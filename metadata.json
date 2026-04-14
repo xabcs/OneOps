@@ -1,0 +1,5 @@
+{
+  "name": "NexOps - 现代化运维管理平台",
+  "description": "基于 Go 和 Vue 3 构建的高颜值、高性能全栈运维管理系统，提供服务器管理、任务自动化、监控告警等核心功能。",
+  "requestFramePermissions": []
+}
