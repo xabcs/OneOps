@@ -93,7 +93,7 @@
                             <el-button link type="primary">管理资产</el-button>
                         </div>
                     </template>
-                    <el-table :data="serverStatus" style="width: 100%">
+                    <el-table :data="displayServerStatus" style="width: 100%">
                         <el-table-column prop="name" label="服务器名称" min-width="150" />
                         <el-table-column prop="ip" label="IP 地址" width="140">
                             <template #default="{ row }">
@@ -123,6 +123,16 @@
                             </template>
                         </el-table-column>
                     </el-table>
+
+                    <div class="pagination-container">
+                        <el-pagination
+                            v-model:current-page="currentPage"
+                            v-model:page-size="pageSize"
+                            :page-sizes="[5, 10, 20]"
+                            layout="total, sizes, prev, pager, next"
+                            :total="serverStatus.length"
+                        />
+                    </div>
                 </el-card>
             </el-col>
         </el-row>
@@ -144,6 +154,8 @@
     const currentTheme = computed(() => store.getters.currentTheme)
     const timeRange = ref('1h')
     const chartRef = ref(null)
+    const currentPage = ref(1)
+    const pageSize = ref(5)
     let refreshTimer = null
 
     const statsConfig = ref([
@@ -168,6 +180,12 @@
         { name: 'Web-Frontend-01', ip: '10.0.1.102', status: 'offline', cpu: 0, mem: 0 },
         { name: 'Log-Collector-Svc', ip: '10.0.5.8', status: 'online', cpu: 34, mem: 56 }
     ])
+
+    const displayServerStatus = computed(() => {
+        const start = (currentPage.value - 1) * pageSize.value
+        const end = start + pageSize.value
+        return serverStatus.value.slice(start, end)
+    })
 
     const refreshData = async () => {
         try {
@@ -514,5 +532,11 @@
 
     .table-row {
         margin-top: 20px;
+    }
+
+    .pagination-container {
+        margin-top: 16px;
+        display: flex;
+        justify-content: flex-end;
     }
 </style>

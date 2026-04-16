@@ -7,7 +7,7 @@
             </div>
             <div class="header-actions">
                 <el-button :icon="Refresh" @click="fetchContainers">刷新列表</el-button>
-                <el-button type="primary" :icon="Plus">部署容器</el-button>
+                <el-button type="accent" :icon="Plus">部署容器</el-button>
             </div>
         </header>
 
@@ -48,7 +48,7 @@
         <!-- Container Grid -->
         <el-card shadow="never" class="table-card">
             <el-table 
-                :data="containers" 
+                :data="displayContainers" 
                 style="width: 100%" 
                 v-loading="loading"
                 header-cell-class-name="table-header-cell"
@@ -101,8 +101,11 @@
                 <el-pagination
                     v-model:current-page="currentPage"
                     v-model:page-size="pageSize"
-                    layout="total, prev, pager, next"
+                    :page-sizes="[10, 20, 50, 100]"
+                    layout="total, sizes, prev, pager, next, jumper"
                     :total="total"
+                    @size-change="handleSizeChange"
+                    @current-change="handleCurrentChange"
                 />
             </div>
         </el-card>
@@ -110,16 +113,21 @@
 </template>
 
 <script setup>
-    import { ref, onMounted } from 'vue'
+    import { ref, computed, onMounted } from 'vue'
     import { Search, Plus, Refresh, MoreFilled } from '@element-plus/icons-vue'
     import { containerApi } from '../api/index.js'
     import { ElMessage } from 'element-plus'
 
     const containers = ref([])
-    const loading = ref(false)
     const total = ref(0)
     const currentPage = ref(1)
     const pageSize = ref(10)
+    const loading = ref(false)
+    const displayContainers = computed(() => {
+        const start = (currentPage.value - 1) * pageSize.value
+        const end = start + pageSize.value
+        return containers.value.slice(start, end)
+    })
 
     const searchForm = ref({
         name: '',
@@ -187,6 +195,16 @@
 
     const handleAction = (row, action) => {
         ElMessage.success(`${action} 容器 ${row.name} 成功`)
+    }
+
+    const handleSizeChange = (val) => {
+        pageSize.value = val
+        fetchContainers()
+    }
+
+    const handleCurrentChange = (val) => {
+        currentPage.value = val
+        fetchContainers()
     }
 
     onMounted(fetchContainers)

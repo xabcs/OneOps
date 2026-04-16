@@ -87,8 +87,28 @@ const operationLogs = Mock.mock({
     'user': '@cname',
     'action|1': ['登录系统', '重启服务器', '删除任务', '修改配置', '导出数据'],
     'module|1': ['主机管理', '自动化任务', '监控中心', '系统设置'],
+    'path|1': ['/api/login', '/api/servers/restart', '/api/tasks/delete', '/api/config/update', '/api/data/export'],
+    'method|1': ['POST', 'GET', 'PUT', 'DELETE'],
+    'params': '{"id": "@integer(1, 100)", "name": "@word(5)"}',
+    'response': '{"code": 200, "message": "success", "data": {}}',
+    'duration|10-2000': 100,
     'ip': '@ip',
     'status|1': ['success', 'failed'],
+    'time': '@datetime'
+  }]
+})
+
+// 模拟登录日志
+const loginLogs = Mock.mock({
+  'list|50-100': [{
+    'id': '@id',
+    'username': '@word(4, 8)',
+    'ip': '@ip',
+    'location': '@city',
+    'browser|1': ['Chrome 120', 'Firefox 121', 'Safari 17', 'Edge 120'],
+    'os|1': ['Windows 11', 'macOS 14', 'Linux', 'iOS 17', 'Android 14'],
+    'status|1': ['success', 'failed'],
+    'msg|1': ['登录成功', '密码错误', '账号锁定', '验证码错误'],
     'time': '@datetime'
   }]
 })
@@ -112,20 +132,84 @@ const menus = [
     { id: 51, name: '菜单管理', icon: 'Menu', path: '/system/menus', permission: 'menu:system:menus', sort: 1, status: 1 },
     { id: 52, name: '角色管理', icon: 'UserFilled', path: '/system/roles', permission: 'menu:system:roles', sort: 2, status: 1 },
     { id: 53, name: '用户管理', icon: 'User', path: '/system/users', permission: 'menu:system:users', sort: 3, status: 1 }
+  ]},
+  { id: 6, name: '操作审计', icon: 'Document', path: '/audit', permission: 'menu:audit', sort: 6, status: 1, children: [
+    { id: 61, name: '事件查询', icon: 'List', path: '/audit/behavior', permission: 'menu:audit:behavior', sort: 1, status: 1 }
   ]}
 ]
 
 const roles = [
-  { id: 1, name: '超级管理员', code: 'admin', description: '拥有系统所有权限', menuIds: [1, 2, 21, 22, 3, 31, 32, 4, 41, 42, 5, 51, 52, 53] },
-  { id: 2, name: '运维工程师', code: 'ops', description: '负责主机和任务管理', menuIds: [1, 2, 21, 22, 3, 31, 32, 4, 41, 42] },
-  { id: 3, name: '审计员', code: 'auditor', description: '仅拥有查看权限', menuIds: [1, 4, 41] }
+  { id: 1, name: '超级管理员', code: 'admin', description: '拥有系统所有权限', status: 1, menuIds: [1, 2, 21, 22, 3, 31, 32, 4, 41, 42, 5, 51, 52, 53, 6, 61] },
+  { id: 2, name: '运维工程师', code: 'ops', description: '负责主机和任务管理', status: 1, menuIds: [1, 2, 21, 22, 3, 31, 32, 4, 41, 42] },
+  { id: 3, name: '审计员', code: 'auditor', description: '仅拥有查看权限', status: 1, menuIds: [1, 4, 41] }
 ]
 
 const users = [
-  { id: 1, username: 'admin', nickname: '超级管理员', avatar: '', roleIds: [1], status: 'active', email: 'admin@example.com', createdAt: '2024-01-01' },
-  { id: 2, username: 'ops_user', nickname: '运维小王', avatar: '', roleIds: [2], status: 'active', email: 'ops@example.com', createdAt: '2024-02-15' },
-  { id: 3, username: 'audit_user', nickname: '审计老李', avatar: '', roleIds: [3], status: 'active', email: 'audit@example.com', createdAt: '2024-03-20' }
+  { id: 1, username: 'admin', nickname: '超级管理员', avatar: '', roleIds: [1], status: 'active', email: 'admin@example.com', createdAt: '2024-01-01', homePath: '/' },
+  { id: 2, username: 'ops_user', nickname: '运维小王', avatar: '', roleIds: [2], status: 'active', email: 'ops@example.com', createdAt: '2024-02-15', homePath: '/servers' },
+  { id: 3, username: 'audit_user', nickname: '审计老李', avatar: '', roleIds: [3], status: 'active', email: 'audit@example.com', createdAt: '2024-03-20', homePath: '/monitoring' }
 ]
+
+// 模拟当前登录用户 ID
+let currentUserId = 1
+
+// 安全深拷贝，避免循环引用
+const safeDeepCopy = (obj, seen = new WeakSet()) => {
+  if (obj === null || typeof obj !== 'object') return obj
+  
+  // 过滤掉 Vue 内部属性和组件
+  if (obj._isVue || obj.__v_isRef || obj.__v_isReadonly) return undefined
+  
+  if (seen.has(obj)) return undefined // 发现循环引用，返回 undefined
+  
+  seen.add(obj)
+  const copy = Array.isArray(obj) ? [] : {}
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      // 过滤掉特定的属性名，这些通常是循环引用的来源
+      if (key === 'component' || key === 'vnode' || key.startsWith('_')) continue
+      copy[key] = safeDeepCopy(obj[key], seen)
+    }
+  }
+  return copy
+}
+
+// 排序逻辑（非原地排序）
+const sortMenus = (list) => {
+  if (!list) return []
+  return [...list].sort((a, b) => a.sort - b.sort).map(item => {
+    const newItem = { ...item }
+    if (newItem.children) {
+      newItem.children = sortMenus(newItem.children)
+    }
+    return newItem
+  })
+}
+
+// 获取用户拥有的所有菜单 ID（包括父级 ID）
+const getTargetIds = (userRoles) => {
+  const ids = new Set(userRoles.flatMap(r => r.menuIds || []))
+  if (ids.size === 0) return [1] // 默认至少拥有首页权限
+  
+  // 递归确保父级 ID 也在列表中
+  const addParents = (list) => {
+    let added = false
+    list.forEach(m => {
+      if (m.children) {
+        const hasChild = m.children.some(c => ids.has(c.id))
+        if (hasChild && !ids.has(m.id)) {
+          ids.add(m.id)
+          added = true
+        }
+        if (addParents(m.children)) added = true
+      }
+    })
+    return added
+  }
+  
+  while (addParents(menus));
+  return [...ids]
+}
 
 // 接口拦截
 Mock.mock(/\/api\/login/, 'post', (options) => {
@@ -140,13 +224,13 @@ Mock.mock(/\/api\/login/, 'post', (options) => {
   
   if (user) {
     // 模拟登录成功
+    currentUserId = user.id
     const userRoles = roles.filter(r => user.roleIds.includes(r.id))
     const isAdmin = userRoles.some(r => r.code === 'admin')
     
-    // 如果是 admin，拥有所有菜单 ID
     const allMenuIds = isAdmin 
       ? menus.flatMap(m => [m.id, ...(m.children ? m.children.map(c => c.id) : [])])
-      : [...new Set(userRoles.flatMap(r => r.menuIds || []))]
+      : getTargetIds(userRoles)
     
     // 递归获取并过滤菜单树
     const getMenuTree = (menuList, targetIds) => {
@@ -163,7 +247,7 @@ Mock.mock(/\/api\/login/, 'post', (options) => {
         })
     }
 
-    const menuTree = getMenuTree(menus, allMenuIds)
+    const menuTree = safeDeepCopy(sortMenus(getMenuTree(menus, allMenuIds)))
     const getPermissions = (tree) => {
       let perms = []
       tree.forEach(m => {
@@ -204,15 +288,14 @@ Mock.mock(/\/api\/register/, 'post', () => {
 })
 
 Mock.mock(/\/api\/user\/info/, 'get', () => {
-  // 模拟当前登录用户为 admin
-  const user = users[0]
+  // 根据 currentUserId 获取当前登录用户
+  const user = users.find(u => u.id === currentUserId) || users[0]
   const userRoles = roles.filter(r => user.roleIds.includes(r.id))
   const isAdmin = userRoles.some(r => r.code === 'admin')
   
-  // 如果是 admin，拥有所有菜单 ID
   const allMenuIds = isAdmin 
     ? menus.flatMap(m => [m.id, ...(m.children ? m.children.map(c => c.id) : [])])
-    : [...new Set(userRoles.flatMap(r => r.menuIds || []))]
+    : getTargetIds(userRoles)
   
   // 递归获取并过滤菜单树
   const getMenuTree = (menuList, targetIds) => {
@@ -229,7 +312,7 @@ Mock.mock(/\/api\/user\/info/, 'get', () => {
       })
   }
 
-  const menuTree = getMenuTree(menus, allMenuIds)
+  const menuTree = safeDeepCopy(sortMenus(getMenuTree(menus, allMenuIds)))
   
   // 获取扁平化的权限列表
   const getPermissions = (tree) => {
@@ -259,23 +342,6 @@ Mock.mock(/\/api\/user\/info/, 'get', () => {
 })
 
 Mock.mock(/\/api\/system\/menus/, 'get', () => {
-  // 排序逻辑
-  const sortMenus = (list) => {
-    return list.sort((a, b) => a.sort - b.sort).map(item => {
-      if (item.children) {
-        item.children = sortMenus(item.children)
-      }
-      return item
-    })
-  }
-  const safeDeepCopy = (obj) => {
-    try {
-      return JSON.parse(JSON.stringify(obj))
-    } catch (e) {
-      console.error('Mock data contains circular structure:', e)
-      return obj // Fallback to original object if stringification fails
-    }
-  }
   return { code: 200, data: sortMenus(safeDeepCopy(menus)), message: 'success' }
 })
 
@@ -383,6 +449,7 @@ Mock.mock(/\/api\/system\/users/, 'post', (options) => {
   } catch (e) {
     console.error('Mock add user parse error:', e)
   }
+  
   const newUser = {
     ...data,
     id: users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1,
@@ -399,6 +466,7 @@ Mock.mock(/\/api\/system\/users\/\d+/, 'put', (options) => {
   } catch (e) {
     console.error('Mock update user parse error:', e)
   }
+
   const index = users.findIndex(u => u.id === id)
   if (index !== -1) {
     users[index] = { ...users[index], ...data }
@@ -551,6 +619,29 @@ Mock.mock(/\/api\/logs\/operation/, 'get', (options) => {
     }
     if (module) {
       list = list.filter(item => item.module === module)
+    }
+  } catch (e) {
+    console.error('Mock URL parsing error:', e)
+  }
+  return { code: 200, data: list, message: 'success' }
+})
+
+Mock.mock(/\/api\/logs\/login/, 'get', (options) => {
+  let list = [...loginLogs.list]
+  try {
+    const url = new URL(options.url, window.location.origin)
+    const username = url.searchParams.get('username')
+    const status = url.searchParams.get('status')
+    const location = url.searchParams.get('location')
+
+    if (username) {
+      list = list.filter(item => item.username.includes(username))
+    }
+    if (status) {
+      list = list.filter(item => item.status === status)
+    }
+    if (location) {
+      list = list.filter(item => item.location.includes(location))
     }
   } catch (e) {
     console.error('Mock URL parsing error:', e)

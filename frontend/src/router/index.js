@@ -65,6 +65,27 @@ const routes = [
     name: 'Users',
     component: Users,
     meta: { requiresAuth: true, title: '用户管理', parent: '系统管理', permission: 'menu:system:users' }
+  },
+  {
+    path: '/audit/behavior',
+    name: 'BehaviorRecords',
+    component: () => import('../views/audit/behavior/Index.vue'),
+    redirect: '/audit/behavior/login',
+    meta: { requiresAuth: true, title: '事件查询', parent: '操作审计', permission: 'menu:audit:behavior' },
+    children: [
+      {
+        path: 'login',
+        name: 'LoginLogs',
+        component: () => import('../views/audit/behavior/LoginLogs.vue'),
+        meta: { requiresAuth: true, title: '登录审计', parent: '事件查询', permission: 'menu:audit:behavior:login' }
+      },
+      {
+        path: 'operation',
+        name: 'OperationLogs',
+        component: () => import('../views/audit/behavior/OperationLogs.vue'),
+        meta: { requiresAuth: true, title: '操作审计', parent: '事件查询', permission: 'menu:audit:behavior:operation' }
+      }
+    ]
   }
 ]
 

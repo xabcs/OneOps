@@ -37,15 +37,38 @@ export default createStore({
     SET_USER(state, user) {
       state.user = user
       try {
-        localStorage.setItem('user', JSON.stringify(user))
+        const seen = new WeakSet()
+        const safeUserStr = JSON.stringify(user, (key, value) => {
+          if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) return undefined
+            seen.add(value)
+          }
+          if (key === 'component' || key === 'vnode' || (value && value._isVue)) return undefined
+          return value
+        })
+        localStorage.setItem('user', safeUserStr)
       } catch (e) {
-        console.error('Failed to persist user to localStorage:', e)
+        console.warn('Failed to persist user to localStorage:', e)
+        try {
+          const basicUser = { id: user.id, username: user.username, roleNames: user.roleNames }
+          localStorage.setItem('user', JSON.stringify(basicUser))
+        } catch (innerE) {
+          console.error('Critical failure persisting user:', innerE)
+        }
       }
     },
     SET_PERMISSIONS(state, permissions) {
       state.permissions = permissions
       try {
-        localStorage.setItem('permissions', JSON.stringify(permissions))
+        const seen = new WeakSet()
+        const safePermissionsStr = JSON.stringify(permissions, (key, value) => {
+          if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) return undefined
+            seen.add(value)
+          }
+          return value
+        })
+        localStorage.setItem('permissions', safePermissionsStr)
       } catch (e) {
         console.error('Failed to persist permissions to localStorage:', e)
       }
@@ -53,9 +76,18 @@ export default createStore({
     SET_MENU_TREE(state, menuTree) {
       state.menuTree = menuTree
       try {
-        localStorage.setItem('menuTree', JSON.stringify(menuTree))
+        const seen = new WeakSet()
+        const safeMenuTreeStr = JSON.stringify(menuTree, (key, value) => {
+          if (typeof value === 'object' && value !== null) {
+            if (seen.has(value)) return undefined
+            seen.add(value)
+          }
+          if (key === 'component' || key === 'vnode' || (value && value._isVue)) return undefined
+          return value
+        })
+        localStorage.setItem('menuTree', safeMenuTreeStr)
       } catch (e) {
-        console.error('Failed to persist menuTree to localStorage:', e)
+        console.warn('Failed to persist menuTree to localStorage:', e)
       }
     },
     LOGOUT(state) {

@@ -1,21 +1,35 @@
 <template>
     <div class="roles-container">
-        <header class="page-header">
-            <div class="header-content">
-                <h2 class="page-title">角色管理</h2>
-                <p class="page-subtitle">管理系统用户角色及权限分配</p>
-            </div>
-            <div class="header-actions">
-                <el-button type="primary" :icon="Plus" @click="handleAdd">新增角色</el-button>
-            </div>
-        </header>
-
         <el-card shadow="never" class="table-card" v-loading="loading">
-            <el-table :data="roleList" border style="width: 100%">
+            <template #header>
+                <div class="card-header-content">
+                    <div class="header-left">
+                        <div style="display: flex; align-items: center; gap: 12px">
+                            <h2 class="page-title">角色管理</h2>
+                            <span class="accent-dot"></span>
+                        </div>
+                        <p class="page-subtitle">管理系统用户角色及权限分配</p>
+                    </div>
+                    <div class="header-right">
+                        <el-space>
+                            <el-input
+                                v-model="queryParams.name"
+                                placeholder="搜索角色名称/标识"
+                                :prefix-icon="Search"
+                                clearable
+                                style="width: 220px"
+                                @keyup.enter="fetchRoles"
+                            />
+                            <el-button type="accent" :icon="Plus" @click="handleAdd">新增角色</el-button>
+                        </el-space>
+                    </div>
+                </div>
+            </template>
+            <el-table :data="displayRoles" border style="width: 100%">
                 <el-table-column prop="name" label="角色名称" width="150" />
                 <el-table-column prop="code" label="角色标识" width="150">
                     <template #default="{ row }">
-                        <el-tag size="small">{{ row.code }}</el-tag>
+                        <el-tag size="small" class="permission-tag">{{ row.code }}</el-tag>
                     </template>
                 </el-table-column>
                 <el-table-column prop="userNames" label="关联用户" min-width="200">
@@ -25,7 +39,7 @@
                                 v-for="userName in row.userNames" 
                                 :key="userName" 
                                 size="small" 
-                                type="info"
+                                type="warning"
                                 class="user-tag"
                             >
                                 {{ userName }}
@@ -35,14 +49,42 @@
                     </template>
                 </el-table-column>
                 <el-table-column prop="description" label="描述" min-width="200" />
+                <el-table-column prop="status" label="状态" width="100" align="center">
+                    <template #default="{ row }">
+                        <el-switch
+                            v-model="row.status"
+                            :active-value="1"
+                            :inactive-value="0"
+                            :disabled="row.code === 'admin'"
+                            @change="(val) => handleStatusChange(row, val)"
+                        />
+                    </template>
+                </el-table-column>
                 <el-table-column label="操作" width="250" align="center">
                     <template #default="{ row }">
                         <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
-                        <el-button link type="primary" @click="handlePermission(row)">权限设置</el-button>
-                        <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+                        <el-button link class="text-accent" @click="handlePermission(row)">权限设置</el-button>
+                        <el-button 
+                            link 
+                            type="danger" 
+                            :disabled="row.code === 'admin'"
+                            @click="handleDelete(row)"
+                        >删除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
+            
+            <div class="pagination-container">
+                <el-pagination
+                    v-model:current-page="currentPage"
+                    v-model:page-size="pageSize"
+                    :page-sizes="[10, 20, 50, 100]"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="total"
+                    @size-change="handleSizeChange"
+                    @current-change="handleCurrentChange"
+                />
+            </div>
         </el-card>
 
         <!-- Role Form Dialog -->
@@ -60,6 +102,12 @@
                 </el-form-item>
                 <el-form-item label="描述" prop="description">
                     <el-input v-model="form.description" type="textarea" placeholder="请输入角色描述" />
+                </el-form-item>
+                <el-form-item label="状态" prop="status">
+                    <el-radio-group v-model="form.status" :disabled="form.code === 'admin'">
+                        <el-radio :label="1">启用</el-radio>
+                        <el-radio :label="0">禁用</el-radio>
+                    </el-radio-group>
                 </el-form-item>
             </el-form>
             <template #footer>
@@ -93,14 +141,17 @@
 </template>
 
 <script setup>
-    import { ref, onMounted, nextTick } from 'vue'
+    import { ref, reactive, computed, onMounted, nextTick } from 'vue'
     import { useStore } from 'vuex'
-    import { Plus } from '@element-plus/icons-vue'
+    import { Plus, Search } from '@element-plus/icons-vue'
     import { ElMessage, ElMessageBox } from 'element-plus'
     import { systemApi } from '../../api/index.js'
 
     const store = useStore()
     const roleList = ref([])
+    const currentPage = ref(1)
+    const pageSize = ref(10)
+    const total = ref(0)
     const menuTree = ref([])
     const loading = ref(false)
     const submitting = ref(false)
@@ -108,12 +159,22 @@
     const permissionDialogVisible = ref(false)
     const formRef = ref(null)
     const treeRef = ref(null)
+    const displayRoles = computed(() => {
+        const start = (currentPage.value - 1) * pageSize.value
+        const end = start + pageSize.value
+        return roleList.value.slice(start, end)
+    })
+
+    const queryParams = reactive({
+        name: ''
+    })
 
     const form = ref({
         id: null,
         name: '',
         code: '',
-        description: ''
+        description: '',
+        status: 1
     })
 
     const rules = {
@@ -133,12 +194,24 @@
             
             if (roleRes.code === 200 && userRes.code === 200) {
                 const users = userRes.data || []
-                roleList.value = roleRes.data.map(role => ({
+                let data = roleRes.data
+                
+                // 前端模拟搜索过滤
+                if (queryParams.name) {
+                    const keyword = queryParams.name.toLowerCase()
+                    data = data.filter(r => 
+                        r.name.toLowerCase().includes(keyword) || 
+                        r.code.toLowerCase().includes(keyword)
+                    )
+                }
+
+                roleList.value = data.map(role => ({
                     ...role,
                     userNames: users
                         .filter(u => u.roleIds && u.roleIds.includes(role.id))
                         .map(u => u.nickname || u.username)
                 }))
+                total.value = roleList.value.length
             }
         } catch (error) {
             console.error('Error fetching roles:', error)
@@ -159,7 +232,7 @@
     }
 
     const handleAdd = () => {
-        form.value = { id: null, name: '', code: '', description: '' }
+        form.value = { id: null, name: '', code: '', description: '', status: 1 }
         dialogVisible.value = true
         nextTick(() => formRef.value?.clearValidate())
     }
@@ -169,10 +242,21 @@
             id: row.id,
             name: row.name,
             code: row.code,
-            description: row.description
+            description: row.description,
+            status: row.status ?? 1
         }
         dialogVisible.value = true
         nextTick(() => formRef.value?.clearValidate())
+    }
+
+    const handleStatusChange = async (row, val) => {
+        try {
+            await systemApi.updateRole(row.id, { status: val })
+            ElMessage.success(`${val === 1 ? '启用' : '禁用'}成功`)
+        } catch (error) {
+            row.status = val === 1 ? 0 : 1
+            ElMessage.error('状态更新失败')
+        }
     }
 
     const submitForm = async () => {
@@ -211,6 +295,16 @@
                 ElMessage.error('删除失败')
             }
         })
+    }
+
+    const handleSizeChange = (val) => {
+        pageSize.value = val
+        fetchRoles()
+    }
+
+    const handleCurrentChange = (val) => {
+        currentPage.value = val
+        fetchRoles()
     }
 
     const handlePermission = (row) => {
@@ -252,21 +346,47 @@
 </script>
 
 <style scoped>
+    .text-accent {
+        color: var(--accent) !important;
+    }
+
+    .text-accent:hover {
+        color: var(--accent-hover) !important;
+        text-decoration: underline;
+    }
+
     .roles-container {
         display: flex;
         flex-direction: column;
-        gap: 16px;
     }
 
-    .page-header {
+    .card-header-content {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 4px;
+        align-items: center;
+    }
+
+    .page-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .page-subtitle {
+        margin: 4px 0 0;
+        font-size: 13px;
+        color: var(--text-tertiary);
     }
 
     .table-card {
-        border: none;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+    }
+
+    :deep(.el-card__header) {
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--border);
+        background-color: var(--bg-primary);
     }
 
     .permission-tree-container {
@@ -290,5 +410,12 @@
     .text-tertiary {
         color: var(--text-tertiary);
         font-size: 12px;
+    }
+
+    .pagination-container {
+        margin-top: 20px;
+        display: flex;
+        justify-content: flex-end;
+        padding: 0 20px 20px;
     }
 </style>

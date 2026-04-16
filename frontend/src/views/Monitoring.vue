@@ -95,7 +95,15 @@
             </el-table>
 
             <div class="pagination-container">
-                <el-pagination layout="total, prev, pager, next" :total="alerts.length" :page-size="10" />
+                <el-pagination
+                    v-model:current-page="currentPage"
+                    v-model:page-size="pageSize"
+                    :page-sizes="[10, 20, 50, 100]"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="alertsTotal"
+                    @size-change="handleSizeChange"
+                    @current-change="handleCurrentChange"
+                />
             </div>
         </el-card>
     </div>
@@ -111,6 +119,8 @@
 
     const loading = ref(false)
     const alertFilter = ref('all')
+    const currentPage = ref(1)
+    const pageSize = ref(10)
     const metrics = ref([
         { label: 'CPU 平均负载', value: '45.2', unit: '%', percentage: 45.2, icon: Cpu, status: 'primary', trend: '+2.4%', trendType: 'up' },
         { label: '内存使用率', value: '62.8', unit: '%', percentage: 62.8, icon: PieChart, status: 'warning', trend: '-1.2%', trendType: 'down' },
@@ -119,9 +129,21 @@
     ])
 
     const alerts = ref([])
+    const alertsTotal = computed(() => {
+        if (alertFilter.value === 'all') return alerts.value.length
+        return alerts.value.filter(a => a.level === alertFilter.value).length
+    })
+
     const filteredAlerts = computed(() => {
-        if (alertFilter.value === 'all') return alerts.value
-        return alerts.value.filter(a => a.level === alertFilter.value)
+        let list = alerts.value
+        if (alertFilter.value !== 'all') {
+            list = list.filter(a => a.level === alertFilter.value)
+        }
+        
+        // 前端分页模拟
+        const start = (currentPage.value - 1) * pageSize.value
+        const end = start + pageSize.value
+        return list.slice(start, end)
     })
 
     const formatLevel = (level) => {
@@ -174,13 +196,21 @@
     onMounted(fetchMonitoringData)
 
     const handleHandle = (row) => {
-        console.log('Handle alert:', row)
+        // console.log('Handle alert:', row.id)
         row.status = 'handled'
     }
 
     const handleIgnore = (row) => {
-        console.log('Ignore alert:', row)
+        // console.log('Ignore alert:', row.id)
         alerts.value = alerts.value.filter(a => a.id !== row.id)
+    }
+
+    const handleSizeChange = (val) => {
+        pageSize.value = val
+    }
+
+    const handleCurrentChange = (val) => {
+        currentPage.value = val
     }
 </script>
 

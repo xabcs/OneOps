@@ -4,10 +4,7 @@
     <div class="login-aside">
       <div class="aside-content">
         <div class="brand">
-          <div class="logo-box">
-            <el-icon :size="32" color="#fff"><Monitor /></el-icon>
-          </div>
-          <h1 class="brand-name">NexOps</h1>
+          <img src="/logo.svg" alt="NexOps" class="brand-logo" />
         </div>
         <div class="hero-text">
           <h2>全栈自动化运维新标杆</h2>
@@ -118,12 +115,14 @@ const handleLogin = async () => {
     const response = await loginApi.login(loginForm)
     
     if (response.success) {
-      store.dispatch('login', {
-        token: response.token,
-        user: response.user
-      })
+      store.commit('SET_TOKEN', response.token)
+      store.commit('SET_USER', response.user)
+      store.commit('SET_PERMISSIONS', response.user.permissions || [])
+      store.commit('SET_MENU_TREE', response.user.menuTree || [])
+      
       ElMessage.success('欢迎回来, ' + response.user.username)
-      router.push('/')
+      // 跳转到用户的家目录，如果没有则跳转到首页
+      router.push(response.user.homePath || '/')
     } else {
       ElMessage.error(response.message || '登录失败')
     }
@@ -182,27 +181,15 @@ const handleLogin = async () => {
 .brand {
   display: flex;
   align-items: center;
-  gap: 16px;
   margin-bottom: auto;
+  padding-left: 40px;
+  overflow: visible;
 }
 
-.logo-box {
-  width: 56px;
-  height: 56px;
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
-}
-
-.brand-name {
-  font-size: 2.25rem;
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: -0.02em;
-  margin: 0;
+.brand-logo {
+  height: 48px;
+  width: auto;
+  display: block;
 }
 
 .hero-text {
@@ -211,19 +198,23 @@ const handleLogin = async () => {
 }
 
 .hero-text h2 {
-  font-size: 3rem;
-  font-weight: 800;
-  line-height: 1.2;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 4rem;
+  font-weight: 900;
+  line-height: 1.1;
   margin-bottom: 24px;
   background: linear-gradient(to bottom right, #ffffff, #94a3b8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  transform: skewX(-5deg);
 }
 
 .hero-text p {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   color: #94a3b8;
   line-height: 1.6;
+  font-weight: 300;
 }
 
 .aside-footer p {

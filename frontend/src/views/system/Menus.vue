@@ -1,30 +1,47 @@
 <template>
     <div class="menus-container">
-        <header class="page-header">
-            <div class="header-content">
-                <h2 class="page-title">菜单管理</h2>
-                <p class="page-subtitle">配置系统导航菜单及权限标识。</p>
-            </div>
-            <div class="header-actions">
-                <el-button type="primary" :icon="Plus" @click="handleAdd">新增菜单</el-button>
-            </div>
-        </header>
-
         <el-card shadow="never" class="table-card" v-loading="loading">
+            <template #header>
+                <div class="card-header-content">
+                    <div class="header-left">
+                        <div style="display: flex; align-items: center; gap: 12px">
+                            <h2 class="page-title">菜单管理</h2>
+                            <span class="accent-dot"></span>
+                        </div>
+                        <p class="page-subtitle">配置系统导航菜单及权限标识。</p>
+                    </div>
+                    <div class="header-right">
+                        <el-space>
+                            <el-input
+                                v-model="filterText"
+                                placeholder="搜索菜单名称"
+                                :prefix-icon="Search"
+                                clearable
+                                style="width: 200px"
+                            />
+                            <el-button type="accent" :icon="Plus" @click="handleAdd">新增菜单</el-button>
+                        </el-space>
+                    </div>
+                </div>
+            </template>
             <el-table
-                :data="menuList"
+                :data="filteredMenuList"
                 row-key="id"
                 border
                 default-expand-all
                 :tree-props="{ children: 'children' }"
             >
-                <el-table-column prop="name" label="菜单名称" min-width="180" />
-                <el-table-column prop="icon" label="图标" width="80" align="center">
+                <el-table-column prop="name" label="菜单名称" width="160">
+                    <template #default="{ row }">
+                        <span class="menu-name">{{ row.name }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="icon" label="图标" width="70" align="center">
                     <template #default="{ row }">
                         <el-icon v-if="row.icon"><component :is="getIcon(row.icon)" /></el-icon>
                     </template>
                 </el-table-column>
-                <el-table-column prop="sort" label="排序" width="120" align="center">
+                <el-table-column prop="sort" label="排序" width="100" align="center">
                     <template #default="{ row }">
                         <div class="sort-actions">
                             <el-button 
@@ -43,7 +60,7 @@
                         </div>
                     </template>
                 </el-table-column>
-                <el-table-column prop="status" label="状态" width="100" align="center">
+                <el-table-column prop="status" label="状态" width="80" align="center">
                     <template #default="{ row }">
                         <el-switch
                             v-model="row.status"
@@ -53,10 +70,11 @@
                         />
                     </template>
                 </el-table-column>
-                <el-table-column prop="path" label="路由路径" min-width="180" />
-                <el-table-column prop="permission" label="权限标识" min-width="180">
+                <el-table-column prop="path" label="路由路径" min-width="150" />
+                <el-table-column prop="permission" label="权限标识" min-width="150">
                     <template #default="{ row }">
-                        <el-tag size="small" type="info">{{ row.permission }}</el-tag>
+                        <el-tag v-if="row.permission" size="small" class="permission-tag">{{ row.permission }}</el-tag>
+                        <span v-else class="text-tertiary">-</span>
                     </template>
                 </el-table-column>
                 <el-table-column label="操作" width="150" align="center">
@@ -133,15 +151,16 @@
 </template>
 
 <script setup>
-    import { ref, onMounted } from 'vue'
+    import { ref, computed, onMounted } from 'vue'
     import { useStore } from 'vuex'
     import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-    import { Plus, Top, Bottom } from '@element-plus/icons-vue'
+    import { Plus, Top, Bottom, Search } from '@element-plus/icons-vue'
     import { ElMessage, ElMessageBox } from 'element-plus'
     import { systemApi, loginApi } from '../../api/index.js'
 
     const store = useStore()
     const menuList = ref([])
+    const filterText = ref('')
     const loading = ref(false)
     const dialogVisible = ref(false)
     const submitting = ref(false)
@@ -162,6 +181,27 @@
         path: [{ required: true, message: '请输入路由路径', trigger: 'blur' }],
         permission: [{ required: true, message: '请输入权限标识', trigger: 'blur' }]
     }
+
+    const filteredMenuList = computed(() => {
+        if (!filterText.value) return menuList.value
+        
+        const filterTree = (list) => {
+            const result = []
+            list.forEach(item => {
+                const nameMatch = item.name.toLowerCase().includes(filterText.value.toLowerCase())
+                const children = item.children ? filterTree(item.children) : []
+                const childrenMatch = children.length > 0
+                
+                if (nameMatch || childrenMatch) {
+                    const newItem = { ...item, children }
+                    result.push(newItem)
+                }
+            })
+            return result
+        }
+        
+        return filterTree(menuList.value)
+    })
 
     const handleAdd = () => {
         form.value = {
@@ -340,18 +380,35 @@
     .menus-container {
         display: flex;
         flex-direction: column;
-        gap: 16px;
     }
 
-    .page-header {
+    .card-header-content {
         display: flex;
         justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 4px;
+        align-items: center;
+    }
+
+    .page-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .page-subtitle {
+        margin: 4px 0 0;
+        font-size: 13px;
+        color: var(--text-tertiary);
     }
 
     .table-card {
-        border: none;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+    }
+
+    :deep(.el-card__header) {
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--border);
+        background-color: var(--bg-primary);
     }
 
     .sort-actions {

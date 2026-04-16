@@ -6,7 +6,7 @@
                 <p class="page-subtitle">编排、调度及监控系统自动化运维任务。</p>
             </div>
             <div class="header-actions">
-                <el-button type="primary" :icon="Plus">新建任务</el-button>
+                <el-button type="accent" :icon="Plus">新建任务</el-button>
                 <el-button :icon="Calendar">调度历史</el-button>
             </div>
         </header>
@@ -62,7 +62,7 @@
         <!-- Task Grid -->
         <el-card shadow="never" class="table-card">
             <el-table 
-                :data="tasks" 
+                :data="displayTasks" 
                 style="width: 100%" 
                 v-loading="loading"
                 header-cell-class-name="table-header-cell"
@@ -135,8 +135,10 @@
                 <el-pagination
                     v-model:current-page="currentPage"
                     v-model:page-size="pageSize"
-                    layout="total, prev, pager, next"
+                    :page-sizes="[10, 20, 50, 100]"
+                    layout="total, sizes, prev, pager, next, jumper"
                     :total="total"
+                    @size-change="handleSizeChange"
                     @current-change="handleCurrentChange"
                 />
             </div>
@@ -145,20 +147,25 @@
 </template>
 
 <script setup>
-    import { ref, onMounted } from 'vue'
+    import { ref, computed, onMounted } from 'vue'
     import { Search, Plus, Calendar, MoreFilled } from '@element-plus/icons-vue'
     import { taskApi } from '../api/index.js'
 
     const tasks = ref([])
+    const currentPage = ref(1)
+    const pageSize = ref(10)
+    const total = ref(0)
     const loading = ref(false)
     const searchForm = ref({
         name: '',
         status: '',
         type: ''
     })
-    const currentPage = ref(1)
-    const pageSize = ref(10)
-    const total = ref(0)
+    const displayTasks = computed(() => {
+        const start = (currentPage.value - 1) * pageSize.value
+        const end = start + pageSize.value
+        return tasks.value.slice(start, end)
+    })
 
     const formatStatus = (status) => {
         const map = {
@@ -229,19 +236,24 @@
     }
 
     const handleView = (row) => {
-        console.log('View task:', row)
+        // console.log('View task:', row.id)
     }
 
     const handleExecute = (row) => {
-        console.log('Execute task:', row)
+        // console.log('Execute task:', row.id)
     }
 
     const handleCancel = (row) => {
-        console.log('Cancel task:', row)
+        // console.log('Cancel task:', row.id)
     }
 
     const handleCurrentChange = (val) => {
         currentPage.value = val
+        fetchTasks()
+    }
+
+    const handleSizeChange = (val) => {
+        pageSize.value = val
         fetchTasks()
     }
 </script>

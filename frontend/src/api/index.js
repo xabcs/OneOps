@@ -13,7 +13,7 @@ const api = axios.create({
 api.interceptors.response.use(
   response => response.data,
   error => {
-    console.error('API 请求错误:', error)
+    console.error('API 请求错误:', error.message || 'Unknown Error')
     return Promise.reject(error)
   }
 )
@@ -62,6 +62,7 @@ export const containerApi = {
 // 日志管理 API
 export const logApi = {
   getOperationLogs: (params) => api.get('/logs/operation', { params }),
+  getLoginLogs: (params) => api.get('/logs/login', { params }),
   getEventRecords: (params) => api.get('/logs/event', { params })
 }
 

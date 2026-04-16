@@ -36,6 +36,12 @@
 
     onMounted(fetchUserInfo)
 
+    watch(isAuthenticated, (val) => {
+        if (val) {
+            fetchUserInfo()
+        }
+    })
+
     const menuItems = computed(() => {
         const rawMenuTree = store.getters.menuTree || []
         
@@ -162,10 +168,7 @@
             <!-- Sidebar -->
             <el-aside :width="isCollapse ? '64px' : '240px'" class="app-sidebar">
                 <div class="logo-container">
-                    <div class="logo-box">
-                        <el-icon :size="24" color="#fff"><Monitor /></el-icon>
-                    </div>
-                    <h1 v-show="!isCollapse" class="logo-text">NexOps</h1>
+                    <img src="/logo.svg" alt="NexOps" class="logo-img" :class="{ 'collapsed': isCollapse }" />
                 </div>
                 
                 <el-scrollbar>
@@ -176,16 +179,30 @@
                         router
                     >
                         <template v-for="item in menuItems" :key="item.path">
-                            <el-sub-menu v-if="item.children" :index="item.path">
-                                <template #title>
-                                    <el-icon><component :is="item.icon" /></el-icon>
-                                    <span>{{ item.name }}</span>
-                                </template>
-                                <el-menu-item v-for="child in item.children" :key="child.path" :index="child.path">
-                                    <el-icon v-if="child.icon"><component :is="child.icon" /></el-icon>
-                                    {{ child.name }}
-                                </el-menu-item>
-                            </el-sub-menu>
+                            <template v-if="item.children && item.children.length > 0">
+                                <el-sub-menu :index="item.path">
+                                    <template #title>
+                                        <el-icon><component :is="item.icon" /></el-icon>
+                                        <span>{{ item.name }}</span>
+                                    </template>
+                                    <template v-for="child in item.children" :key="child.path">
+                                        <el-sub-menu v-if="child.children && child.children.length > 0" :index="child.path">
+                                            <template #title>
+                                                <el-icon v-if="child.icon"><component :is="child.icon" /></el-icon>
+                                                <span>{{ child.name }}</span>
+                                            </template>
+                                            <el-menu-item v-for="grandChild in child.children" :key="grandChild.path" :index="grandChild.path">
+                                                <el-icon v-if="grandChild.icon"><component :is="grandChild.icon" /></el-icon>
+                                                {{ grandChild.name }}
+                                            </el-menu-item>
+                                        </el-sub-menu>
+                                        <el-menu-item v-else :index="child.path">
+                                            <el-icon v-if="child.icon"><component :is="child.icon" /></el-icon>
+                                            {{ child.name }}
+                                        </el-menu-item>
+                                    </template>
+                                </el-sub-menu>
+                            </template>
                             <el-menu-item v-else :index="item.path">
                                 <el-icon><component :is="item.icon" /></el-icon>
                                 <template #title>{{ item.name }}</template>
@@ -244,8 +261,11 @@
                                     {{ user?.username?.charAt(0).toUpperCase() }}
                                 </el-avatar>
                                 <div class="user-meta">
-                                    <span class="user-name">{{ user?.username }}</span>
-                                    <span class="user-role">超级管理员</span>
+                                    <div style="display: flex; align-items: center; gap: 6px">
+                                        <span class="user-name">{{ user?.username }}</span>
+                                        <span class="accent-dot" style="width: 4px; height: 4px; box-shadow: 0 0 4px var(--accent);"></span>
+                                    </div>
+                                    <span class="user-role">{{ user?.roleNames?.join(', ') || '普通用户' }}</span>
                                 </div>
                             </div>
                             <template #dropdown>
@@ -311,38 +331,46 @@
         background-color: var(--bg-sidebar);
         display: flex;
         flex-direction: column;
-        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         border-right: 1px solid var(--sidebar-border);
         z-index: 100;
-        box-shadow: 1px 0 0 0 var(--border);
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.02);
     }
 
     .logo-container {
-        height: 64px;
+        height: 80px;
         display: flex;
         align-items: center;
-        padding: 0 20px;
-        gap: 12px;
+        padding-left: 32px;
         background: var(--bg-sidebar);
-        border-bottom: 1px solid var(--sidebar-border);
+        position: relative;
     }
 
-    .logo-box {
-        width: 24px;
-        height: 24px;
-        background: #0070cc;
-        border-radius: 2px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
+    .logo-container::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 24px;
+        right: 24px;
+        height: 1px;
+        background: linear-gradient(to right, var(--border), transparent);
+        opacity: 0.5;
     }
 
-    .logo-text {
-        color: var(--text-primary);
-        font-size: 16px;
-        font-weight: 600;
-        margin: 0;
+    .logo-img {
+        height: 36px;
+        width: auto;
+        display: block;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        filter: drop-shadow(0 4px 8px rgba(0, 102, 255, 0.1));
+    }
+
+    .logo-img.collapsed {
+        height: 32px;
+        width: 32px;
+        object-fit: cover;
+        object-position: 0 50%;
+        margin-left: -4px;
     }
 
     .sidebar-menu {
@@ -357,22 +385,24 @@
 
     :deep(.el-menu-item), :deep(.el-sub-menu__title) {
         color: var(--sidebar-text) !important;
-        height: 44px !important;
-        line-height: 44px !important;
-        margin: 4px 8px !important;
-        border-radius: 6px !important;
-        transition: all 0.2s !important;
+        height: 48px !important;
+        line-height: 48px !important;
+        margin: 4px 12px !important;
+        border-radius: 12px !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
 
     :deep(.el-menu-item:hover), :deep(.el-sub-menu__title:hover) {
         background-color: var(--sidebar-hover) !important;
         color: var(--primary) !important;
+        transform: translateX(4px);
     }
 
     :deep(.el-menu-item.is-active) {
         background-color: var(--sidebar-active-bg) !important;
         color: var(--sidebar-active-text) !important;
         font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0, 102, 255, 0.08);
     }
 
     :deep(.el-sub-menu.is-active > .el-sub-menu__title) {
@@ -408,17 +438,17 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0 24px;
-        height: 64px !important;
+        padding: 0 20px;
+        height: 52px !important;
         flex-shrink: 0;
     }
 
     .app-tabs-container {
         background-color: var(--bg-primary);
-        padding: 0 24px;
+        padding: 0 20px;
         border-bottom: 1px solid var(--border);
         flex-shrink: 0;
-        height: 38px;
+        height: 34px;
         display: flex;
         align-items: center;
     }
@@ -434,11 +464,11 @@
 
     :deep(.el-tabs--card > .el-tabs__header .el-tabs__item) {
         border: none;
-        height: 38px;
-        line-height: 38px;
+        height: 34px;
+        line-height: 34px;
         font-size: 12px;
         color: var(--text-secondary);
-        padding: 0 20px !important;
+        padding: 0 16px !important;
         transition: all 0.2s;
         position: relative;
     }
@@ -561,7 +591,7 @@
     /* Main Content Styles */
     .app-main {
         background-color: var(--bg-secondary);
-        padding: 16px;
+        padding: 12px;
         overflow-y: auto;
     }
 
