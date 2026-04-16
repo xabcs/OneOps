@@ -133,8 +133,8 @@ const menus = [
     { id: 52, name: '角色管理', icon: 'UserFilled', path: '/system/roles', permission: 'menu:system:roles', sort: 2, status: 1 },
     { id: 53, name: '用户管理', icon: 'User', path: '/system/users', permission: 'menu:system:users', sort: 3, status: 1 }
   ]},
-  { id: 6, name: '操作审计', icon: 'Document', path: '/audit', permission: 'menu:audit', sort: 6, status: 1, children: [
-    { id: 61, name: '事件查询', icon: 'List', path: '/audit/behavior', permission: 'menu:audit:behavior', sort: 1, status: 1 }
+  { id: 6, name: '审计管理', icon: 'Document', path: '/audit', permission: 'menu:audit', sort: 6, status: 1, children: [
+    { id: 61, name: '行为日志', icon: 'List', path: '/audit/behavior', permission: 'menu:audit:behavior', sort: 1, status: 1 }
   ]}
 ]
 

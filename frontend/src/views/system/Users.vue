@@ -18,9 +18,9 @@
                                 :prefix-icon="Search"
                                 clearable
                                 style="width: 200px"
-                                @keyup.enter="fetchUsers"
+                                @keyup.enter="handleSearch"
                             />
-                            <el-select v-model="queryParams.status" placeholder="状态" clearable style="width: 100px" @change="fetchUsers">
+                            <el-select v-model="queryParams.status" placeholder="状态" clearable style="width: 100px" @change="handleSearch">
                                 <el-option label="启用" value="active" />
                                 <el-option label="禁用" value="disabled" />
                             </el-select>
@@ -270,6 +270,11 @@
         } finally {
             loading.value = false
         }
+    }
+
+    const handleSearch = () => {
+        currentPage.value = 1
+        fetchUsers()
     }
 
     const handleAdd = () => {

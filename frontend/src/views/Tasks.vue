@@ -215,6 +215,7 @@
     onMounted(fetchTasks)
 
     const handleSearch = () => {
+        currentPage.value = 1
         fetchTasks()
     }
 

@@ -1,77 +1,73 @@
 <template>
     <div class="logs-container">
         <!-- Info Alert -->
-        <div class="info-alert">
+        <div class="info-alert compact">
             <el-icon class="info-icon"><InfoFilled /></el-icon>
-            <span class="info-text">系统默认记录最近90天的登录审计事件。如需长期保存或进行多维分析，请前往 <el-link type="primary" :underline="false">审计配置</el-link> 开启日志投递。</span>
+            <span class="info-text">系统默认记录最近90天的登录审计事件。如需长期保存，请前往 <el-link type="primary" :underline="false">审计配置</el-link></span>
         </div>
 
-        <!-- Search & Filter -->
-        <div class="compact-filter">
-            <el-form :model="searchForm" class="search-form">
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <div class="filter-label">登录账号</div>
-                        <el-input 
-                            v-model="searchForm.username" 
-                            placeholder="请选择" 
-                            clearable 
-                            class="filter-input"
-                            @clear="handleSearch"
-                            @input="handleInput"
-                        />
-                    </div>
-                    <div class="filter-group">
-                        <div class="filter-label">登录地点</div>
-                        <el-input 
-                            v-model="searchForm.location" 
-                            placeholder="请选择" 
-                            clearable 
-                            class="filter-input"
-                            @clear="handleSearch"
-                            @input="handleInput"
-                        />
-                    </div>
-                    <div class="filter-group">
-                        <div class="filter-label">状态</div>
-                        <el-select 
-                            v-model="searchForm.status" 
-                            placeholder="请选择" 
-                            clearable 
-                            class="filter-select"
-                            @change="handleSearch"
-                        >
-                            <el-option label="成功" value="success" />
-                            <el-option label="失败" value="failed" />
-                        </el-select>
-                    </div>
-                    <div class="filter-actions">
-                        <el-button type="primary" class="submit-btn" @click="handleSearch">提交查询</el-button>
-                        <el-button @click="resetForm">重置</el-button>
-                    </div>
-                </div>
-                
-                <div class="time-range-row">
-                    <el-radio-group v-model="timeRange" size="small" @change="handleSearch">
+        <!-- Toolbar -->
+        <div class="table-toolbar">
+            <el-form :model="searchForm" inline class="search-bar-form">
+                <el-form-item label="登录账号">
+                    <el-input 
+                        v-model="searchForm.username" 
+                        placeholder="用户名" 
+                        clearable 
+                        :prefix-icon="User"
+                        style="width: 140px"
+                        @clear="handleSearch"
+                        @input="handleInput"
+                    />
+                </el-form-item>
+                <el-form-item label="地点">
+                    <el-input 
+                        v-model="searchForm.location" 
+                        placeholder="城市" 
+                        clearable 
+                        style="width: 120px"
+                        @clear="handleSearch"
+                        @input="handleInput"
+                    />
+                </el-form-item>
+                <el-form-item label="状态">
+                    <el-select 
+                        v-model="searchForm.status" 
+                        placeholder="全部" 
+                        clearable 
+                        style="width: 90px"
+                        @change="handleSearch"
+                    >
+                        <el-option label="成功" value="success" />
+                        <el-option label="失败" value="failed" />
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="范围">
+                    <el-radio-group v-model="timeRange" size="small" class="compact-time-group" @change="handleSearch">
                         <el-radio-button label="1h">1h</el-radio-button>
                         <el-radio-button label="12h">12h</el-radio-button>
                         <el-radio-button label="1d">1d</el-radio-button>
                         <el-radio-button label="7d">7d</el-radio-button>
-                        <el-radio-button label="30d">30d</el-radio-button>
-                        <el-radio-button label="custom">自定义</el-radio-button>
                     </el-radio-group>
-                </div>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
+                    <el-button @click="resetForm">重置</el-button>
+                </el-form-item>
             </el-form>
+            
+            <div v-if="searchForm.username" class="active-filter-tags">
+                <el-tag closable @close="searchForm.username=''; handleSearch()" size="small">账号: {{ searchForm.username }}</el-tag>
+            </div>
         </div>
 
         <!-- Log Table -->
-        <el-card shadow="never" class="table-card">
-            <el-table 
-                :data="displayLogs" 
-                style="width: 100%" 
-                v-loading="loading"
-                header-cell-class-name="table-header-cell"
-            >
+        <el-table 
+            :data="displayLogs" 
+            style="width: 100%" 
+            v-loading="loading"
+            class="behavior-table"
+        >
                 <el-table-column prop="time" label="登录时间" width="180">
                     <template #default="{ row }">
                         <span class="data-value">{{ row.time }}</span>
@@ -99,18 +95,17 @@
                 <el-table-column prop="msg" label="提示信息" min-width="150" />
             </el-table>
 
-            <div class="pagination-container">
-                <el-pagination
-                    v-model:current-page="currentPage"
-                    v-model:page-size="pageSize"
-                    :page-sizes="[10, 20, 50, 100]"
-                    layout="total, sizes, prev, pager, next, jumper"
-                    :total="total"
-                    @size-change="handleSizeChange"
-                    @current-change="handleCurrentChange"
-                />
-            </div>
-        </el-card>
+        <div class="pagination-container">
+            <el-pagination
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :page-sizes="[10, 20, 50, 100]"
+                layout="total, sizes, prev, pager, next, jumper"
+                :total="total"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+            />
+        </div>
     </div>
 </template>
 
@@ -197,118 +192,76 @@
     .logs-container {
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 0;
     }
 
     .info-alert {
-        background-color: #f0f7ff;
-        border: 1px solid #d1e9ff;
-        border-radius: 2px;
-        padding: 12px 16px;
+        background-color: var(--el-color-primary-light-9);
+        border-bottom: 1px solid var(--el-color-primary-light-8);
+        padding: 8px 24px;
         display: flex;
         align-items: center;
         gap: 12px;
-        margin-bottom: 8px;
     }
 
-    .info-icon {
-        color: #0070cc;
-        font-size: 18px;
+    .info-alert.compact {
+        padding: 6px 24px;
     }
 
-    .info-text {
-        font-size: 14px;
-        color: #333;
-        line-height: 1.5;
+    .table-toolbar {
+        padding: 16px 24px;
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border);
     }
 
-    .compact-filter {
-        padding: 0 0 16px 0;
+    .search-bar-form :deep(.el-form-item) {
+        margin-bottom: 0;
+        margin-right: 16px;
     }
 
-    .search-form {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-
-    .filter-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        align-items: center;
-    }
-
-    .filter-group {
-        display: flex;
-        align-items: center;
-        border: 1px solid #dcdfe6;
-        border-radius: 2px;
-        overflow: hidden;
-        transition: border-color 0.2s;
-        height: 32px;
-    }
-
-    .filter-group:focus-within {
-        border-color: var(--primary);
-    }
-
-    .filter-label {
-        background-color: #f5f7fa;
-        padding: 0 12px;
-        height: 32px;
-        line-height: 32px;
+    .search-bar-form :deep(.el-form-item__label) {
+        font-weight: 500;
+        color: var(--text-secondary);
         font-size: 13px;
-        color: #606266;
-        border-right: 1px solid #dcdfe6;
-        white-space: nowrap;
     }
 
-    .filter-input, .filter-select {
-        width: 200px;
-    }
-
-    :deep(.el-input__wrapper), :deep(.el-select .el-input__wrapper) {
-        box-shadow: none !important;
-        background-color: transparent !important;
-        height: 30px;
-        padding: 0 8px;
-    }
-
-    .filter-actions {
-        display: flex;
-        gap: 8px;
-        margin-left: auto;
-    }
-
-    .time-range-row {
-        display: flex;
-        align-items: center;
-    }
-
-    :deep(.el-radio-button__inner) {
-        padding: 6px 12px;
+    .compact-time-group :deep(.el-radio-button__inner) {
+        padding: 7px 12px;
         font-size: 12px;
     }
 
-    .table-card {
-        border: 1px solid var(--border);
-        flex: 1;
+    .active-filter-tags {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--border);
         display: flex;
-        flex-direction: column;
-        border-radius: 2px;
+        gap: 8px;
+    }
+
+    .behavior-table {
+        --el-table-header-bg-color: var(--bg-primary);
+    }
+
+    :deep(.el-table) {
+        border-radius: 0;
+    }
+
+    :deep(.el-table__inner-wrapper::before) {
+        display: none;
+    }
+
+    .pagination-container {
+        padding: 16px 24px;
+        display: flex;
+        justify-content: flex-end;
+        background: var(--bg-primary);
+        border-top: 1px solid var(--border);
     }
 
     .user-cell {
         display: flex;
         align-items: center;
         gap: 8px;
-    }
-
-    .pagination-container {
-        margin-top: 20px;
-        display: flex;
-        justify-content: flex-end;
     }
 
     :deep(.el-button),

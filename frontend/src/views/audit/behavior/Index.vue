@@ -3,17 +3,17 @@
         <header class="page-header">
             <div class="header-content">
                 <div style="display: flex; align-items: center; gap: 12px">
-                    <h2 class="page-title">事件查询</h2>
+                    <h2 class="page-title">行为日志</h2>
                     <span class="accent-dot"></span>
                 </div>
-                <p class="page-subtitle">审计系统内所有用户的登录行为及业务操作记录。</p>
+                <p class="page-subtitle">记录和分析系统内所有关键的业务操作及安全审计事件。</p>
             </div>
         </header>
 
-        <el-card shadow="never" class="tabs-card">
+        <div class="content-wrapper">
             <el-tabs v-model="activeTab" class="behavior-tabs" @tab-click="handleTabClick">
-                <el-tab-pane label="登录审计" name="login" />
-                <el-tab-pane label="操作审计" name="operation" />
+                <el-tab-pane label="登录日志" name="login" />
+                <el-tab-pane label="操作日志" name="operation" />
             </el-tabs>
             <div class="tab-content">
                 <router-view v-slot="{ Component }">
@@ -22,7 +22,7 @@
                     </transition>
                 </router-view>
             </div>
-        </el-card>
+        </div>
     </div>
 </template>
 
@@ -58,22 +58,28 @@
     .behavior-container {
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 0;
+        background: var(--bg-primary);
+        min-height: calc(100vh - 100px);
     }
 
-    .tabs-card {
-        border: 1px solid var(--border);
-        border-radius: 2px;
+    .page-header {
+        padding: 20px 24px;
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 0;
     }
 
-    :deep(.el-card__body) {
-        padding: 0;
+    .content-wrapper {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
     }
 
     :deep(.behavior-tabs .el-tabs__header) {
         margin-bottom: 0;
-        padding: 0 20px;
-        background: var(--bg-secondary);
+        padding: 0 24px;
+        background: var(--bg-primary);
         border-bottom: 1px solid var(--border);
     }
 
@@ -82,7 +88,7 @@
     }
 
     .tab-content {
-        padding: 20px;
+        padding: 0;
     }
 
     /* 覆盖子组件的 header */

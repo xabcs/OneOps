@@ -71,19 +71,19 @@ const routes = [
     name: 'BehaviorRecords',
     component: () => import('../views/audit/behavior/Index.vue'),
     redirect: '/audit/behavior/login',
-    meta: { requiresAuth: true, title: '事件查询', parent: '操作审计', permission: 'menu:audit:behavior' },
+    meta: { requiresAuth: true, title: '行为审计', parent: '审计管理', permission: 'menu:audit:behavior' },
     children: [
       {
         path: 'login',
         name: 'LoginLogs',
         component: () => import('../views/audit/behavior/LoginLogs.vue'),
-        meta: { requiresAuth: true, title: '登录审计', parent: '事件查询', permission: 'menu:audit:behavior:login' }
+        meta: { requiresAuth: true, title: '登录日志', parent: '行为审计', permission: 'menu:audit:behavior:login' }
       },
       {
         path: 'operation',
         name: 'OperationLogs',
         component: () => import('../views/audit/behavior/OperationLogs.vue'),
-        meta: { requiresAuth: true, title: '操作审计', parent: '事件查询', permission: 'menu:audit:behavior:operation' }
+        meta: { requiresAuth: true, title: '操作日志', parent: '行为审计', permission: 'menu:audit:behavior:operation' }
       }
     ]
   }

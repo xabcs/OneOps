@@ -288,7 +288,7 @@
                                             </div>
                                         </div>
                                     </el-tab-pane>
-                                    <el-tab-pane label="操作审计" name="logs">
+                                    <el-tab-pane label="操作日志" name="logs">
                                         <div class="log-container">
                                             <div v-for="(log, index) in mockLogs" :key="index" class="log-line">
                                                 <span class="log-time">[{{ log.time }}]</span>
@@ -701,6 +701,7 @@
     })
 
     const handleSearch = () => {
+        currentPage.value = 1
         fetchServers()
     }
 

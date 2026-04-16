@@ -18,7 +18,7 @@
                                 :prefix-icon="Search"
                                 clearable
                                 style="width: 220px"
-                                @keyup.enter="fetchRoles"
+                                @keyup.enter="handleSearch"
                             />
                             <el-button type="accent" :icon="Plus" @click="handleAdd">新增角色</el-button>
                         </el-space>
@@ -218,6 +218,11 @@
         } finally {
             loading.value = false
         }
+    }
+
+    const handleSearch = () => {
+        currentPage.value = 1
+        fetchRoles()
     }
 
     const fetchMenus = async () => {
