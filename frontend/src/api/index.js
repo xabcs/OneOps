@@ -9,6 +9,20 @@ const api = axios.create({
   }
 })
 
+// 请求拦截器 - 添加认证令牌
+api.interceptors.request.use(
+  config => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  error => {
+    return Promise.reject(error)
+  }
+)
+
 // 响应拦截器
 api.interceptors.response.use(
   response => response.data,
@@ -59,11 +73,21 @@ export const containerApi = {
   getImages: (params) => api.get('/images', { params })
 }
 
-// 日志管理 API
-export const logApi = {
-  getOperationLogs: (params) => api.get('/logs/operation', { params }),
-  getLoginLogs: (params) => api.get('/logs/login', { params }),
-  getEventRecords: (params) => api.get('/logs/event', { params })
+// 审计管理 API
+export const auditApi = {
+  // 登录日志
+  getLoginLogs: (params) => api.get('/audit/login-logs', { params }),
+  exportLoginLogs: (params) => api.get('/audit/login-logs/export', { params, responseType: 'blob' }),
+  
+  // 操作日志
+  getOperationLogs: (params) => api.get('/audit/operation-logs', { params }),
+  exportOperationLogs: (params) => api.get('/audit/operation-logs/export', { params, responseType: 'blob' }),
+  
+  // 系统事件日志
+  getSystemEventLogs: (params) => api.get('/audit/system-event-logs', { params }),
+  
+  // 审计统计
+  getAuditStats: () => api.get('/audit/stats')
 }
 
 // 监控管理 API

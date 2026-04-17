@@ -24,7 +24,7 @@
                                 <el-option label="启用" value="active" />
                                 <el-option label="禁用" value="disabled" />
                             </el-select>
-                            <el-button type="accent" :icon="Plus" @click="handleAdd">新增用户</el-button>
+                            <el-button type="primary" :icon="Plus" @click="handleAdd">新增用户</el-button>
                         </el-space>
                     </div>
                 </div>
@@ -39,7 +39,7 @@
                     </template>
                 </el-table-column>
                 <el-table-column prop="nickname" label="昵称" width="150" />
-                <el-table-column prop="roleNames" label="所属角色" min-width="200">
+                <el-table-column prop="roleNames" label="分配角色" min-width="200">
                     <template #default="{ row }">
                         <div class="role-tags">
                             <el-tag 
@@ -110,6 +110,13 @@
                         </el-form-item>
                     </el-col>
                     <el-col :span="12">
+                        <el-form-item label="密码" prop="password" v-if="!form.id">
+                            <el-input v-model="form.password" type="password" placeholder="请输入密码" show-password />
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                    <el-col :span="12">
                         <el-form-item label="昵称" prop="nickname">
                             <el-input v-model="form.nickname" placeholder="请输入昵称" />
                         </el-form-item>
@@ -118,24 +125,15 @@
                 <el-form-item label="邮箱" prop="email">
                     <el-input v-model="form.email" placeholder="请输入邮箱" />
                 </el-form-item>
-                <el-form-item label="家目录" prop="homePath">
-                    <el-select v-model="form.homePath" placeholder="请选择家目录" clearable style="width: 100%">
-                        <el-option
-                            v-for="item in menuOptions"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value"
-                        />
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="所属角色" prop="roleIds">
-                    <el-select 
-                        v-model="form.roleIds" 
-                        placeholder="请选择角色" 
+                <el-form-item label="分配角色" prop="roleIds">
+                    <el-select
+                        v-model="form.roleIds"
+                        placeholder="请先选择角色，系统将根据角色权限显示可用的家目录"
                         style="width: 100%"
                         multiple
                         collapse-tags
                         collapse-tags-tooltip
+                        @change="handleRoleIdsChange"
                     >
                         <el-option
                             v-for="role in roleOptions"
@@ -145,6 +143,54 @@
                         />
                     </el-select>
                 </el-form-item>
+
+                <!-- 角色权限提示 -->
+                <div v-if="form.roleIds.length > 0 && menuOptions.length > 0" class="role-permission-hint">
+                    <el-icon><InfoFilled /></el-icon>
+                    <span>已为所选角色配置了 <strong>{{ menuOptions.length }}</strong> 个可访问的家目录，请从下方选择</span>
+                </div>
+
+                <el-form-item label="家目录" prop="homePath">
+                    <el-select
+                        v-model="form.homePath"
+                        :placeholder="homePathPlaceholder"
+                        :disabled="form.roleIds.length === 0"
+                        clearable
+                        style="width: 100%"
+                        @change="handleHomePathChange"
+                    >
+                        <template #label>
+                            <span>家目录</span>
+                            <el-tooltip v-if="form.roleIds.length > 0" content="系统已根据您选择的角色权限，仅显示可访问的路径" placement="top">
+                                <el-icon class="label-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </template>
+                        <el-option
+                            v-for="item in menuOptions"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value"
+                        >
+                            <span style="float: left">{{ item.label }}</span>
+                            <span style="float: right; color: var(--el-color-success); font-size: 12px">
+                                <el-icon><Select /></el-icon> 可访问
+                            </span>
+                        </el-option>
+                    </el-select>
+                </el-form-item>
+
+                <!-- 权限冲突警告 -->
+                <el-alert
+                    v-if="hasPermissionWarning"
+                    type="warning"
+                    :closable="false"
+                    style="margin-bottom: 15px"
+                >
+                    <template #title>
+                        <el-icon><Warning /></el-icon> 权限已自动调整
+                    </template>
+                    原设置的家目录不在用户权限范围内，系统已自动调整为有权限的路径。
+                </el-alert>
                 <el-form-item label="状态" prop="status">
                     <el-radio-group v-model="form.status">
                         <el-radio label="active">启用</el-radio>
@@ -163,7 +209,7 @@
 <script setup>
     import { ref, reactive, computed, onMounted, nextTick } from 'vue'
     import { useStore } from 'vuex'
-    import { Plus, Search } from '@element-plus/icons-vue'
+    import { Plus, Search, Warning, InfoFilled, QuestionFilled, Select } from '@element-plus/icons-vue'
     import { ElMessage, ElMessageBox } from 'element-plus'
     import { systemApi } from '../../api/index.js'
 
@@ -174,10 +220,24 @@
     const total = ref(0)
     const roleOptions = ref([])
     const menuOptions = ref([])
+    const allMenus = ref([]) // 存储所有菜单数据，用于权限检查
     const loading = ref(false)
     const submitting = ref(false)
     const dialogVisible = ref(false)
     const formRef = ref(null)
+    const hasPermissionWarning = ref(false) // 是否有权限冲突警告
+
+    // 家目录选择器的占位符文本
+    const homePathPlaceholder = computed(() => {
+        if (form.value.roleIds.length === 0) {
+            return '请先选择角色'
+        } else if (menuOptions.value.length === 0) {
+            return '所选角色无任何可访问的家目录'
+        } else {
+            return `请选择家目录（共 ${menuOptions.value.length} 个可选项）`
+        }
+    })
+
     const displayUsers = computed(() => {
         const start = (currentPage.value - 1) * pageSize.value
         const end = start + pageSize.value
@@ -192,6 +252,7 @@
     const form = ref({
         id: null,
         username: '',
+        password: '',
         nickname: '',
         email: '',
         homePath: '/',
@@ -201,6 +262,7 @@
 
     const rules = {
         username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+        password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
         nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
         email: [
             { required: true, message: '请输入邮箱', trigger: 'blur' },
@@ -213,11 +275,15 @@
         try {
             const res = await systemApi.getMenus()
             if (res.code === 200) {
-                // 只取一级菜单
-                menuOptions.value = res.data.map(item => ({
-                    label: item.name,
-                    value: item.path
-                }))
+                // 保存所有菜单数据用于权限检查
+                allMenus.value = res.data
+                // 初始化家目录选项（显示所有一级菜单）
+                menuOptions.value = res.data
+                    .filter(menu => !menu.parentId || menu.parentId === 0)
+                    .map(item => ({
+                        label: item.name,
+                        value: item.path
+                    }))
             }
         } catch (error) {
             console.error('Error fetching menus:', error)
@@ -273,9 +339,141 @@
     }
 
     const handleAdd = () => {
-        form.value = { id: null, username: '', nickname: '', email: '', homePath: '/', roleIds: [], status: 'active' }
+        // 重置表单为初始状态，不预填任何信息
+        form.value = {
+            id: null,
+            username: '',
+            password: '',
+            nickname: '',
+            email: '',
+            homePath: '',
+            roleIds: [],
+            status: 'active'
+        }
+        // 清空家目录选项和警告状态
+        menuOptions.value = []
+        hasPermissionWarning.value = false
         dialogVisible.value = true
         nextTick(() => formRef.value?.clearValidate())
+    }
+
+    // 获取用户有权限访问的菜单ID集合
+    const getUserAccessibleMenuIds = (selectedRoleIds) => {
+        if (!selectedRoleIds || selectedRoleIds.length === 0) return new Set()
+
+        const menuIds = new Set()
+        selectedRoleIds.forEach(roleId => {
+            const role = roleOptions.value.find(r => r.id === roleId)
+            if (role && role.menuIds) {
+                // role.menuIds 是 JSON 字符串，需要解析
+                try {
+                    const ids = JSON.parse(role.menuIds)
+                    ids.forEach(id => menuIds.add(id))
+                } catch (e) {
+                    console.error('解析角色菜单ID失败:', e)
+                }
+            }
+        })
+        return menuIds
+    }
+
+    // 检查指定角色是否有权访问某路径（不依赖当前登录用户权限）
+    const hasRolePathPermission = (path, selectedRoleIds) => {
+        if (!selectedRoleIds || selectedRoleIds.length === 0) return false
+
+        // 获取这些角色关联的所有菜单权限
+        const accessibleMenuIds = getUserAccessibleMenuIds(selectedRoleIds)
+
+        // 如果没有任何菜单权限，返回false
+        if (accessibleMenuIds.size === 0) return false
+
+        // 查找对应的菜单（递归查找）
+        const findMenuByPath = (menus, targetPath) => {
+            for (const menu of menus) {
+                if (menu.path === targetPath) return menu
+                if (menu.children) {
+                    const found = findMenuByPath(menu.children, targetPath)
+                    if (found) return found
+                }
+            }
+            return null
+        }
+
+        const menu = findMenuByPath(allMenus.value, path)
+        return menu && accessibleMenuIds.has(menu.id)
+    }
+
+    // 处理角色选择变化
+    const handleRoleIdsChange = (newRoleIds) => {
+        if (!newRoleIds || newRoleIds.length === 0) {
+            // 没有选择角色时，清空家目录选项并清空当前选择
+            menuOptions.value = []
+            form.value.homePath = ''
+            hasPermissionWarning.value = false
+            return
+        }
+
+        // 获取用户有权限访问的菜单
+        const accessibleMenuIds = getUserAccessibleMenuIds(newRoleIds)
+
+        // 过滤出用户有权限的一级菜单
+        const accessibleMenus = allMenus.value.filter(menu => {
+            if (accessibleMenuIds.has(menu.id)) {
+                // 只显示一级菜单（没有父菜单或父菜单ID为0）
+                return !menu.parentId || menu.parentId === 0
+            }
+            return false
+        })
+
+        if (accessibleMenus.length === 0) {
+            // 如果没有任何可访问的菜单，清空选项并警告
+            menuOptions.value = []
+            form.value.homePath = ''
+            hasPermissionWarning.value = true
+            return
+        }
+
+        // 更新家目录选项
+        menuOptions.value = accessibleMenus.map(item => ({
+            label: item.name,
+            value: item.path
+        }))
+
+        // 检查当前家目录是否在权限范围内
+        const currentHomePath = form.value.homePath
+        if (currentHomePath && currentHomePath !== '/') {
+            const hasPermission = hasRolePathPermission(currentHomePath, newRoleIds)
+            hasPermissionWarning.value = !hasPermission
+
+            if (!hasPermission) {
+                // 如果当前选择的家目录无权限，清空让用户重新选择
+                form.value.homePath = ''
+            }
+        } else {
+            // 如果当前没有选择家目录，不自动选择，让用户自己决定
+            hasPermissionWarning.value = false
+        }
+    }
+
+    // 处理家目录变化
+    const handleHomePathChange = (newHomePath) => {
+        if (!newHomePath || newHomePath === '/') {
+            // 根路径需要角色权限验证
+            if (form.value.roleIds && form.value.roleIds.length > 0) {
+                hasPermissionWarning.value = true
+            } else {
+                hasPermissionWarning.value = false
+            }
+            return
+        }
+
+        if (form.value.roleIds && form.value.roleIds.length > 0) {
+            const hasPermission = hasRolePathPermission(newHomePath, form.value.roleIds)
+            hasPermissionWarning.value = !hasPermission
+        } else {
+            // 没有选择角色时，任何家目录都无效
+            hasPermissionWarning.value = true
+        }
     }
 
     const handleEdit = (row) => {
@@ -284,10 +482,27 @@
             username: row.username,
             nickname: row.nickname,
             email: row.email,
-            homePath: row.homePath || '/',
+            homePath: row.homePath || '',
             roleIds: [...(row.roleIds || [])],
             status: row.status
         }
+
+        // 如果用户有角色，触发角色变化逻辑以更新可用家目录选项
+        if (form.value.roleIds.length > 0) {
+            handleRoleIdsChange(form.value.roleIds)
+            // 重新设置用户原有的家目录（如果有权限的话）
+            const originalHomePath = row.homePath || ''
+            if (originalHomePath && hasRolePathPermission(originalHomePath, form.value.roleIds)) {
+                form.value.homePath = originalHomePath
+            } else if (originalHomePath) {
+                // 如果原有家目录无权限，清空让用户重新选择
+                form.value.homePath = ''
+            }
+        } else {
+            // 没有角色时，清空家目录选项
+            menuOptions.value = []
+        }
+
         dialogVisible.value = true
         nextTick(() => formRef.value?.clearValidate())
     }
@@ -451,5 +666,41 @@
         display: flex;
         justify-content: flex-end;
         padding: 0 20px 20px;
+    }
+
+    /* 角色权限提示样式 */
+    .role-permission-hint {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 15px;
+        margin-bottom: 15px;
+        background-color: var(--el-color-info-light-9);
+        border: 1px solid var(--el-color-info-light-5);
+        border-radius: 4px;
+        color: var(--el-color-info);
+        font-size: 13px;
+    }
+
+    .role-permission-hint .el-icon {
+        font-size: 16px;
+    }
+
+    .role-permission-hint strong {
+        color: var(--el-color-primary);
+        font-weight: 600;
+    }
+
+    /* 家目录标签图标样式 */
+    .label-icon {
+        margin-left: 4px;
+        cursor: help;
+        color: var(--el-color-info);
+        font-size: 14px;
+        vertical-align: middle;
+    }
+
+    .label-icon:hover {
+        color: var(--el-color-primary);
     }
 </style>

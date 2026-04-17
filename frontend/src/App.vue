@@ -25,9 +25,15 @@
         try {
             const res = await loginApi.getUserInfo()
             if (res.code === 200) {
+                const oldUserId = user.value?.id
                 store.commit('SET_USER', res.data)
                 store.commit('SET_PERMISSIONS', res.data.permissions)
                 store.commit('SET_MENU_TREE', res.data.menuTree)
+
+                // 用户切换或登录时，清理无权限的标签页
+                if (res.data.id && res.data.id !== oldUserId) {
+                    cleanInvalidTabs()
+                }
             }
         } catch (error) {
             console.error('Error fetching user info:', error)
@@ -39,6 +45,11 @@
     watch(isAuthenticated, (val) => {
         if (val) {
             fetchUserInfo()
+        } else {
+            // 登出时，重置标签页为首页
+            visitedViews.value = [
+                { name: 'Home', path: '/', title: '控制台', closable: false }
+            ]
         }
     })
 
@@ -116,6 +127,16 @@
 
     const addTab = (route) => {
         if (!route.name || route.name === 'Login') return
+
+        // 检查用户是否有访问该路由的权限
+        if (route.meta.permission) {
+            const hasPermission = permissions.value.includes('*:*:*') || permissions.value.includes(route.meta.permission)
+            if (!hasPermission) {
+                console.warn(`无权访问标签页: ${route.path}`)
+                return
+            }
+        }
+
         const isExist = visitedViews.value.some(v => v.path === route.path)
         if (!isExist) {
             visitedViews.value.push({
@@ -142,6 +163,29 @@
         }
         activeTab.value = activePath
         visitedViews.value = tabs.filter(tab => tab.path !== targetPath)
+    }
+
+    // 清理无权限的标签页
+    const cleanInvalidTabs = () => {
+        visitedViews.value = visitedViews.value.filter(tab => {
+            // 首页始终保留
+            if (tab.path === '/') return true
+
+            // 对于其他标签页，检查权限
+            // 这里我们需要找到对应的路由配置
+            const matchedRoute = router.resolve(tab.path).matched.find(r => r.meta.permission)
+            if (!matchedRoute) return true
+
+            const hasPermission = permissions.value.includes('*:*:*') || permissions.value.includes(matchedRoute.meta.permission)
+            return hasPermission
+        })
+
+        // 确保至少保留首页
+        if (visitedViews.value.length === 0 || !visitedViews.value.some(t => t.path === '/')) {
+            visitedViews.value = [
+                { name: 'Home', path: '/', title: '控制台', closable: false }
+            ]
+        }
     }
 
     watch(() => route.path, () => {

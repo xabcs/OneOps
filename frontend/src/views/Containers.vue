@@ -7,7 +7,7 @@
             </div>
             <div class="header-actions">
                 <el-button :icon="Refresh" @click="fetchContainers">刷新列表</el-button>
-                <el-button type="accent" :icon="Plus">部署容器</el-button>
+                <el-button type="primary" :icon="Plus">部署容器</el-button>
             </div>
         </header>
 

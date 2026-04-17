@@ -10,7 +10,7 @@
                     <p class="page-subtitle">管理和监控您的物理机、虚拟机及云主机资源。</p>
                 </div>
                 <div class="header-actions">
-                    <el-button type="accent" :icon="Plus" @click="handleAddServer">新增主机</el-button>
+                    <el-button type="primary" :icon="Plus" @click="handleAddServer">新增主机</el-button>
                     <el-button :icon="Download">导出数据</el-button>
                 </div>
             </header>

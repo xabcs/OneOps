@@ -15,7 +15,9 @@
 
         <!-- Info Alert -->
         <div class="info-alert">
-            <el-icon class="info-icon"><InfoFilled /></el-icon>
+            <el-icon class="info-icon">
+                <InfoFilled />
+            </el-icon>
             <span class="info-text">默认免费记录了90天的管控事件可供查询，建议 <el-link type="primary" :underline="false">创建跟踪</el-link> 实现更长时间存储，并通过 <el-link type="primary" :underline="false">事件高级查询</el-link> 实现更灵活的多条件组合查询</span>
         </div>
 
@@ -25,24 +27,11 @@
                 <div class="filter-row">
                     <div class="filter-group">
                         <div class="filter-label">操作人</div>
-                        <el-input 
-                            v-model="searchForm.user" 
-                            placeholder="请选择" 
-                            clearable 
-                            class="filter-input"
-                            @clear="handleSearch"
-                            @input="handleInput"
-                        />
+                        <el-input v-model="searchForm.user" placeholder="请选择" clearable class="filter-input" @clear="handleSearch" @input="handleInput" />
                     </div>
                     <div class="filter-group">
                         <div class="filter-label">所属模块</div>
-                        <el-select 
-                            v-model="searchForm.module" 
-                            placeholder="请选择" 
-                            clearable 
-                            class="filter-select"
-                            @change="handleSearch"
-                        >
+                        <el-select v-model="searchForm.module" placeholder="请选择" clearable class="filter-select" @change="handleSearch">
                             <el-option label="主机管理" value="主机管理" />
                             <el-option label="自动化任务" value="自动化任务" />
                             <el-option label="监控中心" value="监控中心" />
@@ -51,13 +40,7 @@
                     </div>
                     <div class="filter-group">
                         <div class="filter-label">状态</div>
-                        <el-select 
-                            v-model="searchForm.status" 
-                            placeholder="请选择" 
-                            clearable 
-                            class="filter-select"
-                            @change="handleSearch"
-                        >
+                        <el-select v-model="searchForm.status" placeholder="请选择" clearable class="filter-select" @change="handleSearch">
                             <el-option label="成功" value="success" />
                             <el-option label="失败" value="failed" />
                         </el-select>
@@ -67,7 +50,7 @@
                         <el-button @click="resetForm">重置</el-button>
                     </div>
                 </div>
-                
+
                 <div class="time-range-row">
                     <el-radio-group v-model="timeRange" size="small" @change="handleSearch">
                         <el-radio-button label="1h">1h</el-radio-button>
@@ -83,12 +66,7 @@
 
         <!-- Log Table -->
         <el-card shadow="never" class="table-card">
-            <el-table 
-                :data="displayLogs" 
-                style="width: 100%" 
-                v-loading="loading"
-                header-cell-class-name="table-header-cell"
-            >
+            <el-table :data="displayLogs" style="width: 100%" v-loading="loading" header-cell-class-name="table-header-cell">
                 <el-table-column prop="time" label="操作时间" width="170">
                     <template #default="{ row }">
                         <span class="data-value">{{ row.time }}</span>
@@ -138,15 +116,7 @@
             </el-table>
 
             <div class="pagination-container">
-                <el-pagination
-                    v-model:current-page="currentPage"
-                    v-model:page-size="pageSize"
-                    :page-sizes="[10, 15, 20, 50, 100]"
-                    layout="total, sizes, prev, pager, next, jumper"
-                    :total="total"
-                    @size-change="handleSearch"
-                    @current-change="handleSearch"
-                />
+                <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 15, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" :total="total" @size-change="handleSearch" @current-change="handleSearch" />
             </div>
         </el-card>
     </div>
@@ -155,7 +125,7 @@
 <script setup>
     import { ref, computed, onMounted } from 'vue'
     import { Search, User, Download, InfoFilled } from '@element-plus/icons-vue'
-    import { logApi } from '../../../api/index.js'
+    import { auditApi } from '../../../api/index.js'
 
     const logs = ref([])
     const loading = ref(false)
@@ -184,10 +154,10 @@
                 status: searchForm.value.status,
                 timeRange: timeRange.value
             }
-            const res = await logApi.getOperationLogs(params)
+            const res = await auditApi.getOperationLogs(params)
             if (res.code === 200) {
-                logs.value = res.data
-                total.value = res.data.length
+                logs.value = res.data.list
+                total.value = res.data.total
             }
         } catch (error) {
             console.error('Error fetching logs:', error)
@@ -308,11 +278,13 @@
         white-space: nowrap;
     }
 
-    .filter-input, .filter-select {
+    .filter-input,
+    .filter-select {
         width: 200px;
     }
 
-    :deep(.el-input__wrapper), :deep(.el-select .el-input__wrapper) {
+    :deep(.el-input__wrapper),
+    :deep(.el-select .el-input__wrapper) {
         box-shadow: none !important;
         background-color: transparent !important;
         height: 30px;
@@ -363,9 +335,15 @@
         white-space: nowrap;
     }
 
-    .text-success { color: #10b981; }
-    .text-warning { color: #f59e0b; }
-    .text-danger { color: #ef4444; }
+    .text-success {
+        color: #10b981;
+    }
+    .text-warning {
+        color: #f59e0b;
+    }
+    .text-danger {
+        color: #ef4444;
+    }
 
     :deep(.el-button),
     :deep(.el-input__wrapper),

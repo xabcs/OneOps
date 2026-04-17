@@ -19,7 +19,7 @@
                                 clearable
                                 style="width: 200px"
                             />
-                            <el-button type="accent" :icon="Plus" @click="handleAdd">新增菜单</el-button>
+                            <el-button type="primary" :icon="Plus" @click="handleAdd">新增菜单</el-button>
                         </el-space>
                     </div>
                 </div>

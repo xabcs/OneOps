@@ -2,7 +2,9 @@
     <div class="logs-container">
         <!-- Info Alert -->
         <div class="info-alert">
-            <el-icon class="info-icon"><InfoFilled /></el-icon>
+            <el-icon class="info-icon">
+                <InfoFilled />
+            </el-icon>
             <span class="info-text">系统默认记录最近90天的登录审计事件。如需长期保存或进行多维分析，请前往 <el-link type="primary" :underline="false">审计配置</el-link> 开启日志投递。</span>
         </div>
 
@@ -12,35 +14,15 @@
                 <div class="filter-row">
                     <div class="filter-group">
                         <div class="filter-label">登录账号</div>
-                        <el-input 
-                            v-model="searchForm.username" 
-                            placeholder="请选择" 
-                            clearable 
-                            class="filter-input"
-                            @clear="handleSearch"
-                            @input="handleInput"
-                        />
+                        <el-input v-model="searchForm.username" placeholder="请选择" clearable class="filter-input" @clear="handleSearch" @input="handleInput" />
                     </div>
                     <div class="filter-group">
                         <div class="filter-label">登录地点</div>
-                        <el-input 
-                            v-model="searchForm.location" 
-                            placeholder="请选择" 
-                            clearable 
-                            class="filter-input"
-                            @clear="handleSearch"
-                            @input="handleInput"
-                        />
+                        <el-input v-model="searchForm.location" placeholder="请选择" clearable class="filter-input" @clear="handleSearch" @input="handleInput" />
                     </div>
                     <div class="filter-group">
                         <div class="filter-label">状态</div>
-                        <el-select 
-                            v-model="searchForm.status" 
-                            placeholder="请选择" 
-                            clearable 
-                            class="filter-select"
-                            @change="handleSearch"
-                        >
+                        <el-select v-model="searchForm.status" placeholder="请选择" clearable class="filter-select" @change="handleSearch">
                             <el-option label="成功" value="success" />
                             <el-option label="失败" value="failed" />
                         </el-select>
@@ -50,7 +32,7 @@
                         <el-button @click="resetForm">重置</el-button>
                     </div>
                 </div>
-                
+
                 <div class="time-range-row">
                     <el-radio-group v-model="timeRange" size="small" @change="handleSearch">
                         <el-radio-button label="1h">1h</el-radio-button>
@@ -66,12 +48,7 @@
 
         <!-- Log Table -->
         <el-card shadow="never" class="table-card">
-            <el-table 
-                :data="displayLogs" 
-                style="width: 100%" 
-                v-loading="loading"
-                header-cell-class-name="table-header-cell"
-            >
+            <el-table :data="displayLogs" style="width: 100%" v-loading="loading" header-cell-class-name="table-header-cell">
                 <el-table-column prop="time" label="登录时间" width="180">
                     <template #default="{ row }">
                         <span class="data-value">{{ row.time }}</span>
@@ -100,15 +77,7 @@
             </el-table>
 
             <div class="pagination-container">
-                <el-pagination
-                    v-model:current-page="currentPage"
-                    v-model:page-size="pageSize"
-                    :page-sizes="[10, 20, 50, 100]"
-                    layout="total, sizes, prev, pager, next, jumper"
-                    :total="total"
-                    @size-change="handleSizeChange"
-                    @current-change="handleCurrentChange"
-                />
+                <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
             </div>
         </el-card>
     </div>
@@ -117,7 +86,7 @@
 <script setup>
     import { ref, computed, onMounted } from 'vue'
     import { User, Download, Search, InfoFilled } from '@element-plus/icons-vue'
-    import { logApi } from '../../../api/index.js'
+    import { auditApi } from '../../../api/index.js'
 
     const loading = ref(false)
     const logs = ref([])
@@ -146,10 +115,10 @@
                 status: searchForm.value.status,
                 timeRange: timeRange.value
             }
-            const res = await logApi.getLoginLogs(params)
+            const res = await auditApi.getLoginLogs(params)
             if (res.code === 200) {
-                logs.value = res.data
-                total.value = res.data.length
+                logs.value = res.data.list
+                total.value = res.data.total
             }
         } catch (error) {
             console.error('Error fetching login logs:', error)
@@ -264,11 +233,13 @@
         white-space: nowrap;
     }
 
-    .filter-input, .filter-select {
+    .filter-input,
+    .filter-select {
         width: 200px;
     }
 
-    :deep(.el-input__wrapper), :deep(.el-select .el-input__wrapper) {
+    :deep(.el-input__wrapper),
+    :deep(.el-select .el-input__wrapper) {
         box-shadow: none !important;
         background-color: transparent !important;
         height: 30px;

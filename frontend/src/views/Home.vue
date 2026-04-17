@@ -65,7 +65,14 @@
                     <template #header>
                         <div class="card-header">
                             <span class="card-title">最近活动日志</span>
-                            <el-button link type="primary">查看全部</el-button>
+                            <el-button
+                                v-if="hasPermission('menu:audit:behavior')"
+                                link
+                                type="primary"
+                                @click="router.push('/audit/behavior/login')"
+                            >
+                                查看全部
+                            </el-button>
                         </div>
                     </template>
                     <el-scrollbar height="340px">
@@ -90,7 +97,14 @@
                     <template #header>
                         <div class="card-header">
                             <span class="card-title">关键服务器状态</span>
-                            <el-button link type="primary">管理资产</el-button>
+                            <el-button
+                                v-if="hasPermission('menu:servers')"
+                                link
+                                type="primary"
+                                @click="router.push('/servers')"
+                            >
+                                管理资产
+                            </el-button>
                         </div>
                     </template>
                     <el-table :data="displayServerStatus" style="width: 100%">
@@ -119,7 +133,14 @@
                         </el-table-column>
                         <el-table-column label="操作" width="100" fixed="right">
                             <template #default>
-                                <el-button link type="primary">详情</el-button>
+                                <el-button
+                                    v-if="hasPermission('menu:servers')"
+                                    link
+                                    type="primary"
+                                    @click="router.push('/servers')"
+                                >
+                                    详情
+                                </el-button>
                             </template>
                         </el-table-column>
                     </el-table>
@@ -142,21 +163,29 @@
 <script setup>
     import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
     import { useStore } from 'vuex'
+    import { useRouter } from 'vue-router'
     import * as d3 from 'd3'
-    import { 
+    import {
         Monitor, Timer, DataLine, Warning, Refresh, Plus,
         CaretTop, CaretBottom
     } from '@element-plus/icons-vue'
     import { taskApi } from '../api/index.js'
 
     const store = useStore()
+    const router = useRouter()
     const user = computed(() => store.getters.user)
+    const permissions = computed(() => store.getters.permissions)
     const currentTheme = computed(() => store.getters.currentTheme)
     const timeRange = ref('1h')
     const chartRef = ref(null)
     const currentPage = ref(1)
     const pageSize = ref(5)
     let refreshTimer = null
+
+    // 权限检查函数
+    const hasPermission = (permission) => {
+        return permissions.value.includes('*:*:*') || permissions.value.includes(permission)
+    }
 
     const statsConfig = ref([
         { title: '在线节点', value: '128', icon: Monitor, type: 'primary', trend: '12%', trendType: 'up' },

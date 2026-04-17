@@ -77,13 +77,13 @@ const routes = [
         path: 'login',
         name: 'LoginLogs',
         component: () => import('../views/audit/behavior/LoginLogs.vue'),
-        meta: { requiresAuth: true, title: '登录审计', parent: '事件查询', permission: 'menu:audit:behavior:login' }
+        meta: { requiresAuth: true, title: '登录审计', parent: '事件查询', permission: 'menu:audit:behavior' }
       },
       {
         path: 'operation',
         name: 'OperationLogs',
         component: () => import('../views/audit/behavior/OperationLogs.vue'),
-        meta: { requiresAuth: true, title: '操作审计', parent: '事件查询', permission: 'menu:audit:behavior:operation' }
+        meta: { requiresAuth: true, title: '操作审计', parent: '事件查询', permission: 'menu:audit:behavior' }
       }
     ]
   }

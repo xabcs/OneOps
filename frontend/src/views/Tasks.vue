@@ -6,7 +6,7 @@
                 <p class="page-subtitle">编排、调度及监控系统自动化运维任务。</p>
             </div>
             <div class="header-actions">
-                <el-button type="accent" :icon="Plus">新建任务</el-button>
+                <el-button type="primary" :icon="Plus">新建任务</el-button>
                 <el-button :icon="Calendar">调度历史</el-button>
             </div>
         </header>

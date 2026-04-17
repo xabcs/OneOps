@@ -20,7 +20,7 @@
                                 style="width: 220px"
                                 @keyup.enter="fetchRoles"
                             />
-                            <el-button type="accent" :icon="Plus" @click="handleAdd">新增角色</el-button>
+                            <el-button type="primary" :icon="Plus" @click="handleAdd">新增角色</el-button>
                         </el-space>
                     </div>
                 </div>
@@ -130,6 +130,7 @@
                     node-key="id"
                     default-expand-all
                     :props="{ label: 'name', children: 'children' }"
+                    :check-strictly="false"
                 />
             </div>
             <template #footer>
@@ -311,11 +312,46 @@
         currentRole.value = row
         permissionDialogVisible.value = true
         nextTick(() => {
-            // 设置已选中的节点
-            // 注意：Element Plus 的 tree 组件设置选中时，如果父节点被选中，子节点会自动选中
-            // 这里我们通常只设置叶子节点，或者根据业务需求设置
-            treeRef.value?.setCheckedKeys(row.menuIds || [])
+            // 解析 menuIds JSON 字符串为数组
+            let menuIds = []
+            try {
+                if (row.menuIds) {
+                    menuIds = JSON.parse(row.menuIds)
+                }
+            } catch (e) {
+                console.error('解析 menuIds 失败:', e)
+                menuIds = []
+            }
+
+            // 从完整的菜单ID列表中提取叶子节点ID
+            // Element Plus Tree 在 check-strictly="false" 模式下
+            // setCheckedKeys 需要传入叶子节点的ID数组
+            const leafKeys = getLeafKeysFromTree(menuTree.value, menuIds)
+            treeRef.value?.setCheckedKeys(leafKeys)
         })
+    }
+
+    // 从完整的菜单ID列表中提取叶子节点ID
+    const getLeafKeysFromTree = (tree, selectedIds) => {
+        const leafKeys = []
+
+        const traverse = (nodes) => {
+            nodes.forEach(node => {
+                const isParent = node.children && node.children.length > 0
+                const isSelected = selectedIds.includes(node.id)
+
+                if (isParent) {
+                    // 如果是父节点，递归处理子节点
+                    traverse(node.children)
+                } else if (isSelected) {
+                    // 如果是叶子节点且被选中，添加到列表
+                    leafKeys.push(node.id)
+                }
+            })
+        }
+
+        traverse(tree)
+        return leafKeys
     }
 
     const submitPermission = async () => {

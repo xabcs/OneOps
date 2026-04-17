@@ -115,14 +115,14 @@ const handleLogin = async () => {
     const response = await loginApi.login(loginForm)
     
     if (response.success) {
-      store.commit('SET_TOKEN', response.token)
-      store.commit('SET_USER', response.user)
-      store.commit('SET_PERMISSIONS', response.user.permissions || [])
-      store.commit('SET_MENU_TREE', response.user.menuTree || [])
-      
-      ElMessage.success('欢迎回来, ' + response.user.username)
+      store.commit('SET_TOKEN', response.data.token)
+      store.commit('SET_USER', response.data.user)
+      store.commit('SET_PERMISSIONS', response.data.user.permissions || [])
+      store.commit('SET_MENU_TREE', response.data.user.menuTree || [])
+
+      ElMessage.success('欢迎回来, ' + response.data.user.username)
       // 跳转到用户的家目录，如果没有则跳转到首页
-      router.push(response.user.homePath || '/')
+      router.push(response.data.user.homePath || '/')
     } else {
       ElMessage.error(response.message || '登录失败')
     }
