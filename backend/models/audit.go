@@ -16,6 +16,7 @@ type LoginLog struct {
 	Status     string     `json:"status" gorm:"size:20;not null;default:'success'"` // success, failed
 	FailReason string     `json:"failReason" gorm:"size:200"`
 	LoginTime  time.Time  `json:"loginTime" gorm:"not null;index"`
+	Time       string     `json:"time" gorm:"-"` // 前端需要的字段，不映射到数据库
 	LogoutTime *time.Time `json:"logoutTime" gorm:"default:null"`
 	Duration   int        `json:"duration" gorm:"default:0"` // 会话时长(秒)
 	CreatedAt  time.Time  `json:"createdAt" gorm:"autoCreateTime"`
@@ -46,6 +47,7 @@ type OperationLog struct {
 	Status      string    `json:"status" gorm:"size:20;not null;default:'success'"` // success, failed
 	ErrorMsg    string    `json:"errorMsg" gorm:"size:500"`
 	OperateTime time.Time `json:"operateTime" gorm:"not null;index"`
+	Time        string    `json:"time" gorm:"-"` // 前端需要的字段，不映射到数据库
 	CreatedAt   time.Time `json:"createdAt" gorm:"autoCreateTime"`
 }
 

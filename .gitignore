@@ -99,9 +99,18 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# 后端日志目录
+backend/logs/
+
 # 环境变量文件
 .env*
 !.env.example
+backend/.env
+!backend/.env.example
+
+# 配置文件（包含敏感信息）
+backend/config/config.yaml
+!backend/config/config.yaml.example
 
 # IDE / 编辑器
 .vscode/

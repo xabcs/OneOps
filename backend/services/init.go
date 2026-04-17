@@ -83,7 +83,7 @@ func (s *InitService) initMenus() error {
 		{ID: 52, Name: "角色管理", Icon: "UserFilled", Path: "/system/roles", Permission: "menu:system:roles", Sort: 2, Status: 1, ParentID: 5},
 		{ID: 53, Name: "用户管理", Icon: "User", Path: "/system/users", Permission: "menu:system:users", Sort: 3, Status: 1, ParentID: 5},
 		{ID: 6, Name: "操作审计", Icon: "Document", Path: "/audit", Permission: "menu:audit", Sort: 6, Status: 1, ParentID: 0},
-		{ID: 61, Name: "事件查询", Icon: "List", Path: "/audit/behavior", Permission: "menu:audit:behavior", Sort: 1, Status: 1, ParentID: 6},
+		{ID: 61, Name: "行为日志", Icon: "List", Path: "/audit/behavior", Permission: "menu:audit:behavior", Sort: 1, Status: 1, ParentID: 6},
 	}
 
 	for _, menu := range menus {
@@ -132,13 +132,13 @@ func (s *InitService) initUsers() error {
 	adminRoleIDsJSON, _ := json.Marshal(adminRoleIDs)
 
 	user := models.User{
-		Username:  "admin",
-		Password:  hashedPassword,
-		Nickname:  "超级管理员",
-		Email:     "admin@example.com",
-		RoleIDs:   string(adminRoleIDsJSON),
-		Status:    "active",
-		HomePath:  "/",
+		Username: "admin",
+		Password: hashedPassword,
+		Nickname: "超级管理员",
+		Email:    "admin@example.com",
+		RoleIDs:  string(adminRoleIDsJSON),
+		Status:   "active",
+		HomePath: "/",
 	}
 
 	return db.Create(&user).Error

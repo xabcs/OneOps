@@ -108,14 +108,14 @@
                         <el-form-item label="菜单图标" prop="icon">
                             <el-select v-model="form.icon" placeholder="请选择图标" style="width: 100%" filterable>
                                 <el-option
-                                    v-for="(item, key) in ElementPlusIconsVue"
-                                    :key="key"
-                                    :label="key"
-                                    :value="key"
+                                    v-for="icon in iconList"
+                                    :key="icon.key"
+                                    :label="icon.key"
+                                    :value="icon.key"
                                 >
                                     <div style="display: flex; align-items: center; gap: 8px">
-                                        <el-icon><component :is="item" /></el-icon>
-                                        <span>{{ key }}</span>
+                                        <el-icon><component :is="icon.component" /></el-icon>
+                                        <span>{{ icon.key }}</span>
                                     </div>
                                 </el-option>
                             </el-select>
@@ -151,7 +151,7 @@
 </template>
 
 <script setup>
-    import { ref, computed, onMounted } from 'vue'
+    import { ref, computed, onMounted, markRaw } from 'vue'
     import { useStore } from 'vuex'
     import * as ElementPlusIconsVue from '@element-plus/icons-vue'
     import { Plus, Top, Bottom, Search } from '@element-plus/icons-vue'
@@ -159,6 +159,12 @@
     import { systemApi, loginApi } from '../../api/index.js'
 
     const store = useStore()
+
+    // 预处理图标列表，使用 markRaw 避免响应式化
+    const iconList = Object.entries(ElementPlusIconsVue).map(([key, component]) => ({
+        key,
+        component: markRaw(component)
+    }))
     const menuList = ref([])
     const filterText = ref('')
     const loading = ref(false)

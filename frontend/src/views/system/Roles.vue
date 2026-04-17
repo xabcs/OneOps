@@ -285,16 +285,31 @@
     }
 
     const handleDelete = (row) => {
-        ElMessageBox.confirm(`确定要删除角色 "${row.name}" 吗？`, '提示', {
-            type: 'warning'
+        ElMessageBox.confirm(`确定要删除角色 "${row.name}" 吗？`, '删除角色', {
+            confirmButtonText: '确定删除',
+            cancelButtonText: '取消',
+            type: 'warning',
+            distinguishCancelAndClose: true
         }).then(async () => {
             try {
-                await systemApi.deleteRole(row.id)
-                ElMessage.success('删除成功')
-                fetchRoles()
+                const res = await systemApi.deleteRole(row.id)
+                if (res.code === 200) {
+                    ElMessage.success(res.message || '删除成功')
+                    fetchRoles()
+                } else {
+                    ElMessage.error(res.message || '删除失败')
+                }
             } catch (error) {
-                ElMessage.error('删除失败')
+                // 处理错误响应
+                if (error.response && error.response.data) {
+                    const errorMsg = error.response.data.message || error.response.data.error || '删除失败'
+                    ElMessage.error(errorMsg)
+                } else {
+                    ElMessage.error('删除失败：网络错误')
+                }
             }
+        }).catch(() => {
+            // 用户点击了取消
         })
     }
 

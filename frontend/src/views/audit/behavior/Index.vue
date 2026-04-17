@@ -3,7 +3,7 @@
         <header class="page-header">
             <div class="header-content">
                 <div style="display: flex; align-items: center; gap: 12px">
-                    <h2 class="page-title">事件查询</h2>
+                    <h2 class="page-title">行为日志</h2>
                     <span class="accent-dot"></span>
                 </div>
                 <p class="page-subtitle">审计系统内所有用户的登录行为及业务操作记录。</p>
@@ -56,37 +56,37 @@
 
 <style scoped>
     .behavior-container {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
     .tabs-card {
-        border: 1px solid var(--border);
-        border-radius: 2px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
     }
 
     :deep(.el-card__body) {
-        padding: 0;
+      padding: 0;
     }
 
     :deep(.behavior-tabs .el-tabs__header) {
-        margin-bottom: 0;
-        padding: 0 20px;
-        background: var(--bg-secondary);
-        border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
+      padding: 0 20px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
     }
 
     :deep(.behavior-tabs .el-tabs__nav-wrap::after) {
-        display: none;
+      display: none;
     }
 
     .tab-content {
-        padding: 20px;
+      padding: 20px;
     }
 
     /* 覆盖子组件的 header */
     :deep(.logs-container .page-header) {
-        display: none;
+      display: none;
     }
 </style>

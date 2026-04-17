@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -140,11 +141,48 @@ func (ctrl *RoleController) DeleteRole(c *gin.Context) {
 
 	db := services.GetDB()
 
-	// 检查是否有用户使用该角色
+	// 检查角色是否存在
+	var role models.Role
+	if err := db.First(&role, id).Error; err != nil {
+		if err.Error() == "record not found" {
+			c.JSON(http.StatusOK, utils.ErrorBadRequest("角色不存在"))
+			return
+		}
+		c.JSON(http.StatusOK, utils.ErrorInternal("查询角色失败"))
+		return
+	}
+
+	// 检查是否有用户使用该角色（role_ids是JSON字符串）
 	var count int64
-	db.Model(&models.User{}).Where("role_ids LIKE ?", "%\""+idStr+"\"%").Count(&count)
+	// 使用CAST将JSON字符串转换为JSON类型，然后使用JSON_CONTAINS
+	db.Model(&models.User{}).Where("JSON_CONTAINS(CAST(role_ids AS JSON), ?)", fmt.Sprintf("[%d]", id)).Count(&count)
+
 	if count > 0 {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("该角色正在被使用，无法删除"))
+		// 查询使用该角色的用户列表
+		var users []models.User
+		db.Select("id, username, nickname").Where("JSON_CONTAINS(CAST(role_ids AS JSON), ?)", fmt.Sprintf("[%d]", id)).Find(&users)
+
+		// 构建用户列表字符串
+		userList := ""
+		for i, user := range users {
+			if i > 0 {
+				userList += "、"
+			}
+			userList += user.Username
+			if user.Nickname != "" {
+				userList += "(" + user.Nickname + ")"
+			}
+		}
+
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(
+			fmt.Sprintf("该角色已绑定 %d 个用户：%s。请先在用户管理中解除该角色与用户的绑定关系后再删除。", count, userList),
+		))
+		return
+	}
+
+	// 检查是否为默认角色，防止删除系统必需角色
+	if role.Code == "admin" {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("系统管理员角色不能删除"))
 		return
 	}
 

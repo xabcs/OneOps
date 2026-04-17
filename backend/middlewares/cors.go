@@ -7,7 +7,10 @@ import (
 // CORS 跨域中间件
 func CORS() cors.Config {
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"http://localhost:3000", "http://localhost:5173", "http://localhost:8080"}
+
+	// 允许所有来源，方便开发和测试
+	config.AllowAllOrigins = true
+
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Authorization"}
 	config.AllowCredentials = true

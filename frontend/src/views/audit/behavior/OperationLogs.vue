@@ -3,7 +3,7 @@
         <header class="page-header">
             <div class="header-content">
                 <div style="display: flex; align-items: center; gap: 12px">
-                    <h2 class="page-title">事件查询</h2>
+                    <h2 class="page-title">行为日志</h2>
                     <span class="accent-dot"></span>
                 </div>
                 <p class="page-subtitle">审计系统内所有用户的关键操作行为及接口调用详情。</p>
@@ -209,140 +209,140 @@
 
 <style scoped>
     .logs-container {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
     .info-alert {
-        background-color: #f0f7ff;
-        border: 1px solid #d1e9ff;
-        border-radius: 2px;
-        padding: 12px 16px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 8px;
+      background-color: #f0f7ff;
+      border: 1px solid #d1e9ff;
+      border-radius: 2px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
     }
 
     .info-icon {
-        color: #0070cc;
-        font-size: 18px;
+      color: #0070cc;
+      font-size: 18px;
     }
 
     .info-text {
-        font-size: 14px;
-        color: #333;
-        line-height: 1.5;
+      font-size: 14px;
+      color: #333;
+      line-height: 1.5;
     }
 
     .compact-filter {
-        padding: 0 0 16px 0;
+      padding: 0 0 16px 0;
     }
 
     .search-form {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
     .filter-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
     }
 
     .filter-group {
-        display: flex;
-        align-items: center;
-        border: 1px solid #dcdfe6;
-        border-radius: 2px;
-        overflow: hidden;
-        transition: border-color 0.2s;
-        height: 32px;
+      display: flex;
+      align-items: center;
+      border: 1px solid #dcdfe6;
+      border-radius: 2px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+      height: 32px;
     }
 
     .filter-group:focus-within {
-        border-color: var(--primary);
+      border-color: var(--primary);
     }
 
     .filter-label {
-        background-color: #f5f7fa;
-        padding: 0 12px;
-        height: 32px;
-        line-height: 32px;
-        font-size: 13px;
-        color: #606266;
-        border-right: 1px solid #dcdfe6;
-        white-space: nowrap;
+      background-color: #f5f7fa;
+      padding: 0 12px;
+      height: 32px;
+      line-height: 32px;
+      font-size: 13px;
+      color: #606266;
+      border-right: 1px solid #dcdfe6;
+      white-space: nowrap;
     }
 
     .filter-input,
     .filter-select {
-        width: 200px;
+      width: 200px;
     }
 
     :deep(.el-input__wrapper),
     :deep(.el-select .el-input__wrapper) {
-        box-shadow: none !important;
-        background-color: transparent !important;
-        height: 30px;
-        padding: 0 8px;
+      box-shadow: none !important;
+      background-color: transparent !important;
+      height: 30px;
+      padding: 0 8px;
     }
 
     .filter-actions {
-        display: flex;
-        gap: 8px;
-        margin-left: auto;
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
     }
 
     .time-range-row {
-        display: flex;
-        align-items: center;
+      display: flex;
+      align-items: center;
     }
 
     :deep(.el-radio-button__inner) {
-        padding: 6px 12px;
-        font-size: 12px;
+      padding: 6px 12px;
+      font-size: 12px;
     }
 
     .user-cell {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .pagination-container {
-        margin-top: 24px;
-        display: flex;
-        justify-content: flex-end;
+      margin-top: 24px;
+      display: flex;
+      justify-content: flex-end;
     }
 
     .code-text {
-        font-family: var(--mono);
-        background: var(--bg-tertiary);
-        padding: 2px 6px;
-        border-radius: 2px;
-        font-size: 12px;
-        color: var(--primary);
+      font-family: var(--mono);
+      background: var(--bg-tertiary);
+      padding: 2px 6px;
+      border-radius: 2px;
+      font-size: 12px;
+      color: var(--primary);
     }
 
     .json-text {
-        font-family: var(--mono);
-        font-size: 11px;
-        color: var(--text-secondary);
-        white-space: nowrap;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-secondary);
+      white-space: nowrap;
     }
 
     .text-success {
-        color: #10b981;
+      color: #10b981;
     }
     .text-warning {
-        color: #f59e0b;
+      color: #f59e0b;
     }
     .text-danger {
-        color: #ef4444;
+      color: #ef4444;
     }
 
     :deep(.el-button),
@@ -352,10 +352,10 @@
     :deep(.el-tag),
     :deep(.el-radio-button:first-child .el-radio-button__inner),
     :deep(.el-radio-button:last-child .el-radio-button__inner) {
-        border-radius: 2px !important;
+      border-radius: 2px !important;
     }
 
     :deep(.table-header-cell) {
-        background-color: var(--bg-secondary) !important;
+      background-color: var(--bg-secondary) !important;
     }
 </style>

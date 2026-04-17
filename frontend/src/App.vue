@@ -1,10 +1,10 @@
 <script setup>
-    import { ref, computed, watch, onMounted } from 'vue'
+    import { ref, computed, watch, onMounted, markRaw } from 'vue'
     import { useRouter, useRoute } from 'vue-router'
     import { useStore } from 'vuex'
     import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-    import { 
-        House, Monitor, Timer, DataLine, User, SwitchButton, 
+    import {
+        House, Monitor, Timer, DataLine, User, SwitchButton,
         Expand, Fold, Bell, Search, Setting, QuestionFilled,
         Close, Moon, Sunny, Menu, UserFilled, Plus
     } from '@element-plus/icons-vue'
@@ -61,7 +61,10 @@
             return list.map(item => {
                 const node = { ...item }
                 if (typeof item.icon === 'string') {
-                    node.icon = ElementPlusIconsVue[item.icon] || item.icon
+                    const iconComponent = ElementPlusIconsVue[item.icon]
+                    if (iconComponent) {
+                        node.icon = markRaw(iconComponent)
+                    }
                 }
                 if (item.children) {
                     node.children = mapIcons(item.children)

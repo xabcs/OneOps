@@ -169,6 +169,8 @@ func (s *AuditService) GetLoginLogs(query map[string]interface{}, page, pageSize
 			Status:   log.Status,
 			Msg:      log.FailReason,
 		}
+		// 同时设置模型中的Time字段，保持一致性
+		logs[i].Time = log.LoginTime.Format("2006-01-02 15:04:05")
 	}
 
 	return response, total, nil
@@ -250,7 +252,16 @@ func (s *AuditService) GetOperationLogs(query map[string]interface{}, page, page
 		Limit(pageSize).
 		Find(&logs).Error
 
-	return logs, total, err
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 格式化时间字段
+	for i := range logs {
+		logs[i].Time = logs[i].OperateTime.Format("2006-01-02 15:04:05")
+	}
+
+	return logs, total, nil
 }
 
 // GetSystemEventLogs 获取系统事件日志列表
