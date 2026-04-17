@@ -1,15 +1,5 @@
 <template>
     <div class="behavior-container">
-        <header class="page-header">
-            <div class="header-content">
-                <div style="display: flex; align-items: center; gap: 12px">
-                    <h2 class="page-title">行为日志</h2>
-                    <span class="accent-dot"></span>
-                </div>
-                <p class="page-subtitle">记录和分析系统内所有关键的业务操作及安全审计事件。</p>
-            </div>
-        </header>
-
         <div class="content-wrapper">
             <el-tabs v-model="activeTab" class="behavior-tabs" @tab-click="handleTabClick">
                 <el-tab-pane label="登录日志" name="login" />
@@ -60,14 +50,7 @@
         flex-direction: column;
         gap: 0;
         background: var(--bg-primary);
-        min-height: calc(100vh - 100px);
-    }
-
-    .page-header {
-        padding: 20px 24px;
-        background: var(--bg-primary);
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 0;
+        min-height: calc(100vh - 60px);
     }
 
     .content-wrapper {

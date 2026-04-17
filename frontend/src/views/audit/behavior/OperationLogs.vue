@@ -1,18 +1,5 @@
 <template>
     <div class="logs-container">
-        <header class="page-header">
-            <div class="header-content">
-                <div style="display: flex; align-items: center; gap: 12px">
-                    <h2 class="page-title">操作日志</h2>
-                    <span class="accent-dot"></span>
-                </div>
-                <p class="page-subtitle">审计系统内所有用户的关键操作行为及接口调用详情。</p>
-            </div>
-            <div class="header-actions">
-                <el-button :icon="Download">导出日志</el-button>
-            </div>
-        </header>
-
         <!-- Info Alert -->
         <div class="info-alert compact">
             <el-icon class="info-icon"><InfoFilled /></el-icon>
@@ -21,57 +8,62 @@
 
         <!-- Toolbar -->
         <div class="table-toolbar">
-            <el-form :model="searchForm" inline class="search-bar-form">
-                <el-form-item label="操作人">
-                    <el-input 
-                        v-model="searchForm.user" 
-                        placeholder="用户名" 
-                        clearable 
-                        :prefix-icon="User"
-                        style="width: 140px"
-                        @clear="handleSearch"
-                        @input="handleInput"
-                    />
-                </el-form-item>
-                <el-form-item label="模块">
-                    <el-select 
-                        v-model="searchForm.module" 
-                        placeholder="全部" 
-                        clearable 
-                        style="width: 120px"
-                        @change="handleSearch"
-                    >
-                        <el-option label="主机管理" value="主机管理" />
-                        <el-option label="自动化任务" value="自动化任务" />
-                        <el-option label="监控中心" value="监控中心" />
-                        <el-option label="系统设置" value="系统设置" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="状态">
-                    <el-select 
-                        v-model="searchForm.status" 
-                        placeholder="全部" 
-                        clearable 
-                        style="width: 90px"
-                        @change="handleSearch"
-                    >
-                        <el-option label="成功" value="success" />
-                        <el-option label="失败" value="failed" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="范围">
-                    <el-radio-group v-model="timeRange" size="small" class="compact-time-group" @change="handleSearch">
-                        <el-radio-button label="1h">1h</el-radio-button>
-                        <el-radio-button label="12h">12h</el-radio-button>
-                        <el-radio-button label="1d">1d</el-radio-button>
-                        <el-radio-button label="7d">7d</el-radio-button>
-                    </el-radio-group>
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
-                    <el-button @click="resetForm">重置</el-button>
-                </el-form-item>
-            </el-form>
+            <div class="toolbar-content">
+                <el-form :model="searchForm" inline class="search-bar-form">
+                    <el-form-item label="操作人">
+                        <el-input 
+                            v-model="searchForm.user" 
+                            placeholder="用户名" 
+                            clearable 
+                            :prefix-icon="User"
+                            style="width: 140px"
+                            @clear="handleSearch"
+                            @input="handleInput"
+                        />
+                    </el-form-item>
+                    <el-form-item label="模块">
+                        <el-select 
+                            v-model="searchForm.module" 
+                            placeholder="全部" 
+                            clearable 
+                            style="width: 120px"
+                            @change="handleSearch"
+                        >
+                            <el-option label="主机管理" value="主机管理" />
+                            <el-option label="自动化任务" value="自动化任务" />
+                            <el-option label="监控中心" value="监控中心" />
+                            <el-option label="系统设置" value="系统设置" />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="状态">
+                        <el-select 
+                            v-model="searchForm.status" 
+                            placeholder="全部" 
+                            clearable 
+                            style="width: 90px"
+                            @change="handleSearch"
+                        >
+                            <el-option label="成功" value="success" />
+                            <el-option label="失败" value="failed" />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="范围">
+                        <el-radio-group v-model="timeRange" size="small" class="compact-time-group" @change="handleSearch">
+                            <el-radio-button label="1h">1h</el-radio-button>
+                            <el-radio-button label="12h">12h</el-radio-button>
+                            <el-radio-button label="1d">1d</el-radio-button>
+                            <el-radio-button label="7d">7d</el-radio-button>
+                        </el-radio-group>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
+                        <el-button @click="resetForm">重置</el-button>
+                    </el-form-item>
+                </el-form>
+                <div class="toolbar-actions">
+                    <el-button :icon="Download">导出</el-button>
+                </div>
+            </div>
             
             <div v-if="searchForm.user || searchForm.module" class="active-filter-tags">
                 <el-tag v-if="searchForm.user" closable @close="searchForm.user=''; handleSearch()" size="small" class="mr-2">操作人: {{ searchForm.user }}</el-tag>
@@ -258,6 +250,13 @@
         padding: 16px 24px;
         background: var(--bg-primary);
         border-bottom: 1px solid var(--border);
+    }
+
+    .toolbar-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
     }
 
     .search-bar-form :deep(.el-form-item) {

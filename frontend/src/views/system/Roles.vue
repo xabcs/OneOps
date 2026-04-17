@@ -1,31 +1,31 @@
 <template>
-    <div class="roles-container">
-        <el-card shadow="never" class="table-card" v-loading="loading">
-            <template #header>
-                <div class="card-header-content">
-                    <div class="header-left">
-                        <div style="display: flex; align-items: center; gap: 12px">
-                            <h2 class="page-title">角色管理</h2>
-                            <span class="accent-dot"></span>
-                        </div>
-                        <p class="page-subtitle">管理系统用户角色及权限分配</p>
-                    </div>
-                    <div class="header-right">
-                        <el-space>
-                            <el-input
-                                v-model="queryParams.name"
-                                placeholder="搜索角色名称/标识"
-                                :prefix-icon="Search"
-                                clearable
-                                style="width: 220px"
-                                @keyup.enter="handleSearch"
-                            />
-                            <el-button type="accent" :icon="Plus" @click="handleAdd">新增角色</el-button>
-                        </el-space>
-                    </div>
+    <div class="roles-container" v-loading="loading">
+        <!-- Toolbar -->
+        <div class="table-toolbar">
+            <div class="toolbar-content">
+                <el-form inline class="search-bar-form">
+                    <el-form-item label="角色搜索">
+                        <el-input
+                            v-model="queryParams.name"
+                            placeholder="角色名称/标识"
+                            :prefix-icon="Search"
+                            clearable
+                            style="width: 200px"
+                            @keyup.enter="handleSearch"
+                            @clear="handleSearch"
+                        />
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
+                    </el-form-item>
+                </el-form>
+                <div class="toolbar-actions">
+                    <el-button type="accent" :icon="Plus" @click="handleAdd">新增角色</el-button>
                 </div>
-            </template>
-            <el-table :data="displayRoles" border style="width: 100%">
+            </div>
+        </div>
+
+        <el-table :data="displayRoles" style="width: 100%" class="behavior-table">
                 <el-table-column prop="name" label="角色名称" width="150" />
                 <el-table-column prop="code" label="角色标识" width="150">
                     <template #default="{ row }">
@@ -74,18 +74,17 @@
                 </el-table-column>
             </el-table>
             
-            <div class="pagination-container">
-                <el-pagination
-                    v-model:current-page="currentPage"
-                    v-model:page-size="pageSize"
-                    :page-sizes="[10, 20, 50, 100]"
-                    layout="total, sizes, prev, pager, next, jumper"
-                    :total="total"
-                    @size-change="handleSizeChange"
-                    @current-change="handleCurrentChange"
-                />
-            </div>
-        </el-card>
+        <div class="pagination-container">
+            <el-pagination
+                v-model:current-page="currentPage"
+                v-model:page-size="pageSize"
+                :page-sizes="[10, 20, 50, 100]"
+                layout="total, sizes, prev, pager, next, jumper"
+                :total="total"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+            />
+        </div>
 
         <!-- Role Form Dialog -->
         <el-dialog
@@ -363,64 +362,52 @@
     .roles-container {
         display: flex;
         flex-direction: column;
+        background: var(--bg-primary);
+        min-height: calc(100vh - 60px);
     }
 
-    .card-header-content {
+    .table-toolbar {
+        padding: 16px 24px;
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .toolbar-content {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        width: 100%;
     }
 
-    .page-title {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 600;
+    .search-bar-form :deep(.el-form-item) {
+        margin-bottom: 0;
+        margin-right: 16px;
     }
 
-    .page-subtitle {
-        margin: 4px 0 0;
+    .search-bar-form :deep(.el-form-item__label) {
+        font-weight: 500;
+        color: var(--text-secondary);
         font-size: 13px;
-        color: var(--text-tertiary);
     }
 
-    .table-card {
-        border: 1px solid var(--border);
-        border-radius: 8px;
+    .behavior-table {
+        --el-table-header-bg-color: var(--bg-primary);
     }
 
-    :deep(.el-card__header) {
-        padding: 12px 20px;
-        border-bottom: 1px solid var(--border);
-        background-color: var(--bg-primary);
+    :deep(.el-table) {
+        border-radius: 0;
+        --el-table-border-color: var(--border);
     }
 
-    .permission-tree-container {
-        max-height: 400px;
-        overflow-y: auto;
-        padding: 8px;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-    }
-
-    .user-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
-    }
-
-    .user-tag {
-        margin: 2px 0;
-    }
-
-    .text-tertiary {
-        color: var(--text-tertiary);
-        font-size: 12px;
+    :deep(.el-table__inner-wrapper::before) {
+        display: none;
     }
 
     .pagination-container {
-        margin-top: 20px;
+        padding: 16px 24px;
         display: flex;
         justify-content: flex-end;
-        padding: 0 20px 20px;
+        background: var(--bg-primary);
+        border-top: 1px solid var(--border);
     }
 </style>

@@ -1,42 +1,56 @@
 <template>
   <div class="login-page">
-    <!-- Left Side: Decorative & Brand -->
-    <div class="login-aside">
-      <div class="aside-content">
-        <div class="brand">
-          <img src="/logo.svg" alt="NexOps" class="brand-logo" />
+    <!-- Left Decorative Column -->
+    <div class="visual-column">
+      <div class="gradient-overlay"></div>
+      <div class="pattern-overlay"></div>
+      
+      <!-- Curve Separator -->
+      <div class="curve-divider">
+        <svg preserveAspectRatio="none" viewBox="0 0 100 100" class="curve-svg">
+          <path d="M100,0 C30,25 30,75 100,100 Z" fill="#ffffff"></path>
+        </svg>
+      </div>
+
+      <div class="visual-content">
+        <div class="brand-logo">
+          <img src="/logo.svg" alt="NexOps" class="logo-image" />
+          <span class="brand-name">NexOps</span>
         </div>
-        <div class="hero-text">
-          <h2>全栈自动化运维新标杆</h2>
-          <p>NexOps 为企业提供高效、安全、智能的 IT 基础设施管理方案，助力业务数字化转型。</p>
+        
+        <div class="hero-text-area">
+          <h1 class="hero-title">
+            高效运维<br />
+            智领未来
+          </h1>
         </div>
-        <div class="aside-footer">
-          <p>&copy; 2026 NexOps Team. All rights reserved.</p>
+        
+        <div class="visual-footer">
+          <p class="copyright">&copy; 2026 NexOps Team.</p>
         </div>
       </div>
-      <div class="aside-bg"></div>
     </div>
 
-    <!-- Right Side: Login Form -->
-    <div class="login-main">
-      <div class="form-container">
-        <div class="form-header">
-          <h2>欢迎回来</h2>
-          <p>请输入您的凭据以访问控制台</p>
-        </div>
+    <!-- Right Form Column -->
+    <div class="form-column">
+      <div class="form-wrapper">
+        <header class="form-intro">
+          <h2 class="welcome-title">欢迎使用</h2>
+          <p class="welcome-sub">请登录您的账号以继续</p>
+        </header>
 
         <el-form 
           :model="loginForm" 
           :rules="rules" 
           ref="loginFormRef" 
           label-position="top" 
-          class="login-form"
+          class="login-main-form"
           @keyup.enter="handleLogin"
         >
           <el-form-item label="用户名" prop="username">
             <el-input 
               v-model="loginForm.username" 
-              placeholder="请输入用户名"
+              placeholder="请输入您的用户名"
               :prefix-icon="User"
               size="large"
             />
@@ -46,32 +60,31 @@
             <el-input 
               v-model="loginForm.password" 
               type="password" 
-              placeholder="请输入密码"
+              placeholder="请输入您的密码"
               :prefix-icon="Lock"
               show-password
               size="large"
             />
           </el-form-item>
 
-          <div class="form-options">
-            <el-checkbox v-model="rememberMe">记住我</el-checkbox>
-            <el-button link type="primary">忘记密码？</el-button>
+          <div class="form-actions-meta">
+            <el-checkbox v-model="rememberMe">记住登录状态</el-checkbox>
+            <el-button link type="primary" class="forgot-btn">忘记密码？</el-button>
           </div>
 
           <el-button 
             type="primary" 
-            class="submit-btn" 
+            class="submit-action-btn" 
             :loading="loading"
             @click="handleLogin"
-            size="large"
           >
-            {{ loading ? '正在登录...' : '立即登录' }}
+            {{ loading ? '验证中...' : '立即登录' }}
           </el-button>
         </el-form>
 
-        <div class="form-footer">
-          <p>还没有账号？ <el-button link type="primary">联系管理员注册</el-button></p>
-        </div>
+        <footer class="form-extras">
+          <p>还没有账号？ <el-button link class="contact-admin">联系管理员进行注册</el-button></p>
+        </footer>
       </div>
     </div>
   </div>
@@ -82,7 +95,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { ElMessage } from 'element-plus'
-import { User, Lock, Monitor } from '@element-plus/icons-vue'
+import { User, Lock } from '@element-plus/icons-vue'
 import { loginApi } from '../api/index.js'
 
 const router = useRouter()
@@ -121,18 +134,13 @@ const handleLogin = async () => {
       store.commit('SET_MENU_TREE', response.user.menuTree || [])
       
       ElMessage.success('欢迎回来, ' + response.user.username)
-      // 跳转到用户的家目录，如果没有则跳转到首页
       router.push(response.user.homePath || '/')
     } else {
-      ElMessage.error(response.message || '登录失败')
+       ElMessage.error(response.message || '用户名或密码错误')
     }
   } catch (error) {
     console.error('Login error:', error)
-    if (error.response) {
-      ElMessage.error(error.response.data.message || '登录失败')
-    } else {
-      ElMessage.error('网络连接异常，请检查后端服务')
-    }
+    ElMessage.error('无法连接到系统服务，请稍后再试')
   } finally {
     loading.value = false
   }
@@ -143,194 +151,229 @@ const handleLogin = async () => {
 .login-page {
   min-height: 100vh;
   display: flex;
-  background-color: #ffffff;
+  background-color: #fff;
 }
 
-/* Left Side Styles */
-.login-aside {
-  flex: 1;
+/* Left Column - Visuals */
+.visual-column {
+  flex: 1.1;
   position: relative;
+  background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
   display: flex;
   flex-direction: column;
   padding: 60px;
-  background-color: #0f172a;
-  color: #ffffff;
+  color: #fff;
   overflow: hidden;
 }
 
-.aside-bg {
+.curve-divider {
   position: absolute;
   top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    radial-gradient(circle at 20% 30%, rgba(37, 99, 235, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
-  z-index: 1;
+  right: -1px;
+  bottom: 0;
+  width: 120px;
+  z-index: 5;
 }
 
-.aside-content {
+.curve-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.gradient-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.1) 0%, transparent 40%);
+}
+
+.pattern-overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0.1;
+  background-image: radial-gradient(#fff 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+.visual-content {
   position: relative;
-  z-index: 2;
+  z-index: 10;
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.brand {
+.brand-logo {
   display: flex;
   align-items: center;
+  gap: 12px;
   margin-bottom: auto;
-  padding-left: 40px;
-  overflow: visible;
 }
 
-.brand-logo {
-  height: 48px;
+.logo-image {
+  height: 40px;
   width: auto;
-  display: block;
 }
 
-.hero-text {
+.brand-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.hero-text-area {
   margin-bottom: auto;
-  max-width: 480px;
 }
 
-.hero-text h2 {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 4rem;
-  font-weight: 900;
-  line-height: 1.1;
+.hero-title {
+  font-size: clamp(2.5rem, 4.5vw, 3.5rem);
+  font-weight: 700;
+  line-height: 1.2;
   margin-bottom: 24px;
-  background: linear-gradient(to bottom right, #ffffff, #94a3b8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  transform: skewX(-5deg);
 }
 
-.hero-text p {
-  font-size: 1.25rem;
-  color: #94a3b8;
-  line-height: 1.6;
+.hero-sub {
+  font-size: 1.125rem;
+  line-height: 1.7;
+  max-width: 480px;
+  opacity: 0.9;
   font-weight: 300;
 }
 
-.aside-footer p {
+.visual-footer {
   font-size: 0.875rem;
-  color: #475569;
+  opacity: 0.6;
 }
 
-/* Right Side Styles */
-.login-main {
+/* Right Column - Form */
+.form-column {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 60px;
+  padding: 40px;
+  background-color: #fff;
 }
 
-.form-container {
+.form-wrapper {
   width: 100%;
   max-width: 400px;
+  animation: slide-in-fade 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.form-header {
+@keyframes slide-in-fade {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.form-intro {
   margin-bottom: 40px;
 }
 
-.form-header h2 {
-  font-size: 2rem;
+.welcome-title {
+  font-size: 2.25rem;
   font-weight: 700;
-  color: #1e293b;
+  color: #111827;
   margin-bottom: 8px;
 }
 
-.form-header p {
-  color: #64748b;
+.welcome-sub {
+  color: #6b7280;
   font-size: 1rem;
 }
 
-.login-form {
+.login-main-form {
   margin-bottom: 32px;
 }
 
 :deep(.el-form-item__label) {
   font-weight: 600;
-  color: #475569;
+  color: #374151;
   padding-bottom: 8px;
 }
 
 :deep(.el-input__wrapper) {
-  padding: 4px 12px;
+  padding: 8px 16px;
   border-radius: 12px;
-  box-shadow: 0 0 0 1px #e2e8f0 inset;
+  box-shadow: 0 0 0 1px #e5e7eb inset;
   transition: all 0.2s;
-  background-color: #f8fafc;
 }
 
 :deep(.el-input__wrapper.is-focus) {
-  background-color: #ffffff;
-  box-shadow: 0 0 0 1px #2563eb inset, 0 0 0 4px rgba(37, 99, 235, 0.1) !important;
+  box-shadow: 0 0 0 2px #4f46e5 inset, 0 0 0 4px rgba(79, 70, 229, 0.1) !important;
 }
 
-.form-options {
+.form-actions-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 32px;
 }
 
-.submit-btn {
+.forgot-btn {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.submit-action-btn {
   width: 100%;
-  height: 54px;
-  border-radius: 12px;
+  height: 52px;
   font-size: 1.125rem;
   font-weight: 600;
-  background: #2563eb;
+  border-radius: 14px;
+  background-color: #4f46e5;
   border: none;
+  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2), 0 2px 4px -1px rgba(79, 70, 229, 0.1);
   transition: all 0.2s;
 }
 
-.submit-btn:hover {
-  background: #1d4ed8;
+.submit-action-btn:hover {
+  background-color: #4338ca;
   transform: translateY(-1px);
-  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
 }
 
-.form-footer {
+.form-extras {
   text-align: center;
-  color: #64748b;
   font-size: 0.875rem;
+  color: #6b7280;
 }
 
+.contact-admin {
+  font-weight: 600;
+}
+
+/* Responsiveness */
 @media (max-width: 1024px) {
-  .login-aside {
+  .visual-column {
     display: none;
   }
   
-  .login-main {
-    background-color: #f8fafc;
+  .form-column {
+    background-color: #f9fafb;
   }
   
-  .form-container {
-    background: #ffffff;
-    padding: 40px;
+  .form-wrapper {
+    background: #fff;
+    padding: 48px;
     border-radius: 24px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   }
 }
 
 @media (max-width: 480px) {
-  .login-main {
+  .form-column {
     padding: 20px;
   }
   
-  .form-container {
-    padding: 30px 20px;
+  .form-wrapper {
+    padding: 32px 20px;
     box-shadow: none;
+    border-radius: 0;
     background: transparent;
+  }
+  
+  .welcome-title {
+    font-size: 1.75rem;
   }
 }
 </style>

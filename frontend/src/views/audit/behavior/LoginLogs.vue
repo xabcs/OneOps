@@ -8,53 +8,58 @@
 
         <!-- Toolbar -->
         <div class="table-toolbar">
-            <el-form :model="searchForm" inline class="search-bar-form">
-                <el-form-item label="登录账号">
-                    <el-input 
-                        v-model="searchForm.username" 
-                        placeholder="用户名" 
-                        clearable 
-                        :prefix-icon="User"
-                        style="width: 140px"
-                        @clear="handleSearch"
-                        @input="handleInput"
-                    />
-                </el-form-item>
-                <el-form-item label="地点">
-                    <el-input 
-                        v-model="searchForm.location" 
-                        placeholder="城市" 
-                        clearable 
-                        style="width: 120px"
-                        @clear="handleSearch"
-                        @input="handleInput"
-                    />
-                </el-form-item>
-                <el-form-item label="状态">
-                    <el-select 
-                        v-model="searchForm.status" 
-                        placeholder="全部" 
-                        clearable 
-                        style="width: 90px"
-                        @change="handleSearch"
-                    >
-                        <el-option label="成功" value="success" />
-                        <el-option label="失败" value="failed" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="范围">
-                    <el-radio-group v-model="timeRange" size="small" class="compact-time-group" @change="handleSearch">
-                        <el-radio-button label="1h">1h</el-radio-button>
-                        <el-radio-button label="12h">12h</el-radio-button>
-                        <el-radio-button label="1d">1d</el-radio-button>
-                        <el-radio-button label="7d">7d</el-radio-button>
-                    </el-radio-group>
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
-                    <el-button @click="resetForm">重置</el-button>
-                </el-form-item>
-            </el-form>
+            <div class="toolbar-content">
+                <el-form :model="searchForm" inline class="search-bar-form">
+                    <el-form-item label="登录账号">
+                        <el-input 
+                            v-model="searchForm.username" 
+                            placeholder="用户名" 
+                            clearable 
+                            :prefix-icon="User"
+                            style="width: 140px"
+                            @clear="handleSearch"
+                            @input="handleInput"
+                        />
+                    </el-form-item>
+                    <el-form-item label="地点">
+                        <el-input 
+                            v-model="searchForm.location" 
+                            placeholder="城市" 
+                            clearable 
+                            style="width: 120px"
+                            @clear="handleSearch"
+                            @input="handleInput"
+                        />
+                    </el-form-item>
+                    <el-form-item label="状态">
+                        <el-select 
+                            v-model="searchForm.status" 
+                            placeholder="全部" 
+                            clearable 
+                            style="width: 90px"
+                            @change="handleSearch"
+                        >
+                            <el-option label="成功" value="success" />
+                            <el-option label="失败" value="failed" />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="范围">
+                        <el-radio-group v-model="timeRange" size="small" class="compact-time-group" @change="handleSearch">
+                            <el-radio-button label="1h">1h</el-radio-button>
+                            <el-radio-button label="12h">12h</el-radio-button>
+                            <el-radio-button label="1d">1d</el-radio-button>
+                            <el-radio-button label="7d">7d</el-radio-button>
+                        </el-radio-group>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
+                        <el-button @click="resetForm">重置</el-button>
+                    </el-form-item>
+                </el-form>
+                <div class="toolbar-actions">
+                    <el-button :icon="Download">导出</el-button>
+                </div>
+            </div>
             
             <div v-if="searchForm.username" class="active-filter-tags">
                 <el-tag closable @close="searchForm.username=''; handleSearch()" size="small">账号: {{ searchForm.username }}</el-tag>
@@ -212,6 +217,13 @@
         padding: 16px 24px;
         background: var(--bg-primary);
         border-bottom: 1px solid var(--border);
+    }
+
+    .toolbar-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
     }
 
     .search-bar-form :deep(.el-form-item) {

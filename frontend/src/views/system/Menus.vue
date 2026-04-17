@@ -1,36 +1,33 @@
 <template>
-    <div class="menus-container">
-        <el-card shadow="never" class="table-card" v-loading="loading">
-            <template #header>
-                <div class="card-header-content">
-                    <div class="header-left">
-                        <div style="display: flex; align-items: center; gap: 12px">
-                            <h2 class="page-title">菜单管理</h2>
-                            <span class="accent-dot"></span>
-                        </div>
-                        <p class="page-subtitle">配置系统导航菜单及权限标识。</p>
-                    </div>
-                    <div class="header-right">
-                        <el-space>
-                            <el-input
-                                v-model="filterText"
-                                placeholder="搜索菜单名称"
-                                :prefix-icon="Search"
-                                clearable
-                                style="width: 200px"
-                            />
-                            <el-button type="accent" :icon="Plus" @click="handleAdd">新增菜单</el-button>
-                        </el-space>
-                    </div>
+    <div class="menus-container" v-loading="loading">
+        <!-- Toolbar -->
+        <div class="table-toolbar">
+            <div class="toolbar-content">
+                <el-form inline class="search-bar-form">
+                    <el-form-item label="菜单搜索">
+                        <el-input
+                            v-model="filterText"
+                            placeholder="搜索菜单名称"
+                            :prefix-icon="Search"
+                            clearable
+                            style="width: 200px"
+                        />
+                    </el-form-item>
+                </el-form>
+                <div class="toolbar-actions">
+                    <el-button type="accent" :icon="Plus" @click="handleAdd">新增菜单</el-button>
                 </div>
-            </template>
-            <el-table
-                :data="filteredMenuList"
-                row-key="id"
-                border
-                default-expand-all
-                :tree-props="{ children: 'children' }"
-            >
+            </div>
+        </div>
+
+        <el-table
+            :data="filteredMenuList"
+            row-key="id"
+            border
+            default-expand-all
+            :tree-props="{ children: 'children' }"
+            class="behavior-table"
+        >
                 <el-table-column prop="name" label="菜单名称" width="160">
                     <template #default="{ row }">
                         <span class="menu-name">{{ row.name }}</span>
@@ -84,7 +81,6 @@
                     </template>
                 </el-table-column>
             </el-table>
-        </el-card>
 
         <!-- Edit Menu Dialog -->
         <el-dialog
@@ -380,35 +376,45 @@
     .menus-container {
         display: flex;
         flex-direction: column;
+        background: var(--bg-primary);
+        min-height: calc(100vh - 60px);
     }
 
-    .card-header-content {
+    .table-toolbar {
+        padding: 16px 24px;
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .toolbar-content {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        width: 100%;
     }
 
-    .page-title {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 600;
+    .search-bar-form :deep(.el-form-item) {
+        margin-bottom: 0;
+        margin-right: 16px;
     }
 
-    .page-subtitle {
-        margin: 4px 0 0;
+    .search-bar-form :deep(.el-form-item__label) {
+        font-weight: 500;
+        color: var(--text-secondary);
         font-size: 13px;
-        color: var(--text-tertiary);
     }
 
-    .table-card {
-        border: 1px solid var(--border);
-        border-radius: 8px;
+    .behavior-table {
+        --el-table-header-bg-color: var(--bg-primary);
     }
 
-    :deep(.el-card__header) {
-        padding: 12px 20px;
-        border-bottom: 1px solid var(--border);
-        background-color: var(--bg-primary);
+    :deep(.el-table) {
+        border-radius: 0;
+        --el-table-border-color: var(--border);
+    }
+
+    :deep(.el-table__inner-wrapper::before) {
+        display: none;
     }
 
     .sort-actions {
