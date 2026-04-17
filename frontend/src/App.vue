@@ -166,7 +166,7 @@
     <div v-if="isAuthenticated" class="app-wrapper">
         <el-container class="app-container">
             <!-- Sidebar -->
-            <el-aside :width="isCollapse ? '64px' : '240px'" class="app-sidebar">
+            <el-aside :width="isCollapse ? '64px' : '210px'" class="app-sidebar">
                 <div class="logo-container">
                     <img src="/logo.svg" alt="NexOps" class="logo-img" :class="{ 'collapsed': isCollapse }" />
                 </div>
@@ -341,7 +341,7 @@
         height: 80px;
         display: flex;
         align-items: center;
-        padding-left: 32px;
+        padding-left: 24px;
         background: var(--bg-sidebar);
         position: relative;
     }
@@ -385,10 +385,11 @@
 
     :deep(.el-menu-item), :deep(.el-sub-menu__title) {
         color: var(--sidebar-text) !important;
-        height: 48px !important;
-        line-height: 48px !important;
-        margin: 4px 12px !important;
-        border-radius: 12px !important;
+        font-weight: 400 !important;
+        height: 40px !important;
+        line-height: 40px !important;
+        margin: 2px 8px !important;
+        border-radius: 10px !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
 
@@ -417,7 +418,7 @@
     }
 
     :deep(.el-sub-menu .el-menu-item) {
-        padding-left: 48px !important;
+        padding-left: 44px !important;
         font-size: 12px;
     }
 
