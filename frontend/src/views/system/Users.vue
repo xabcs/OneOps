@@ -12,14 +12,7 @@
                     </div>
                     <div class="header-right">
                         <el-space>
-                            <el-input
-                                v-model="queryParams.username"
-                                placeholder="搜索用户名/昵称"
-                                :prefix-icon="Search"
-                                clearable
-                                style="width: 200px"
-                                @keyup.enter="fetchUsers"
-                            />
+                            <el-input v-model="queryParams.username" placeholder="搜索用户名/昵称" :prefix-icon="Search" clearable style="width: 200px" @keyup.enter="fetchUsers" />
                             <el-select v-model="queryParams.status" placeholder="状态" clearable style="width: 100px" @change="fetchUsers">
                                 <el-option label="启用" value="active" />
                                 <el-option label="禁用" value="disabled" />
@@ -42,13 +35,7 @@
                 <el-table-column prop="roleNames" label="分配角色" min-width="200">
                     <template #default="{ row }">
                         <div class="role-tags">
-                            <el-tag 
-                                v-for="roleName in row.roleNames" 
-                                :key="roleName" 
-                                size="small" 
-                                type="success"
-                                class="role-tag"
-                            >
+                            <el-tag v-for="roleName in row.roleNames" :key="roleName" size="small" type="success" class="role-tag">
                                 {{ roleName }}
                             </el-tag>
                             <span v-if="!row.roleNames || row.roleNames.length === 0" class="text-tertiary">未分配</span>
@@ -59,13 +46,7 @@
                 <el-table-column prop="homePath" label="家目录" width="150" />
                 <el-table-column prop="status" label="状态" width="100" align="center">
                     <template #default="{ row }">
-                        <el-switch
-                            v-model="row.status"
-                            active-value="active"
-                            inactive-value="disabled"
-                            :disabled="row.id === store.state.user?.id"
-                            @change="(val) => handleStatusChange(row, val)"
-                        />
+                        <el-switch v-model="row.status" active-value="active" inactive-value="disabled" :disabled="row.id === store.state.user?.id" @change="(val) => handleStatusChange(row, val)" />
                     </template>
                 </el-table-column>
                 <el-table-column prop="createdAt" label="创建时间" width="180" />
@@ -73,35 +54,18 @@
                     <template #default="{ row }">
                         <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
                         <el-button link class="text-accent" @click="handleResetPwd(row)">重置密码</el-button>
-                        <el-button 
-                            link 
-                            type="danger" 
-                            :disabled="row.id === store.state.user?.id"
-                            @click="handleDelete(row)"
-                        >删除</el-button>
+                        <el-button link type="danger" :disabled="row.id === store.state.user?.id" @click="handleDelete(row)">删除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
-            
+
             <div class="pagination-container">
-                <el-pagination
-                    v-model:current-page="currentPage"
-                    v-model:page-size="pageSize"
-                    :page-sizes="[10, 20, 50, 100]"
-                    layout="total, sizes, prev, pager, next, jumper"
-                    :total="total"
-                    @size-change="handleSizeChange"
-                    @current-change="handleCurrentChange"
-                />
+                <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
             </div>
         </el-card>
 
         <!-- User Form Dialog -->
-        <el-dialog
-            v-model="dialogVisible"
-            :title="form.id ? '编辑用户' : '新增用户'"
-            width="500px"
-        >
+        <el-dialog v-model="dialogVisible" :title="form.id ? '编辑用户' : '新增用户'" width="500px">
             <el-form :model="form" :rules="rules" ref="formRef" label-width="80px" label-position="top">
                 <el-row :gutter="20">
                     <el-col :span="12">
@@ -126,51 +90,30 @@
                     <el-input v-model="form.email" placeholder="请输入邮箱" />
                 </el-form-item>
                 <el-form-item label="分配角色" prop="roleIds">
-                    <el-select
-                        v-model="form.roleIds"
-                        placeholder="请先选择角色，系统将根据角色权限显示可用的家目录"
-                        style="width: 100%"
-                        multiple
-                        collapse-tags
-                        collapse-tags-tooltip
-                        @change="handleRoleIdsChange"
-                    >
-                        <el-option
-                            v-for="role in roleOptions"
-                            :key="role.id"
-                            :label="role.name"
-                            :value="role.id"
-                        />
+                    <el-select v-model="form.roleIds" placeholder="请先选择角色，系统将根据角色权限显示可用的家目录" style="width: 100%" multiple collapse-tags collapse-tags-tooltip @change="handleRoleIdsChange">
+                        <el-option v-for="role in roleOptions" :key="role.id" :label="role.name" :value="role.id" />
                     </el-select>
                 </el-form-item>
 
                 <!-- 角色权限提示 -->
                 <div v-if="form.roleIds.length > 0 && menuOptions.length > 0" class="role-permission-hint">
-                    <el-icon><InfoFilled /></el-icon>
+                    <el-icon>
+                        <InfoFilled />
+                    </el-icon>
                     <span>已为所选角色配置了 <strong>{{ menuOptions.length }}</strong> 个可访问的家目录，请从下方选择</span>
                 </div>
 
                 <el-form-item label="家目录" prop="homePath">
-                    <el-select
-                        v-model="form.homePath"
-                        :placeholder="homePathPlaceholder"
-                        :disabled="form.roleIds.length === 0"
-                        clearable
-                        style="width: 100%"
-                        @change="handleHomePathChange"
-                    >
+                    <el-select v-model="form.homePath" :placeholder="homePathPlaceholder" :disabled="form.roleIds.length === 0" clearable style="width: 100%" @change="handleHomePathChange">
                         <template #label>
                             <span>家目录</span>
                             <el-tooltip v-if="form.roleIds.length > 0" content="系统已根据您选择的角色权限，仅显示可访问的路径" placement="top">
-                                <el-icon class="label-icon"><QuestionFilled /></el-icon>
+                                <el-icon class="label-icon">
+                                    <QuestionFilled />
+                                </el-icon>
                             </el-tooltip>
                         </template>
-                        <el-option
-                            v-for="item in menuOptions"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value"
-                        >
+                        <el-option v-for="item in menuOptions" :key="item.value" :label="item.label" :value="item.value">
                             <span style="float: left">{{ item.label }}</span>
                             <span style="float: right; color: var(--el-color-success); font-size: 12px">
                                 <el-icon><Select /></el-icon> 可访问
@@ -180,14 +123,11 @@
                 </el-form-item>
 
                 <!-- 权限冲突警告 -->
-                <el-alert
-                    v-if="hasPermissionWarning"
-                    type="warning"
-                    :closable="false"
-                    style="margin-bottom: 15px"
-                >
+                <el-alert v-if="hasPermissionWarning" type="warning" :closable="false" style="margin-bottom: 15px">
                     <template #title>
-                        <el-icon><Warning /></el-icon> 权限已自动调整
+                        <el-icon>
+                            <Warning />
+                        </el-icon> 权限已自动调整
                     </template>
                     原设置的家目录不在用户权限范围内，系统已自动调整为有权限的路径。
                 </el-alert>
@@ -265,7 +205,6 @@
         password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
         nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
         email: [
-            { required: true, message: '请输入邮箱', trigger: 'blur' },
             { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
         ],
         roleIds: [{ required: true, message: '请至少选择一个角色', trigger: 'change', type: 'array' }]
@@ -308,16 +247,16 @@
                 systemApi.getUsers(),
                 systemApi.getRoles()
             ])
-            
+
             if (userRes.code === 200 && roleRes.code === 200) {
                 const roles = roleRes.data || []
                 let data = userRes.data
-                
+
                 // 前端模拟搜索过滤
                 if (queryParams.username) {
                     const keyword = queryParams.username.toLowerCase()
-                    data = data.filter(u => 
-                        u.username.toLowerCase().includes(keyword) || 
+                    data = data.filter(u =>
+                        u.username.toLowerCase().includes(keyword) ||
                         u.nickname.toLowerCase().includes(keyword)
                     )
                 }
@@ -536,7 +475,7 @@
                     } else {
                         res = await systemApi.addUser(form.value)
                     }
-                    
+
                     if (res.code === 200) {
                         ElMessage.success(form.value.id ? '更新成功' : '添加成功')
                         dialogVisible.value = false
@@ -604,103 +543,103 @@
 
 <style scoped>
     .text-accent {
-        color: var(--accent) !important;
+      color: var(--accent) !important;
     }
 
     .text-accent:hover {
-        color: var(--accent-hover) !important;
-        text-decoration: underline;
+      color: var(--accent-hover) !important;
+      text-decoration: underline;
     }
 
     .users-container {
-        display: flex;
-        flex-direction: column;
+      display: flex;
+      flex-direction: column;
     }
 
     .card-header-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .page-title {
-        margin: 0;
-        font-size: 18px;
-        font-weight: 600;
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
     }
 
     .page-subtitle {
-        margin: 4px 0 0;
-        font-size: 13px;
-        color: var(--text-tertiary);
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--text-tertiary);
     }
 
     .table-card {
-        border: 1px solid var(--border);
-        border-radius: 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
     }
 
     :deep(.el-card__header) {
-        padding: 12px 20px;
-        border-bottom: 1px solid var(--border);
-        background-color: var(--bg-primary);
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      background-color: var(--bg-primary);
     }
 
     .role-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
     }
 
     .role-tag {
-        margin: 2px 0;
+      margin: 2px 0;
     }
 
     .text-tertiary {
-        color: var(--text-tertiary);
-        font-size: 12px;
+      color: var(--text-tertiary);
+      font-size: 12px;
     }
 
     .pagination-container {
-        margin-top: 20px;
-        display: flex;
-        justify-content: flex-end;
-        padding: 0 20px 20px;
+      margin-top: 20px;
+      display: flex;
+      justify-content: flex-end;
+      padding: 0 20px 20px;
     }
 
     /* 角色权限提示样式 */
     .role-permission-hint {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 15px;
-        margin-bottom: 15px;
-        background-color: var(--el-color-info-light-9);
-        border: 1px solid var(--el-color-info-light-5);
-        border-radius: 4px;
-        color: var(--el-color-info);
-        font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 15px;
+      margin-bottom: 15px;
+      background-color: var(--el-color-info-light-9);
+      border: 1px solid var(--el-color-info-light-5);
+      border-radius: 4px;
+      color: var(--el-color-info);
+      font-size: 13px;
     }
 
     .role-permission-hint .el-icon {
-        font-size: 16px;
+      font-size: 16px;
     }
 
     .role-permission-hint strong {
-        color: var(--el-color-primary);
-        font-weight: 600;
+      color: var(--el-color-primary);
+      font-weight: 600;
     }
 
     /* 家目录标签图标样式 */
     .label-icon {
-        margin-left: 4px;
-        cursor: help;
-        color: var(--el-color-info);
-        font-size: 14px;
-        vertical-align: middle;
+      margin-left: 4px;
+      cursor: help;
+      color: var(--el-color-info);
+      font-size: 14px;
+      vertical-align: middle;
     }
 
     .label-icon:hover {
-        color: var(--el-color-primary);
+      color: var(--el-color-primary);
     }
 </style>
