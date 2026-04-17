@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"oneops/backend/models"
 	"oneops/backend/services"
 	"oneops/backend/utils"
 	"strings"
@@ -87,10 +88,22 @@ func (m *AuditMiddleware) shouldSkipAudit(c *gin.Context) bool {
 
 // getUserInfo 从上下文中获取用户信息
 func (m *AuditMiddleware) getUserInfo(c *gin.Context) (uint, string, string) {
-	// 从JWT中获取用户信息
+	// 优先从JWT claims中获取用户信息
 	if claims, exists := c.Get("claims"); exists {
 		if userClaims, ok := claims.(*utils.Claims); ok {
-			return userClaims.UserID, userClaims.Username, "" // JWT Claims中没有nickname字段
+			return userClaims.UserID, userClaims.Username, ""
+		}
+	}
+
+	// 备用方案：从单独的user_id和username字段获取
+	if userID, exists := c.Get("user_id"); exists {
+		if uid, ok := userID.(uint); ok {
+			if username, exists := c.Get("username"); exists {
+				if uname, ok := username.(string); ok {
+					return uid, uname, ""
+				}
+			}
+			return uid, "", ""
 		}
 	}
 
@@ -155,22 +168,51 @@ func (m *AuditMiddleware) recordOperationLog(c *gin.Context, userID uint, userna
 	)
 }
 
-// getModuleFromPath 从路径解析模块名称
+// getModuleFromPath 从路径解析模块名称（从menu表查询）
 func (m *AuditMiddleware) getModuleFromPath(path string) string {
-	if strings.HasPrefix(path, "/api/system") {
-		return "系统管理"
-	} else if strings.HasPrefix(path, "/api/audit") {
-		return "审计管理"
-	} else if strings.HasPrefix(path, "/api/monitoring") {
-		return "监控中心"
-	} else if strings.HasPrefix(path, "/api/servers") {
-		return "主机管理"
-	} else if strings.HasPrefix(path, "/api/tasks") {
-		return "任务管理"
-	} else if strings.HasPrefix(path, "/api/") {
-		return "API接口"
+	// 如果不是API路径，直接返回
+	if !strings.HasPrefix(path, "/api/") {
+		return "其他"
 	}
-	return "其他"
+
+	// 去掉/api前缀，得到菜单路径
+	menuPath := strings.TrimPrefix(path, "/api")
+
+	// 查询该路径对应的菜单项
+	var menu models.Menu
+	err := services.GetDB().Where("path = ?", menuPath).First(&menu).Error
+	if err != nil {
+		// 如果找不到对应菜单，尝试从operation_logs学习
+		var moduleName string
+		learnErr := services.GetDB().Table("operation_logs").
+			Select("DISTINCT module").
+			Where("path = ?", path).
+			Where("module != ?", "").
+			Order("id DESC").
+			Limit(1).
+			Pluck("module", &moduleName).Error
+
+		if learnErr == nil && moduleName != "" {
+			return moduleName
+		}
+
+		// 都找不到，返回默认值
+		return "未知模块"
+	}
+
+	// 如果是顶级菜单（没有父菜单），直接返回菜单名称作为模块名
+	if menu.ParentID == 0 {
+		return menu.Name
+	}
+
+	// 如果有父菜单，查询父菜单获取模块名
+	var parentMenu models.Menu
+	err = services.GetDB().Where("id = ?", menu.ParentID).First(&parentMenu).Error
+	if err != nil {
+		return "未知模块"
+	}
+
+	return parentMenu.Name
 }
 
 // getActionFromMethod 从HTTP方法解析操作动作

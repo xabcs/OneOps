@@ -77,6 +77,9 @@ func SetupRoutes(r *gin.Engine) {
 
 			// 审计统计
 			audit.GET("/stats", auditController.GetAuditStats)
+
+			// 可用模块列表
+			audit.GET("/modules", auditController.GetModules)
 		}
 	}
 }

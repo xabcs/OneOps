@@ -1,49 +1,46 @@
 <template>
     <div class="logs-container">
-        <!-- Info Alert -->
-        <div class="info-alert">
-            <el-icon class="info-icon">
-                <InfoFilled />
-            </el-icon>
-            <span class="info-text">系统默认记录最近90天的登录审计事件。如需长期保存或进行多维分析，请前往 <el-link type="primary" :underline="false">审计配置</el-link> 开启日志投递。</span>
-        </div>
-
         <!-- Search & Filter -->
         <div class="compact-filter">
-            <el-form :model="searchForm" class="search-form">
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <div class="filter-label">登录账号</div>
-                        <el-input v-model="searchForm.username" placeholder="请选择" clearable class="filter-input" @clear="handleSearch" @input="handleInput" />
-                    </div>
-                    <div class="filter-group">
-                        <div class="filter-label">登录地点</div>
-                        <el-input v-model="searchForm.location" placeholder="请选择" clearable class="filter-input" @clear="handleSearch" @input="handleInput" />
-                    </div>
-                    <div class="filter-group">
-                        <div class="filter-label">状态</div>
-                        <el-select v-model="searchForm.status" placeholder="请选择" clearable class="filter-select" @change="handleSearch">
+            <div class="filter-row">
+                <el-form :model="searchForm" class="search-form-inline" inline>
+                    <el-form-item label="登录账号">
+                        <el-input v-model="searchForm.username" placeholder="输入账号" clearable style="width: 180px" @clear="handleSearch" @input="handleInput" />
+                    </el-form-item>
+                    <el-form-item label="状态">
+                        <el-select v-model="searchForm.status" placeholder="全部" clearable style="width: 120px" @change="handleSearch">
                             <el-option label="成功" value="success" />
                             <el-option label="失败" value="failed" />
                         </el-select>
-                    </div>
-                    <div class="filter-actions">
-                        <el-button type="primary" class="submit-btn" @click="handleSearch">提交查询</el-button>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="handleSearch">查询</el-button>
                         <el-button @click="resetForm">重置</el-button>
-                    </div>
-                </div>
+                    </el-form-item>
+                </el-form>
+            </div>
 
-                <div class="time-range-row">
-                    <el-radio-group v-model="timeRange" size="small" @change="handleSearch">
-                        <el-radio-button label="1h">1h</el-radio-button>
-                        <el-radio-button label="12h">12h</el-radio-button>
-                        <el-radio-button label="1d">1d</el-radio-button>
-                        <el-radio-button label="7d">7d</el-radio-button>
-                        <el-radio-button label="30d">30d</el-radio-button>
-                        <el-radio-button label="custom">自定义</el-radio-button>
-                    </el-radio-group>
-                </div>
-            </el-form>
+            <div class="filter-row time-range-row">
+                <span class="time-label">时间范围：</span>
+                <el-radio-group v-model="timeRange" size="small" @change="handleSearch">
+                    <el-radio-button label="1h">1小时</el-radio-button>
+                    <el-radio-button label="1d">今天</el-radio-button>
+                    <el-radio-button label="7d">7天</el-radio-button>
+                    <el-radio-button label="30d">30天</el-radio-button>
+                    <el-radio-button label="custom">自定义</el-radio-button>
+                </el-radio-group>
+                <el-date-picker
+                    v-if="timeRange === 'custom'"
+                    v-model="customTimeRange"
+                    type="datetimerange"
+                    range-separator="至"
+                    start-placeholder="开始时间"
+                    end-placeholder="结束时间"
+                    size="small"
+                    style="width: 350px; margin-left: 8px"
+                    @change="handleSearch"
+                />
+            </div>
         </div>
 
         <!-- Log Table -->
@@ -102,23 +99,56 @@
 
     const searchForm = ref({
         username: '',
-        location: '',
         status: ''
     })
+    const customTimeRange = ref([])
 
     const fetchLogs = async () => {
         loading.value = true
         try {
             const params = {
                 username: searchForm.value.username,
-                location: searchForm.value.location,
                 status: searchForm.value.status,
-                timeRange: timeRange.value
+                page: currentPage.value,
+                pageSize: pageSize.value
             }
+
+            // 添加时间范围参数
+            const now = new Date()
+            let startTime = new Date()
+
+            switch (timeRange.value) {
+                case '1h':
+                    startTime = new Date(now.getTime() - 60 * 60 * 1000)
+                    break
+                case '1d':
+                    startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+                    break
+                case '7d':
+                    startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+                    break
+                case '30d':
+                    startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+                    break
+                case 'custom':
+                    if (customTimeRange.value && customTimeRange.value.length === 2) {
+                        params.startTime = customTimeRange.value[0].toISOString().slice(0, 19).replace('T', ' ')
+                        params.endTime = customTimeRange.value[1].toISOString().slice(0, 19).replace('T', ' ')
+                    }
+                    break
+                default:
+                    startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) // 默认7天
+            }
+
+            if (timeRange.value !== 'custom') {
+                params.startTime = startTime.toISOString().slice(0, 19).replace('T', ' ')
+                params.endTime = now.toISOString().slice(0, 19).replace('T', ' ')
+            }
+
             const res = await auditApi.getLoginLogs(params)
             if (res.code === 200) {
-                logs.value = res.data.list
-                total.value = res.data.total
+                logs.value = res.data.list || []
+                total.value = res.data.total || 0
             }
         } catch (error) {
             console.error('Error fetching login logs:', error)
@@ -140,10 +170,10 @@
     const resetForm = () => {
         searchForm.value = {
             username: '',
-            location: '',
             status: ''
         }
         timeRange.value = '7d'
+        customTimeRange.value = []
         handleSearch()
     }
 
@@ -164,110 +194,104 @@
 
 <style scoped>
     .logs-container {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
-
-    .info-alert {
-        background-color: #f0f7ff;
-        border: 1px solid #d1e9ff;
-        border-radius: 2px;
-        padding: 12px 16px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 8px;
-    }
-
-    .info-icon {
-        color: #0070cc;
-        font-size: 18px;
-    }
-
-    .info-text {
-        font-size: 14px;
-        color: #333;
-        line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 120px);
+      background-color: var(--bg-secondary);
     }
 
     .compact-filter {
-        padding: 0 0 16px 0;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background-color: var(--bg-primary);
+      border-radius: 0;
+      margin-bottom: 0;
     }
 
-    .search-form {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+    .table-card {
+      border: none;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      background-color: transparent;
+      box-shadow: none;
+    }
+
+    :deep(.el-card__body) {
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      background-color: transparent;
+    }
+
+    :deep(.el-table) {
+      flex: 1;
+      border: none;
+      background-color: transparent;
+    }
+
+    :deep(.el-table__header-wrapper) {
+      background-color: var(--bg-primary);
+    }
+
+    :deep(.table-header-cell) {
+      background-color: var(--bg-primary) !important;
+      font-weight: 500;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    :deep(.el-table__body tr) {
+      background-color: transparent;
+    }
+
+    :deep(.el-table__body tr:hover > td) {
+      background-color: var(--bg-tertiary) !important;
+    }
+
+    :deep(.el-table td) {
+      border: none;
+      padding: 12px 0;
+    }
+
+    :deep(.el-table__empty-block) {
+      background-color: transparent;
     }
 
     .filter-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .filter-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .search-form-inline {
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
         align-items: center;
     }
 
-    .filter-group {
-        display: flex;
-        align-items: center;
-        border: 1px solid #dcdfe6;
-        border-radius: 2px;
-        overflow: hidden;
-        transition: border-color 0.2s;
-        height: 32px;
-    }
-
-    .filter-group:focus-within {
-        border-color: var(--primary);
-    }
-
-    .filter-label {
-        background-color: #f5f7fa;
-        padding: 0 12px;
-        height: 32px;
-        line-height: 32px;
-        font-size: 13px;
-        color: #606266;
-        border-right: 1px solid #dcdfe6;
-        white-space: nowrap;
-    }
-
-    .filter-input,
-    .filter-select {
-        width: 200px;
-    }
-
-    :deep(.el-input__wrapper),
-    :deep(.el-select .el-input__wrapper) {
-        box-shadow: none !important;
-        background-color: transparent !important;
-        height: 30px;
-        padding: 0 8px;
-    }
-
-    .filter-actions {
-        display: flex;
-        gap: 8px;
-        margin-left: auto;
+    :deep(.el-form-item) {
+        margin-bottom: 0;
     }
 
     .time-range-row {
         display: flex;
         align-items: center;
+        gap: 8px;
     }
 
-    :deep(.el-radio-button__inner) {
-        padding: 6px 12px;
-        font-size: 12px;
-    }
-
-    .table-card {
-        border: 1px solid var(--border);
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        border-radius: 2px;
+    .time-label {
+        font-size: 14px;
+        color: #606266;
+        white-space: nowrap;
     }
 
     .user-cell {
@@ -277,9 +301,10 @@
     }
 
     .pagination-container {
-        margin-top: 20px;
+        margin-top: 24px;
         display: flex;
         justify-content: flex-end;
+        padding: 0 16px 16px;
     }
 
     :deep(.el-button),
@@ -289,10 +314,6 @@
     :deep(.el-tag),
     :deep(.el-radio-button:first-child .el-radio-button__inner),
     :deep(.el-radio-button:last-child .el-radio-button__inner) {
-        border-radius: 2px !important;
-    }
-
-    :deep(.el-card__body) {
-        padding: 12px;
+      border-radius: 2px !important;
     }
 </style>

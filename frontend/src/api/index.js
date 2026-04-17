@@ -85,9 +85,12 @@ export const auditApi = {
   
   // 系统事件日志
   getSystemEventLogs: (params) => api.get('/audit/system-event-logs', { params }),
-  
+
   // 审计统计
-  getAuditStats: () => api.get('/audit/stats')
+  getAuditStats: () => api.get('/audit/stats'),
+
+  // 可用模块列表
+  getModules: () => api.get('/audit/modules')
 }
 
 // 监控管理 API

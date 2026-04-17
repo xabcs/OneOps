@@ -1,67 +1,64 @@
 <template>
     <div class="logs-container">
-        <header class="page-header">
-            <div class="header-content">
-                <div style="display: flex; align-items: center; gap: 12px">
-                    <h2 class="page-title">行为日志</h2>
-                    <span class="accent-dot"></span>
-                </div>
-                <p class="page-subtitle">审计系统内所有用户的关键操作行为及接口调用详情。</p>
-            </div>
-            <div class="header-actions">
-                <el-button :icon="Download">导出日志</el-button>
-            </div>
-        </header>
-
-        <!-- Info Alert -->
-        <div class="info-alert">
-            <el-icon class="info-icon">
-                <InfoFilled />
-            </el-icon>
-            <span class="info-text">默认免费记录了90天的管控事件可供查询，建议 <el-link type="primary" :underline="false">创建跟踪</el-link> 实现更长时间存储，并通过 <el-link type="primary" :underline="false">事件高级查询</el-link> 实现更灵活的多条件组合查询</span>
-        </div>
-
         <!-- Search & Filter -->
         <div class="compact-filter">
-            <el-form :model="searchForm" class="search-form">
-                <div class="filter-row">
-                    <div class="filter-group">
-                        <div class="filter-label">操作人</div>
-                        <el-input v-model="searchForm.user" placeholder="请选择" clearable class="filter-input" @clear="handleSearch" @input="handleInput" />
-                    </div>
-                    <div class="filter-group">
-                        <div class="filter-label">所属模块</div>
-                        <el-select v-model="searchForm.module" placeholder="请选择" clearable class="filter-select" @change="handleSearch">
-                            <el-option label="主机管理" value="主机管理" />
-                            <el-option label="自动化任务" value="自动化任务" />
-                            <el-option label="监控中心" value="监控中心" />
-                            <el-option label="系统设置" value="系统设置" />
+            <div class="filter-row">
+                <el-form :model="searchForm" class="search-form-inline" inline>
+                    <el-form-item label="操作人">
+                        <el-input v-model="searchForm.username" placeholder="输入用户名" clearable style="width: 150px" @clear="handleSearch" @input="handleInput" />
+                    </el-form-item>
+                    <el-form-item label="操作模块">
+                        <el-select v-model="searchForm.module" placeholder="全部" clearable style="width: 140px" @change="handleSearch">
+                            <el-option
+                                v-for="module in availableModules"
+                                :key="module"
+                                :label="module"
+                                :value="module"
+                            />
                         </el-select>
-                    </div>
-                    <div class="filter-group">
-                        <div class="filter-label">状态</div>
-                        <el-select v-model="searchForm.status" placeholder="请选择" clearable class="filter-select" @change="handleSearch">
+                    </el-form-item>
+                    <el-form-item label="请求方法">
+                        <el-select v-model="searchForm.method" placeholder="全部" clearable style="width: 120px" @change="handleSearch">
+                            <el-option label="GET" value="GET" />
+                            <el-option label="POST" value="POST" />
+                            <el-option label="PUT" value="PUT" />
+                            <el-option label="DELETE" value="DELETE" />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="状态">
+                        <el-select v-model="searchForm.status" placeholder="全部" clearable style="width: 120px" @change="handleSearch">
                             <el-option label="成功" value="success" />
                             <el-option label="失败" value="failed" />
                         </el-select>
-                    </div>
-                    <div class="filter-actions">
-                        <el-button type="primary" class="submit-btn" @click="handleSearch">提交查询</el-button>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="handleSearch">查询</el-button>
                         <el-button @click="resetForm">重置</el-button>
-                    </div>
-                </div>
+                    </el-form-item>
+                </el-form>
+            </div>
 
-                <div class="time-range-row">
-                    <el-radio-group v-model="timeRange" size="small" @change="handleSearch">
-                        <el-radio-button label="1h">1h</el-radio-button>
-                        <el-radio-button label="12h">12h</el-radio-button>
-                        <el-radio-button label="1d">1d</el-radio-button>
-                        <el-radio-button label="7d">7d</el-radio-button>
-                        <el-radio-button label="30d">30d</el-radio-button>
-                        <el-radio-button label="custom">自定义</el-radio-button>
-                    </el-radio-group>
-                </div>
-            </el-form>
+            <div class="filter-row time-range-row">
+                <span class="time-label">时间范围：</span>
+                <el-radio-group v-model="timeRange" size="small" @change="handleSearch">
+                    <el-radio-button label="1h">1小时</el-radio-button>
+                    <el-radio-button label="1d">今天</el-radio-button>
+                    <el-radio-button label="7d">7天</el-radio-button>
+                    <el-radio-button label="30d">30天</el-radio-button>
+                    <el-radio-button label="custom">自定义</el-radio-button>
+                </el-radio-group>
+                <el-date-picker
+                    v-if="timeRange === 'custom'"
+                    v-model="customTimeRange"
+                    type="datetimerange"
+                    range-separator="至"
+                    start-placeholder="开始时间"
+                    end-placeholder="结束时间"
+                    size="small"
+                    style="width: 350px; margin-left: 8px"
+                    @change="handleSearch"
+                />
+            </div>
         </div>
 
         <!-- Log Table -->
@@ -75,8 +72,8 @@
                 <el-table-column prop="user" label="操作人" width="110">
                     <template #default="{ row }">
                         <div class="user-cell">
-                            <el-avatar :size="24" :src="'https://api.dicebear.com/7.x/avataaars/svg?seed=' + row.user" />
-                            <span>{{ row.user }}</span>
+                            <el-avatar :size="24" :src="'https://api.dicebear.com/7.x/avataaars/svg?seed=' + (row.username || row.user)" />
+                            <span>{{ row.username || row.user }}</span>
                         </div>
                     </template>
                 </el-table-column>
@@ -138,26 +135,76 @@
         return logs.value.slice(start, end)
     })
     const timeRange = ref('7d')
+    const availableModules = ref([]) // 动态获取的模块列表
 
     const searchForm = ref({
-        user: '',
+        username: '',
         module: '',
+        method: '',
         status: ''
     })
+    const customTimeRange = ref([])
+
+    // 获取可用的模块列表
+    const fetchModules = async () => {
+        try {
+            const res = await auditApi.getModules()
+            if (res.code === 200) {
+                availableModules.value = res.data || []
+            }
+        } catch (error) {
+            console.error('Error fetching modules:', error)
+        }
+    }
 
     const fetchLogs = async () => {
         loading.value = true
         try {
             const params = {
-                user: searchForm.value.user,
+                username: searchForm.value.username,
                 module: searchForm.value.module,
+                method: searchForm.value.method,
                 status: searchForm.value.status,
-                timeRange: timeRange.value
+                page: currentPage.value,
+                pageSize: pageSize.value
             }
+
+            // 添加时间范围参数
+            const now = new Date()
+            let startTime = new Date()
+
+            switch (timeRange.value) {
+                case '1h':
+                    startTime = new Date(now.getTime() - 60 * 60 * 1000)
+                    break
+                case '1d':
+                    startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+                    break
+                case '7d':
+                    startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+                    break
+                case '30d':
+                    startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+                    break
+                case 'custom':
+                    if (customTimeRange.value && customTimeRange.value.length === 2) {
+                        params.startTime = customTimeRange.value[0].toISOString().slice(0, 19).replace('T', ' ')
+                        params.endTime = customTimeRange.value[1].toISOString().slice(0, 19).replace('T', ' ')
+                    }
+                    break
+                default:
+                    startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) // 默认7天
+            }
+
+            if (timeRange.value !== 'custom') {
+                params.startTime = startTime.toISOString().slice(0, 19).replace('T', ' ')
+                params.endTime = now.toISOString().slice(0, 19).replace('T', ' ')
+            }
+
             const res = await auditApi.getOperationLogs(params)
             if (res.code === 200) {
-                logs.value = res.data.list
-                total.value = res.data.total
+                logs.value = res.data.list || []
+                total.value = res.data.total || 0
             }
         } catch (error) {
             console.error('Error fetching logs:', error)
@@ -180,11 +227,13 @@
 
     const resetForm = () => {
         searchForm.value = {
-            user: '',
+            username: '',
             module: '',
+            method: '',
             status: ''
         }
         timeRange.value = '7d'
+        customTimeRange.value = []
         fetchLogs()
     }
 
@@ -204,119 +253,125 @@
         return 'text-success'
     }
 
-    onMounted(fetchLogs)
+    onMounted(() => {
+        fetchModules() // 先获取模块列表
+        fetchLogs()      // 再获取日志数据
+    })
 </script>
 
 <style scoped>
     .logs-container {
       display: flex;
       flex-direction: column;
-      gap: 16px;
-    }
-
-    .info-alert {
-      background-color: #f0f7ff;
-      border: 1px solid #d1e9ff;
-      border-radius: 2px;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 8px;
-    }
-
-    .info-icon {
-      color: #0070cc;
-      font-size: 18px;
-    }
-
-    .info-text {
-      font-size: 14px;
-      color: #333;
-      line-height: 1.5;
+      height: calc(100vh - 120px);
+      background-color: var(--bg-secondary);
     }
 
     .compact-filter {
-      padding: 0 0 16px 0;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background-color: var(--bg-primary);
+      border-radius: 0;
+      margin-bottom: 0;
     }
 
-    .search-form {
+    .table-card {
+      border: none;
+      border-radius: 0;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      flex: 1;
+      background-color: transparent;
+      box-shadow: none;
+    }
+
+    :deep(.el-card__body) {
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      background-color: transparent;
+    }
+
+    :deep(.el-table) {
+      flex: 1;
+      border: none;
+      background-color: transparent;
+    }
+
+    :deep(.el-table__header-wrapper) {
+      background-color: var(--bg-primary);
+    }
+
+    :deep(.table-header-cell) {
+      background-color: var(--bg-primary) !important;
+      font-weight: 500;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    :deep(.el-table__body tr) {
+      background-color: transparent;
+    }
+
+    :deep(.el-table__body tr:hover > td) {
+      background-color: var(--bg-tertiary) !important;
+    }
+
+    :deep(.el-table td) {
+      border: none;
+      padding: 12px 0;
+    }
+
+    :deep(.el-table__empty-block) {
+      background-color: transparent;
     }
 
     .filter-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
     }
 
-    .filter-group {
-      display: flex;
-      align-items: center;
-      border: 1px solid #dcdfe6;
-      border-radius: 2px;
-      overflow: hidden;
-      transition: border-color 0.2s;
-      height: 32px;
+    .filter-row:last-child {
+        margin-bottom: 0;
     }
 
-    .filter-group:focus-within {
-      border-color: var(--primary);
+    .search-form-inline {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
     }
 
-    .filter-label {
-      background-color: #f5f7fa;
-      padding: 0 12px;
-      height: 32px;
-      line-height: 32px;
-      font-size: 13px;
-      color: #606266;
-      border-right: 1px solid #dcdfe6;
-      white-space: nowrap;
-    }
-
-    .filter-input,
-    .filter-select {
-      width: 200px;
-    }
-
-    :deep(.el-input__wrapper),
-    :deep(.el-select .el-input__wrapper) {
-      box-shadow: none !important;
-      background-color: transparent !important;
-      height: 30px;
-      padding: 0 8px;
-    }
-
-    .filter-actions {
-      display: flex;
-      gap: 8px;
-      margin-left: auto;
+    :deep(.el-form-item) {
+        margin-bottom: 0;
     }
 
     .time-range-row {
-      display: flex;
-      align-items: center;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
-    :deep(.el-radio-button__inner) {
-      padding: 6px 12px;
-      font-size: 12px;
+    .time-label {
+        font-size: 14px;
+        color: #606266;
+        white-space: nowrap;
     }
 
     .user-cell {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
     .pagination-container {
-      margin-top: 24px;
-      display: flex;
-      justify-content: flex-end;
+        margin-top: 24px;
+        display: flex;
+        justify-content: flex-end;
+        padding: 0 16px 16px;
     }
 
     .code-text {

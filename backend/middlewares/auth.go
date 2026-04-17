@@ -38,6 +38,7 @@ func Auth() gin.HandlerFunc {
 		// 将用户信息存入上下文
 		c.Set("user_id", claims.UserID)
 		c.Set("username", claims.Username)
+		c.Set("claims", claims) // 设置完整的claims对象
 		c.Next()
 	}
 }
@@ -65,6 +66,7 @@ func OptionalAuth() gin.HandlerFunc {
 
 		c.Set("user_id", claims.UserID)
 		c.Set("username", claims.Username)
+		c.Set("claims", claims) // 设置完整的claims对象
 		c.Next()
 	}
 }

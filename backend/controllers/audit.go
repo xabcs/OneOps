@@ -173,6 +173,12 @@ func (ctrl *AuditController) GetAuditStats(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(stats))
 }
 
+// GetModules 获取可用的审计模块列表
+func (ctrl *AuditController) GetModules(c *gin.Context) {
+	modules := ctrl.auditService.GetModules()
+	c.JSON(http.StatusOK, utils.SuccessWithData(modules))
+}
+
 // ExportLoginLogs 导出登录日志
 func (ctrl *AuditController) ExportLoginLogs(c *gin.Context) {
 	// 获取所有符合条件的日志

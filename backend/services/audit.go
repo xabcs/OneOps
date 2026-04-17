@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"fmt"
 	"oneops/backend/models"
 	"oneops/backend/utils"
 	"time"
@@ -156,10 +157,10 @@ func (s *AuditService) GetLoginLogs(query map[string]interface{}, page, pageSize
 	}
 
 	// 转换为响应格式
-	response := make([]LoginLogResponse, len(logs))
-	for i, log := range logs {
+	response := make([]LoginLogResponse, 0, len(logs))
+	for _, log := range logs {
 		userAgentInfo := utils.ParseUserAgent(log.UserAgent)
-		response[i] = LoginLogResponse{
+		logResponse := LoginLogResponse{
 			Time:     log.LoginTime.Format("2006-01-02 15:04:05"),
 			Username: log.Username,
 			IP:       log.IP,
@@ -169,11 +170,36 @@ func (s *AuditService) GetLoginLogs(query map[string]interface{}, page, pageSize
 			Status:   log.Status,
 			Msg:      log.FailReason,
 		}
-		// 同时设置模型中的Time字段，保持一致性
-		logs[i].Time = log.LoginTime.Format("2006-01-02 15:04:05")
+
+		// 应用浏览器和操作系统过滤（在解析后过滤）
+		if browser, ok := query["browser"].(string); ok && browser != "" {
+			if userAgentInfo.Browser != browser {
+				continue
+			}
+		}
+		if os, ok := query["os"].(string); ok && os != "" {
+			if userAgentInfo.OS != os {
+				continue
+			}
+		}
+
+		response = append(response, logResponse)
 	}
 
-	return response, total, nil
+	// 更新总数（应用浏览器和OS过滤后）
+	total = int64(len(response))
+
+	// 应用分页（在内存中分页，因为浏览器和OS过滤是在解析后进行的）
+	start := (page - 1) * pageSize
+	end := start + pageSize
+	if start > int(total) {
+		start = int(total)
+	}
+	if end > int(total) {
+		end = int(total)
+	}
+
+	return response[start:end], total, nil
 }
 
 // GetLoginLogsForExport 获取登录日志列表（用于导出）
@@ -233,6 +259,34 @@ func (s *AuditService) GetOperationLogs(query map[string]interface{}, page, page
 	}
 	if action, ok := query["action"].(string); ok && action != "" {
 		tx = tx.Where("action LIKE ?", "%"+action+"%")
+	}
+	if method, ok := query["method"].(string); ok && method != "" {
+		tx = tx.Where("method = ?", method)
+	}
+	if statusCode, ok := query["statusCode"].(int); ok && statusCode > 0 {
+		tx = tx.Where("status_code = ?", statusCode)
+	}
+	if statusCodeStr, ok := query["statusCode"].(string); ok && statusCodeStr != "" {
+		// 尝试将字符串转换为数字
+		var code int
+		if _, err := fmt.Sscanf(statusCodeStr, "%d", &code); err == nil {
+			tx = tx.Where("status_code = ?", code)
+		}
+	}
+	if path, ok := query["path"].(string); ok && path != "" {
+		tx = tx.Where("path LIKE ?", "%"+path+"%")
+	}
+	if durationRange, ok := query["durationRange"].(string); ok && durationRange != "" {
+		switch durationRange {
+		case "fast":
+			tx = tx.Where("duration < 100")
+		case "normal":
+			tx = tx.Where("duration >= 100 AND duration < 500")
+		case "slow":
+			tx = tx.Where("duration >= 500 AND duration < 1000")
+		case "very-slow":
+			tx = tx.Where("duration >= 1000")
+		}
 	}
 	if startTime, ok := query["startTime"].(string); ok && startTime != "" {
 		tx = tx.Where("operate_time >= ?", startTime)
@@ -368,4 +422,23 @@ func (s *AuditService) GetAuditStats() (gin.H, error) {
 	stats["login"].(gin.H)["today"] = todayLoginCount
 
 	return stats, nil
+}
+
+// GetModules 获取可用的审计模块列表（从menu表获取一级菜单）
+func (s *AuditService) GetModules() []string {
+	var modules []string
+
+	// 从menu表中查询所有一级菜单（parent_id = 0）
+	err := db.Model(&models.Menu{}).
+		Where("parent_id = 0").
+		Where("status = 1"). // 只查询启用的菜单
+		Order("sort ASC").
+		Pluck("name", &modules).Error
+
+	if err != nil {
+		// 如果查询失败，返回空列表
+		return []string{}
+	}
+
+	return modules
 }
