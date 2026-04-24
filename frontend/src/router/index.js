@@ -3,6 +3,8 @@ import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import Home from '../views/Home.vue'
 import store from '../store'
+import { authStorage, backendStatusStorage } from '../utils/storage'
+import { ROUTES } from '../constants'
 
 // 配置 NProgress
 NProgress.configure({ 
@@ -103,27 +105,38 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   NProgress.start()
+
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
-  const isAuthenticated = !!localStorage.getItem('token')
-  
+  const isAuthenticated = !!authStorage.getToken()
+  const isBackendUnavailable = backendStatusStorage.isUnavailable()
+
+  // 如果后端不可用，强制重定向到登录页（除非已经在登录页）
+  if (isBackendUnavailable && to.path !== ROUTES.LOGIN) {
+    // 清除认证信息
+    if (isAuthenticated) {
+      authStorage.clearAuth()
+    }
+
+    NProgress.done()
+    next(ROUTES.LOGIN)
+    return
+  }
+
+  // 正常的认证检查
   if (requiresAuth && !isAuthenticated) {
-    next('/login')
-  } else if (to.path === '/login' && isAuthenticated) {
-    next('/')
+    next(ROUTES.LOGIN)
+  } else if (to.path === ROUTES.LOGIN && isAuthenticated && !isBackendUnavailable) {
+    // 如果已登录且后端可用，重定向到首页
+    next(ROUTES.HOME)
   } else {
     // 权限校验
-    let permissions = []
-    try {
-      permissions = JSON.parse(localStorage.getItem('permissions') || '[]')
-    } catch (e) {
-      console.error('Failed to parse permissions from localStorage in router:', e)
-    }
+    const permissions = store.getters.permissions || []
     const hasPermission = permissions.includes('*:*:*') || (to.meta.permission && permissions.includes(to.meta.permission))
-    
+
     if (to.meta.permission && !hasPermission) {
       console.warn(`无权访问: ${to.path}`)
       NProgress.done()
-      next('/')
+      next(ROUTES.HOME)
     } else {
       next()
     }

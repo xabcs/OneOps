@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后端服务状态测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 40px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        .warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔧 后端服务状态测试</h1>
+
+        <div class="test-section">
+            <h3>1. 后端连接状态检查</h3>
+            <button onclick="testBackendConnection()">测试连接</button>
+            <div id="connection-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. 用户信息获取测试</h3>
+            <button onclick="testUserInfo()">获取用户信息</button>
+            <div id="userinfo-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 错误处理测试</h3>
+            <button onclick="testErrorHandling()">测试错误处理</button>
+            <div id="error-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. 健康检查状态</h3>
+            <button onclick="checkHealthStatus()">检查健康状态</button>
+            <div id="health-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>5. 清理状态</h3>
+            <button onclick="clearState()">清除所有状态</button>
+            <div id="clear-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8082/api';
+
+        // 显示结果
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+        }
+
+        // 测试后端连接
+        async function testBackendConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: '123456' })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('connection-result', `✅ 后端连接正常\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult('connection-result', `❌ 后端返回错误: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                showResult('connection-result', `❌ 无法连接到后端服务\n错误: ${error.message}\n\n可能原因：\n1. 后端服务未启动\n2. 端口配置错误\n3. 网络连接问题`, 'error');
+            }
+        }
+
+        // 测试用户信息获取
+        async function testUserInfo() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                showResult('userinfo-result', '❌ 未找到登录凭证，请先登录', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/user/info`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showResult('userinfo-result', `✅ 用户信息获取成功\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    showResult('userinfo-result', `❌ 获取失败: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showResult('userinfo-result', `❌ 网络错误: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试错误处理
+        async function testErrorHandling() {
+            try {
+                // 尝试访问不存在的端点
+                const response = await fetch(`${API_BASE}/nonexistent`);
+
+                if (response.status === 404) {
+                    showResult('error-result', `✅ 错误处理正常工作\n404 错误已正确处理`, 'success');
+                } else {
+                    showResult('error-result', `⚠️ 意外的响应状态: ${response.status}`, 'warning');
+                }
+            } catch (error) {
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    showResult('error-result', `✅ 网络错误检测正常\n错误类型: 网络连接失败\n错误信息: ${error.message}`, 'success');
+                } else {
+                    showResult('error-result', `❌ 未知错误: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        // 检查健康状态
+        function checkHealthStatus() {
+            const isBackendUnavailable = sessionStorage.getItem('backendUnavailable');
+            const unavailableTime = sessionStorage.getItem('backendUnavailableTime');
+
+            if (isBackendUnavailable) {
+                const time = new Date(parseInt(unavailableTime));
+                showResult('health-result', `⚠️ 后端标记为不可用\n标记时间: ${time.toLocaleString()}\n\n建议：\n1. 检查后端服务是否启动\n2. 点击"测试连接"按钮验证`, 'warning');
+            } else {
+                showResult('health-result', `✅ 后端状态正常\n当前没有不可用标记`, 'success');
+            }
+        }
+
+        // 清除状态
+        function clearState() {
+            sessionStorage.removeItem('backendUnavailable');
+            sessionStorage.removeItem('backendUnavailableTime');
+            localStorage.clear();
+
+            showResult('clear-result', `✅ 所有状态已清除\n\n已清理：\n- sessionStorage\n- localStorage\n\n页面可能需要刷新以应用更改`, 'success');
+        }
+
+        // 页面加载时自动检查状态
+        window.addEventListener('load', () => {
+            checkHealthStatus();
+        });
+    </script>
+</body>
+</html>

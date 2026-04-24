@@ -9,6 +9,7 @@
         Close, Moon, Sunny, Menu, UserFilled, Plus
     } from '@element-plus/icons-vue'
     import { loginApi } from './api/index.js'
+    import BackendStatusMonitor from './components/BackendStatusMonitor.vue'
 
     const router = useRouter()
     const route = useRoute()
@@ -18,8 +19,14 @@
     const user = computed(() => store.getters.user)
     const permissions = computed(() => store.getters.permissions)
     const currentTheme = computed(() => store.getters.currentTheme)
+    const isBackendAvailable = computed(() => store.getters.isBackendAvailable)
     const isCollapse = ref(false)
     const isTransitioning = ref(false)
+
+    // 检查是否应该显示主界面布局
+    const shouldShowMainLayout = computed(() => {
+        return isAuthenticated.value && isBackendAvailable.value && route.path !== '/login'
+    })
 
     const fetchUserInfo = async () => {
         if (!isAuthenticated.value) return
@@ -31,6 +38,9 @@
                 store.commit('SET_PERMISSIONS', res.data.permissions)
                 store.commit('SET_MENU_TREE', res.data.menuTree)
 
+                // 后端恢复可用，清除不可用标记
+                store.commit('SET_BACKEND_AVAILABLE', true)
+
                 // 用户切换或登录时，清理无权限的标签页
                 if (res.data.id && res.data.id !== oldUserId) {
                     cleanInvalidTabs()
@@ -38,6 +48,11 @@
             }
         } catch (error) {
             console.error('Error fetching user info:', error)
+            // 如果是网络错误，标记后端不可用
+            if (error.message?.includes('Network Error') || error.message?.includes('ERR_CONNECTION_REFUSED')) {
+                store.commit('SET_BACKEND_AVAILABLE', false)
+                // 不要在这里显示错误消息，因为API拦截器已经处理了
+            }
         }
     }
 
@@ -216,7 +231,11 @@
 </script>
 
 <template>
-    <div v-if="isAuthenticated" class="app-wrapper">
+    <!-- 后端状态监控（全局显示） -->
+    <BackendStatusMonitor />
+
+    <!-- 主界面布局：仅当已认证且后端可用时显示 -->
+    <div v-if="shouldShowMainLayout" class="app-wrapper">
         <el-container class="app-container">
             <!-- Sidebar -->
             <el-aside :width="isCollapse ? '64px' : '240px'" class="app-sidebar">

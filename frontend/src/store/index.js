@@ -1,33 +1,15 @@
 import { createStore } from 'vuex'
+import { authStorage, backendStatusStorage, themeStorage } from '../utils/storage'
 
 export default createStore({
   state: {
-    token: localStorage.getItem('token') || '',
-    user: (() => {
-      try {
-        return JSON.parse(localStorage.getItem('user') || 'null')
-      } catch (e) {
-        console.error('Failed to parse user from localStorage:', e)
-        return null
-      }
-    })(),
-    permissions: (() => {
-      try {
-        return JSON.parse(localStorage.getItem('permissions') || '[]')
-      } catch (e) {
-        console.error('Failed to parse permissions from localStorage:', e)
-        return []
-      }
-    })(),
-    menuTree: (() => {
-      try {
-        return JSON.parse(localStorage.getItem('menuTree') || '[]')
-      } catch (e) {
-        console.error('Failed to parse menuTree from localStorage:', e)
-        return []
-      }
-    })(),
-    theme: localStorage.getItem('theme') || 'light'
+    token: authStorage.getToken() || '',
+    user: authStorage.getUser(),
+    permissions: authStorage.getPermissions(),
+    menuTree: authStorage.getMenuTree(),
+    theme: themeStorage.getTheme(),
+    isBackendAvailable: !backendStatusStorage.isUnavailable(),
+    backendUnavailableTime: backendStatusStorage.getUnavailableTime()
   },
   mutations: {
     SET_TOKEN(state, token) {
@@ -95,19 +77,26 @@ export default createStore({
       state.user = null
       state.permissions = []
       state.menuTree = []
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      localStorage.removeItem('permissions')
-      localStorage.removeItem('menuTree')
+      authStorage.clearAuth()
     },
     SET_THEME(state, theme) {
       state.theme = theme
-      localStorage.setItem('theme', theme)
+      themeStorage.saveTheme(theme)
       document.documentElement.setAttribute('data-theme', theme)
       if (theme === 'dark') {
         document.documentElement.classList.add('dark')
       } else {
         document.documentElement.classList.remove('dark')
+      }
+    },
+    SET_BACKEND_AVAILABLE(state, isAvailable) {
+      state.isBackendAvailable = isAvailable
+      if (isAvailable) {
+        backendStatusStorage.clearUnavailable()
+        state.backendUnavailableTime = 0
+      } else {
+        backendStatusStorage.setUnavailable()
+        state.backendUnavailableTime = Date.now()
       }
     }
   },
@@ -178,6 +167,8 @@ export default createStore({
     permissions: state => state.permissions,
     menuTree: state => state.menuTree,
     currentTheme: state => state.theme,
+    isBackendAvailable: state => state.isBackendAvailable,
+    backendUnavailableTime: state => state.backendUnavailableTime,
     hasPermission: state => (permission) => {
       if (!permission) return true
       return state.permissions.includes('*:*:*') || state.permissions.includes(permission)

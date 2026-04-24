@@ -1,5 +1,9 @@
 import axios from 'axios'
 import qs from 'qs'
+import { ElMessage } from 'element-plus'
+import { handleApiError, isNetworkError, isAuthError } from '../utils/errorHandler'
+import { authStorage, backendStatusStorage } from '../utils/storage'
+import { ROUTES } from '../constants'
 
 // 创建 axios 实例
 const api = axios.create({
@@ -31,7 +35,32 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   response => response.data,
   error => {
-    console.error('API 请求错误:', error.message || 'Unknown Error')
+    handleApiError(error, {
+      showMessage: false,
+      onAuthError: () => {
+        // 认证错误时清除认证数据
+        authStorage.clearAuth()
+
+        // 只在没有已经在登录页时才重定向
+        if (window.location.pathname !== ROUTES.LOGIN) {
+          window.location.href = ROUTES.LOGIN
+        }
+
+        ElMessage.error('登录已过期，请重新登录')
+      }
+    })
+
+    // 处理后端可用性状态
+    if (isNetworkError(error)) {
+      // 网络错误时标记为不可用（只设置一次）
+      if (!backendStatusStorage.isUnavailable()) {
+        backendStatusStorage.setUnavailable()
+      }
+    } else if (!isAuthError(error)) {
+      // 其他错误说明后端可用
+      backendStatusStorage.clearUnavailable()
+    }
+
     return Promise.reject(error)
   }
 )

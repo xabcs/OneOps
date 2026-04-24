@@ -79,17 +79,13 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { useStore } from 'vuex'
-import { ElMessage } from 'element-plus'
-import { User, Lock, Monitor } from '@element-plus/icons-vue'
-import { loginApi } from '../api/index.js'
+import { User, Lock } from '@element-plus/icons-vue'
+import { useAuth } from '../composables/useAuth'
 
-const router = useRouter()
-const store = useStore()
+const { login: performLogin } = useAuth()
+
 const loginFormRef = ref(null)
 const loading = ref(false)
-const rememberMe = ref(false)
 
 const loginForm = reactive({
   username: '',
@@ -107,31 +103,17 @@ const rules = {
 
 const handleLogin = async () => {
   if (!loginFormRef.value) return
-  
+
   try {
     await loginFormRef.value.validate()
     loading.value = true
-    
-    const response = await loginApi.login(loginForm)
-    
-    if (response.success) {
-      store.commit('SET_TOKEN', response.data.token)
-      store.commit('SET_USER', response.data.user)
-      store.commit('SET_PERMISSIONS', response.data.user.permissions || [])
-      store.commit('SET_MENU_TREE', response.data.user.menuTree || [])
 
-      ElMessage.success('欢迎回来, ' + response.data.user.username)
-      // 跳转到用户的家目录，如果没有则跳转到首页
-      router.push(response.data.user.homePath || '/')
-    } else {
-      ElMessage.error(response.message || '登录失败')
-    }
-  } catch (error) {
-    console.error('Login error:', error)
-    if (error.response) {
-      ElMessage.error(error.response.data.message || '登录失败')
-    } else {
-      ElMessage.error('网络连接异常，请检查后端服务')
+    const result = await performLogin(loginForm)
+
+    if (result.success) {
+      // 登录成功，跳转到用户主页
+      const homePath = result.user?.homePath || '/'
+      window.location.href = homePath
     }
   } finally {
     loading.value = false

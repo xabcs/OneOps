@@ -8,6 +8,7 @@ import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 import store from './store'
 import './mock'
+import healthChecker from './services/unifiedHealthChecker'
 
 const app = createApp(App)
 
@@ -29,4 +30,14 @@ app.config.warnHandler = (msg, vm, trace) => {
 // 初始化认证状态
 store.dispatch('initializeAuth')
 
+// 订阅健康检查状态变化并更新store
+healthChecker.subscribe((isHealthy) => {
+  store.commit('SET_BACKEND_AVAILABLE', isHealthy)
+})
+
 app.use(router).use(ElementPlus, { locale: zhCn }).use(store).mount('#app')
+
+// 在应用挂载后启动健康检查服务
+setTimeout(() => {
+  healthChecker.start()
+}, 1000)

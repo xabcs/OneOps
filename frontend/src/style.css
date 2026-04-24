@@ -457,7 +457,8 @@ h3 { font-size: 18px; line-height: 1.4; }
 }
 
 /* Layout Utilities */
-.page-header {
+/* 只针对旧的 header.page-header，不影响新的 PageHeader 组件 */
+header.page-header {
   margin-bottom: 16px;
   display: flex;
   justify-content: space-between;
