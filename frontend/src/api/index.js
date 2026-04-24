@@ -1,4 +1,5 @@
 import axios from 'axios'
+import qs from 'qs'
 
 // 创建 axios 实例
 const api = axios.create({
@@ -6,6 +7,9 @@ const api = axios.create({
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
+  },
+  paramsSerializer: params => {
+    return qs.stringify(params, { arrayFormat: 'repeat', format: 'RFC1738' })
   }
 })
 
@@ -95,7 +99,16 @@ export const auditApi = {
 
 // 监控管理 API
 export const monitoringApi = {
-  getMonitoring: () => api.get('/monitoring')
+  getMonitoring: () => api.get('/monitoring'),
+  getGrafanaUrl: () => api.get('/monitoring/grafana/url'),
+  getStats: () => api.get('/monitoring/stats'),
+  refresh: () => api.post('/monitoring/refresh'),
+  handleAlert: (data) => api.post('/monitoring/alert/handle', data)
+}
+
+// 证书监控 API
+export const certificateMonitoringApi = {
+  getGrafanaUrl: () => api.get('/monitoring/grafana/url')
 }
 
 export default api

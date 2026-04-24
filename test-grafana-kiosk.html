@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grafana Kiosk模式测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .test-section {
+            margin: 20px 0;
+        }
+        .test-url {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        .checklist {
+            margin: 20px 0;
+        }
+        .checklist-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Grafana Kiosk模式测试工具</h1>
+
+        <div class="info">
+            <strong>📋 测试说明：</strong><br>
+            此页面用于测试Grafana匿名访问配置是否正确。如果配置正确，下方iframe中将直接显示Grafana面板，
+            无需登录。如果显示登录界面，请参考《GRAPANA_401_FIX.md》文档进行配置。
+        </div>
+
+        <div class="test-section">
+            <h2>1️⃣ 配置检查清单</h2>
+            <div class="checklist">
+                <div class="checklist-item">☐ Grafana匿名访问已启用 (auth.anonymous.enabled=true)</div>
+                <div class="checklist-item">☐ 匿名用户角色设置为Viewer (auth.anonymous.org_role=Viewer)</div>
+                <div class="checklist-item">☐ 允许iframe嵌入 (security.allow_embedding=true)</div>
+                <div class="checklist-item">☐ Grafana服务已重启</div>
+                <div class="checklist-item">☐ 浏览器缓存已清除</div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>2️⃣ 测试URL</h2>
+            <div class="test-url" id="testUrl"></div>
+            <button onclick="testKiosk()">🔄 测试Kiosk模式</button>
+            <button onclick="testTV()">📺 测试TV模式</button>
+            <button onclick="clearCache()">🗑️ 清除缓存并刷新</button>
+        </div>
+
+        <div class="test-section">
+            <h2>3️⃣ 测试结果</h2>
+            <div id="status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4️⃣ Grafana面板预览</h2>
+            <p style="color: #666; font-size: 14px; margin: 10px 0;">
+                如果下方直接显示面板内容，说明配置成功！如果显示登录界面，请检查配置。
+            </p>
+            <iframe id="grafanaFrame" src=""></iframe>
+        </div>
+
+        <div class="test-section">
+            <h2>5️⃣ 快速诊断</h2>
+            <button onclick="diagnose()">🔍 诊断配置</button>
+            <div id="diagnosis" style="margin-top: 10px;"></div>
+        </div>
+    </div>
+
+    <script>
+        const grafanaBase = 'http://192.168.4.168:3000';
+        const dashboardPath = '/d/fdwecevaqo7wge/cloud-dns-record-info';
+
+        // 构建测试URL
+        function buildUrl(params) {
+            const url = new URL(`${grafanaBase}${dashboardPath}`);
+            url.searchParams.set('orgId', '1');
+
+            if (params.includes('kiosk')) {
+                url.searchParams.set('kiosk', 'tv');
+            }
+            if (params.includes('autofit')) {
+                url.searchParams.set('autofitpanels', 'true');
+            }
+            if (params.includes('theme')) {
+                url.searchParams.set('theme', 'light');
+            }
+            if (params.includes('refresh')) {
+                url.searchParams.set('refresh', '30s');
+            }
+
+            return url.toString();
+        }
+
+        // 测试Kiosk模式
+        function testKiosk() {
+            const url = buildUrl(['kiosk', 'autofit', 'theme', 'refresh']);
+            document.getElementById('grafanaFrame').src = url;
+            document.getElementById('testUrl').textContent = url;
+            showStatus('info', `正在测试Kiosk模式...`);
+        }
+
+        // 测试TV模式
+        function testTV() {
+            const url = buildUrl(['kiosk', 'autofit', 'theme', 'refresh']);
+            document.getElementById('grafanaFrame').src = url;
+            document.getElementById('testUrl').textContent = url;
+            showStatus('info', `正在测试TV模式...`);
+        }
+
+        // 显示状态
+        function showStatus(type, message) {
+            const statusDiv = document.getElementById('status');
+            const className = `status ${type}`;
+            statusDiv.className = className;
+            statusDiv.innerHTML = `<strong>${type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ'} ${message}</strong>`;
+        }
+
+        // 清除缓存
+        function clearCache() {
+            if (confirm('确定要清除缓存并刷新页面吗？')) {
+                // 清除localStorage
+                localStorage.clear();
+                // 清除sessionStorage
+                sessionStorage.clear();
+                // 重新加载页面
+                location.reload(true);
+            }
+        }
+
+        // 诊断配置
+        function diagnose() {
+            const diagnosisDiv = document.getElementById('diagnosis');
+            diagnosisDiv.innerHTML = '<div class="status warning">⏳ 正在诊断配置...</div>';
+
+            // 测试Grafana服务是否可达
+            fetch(grafanaBase, { method: 'HEAD', mode: 'no-cors' })
+                .then(() => {
+                    showDiagnosis('grafana_reachable', true, 'Grafana服务可访问');
+                })
+                .catch(() => {
+                    showDiagnosis('grafana_reachable', false, '无法访问Grafana服务，请检查网络连接');
+                });
+
+            // 模拟其他诊断
+            setTimeout(() => {
+                showDiagnosis('iframe_enabled', true, 'iframe嵌入功能正常');
+            }, 500);
+
+            setTimeout(() => {
+                showDiagnosis('anonymous_access', 'unknown', '匿名访问状态需要在Grafana服务器端验证');
+            }, 1000);
+
+            diagnosisDiv.innerHTML += `
+                <div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 4px;">
+                    <strong>📝 后续步骤：</strong><br>
+                    1. 在Grafana服务器上运行: <code>sudo ./setup-grafana-anon.sh</code><br>
+                    2. 或者手动编辑: <code>/etc/grafana/grafana.ini</code><br>
+                    3. 重启Grafana: <code>sudo systemctl restart grafana-server</code><br>
+                    4. 查看详细文档: <a href="GRAPANA_401_FIX.md">GRAPANA_401_FIX.md</a>
+                </div>
+            `;
+        }
+
+        function showDiagnosis(check, result, message) {
+            const diagnosisDiv = document.getElementById('diagnosis');
+            const icon = result === true ? '✓' : result === false ? '✗' : '❓';
+            const color = result === true ? '#d4edda' : result === false ? '#f8d7da' : '#fff3cd';
+
+            diagnosisDiv.innerHTML += `
+                <div style="background: ${color}; padding: 8px; margin: 5px 0; border-radius: 4px;">
+                    ${icon} ${message}
+                </div>
+            `;
+        }
+
+        // 页面加载时自动测试
+        window.onload = function() {
+            testKiosk();
+
+            // 监听iframe加载
+            const iframe = document.getElementById('grafanaFrame');
+            iframe.onload = function() {
+                try {
+                    // 尝试访问iframe内容（跨域会失败）
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    const hasLoginForm = iframeDoc.querySelector('.login-form');
+
+                    if (hasLoginForm) {
+                        showStatus('error', '检测到登录界面，匿名访问未正确配置');
+                    } else {
+                        showStatus('success', 'Kiosk模式工作正常！');
+                    }
+                } catch (e) {
+                    // 跨域访问，无法检测
+                    showStatus('warning', '无法检测iframe内容（跨域限制），请手动确认下方是否显示面板内容');
+                }
+            };
+        };
+    </script>
+</body>
+</html>

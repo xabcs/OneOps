@@ -111,7 +111,7 @@
 
 <script setup>
     import { ref, computed, onMounted } from 'vue'
-    import { 
+    import {
         Cpu, Connection, PieChart, Bell, Refresh, Setting,
         Warning, CircleClose, InfoFilled
     } from '@element-plus/icons-vue'
@@ -159,18 +159,19 @@
     const fetchMonitoringData = async () => {
         loading.value = true
         try {
-            const res = await monitoringApi.getMonitoring()
+            // 使用新的监控统计 API
+            const res = await monitoringApi.getStats()
             if (res.code === 200) {
                 const data = res.data
                 // Update metrics
                 metrics.value[0].value = data.cpu
-                metrics.value[0].percentage = data.cpu
+                metrics.value[0].percentage = parseFloat(data.cpu)
                 metrics.value[1].value = data.memory
-                metrics.value[1].percentage = data.memory
+                metrics.value[1].percentage = parseFloat(data.memory)
                 metrics.value[2].value = data.network
-                metrics.value[2].percentage = data.network
-                
-                alerts.value = data.alerts.map(a => ({
+                metrics.value[2].percentage = parseFloat(data.network)
+
+                alerts.value = (data.alerts || []).map(a => ({
                     ...a,
                     status: 'unhandled'
                 }))
@@ -189,20 +190,49 @@
         }
     }
 
-    const refreshData = () => {
-        fetchMonitoringData()
+    const refreshData = async () => {
+        try {
+            // 调用刷新 API，会被审计中间件自动记录
+            await monitoringApi.refresh()
+            await fetchMonitoringData()
+        } catch (error) {
+            console.error('刷新监控数据失败:', error)
+            // 失败时仍然刷新本地数据
+            fetchMonitoringData()
+        }
     }
 
-    onMounted(fetchMonitoringData)
+    onMounted(async () => {
+        // 只调用业务API，审计中间件会自动记录访问行为
+        await fetchMonitoringData()
+    })
 
-    const handleHandle = (row) => {
-        // console.log('Handle alert:', row.id)
-        row.status = 'handled'
+    const handleHandle = async (row) => {
+        try {
+            // 调用处理告警 API，会被审计中间件自动记录
+            await monitoringApi.handleAlert({
+                alertId: row.id,
+                action: 'handle',
+                reason: '手动处理'
+            })
+            row.status = 'handled'
+        } catch (error) {
+            console.error('处理告警失败:', error)
+        }
     }
 
-    const handleIgnore = (row) => {
-        // console.log('Ignore alert:', row.id)
-        alerts.value = alerts.value.filter(a => a.id !== row.id)
+    const handleIgnore = async (row) => {
+        try {
+            // 调用忽略告警 API，会被审计中间件自动记录
+            await monitoringApi.handleAlert({
+                alertId: row.id,
+                action: 'ignore',
+                reason: '手动忽略'
+            })
+            alerts.value = alerts.value.filter(a => a.id !== row.id)
+        } catch (error) {
+            console.error('忽略告警失败:', error)
+        }
     }
 
     const handleSizeChange = (val) => {

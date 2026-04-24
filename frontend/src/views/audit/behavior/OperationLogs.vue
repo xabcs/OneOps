@@ -63,10 +63,10 @@
 
         <!-- Log Table -->
         <el-card shadow="never" class="table-card">
-            <el-table :data="displayLogs" style="width: 100%" v-loading="loading" header-cell-class-name="table-header-cell">
-                <el-table-column prop="time" label="操作时间" width="170">
+            <el-table :data="displayLogs" style="width: 100%" v-loading="loading" header-cell-class-name="table-header-cell" @sort-change="handleSortChange">
+                <el-table-column prop="time" label="操作时间" width="180" sortable="custom">
                     <template #default="{ row }">
-                        <span class="data-value">{{ row.time }}</span>
+                        <span class="data-value nowrap-text">{{ row.time }}</span>
                     </template>
                 </el-table-column>
                 <el-table-column prop="user" label="操作人" width="110">
@@ -113,14 +113,14 @@
             </el-table>
 
             <div class="pagination-container">
-                <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 15, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" :total="total" @size-change="handleSearch" @current-change="handleSearch" />
+                <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 15, 20, 50, 100]" layout="total, sizes, prev, pager, next, jumper" :total="total" @size-change="handleSizeChange" @current-change="handlePageChange" />
             </div>
         </el-card>
     </div>
 </template>
 
 <script setup>
-    import { ref, computed, onMounted } from 'vue'
+    import { ref, computed, onMounted, watch } from 'vue'
     import { Search, User, Download, InfoFilled } from '@element-plus/icons-vue'
     import { auditApi } from '../../../api/index.js'
 
@@ -129,10 +129,12 @@
     const total = ref(0)
     const currentPage = ref(1)
     const pageSize = ref(15)
+    const sortBy = ref('operate_time') // 排序字段（对应数据库字段）
+    const sortOrder = ref('DESC') // 排序方向（ASC/DESC）
+
+    // 计算显示的日志（直接显示后端返回的数据，后端已处理分页和排序）
     const displayLogs = computed(() => {
-        const start = (currentPage.value - 1) * pageSize.value
-        const end = start + pageSize.value
-        return logs.value.slice(start, end)
+        return logs.value
     })
     const timeRange = ref('7d')
     const availableModules = ref([]) // 动态获取的模块列表
@@ -144,6 +146,17 @@
         status: ''
     })
     const customTimeRange = ref([])
+
+    // 格式化本地时间为 YYYY-MM-DD HH:mm:ss
+    const formatLocalDateTime = (date) => {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+        const seconds = String(date.getSeconds()).padStart(2, '0')
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+    }
 
     // 获取可用的模块列表
     const fetchModules = async () => {
@@ -159,6 +172,7 @@
 
     const fetchLogs = async () => {
         loading.value = true
+
         try {
             const params = {
                 username: searchForm.value.username,
@@ -166,7 +180,9 @@
                 method: searchForm.value.method,
                 status: searchForm.value.status,
                 page: currentPage.value,
-                pageSize: pageSize.value
+                pageSize: pageSize.value,
+                sortBy: sortBy.value,
+                sortOrder: sortOrder.value
             }
 
             // 添加时间范围参数
@@ -188,8 +204,8 @@
                     break
                 case 'custom':
                     if (customTimeRange.value && customTimeRange.value.length === 2) {
-                        params.startTime = customTimeRange.value[0].toISOString().slice(0, 19).replace('T', ' ')
-                        params.endTime = customTimeRange.value[1].toISOString().slice(0, 19).replace('T', ' ')
+                        params.startTime = formatLocalDateTime(new Date(customTimeRange.value[0]))
+                        params.endTime = formatLocalDateTime(new Date(customTimeRange.value[1]))
                     }
                     break
                 default:
@@ -197,8 +213,8 @@
             }
 
             if (timeRange.value !== 'custom') {
-                params.startTime = startTime.toISOString().slice(0, 19).replace('T', ' ')
-                params.endTime = now.toISOString().slice(0, 19).replace('T', ' ')
+                params.startTime = formatLocalDateTime(startTime)
+                params.endTime = formatLocalDateTime(now)
             }
 
             const res = await auditApi.getOperationLogs(params)
@@ -214,13 +230,26 @@
     }
 
     const handleSearch = () => {
+        currentPage.value = 1  // 重置到第一页
         fetchLogs()
+    }
+
+    const handleSizeChange = (val) => {
+        pageSize.value = val
+        currentPage.value = 1  // 改变每页大小时，重置到第一页
+        fetchLogs()
+    }
+
+    const handlePageChange = (val) => {
+        currentPage.value = val
+        fetchLogs()  // 只改变页码，不重置
     }
 
     let inputTimer = null
     const handleInput = () => {
         if (inputTimer) clearTimeout(inputTimer)
         inputTimer = setTimeout(() => {
+            currentPage.value = 1  // 重置到第一页
             handleSearch()
         }, 500)
     }
@@ -253,9 +282,34 @@
         return 'text-success'
     }
 
+    // 处理排序变化
+    const handleSortChange = ({ prop, order }) => {
+        if (prop) {
+            // 将前端的排序字段映射到数据库字段
+            const fieldMap = {
+                'time': 'operate_time',
+                'user': 'username',
+                'action': 'action',
+                'duration': 'duration',
+                'status': 'status'
+            }
+            sortBy.value = fieldMap[prop] || 'operate_time'
+            sortOrder.value = order === 'ascending' ? 'ASC' : 'DESC'
+
+            // 重新获取数据
+            fetchLogs()
+        }
+    }
+
     onMounted(() => {
         fetchModules() // 先获取模块列表
         fetchLogs()      // 再获取日志数据
+    })
+
+    // 使用watch监听timeRange变化
+    watch(() => timeRange.value, () => {
+        currentPage.value = 1
+        fetchLogs()
     })
 </script>
 
@@ -308,6 +362,19 @@
       font-weight: 500;
       color: var(--text-primary);
       border-bottom: 1px solid var(--border);
+    }
+
+    :deep(.table-header-cell .caret-wrapper) {
+      cursor: pointer;
+      margin-left: 4px;
+    }
+
+    :deep(.table-header-cell .sort-caret.ascending) {
+      border-bottom-color: var(--primary);
+    }
+
+    :deep(.table-header-cell .sort-caret.descending) {
+      border-top-color: var(--primary);
     }
 
     :deep(.el-table__body tr) {
@@ -398,6 +465,14 @@
     }
     .text-danger {
       color: #ef4444;
+    }
+
+    .data-value {
+      display: inline-block;
+    }
+
+    .nowrap-text {
+      white-space: nowrap;
     }
 
     :deep(.el-button),

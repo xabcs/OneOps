@@ -26,6 +26,7 @@ func SetupRoutes(r *gin.Engine) {
 	roleController := controllers.NewRoleController()
 	userController := controllers.NewUserController()
 	auditController := controllers.NewAuditController()
+	monitoringController := controllers.NewMonitoringController()
 
 	// API 路由组
 	api := r.Group("/api")
@@ -80,6 +81,20 @@ func SetupRoutes(r *gin.Engine) {
 
 			// 可用模块列表
 			audit.GET("/modules", auditController.GetModules)
+		}
+
+		// 监控管理路由（需要认证）
+		monitoring := api.Group("/monitoring")
+		monitoring.Use(middlewares.Auth())
+		{
+			// Grafana面板URL
+			monitoring.GET("/grafana/url", monitoringController.GetGrafanaUrl)
+			// 监控数据
+			monitoring.GET("/stats", monitoringController.GetMonitoringStats)
+			// 刷新监控数据
+			monitoring.POST("/refresh", monitoringController.RefreshMonitoring)
+			// 处理告警
+			monitoring.POST("/alert/handle", monitoringController.HandleAlert)
 		}
 	}
 }

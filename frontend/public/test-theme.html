@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主题切换测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        [data-theme='light'] {
+            --bg-color: #ffffff;
+            --text-color: #0f172a;
+        }
+
+        [data-theme='dark'] {
+            --bg-color: #1b1b1d;
+            --text-color: #f5f6f7;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .theme-info {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid currentColor;
+            border-radius: 8px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #0066FF;
+            color: white;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        .log {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>主题切换测试页面</h1>
+
+    <div class="theme-info">
+        <p><strong>当前主题：</strong> <span id="currentTheme">加载中...</span></p>
+        <p><strong>data-theme属性：</strong> <span id="dataTheme">加载中...</span></p>
+        <p><strong>dark类：</strong> <span id="darkClass">加载中...</span></p>
+    </div>
+
+    <button id="toggleBtn">切换主题</button>
+
+    <div class="log">
+        <div><strong>事件日志：</strong></div>
+        <div id="eventLog"></div>
+    </div>
+
+    <script>
+        const html = document.documentElement;
+        const toggleBtn = document.getElementById('toggleBtn');
+        const currentThemeSpan = document.getElementById('currentTheme');
+        const dataThemeSpan = document.getElementById('dataTheme');
+        const darkClassSpan = document.getElementById('darkClass');
+        const eventLog = document.getElementById('eventLog');
+
+        function log(message) {
+            const time = new Date().toLocaleTimeString();
+            eventLog.innerHTML += `<div>[${time}] ${message}</div>`;
+            eventLog.scrollTop = eventLog.scrollHeight;
+        }
+
+        function updateThemeInfo() {
+            const theme = html.getAttribute('data-theme') || 'light';
+            const hasDarkClass = html.classList.contains('dark');
+
+            currentThemeSpan.textContent = theme;
+            dataThemeSpan.textContent = html.getAttribute('data-theme');
+            darkClassSpan.textContent = hasDarkClass ? '是' : '否';
+
+            return theme;
+        }
+
+        function toggleTheme() {
+            const currentTheme = html.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+            log(`准备切换主题: ${currentTheme} → ${newTheme}`);
+
+            html.setAttribute('data-theme', newTheme);
+
+            if (newTheme === 'dark') {
+                html.classList.add('dark');
+            } else {
+                html.classList.remove('dark');
+            }
+
+            // 保存到localStorage
+            try {
+                localStorage.setItem('theme', newTheme);
+                log(`✓ 主题已切换到: ${newTheme}`);
+            } catch (e) {
+                log(`✗ localStorage保存失败: ${e.message}`);
+            }
+
+            updateThemeInfo();
+        }
+
+        // 初始化
+        function init() {
+            log('页面加载完成');
+
+            // 从localStorage读取主题
+            let theme = 'light';
+            try {
+                theme = localStorage.getItem('theme') || 'light';
+                log(`从localStorage读取主题: ${theme}`);
+            } catch (e) {
+                log(`localStorage读取失败: ${e.message}`);
+            }
+
+            // 应用主题
+            html.setAttribute('data-theme', theme);
+            if (theme === 'dark') {
+                html.classList.add('dark');
+            }
+
+            updateThemeInfo();
+            log(`✓ 初始主题设置为: ${theme}`);
+        }
+
+        // 事件监听
+        toggleBtn.addEventListener('click', () => {
+            log('按钮点击事件触发');
+            toggleTheme();
+        });
+
+        // 监听主题变化
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+                    log(`检测到data-theme变化: ${html.getAttribute('data-theme')}`);
+                    updateThemeInfo();
+                }
+            });
+        });
+
+        observer.observe(html, {
+            attributes: true,
+            attributeFilter: ['data-theme']
+        });
+
+        // 启动
+        init();
+    </script>
+</body>
+</html>

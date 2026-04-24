@@ -45,8 +45,8 @@
 
         <!-- Log Table -->
         <el-card shadow="never" class="table-card">
-            <el-table :data="displayLogs" style="width: 100%" v-loading="loading" header-cell-class-name="table-header-cell">
-                <el-table-column prop="time" label="登录时间" width="180">
+            <el-table :data="displayLogs" style="width: 100%" v-loading="loading" header-cell-class-name="table-header-cell" @sort-change="handleSortChange">
+                <el-table-column prop="time" label="登录时间" width="180" sortable="custom">
                     <template #default="{ row }">
                         <span class="data-value">{{ row.time }}</span>
                     </template>
@@ -90,10 +90,26 @@
     const total = ref(0)
     const currentPage = ref(1)
     const pageSize = ref(10)
+    const sortBy = ref('time') // 排序字段
+    const sortOrder = ref('descending') // 排序方向：ascending/descending
+
+    // 计算显示的日志（包含排序和分页）
     const displayLogs = computed(() => {
+        let sortedLogs = [...logs.value]
+
+        // 根据时间排序
+        if (sortBy.value === 'time') {
+            sortedLogs.sort((a, b) => {
+                const timeA = new Date(a.time).getTime()
+                const timeB = new Date(b.time).getTime()
+                return sortOrder.value === 'ascending' ? timeA - timeB : timeB - timeA
+            })
+        }
+
+        // 分页
         const start = (currentPage.value - 1) * pageSize.value
         const end = start + pageSize.value
-        return logs.value.slice(start, end)
+        return sortedLogs.slice(start, end)
     })
     const timeRange = ref('7d')
 
@@ -102,6 +118,17 @@
         status: ''
     })
     const customTimeRange = ref([])
+
+    // 格式化本地时间为 YYYY-MM-DD HH:mm:ss
+    const formatLocalDateTime = (date) => {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+        const seconds = String(date.getSeconds()).padStart(2, '0')
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+    }
 
     const fetchLogs = async () => {
         loading.value = true
@@ -113,7 +140,7 @@
                 pageSize: pageSize.value
             }
 
-            // 添加时间范围参数
+            // 添加时间范围参数（使用本地时间）
             const now = new Date()
             let startTime = new Date()
 
@@ -132,18 +159,20 @@
                     break
                 case 'custom':
                     if (customTimeRange.value && customTimeRange.value.length === 2) {
-                        params.startTime = customTimeRange.value[0].toISOString().slice(0, 19).replace('T', ' ')
-                        params.endTime = customTimeRange.value[1].toISOString().slice(0, 19).replace('T', ' ')
+                        params.startTime = formatLocalDateTime(new Date(customTimeRange.value[0]))
+                        params.endTime = formatLocalDateTime(new Date(customTimeRange.value[1]))
                     }
                     break
                 default:
-                    startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000) // 默认7天
+                    startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
             }
 
             if (timeRange.value !== 'custom') {
-                params.startTime = startTime.toISOString().slice(0, 19).replace('T', ' ')
-                params.endTime = now.toISOString().slice(0, 19).replace('T', ' ')
+                params.startTime = formatLocalDateTime(startTime)
+                params.endTime = formatLocalDateTime(now)
             }
+
+            console.log('时间过滤参数:', params.startTime, params.endTime)
 
             const res = await auditApi.getLoginLogs(params)
             if (res.code === 200) {
@@ -185,6 +214,14 @@
     const handleCurrentChange = (val) => {
         currentPage.value = val
         fetchLogs()
+    }
+
+    // 处理排序变化
+    const handleSortChange = ({ prop, order }) => {
+        if (prop) {
+            sortBy.value = prop
+            sortOrder.value = order || 'descending'
+        }
     }
 
     onMounted(() => {
@@ -241,6 +278,19 @@
       font-weight: 500;
       color: var(--text-primary);
       border-bottom: 1px solid var(--border);
+    }
+
+    :deep(.table-header-cell .caret-wrapper) {
+      cursor: pointer;
+      margin-left: 4px;
+    }
+
+    :deep(.table-header-cell .sort-caret.ascending) {
+      border-bottom-color: var(--primary);
+    }
+
+    :deep(.table-header-cell .sort-caret.descending) {
+      border-top-color: var(--primary);
     }
 
     :deep(.el-table__body tr) {

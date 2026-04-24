@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圆形扩散动画测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            transition: none;
+        }
+
+        [data-theme='light'] {
+            --bg-color: #ffffff;
+            --text-color: #0f172a;
+        }
+
+        [data-theme='dark'] {
+            --bg-color: #1b1b1d;
+            --text-color: #f5f6f7;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #0066FF;
+            color: white;
+            margin: 10px;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        .log {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .info {
+            background-color: rgba(0, 102, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>圆形扩散动画测试</h1>
+
+        <div class="info">
+            <p><strong>当前主题：</strong> <span id="theme">加载中...</span></p>
+            <p><strong>View Transitions API：</strong> <span id="api-support">检测中...</span></p>
+            <p><strong>动画状态：</strong> <span id="animation-status">未开始</span></p>
+        </div>
+
+        <button id="toggleBtn">切换主题（圆形扩散）</button>
+        <button id="simpleBtn">切换主题（无动画）</button>
+
+        <div class="log">
+            <div><strong>事件日志：</strong></div>
+            <div id="eventLog"></div>
+        </div>
+    </div>
+
+    <script>
+        const html = document.documentElement;
+        const toggleBtn = document.getElementById('toggleBtn');
+        const simpleBtn = document.getElementById('simpleBtn');
+        const themeSpan = document.getElementById('theme');
+        const apiSupportSpan = document.getElementById('api-support');
+        const animationStatusSpan = document.getElementById('animation-status');
+        const eventLog = document.getElementById('eventLog');
+
+        let isTransitioning = false;
+
+        function log(message) {
+            const time = new Date().toLocaleTimeString();
+            eventLog.innerHTML += `<div>[${time}] ${message}</div>`;
+            eventLog.scrollTop = eventLog.scrollHeight;
+        }
+
+        function updateInfo() {
+            const theme = html.getAttribute('data-theme') || 'light';
+            themeSpan.textContent = theme;
+
+            const supports = 'startViewTransition' in document;
+            apiSupportSpan.textContent = supports ? '✓ 支持' : '✗ 不支持';
+
+            return { theme, supports };
+        }
+
+        function toggleThemeWithAnimation(event) {
+            if (isTransitioning) {
+                log('⚠️ 动画进行中，请稍候');
+                return;
+            }
+
+            const { theme, supports } = updateInfo();
+            const newTheme = theme === 'light' ? 'dark' : 'light';
+
+            log(`🎨 开始切换: ${theme} → ${newTheme}`);
+
+            if (!supports) {
+                log('❌ 浏览器不支持 View Transitions API');
+                simpleToggle(newTheme);
+                return;
+            }
+
+            isTransitioning = true;
+            animationStatusSpan.textContent = '进行中...';
+
+            const x = event.clientX;
+            const y = event.clientY;
+            const maxRadius = Math.hypot(
+                Math.max(x, innerWidth - x),
+                Math.max(y, innerHeight - y)
+            );
+
+            log(`📐 圆形参数: x=${x}, y=${y}, r=${Math.round(maxRadius)}px`);
+
+            const startTime = performance.now();
+
+            try {
+                const transition = document.startViewTransition(() => {
+                    html.setAttribute('data-theme', newTheme);
+                    log('✓ DOM已更新');
+                });
+
+                log('⏳ 等待 transition.ready...');
+
+                transition.ready.then(() => {
+                    const readyTime = performance.now() - startTime;
+                    log(`✓ transition.ready 触发 (耗时: ${Math.round(readyTime)}ms)`);
+
+                    animationStatusSpan.textContent = '动画中...';
+
+                    const animation = document.documentElement.animate(
+                        [
+                            { clipPath: `circle(0px at ${x}px ${y}px)` },
+                            { clipPath: `circle(${maxRadius}px at ${x}px ${y}px)` }
+                        ],
+                        {
+                            duration: 350,
+                            easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                            pseudoElement: '::view-transition-new(root)'
+                        }
+                    );
+
+                    log('🎬 动画开始');
+
+                    animation.finished.then(() => {
+                        const finishTime = performance.now() - startTime;
+                        log(`✅ 动画完成 (总耗时: ${Math.round(finishTime)}ms)`);
+                        animationStatusSpan.textContent = '已完成';
+                        isTransitioning = false;
+                        updateInfo();
+                    }).catch(error => {
+                        log(`❌ 动画失败: ${error.message}`);
+                        animationStatusSpan.textContent = '失败';
+                        isTransitioning = false;
+                    });
+
+                    // 设置超时保护
+                    setTimeout(() => {
+                        if (isTransitioning) {
+                            log(`⚠️ 动画超时 (800ms)，强制重置`);
+                            animationStatusSpan.textContent = '超时';
+                            isTransitioning = false;
+                            updateInfo();
+                        }
+                    }, 800);
+
+                }).catch(error => {
+                    log(`❌ transition.ready 失败: ${error.message}`);
+                    animationStatusSpan.textContent = 'Ready失败';
+                    isTransitioning = false;
+                    updateInfo();
+                });
+
+            } catch (error) {
+                log(`❌ 异常: ${error.message}`);
+                animationStatusSpan.textContent = '异常';
+                isTransitioning = false;
+                updateInfo();
+            }
+        }
+
+        function simpleToggle(newTheme) {
+            log(`🔄 简单切换到: ${newTheme}`);
+            html.setAttribute('data-theme', newTheme);
+            animationStatusSpan.textContent = '简单切换';
+            updateInfo();
+        }
+
+        toggleBtn.addEventListener('click', toggleThemeWithAnimation);
+
+        simpleBtn.addEventListener('click', () => {
+            const { theme } = updateInfo();
+            const newTheme = theme === 'light' ? 'dark' : 'light';
+            simpleToggle(newTheme);
+        });
+
+        // 初始化
+        updateInfo();
+        log('✅ 页面加载完成');
+        log('💡 点击按钮测试圆形扩散动画');
+    </script>
+</body>
+</html>

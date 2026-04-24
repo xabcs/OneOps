@@ -1,21 +1,34 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@1,600;1,900&display=swap');
 
+/* 定义可过渡的自定义属性（如果浏览器支持） */
+@property --theme-transition-bg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #ffffff;
+}
+
+@property --theme-transition-text {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #0f172a;
+}
+
 :root {
   /* NProgress 样式定制 */
   --nprogress-color: #0066FF;
-  
+
   /* Common Colors */
   --primary: #0066FF;
   --primary-hover: #0052cc;
   --primary-light: rgba(0, 102, 255, 0.08);
   --primary-border: #b3d1ff;
-  
+
   /* Accent Colors - Adding a touch of energy */
   --accent: #FF6B21; /* Warm orange */
   --accent-hover: #e55a1a;
   --accent-light: rgba(255, 107, 33, 0.08);
   --accent-border: rgba(255, 107, 33, 0.2);
-  
+
   --success: #10b981;
   --success-light: #ecfdf5;
   --warning: #f59e0b;
@@ -35,7 +48,7 @@
   --text-secondary: #475569;
   --text-tertiary: #94a3b8;
   --text-quaternary: #cbd5e1;
-  
+
   --bg-primary: #ffffff;
   --bg-secondary: #f8fafc;
   --bg-tertiary: #f1f5f9;
@@ -46,11 +59,11 @@
   --sidebar-active-bg: rgba(0, 102, 255, 0.08);
   --sidebar-active-text: #0066FF;
   --sidebar-submenu-bg: #ffffff;
-  
+
   --border: #e2e8f0;
   --border-light: #f1f5f9;
   --border-strong: #cbd5e1;
-  
+
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
   --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
@@ -61,16 +74,25 @@
   color: var(--text-primary);
   background-color: var(--bg-secondary);
   -webkit-font-smoothing: antialiased;
+
+  /* 如果支持 @property，使用平滑过渡 */
+  transition: background-color 0.3s ease-out, color 0.3s ease-out;
 }
 
-/* View Transitions for Smooth Theme Toggle */
+/* ============================================
+   View Transitions API 配置 - 淡入淡出效果
+   ============================================ */
+
+/* 确保 View Transition 伪元素正常工作 */
+::view-transition {
+  pointer-events: none;
+}
+
+/* 淡入淡出效果优化 */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
-  display: block;
-  position: fixed;
-  inset: 0;
 }
 
 ::view-transition-old(root) {
@@ -81,11 +103,60 @@
   z-index: 9999;
 }
 
-/* Fallback for browsers not supporting View Transitions */
-@supports not (view-transition-name: root) {
-  .app-wrapper, .app-sidebar, .app-header, .app-main, .el-card, .el-table, .el-tabs, .el-menu, .el-breadcrumb {
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
-  }
+/* 确保 root 的 image-pair 正确渲染 */
+::view-transition-image-pair(root) {
+  isolation: isolate;
+}
+
+/* 关键：完全禁用CSS变量和主题属性的transition */
+:root,
+[data-theme='dark'],
+[data-theme='light'] {
+  transition: none !important;
+}
+
+/* 禁用主要容器的过渡 */
+html,
+body,
+.app-wrapper,
+.app-sidebar,
+.app-header,
+.app-main {
+  transition: none !important;
+}
+
+/* Element Plus 组件也禁用过渡 */
+.el-card,
+.el-table,
+.el-tabs,
+.el-menu,
+.el-dialog,
+.el-drawer {
+  transition: none !important;
+}
+
+/* 全局禁用，避免任何闪烁 */
+*,
+*::before,
+*::after {
+  transition: none !important;
+}
+
+/* 只为特定交互效果保留过渡 */
+.el-button:hover {
+  transform: translateY(-1px);
+}
+
+.el-menu-item:hover,
+.el-sub-menu__title:hover {
+  background-color: var(--sidebar-hover);
+}
+
+/* 按钮和菜单项的微交互 */
+.el-button,
+.el-menu-item,
+.el-sub-menu__title {
+  transition: transform 0.15s ease-out !important;
 }
 
 /* Dark Theme Variables */

@@ -49,6 +49,12 @@ const routes = [
     meta: { requiresAuth: true, title: '系统监控', parent: '监控中心', permission: 'menu:monitoring' }
   },
   {
+    path: '/monitoring/certificate',
+    name: 'CertificateMonitoring',
+    component: () => import('../views/monitoring/CertificateMonitoring.vue'),
+    meta: { requiresAuth: true, title: '证书监控', parent: '监控中心', permission: 'menu:monitoring:certificate' }
+  },
+  {
     path: '/system/menus',
     name: 'Menus',
     component: Menus,

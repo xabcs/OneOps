@@ -3,8 +3,8 @@ package middlewares
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
-	"oneops/backend/models"
 	"oneops/backend/services"
 	"oneops/backend/utils"
 	"strings"
@@ -115,11 +115,11 @@ func (m *AuditMiddleware) recordOperationLog(c *gin.Context, userID uint, userna
 	// 解析模块名称
 	module := m.getModuleFromPath(c.Request.URL.Path)
 
-	// 解析操作动作
-	action := m.getActionFromMethod(c.Request.Method)
+	// 解析操作动作（使用智能识别方法）
+	action := m.getActionFromMethodAndPath(c.Request.Method, c.Request.URL.Path)
 
-	// 解析操作描述
-	description := m.getDescriptionFromPathAndMethod(c.Request.URL.Path, c.Request.Method)
+	// 生成操作描述
+	description := m.generateDescription(module, action, c.Request.URL.Path)
 
 	// 解析请求参数
 	var params interface{}
@@ -168,51 +168,58 @@ func (m *AuditMiddleware) recordOperationLog(c *gin.Context, userID uint, userna
 	)
 }
 
-// getModuleFromPath 从路径解析模块名称（从menu表查询）
+// getModuleFromPath 从路径解析模块名称（智能识别）
 func (m *AuditMiddleware) getModuleFromPath(path string) string {
 	// 如果不是API路径，直接返回
 	if !strings.HasPrefix(path, "/api/") {
 		return "其他"
 	}
 
-	// 去掉/api前缀，得到菜单路径
-	menuPath := strings.TrimPrefix(path, "/api")
+	// 去掉/api前缀
+	apiPath := strings.TrimPrefix(path, "/api")
 
-	// 查询该路径对应的菜单项
-	var menu models.Menu
-	err := services.GetDB().Where("path = ?", menuPath).First(&menu).Error
-	if err != nil {
-		// 如果找不到对应菜单，尝试从operation_logs学习
-		var moduleName string
-		learnErr := services.GetDB().Table("operation_logs").
-			Select("DISTINCT module").
-			Where("path = ?", path).
-			Where("module != ?", "").
-			Order("id DESC").
-			Limit(1).
-			Pluck("module", &moduleName).Error
-
-		if learnErr == nil && moduleName != "" {
-			return moduleName
-		}
-
-		// 都找不到，返回默认值
-		return "未知模块"
+	// 基于 API 路径前缀智能识别模块
+	if strings.HasPrefix(apiPath, "/login") || strings.HasPrefix(apiPath, "/logout") || strings.HasPrefix(apiPath, "/user") {
+		return "认证管理"
+	}
+	if strings.HasPrefix(apiPath, "/system/menus") {
+		return "菜单管理"
+	}
+	if strings.HasPrefix(apiPath, "/system/roles") {
+		return "角色管理"
+	}
+	if strings.HasPrefix(apiPath, "/system/users") {
+		return "用户管理"
+	}
+	if strings.HasPrefix(apiPath, "/audit") {
+		return "审计管理"
+	}
+	if strings.HasPrefix(apiPath, "/monitoring") {
+		return "监控中心"
+	}
+	if strings.HasPrefix(apiPath, "/tasks") {
+		return "任务管理"
+	}
+	if strings.HasPrefix(apiPath, "/servers") {
+		return "服务器管理"
+	}
+	if strings.HasPrefix(apiPath, "/containers") {
+		return "容器管理"
+	}
+	if strings.HasPrefix(apiPath, "/certificates") {
+		return "证书管理"
+	}
+	if strings.HasPrefix(apiPath, "/system") {
+		return "系统管理"
 	}
 
-	// 如果是顶级菜单（没有父菜单），直接返回菜单名称作为模块名
-	if menu.ParentID == 0 {
-		return menu.Name
+	// 从路径中提取第一级作为模块名
+	parts := strings.Split(strings.Trim(apiPath, "/"), "/")
+	if len(parts) > 0 {
+		return parts[0]
 	}
 
-	// 如果有父菜单，查询父菜单获取模块名
-	var parentMenu models.Menu
-	err = services.GetDB().Where("id = ?", menu.ParentID).First(&parentMenu).Error
-	if err != nil {
-		return "未知模块"
-	}
-
-	return parentMenu.Name
+	return "其他"
 }
 
 // getActionFromMethod 从HTTP方法解析操作动作
@@ -223,29 +230,128 @@ func (m *AuditMiddleware) getActionFromMethod(method string) string {
 	case "POST":
 		return "新增"
 	case "PUT":
-		return "修改"
+		return "更新"
 	case "DELETE":
 		return "删除"
+	case "PATCH":
+		return "修改"
 	default:
 		return method
 	}
 }
 
-// getDescriptionFromPathAndMethod 从路径和方法生成操作描述
-func (m *AuditMiddleware) getDescriptionFromPathAndMethod(path, method string) string {
-	// 根据路径和方法生成更详细的描述
-	if strings.Contains(path, "/users") {
-		return m.getActionFromMethod(method) + "用户"
-	} else if strings.Contains(path, "/roles") {
-		return m.getActionFromMethod(method) + "角色"
-	} else if strings.Contains(path, "/menus") {
-		return m.getActionFromMethod(method) + "菜单"
-	} else if strings.Contains(path, "/servers") {
-		return m.getActionFromMethod(method) + "服务器"
-	} else if strings.Contains(path, "/tasks") {
-		return m.getActionFromMethod(method) + "任务"
+// getActionFromMethodAndPath 从方法和路径智能识别操作
+func (m *AuditMiddleware) getActionFromMethodAndPath(method, path string) string {
+	// 特殊路径优先处理
+	if strings.Contains(path, "/refresh") {
+		return "刷新"
 	}
-	return m.getActionFromMethod(method) + "操作"
+	if strings.Contains(path, "/handle") {
+		return "处理"
+	}
+	if strings.Contains(path, "/ignore") {
+		return "忽略"
+	}
+	if strings.Contains(path, "/export") {
+		return "导出"
+	}
+	if strings.Contains(path, "/import") {
+		return "导入"
+	}
+	if strings.Contains(path, "/visit") {
+		return "访问"
+	}
+	if strings.Contains(path, "/statistics") || strings.Contains(path, "/stats") {
+		return "统计"
+	}
+
+	// 基于 HTTP 方法
+	switch method {
+	case "GET":
+		// 判断是查询还是访问
+		if strings.Contains(path, "/detail") || strings.Contains(path, "/info") {
+			return "查询"
+		}
+		return "查询"
+	case "POST":
+		// 判断是创建还是其他操作
+		if strings.HasSuffix(path, "/login") {
+			return "登录"
+		}
+		if strings.HasSuffix(path, "/logout") {
+			return "登出"
+		}
+		return "新增"
+	case "PUT":
+		return "更新"
+	case "DELETE":
+		return "删除"
+	case "PATCH":
+		return "修改"
+	default:
+		return method
+	}
+}
+
+// generateDescription 生成操作描述
+func (m *AuditMiddleware) generateDescription(module, action, path string) string {
+	// 特殊处理
+	if action == "刷新" {
+		return fmt.Sprintf("刷新%s数据", module)
+	}
+	if action == "访问" {
+		return fmt.Sprintf("访问%s", module)
+	}
+	if action == "处理" && strings.Contains(path, "alert") {
+		return "处理告警"
+	}
+	if action == "统计" {
+		return fmt.Sprintf("查询%s统计数据", module)
+	}
+
+	// 根据模块和动作生成描述
+	switch module {
+	case "监控中心":
+		if action == "查询" {
+			return "查询监控数据"
+		}
+		return fmt.Sprintf("%s监控", action)
+	case "用户管理":
+		return fmt.Sprintf("%s用户", action)
+	case "角色管理":
+		return fmt.Sprintf("%s角色", action)
+	case "菜单管理":
+		return fmt.Sprintf("%s菜单", action)
+	case "审计管理":
+		return fmt.Sprintf("%s审计日志", action)
+	case "任务管理":
+		return fmt.Sprintf("%s任务", action)
+	case "服务器管理":
+		return fmt.Sprintf("%s服务器", action)
+	case "容器管理":
+		return fmt.Sprintf("%s容器", action)
+	case "证书管理":
+		return fmt.Sprintf("%s证书", action)
+	case "认证管理":
+		if action == "登录" {
+			return "用户登录"
+		}
+		if action == "登出" {
+			return "用户登出"
+		}
+		return fmt.Sprintf("%s认证", action)
+	default:
+		// 通用格式
+		return fmt.Sprintf("%s%s", action, module)
+	}
+}
+
+// getDescriptionFromPathAndMethod 从路径和方法生成操作描述（已废弃，保留用于兼容）
+func (m *AuditMiddleware) getDescriptionFromPathAndMethod(path, method string) string {
+	// 委托给新的 generateDescription 方法
+	module := m.getModuleFromPath(path)
+	action := m.getActionFromMethodAndPath(method, path)
+	return m.generateDescription(module, action, path)
 }
 
 // responseWriter 自定义响应写入器用于捕获响应体

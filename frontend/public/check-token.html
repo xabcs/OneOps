@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token检查工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #FF8C42;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #FF6B21;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔑 OneOps Token检查工具</h1>
+
+    <div class="card">
+        <h2>当前Token状态</h2>
+        <div id="tokenStatus"></div>
+    </div>
+
+    <div class="card">
+        <h2>操作</h2>
+        <button onclick="checkToken()">检查Token</button>
+        <button onclick="testAPI()">测试API请求</button>
+        <button onclick="clearToken()">清除Token并重新登录</button>
+    </div>
+
+    <div class="card">
+        <h2>API测试结果</h2>
+        <div id="apiResult"></div>
+    </div>
+
+    <div class="card">
+        <h2>LocalStorage内容</h2>
+        <div id="localStorageContent"></div>
+    </div>
+
+    <script>
+        function checkToken() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            const statusDiv = document.getElementById('tokenStatus');
+
+            if (token) {
+                statusDiv.innerHTML = `
+                    <div class="success">✅ Token存在</div>
+                    <div class="info">
+                        <strong>Token内容（前50字符）:</strong><br>
+                        <code>${token.substring(0, 50)}...</code><br><br>
+                        <strong>Token长度:</strong> ${token.length} 字符<br>
+                        <strong>用户信息:</strong><br>
+                        <pre>${user || '无'}</pre>
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <div class="error">❌ Token不存在</div>
+                    <div class="info">你需要重新登录以获取token</div>
+                `;
+            }
+        }
+
+        async function testAPI() {
+            const resultDiv = document.getElementById('apiResult');
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                resultDiv.innerHTML = '<div class="error">❌ 没有Token，请先登录</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="info">⏳ 正在测试API...</div>';
+
+            try {
+                // 测试用户信息API
+                const response = await fetch('/api/user/info', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.code === 200) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ API请求成功</div>
+                        <div class="info">
+                            <strong>响应数据:</strong><br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">❌ API请求失败</div>
+                        <div class="info">
+                            <strong>状态码:</strong> ${response.status}<br>
+                            <strong>响应数据:</strong><br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">❌ 请求错误</div>
+                    <div class="info">
+                        <strong>错误信息:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function clearToken() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('permissions');
+            localStorage.removeItem('menuTree');
+            window.location.href = '/login';
+        }
+
+        function showLocalStorage() {
+            const contentDiv = document.getElementById('localStorageContent');
+            let html = '';
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                html += `<div><strong>${key}:</strong></div><pre>${value.substring(0, 200)}${value.length > 200 ? '...' : ''}</pre>`;
+            }
+
+            contentDiv.innerHTML = html || '<div class="info">LocalStorage为空</div>';
+        }
+
+        // 页面加载时自动检查
+        window.onload = function() {
+            checkToken();
+            showLocalStorage();
+        };
+    </script>
+</body>
+</html>

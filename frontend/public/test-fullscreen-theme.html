@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全屏模式主题切换测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            transition: none;
+        }
+
+        [data-theme='light'] {
+            --bg-color: #ffffff;
+            --text-color: #0f172a;
+            --card-bg: #f8fafc;
+        }
+
+        [data-theme='dark'] {
+            --bg-color: #1b1b1d;
+            --text-color: #f5f6f7;
+            --card-bg: #242526;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .status-item {
+            background-color: rgba(0, 102, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .status-label {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #0066FF;
+            color: white;
+            margin: 10px 10px 10px 0;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background-color: #0052cc;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .log {
+            background-color: rgba(0, 0, 0, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 250px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        [data-theme='dark'] .log {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .fullscreen-hint {
+            background-color: rgba(255, 107, 33, 0.1);
+            border-left: 4px solid #FF6B21;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .full-btn {
+            background-color: #10b981;
+        }
+
+        .full-btn:hover {
+            background-color: #059669;
+        }
+
+        .test-pattern {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .pattern-box {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        [data-theme='light'] .pattern-box:nth-child(odd) {
+            background-color: #e2e8f0;
+        }
+
+        [data-theme='light'] .pattern-box:nth-child(even) {
+            background-color: #cbd5e1;
+        }
+
+        [data-theme='dark'] .pattern-box:nth-child(odd) {
+            background-color: #2e2f30;
+        }
+
+        [data-theme='dark'] .pattern-box:nth-child(even) {
+            background-color: #3e4144;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>全屏模式主题切换测试</h1>
+
+        <div class="fullscreen-hint">
+            <strong>💡 提示：</strong>进入全屏模式后切换主题，观察是否有左右闪烁现象
+        </div>
+
+        <div class="card">
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="status-label">当前主题</div>
+                    <div class="status-value" id="theme">加载中...</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">全屏状态</div>
+                    <div class="status-value" id="fullscreen">未全屏</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">View Transitions</div>
+                    <div class="status-value" id="api-support">检测中...</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">切换状态</div>
+                    <div class="status-value" id="status">就绪</div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="toggleTheme">🌓 切换主题</button>
+                <button id="toggleFullscreen" class="full-btn">🖥️ 进入全屏</button>
+                <button id="exitFullscreen" style="display: none;">⛔ 退出全屏</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>测试图案（用于检测闪烁）</h3>
+            <div class="test-pattern">
+                <div class="pattern-box">1</div>
+                <div class="pattern-box">2</div>
+                <div class="pattern-box">3</div>
+                <div class="pattern-box">4</div>
+                <div class="pattern-box">5</div>
+                <div class="pattern-box">6</div>
+                <div class="pattern-box">7</div>
+                <div class="pattern-box">8</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>事件日志</h3>
+            <div class="log">
+                <div id="eventLog"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const html = document.documentElement;
+        const themeSpan = document.getElementById('theme');
+        const fullscreenSpan = document.getElementById('fullscreen');
+        const apiSupportSpan = document.getElementById('api-support');
+        const statusSpan = document.getElementById('status');
+        const eventLog = document.getElementById('eventLog');
+        const toggleThemeBtn = document.getElementById('toggleTheme');
+        const toggleFullscreenBtn = document.getElementById('toggleFullscreen');
+        const exitFullscreenBtn = document.getElementById('exitFullscreen');
+
+        let isTransitioning = false;
+
+        function log(message) {
+            const time = new Date().toLocaleTimeString();
+            eventLog.innerHTML += `<div>[${time}] ${message}</div>`;
+            eventLog.scrollTop = eventLog.scrollHeight;
+        }
+
+        function updateInfo() {
+            const theme = html.getAttribute('data-theme') || 'light';
+            themeSpan.textContent = theme === 'light' ? '☀️ 亮色' : '🌙 暗色';
+
+            const isFullscreen = document.fullscreenElement ||
+                                document.webkitFullscreenElement ||
+                                document.mozFullScreenElement ||
+                                document.msFullscreenElement;
+            fullscreenSpan.textContent = isFullscreen ? '✅ 全屏' : '❌ 未全屏';
+
+            const supports = 'startViewTransition' in document;
+            apiSupportSpan.textContent = supports ? '✅ 支持' : '❌ 不支持';
+
+            return { theme, isFullscreen, supports };
+        }
+
+        function toggleTheme(event) {
+            if (isTransitioning) {
+                log('⚠️ 切换中，请稍候...');
+                return;
+            }
+
+            const { theme, supports } = updateInfo();
+            const newTheme = theme === 'light' ? 'dark' : 'light';
+
+            log(`🎨 切换主题: ${theme} → ${newTheme}`);
+
+            if (!supports) {
+                log('❌ 不支持 View Transitions API');
+                html.setAttribute('data-theme', newTheme);
+                updateInfo();
+                return;
+            }
+
+            isTransitioning = true;
+            statusSpan.textContent = '切换中...';
+            toggleThemeBtn.disabled = true;
+
+            try {
+                const transition = document.startViewTransition(() => {
+                    html.setAttribute('data-theme', newTheme);
+                });
+
+                transition.ready.then(() => {
+                    log('✅ View Transition ready');
+                    log('🌓 使用淡入淡出效果');
+
+                    // 统一使用淡入淡出效果（全屏和非全屏都适用）
+                    document.documentElement.animate(
+                        [
+                            { opacity: 1 },
+                            { opacity: 0.9 },
+                            { opacity: 1 }
+                        ],
+                        {
+                            duration: 300,
+                            easing: 'ease-in-out'
+                        }
+                    );
+                });
+
+                setTimeout(() => {
+                    isTransitioning = false;
+                    statusSpan.textContent = '完成';
+                    toggleThemeBtn.disabled = false;
+                    log('✅ 切换完成');
+                    updateInfo();
+                }, 350);
+
+            } catch (error) {
+                log(`❌ 错误: ${error.message}`);
+                isTransitioning = false;
+                statusSpan.textContent = '错误';
+                toggleThemeBtn.disabled = false;
+                updateInfo();
+            }
+        }
+
+        function toggleFullscreen() {
+            const elem = document.documentElement;
+
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.mozRequestFullScreen) {
+                elem.mozRequestFullScreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        }
+
+        function exitFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+
+        // 监听全屏状态变化
+        document.addEventListener('fullscreenchange', () => {
+            updateInfo();
+            log(document.fullscreenElement ? '🖥️ 进入全屏' : '⛔ 退出全屏');
+
+            if (document.fullscreenElement) {
+                toggleFullscreenBtn.style.display = 'none';
+                exitFullscreenBtn.style.display = 'inline-block';
+            } else {
+                toggleFullscreenBtn.style.display = 'inline-block';
+                exitFullscreenBtn.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('webkitfullscreenchange', () => {
+            updateInfo();
+            log(document.webkitFullscreenElement ? '🖥️ 进入全屏' : '⛔ 退出全屏');
+        });
+
+        // 事件监听
+        toggleThemeBtn.addEventListener('click', toggleTheme);
+        toggleFullscreenBtn.addEventListener('click', toggleFullscreen);
+        exitFullscreenBtn.addEventListener('click', exitFullscreen);
+
+        // 初始化
+        updateInfo();
+        log('✅ 页面加载完成');
+        log('💡 点击"进入全屏"按钮，然后切换主题测试');
+    </script>
+</body>
+</html>

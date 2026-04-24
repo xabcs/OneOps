@@ -19,6 +19,7 @@
     const permissions = computed(() => store.getters.permissions)
     const currentTheme = computed(() => store.getters.currentTheme)
     const isCollapse = ref(false)
+    const isTransitioning = ref(false)
 
     const fetchUserInfo = async () => {
         if (!isAuthenticated.value) return
@@ -77,43 +78,48 @@
     })
 
     const toggleTheme = (event) => {
-        const isAppearanceTransition = document.startViewTransition &&
-            !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        if (isTransitioning.value) return
 
-        if (!isAppearanceTransition) {
-            const newTheme = currentTheme.value === 'light' ? 'dark' : 'light'
+        const newTheme = currentTheme.value === 'light' ? 'dark' : 'light'
+        const supportsVT = 'startViewTransition' in document
+
+        if (!supportsVT) {
+            // 不支持 View Transitions API，直接切换
             store.commit('SET_THEME', newTheme)
             return
         }
 
-        const x = event.clientX
-        const y = event.clientY
-        const endRadius = Math.hypot(
-            Math.max(x, innerWidth - x),
-            Math.max(y, innerHeight - y)
-        )
+        isTransitioning.value = true
 
-        const transition = document.startViewTransition(() => {
-            const newTheme = currentTheme.value === 'light' ? 'dark' : 'light'
+        try {
+            const transition = document.startViewTransition(() => {
+                store.commit('SET_THEME', newTheme)
+            })
+
+            transition.ready.then(() => {
+                // 使用淡入淡出效果
+                document.documentElement.animate(
+                    [
+                        { opacity: 1 },
+                        { opacity: 0.9 },
+                        { opacity: 1 }
+                    ],
+                    {
+                        duration: 300,
+                        easing: 'ease-in-out'
+                    }
+                )
+            })
+
+            setTimeout(() => {
+                isTransitioning.value = false
+            }, 350)
+
+        } catch (error) {
+            console.error('主题切换失败:', error)
             store.commit('SET_THEME', newTheme)
-        })
-
-        transition.ready.then(() => {
-            const clipPath = [
-                `circle(0px at ${x}px ${y}px)`,
-                `circle(${endRadius}px at ${x}px ${y}px)`,
-            ]
-            document.documentElement.animate(
-                {
-                    clipPath: clipPath,
-                },
-                {
-                    duration: 500,
-                    easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-                    pseudoElement: '::view-transition-new(root)',
-                }
-            )
-        })
+            isTransitioning.value = false
+        }
     }
 
     // Tabs logic
@@ -289,10 +295,12 @@
                             />
                         </div>
 
-                        <el-button 
-                            link 
-                            :icon="currentTheme === 'light' ? Moon : Sunny" 
-                            class="header-icon-btn"
+                        <el-button
+                            link
+                            :icon="currentTheme === 'light' ? Moon : Sunny"
+                            class="header-icon-btn theme-toggle-btn"
+                            :class="{ 'is-transitioning': isTransitioning }"
+                            :disabled="isTransitioning"
                             @click="toggleTheme($event)"
                         />
                         
@@ -593,6 +601,50 @@
     .header-icon-btn {
         font-size: 20px;
         color: var(--text-secondary);
+        transition: all 0.2s;
+    }
+
+    .header-icon-btn:hover {
+        color: var(--primary);
+        transform: scale(1.1);
+    }
+
+    .theme-toggle-btn {
+        position: relative;
+    }
+
+    .theme-toggle-btn.is-transitioning {
+        opacity: 0.5;
+        cursor: wait;
+    }
+
+    .theme-toggle-btn.is-transitioning .el-icon {
+        animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.1);
+            opacity: 0.8;
+        }
+    }
+
+    .theme-toggle-btn:not(.is-transitioning):hover {
+        transform: rotate(15deg) scale(1.1);
+    }
+
+    .theme-toggle-btn:not(.is-transitioning) {
+        transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+    }
+
+    /* 主题图标样式 */
+    .theme-toggle-btn .el-icon {
+        font-size: 20px;
+        display: inline-block;
     }
 
     .user-profile {
@@ -638,7 +690,7 @@
     /* Main Content Styles */
     .app-main {
         background-color: var(--bg-secondary);
-        padding: 12px;
+        padding: 4px;
         overflow-y: auto;
     }
 
