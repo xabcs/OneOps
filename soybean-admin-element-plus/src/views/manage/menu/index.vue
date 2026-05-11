@@ -7,6 +7,7 @@ import { $t } from '@/locales';
 import { Icon } from '@iconify/vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { useRouteStore } from '@/store/modules/route';
+import { jsonClone } from '@sa/utils';
 import MenuOperateDrawer from './modules/menu-operate-drawer.vue';
 import { ElNotification } from 'element-plus';
 import { Top, Bottom, Plus } from '@element-plus/icons-vue';
@@ -351,8 +352,8 @@ const {
   drawerVisible,
   operateType,
   editingData,
-  handleAdd,
-  handleEdit,
+  handleAdd: _handleAdd,
+  handleEdit: _handleEdit,
   checkedRowKeys,
   onBatchDeleted,
   onDeleted
@@ -360,6 +361,34 @@ const {
 
 const isAddingChild = ref(false);
 const parentMenuName = ref('');
+
+// 重写 handleEdit，支持树形数据查找
+function handleEdit(id: number) {
+  console.log('🎯 [菜单管理] handleEdit', { id, flatMenuList: flatMenuList.value });
+
+  isAddingChild.value = false;
+  parentMenuName.value = '';
+  operateType.value = 'edit';
+
+  // 在扁平列表中查找（包含所有层级的菜单）
+  const foundItem = flatMenuList.value.find(item => item.id === id);
+  editingData.value = foundItem ? jsonClone(foundItem) : null;
+
+  console.log('✅ [菜单管理] handleEdit 完成', {
+    operateType: operateType.value,
+    editingData: editingData.value,
+    foundItem
+  });
+
+  drawerVisible.value = true;
+}
+
+// 重写 handleAdd
+function handleAdd() {
+  isAddingChild.value = false;
+  parentMenuName.value = '';
+  _handleAdd();
+}
 
 // 移动菜单（同级排序）
 async function handleMove(row: Api.SystemManage.Menu, direction: 'up' | 'down') {

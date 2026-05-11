@@ -40,10 +40,21 @@ async function loadMenuTree() {
     if (!error && data && Array.isArray(data)) {
       menuTreeData.value = data as Api.SystemManage.Menu[];
 
-      // 构建树形结构
+      // 获取当前编辑菜单的子孙节点ID（编辑模式下）
+      const excludedIds = new Set<number>();
+      if (isEdit.value && props.rowData) {
+        const collectChildren = (menuId: number) => {
+          excludedIds.add(menuId);
+          const children = menuTreeData.value.filter(m => m.parentId === menuId);
+          children.forEach(child => collectChildren(child.id));
+        };
+        collectChildren(props.rowData.id);
+      }
+
+      // 构建树形结构，排除当前编辑节点及其子孙
       const buildTree = (menus: Api.SystemManage.Menu[], parentId = 0): Api.SystemManage.MenuTree[] => {
         return menus
-          .filter(menu => menu.parentId === parentId)
+          .filter(menu => menu.parentId === parentId && !excludedIds.has(menu.id))
           .map(menu => ({
             id: menu.id,
             name: menu.name,
@@ -57,7 +68,12 @@ async function loadMenuTree() {
           }));
       };
 
-      menuTree.value = buildTree(menuTreeData.value);
+      const tree = buildTree(menuTreeData.value);
+
+      // 添加根菜单选项
+      menuTree.value = [
+        { id: 0, name: '作为一级菜单', parentId: 0, children: tree }
+      ] as Api.SystemManage.MenuTree[];
     }
   } finally {
     loadingMenuTree.value = false;
