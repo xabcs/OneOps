@@ -272,13 +272,21 @@ func (ctrl *UserController) DeleteUser(c *gin.Context) {
 		return
 	}
 
-	// 不能删除 admin 用户
-	if id == 1 {
+	db := services.GetDB()
+
+	// 先查询用户信息，检查是否为 admin
+	var user models.User
+	if err := db.First(&user, id).Error; err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("用户不存在"))
+		return
+	}
+
+	// 不能删除 admin 用户（通过用户名判断，更严谨）
+	if user.Username == "admin" {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("不能删除管理员用户"))
 		return
 	}
 
-	db := services.GetDB()
 	if err := db.Delete(&models.User{}, id).Error; err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("删除用户失败"))
 		return

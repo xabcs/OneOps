@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -35,18 +37,33 @@ func (ctrl *MenuController) GetMenus(c *gin.Context) {
 }
 
 // buildMenuTree 递归构建菜单树
-func (ctrl *MenuController) buildMenuTree(menus []models.Menu, parentID uint) []models.Menu {
-	var result []models.Menu
+func (ctrl *MenuController) buildMenuTree(menus []models.Menu, parentID uint) []*models.Menu {
+	var result []*models.Menu
 	for _, menu := range menus {
 		if menu.ParentID == parentID {
-			menuItem := menu
+			// 递归构建子菜单
 			children := ctrl.buildMenuTree(menus, menu.ID)
-			if len(children) > 0 {
-				menuItem.Children = make([]*models.Menu, len(children))
-				for i := range children {
-					menuItem.Children[i] = &children[i]
-				}
+
+			// 创建新的菜单项，包含 children 字段
+			menuItem := &models.Menu{
+				ID:         menu.ID,
+				Name:       menu.Name,
+				Icon:       menu.Icon,
+				Path:       menu.Path,
+				Permission: menu.Permission,
+				ParentID:   menu.ParentID,
+				Sort:       menu.Sort,
+				Status:     menu.Status,
+				CreatedAt:  menu.CreatedAt,
+				UpdatedAt:  menu.UpdatedAt,
 			}
+
+			// 始终包含 children 字段（即使是空数组）
+			menuItem.Children = make([]*models.Menu, 0)
+			if len(children) > 0 {
+				menuItem.Children = children
+			}
+
 			result = append(result, menuItem)
 		}
 	}
@@ -111,9 +128,24 @@ func (ctrl *MenuController) UpdateMenu(c *gin.Context) {
 		return
 	}
 
+	// 读取请求体
+	bodyBytes, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("读取请求失败"))
+		return
+	}
+
+	// 解析为 map 检查哪些字段被提供了
+	var rawBody map[string]interface{}
+	if err := json.Unmarshal(bodyBytes, &rawBody); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("JSON解析失败"))
+		return
+	}
+
+	// 解析为结构体
 	var req UpdateMenuRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误"))
+	if err := json.Unmarshal(bodyBytes, &req); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("参数解析失败"))
 		return
 	}
 
@@ -132,9 +164,23 @@ func (ctrl *MenuController) UpdateMenu(c *gin.Context) {
 	if req.Permission != "" {
 		updates["permission"] = req.Permission
 	}
-	updates["parent_id"] = req.ParentID
-	updates["sort"] = req.Sort
-	updates["status"] = req.Status
+
+	// 只更新请求中明确包含的字段
+	if _, ok := rawBody["parentId"]; ok {
+		updates["parent_id"] = req.ParentID
+	}
+	if _, ok := rawBody["sort"]; ok {
+		updates["sort"] = req.Sort
+	}
+	if _, ok := rawBody["status"]; ok {
+		updates["status"] = req.Status
+	}
+
+	// 如果没有任何字段需要更新，返回错误
+	if len(updates) == 0 {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("没有提供要更新的字段"))
+		return
+	}
 
 	if err := db.Model(&models.Menu{}).Where("id = ?", id).Updates(updates).Error; err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("更新菜单失败"))
