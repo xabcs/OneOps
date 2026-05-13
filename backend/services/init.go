@@ -69,26 +69,17 @@ func (s *InitService) initData() error {
 	return nil
 }
 
-// initMenus 初始化菜单数据（统一使用 mdi: 图标）
+// initMenus 初始化菜单数据（动态路由模式）
 func (s *InitService) initMenus() error {
 	menus := []models.Menu{
-		{ID: 1, Name: "仪表盘概览", Icon: "mdi:view-dashboard", Path: "/", Permission: "menu:home", Sort: 1, Status: 1, ParentID: 0},
-		{ID: 2, Name: "资产管理", Icon: "mdi:server", Path: "/servers", Permission: "menu:servers", Sort: 2, Status: 1, ParentID: 0},
-		{ID: 21, Name: "主机管理", Icon: "mdi:desktop-classic", Path: "/servers", Permission: "menu:servers", Sort: 1, Status: 1, ParentID: 2},
-		{ID: 22, Name: "添加资产", Icon: "mdi:plus-circle", Path: "/servers/add", Permission: "menu:servers:add", Sort: 2, Status: 1, ParentID: 2},
-		{ID: 3, Name: "自动化任务", Icon: "mdi:robot", Path: "/tasks", Permission: "menu:tasks", Sort: 3, Status: 1, ParentID: 0},
-		{ID: 31, Name: "任务列表", Icon: "mdi:format-list-checks", Path: "/tasks", Permission: "menu:tasks", Sort: 1, Status: 1, ParentID: 3},
-		{ID: 32, Name: "新建任务", Icon: "mdi:plus-box", Path: "/tasks/create", Permission: "menu:tasks:create", Sort: 2, Status: 1, ParentID: 3},
-		{ID: 4, Name: "监控中心", Icon: "mdi:pulse", Path: "/monitoring", Permission: "menu:monitoring", Sort: 4, Status: 1, ParentID: 0},
-		{ID: 41, Name: "系统监控", Icon: "mdi:chart-line", Path: "/monitoring", Permission: "menu:monitoring", Sort: 1, Status: 1, ParentID: 4},
-		{ID: 42, Name: "告警管理", Icon: "mdi:alarm", Path: "/monitoring/alerts", Permission: "menu:monitoring:alerts", Sort: 2, Status: 1, ParentID: 4},
-		{ID: 43, Name: "证书监控", Icon: "mdi:key", Path: "/monitoring/certificate", Permission: "menu:monitoring:certificate", Sort: 3, Status: 1, ParentID: 4},
-		{ID: 5, Name: "系统管理", Icon: "carbon:cloud-service-management", Path: "/system", Permission: "menu:system", Sort: 5, Status: 1, ParentID: 0},
-		{ID: 51, Name: "菜单管理", Icon: "material-symbols:route", Path: "/system/menus", Permission: "menu:system:menus", Sort: 1, Status: 1, ParentID: 5},
-		{ID: 52, Name: "角色管理", Icon: "carbon:user-role", Path: "/system/roles", Permission: "menu:system:roles", Sort: 2, Status: 1, ParentID: 5},
-		{ID: 53, Name: "用户管理", Icon: "ic:round-manage-accounts", Path: "/system/users", Permission: "menu:system:users", Sort: 3, Status: 1, ParentID: 5},
-		{ID: 6, Name: "操作审计", Icon: "mdi:file-search", Path: "/audit", Permission: "menu:audit", Sort: 6, Status: 1, ParentID: 0},
-		{ID: 61, Name: "行为日志", Icon: "mdi:file-document", Path: "/audit/behavior", Permission: "menu:audit:behavior", Sort: 1, Status: 1, ParentID: 6},
+		// 一级菜单
+		{ID: 1, Name: "首页", Icon: "mdi:monitor-dashboard", Path: "/home", Permission: "", Sort: 1, Status: 1, ParentID: 0},
+		{ID: 2, Name: "系统管理", Icon: "carbon:cloud-service-management", Path: "/manage", Permission: "", Sort: 2, Status: 1, ParentID: 0},
+		{ID: 3, Name: "用户管理", Icon: "ic:round-manage-accounts", Path: "/manage/user", Permission: "system:user:query", Sort: 1, Status: 1, ParentID: 2},
+		{ID: 4, Name: "角色管理", Icon: "carbon:user-role", Path: "/manage/role", Permission: "system:role:query", Sort: 2, Status: 1, ParentID: 2},
+		{ID: 5, Name: "菜单管理", Icon: "material-symbols:route", Path: "/manage/menu", Permission: "system:menu:query", Sort: 3, Status: 1, ParentID: 2},
+		{ID: 13, Name: "关于", Icon: "fluent:book-information-24-regular", Path: "/about", Permission: "", Sort: 5, Status: 1, ParentID: 0},
+		{ID: 14, Name: "用户中心", Icon: "mdi:user-circle-outline", Path: "/user-center", Permission: "", Sort: 6, Status: 1, ParentID: 0},
 	}
 
 	for _, menu := range menus {
@@ -104,36 +95,17 @@ func (s *InitService) initMenus() error {
 func (s *InitService) syncMenus() error {
 	logger.Info("开始同步菜单数据...")
 
-	// 定义所有菜单（统一使用 mdi: 图标格式）
+	// 定义动态路由菜单（用于 SoybeanAdmin 动态路由模式）
+	// 只包含前端实际存在的页面
 	menus := []models.Menu{
-		// 仪表盘
-		{ID: 1, Name: "仪表盘概览", Icon: "mdi:view-dashboard", Path: "/", Permission: "menu:home", Sort: 1, Status: 1, ParentID: 0},
-
-		// 资产管理
-		{ID: 2, Name: "资产管理", Icon: "mdi:server", Path: "/servers", Permission: "menu:servers", Sort: 2, Status: 1, ParentID: 0},
-		{ID: 21, Name: "主机管理", Icon: "mdi:desktop-classic", Path: "/servers", Permission: "menu:servers", Sort: 1, Status: 1, ParentID: 2},
-		{ID: 22, Name: "添加资产", Icon: "mdi:plus-circle", Path: "/servers/add", Permission: "menu:servers:add", Sort: 2, Status: 1, ParentID: 2},
-
-		// 自动化任务
-		{ID: 3, Name: "自动化任务", Icon: "mdi:robot", Path: "/tasks", Permission: "menu:tasks", Sort: 3, Status: 1, ParentID: 0},
-		{ID: 31, Name: "任务列表", Icon: "mdi:format-list-checks", Path: "/tasks", Permission: "menu:tasks", Sort: 1, Status: 1, ParentID: 3},
-		{ID: 32, Name: "新建任务", Icon: "mdi:plus-box", Path: "/tasks/create", Permission: "menu:tasks:create", Sort: 2, Status: 1, ParentID: 3},
-
-		// 监控中心
-		{ID: 4, Name: "监控中心", Icon: "mdi:pulse", Path: "/monitoring", Permission: "menu:monitoring", Sort: 4, Status: 1, ParentID: 0},
-		{ID: 41, Name: "系统监控", Icon: "mdi:chart-line", Path: "/monitoring", Permission: "menu:monitoring", Sort: 1, Status: 1, ParentID: 4},
-		{ID: 42, Name: "告警管理", Icon: "mdi:alarm", Path: "/monitoring/alerts", Permission: "menu:monitoring:alerts", Sort: 2, Status: 1, ParentID: 4},
-		{ID: 43, Name: "证书监控", Icon: "mdi:key", Path: "/monitoring/certificate", Permission: "menu:monitoring:certificate", Sort: 3, Status: 1, ParentID: 4},
-
-		// 系统管理
-		{ID: 5, Name: "系统管理", Icon: "carbon:cloud-service-management", Path: "/system", Permission: "menu:system", Sort: 5, Status: 1, ParentID: 0},
-		{ID: 51, Name: "菜单管理", Icon: "material-symbols:route", Path: "/system/menus", Permission: "menu:system:menus", Sort: 1, Status: 1, ParentID: 5},
-		{ID: 52, Name: "角色管理", Icon: "carbon:user-role", Path: "/system/roles", Permission: "menu:system:roles", Sort: 2, Status: 1, ParentID: 5},
-		{ID: 53, Name: "用户管理", Icon: "ic:round-manage-accounts", Path: "/system/users", Permission: "menu:system:users", Sort: 3, Status: 1, ParentID: 5},
-
-		// 操作审计
-		{ID: 6, Name: "操作审计", Icon: "mdi:file-search", Path: "/audit", Permission: "menu:audit", Sort: 6, Status: 1, ParentID: 0},
-		{ID: 61, Name: "行为日志", Icon: "mdi:file-document", Path: "/audit/behavior", Permission: "menu:audit:behavior", Sort: 1, Status: 1, ParentID: 6},
+		// 一级菜单
+		{ID: 1, Name: "首页", Icon: "mdi:monitor-dashboard", Path: "/home", Permission: "", Sort: 1, Status: 1, ParentID: 0},
+		{ID: 2, Name: "系统管理", Icon: "carbon:cloud-service-management", Path: "/manage", Permission: "", Sort: 2, Status: 1, ParentID: 0},
+		{ID: 3, Name: "用户管理", Icon: "ic:round-manage-accounts", Path: "/manage/user", Permission: "system:user:query", Sort: 1, Status: 1, ParentID: 2},
+		{ID: 4, Name: "角色管理", Icon: "carbon:user-role", Path: "/manage/role", Permission: "system:role:query", Sort: 2, Status: 1, ParentID: 2},
+		{ID: 5, Name: "菜单管理", Icon: "material-symbols:route", Path: "/manage/menu", Permission: "system:menu:query", Sort: 3, Status: 1, ParentID: 2},
+		{ID: 13, Name: "关于", Icon: "fluent:book-information-24-regular", Path: "/about", Permission: "", Sort: 5, Status: 1, ParentID: 0},
+		{ID: 14, Name: "用户中心", Icon: "mdi:user-circle-outline", Path: "/user-center", Permission: "", Sort: 6, Status: 1, ParentID: 0},
 	}
 
 	addedCount := 0
@@ -186,12 +158,13 @@ func (s *InitService) syncMenus() error {
 func (s *InitService) syncRoleMenus() error {
 	logger.Info("开始同步角色菜单权限...")
 
-	// 定义5个内置角色的菜单权限
-	adminMenuIDs := []uint{1, 2, 21, 22, 3, 31, 32, 4, 41, 42, 43, 5, 51, 52, 53, 6, 61}       // 超级管理员：所有权限
-	opsMenuIDs := []uint{1, 2, 21, 22, 3, 31, 32, 4, 41, 42, 43}                              // 运维工程师：主机和任务管理
-	auditorMenuIDs := []uint{1, 4, 41}                                                          // 审计员：仅查看权限
-	userMenuIDs := []uint{1, 2, 21}                                                              // 普通用户：基础查看
-	testMenuIDs := []uint{1, 2, 21, 3, 31, 4, 41}                                                // 测试角色：部分权限
+	// 定义5个内置角色的菜单权限（动态路由模式）
+	// 菜单ID映射：1=首页, 2=系统管理, 3=用户管理, 4=角色管理, 5=菜单管理, 13=关于, 14=用户中心
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14}           // 超级管理员：所有权限
+	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14}              // 运维工程师：系统管理权限
+	auditorMenuIDs := []uint{1, 13}                    // 审计员：仅基础权限
+	userMenuIDs := []uint{1}                           // 普通用户：仅首页
+	testMenuIDs := []uint{1, 13}                       // 测试角色：首页和关于
 
 	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
 	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)
@@ -259,12 +232,13 @@ func (s *InitService) syncRoleMenus() error {
 
 // initRoles 初始化角色数据
 func (s *InitService) initRoles() error {
-	// 定义5个内置角色的菜单权限
-	adminMenuIDs := []uint{1, 2, 21, 22, 3, 31, 32, 4, 41, 42, 43, 5, 51, 52, 53, 6, 61}       // 超级管理员：所有权限
-	opsMenuIDs := []uint{1, 2, 21, 22, 3, 31, 32, 4, 41, 42, 43}                              // 运维工程师：主机和任务管理
-	auditorMenuIDs := []uint{1, 4, 41}                                                          // 审计员：仅查看权限
-	userMenuIDs := []uint{1, 2, 21}                                                              // 普通用户：基础查看
-	testMenuIDs := []uint{1, 2, 21, 3, 31, 4, 41}                                                // 测试角色：部分权限
+	// 定义5个内置角色的菜单权限（动态路由模式）
+	// 菜单ID映射：1=首页, 2=系统管理, 3=用户管理, 4=角色管理, 5=菜单管理, 13=关于, 14=用户中心
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14}           // 超级管理员：所有权限
+	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14}              // 运维工程师：系统管理权限
+	auditorMenuIDs := []uint{1, 13}                    // 审计员：仅基础权限
+	userMenuIDs := []uint{1}                           // 普通用户：仅首页
+	testMenuIDs := []uint{1, 13}                       // 测试角色：首页和关于
 
 	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
 	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)
@@ -316,7 +290,7 @@ func (s *InitService) initUsers() error {
 		Email:    "admin@example.com",
 		RoleIDs:  string(adminRoleIDsJSON),
 		Status:   "active",
-		HomePath: "/",
+		HomePath: "/home",
 	}
 
 	return db.Create(&user).Error

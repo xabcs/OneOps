@@ -213,6 +213,7 @@ const { columns, columnChecks, data, loading, getData, getDataByPage } = useUIPa
   },
   transform: response => response,
   columns: () => [
+    { prop: 'id', label: 'ID', width: 80, align: 'center', fixed: 'left' },
     {
       prop: 'hierarchyIndex',
       label: '序号',
@@ -222,13 +223,11 @@ const { columns, columnChecks, data, loading, getData, getDataByPage } = useUIPa
         return <span class="hierarchy-index">{row.hierarchyIndex || '-'}</span>;
       }
     },
-    { prop: 'id', label: 'ID', width: 80, align: 'center' },
     {
       prop: 'name',
       label: '菜单名称',
       width: 200,
-      align: 'left',
-      fixed: 'left',
+      align: 'center',
       labelClassName: 'custom-header-center',
       className: 'menu-name-column'
     },

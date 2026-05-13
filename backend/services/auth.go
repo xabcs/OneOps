@@ -51,10 +51,10 @@ func (s *AuthService) GetUserInfo(userID uint) (*UserInfo, error) {
 		return nil, err
 	}
 
-	// 构建角色名称列表
-	roleNames := make([]string, len(roles))
+	// 构建角色代码列表（使用 Code 而不是 Name，方便前端进行权限匹配）
+	roleCodes := make([]string, len(roles))
 	for i, role := range roles {
-		roleNames[i] = role.Name
+		roleCodes[i] = role.Code
 	}
 
 	// 获取菜单树和权限
@@ -66,7 +66,7 @@ func (s *AuthService) GetUserInfo(userID uint) (*UserInfo, error) {
 
 	return &UserInfo{
 		User:        &user,
-		RoleNames:   roleNames,
+		RoleNames:   roleCodes,
 		MenuTree:    menuTree,
 		Permissions: permissions,
 	}, nil

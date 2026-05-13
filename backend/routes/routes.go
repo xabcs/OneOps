@@ -27,12 +27,15 @@ func SetupRoutes(r *gin.Engine) {
 	userController := controllers.NewUserController()
 	auditController := controllers.NewAuditController()
 	monitoringController := controllers.NewMonitoringController()
+	routeController := controllers.NewRouteController()
 
 	// API 路由组
 	api := r.Group("/api")
 	{
 		// 认证路由（无需认证）
 		api.POST("/login", authController.Login)
+		// 常量路由接口（无需认证，因为常量路由本身就是公开的）
+		api.GET("/route/getConstantRoutes", routeController.GetConstantRoutes)
 
 		// 用户信息路由（需要认证）
 		api.GET("/user/info", middlewares.Auth(), authController.GetUserInfo)
@@ -95,6 +98,14 @@ func SetupRoutes(r *gin.Engine) {
 			monitoring.POST("/refresh", monitoringController.RefreshMonitoring)
 			// 处理告警
 			monitoring.POST("/alert/handle", monitoringController.HandleAlert)
+		}
+
+		// 动态路由接口（需要认证）
+		routeGroup := api.Group("/route")
+		routeGroup.Use(middlewares.Auth())
+		{
+			routeGroup.GET("/getUserRoutes", routeController.GetUserRoutes)
+			routeGroup.GET("/isRouteExist", routeController.IsRouteExist)
 		}
 	}
 }
