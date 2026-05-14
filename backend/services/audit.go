@@ -417,9 +417,61 @@ func (s *AuditService) GetAuditStats() (gin.H, error) {
 	var todayLoginCount int64
 	today := time.Now().Format("2006-01-02")
 	db.Model(&models.LoginLog{}).
-		Where("DATE(login_time) = ?", today).
+		Where("DATE(created_at) = ?", today).
 		Count(&todayLoginCount)
 	stats["login"].(gin.H)["today"] = todayLoginCount
+
+	// 本周登录次数
+	var weekLoginCount int64
+	weekStart := time.Now().AddDate(0, 0, -int(time.Now().Weekday()))
+	if time.Now().Weekday() == 0 {
+		weekStart = time.Now().AddDate(0, 0, -6)
+	}
+	weekStartStr := weekStart.Format("2006-01-02")
+	db.Model(&models.LoginLog{}).
+		Where("DATE(created_at) >= ?", weekStartStr).
+		Count(&weekLoginCount)
+	stats["login"].(gin.H)["thisWeek"] = weekLoginCount
+
+	// 本月登录次数
+	var monthLoginCount int64
+	monthStart := time.Now().Format("2006-01-01")
+	db.Model(&models.LoginLog{}).
+		Where("DATE(created_at) >= ?", monthStart).
+		Count(&monthLoginCount)
+	stats["login"].(gin.H)["thisMonth"] = monthLoginCount
+
+	// 系统事件统计
+	var eventStats []struct {
+		Level string
+		Count  int64
+	}
+	db.Model(&models.SystemEventLog{}).
+		Select("level, count(*) as count").
+		Group("level").
+		Scan(&eventStats)
+
+	stats["system"] = gin.H{
+		"total":    0,
+		"info":     0,
+		"warning":  0,
+		"error":    0,
+		"critical": 0,
+	}
+
+	for _, stat := range eventStats {
+		stats["system"].(gin.H)["total"] = stats["system"].(gin.H)["total"].(int) + int(stat.Count)
+		switch stat.Level {
+		case "info":
+			stats["system"].(gin.H)["info"] = stat.Count
+		case "warning":
+			stats["system"].(gin.H)["warning"] = stat.Count
+		case "error":
+			stats["system"].(gin.H)["error"] = stat.Count
+		case "critical":
+			stats["system"].(gin.H)["critical"] = stat.Count
+		}
+	}
 
 	return stats, nil
 }

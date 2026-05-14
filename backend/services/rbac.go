@@ -109,6 +109,7 @@ func (s *RBACService) buildMenuTree(allMenus []*models.Menu, menuIDs map[uint]bo
 				Icon:       menu.Icon,
 				Path:       menu.Path,
 				Permission: menu.Permission,
+				MenuType:   menu.MenuType,
 				ParentID:   menu.ParentID,
 				Sort:       menu.Sort,
 				Status:     menu.Status,

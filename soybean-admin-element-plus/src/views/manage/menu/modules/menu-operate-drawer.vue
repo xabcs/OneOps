@@ -100,6 +100,7 @@ type Model = {
   icon: string;
   path: string;
   permission: string;
+  menuType: string;
   parentId: number;
   sort: number;
   status: number;
@@ -110,17 +111,19 @@ const model = ref<Model>({
   icon: '',
   path: '',
   permission: '',
+  menuType: 'menu',
   parentId: 0,
   sort: 1,
   status: 1
 });
 
-type RuleKey = 'name' | 'path' | 'permission' | 'sort' | 'status';
+type RuleKey = 'name' | 'path' | 'permission' | 'menuType' | 'sort' | 'status';
 
 const rules: Record<RuleKey, App.Global.FormRule> = {
   name: defaultRequiredRule,
   path: defaultRequiredRule,
   permission: defaultRequiredRule,
+  menuType: defaultRequiredRule,
   sort: defaultRequiredRule,
   status: defaultRequiredRule
 };
@@ -140,6 +143,7 @@ function handleInitModel() {
       icon: props.rowData.icon || '',
       path: props.rowData.path || '',
       permission: props.rowData.permission || '',
+      menuType: props.rowData.menuType || 'menu',
       parentId: props.rowData.parentId ?? 0,
       sort: props.rowData.sort ?? 1,
       status: props.rowData.status ?? 1
@@ -152,8 +156,9 @@ function handleInitModel() {
       icon: '',
       path: '',
       permission: '',
+      menuType: props.isAddingChild ? 'menu' : 'directory',
       parentId: props.isAddingChild ? (props.rowData?.id ?? 0) : 0,
-      sort: 1,
+      sort: props.isAddingChild ? getNextSort() : 1,
       status: 1
     };
     console.log('➕ [菜单操作抽屉] 新增模式数据', model.value);
@@ -238,7 +243,13 @@ watch(
       <ElFormItem label="权限标识" prop="permission">
         <ElInput v-model="model.permission" placeholder="请输入权限标识，如：menu:system:menus" />
       </ElFormItem>
-      <ElFormItem label="父级菜单" prop="parentId">
+      <ElFormItem label="菜单类型" prop="menuType">
+        <ElSelect v-model="model.menuType" placeholder="请选择菜单类型" class="w-full">
+          <ElOption label="菜单" value="menu" />
+          <ElOption label="目录" value="directory" />
+        </ElSelect>
+      </ElFormItem>
+      <ElFormItem v-if="!isAddingChild" label="父级菜单" prop="parentId">
         <ElTreeSelect
           v-model="model.parentId"
           :data="menuTree"
@@ -250,6 +261,9 @@ watch(
           class="w-full"
           clearable
         />
+      </ElFormItem>
+      <ElFormItem v-else label="父级菜单">
+        <ElInput :value="parentMenuName" disabled class="w-full" />
       </ElFormItem>
       <ElFormItem label="排序" prop="sort">
         <ElInputNumber v-model="model.sort" :min="1" :max="999" placeholder="请输入排序序号" class="w-full" />

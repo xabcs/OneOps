@@ -218,13 +218,19 @@ func (c *RouteController) buildRouteFromMenu(menu *models.Menu, hasChildren bool
 
 // generateRouteName 根据路径生成路由名称
 func (c *RouteController) generateRouteName(path string) string {
+	// 特殊处理：保留某些路径的原始格式
+	if path == "/user-center" {
+		return "user-center"
+	}
+
 	// 移除前导斜杠
 	name := path
 	if len(name) > 0 && name[0] == '/' {
 		name = name[1:]
 	}
-	// 只替换路径分隔符 / 为 _，保留连字符 -
+	// 使用下划线替换路径分隔符 / 和连字符 -，与前端路由命名保持一致
 	name = strings.ReplaceAll(name, "/", "_")
+	name = strings.ReplaceAll(name, "-", "_")
 	return name
 }
 

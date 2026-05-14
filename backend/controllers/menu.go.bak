@@ -1,0 +1,224 @@
+package controllers
+
+import (
+	"encoding/json"
+	"io"
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"oneops/backend/models"
+	"oneops/backend/services"
+	"oneops/backend/utils"
+)
+
+// MenuController 菜单控制器
+type MenuController struct{}
+
+// NewMenuController 创建菜单控制器
+func NewMenuController() *MenuController {
+	return &MenuController{}
+}
+
+// GetMenus 获取所有菜单
+func (ctrl *MenuController) GetMenus(c *gin.Context) {
+	db := services.GetDB()
+
+	var menus []models.Menu
+	if err := db.Order("sort ASC").Find(&menus).Error; err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取菜单列表失败"))
+		return
+	}
+
+	// 构建菜单树
+	menuTree := ctrl.buildMenuTree(menus, 0)
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(menuTree))
+}
+
+// buildMenuTree 递归构建菜单树
+func (ctrl *MenuController) buildMenuTree(menus []models.Menu, parentID uint) []*models.Menu {
+	var result []*models.Menu
+	for _, menu := range menus {
+		if menu.ParentID == parentID {
+			// 递归构建子菜单
+			children := ctrl.buildMenuTree(menus, menu.ID)
+
+			// 创建新的菜单项，包含 children 字段
+			menuItem := &models.Menu{
+				ID:         menu.ID,
+				Name:       menu.Name,
+				Icon:       menu.Icon,
+				Path:       menu.Path,
+				Permission: menu.Permission,
+				ParentID:   menu.ParentID,
+				Sort:       menu.Sort,
+				Status:     menu.Status,
+				CreatedAt:  menu.CreatedAt,
+				UpdatedAt:  menu.UpdatedAt,
+			}
+
+			// 始终包含 children 字段（即使是空数组）
+			menuItem.Children = make([]*models.Menu, 0)
+			if len(children) > 0 {
+				menuItem.Children = children
+			}
+
+			result = append(result, menuItem)
+		}
+	}
+	return result
+}
+
+// CreateMenuRequest 创建菜单请求
+type CreateMenuRequest struct {
+	Name       string `json:"name" binding:"required"`
+	Icon       string `json:"icon"`
+	Path       string `json:"path"`
+	Permission string `json:"permission"`
+	MenuType   string `json:"menuType"`
+	ParentID   uint   `json:"parentId"`
+	Sort       int    `json:"sort"`
+	Status     int    `json:"status"`
+}
+
+// CreateMenu 创建菜单
+func (ctrl *MenuController) CreateMenu(c *gin.Context) {
+	var req CreateMenuRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误"))
+		return
+	}
+
+	db := services.GetDB()
+	menu := models.Menu{
+		Name:       req.Name,
+		Icon:       req.Icon,
+		Path:       req.Path,
+		Permission: req.Permission,
+		MenuType:   req.MenuType,
+		ParentID:   req.ParentID,
+		Sort:       req.Sort,
+		Status:     req.Status,
+	}
+
+	if err := db.Create(&menu).Error; err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("创建菜单失败"))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(menu))
+}
+
+// UpdateMenuRequest 更新菜单请求
+type UpdateMenuRequest struct {
+	Name       string `json:"name"`
+	Icon       string `json:"icon"`
+	Path       string `json:"path"`
+	Permission string `json:"permission"`
+	MenuType   string `json:"menuType"`
+	ParentID   uint   `json:"parentId"`
+	Sort       int    `json:"sort"`
+	Status     int    `json:"status"`
+}
+
+// UpdateMenu 更新菜单
+func (ctrl *MenuController) UpdateMenu(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的菜单ID"))
+		return
+	}
+
+	// 读取请求体
+	bodyBytes, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("读取请求失败"))
+		return
+	}
+
+	// 解析为 map 检查哪些字段被提供了
+	var rawBody map[string]interface{}
+	if err := json.Unmarshal(bodyBytes, &rawBody); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("JSON解析失败"))
+		return
+	}
+
+	// 解析为结构体
+	var req UpdateMenuRequest
+	if err := json.Unmarshal(bodyBytes, &req); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("参数解析失败"))
+		return
+	}
+
+	db := services.GetDB()
+	updates := map[string]interface{}{}
+
+	if req.Name != "" {
+		updates["name"] = req.Name
+	}
+	if req.Icon != "" {
+		updates["icon"] = req.Icon
+	}
+	if req.Path != "" {
+		updates["path"] = req.Path
+	}
+	if req.Permission != "" {
+		updates["permission"] = req.Permission
+	}
+		if req.MenuType != "" {
+			updates["menu_type"] = req.MenuType
+		}
+
+	// 只更新请求中明确包含的字段
+	if _, ok := rawBody["parentId"]; ok {
+		updates["parent_id"] = req.ParentID
+	}
+	if _, ok := rawBody["sort"]; ok {
+		updates["sort"] = req.Sort
+	}
+	if _, ok := rawBody["status"]; ok {
+		updates["status"] = req.Status
+	}
+
+	// 如果没有任何字段需要更新，返回错误
+	if len(updates) == 0 {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("没有提供要更新的字段"))
+		return
+	}
+
+	if err := db.Model(&models.Menu{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("更新菜单失败"))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("更新成功"))
+}
+
+// DeleteMenu 删除菜单
+func (ctrl *MenuController) DeleteMenu(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的菜单ID"))
+		return
+	}
+
+	db := services.GetDB()
+
+	// 检查是否有子菜单
+	var count int64
+	db.Model(&models.Menu{}).Where("parent_id = ?", id).Count(&count)
+	if count > 0 {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("该菜单下有子菜单，无法删除"))
+		return
+	}
+
+	if err := db.Delete(&models.Menu{}, id).Error; err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("删除菜单失败"))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("删除成功"))
+}

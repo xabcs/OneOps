@@ -11,6 +11,7 @@ type Menu struct {
 	Icon       string    `json:"icon" gorm:"size:50"`
 	Path       string    `json:"path" gorm:"size:200"`
 	Permission string    `json:"permission" gorm:"size:100"`
+	MenuType   string    `json:"menuType" gorm:"size:20;default:menu"` // 菜单类型：menu(菜单) 或 directory(目录)
 	ParentID   uint      `json:"parentId" gorm:"default:0"`
 	Sort       int       `json:"sort" gorm:"default:0"`
 	Status     int       `json:"status" gorm:"default:1"`

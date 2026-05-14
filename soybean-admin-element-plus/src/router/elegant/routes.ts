@@ -96,6 +96,74 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'audit',
+    path: '/audit',
+    component: 'layout.base',
+    meta: {
+      title: 'audit',
+      i18nKey: 'route.audit'
+    },
+    children: [
+      {
+        name: 'audit_login',
+        path: '/audit/login',
+        meta: {
+          title: 'audit_login',
+          i18nKey: 'route.audit_login'
+        },
+        children: [
+          {
+            name: 'audit_login_logs',
+            path: '/audit/login/logs',
+            component: 'view.audit_login_logs',
+            meta: {
+              title: 'audit_login_logs',
+              i18nKey: 'route.audit_login_logs'
+            }
+          }
+        ]
+      },
+      {
+        name: 'audit_operation',
+        path: '/audit/operation',
+        meta: {
+          title: 'audit_operation',
+          i18nKey: 'route.audit_operation'
+        },
+        children: [
+          {
+            name: 'audit_operation_logs',
+            path: '/audit/operation/logs',
+            component: 'view.audit_operation_logs',
+            meta: {
+              title: 'audit_operation_logs',
+              i18nKey: 'route.audit_operation_logs'
+            }
+          }
+        ]
+      },
+      {
+        name: 'audit_system',
+        path: '/audit/system',
+        meta: {
+          title: 'audit_system',
+          i18nKey: 'route.audit_system'
+        },
+        children: [
+          {
+            name: 'audit_system_events',
+            path: '/audit/system/events',
+            component: 'view.audit_system_events',
+            meta: {
+              title: 'audit_system_events',
+              i18nKey: 'route.audit_system_events'
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
     name: 'function',
     path: '/function',
     component: 'layout.base',
@@ -629,8 +697,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     component: 'layout.base$view.user-center',
     meta: {
       title: 'user-center',
-      i18nKey: 'route.user-center',
-      hideInMenu: true
+      i18nKey: 'route.user-center'
     }
   }
 ];

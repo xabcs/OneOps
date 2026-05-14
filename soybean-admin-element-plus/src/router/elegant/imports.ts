@@ -24,6 +24,10 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   alova_request: () => import("@/views/alova/request/index.vue"),
   alova_scenes: () => import("@/views/alova/scenes/index.vue"),
   alova_user: () => import("@/views/alova/user/index.vue"),
+  audit: () => import("@/views/audit/index.vue"),
+  audit_login_logs: () => import("@/views/audit_login_logs/index.vue"),
+  audit_operation_logs: () => import("@/views/audit_operation_logs/index.vue"),
+  audit_system_events: () => import("@/views/audit_system_events/index.vue"),
   "function_hide-child_one": () => import("@/views/function/hide-child/one/index.vue"),
   "function_hide-child_three": () => import("@/views/function/hide-child/three/index.vue"),
   "function_hide-child_two": () => import("@/views/function/hide-child/two/index.vue"),
@@ -59,4 +63,5 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   plugin_typeit: () => import("@/views/plugin/typeit/index.vue"),
   plugin_video: () => import("@/views/plugin/video/index.vue"),
   "user-center": () => import("@/views/user-center/index.vue"),
+  user_center: () => import("@/views/user-center/index.vue"),
 };

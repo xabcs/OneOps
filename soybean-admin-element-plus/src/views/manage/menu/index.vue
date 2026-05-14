@@ -35,6 +35,7 @@ function flattenMenuTree(tree: Api.SystemManage.Menu[]): Api.SystemManage.Menu[]
         path: item.path,
         icon: item.icon,
         permission: item.permission,
+        menuType: item.menuType,
         sort: item.sort,
         status: item.status,
         hierarchyIndex: (item as any).hierarchyIndex
@@ -64,6 +65,7 @@ function cleanMenuTree(tree: Api.SystemManage.Menu[]): Api.SystemManage.Menu[] {
           path: item.path,
           icon: item.icon,
           permission: item.permission,
+          menuType: item.menuType,
           sort: item.sort,
           status: item.status
         };
@@ -232,6 +234,21 @@ const { columns, columnChecks, data, loading, getData, getDataByPage } = useUIPa
       className: 'menu-name-column'
     },
     {
+      prop: 'menuType',
+      label: '菜单类型',
+      width: 100,
+      align: 'center',
+      formatter: row => {
+        const menuType = row.menuType || 'menu';
+        const typeMap: Record<string, { text: string; type: any }> = {
+          'directory': { text: '目录', type: 'primary' },
+          'menu': { text: '菜单', type: 'success' }
+        };
+        const config = typeMap[menuType] || { text: '菜单', type: 'info' };
+        return <ElTag size="small" type={config.type}>{config.text}</ElTag>;
+      }
+    },
+    {
       prop: 'icon',
       label: '图标',
       width: 80,
@@ -314,16 +331,18 @@ const { columns, columnChecks, data, loading, getData, getDataByPage } = useUIPa
       fixed: 'right',
       formatter: row => (
         <div class="flex-center gap-8px">
-          <ElButton
-            type="primary"
-            plain
-            size="small"
-            icon={Plus}
-            onClick={() => handleAddChild(row)}
-            title="添加子菜单"
-          >
-            添加子菜单
-          </ElButton>
+          {row.menuType === 'directory' && (
+            <ElButton
+              type="primary"
+              plain
+              size="small"
+              icon={Plus}
+              onClick={() => handleAddChild(row)}
+              title="添加子菜单"
+            >
+              添加子菜单
+            </ElButton>
+          )}
           <ElButton
             type="primary"
             plain
@@ -509,6 +528,7 @@ function handleAddChild(row: Api.SystemManage.Menu) {
     icon: '',
     path: '',
     permission: '',
+    menuType: 'menu',
     parentId: row.id,
     sort: getNextSort(row.id),
     status: 1

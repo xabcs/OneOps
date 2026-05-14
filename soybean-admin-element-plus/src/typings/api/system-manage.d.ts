@@ -118,6 +118,8 @@ declare namespace Api {
       icon: string;
       /** permission */
       permission: string;
+      /** menu type: menu or directory */
+      menuType: string;
       /** sort order */
       sort: number;
       /** status */
@@ -136,6 +138,7 @@ declare namespace Api {
       icon?: string;
       path?: string;
       permission?: string;
+      menuType?: string;
       sort?: number;
       status?: number;
       children: MenuTree[];

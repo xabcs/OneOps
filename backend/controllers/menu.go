@@ -51,6 +51,7 @@ func (ctrl *MenuController) buildMenuTree(menus []models.Menu, parentID uint) []
 				Icon:       menu.Icon,
 				Path:       menu.Path,
 				Permission: menu.Permission,
+					MenuType:   menu.MenuType,
 				ParentID:   menu.ParentID,
 				Sort:       menu.Sort,
 				Status:     menu.Status,
@@ -76,6 +77,7 @@ type CreateMenuRequest struct {
 	Icon       string `json:"icon"`
 	Path       string `json:"path"`
 	Permission string `json:"permission"`
+	MenuType   string `json:"menuType"`
 	ParentID   uint   `json:"parentId"`
 	Sort       int    `json:"sort"`
 	Status     int    `json:"status"`
@@ -95,6 +97,7 @@ func (ctrl *MenuController) CreateMenu(c *gin.Context) {
 		Icon:       req.Icon,
 		Path:       req.Path,
 		Permission: req.Permission,
+		MenuType:   req.MenuType,
 		ParentID:   req.ParentID,
 		Sort:       req.Sort,
 		Status:     req.Status,
@@ -114,6 +117,7 @@ type UpdateMenuRequest struct {
 	Icon       string `json:"icon"`
 	Path       string `json:"path"`
 	Permission string `json:"permission"`
+	MenuType   string `json:"menuType"`
 	ParentID   uint   `json:"parentId"`
 	Sort       int    `json:"sort"`
 	Status     int    `json:"status"`
@@ -164,6 +168,9 @@ func (ctrl *MenuController) UpdateMenu(c *gin.Context) {
 	if req.Permission != "" {
 		updates["permission"] = req.Permission
 	}
+		if req.MenuType != "" {
+			updates["menu_type"] = req.MenuType
+		}
 
 	// 只更新请求中明确包含的字段
 	if _, ok := rawBody["parentId"]; ok {
