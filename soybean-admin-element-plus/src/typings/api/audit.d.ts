@@ -75,6 +75,7 @@ declare namespace Audit {
     details: string;
     ip: string;
     eventTime: string;
+    time: string;
     createdAt: string;
   };
 

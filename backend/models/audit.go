@@ -66,6 +66,7 @@ type SystemEventLog struct {
 	Details   string    `json:"details" gorm:"type:text"`              // 详细数据
 	IP        string    `json:"ip" gorm:"size:45"`
 	EventTime time.Time `json:"eventTime" gorm:"not null;index"`
+	Time      string    `json:"time" gorm:"-"` // 前端需要的字段，不映射到数据库
 	CreatedAt time.Time `json:"createdAt" gorm:"autoCreateTime"`
 }
 

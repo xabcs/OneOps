@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
-import { IconifyIcon } from '@/components/common/iconify-icon';
 import { fetchGetOperationLogs, fetchExportOperationLogs, fetchGetModules } from '@/service/api';
 import type { Audit } from '@/typings/api';
 import { ElNotification } from 'element-plus';
@@ -183,15 +182,14 @@ onMounted(() => {
           />
         </ElFormItem>
         <ElFormItem>
-          <ElButton type="primary" :icon="IconifyIcon('ri:search-line')" @click="handleSearch">
+          <ElButton type="primary" @click="handleSearch">
             搜索
           </ElButton>
-          <ElButton :icon="IconifyIcon('ri:refresh-line')" @click="handleReset">
+          <ElButton @click="handleReset">
             重置
           </ElButton>
           <ElButton
             type="success"
-            :icon="IconifyIcon('ri:download-line')"
             @click="handleExport"
           >
             导出
@@ -207,21 +205,21 @@ onMounted(() => {
         class="h-full"
         height="calc(100vh - 400px)"
       >
-        <ElTableColumn prop="id" label="ID" width="80" align="center" />
-        <ElTableColumn prop="username" label="用户名" width="100" align="center" />
-        <ElTableColumn prop="module" label="模块" width="120" align="center" />
-        <ElTableColumn prop="action" label="操作" width="120" align="center" />
-        <ElTableColumn prop="description" label="描述" width="200" align="center" show-overflow-tooltip />
-        <ElTableColumn label="方法" width="80" align="center">
+        <ElTableColumn prop="id" label="ID" width="70" align="center" />
+        <ElTableColumn prop="username" label="用户名" width="90" align="center" />
+        <ElTableColumn prop="module" label="模块" width="100" align="center" />
+        <ElTableColumn prop="action" label="操作" width="100" align="center" />
+        <ElTableColumn prop="description" label="描述" min-width="150" align="center" show-overflow-tooltip />
+        <ElTableColumn label="方法" width="70" align="center">
           <template #default="{ row }">
             <ElTag :type="getMethodTag(row.method).type" size="small">
               {{ getMethodTag(row.method).text }}
             </ElTag>
           </template>
         </ElTableColumn>
-        <ElTableColumn prop="path" label="路径" width="200" align="center" show-overflow-tooltip />
+        <ElTableColumn prop="path" label="路径" min-width="180" align="center" show-overflow-tooltip />
         <ElTableColumn prop="statusCode" label="状态码" width="80" align="center" />
-        <ElTableColumn prop="ip" label="IP地址" width="140" align="center" />
+        <ElTableColumn prop="ip" label="IP地址" width="130" align="center" />
         <ElTableColumn label="耗时(ms)" width="80" align="center">
           <template #default="{ row }">
             <span :class="{ 'text-warning': row.duration > 1000 }">{{ row.duration }}</span>
@@ -234,7 +232,7 @@ onMounted(() => {
             </ElTag>
           </template>
         </ElTableColumn>
-        <ElTableColumn prop="operateTime" label="操作时间" width="180" align="center" />
+        <ElTableColumn prop="time" label="操作时间" width="160" align="center" />
       </ElTable>
 
       <div class="flex justify-end mt-16px">

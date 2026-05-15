@@ -107,15 +107,22 @@ func (s *AuditService) LogSystemEvent(level, source, category, message, details,
 
 // LoginLogResponse 登录日志响应结构
 type LoginLogResponse struct {
-	Time     string `json:"time"`
-	Username string `json:"username"`
-	IP       string `json:"ip"`
-	Location string `json:"location"`
-	Browser  string `json:"browser"`
-	OS       string `json:"os"`
-	Status   string `json:"status"`
-	Msg      string `json:"msg"`
+	ID              uint   `json:"id"`
+	UserID          uint   `json:"userId"`
+	Username        string `json:"username"`
+	Nickname        string `json:"nickname"`
+	IP              string `json:"ip"`
+	UserAgent       string `json:"userAgent"`
+	Location        string `json:"location"`
+	Status          string `json:"status"`
+	FailReason      string `json:"failReason"`
+	LoginTime       string `json:"loginTime"`
+	LogoutTime      string `json:"logoutTime,omitempty"`
+	Duration        int    `json:"duration"`
+	Browser         string `json:"browser"`
+	OS              string `json:"os"`
 }
+
 
 // GetLoginLogs 获取登录日志列表（用于前端显示）
 func (s *AuditService) GetLoginLogs(query map[string]interface{}, page, pageSize int) ([]LoginLogResponse, int64, error) {
@@ -160,15 +167,35 @@ func (s *AuditService) GetLoginLogs(query map[string]interface{}, page, pageSize
 	response := make([]LoginLogResponse, 0, len(logs))
 	for _, log := range logs {
 		userAgentInfo := utils.ParseUserAgent(log.UserAgent)
+
+		// 计算会话时长
+		duration := 0
+		if log.LogoutTime != nil {
+			duration = int(log.LogoutTime.Sub(log.LoginTime).Seconds())
+		} else if log.Duration > 0 {
+			duration = log.Duration
+		}
+
+		var logoutTimeStr string
+		if log.LogoutTime != nil {
+			logoutTimeStr = log.LogoutTime.Format("2006-01-02 15:04:05")
+		}
+
 		logResponse := LoginLogResponse{
-			Time:     log.LoginTime.Format("2006-01-02 15:04:05"),
-			Username: log.Username,
-			IP:       log.IP,
-			Location: log.Location,
-			Browser:  userAgentInfo.Browser,
-			OS:       userAgentInfo.OS,
-			Status:   log.Status,
-			Msg:      log.FailReason,
+			ID:         log.ID,
+			UserID:     log.UserID,
+			Username:   log.Username,
+			Nickname:   log.Nickname,
+			IP:         log.IP,
+			UserAgent:  log.UserAgent,
+			Location:   log.Location,
+			Status:     log.Status,
+			FailReason: log.FailReason,
+			LoginTime:  log.LoginTime.Format("2006-01-02 15:04:05"),
+			LogoutTime: logoutTimeStr,
+			Duration:   duration,
+			Browser:    userAgentInfo.Browser,
+			OS:         userAgentInfo.OS,
 		}
 
 		// 应用浏览器和操作系统过滤（在解析后过滤）
@@ -353,7 +380,33 @@ func (s *AuditService) GetSystemEventLogs(query map[string]interface{}, page, pa
 		Limit(pageSize).
 		Find(&logs).Error
 
-	return logs, total, err
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 格式化时间字段
+	for i := range logs {
+		logs[i].Time = logs[i].EventTime.Format("2006-01-02 15:04:05")
+	}
+
+	return logs, total, nil
+}
+
+// formatDuration 格式化会话时长
+func formatDuration(seconds int) string {
+	if seconds < 60 {
+		return fmt.Sprintf("%d秒", seconds)
+	}
+	minutes := seconds / 60
+	if minutes < 60 {
+		return fmt.Sprintf("%d分钟", minutes)
+	}
+	hours := minutes / 60
+	remainingMinutes := minutes % 60
+	if remainingMinutes > 0 {
+		return fmt.Sprintf("%d小时%d分钟", hours, remainingMinutes)
+	}
+	return fmt.Sprintf("%d小时", hours)
 }
 
 // GetAuditStats 获取审计统计信息

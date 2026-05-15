@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
-import { IconifyIcon } from '@/components/common/iconify-icon';
 import { fetchGetSystemEventLogs } from '@/service/api';
 import type { Audit } from '@/typings/api';
 import { ElNotification } from 'element-plus';
@@ -137,10 +136,10 @@ onMounted(() => {
           />
         </ElFormItem>
         <ElFormItem>
-          <ElButton type="primary" :icon="IconifyIcon('ri:search-line')" @click="handleSearch">
+          <ElButton type="primary" @click="handleSearch">
             搜索
           </ElButton>
-          <ElButton :icon="IconifyIcon('ri:refresh-line')" @click="handleReset">
+          <ElButton @click="handleReset">
             重置
           </ElButton>
         </ElFormItem>
@@ -154,20 +153,20 @@ onMounted(() => {
         class="h-full"
         height="calc(100vh - 400px)"
       >
-        <ElTableColumn prop="id" label="ID" width="80" align="center" />
-        <ElTableColumn label="级别" width="80" align="center">
+        <ElTableColumn prop="id" label="ID" width="70" align="center" />
+        <ElTableColumn label="级别" width="70" align="center">
           <template #default="{ row }">
             <ElTag :type="getLevelTag(row.level).type">
               {{ getLevelTag(row.level).text }}
             </ElTag>
           </template>
         </ElTableColumn>
-        <ElTableColumn prop="source" label="来源" width="120" align="center" />
-        <ElTableColumn prop="category" label="分类" width="120" align="center" />
-        <ElTableColumn prop="message" label="消息" width="300" align="center" show-overflow-tooltip />
-        <ElTableColumn prop="details" label="详情" width="200" align="center" show-overflow-tooltip />
-        <ElTableColumn prop="ip" label="IP地址" width="140" align="center" />
-        <ElTableColumn prop="eventTime" label="事件时间" width="180" align="center" />
+        <ElTableColumn prop="source" label="来源" width="100" align="center" />
+        <ElTableColumn prop="category" label="分类" width="100" align="center" />
+        <ElTableColumn prop="message" label="消息" min-width="200" align="center" show-overflow-tooltip />
+        <ElTableColumn prop="details" label="详情" min-width="150" align="center" show-overflow-tooltip />
+        <ElTableColumn prop="ip" label="IP地址" width="130" align="center" />
+        <ElTableColumn prop="time" label="事件时间" width="160" align="center" />
       </ElTable>
 
       <div class="flex justify-end mt-16px">

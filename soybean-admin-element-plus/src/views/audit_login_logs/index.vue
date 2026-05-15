@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
-import { IconifyIcon } from '@/components/common/iconify-icon';
 import { fetchGetLoginLogs, fetchExportLoginLogs } from '@/service/api';
 import type { Audit } from '@/typings/api';
 import { ElNotification } from 'element-plus';
@@ -166,15 +165,14 @@ onMounted(() => {
           />
         </ElFormItem>
         <ElFormItem>
-          <ElButton type="primary" :icon="IconifyIcon('ri:search-line')" @click="handleSearch">
+          <ElButton type="primary" @click="handleSearch">
             搜索
           </ElButton>
-          <ElButton :icon="IconifyIcon('ri:refresh-line')" @click="handleReset">
+          <ElButton @click="handleReset">
             重置
           </ElButton>
           <ElButton
             type="success"
-            :icon="IconifyIcon('ri:download-line')"
             @click="handleExport"
           >
             导出
@@ -191,11 +189,11 @@ onMounted(() => {
         class="h-full"
         height="calc(100vh - 400px)"
       >
-        <ElTableColumn prop="id" label="ID" width="80" align="center" />
-        <ElTableColumn prop="username" label="用户名" width="120" align="center" />
-        <ElTableColumn prop="nickname" label="昵称" width="120" align="center" />
-        <ElTableColumn prop="ip" label="IP地址" width="140" align="center" />
-        <ElTableColumn label="位置" width="150" align="center">
+        <ElTableColumn prop="id" label="ID" width="70" align="center" />
+        <ElTableColumn prop="username" label="用户名" width="100" align="center" />
+        <ElTableColumn prop="nickname" label="昵称" width="100" align="center" />
+        <ElTableColumn prop="ip" label="IP地址" width="130" align="center" />
+        <ElTableColumn label="位置" min-width="120" align="center" show-overflow-tooltip>
           <template #default="{ row }">
             <span class="text-tertiary">{{ row.location || '-' }}</span>
           </template>
@@ -207,13 +205,13 @@ onMounted(() => {
             </ElTag>
           </template>
         </ElTableColumn>
-        <ElTableColumn label="失败原因" width="200" align="center">
+        <ElTableColumn label="失败原因" min-width="150" align="center" show-overflow-tooltip>
           <template #default="{ row }">
             <span v-if="row.status === 'failed'" class="text-error">{{ row.failReason }}</span>
             <span v-else class="text-tertiary">-</span>
           </template>
         </ElTableColumn>
-        <ElTableColumn prop="loginTime" label="登录时间" width="180" align="center" />
+        <ElTableColumn prop="loginTime" label="登录时间" width="160" align="center" />
         <ElTableColumn label="会话时长" width="100" align="center">
           <template #default="{ row }">
             <span v-if="row.duration > 0">{{ Math.floor(row.duration / 60) }}分钟</span>

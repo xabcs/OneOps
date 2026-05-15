@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { IconifyIcon } from '@/components/common/iconify-icon';
 import { fetchGetAuditStats } from '@/service/api';
 
 defineOptions({ name: 'AuditCenter' });
@@ -100,7 +99,7 @@ onMounted(() => {
       <template #header>
         <div class="flex items-center justify-between">
           <p>{{ $t('route.audit') }}</p>
-          <ElButton :icon="IconifyIcon('ri:refresh-line')" @click="getAuditStats" :loading="loading">
+          <ElButton @click="getAuditStats" :loading="loading">
             刷新
           </ElButton>
         </div>
@@ -111,7 +110,7 @@ onMounted(() => {
         <!-- 登录统计 -->
         <div class="stat-card" @click="navigateToDetail('/audit-login-logs')">
           <div class="stat-header">
-            <IconifyIcon :icon="'mdi:login'" :size="24" class="text-primary" />
+            <span class="stat-icon">🔐</span>
             <span class="stat-title">登录统计</span>
           </div>
           <div class="stat-content">
@@ -156,7 +155,7 @@ onMounted(() => {
         <!-- 操作统计 -->
         <div class="stat-card" @click="navigateToDetail('/audit-operation-logs')">
           <div class="stat-header">
-            <IconifyIcon :icon="'mdi:cog-outline'" :size="24" class="text-warning" />
+            <span class="stat-icon">⚙️</span>
             <span class="stat-title">操作统计</span>
           </div>
           <div class="stat-content">
@@ -187,7 +186,7 @@ onMounted(() => {
         <!-- 系统事件统计 -->
         <div class="stat-card" @click="navigateToDetail('/audit-system-events')">
           <div class="stat-header">
-            <IconifyIcon :icon="'mdi:alert-circle-outline'" :size="24" class="text-error" />
+            <span class="stat-icon">⚠️</span>
             <span class="stat-title">系统事件</span>
           </div>
           <div class="stat-content">
@@ -247,6 +246,10 @@ onMounted(() => {
     margin-bottom: 16px;
     font-size: 16px;
     font-weight: 500;
+  }
+
+  .stat-icon {
+    font-size: 24px;
   }
 
   .stat-content {
