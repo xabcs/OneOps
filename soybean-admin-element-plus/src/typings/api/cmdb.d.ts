@@ -11,6 +11,8 @@ declare namespace CMDB {
   /** 服务器提供商 */
   type ServerProvider = 'aliyun' | 'tencent' | 'aws' | 'self' | 'huawei' | 'other';
 
+  type CloudProvider = Exclude<ServerProvider, 'self'>;
+
   /** 服务器 */
   type Server = {
     id: number;
@@ -38,6 +40,8 @@ declare namespace CMDB {
     assetNumber?: string;
     provider: ServerProvider;
     serverType: ServerType;
+    businessId?: number;
+    business?: BusinessUnit;
     remarks?: string;
     createdAt: string;
     updatedAt: string;
@@ -185,15 +189,17 @@ declare namespace CMDB {
     ip: string;
     innerIp?: string;
     credentialId: number;
+    serverType: ServerType;
     groupIds?: number[];
     sshPort?: number;
     remarks?: string;
+    cloudInfo?: CloudServerForm | null;
   };
 
   /** 云主机表单 */
   type CloudServerForm = {
     serverId?: number;
-    provider: ServerProvider;
+    provider: CloudProvider;
     instanceId?: string;
     instanceName?: string;
     instanceType?: string;
@@ -216,8 +222,6 @@ declare namespace CMDB {
     password?: string;
     privateKey?: string;
     passphrase?: string;
-    port?: number;
-    sortOrder?: number;
     status?: number;
   };
 

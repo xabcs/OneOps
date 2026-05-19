@@ -6,11 +6,16 @@ import {
   fetchUpdateServer,
   fetchDeleteServer,
   fetchGetServerGroups,
+  fetchCreateServerGroup,
+  fetchUpdateServerGroup,
+  fetchDeleteServerGroup,
   fetchAssignServerToGroup,
   fetchGetSSHCredentials,
-  fetchCreateSSHCredential
+  fetchGetBusinessUnits,
+  fetchCreateSSHCredential,
+  fetchUpdateSSHCredential,
+  fetchDeleteSSHCredential
 } from '@/service/api';
-import type { CMDB } from '@/typings/api';
 import { ElNotification, ElMessageBox, FormInstance, FormRules } from 'element-plus';
 
 defineOptions({ name: 'CmdbServers' });
@@ -37,10 +42,34 @@ const pagination = reactive({
 });
 
 // 业务系统列表
+const businessUnits = ref<CMDB.BusinessUnit[]>([]);
+
 // 主机分组列表
 const serverGroups = ref<CMDB.ServerGroup[]>([]);
 
 // 环境选项
+const envOptions = [
+  { label: '生产', value: 'prod' },
+  { label: '测试', value: 'test' },
+  { label: '开发', value: 'dev' }
+] as const;
+
+const statusOptions = [
+  { label: '在线', value: 'online' },
+  { label: '离线', value: 'offline' },
+  { label: '未知', value: 'unknown' }
+] as const;
+
+const providerOptions = [
+  { label: '阿里云', value: 'aliyun' },
+  { label: '腾讯云', value: 'tencent' },
+  { label: 'AWS', value: 'aws' },
+  { label: '华为云', value: 'huawei' },
+  { label: '自建', value: 'self' },
+  { label: '其他', value: 'other' }
+] as const;
+
+const treeSelectProps = { label: 'name', value: 'id', children: 'children' } as any;
 
 // 对话框
 const dialogVisible = ref(false);
@@ -51,7 +80,8 @@ const serverForm = reactive<CMDB.ServerForm & { groupIds?: number[] }>({
   hostname: '',
   ip: '',
   innerIp: '',
-  credentialId: 0,
+  credentialId: undefined as unknown as number,
+  serverType: 'vm',
   groupIds: [],
   sshPort: 22,
   remarks: ''
@@ -59,7 +89,7 @@ const serverForm = reactive<CMDB.ServerForm & { groupIds?: number[] }>({
 
 // 云主机表单
 const cloudForm = reactive<CMDB.CloudServerForm>({
-  provider: 'self',
+  provider: 'aliyun',
   instanceName: '',
   instanceType: '',
   region: '',
@@ -78,7 +108,7 @@ const serverFormRules: FormRules = {
     { pattern: /^[a-zA-Z0-9.-]+$/, message: '主机名只能包含字母、数字、点和连字符', trigger: 'blur' }
   ],
   ip: [
-    { required: true, message: '请输入外网IP', trigger: 'blur' },
+    { required: true, message: '请输入连接IP', trigger: 'blur' },
     { pattern: /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/, message: '请输入有效的IP地址', trigger: 'blur' }
   ],
   innerIp: [
@@ -95,16 +125,24 @@ const serverFormRules: FormRules = {
 // 获取SSH凭证列表
 async function getSSHCredentials() {
   try {
-    // TODO: 调用 API
-    // const { data } = await fetchGetSSHCredentials();
-    // sshCredentials.value = data || [];
-    sshCredentials.value = [];
+    const { data } = await fetchGetSSHCredentials();
+    sshCredentials.value = data || [];
   } catch (err) {
     console.error('获取SSH凭证失败:', err);
+    ElNotification.error('获取SSH凭证失败');
   }
 }
 
 // 获取配置相关
+
+async function getBusinessUnits() {
+  try {
+    const { data } = await fetchGetBusinessUnits();
+    businessUnits.value = data || [];
+  } catch (err) {
+    console.error('获取业务系统失败:', err);
+  }
+}
 
 // 扁平化的分组列表（用于下拉选择）
 const flatServerGroups = computed(() => {
@@ -123,81 +161,64 @@ const flatServerGroups = computed(() => {
   return flat;
 });
 
-// 分组管理对话框
-const groupDialogVisible = ref(false);
-const groupFormRef = ref<FormInstance>();
-const groupForm = reactive<{
-  id?: number;
-  name: string;
-  code: string;
-  parentId: number;
-  description: string;
-  color: string;
-  icon: string;
-  sortOrder: number;
-  status: number;
-}>({
-  name: '',
-  code: '',
-  parentId: 0,
-  description: '',
-  color: '#409EFF',
-  icon: 'mdi:folder',
-  sortOrder: 0,
-  status: 1
+const flatBusinessUnits = computed(() => {
+  const flat: CMDB.BusinessUnit[] = [];
+
+  function flatten(units: CMDB.BusinessUnit[]) {
+    units.forEach(unit => {
+      flat.push(unit);
+      if (unit.children && unit.children.length > 0) {
+        flatten(unit.children);
+      }
+    });
+  }
+
+  flatten(businessUnits.value);
+  return flat;
 });
 
-// 分组表单验证规则
-const groupFormRules: FormRules = {
-  name: [
-    { required: true, message: '请输入分组名称', trigger: 'blur' },
-    { min: 2, max: 100, message: '分组名称长度在 2 到 100 个字符', trigger: 'blur' }
-  ],
-  code: [
-    { required: true, message: '请输入分组代码', trigger: 'blur' },
-    { min: 2, max: 50, message: '分组代码长度在 2 到 50 个字符', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9_-]+$/, message: '分组代码只能包含字母、数字、下划线和连字符', trigger: 'blur' }
-  ]
-};
-
-// 获取服务器配置
-
-// 获取服务器列表
-async function getServers() {
-  loading.value = true;
-  try {
-    const { data, error } = await fetchGetServers({
-      ...searchForm,
-      page: pagination.page,
-      pageSize: pagination.pageSize
-    });
-
-    if (!error && data) {
-      tableData.value = data.list || [];
-      total.value = data.total || 0;
-    }
-  } catch (err) {
-    console.error('获取服务器列表失败:', err);
-    ElNotification({
-      title: '错误',
-      message: '获取服务器列表失败',
-      type: 'error'
-    });
-  } finally {
-    loading.value = false;
-  }
-}
 
 // 获取主机分组列表
 async function getServerGroups() {
   try {
     const { data } = await fetchGetServerGroups();
-    if (data) {
-      serverGroups.value = data;
+    if (data && Array.isArray(data)) {
+      // 构建树形结构
+      serverGroups.value = buildGroupTree(data, 0);
     }
   } catch (err) {
     console.error('获取主机分组失败:', err);
   }
+}
+
+// 构建分组树
+function buildGroupTree(groups: CMDB.ServerGroup[], parentId: number): CMDB.ServerGroup[] {
+  const result: CMDB.ServerGroup[] = [];
+  groups.forEach(group => {
+    if (group.parentId === parentId) {
+      const children = buildGroupTree(groups, group.id);
+      result.push({
+        ...group,
+        children: children.length > 0 ? children : undefined
+      });
+    }
+  });
+  return result;
+}
+
+function getBusinessName(businessId?: number) {
+  if (!businessId) return '-';
+  const unit = flatBusinessUnits.value.find(item => item.id === businessId);
+  return unit?.name || '-';
+}
+
+function getStatusTag(status: string) {
+  const statusMap: Record<string, { text: string; type: 'success' | 'warning' | 'danger' | 'info' }> = {
+    online: { text: '在线', type: 'success' },
+    offline: { text: '离线', type: 'danger' },
+    unknown: { text: '未知', type: 'info' }
+  };
+  return statusMap[status] || { text: status, type: 'info' };
 }
 
 // 搜索
@@ -238,16 +259,19 @@ function handleAdd() {
   dialogTitle.value = '新增服务器';
   serverType.value = 'normal';
   Object.assign(serverForm, {
+    id: undefined,
     hostname: '',
     ip: '',
     innerIp: '',
-    credentialId: 0,
+    credentialId: undefined as unknown as number,
+    serverType: 'vm',
     groupIds: [],
     sshPort: 22,
     remarks: ''
   });
   Object.assign(cloudForm, {
-    provider: 'self',
+    provider: 'aliyun',
+    instanceId: '',
     instanceName: '',
     instanceType: '',
     region: '',
@@ -274,11 +298,22 @@ function handleEdit(row: CMDB.Server) {
   if (row.cloudInfo) {
     Object.assign(cloudForm, {
       provider: row.provider as any,
+      instanceId: row.cloudInfo.instanceId,
       instanceName: row.cloudInfo.instanceName,
       instanceType: row.cloudInfo.instanceType,
       region: row.cloudInfo.region,
       zone: row.cloudInfo.zone,
       chargeType: row.cloudInfo.chargeType
+    });
+  } else {
+    Object.assign(cloudForm, {
+      provider: 'aliyun',
+      instanceId: '',
+      instanceName: '',
+      instanceType: '',
+      region: '',
+      zone: '',
+      chargeType: 'postpay'
     });
   }
   dialogVisible.value = true;
@@ -344,6 +379,7 @@ async function handleManageCredentials() {
 // 新增凭证
 function handleAddCredential() {
   Object.assign(credentialForm, {
+    id: undefined,
     name: '',
     description: '',
     username: 'root',
@@ -379,14 +415,14 @@ async function handleSaveCredential() {
     await credentialFormRef.value.validate();
 
     if (credentialForm.id) {
-      // 更新 - 暂不支持
-      ElNotification.info('编辑凭证功能开发中');
+      await fetchUpdateSSHCredential(credentialForm.id, credentialForm);
+      ElNotification.success('凭证更新成功');
     } else {
-      // 新增
-      // TODO: 调用API创建凭证
-      ElNotification.success('凭证创建成功（模拟）');
-      await getSSHCredentials();
+      await fetchCreateSSHCredential(credentialForm);
+      ElNotification.success('凭证创建成功');
     }
+    Object.assign(credentialForm, { name: '' });
+    await getSSHCredentials();
   } catch (error) {
     if (error && typeof error === 'object' && 'message' in error) {
       ElNotification.error(typeof error.message === 'string' ? error.message : '保存失败');
@@ -402,8 +438,8 @@ function handleDeleteCredential(cred: CMDB.SSHCredential) {
     type: 'warning'
   })
     .then(async () => {
-      // TODO: 调用API删除
-      ElNotification.success('删除成功（模拟）');
+      await fetchDeleteSSHCredential(cred.id);
+      ElNotification.success('删除成功');
       await getSSHCredentials();
     })
     .catch(() => {});
@@ -416,7 +452,19 @@ async function handleSave() {
   try {
     await serverFormRef.value.validate();
 
-    const formData = { ...serverForm };
+    const formData: CMDB.ServerForm = {
+      ...serverForm,
+      serverType: serverType.value === 'cloud' ? 'vm' : serverForm.serverType || 'vm',
+      cloudInfo:
+        serverType.value === 'cloud'
+          ? {
+              ...cloudForm,
+              provider: cloudForm.provider,
+              publicIp: serverForm.ip,
+              privateIp: serverForm.innerIp
+            }
+          : null
+    };
 
     if (serverForm.id) {
       await fetchUpdateServer(serverForm.id, formData);
@@ -472,121 +520,6 @@ function handleAddGroup() {
     sortOrder: 0,
     status: 1
   });
-  groupDialogVisible.value = true;
-}
-
-// 打开编辑分组对话框
-function handleEditGroup(group: CMDB.ServerGroup) {
-  dialogVisible.value = false;
-  Object.assign(groupForm, {
-    id: group.id,
-    name: group.name,
-    code: group.code,
-    parentId: group.parentId,
-    description: group.description || '',
-    color: group.color,
-    icon: group.icon,
-    sortOrder: group.sortOrder,
-    status: group.status
-  });
-  groupDialogVisible.value = true;
-}
-
-// 保存分组
-async function handleSaveGroup() {
-  if (!groupFormRef.value) return;
-
-  try {
-    await groupFormRef.value.validate();
-
-    const formData = { ...groupForm };
-
-    if (groupForm.id) {
-      await fetchUpdateServerGroup(groupForm.id, formData);
-      ElNotification.success('分组更新成功');
-    } else {
-      await fetchCreateServerGroup(formData);
-      ElNotification.success('分组创建成功');
-    }
-    groupDialogVisible.value = false;
-    getServerGroups();
-  } catch (error) {
-    if (error && typeof error === 'object' && 'message' in error) {
-      ElNotification.error(typeof error.message === 'string' ? error.message : '保存失败');
-    } else {
-      ElNotification.error('保存失败');
-    }
-  }
-}
-
-// 删除分组
-function handleDeleteGroup(group: CMDB.ServerGroup) {
-  // 检查是否有子分组
-  if (group.children && group.children.length > 0) {
-    ElNotification.warning('该分组下有子分组，无法删除');
-    return;
-  }
-
-  ElMessageBox.confirm(`确定要删除分组 "${group.name}" 吗？`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  })
-    .then(async () => {
-      try {
-        await fetchDeleteServerGroup(group.id);
-        ElNotification.success('删除成功');
-        getServerGroups();
-      } catch (error) {
-        console.error('删除失败:', error);
-        ElNotification.error('删除失败');
-      }
-    })
-    .catch(() => {});
-}
-
-// 分配服务器到分组
-const assignDialogVisible = ref(false);
-const assignFormRef = ref<FormInstance>();
-const assignForm = reactive<{
-  serverId: number;
-  serverName: string;
-  groupId: number;
-}>({
-  serverId: 0,
-  serverName: '',
-  groupId: 0
-});
-
-// 当前选中的分组
-const selectedGroupId = ref<number>();
-
-// 分组树节点点击
-function handleGroupClick(data: CMDB.ServerGroup) {
-  selectedGroupId.value = data.id;
-  searchForm.groupId = data.id;
-  getServers();
-}
-
-// 清空分组选择
-function handleClearGroup() {
-  selectedGroupId.value = undefined;
-  searchForm.groupId = undefined;
-  getServers();
-}
-
-// 打开分配分组对话框
-function handleAssignGroup(row: CMDB.Server) {
-  Object.assign(assignForm, {
-    serverId: row.id,
-    serverName: row.hostname,
-    groupId: 0
-  });
-  assignDialogVisible.value = true;
-}
-
-// 保存分组分配
-async function handleSaveAssign() {
   if (!assignForm.groupId) {
     ElNotification.warning('请选择分组');
     return;
@@ -633,6 +566,7 @@ function getGroupNames(groups?: CMDB.ServerGroup[]) {
 
 // 初始化
 onMounted(() => {
+  getBusinessUnits();
   getSSHCredentials();
   getServerGroups();
   getServers();
@@ -648,7 +582,6 @@ onMounted(() => {
           <template #header>
             <div class="flex justify-between items-center">
               <span class="font-bold">主机分组</span>
-              <ElButton type="primary" size="small" @click="handleAddGroup">管理分组</ElButton>
             </div>
           </template>
           <div class="h-full overflow-auto">
@@ -790,14 +723,14 @@ onMounted(() => {
         <ElFormItem label="主机名" prop="hostname">
           <ElInput v-model="serverForm.hostname" placeholder="请输入主机名" />
         </ElFormItem>
-        <ElFormItem label="外网IP" prop="ip">
-          <ElInput v-model="serverForm.ip" placeholder="请输入外网IP" />
+        <ElFormItem label="连接IP" prop="ip">
+          <ElInput v-model="serverForm.ip" placeholder="请输入连接IP" />
         </ElFormItem>
         <ElFormItem label="内网IP">
-          <ElInput v-model="serverForm.innerIp" placeholder="请输入内网IP" />
+          <ElInput v-model="serverForm.innerIp" placeholder="请输入内网IP（可选）" />
         </ElFormItem>
 
-        <!-- 云主机特有字段 -->
+        <!-- SSH凭证选择 -->
         <template v-if="serverType === 'cloud'">
           <ElFormItem label="云服务商">
             <ElSelect v-model="cloudForm.provider" style="width: 100%">
@@ -852,9 +785,9 @@ onMounted(() => {
           <ElTreeSelect
             v-model="serverForm.groupIds"
             :data="serverGroups"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
+            :props="treeSelectProps"
             multiple
-            show-checkbox
+            show-checkbox check-strictly
             placeholder="请选择分组"
             style="width: 100%"
           />
@@ -870,82 +803,6 @@ onMounted(() => {
       </template>
     </ElDialog>
 
-    <!-- 分组管理对话框 -->
-    <ElDialog v-model="groupDialogVisible" title="主机分组管理" width="900px">
-      <div class="flex gap-16px">
-        <!-- 分组树 -->
-        <div class="flex-1 border rounded p-12px">
-          <div class="flex justify-between items-center mb-12px">
-            <h3 class="text-16px font-bold">分组列表</h3>
-            <ElButton type="primary" size="small" @click="handleAddGroup">新增分组</ElButton>
-          </div>
-          <ElTree
-            :data="serverGroups"
-            node-key="id"
-            default-expand-all
-            :props="{ label: 'name', children: 'children' }"
-          >
-            <template #default="{ node, data }">
-              <div class="flex items-center justify-between w-full pr-8px">
-                <div class="flex items-center gap-8px">
-                  <span :style="{ color: data.color }">{{ node.label }}</span>
-                  <ElTag v-if="data.code" size="small" type="info">{{ data.code }}</ElTag>
-                </div>
-                <div class="flex gap-4px">
-                  <ElButton type="primary" size="small" link @click.stop="handleEditGroup(data)">编辑</ElButton>
-                  <ElButton type="danger" size="small" link @click.stop="handleDeleteGroup(data)">删除</ElButton>
-                </div>
-              </div>
-            </template>
-          </ElTree>
-        </div>
-
-        <!-- 分组表单 -->
-        <div v-if="groupDialogVisible" class="w-360px border rounded p-12px">
-          <h3 class="text-16px font-bold mb-12px">{{ groupForm.id ? '编辑分组' : '新增分组' }}</h3>
-          <ElForm ref="groupFormRef" :model="groupForm" :rules="groupFormRules" label-width="100px">
-            <ElFormItem label="分组名称" prop="name">
-              <ElInput v-model="groupForm.name" placeholder="请输入分组名称" />
-            </ElFormItem>
-            <ElFormItem label="分组代码" prop="code">
-              <ElInput v-model="groupForm.code" placeholder="请输入分组代码" />
-            </ElFormItem>
-            <ElFormItem label="上级分组">
-              <ElTreeSelect
-                v-model="groupForm.parentId"
-                :data="[{ id: 0, name: '根分组', children: serverGroups }]"
-                :props="{ label: 'name', value: 'id' }"
-                placeholder="请选择上级分组"
-                clearable
-                check-strictly
-              />
-            </ElFormItem>
-            <ElFormItem label="分组颜色">
-              <ElColorPicker v-model="groupForm.color" />
-            </ElFormItem>
-            <ElFormItem label="分组图标">
-              <ElInput v-model="groupForm.icon" placeholder="如: mdi:folder" />
-            </ElFormItem>
-            <ElFormItem label="排序">
-              <ElInputNumber v-model="groupForm.sortOrder" :min="0" style="width: 100%" />
-            </ElFormItem>
-            <ElFormItem label="状态">
-              <ElRadioGroup v-model="groupForm.status">
-                <ElRadio :value="1">启用</ElRadio>
-                <ElRadio :value="0">禁用</ElRadio>
-              </ElRadioGroup>
-            </ElFormItem>
-            <ElFormItem label="描述">
-              <ElInput v-model="groupForm.description" type="textarea" :rows="3" placeholder="请输入描述" />
-            </ElFormItem>
-            <ElFormItem>
-              <ElButton type="primary" @click="handleSaveGroup">保存</ElButton>
-              <ElButton @click="groupDialogVisible = false">取消</ElButton>
-            </ElFormItem>
-          </ElForm>
-        </div>
-      </div>
-    </ElDialog>
 
     <!-- 分配分组对话框 -->
     <ElDialog v-model="assignDialogVisible" title="分配主机分组" width="500px">
@@ -957,7 +814,7 @@ onMounted(() => {
           <ElTreeSelect
             v-model="assignForm.groupId"
             :data="serverGroups"
-            :props="{ label: 'name', value: 'id' }"
+            :props="treeSelectProps"
             placeholder="请选择分组"
             clearable
             check-strictly

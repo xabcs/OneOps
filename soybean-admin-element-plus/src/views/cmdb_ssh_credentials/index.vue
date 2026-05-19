@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { ElNotification, ElMessageBox, FormInstance, FormRules } from 'element-plus';
-import type { CMDB } from '@/typings/api';
 import {
   fetchGetSSHCredentials,
   fetchCreateSSHCredential,
@@ -28,8 +27,6 @@ const form = reactive<CMDB.SSHCredentialForm>({
   password: '',
   privateKey: '',
   passphrase: '',
-  port: 22,
-  sortOrder: 0,
   status: 1
 });
 
@@ -96,8 +93,6 @@ function handleAdd() {
     password: '',
     privateKey: '',
     passphrase: '',
-    port: 22,
-    sortOrder: 0,
     status: 1
   });
   dialogVisible.value = true;
@@ -112,9 +107,6 @@ function handleEdit(row: CMDB.SSHCredential) {
     description: row.description,
     username: row.username,
     authType: row.authType,
-    port: row.port,
-    sortOrder: row.sortOrder,
-    status: row.status
   });
   dialogVisible.value = true;
 }
@@ -168,8 +160,9 @@ function handleDelete(row: CMDB.SSHCredential) {
 
 // 测试连接
 async function handleTest(row: CMDB.SSHCredential) {
-  const testIp = await ElMessageBox.prompt('请输入要测试连接的IP地址', '测试连接', {
-    confirmButtonText: '测试',
+  // 先输入IP地址
+  const testIp = await ElMessageBox.prompt('请输入要测试连接的IP地址', '测试连接 - IP地址', {
+    confirmButtonText: '下一步',
     cancelButtonText: '取消',
     inputPattern: /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/,
     inputErrorMessage: '请输入有效的IP地址'
@@ -177,9 +170,20 @@ async function handleTest(row: CMDB.SSHCredential) {
 
   if (!testIp) return;
 
+  // 再输入端口号
+  const testPort = await ElMessageBox.prompt('请输入SSH端口号', '测试连接 - SSH端口', {
+    confirmButtonText: '测试',
+    cancelButtonText: '取消',
+    inputValue: '22',
+    inputPattern: /^[1-9][0-9]{0,4}$/,
+    inputErrorMessage: '请输入有效的端口号（1-65535）'
+  }).catch(() => null);
+
+  if (!testPort) return;
+
   testLoading.value = true;
   try {
-    const { data } = await fetchTestSSHCredential(row.id, testIp.value);
+    const { data } = await fetchTestSSHCredential(row.id, testIp.value, parseInt(testPort.value));
     if (data.success) {
       ElNotification.success(`连接测试成功：${data.message || '可以连接'}`);
     } else {
@@ -271,15 +275,9 @@ onMounted(() => {
           <ElInput v-model="form.passphrase" type="password" placeholder="如果私钥有密码请输入" show-password />
         </ElFormItem>
         <ElFormItem label="SSH端口">
-          <ElInputNumber v-model="form.port" :min="1" :max="65535" style="width: 100%" />
-        </ElFormItem>
-        <ElFormItem label="描述">
           <ElInput v-model="form.description" type="textarea" :rows="3" placeholder="请输入描述" />
         </ElFormItem>
         <ElFormItem label="排序">
-          <ElInputNumber v-model="form.sortOrder" :min="0" style="width: 100%" />
-        </ElFormItem>
-        <ElFormItem label="状态">
           <ElRadioGroup v-model="form.status">
             <ElRadio :value="1">启用</ElRadio>
             <ElRadio :value="0">禁用</ElRadio>

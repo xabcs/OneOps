@@ -139,16 +139,18 @@ func SetupRoutes(r *gin.Engine) {
 			// 标签管理
 			cmdb.GET("/tags", cmdbController.GetServerTags)
 			cmdb.POST("/tags", cmdbController.CreateServerTag)
+			cmdb.PUT("/tags/:id", cmdbController.UpdateServerTag)
 			cmdb.DELETE("/tags/:id", cmdbController.DeleteServerTag)
 			cmdb.POST("/tags/assign", cmdbController.AssignServerTag)
+			cmdb.DELETE("/server-tags/:serverId/:tagId", cmdbController.RemoveServerTag)
 
-				// SSH凭证管理
-				cmdb.GET("/ssh-credentials", cmdbController.GetSSHCredentials)
-				cmdb.GET("/ssh-credentials/:id", cmdbController.GetSSHCredentialByID)
-				cmdb.POST("/ssh-credentials", cmdbController.CreateSSHCredential)
-				cmdb.PUT("/ssh-credentials/:id", cmdbController.UpdateSSHCredential)
-				cmdb.DELETE("/ssh-credentials/:id", cmdbController.DeleteSSHCredential)
-				cmdb.POST("/ssh-credentials/:id/test", cmdbController.TestSSHCredential)
+			// SSH凭证管理
+			cmdb.GET("/ssh-credentials", cmdbController.GetSSHCredentials)
+			cmdb.GET("/ssh-credentials/:id", cmdbController.GetSSHCredentialByID)
+			cmdb.POST("/ssh-credentials", cmdbController.CreateSSHCredential)
+			cmdb.PUT("/ssh-credentials/:id", cmdbController.UpdateSSHCredential)
+			cmdb.DELETE("/ssh-credentials/:id", cmdbController.DeleteSSHCredential)
+			cmdb.POST("/ssh-credentials/:id/test", cmdbController.TestSSHCredential)
 
 			// 资产变更记录
 			cmdb.GET("/asset-changes", cmdbController.GetAssetChanges)

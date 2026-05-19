@@ -35,9 +35,6 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 	if status, ok := query["status"].(string); ok && status != "" {
 		tx = tx.Where("status = ?", status)
 	}
-	if businessID, ok := query["businessId"].(uint); ok && businessID > 0 {
-		tx = tx.Where("business_id = ?", businessID)
-	}
 	if provider, ok := query["provider"].(string); ok && provider != "" {
 		tx = tx.Where("provider = ?", provider)
 	}
@@ -56,7 +53,7 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 	}
 
 	// 预加载关联数据
-	queryTx := tx.Preload("Business").
+	queryTx := tx.
 		Preload("Cabinet").
 		Preload("Cabinet.Room").
 		Preload("Tags").
@@ -76,7 +73,7 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 // GetServerByID 根据ID获取服务器
 func (s *CMDBService) GetServerByID(id uint) (*models.Server, error) {
 	var server models.Server
-	err := db.Preload("Business").
+	err := db.
 		Preload("Cabinet").
 		Preload("Cabinet.Room").
 		Preload("Tags").
@@ -193,13 +190,6 @@ func (s *CMDBService) DeleteBusinessUnit(id uint) error {
 		return fmt.Errorf("该业务下有子业务，无法删除")
 	}
 
-	// 检查是否有关联服务器
-	if err := db.Model(&models.Server{}).Where("business_id = ?", id).Count(&count).Error; err != nil {
-		return err
-	}
-	if count > 0 {
-		return fmt.Errorf("该业务下有关联服务器，无法删除")
-	}
 
 	return db.Delete(&models.BusinessUnit{}, id).Error
 }
@@ -525,7 +515,7 @@ func (s *CMDBService) DeleteSSHCredential(id uint) error {
 }
 
 // TestSSHCredential 测试SSH凭证连接
-func (s *CMDBService) TestSSHCredential(id uint, testIP string) (map[string]interface{}, error) {
+func (s *CMDBService) TestSSHCredential(id uint, testIP string, testPort int) (map[string]interface{}, error) {
 	credential, err := s.GetSSHCredentialByID(id)
 	if err != nil {
 		return nil, err
@@ -537,6 +527,7 @@ func (s *CMDBService) TestSSHCredential(id uint, testIP string) (map[string]inte
 	result["message"] = "连接测试功能开发中"
 	result["credential"] = credential.Username
 	result["test_ip"] = testIP
+	result["test_port"] = testPort
 
 	return result, nil
 }

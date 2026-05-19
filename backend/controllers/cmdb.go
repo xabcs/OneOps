@@ -43,11 +43,6 @@ func (c *CMDBController) GetServers(ctx *gin.Context) {
 	if status := ctx.Query("status"); status != "" {
 		query["status"] = status
 	}
-	if businessID := ctx.Query("businessId"); businessID != "" {
-		if id, err := strconv.ParseUint(businessID, 10, 32); err == nil {
-			query["businessId"] = uint(id)
-		}
-	}
 	if provider := ctx.Query("provider"); provider != "" {
 		query["provider"] = provider
 	}
@@ -345,6 +340,29 @@ func (c *CMDBController) CreateServerTag(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("标签创建成功"))
+}
+
+// UpdateServerTag 更新服务器标签
+func (c *CMDBController) UpdateServerTag(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的ID"))
+		return
+	}
+
+	var updates map[string]interface{}
+	if err := ctx.ShouldBindJSON(&updates); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		return
+	}
+
+	if err := c.cmdbService.UpdateServerTag(uint(id), updates); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("标签更新成功"))
 }
 
 // DeleteServerTag 删除服务器标签
@@ -703,13 +721,14 @@ func (c *CMDBController) TestSSHCredential(ctx *gin.Context) {
 
 	var req struct {
 		TestIP string `json:"testIp"`
+		TestPort int `json:"testPort"`
 	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
 		return
 	}
 
-	result, err := c.cmdbService.TestSSHCredential(uint(id), req.TestIP)
+	result, err := c.cmdbService.TestSSHCredential(uint(id), req.TestIP, req.TestPort)
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return

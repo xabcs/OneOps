@@ -213,6 +213,7 @@ const local: App.I18n.Schema = {
     'cmdb_rooms': 'Room Management',
     'cmdb_tags': 'Tag Management',
     'cmdb_changes': 'Change Records',
+    'cmdb_ssh_credentials': 'SSH Credentials',
     plugin: 'Plugin',
     plugin_copy: 'Copy',
     plugin_charts: 'Charts',

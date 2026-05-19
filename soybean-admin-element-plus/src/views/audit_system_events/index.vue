@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { fetchGetSystemEventLogs } from '@/service/api';
-import type { Audit } from '@/typings/api';
 import { ElNotification } from 'element-plus';
 
 defineOptions({ name: 'AuditSystemEvents' });

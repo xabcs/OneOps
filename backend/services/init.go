@@ -27,6 +27,17 @@ func (s *InitService) InitDatabase() error {
 		&models.LoginLog{},
 		&models.OperationLog{},
 		&models.SystemEventLog{},
+		&models.BusinessUnit{},
+		&models.ServerRoom{},
+		&models.Cabinet{},
+		&models.SSHCredential{},
+		&models.Server{},
+		&models.ServerTag{},
+		&models.ServerTagRelation{},
+		&models.ServerGroup{},
+		&models.ServerGroupRelation{},
+		&models.CloudServer{},
+		&models.AssetChange{},
 	)
 	if err != nil {
 		return err
@@ -80,6 +91,13 @@ func (s *InitService) initMenus() error {
 		{ID: 5, Name: "菜单管理", Icon: "material-symbols:route", Path: "/manage/menu", Permission: "system:menu:query", Sort: 3, Status: 1, ParentID: 2},
 		{ID: 13, Name: "关于", Icon: "fluent:book-information-24-regular", Path: "/about", Permission: "", Sort: 5, Status: 1, ParentID: 0},
 		{ID: 14, Name: "用户中心", Icon: "mdi:user-circle-outline", Path: "/user-center", Permission: "", Sort: 6, Status: 1, ParentID: 0},
+		{ID: 20, Name: "资产管理", Icon: "mdi:server-network", Path: "/cmdb", Permission: "", Sort: 3, Status: 1, ParentID: 0},
+		{ID: 21, Name: "服务器管理", Icon: "mdi:server", Path: "/cmdb/servers", Permission: "cmdb:server:query", Sort: 1, Status: 1, ParentID: 20},
+		{ID: 22, Name: "业务管理", Icon: "mdi:sitemap", Path: "/cmdb/business", Permission: "cmdb:business:query", Sort: 2, Status: 1, ParentID: 20},
+		{ID: 23, Name: "机房管理", Icon: "mdi:office-building-marker", Path: "/cmdb/rooms", Permission: "cmdb:room:query", Sort: 3, Status: 1, ParentID: 20},
+		{ID: 24, Name: "标签管理", Icon: "mdi:tag-multiple", Path: "/cmdb/tags", Permission: "cmdb:tag:query", Sort: 4, Status: 1, ParentID: 20},
+		{ID: 25, Name: "变更记录", Icon: "mdi:history", Path: "/cmdb/changes", Permission: "cmdb:change:query", Sort: 5, Status: 1, ParentID: 20},
+		{ID: 26, Name: "SSH凭证", Icon: "mdi:key-variant", Path: "/cmdb/ssh-credentials", Permission: "cmdb:credential:query", Sort: 6, Status: 1, ParentID: 20},
 	}
 
 	for _, menu := range menus {
@@ -106,6 +124,13 @@ func (s *InitService) syncMenus() error {
 		{ID: 5, Name: "菜单管理", Icon: "material-symbols:route", Path: "/manage/menu", Permission: "system:menu:query", Sort: 3, Status: 1, ParentID: 2, MenuType: "menu"},
 		{ID: 13, Name: "关于", Icon: "fluent:book-information-24-regular", Path: "/about", Permission: "", MenuType: "menu", Sort: 5, Status: 1, ParentID: 0},
 		{ID: 14, Name: "用户中心", Icon: "mdi:user-circle-outline", Path: "/user-center", Permission: "", MenuType: "menu", Sort: 6, Status: 1, ParentID: 0},
+		{ID: 20, Name: "资产管理", Icon: "mdi:server-network", Path: "/cmdb", Permission: "", MenuType: "directory", Sort: 3, Status: 1, ParentID: 0},
+		{ID: 21, Name: "服务器管理", Icon: "mdi:server", Path: "/cmdb/servers", Permission: "cmdb:server:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 20},
+		{ID: 22, Name: "业务管理", Icon: "mdi:sitemap", Path: "/cmdb/business", Permission: "cmdb:business:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 20},
+		{ID: 23, Name: "机房管理", Icon: "mdi:office-building-marker", Path: "/cmdb/rooms", Permission: "cmdb:room:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 20},
+		{ID: 24, Name: "标签管理", Icon: "mdi:tag-multiple", Path: "/cmdb/tags", Permission: "cmdb:tag:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 20},
+		{ID: 25, Name: "变更记录", Icon: "mdi:history", Path: "/cmdb/changes", Permission: "cmdb:change:query", MenuType: "menu", Sort: 5, Status: 1, ParentID: 20},
+		{ID: 26, Name: "SSH凭证", Icon: "mdi:key-variant", Path: "/cmdb/ssh-credentials", Permission: "cmdb:credential:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 20},
 	}
 
 	addedCount := 0
@@ -125,6 +150,7 @@ func (s *InitService) syncMenus() error {
 				"parent_id":  menu.ParentID,
 				"sort":       menu.Sort,
 				"status":     menu.Status,
+					"menu_type":  menu.MenuType,
 			})
 			updatedCount++
 			logger.Debug("更新菜单",
@@ -159,12 +185,12 @@ func (s *InitService) syncRoleMenus() error {
 	logger.Info("开始同步角色菜单权限...")
 
 	// 定义5个内置角色的菜单权限（动态路由模式）
-	// 菜单ID映射：1=首页, 2=系统管理, 3=用户管理, 4=角色管理, 5=菜单管理, 13=关于, 14=用户中心
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14}           // 超级管理员：所有权限
-	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14}              // 运维工程师：系统管理权限
-	auditorMenuIDs := []uint{1, 13}                    // 审计员：仅基础权限
-	userMenuIDs := []uint{1}                           // 普通用户：仅首页
-	testMenuIDs := []uint{1, 13}                       // 测试角色：首页和关于
+	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26} // 超级管理员：所有权限
+	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26}               // 运维工程师：资产管理权限
+	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 23, 24, 25}                   // 审计员：资产和变更查看权限
+	userMenuIDs := []uint{1}                                                  // 普通用户：仅首页
+	testMenuIDs := []uint{1, 13, 20, 21, 22, 23, 24, 25, 26}                  // 测试角色：首页、关于和资产管理
 
 	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
 	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)
@@ -233,12 +259,12 @@ func (s *InitService) syncRoleMenus() error {
 // initRoles 初始化角色数据
 func (s *InitService) initRoles() error {
 	// 定义5个内置角色的菜单权限（动态路由模式）
-	// 菜单ID映射：1=首页, 2=系统管理, 3=用户管理, 4=角色管理, 5=菜单管理, 13=关于, 14=用户中心
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14}           // 超级管理员：所有权限
-	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14}              // 运维工程师：系统管理权限
-	auditorMenuIDs := []uint{1, 13}                    // 审计员：仅基础权限
-	userMenuIDs := []uint{1}                           // 普通用户：仅首页
-	testMenuIDs := []uint{1, 13}                       // 测试角色：首页和关于
+	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26} // 超级管理员：所有权限
+	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26}               // 运维工程师：资产管理权限
+	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 23, 24, 25}                   // 审计员：资产和变更查看权限
+	userMenuIDs := []uint{1}                                                  // 普通用户：仅首页
+	testMenuIDs := []uint{1, 13, 20, 21, 22, 23, 24, 25, 26}                  // 测试角色：首页、关于和资产管理
 
 	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
 	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)

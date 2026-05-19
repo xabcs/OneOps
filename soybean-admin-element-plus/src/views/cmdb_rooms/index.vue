@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import { fetchGetServerRooms, fetchCreateServerRoom, fetchUpdateServerRoom, fetchDeleteServerRoom } from '@/service/api';
-import type { ServerRoom } from '@/typings/api/cmdb';
 import { ElNotification, ElMessageBox, FormInstance, FormRules } from 'element-plus';
 
 defineOptions({ name: 'CmdbRooms' });
 
 const loading = ref(false);
-const tableData = ref<ServerRoom[]>([]);
+const tableData = ref<CMDB.ServerRoom[]>([]);
+const searchKeyword = ref('');
 
 // 对话框
 const dialogVisible = ref(false);
@@ -65,7 +65,12 @@ async function getTableData() {
   try {
     const { data } = await fetchGetServerRooms();
     if (data) {
-      tableData.value = data || [];
+      const keyword = searchKeyword.value.trim().toLowerCase();
+      tableData.value = keyword
+        ? (data || []).filter(item =>
+            [item.name, item.code, item.location, item.provider].some(value => value?.toLowerCase().includes(keyword))
+          )
+        : data || [];
     }
   } catch (err) {
     console.error('获取机房列表失败:', err);
@@ -93,7 +98,7 @@ function handleAdd() {
 }
 
 // 打开编辑对话框
-function handleEdit(row: ServerRoom) {
+function handleEdit(row: CMDB.ServerRoom) {
   dialogTitle.value = '编辑机房';
   Object.assign(roomForm, {
     id: row.id,
@@ -133,7 +138,7 @@ async function handleSave() {
 }
 
 // 删除
-function handleDelete(row: ServerRoom) {
+function handleDelete(row: CMDB.ServerRoom) {
   ElMessageBox.confirm(`确定要删除机房 "${row.name}" 吗？`, '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -154,7 +159,9 @@ function handleDelete(row: ServerRoom) {
 
 // 获取状态标签
 function getStatusTag(status: number) {
-  return status === 1 ? { text: '启用', type: 'success' } : { text: '禁用', type: 'danger' };
+  return status === 1
+    ? ({ text: '启用', type: 'success' } as const)
+    : ({ text: '禁用', type: 'danger' } as const);
 }
 
 // 初始化
@@ -177,13 +184,13 @@ onMounted(() => {
             @input="getTableData"
           >
             <template #prefix>
-              <icon-mdi:magnify class="align-sub text-icon" />
+              <icon-mdi-magnify class="align-sub text-icon" />
             </template>
           </ElInput>
         </ElSpace>
         <ElButton type="primary" @click="handleAdd">
           <template #icon>
-            <icon-mdi:add class="align-sub text-icon" />
+            <icon-mdi-plus class="align-sub text-icon" />
           </template>
           新增机房
         </ElButton>

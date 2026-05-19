@@ -271,6 +271,17 @@ export function fetchCreateServerTag(data: CMDB.ServerTagForm) {
 }
 
 /**
+ * 更新服务器标签
+ */
+export function fetchUpdateServerTag(id: number, data: Partial<CMDB.ServerTagForm>) {
+  return request({
+    url: `/cmdb/tags/${id}`,
+    method: 'put',
+    data
+  });
+}
+
+/**
  * 删除服务器标签
  */
 export function fetchDeleteServerTag(id: number) {
@@ -296,7 +307,7 @@ export function fetchAssignServerTag(serverId: number, tagId: number) {
  */
 export function fetchRemoveServerTag(serverId: number, tagId: number) {
   return request({
-    url: `/cmdb/servers/${serverId}/tags/${tagId}`,
+    url: `/cmdb/server-tags/${serverId}/${tagId}`,
     method: 'delete'
   });
 }
@@ -362,10 +373,10 @@ export function fetchDeleteSSHCredential(id: number) {
 /**
  * 测试SSH凭证连接
  */
-export function fetchTestSSHCredential(id: number, testIp: string) {
+export function fetchTestSSHCredential(id: number, testIp: string, testPort: number) {
   return request({
     url: `/cmdb/ssh-credentials/${id}/test`,
     method: 'post',
-    data: { testIp }
+    data: { testIp, testPort }
   });
 }
