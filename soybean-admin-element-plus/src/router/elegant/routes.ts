@@ -164,6 +164,81 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'cmdb',
+    path: '/cmdb',
+    component: 'layout.base',
+    meta: {
+      title: 'cmdb',
+      i18nKey: 'route.cmdb'
+    },
+    children: [
+      {
+        name: 'cmdb_business',
+        path: '/cmdb/business',
+        component: 'view.cmdb_business',
+        meta: {
+          title: 'cmdb_business',
+          i18nKey: 'route.cmdb_business'
+        }
+      },
+      {
+        name: 'cmdb_changes',
+        path: '/cmdb/changes',
+        component: 'view.cmdb_changes',
+        meta: {
+          title: 'cmdb_changes',
+          i18nKey: 'route.cmdb_changes'
+        }
+      },
+      {
+        name: 'cmdb_rooms',
+        path: '/cmdb/rooms',
+        component: 'view.cmdb_rooms',
+        meta: {
+          title: 'cmdb_rooms',
+          i18nKey: 'route.cmdb_rooms'
+        }
+      },
+      {
+        name: 'cmdb_servers',
+        path: '/cmdb/servers',
+        component: 'view.cmdb_servers',
+        meta: {
+          title: 'cmdb_servers',
+          i18nKey: 'route.cmdb_servers'
+        }
+      },
+      {
+        name: 'cmdb_ssh',
+        path: '/cmdb/ssh',
+        meta: {
+          title: 'cmdb_ssh',
+          i18nKey: 'route.cmdb_ssh'
+        },
+        children: [
+          {
+            name: 'cmdb_ssh_credentials',
+            path: '/cmdb/ssh/credentials',
+            component: 'view.cmdb_ssh_credentials',
+            meta: {
+              title: 'cmdb_ssh_credentials',
+              i18nKey: 'route.cmdb_ssh_credentials'
+            }
+          }
+        ]
+      },
+      {
+        name: 'cmdb_tags',
+        path: '/cmdb/tags',
+        component: 'view.cmdb_tags',
+        meta: {
+          title: 'cmdb_tags',
+          i18nKey: 'route.cmdb_tags'
+        }
+      }
+    ]
+  },
+  {
     name: 'function',
     path: '/function',
     component: 'layout.base',

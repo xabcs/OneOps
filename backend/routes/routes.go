@@ -28,6 +28,7 @@ func SetupRoutes(r *gin.Engine) {
 	auditController := controllers.NewAuditController()
 	monitoringController := controllers.NewMonitoringController()
 	routeController := controllers.NewRouteController()
+	cmdbController := controllers.NewCMDBController()
 
 	// API 路由组
 	api := r.Group("/api")
@@ -98,6 +99,59 @@ func SetupRoutes(r *gin.Engine) {
 			monitoring.POST("/refresh", monitoringController.RefreshMonitoring)
 			// 处理告警
 			monitoring.POST("/alert/handle", monitoringController.HandleAlert)
+		}
+
+		// CMDB资产管理路由（需要认证）
+		cmdb := api.Group("/cmdb")
+		cmdb.Use(middlewares.Auth())
+		{
+			// 服务器管理
+			cmdb.GET("/servers", cmdbController.GetServers)
+			cmdb.GET("/servers/:id", cmdbController.GetServerByID)
+			cmdb.POST("/servers", cmdbController.CreateServer)
+			cmdb.PUT("/servers/:id", cmdbController.UpdateServer)
+			cmdb.DELETE("/servers/:id", cmdbController.DeleteServer)
+			cmdb.GET("/servers/stats", cmdbController.GetServerStats)
+			cmdb.POST("/servers/config", cmdbController.GetServerConfig)
+
+			// 主机分组管理
+			cmdb.GET("/groups", cmdbController.GetServerGroups)
+			cmdb.GET("/groups/:id", cmdbController.GetServerGroupByID)
+			cmdb.POST("/groups", cmdbController.CreateServerGroup)
+			cmdb.PUT("/groups/:id", cmdbController.UpdateServerGroup)
+			cmdb.DELETE("/groups/:id", cmdbController.DeleteServerGroup)
+			cmdb.POST("/groups/assign", cmdbController.AssignServerToGroup)
+			cmdb.GET("/group-servers/:groupId", cmdbController.GetServersByGroup)
+
+			// 业务系统管理
+			cmdb.GET("/business-units", cmdbController.GetBusinessUnits)
+			cmdb.POST("/business-units", cmdbController.CreateBusinessUnit)
+			cmdb.PUT("/business-units/:id", cmdbController.UpdateBusinessUnit)
+			cmdb.DELETE("/business-units/:id", cmdbController.DeleteBusinessUnit)
+
+			// 机房机柜管理
+			cmdb.GET("/rooms", cmdbController.GetServerRooms)
+			cmdb.POST("/rooms", cmdbController.CreateServerRoom)
+			cmdb.PUT("/rooms/:id", cmdbController.UpdateServerRoom)
+			cmdb.DELETE("/rooms/:id", cmdbController.DeleteServerRoom)
+			cmdb.GET("/cabinets", cmdbController.GetCabinets)
+
+			// 标签管理
+			cmdb.GET("/tags", cmdbController.GetServerTags)
+			cmdb.POST("/tags", cmdbController.CreateServerTag)
+			cmdb.DELETE("/tags/:id", cmdbController.DeleteServerTag)
+			cmdb.POST("/tags/assign", cmdbController.AssignServerTag)
+
+				// SSH凭证管理
+				cmdb.GET("/ssh-credentials", cmdbController.GetSSHCredentials)
+				cmdb.GET("/ssh-credentials/:id", cmdbController.GetSSHCredentialByID)
+				cmdb.POST("/ssh-credentials", cmdbController.CreateSSHCredential)
+				cmdb.PUT("/ssh-credentials/:id", cmdbController.UpdateSSHCredential)
+				cmdb.DELETE("/ssh-credentials/:id", cmdbController.DeleteSSHCredential)
+				cmdb.POST("/ssh-credentials/:id/test", cmdbController.TestSSHCredential)
+
+			// 资产变更记录
+			cmdb.GET("/asset-changes", cmdbController.GetAssetChanges)
 		}
 
 		// 动态路由接口（需要认证）

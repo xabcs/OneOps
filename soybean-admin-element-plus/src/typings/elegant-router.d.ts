@@ -46,6 +46,14 @@ declare module "@elegant-router/types" {
     "audit_operation_logs": "/audit/operation/logs";
     "audit_system": "/audit/system";
     "audit_system_events": "/audit/system/events";
+    "cmdb": "/cmdb";
+    "cmdb_business": "/cmdb/business";
+    "cmdb_changes": "/cmdb/changes";
+    "cmdb_rooms": "/cmdb/rooms";
+    "cmdb_servers": "/cmdb/servers";
+    "cmdb_ssh": "/cmdb/ssh";
+    "cmdb_ssh_credentials": "/cmdb/ssh/credentials";
+    "cmdb_tags": "/cmdb/tags";
     "function": "/function";
     "function_hide-child": "/function/hide-child";
     "function_hide-child_one": "/function/hide-child/one";
@@ -146,6 +154,7 @@ declare module "@elegant-router/types" {
     | "about"
     | "alova"
     | "audit"
+    | "cmdb"
     | "function"
     | "home"
     | "iframe-page"
@@ -185,6 +194,12 @@ declare module "@elegant-router/types" {
     | "audit_login_logs"
     | "audit_operation_logs"
     | "audit_system_events"
+    | "cmdb_business"
+    | "cmdb_changes"
+    | "cmdb_rooms"
+    | "cmdb_servers"
+    | "cmdb_ssh_credentials"
+    | "cmdb_tags"
     | "function_hide-child_one"
     | "function_hide-child_three"
     | "function_hide-child_two"
