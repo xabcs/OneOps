@@ -49,6 +49,7 @@ declare module "@elegant-router/types" {
     "cmdb": "/cmdb";
     "cmdb_business": "/cmdb/business";
     "cmdb_changes": "/cmdb/changes";
+    "cmdb_groups": "/cmdb/groups";
     "cmdb_rooms": "/cmdb/rooms";
     "cmdb_servers": "/cmdb/servers";
     "cmdb_ssh": "/cmdb/ssh";
@@ -196,6 +197,7 @@ declare module "@elegant-router/types" {
     | "audit_system_events"
     | "cmdb_business"
     | "cmdb_changes"
+    | "cmdb_groups"
     | "cmdb_rooms"
     | "cmdb_servers"
     | "cmdb_ssh_credentials"

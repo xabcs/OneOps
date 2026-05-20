@@ -10,6 +10,14 @@ import type { RequestInstanceState } from './type';
 const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
 const { baseURL, otherBaseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
 
+// 业务错误码映射
+const BusinessErrorMessages: Record<number, string> = {
+  40001: '主机名已存在，请使用其他主机名',
+  40002: 'IP地址已存在，请使用其他IP地址',
+  40003: '服务器不存在',
+  40004: '无效的SSH凭证'
+};
+
 export const request = createFlatRequest(
   {
     baseURL,
@@ -23,6 +31,14 @@ export const request = createFlatRequest(
       refreshTokenPromise: null
     } as RequestInstanceState,
     transform(response: AxiosResponse<App.Service.Response<any>>) {
+      // 检查是否是业务错误（4xxxx）
+      const responseCode = response.data.code;
+      const businessErrorCode = parseInt(String(responseCode));
+      if (businessErrorCode >= 40000 && businessErrorCode < 50000) {
+        // 业务错误，返回完整响应，让业务代码处理
+        return response.data;
+      }
+      // 正常情况，返回数据部分
       return response.data.data;
     },
     async onRequest(config) {
@@ -49,6 +65,14 @@ export const request = createFlatRequest(
         window.removeEventListener('beforeunload', handleLogout);
 
         request.state.errMsgStack = request.state.errMsgStack.filter(msg => msg !== response.data.msg);
+      }
+
+      // 处理业务错误码（4xxxx）- 不抛出错误，让请求正常返回，业务代码检查响应
+      const businessErrorCode = parseInt(responseCode);
+      if (businessErrorCode >= 40000 && businessErrorCode < 50000) {
+        // 业务错误，不抛出错误，直接返回响应
+        // 业务代码需要检查 response.data.code 来判断是否成功
+        return response.data;
       }
 
       // when the backend response code is in `logoutCodes`, it means the user will be logged out and redirected to login page
@@ -130,6 +154,8 @@ export const request = createFlatRequest(
         return;
       }
 
+      // 业务错误（4xxxx）已经在 onBackendFail 中处理并抛出，这里不需要再处理
+      // 只处理其他类型的错误
       showErrorMsg(request.state, message);
     }
   }

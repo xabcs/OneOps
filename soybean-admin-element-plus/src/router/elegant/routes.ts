@@ -191,6 +191,15 @@ export const generatedRoutes: GeneratedRoute[] = [
         }
       },
       {
+        name: 'cmdb_groups',
+        path: '/cmdb/groups',
+        component: 'view.cmdb_groups',
+        meta: {
+          title: 'cmdb_groups',
+          i18nKey: 'route.cmdb_groups'
+        }
+      },
+      {
         name: 'cmdb_rooms',
         path: '/cmdb/rooms',
         component: 'view.cmdb_rooms',

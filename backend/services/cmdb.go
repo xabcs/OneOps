@@ -88,7 +88,36 @@ func (s *CMDBService) CreateServer(server *models.Server, operator string) error
 		return err
 	}
 
-	return db.Create(server).Error
+	// 开始事务
+	tx := db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 创建服务器
+	if err := tx.Create(server).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// 处理分组关联
+	if len(server.GroupIDs) > 0 {
+		for _, groupID := range server.GroupIDs {
+			relation := models.ServerGroupRelation{
+				ServerID: server.ID,
+				GroupID:  groupID,
+			}
+			if err := tx.Create(&relation).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("创建分组关联失败: %w", err)
+			}
+		}
+	}
+
+	// 提交事务
+	return tx.Commit().Error
 }
 
 // UpdateServer 更新服务器
@@ -107,7 +136,43 @@ func (s *CMDBService) UpdateServer(id uint, updates map[string]interface{}, oper
 		}
 	}
 
-	return db.Model(&models.Server{}).Where("id = ?", id).Updates(updates).Error
+	// 开始事务
+	tx := db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 更新服务器基本信息
+	if err := tx.Model(&models.Server{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// 处理分组关联更新
+	if groupIDs, ok := updates["groupIds"].([]uint); ok {
+		// 删除旧的分组关联
+		if err := tx.Where("server_id = ?", id).Delete(&models.ServerGroupRelation{}).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("删除旧分组关联失败: %w", err)
+		}
+
+		// 创建新的分组关联
+		for _, groupID := range groupIDs {
+			relation := models.ServerGroupRelation{
+				ServerID: id,
+				GroupID:  groupID,
+			}
+			if err := tx.Create(&relation).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("创建分组关联失败: %w", err)
+			}
+		}
+	}
+
+	// 提交事务
+	return tx.Commit().Error
 }
 
 // DeleteServer 删除服务器

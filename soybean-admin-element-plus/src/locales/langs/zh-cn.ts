@@ -216,6 +216,7 @@ const local: App.I18n.Schema = {
     'cmdb_tags': '标签管理',
     'cmdb_changes': '变更记录',
     'cmdb_ssh_credentials': 'SSH凭证',
+    'cmdb_groups': '主机分组',
     plugin_copy: '剪贴板',
     plugin_charts: '图表',
     plugin_charts_echarts: 'ECharts',

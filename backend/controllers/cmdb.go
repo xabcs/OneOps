@@ -6,6 +6,7 @@ import (
 	"oneops/backend/services"
 	"oneops/backend/utils"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -97,6 +98,16 @@ func (c *CMDBController) CreateServer(ctx *gin.Context) {
 	}
 
 	if err := c.cmdbService.CreateServer(&server, operator); err != nil {
+		// 检查是否是重复键错误
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "Duplicate entry") && strings.Contains(errMsg, "hostname") {
+			ctx.JSON(http.StatusOK, utils.ErrorDuplicateHostname())
+			return
+		}
+		if strings.Contains(errMsg, "Duplicate entry") && strings.Contains(errMsg, "ip") {
+			ctx.JSON(http.StatusOK, utils.ErrorDuplicateIP())
+			return
+		}
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -126,6 +137,16 @@ func (c *CMDBController) UpdateServer(ctx *gin.Context) {
 	}
 
 	if err := c.cmdbService.UpdateServer(uint(id), updates, operator); err != nil {
+		// 检查是否是重复键错误
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "Duplicate entry") && strings.Contains(errMsg, "hostname") {
+			ctx.JSON(http.StatusOK, utils.ErrorDuplicateHostname())
+			return
+		}
+		if strings.Contains(errMsg, "Duplicate entry") && strings.Contains(errMsg, "ip") {
+			ctx.JSON(http.StatusOK, utils.ErrorDuplicateIP())
+			return
+		}
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}

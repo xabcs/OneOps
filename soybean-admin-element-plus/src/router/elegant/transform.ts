@@ -195,6 +195,7 @@ const routeMap: RouteMap = {
   "cmdb": "/cmdb",
   "cmdb_business": "/cmdb/business",
   "cmdb_changes": "/cmdb/changes",
+  "cmdb_groups": "/cmdb/groups",
   "cmdb_rooms": "/cmdb/rooms",
   "cmdb_servers": "/cmdb/servers",
   "cmdb_ssh": "/cmdb/ssh",
