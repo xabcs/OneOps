@@ -49,7 +49,7 @@ func (s *InitService) InitDatabase() error {
 
 // initData 初始化和同步数据（自动检测并添加新菜单）
 func (s *InitService) initData() error {
-	// 同步菜单数据（增量更新，不删除现有数据）
+	// 同步菜单数据（增量更新，并清理已废弃菜单）
 	if err := s.syncMenus(); err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func (s *InitService) syncMenus() error {
 				"parent_id":  menu.ParentID,
 				"sort":       menu.Sort,
 				"status":     menu.Status,
-					"menu_type":  menu.MenuType,
+				"menu_type":  menu.MenuType,
 			})
 			updatedCount++
 			logger.Debug("更新菜单",
@@ -170,6 +170,15 @@ func (s *InitService) syncMenus() error {
 				zap.Uint("id", menu.ID),
 				zap.String("path", menu.Path))
 		}
+	}
+
+	deletedResult := db.Where("path = ? OR name IN ?", "/cmdb/groups", []string{"主机分组", "cmdb_groups"}).Delete(&models.Menu{})
+	if deletedResult.Error != nil {
+		logger.Error("删除废弃主机分组菜单失败", zap.Error(deletedResult.Error))
+		return deletedResult.Error
+	}
+	if deletedResult.RowsAffected > 0 {
+		logger.Info("已删除废弃主机分组菜单", zap.Int64("count", deletedResult.RowsAffected))
 	}
 
 	logger.Info("菜单同步完成",

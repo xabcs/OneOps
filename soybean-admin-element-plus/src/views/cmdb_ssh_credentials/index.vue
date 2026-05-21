@@ -7,7 +7,7 @@ import {
   fetchUpdateSSHCredential,
   fetchDeleteSSHCredential,
   fetchTestSSHCredential
-} from '@/service/api';
+} from '@/service/api/cmdb';
 
 defineOptions({ name: 'CmdbSshCredentials' });
 
@@ -265,19 +265,23 @@ onMounted(() => {
             <ElRadio value="key">密钥认证</ElRadio>
           </ElRadioGroup>
         </ElFormItem>
-        <ElFormItem v-if="form.authType === 'password'" label="密码" prop="password">
-          <ElInput v-model="form.password" type="password" placeholder="请输入密码" show-password />
-        </ElFormItem>
-        <ElFormItem v-if="form.authType === 'key'" label="私钥" prop="privateKey">
-          <ElInput v-model="form.privateKey" type="textarea" :rows="6" placeholder="请输入私钥内容" />
-        </ElFormItem>
-        <ElFormItem v-if="form.authType === 'key'" label="私钥密码">
-          <ElInput v-model="form.passphrase" type="password" placeholder="如果私钥有密码请输入" show-password />
-        </ElFormItem>
-        <ElFormItem label="SSH端口">
+        <template v-if="form.authType === 'password'">
+          <ElFormItem label="密码" prop="password">
+            <ElInput v-model="form.password" type="password" placeholder="请输入密码" show-password />
+          </ElFormItem>
+        </template>
+        <template v-if="form.authType === 'key'">
+          <ElFormItem label="私钥" prop="privateKey">
+            <ElInput v-model="form.privateKey" type="textarea" :rows="6" placeholder="请输入私钥内容" />
+          </ElFormItem>
+          <ElFormItem label="私钥密码">
+            <ElInput v-model="form.passphrase" type="password" placeholder="如果私钥有密码请输入" show-password />
+          </ElFormItem>
+        </template>
+        <ElFormItem label="描述">
           <ElInput v-model="form.description" type="textarea" :rows="3" placeholder="请输入描述" />
         </ElFormItem>
-        <ElFormItem label="排序">
+        <ElFormItem label="状态">
           <ElRadioGroup v-model="form.status">
             <ElRadio :value="1">启用</ElRadio>
             <ElRadio :value="0">禁用</ElRadio>

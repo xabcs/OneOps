@@ -312,3 +312,141 @@ declare namespace CMDB {
     total: number;
   };
 }
+
+/** 堡垒机相关类型 */
+declare namespace Bastion {
+  /** 会话状态 */
+  type SessionStatus = 'active' | 'closed' | 'error' | 'terminated';
+
+  /** 连接协议 */
+  type Protocol = 'ssh' | 'sftp';
+
+  /** 风险等级 */
+  type RiskLevel = 'safe' | 'low' | 'medium' | 'high' | 'critical';
+
+  /** 传输方向 */
+  type TransferDirection = 'upload' | 'download';
+
+  /** 传输状态 */
+  type TransferStatus = 'pending' | 'transferring' | 'success' | 'failed';
+
+  /** 审批状态 */
+  type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired';
+
+  /** 堡垒机会话 */
+  type BastionSession = {
+    id: number;
+    serverId: number;
+    server?: CMDB.Server;
+    userId: number;
+    user?: {
+      id: number;
+      username: string;
+    };
+    username: string;
+    loginAccount: string;
+    clientIp?: string;
+    protocol: Protocol;
+    sshCredentialId?: number;
+    sshCredential?: CMDB.SSHCredential;
+    startedAt?: string;
+    endedAt?: string;
+    duration: number;
+    status: SessionStatus;
+    closeReason?: string;
+    createdAt: string;
+    // 关联数据
+    commands?: BastionCommand[];
+    fileTransfers?: BastionFileTransfer[];
+  };
+
+  /** 命令审计 */
+  type BastionCommand = {
+    id: number;
+    sessionId: number;
+    session?: BastionSession;
+    command: string;
+    executedAt?: string;
+    exitCode?: number;
+    riskLevel: RiskLevel;
+    blocked: boolean;
+    outputSummary?: string;
+    createdAt: string;
+  };
+
+  /** 文件传输审计 */
+  type BastionFileTransfer = {
+    id: number;
+    sessionId: number;
+    session?: BastionSession;
+    direction: TransferDirection;
+    remotePath: string;
+    localPath?: string;
+    fileSize: number;
+    status: TransferStatus;
+    errorMessage?: string;
+    startedAt?: string;
+    completedAt?: string;
+    createdAt: string;
+  };
+
+  /** 访问策略 */
+  type AccessPolicy = {
+    id: number;
+    name: string;
+    subjectType: 'user' | 'role' | 'user_group';
+    subjectId: number;
+    assetScopeType: 'server' | 'group' | 'business' | 'tag' | 'all';
+    assetScopeId: number;
+    loginAccounts?: string[];
+    protocols?: Protocol[];
+    allowFileTransfer: boolean;
+    allowSudo: boolean;
+    requireApproval: boolean;
+    timeWindow?: {
+      start: string;
+      end: string;
+      days: number[];
+    };
+    highRiskCommands?: string[];
+    status: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+
+  /** 访问策略表单 */
+  type AccessPolicyForm = {
+    id?: number;
+    name: string;
+    subjectType: 'user' | 'role' | 'user_group';
+    subjectId: number | number[];
+    assetScopeType: 'server' | 'group' | 'business' | 'tag' | 'all';
+    assetScopeId: number | number[];
+    loginAccounts?: string[];
+    protocols?: Protocol[];
+    allowFileTransfer?: boolean;
+    allowSudo?: boolean;
+    requireApproval?: boolean;
+    timeWindow?: {
+      start: string;
+      end: string;
+      days: number[];
+    };
+    highRiskCommands?: string[];
+    status?: number;
+  };
+
+  /** 连接请求 */
+  type ConnectRequest = {
+    protocol: Protocol;
+    loginAccount: string;
+  };
+
+  /** 连接响应 */
+  type ConnectResponse = {
+    sessionId: number;
+    websocketUrl: string;
+    serverName: string;
+    serverIp: string;
+  };
+}

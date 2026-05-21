@@ -2,6 +2,7 @@ package routes
 
 import (
 	"oneops/backend/controllers"
+	"oneops/backend/handlers"
 	"oneops/backend/middlewares"
 
 	"github.com/gin-contrib/cors"
@@ -29,6 +30,8 @@ func SetupRoutes(r *gin.Engine) {
 	monitoringController := controllers.NewMonitoringController()
 	routeController := controllers.NewRouteController()
 	cmdbController := controllers.NewCMDBController()
+	bastionController := controllers.NewBastionController()
+	sshHandler := handlers.NewSSHWebSocketHandler()
 
 	// API 路由组
 	api := r.Group("/api")
@@ -107,12 +110,14 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			// 服务器管理
 			cmdb.GET("/servers", cmdbController.GetServers)
-			cmdb.GET("/servers/:id", cmdbController.GetServerByID)
 			cmdb.POST("/servers", cmdbController.CreateServer)
 			cmdb.PUT("/servers/:id", cmdbController.UpdateServer)
 			cmdb.DELETE("/servers/:id", cmdbController.DeleteServer)
 			cmdb.GET("/servers/stats", cmdbController.GetServerStats)
 			cmdb.POST("/servers/config", cmdbController.GetServerConfig)
+			cmdb.GET("/servers/:id", cmdbController.GetServerByID)
+			cmdb.POST("/servers/:id/connect", bastionController.ConnectServer)
+			cmdb.GET("/servers/:id/permission", bastionController.CheckConnectPermission)
 
 			// 主机分组管理
 			cmdb.GET("/groups", cmdbController.GetServerGroups)
@@ -154,6 +159,36 @@ func SetupRoutes(r *gin.Engine) {
 
 			// 资产变更记录
 			cmdb.GET("/asset-changes", cmdbController.GetAssetChanges)
+
+			// ========== 堡垒机功能 ==========
+
+			// 会话管理
+			cmdb.GET("/sessions", bastionController.GetSessions)
+			cmdb.GET("/sessions/active", bastionController.GetActiveSessions)
+			cmdb.GET("/sessions/stats", bastionController.GetSessionStats)
+			cmdb.GET("/sessions/:id", bastionController.GetSessionByID)
+			cmdb.POST("/sessions/:id/terminate", bastionController.TerminateSession)
+			cmdb.GET("/sessions/:id/commands", bastionController.GetSessionCommands)
+			cmdb.GET("/sessions/:id/file-transfers", bastionController.GetSessionFileTransfers)
+			cmdb.POST("/sessions/:id/resize", sshHandler.ResizePTY)
+
+			// WebSocket SSH 连接
+			cmdb.GET("/sessions/:id/ws", func(ctx *gin.Context) {
+				sshHandler.HandleWebSocket(ctx)
+			})
+
+			// 命令审计
+			cmdb.GET("/commands", bastionController.GetCommands)
+
+			// 文件传输审计
+			cmdb.GET("/file-transfers", bastionController.GetFileTransfers)
+
+			// 访问策略管理
+			cmdb.GET("/access-policies", bastionController.GetAccessPolicies)
+			cmdb.GET("/access-policies/:id", bastionController.GetAccessPolicyByID)
+			cmdb.POST("/access-policies", bastionController.CreateAccessPolicy)
+			cmdb.PUT("/access-policies/:id", bastionController.UpdateAccessPolicy)
+			cmdb.DELETE("/access-policies/:id", bastionController.DeleteAccessPolicy)
 		}
 
 		// 动态路由接口（需要认证）

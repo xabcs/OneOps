@@ -81,47 +81,50 @@ func (Cabinet) TableName() string {
 
 // Server 服务器模型
 type Server struct {
-	ID             uint       `json:"id" gorm:"primaryKey"`
-	Hostname       string     `json:"hostname" gorm:"size:100;not null;uniqueIndex"` // 主机名
-	IP             string     `json:"ip" gorm:"size:50;not null;index"`              // 外网IP
-	InnerIP        string     `json:"innerIp" gorm:"size:50;index"`                  // 内网IP
-	CPU            int        `json:"cpu" gorm:"default:0"`                          // CPU核心数
-	Memory         int        `json:"memory" gorm:"default:0"`                       // 内存(GB)
-	Disk           int        `json:"disk" gorm:"default:0"`                         // 磁盘(GB)
-	OS             string     `json:"os" gorm:"size:50"`                             // 操作系统
-	OSVersion      string     `json:"osVersion" gorm:"size:50"`                      // 系统版本
-	Arch           string     `json:"arch" gorm:"size:20;default:'x86_64'"`          // 系统架构
-	Env            string     `json:"env" gorm:"size:10;default:'test';index"`       // 环境
-	Status         string     `json:"status" gorm:"size:20;default:'unknown';index"` // 状态
-	SSHPort        int        `json:"sshPort" gorm:"default:22"`                     // SSH端口
-	SSHUser        string     `json:"sshUser" gorm:"size:50;default:'root'"`         // SSH用户
-	CredentialID   uint       `json:"credentialId" gorm:"index"`                     // SSH凭证ID
-	CabinetID      uint       `json:"cabinetId" gorm:"index"`                        // 所在机柜ID
-	UPosition      int        `json:"uPosition"`                                     // 机柜位置(U)
-	SN             string     `json:"sn" gorm:"size:100"`                            // 序列号
-	Manufacturer   string     `json:"manufacturer" gorm:"size:100"`                  // 厂商
-	Model          string     `json:"model" gorm:"size:100"`                         // 型号
-	PurchaseDate   *time.Time `json:"purchaseDate"`                                  // 购买日期
-	ExpireWarranty *time.Time `json:"expireWarranty"`                                // 保修到期
-	AssetNumber    string     `json:"assetNumber" gorm:"size:100"`                   // 资产编号
-	InstanceID     string     `json:"instanceId" gorm:"size:100"`                    // 云主机实例ID
-	InstanceType   string     `json:"instanceType" gorm:"size:50"`                   // 云主机类型
-	Region         string     `json:"region" gorm:"size:50"`                         // 区域
-	Zone           string     `json:"zone" gorm:"size:50"`                           // 可用区
-	Provider       string     `json:"provider" gorm:"size:50;index"`                 // 服务商
-	ServerType     string     `json:"serverType" gorm:"size:20;default:'vm'"`        // 类型
-	Remarks        string     `json:"remarks" gorm:"type:text"`                      // 备注
-	CreatedAt      time.Time  `json:"createdAt" gorm:"autoCreateTime"`
-	UpdatedAt      time.Time  `json:"updatedAt" gorm:"autoUpdateTime"`
-	LastCheckTime  *time.Time `json:"lastCheckTime"` // 最后检查时间
+	ID                uint       `json:"id" gorm:"primaryKey"`
+	Hostname          string     `json:"hostname" gorm:"size:100;not null;uniqueIndex"` // 主机名
+	IP                string     `json:"ip" gorm:"size:50;not null;index"`              // 外网IP
+	InnerIP           string     `json:"innerIp" gorm:"size:50;index"`                  // 内网IP
+	CPU               int        `json:"cpu" gorm:"default:0"`                          // CPU核心数
+	Memory            int        `json:"memory" gorm:"default:0"`                       // 内存(GB)
+	Disk              int        `json:"disk" gorm:"default:0"`                         // 磁盘(GB)
+	OS                string     `json:"os" gorm:"size:50"`                             // 操作系统
+	OSVersion         string     `json:"osVersion" gorm:"size:50"`                      // 系统版本
+	Arch              string     `json:"arch" gorm:"size:20;default:'x86_64'"`          // 系统架构
+	Env               string     `json:"env" gorm:"size:10;default:'test';index"`       // 环境
+	Status            string     `json:"status" gorm:"size:20;default:'unknown';index"` // 状态
+	SSHPort           int        `json:"sshPort" gorm:"default:22"`                     // SSH端口
+	SSHUser           string     `json:"sshUser" gorm:"size:50;default:'root'"`         // SSH用户
+	CredentialID      uint       `json:"credentialId" gorm:"index"`                     // SSH凭证ID（兼容旧字段）
+	SSHCredentialID   uint       `json:"sshCredentialId" gorm:"index"`                  // SSH凭证ID
+	CabinetID         uint       `json:"cabinetId" gorm:"index"`                        // 所在机柜ID
+	UPosition         int        `json:"uPosition"`                                     // 机柜位置(U)
+	SN                string     `json:"sn" gorm:"size:100"`                            // 序列号
+	Manufacturer     string     `json:"manufacturer" gorm:"size:100"`                  // 厂商
+	Model             string     `json:"model" gorm:"size:100"`                         // 型号
+	PurchaseDate      *time.Time `json:"purchaseDate"`                                  // 购买日期
+	ExpireWarranty    *time.Time `json:"expireWarranty"`                                // 保修到期
+	AssetNumber       string     `json:"assetNumber" gorm:"size:100"`                   // 资产编号
+	InstanceID        string     `json:"instanceId" gorm:"size:100"`                    // 云主机实例ID
+	InstanceType      string     `json:"instanceType" gorm:"size:50"`                   // 云主机类型
+	Region            string     `json:"region" gorm:"size:50"`                         // 区域
+	Zone              string     `json:"zone" gorm:"size:50"`                           // 可用区
+	Provider          string     `json:"provider" gorm:"size:50;index"`                 // 服务商
+	ServerType        string     `json:"serverType" gorm:"size:20;default:'vm'"`        // 类型
+	Remarks           string     `json:"remarks" gorm:"type:text"`                      // 备注
+	LastCheckTime     *time.Time `json:"lastCheckTime"`                                 // 最后连通性检查时间
+	LastConnectTime   *time.Time `json:"lastConnectTime"`                               // 最后连接时间
+	ConnectivityStatus string    `json:"connectivityStatus" gorm:"type:enum('online','offline','unknown');default:'unknown'"` // 连通性状态
+	CreatedAt         time.Time  `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt         time.Time  `json:"updatedAt" gorm:"autoUpdateTime"`
 
 	// 关联
-	Credential *SSHCredential `json:"credential,omitempty" gorm:"foreignKey:CredentialID;constraint:OnDelete:SET NULL"`
-	Cabinet    *Cabinet       `json:"cabinet,omitempty" gorm:"foreignKey:CabinetID;constraint:OnDelete:SET NULL"`
-	Tags       []ServerTag    `json:"tags,omitempty" gorm:"many2many:server_tag_relations;constraint:OnDelete:CASCADE"`
-	Groups     []ServerGroup  `json:"groups,omitempty" gorm:"many2many:server_group_relations;constraint:OnDelete:CASCADE"`
-	CloudInfo  *CloudServer   `json:"cloudInfo,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:SET NULL"`
-	GroupIDs   []uint         `json:"groupIds,omitempty" gorm:"-"`
+	SSHCredential *SSHCredential `json:"sshCredential,omitempty" gorm:"foreignKey:SSHCredentialID;constraint:OnDelete:SET NULL"`
+	Cabinet       *Cabinet       `json:"cabinet,omitempty" gorm:"foreignKey:CabinetID;constraint:OnDelete:SET NULL"`
+	Tags          []ServerTag    `json:"tags,omitempty" gorm:"many2many:server_tag_relations;constraint:OnDelete:CASCADE"`
+	Groups        []ServerGroup  `json:"groups,omitempty" gorm:"many2many:server_group_relations;constraint:OnDelete:CASCADE"`
+	CloudInfo     *CloudServer   `json:"cloudInfo,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:SET NULL"`
+	GroupIDs      []uint         `json:"groupIds,omitempty" gorm:"-"`
 }
 
 // TableName 指定表名

@@ -91,3 +91,11 @@ func ErrorServerNotFound() Response {
 func ErrorInvalidCredential() Response {
 	return ErrorResponse(ErrCodeInvalidCredential, "无效的SSH凭证")
 }
+
+// ErrorForbidden 403 禁止访问
+func ErrorForbidden(message string) Response {
+	if message == "" {
+		message = "禁止访问"
+	}
+	return ErrorResponse(403, message)
+}

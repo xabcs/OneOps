@@ -380,3 +380,245 @@ export function fetchTestSSHCredential(id: number, testIp: string, testPort: num
     data: { testIp, testPort }
   });
 }
+
+// ========== 堡垒机功能 ==========
+
+/**
+ * 连接服务器
+ */
+export function fetchConnectServer(serverId: number, data: {
+  protocol: 'ssh' | 'sftp';
+  loginAccount: string;
+}) {
+  return request<{
+    sessionId: number;
+    websocketUrl: string;
+    serverName: string;
+    serverIp: string;
+  }>({
+    url: `/cmdb/servers/${serverId}/connect`,
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 检查连接权限
+ */
+export function fetchCheckConnectPermission(serverId: number) {
+  return request<{
+    hasPermission: boolean;
+    allowedAccounts: string[];
+  }>({
+    url: `/cmdb/servers/${serverId}/permission`,
+    method: 'get'
+  });
+}
+
+/**
+ * 获取服务器的会话列表
+ */
+export function fetchGetServerSessions(serverId: number, params?: {
+  page?: number;
+  pageSize?: number;
+}) {
+  return request<CMDB.PageResponse<Bastion.BastionSession>>({
+    url: `/cmdb/servers/${serverId}/sessions`,
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取会话列表
+ */
+export function fetchGetSessions(params?: {
+  serverId?: number;
+  userId?: number;
+  status?: string;
+  protocol?: string;
+  clientIp?: string;
+  loginAccount?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  return request<CMDB.PageResponse<Bastion.BastionSession>>({
+    url: '/cmdb/sessions',
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取活跃会话
+ */
+export function fetchGetActiveSessions() {
+  return request<Bastion.BastionSession[]>({
+    url: '/cmdb/sessions/active',
+    method: 'get'
+  });
+}
+
+/**
+ * 获取会话统计
+ */
+export function fetchGetSessionStats() {
+  return request<{
+    active: number;
+    today: number;
+  }>({
+    url: '/cmdb/sessions/stats',
+    method: 'get'
+  });
+}
+
+/**
+ * 获取会话详情
+ */
+export function fetchGetSessionById(sessionId: number) {
+  return request<Bastion.BastionSession>({
+    url: `/cmdb/sessions/${sessionId}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 终止会话
+ */
+export function fetchTerminateSession(sessionId: number) {
+  return request({
+    url: `/cmdb/sessions/${sessionId}/terminate`,
+    method: 'post'
+  });
+}
+
+/**
+ * 获取会话命令列表
+ */
+export function fetchGetSessionCommands(sessionId: number) {
+  return request<Bastion.BastionCommand[]>({
+    url: `/cmdb/sessions/${sessionId}/commands`,
+    method: 'get'
+  });
+}
+
+/**
+ * 获取命令列表
+ */
+export function fetchGetCommands(params?: {
+  sessionId?: number;
+  riskLevel?: string;
+  blocked?: boolean;
+  command?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  return request<CMDB.PageResponse<Bastion.BastionCommand>>({
+    url: '/cmdb/commands',
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取会话文件传输记录
+ */
+export function fetchGetSessionFileTransfers(sessionId: number) {
+  return request<Bastion.BastionFileTransfer[]>({
+    url: `/cmdb/sessions/${sessionId}/file-transfers`,
+    method: 'get'
+  });
+}
+
+/**
+ * 获取文件传输列表
+ */
+export function fetchGetFileTransfers(params?: {
+  sessionId?: number;
+  direction?: 'upload' | 'download';
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  return request<CMDB.PageResponse<Bastion.BastionFileTransfer>>({
+    url: '/cmdb/file-transfers',
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 调整终端大小
+ */
+export function fetchResizeTerminal(sessionId: number, data: {
+  rows: number;
+  cols: number;
+}) {
+  return request({
+    url: `/cmdb/sessions/${sessionId}/resize`,
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 获取访问策略列表
+ */
+export function fetchGetAccessPolicies(params?: {
+  page?: number;
+  pageSize?: number;
+}) {
+  return request<CMDB.PageResponse<Bastion.AccessPolicy>>({
+    url: '/cmdb/access-policies',
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取访问策略详情
+ */
+export function fetchGetAccessPolicyById(id: number) {
+  return request<Bastion.AccessPolicy>({
+    url: `/cmdb/access-policies/${id}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 创建访问策略
+ */
+export function fetchCreateAccessPolicy(data: Bastion.AccessPolicyForm) {
+  return request({
+    url: '/cmdb/access-policies',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 更新访问策略
+ */
+export function fetchUpdateAccessPolicy(id: number, data: Partial<Bastion.AccessPolicyForm>) {
+  return request({
+    url: `/cmdb/access-policies/${id}`,
+    method: 'put',
+    data
+  });
+}
+
+/**
+ * 删除访问策略
+ */
+export function fetchDeleteAccessPolicy(id: number) {
+  return request({
+    url: `/cmdb/access-policies/${id}`,
+    method: 'delete'
+  });
+}

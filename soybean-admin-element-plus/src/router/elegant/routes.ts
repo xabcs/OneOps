@@ -173,6 +173,25 @@ export const generatedRoutes: GeneratedRoute[] = [
     },
     children: [
       {
+        name: 'cmdb_access',
+        path: '/cmdb/access',
+        meta: {
+          title: 'cmdb_access',
+          i18nKey: 'route.cmdb_access'
+        },
+        children: [
+          {
+            name: 'cmdb_access_policies',
+            path: '/cmdb/access/policies',
+            component: 'view.cmdb_access_policies',
+            meta: {
+              title: 'cmdb_access_policies',
+              i18nKey: 'route.cmdb_access_policies'
+            }
+          }
+        ]
+      },
+      {
         name: 'cmdb_business',
         path: '/cmdb/business',
         component: 'view.cmdb_business',
@@ -191,12 +210,12 @@ export const generatedRoutes: GeneratedRoute[] = [
         }
       },
       {
-        name: 'cmdb_groups',
-        path: '/cmdb/groups',
-        component: 'view.cmdb_groups',
+        name: 'cmdb_commands',
+        path: '/cmdb/commands',
+        component: 'view.cmdb_commands',
         meta: {
-          title: 'cmdb_groups',
-          i18nKey: 'route.cmdb_groups'
+          title: 'cmdb_commands',
+          i18nKey: 'route.cmdb_commands'
         }
       },
       {
@@ -215,6 +234,15 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'cmdb_servers',
           i18nKey: 'route.cmdb_servers'
+        }
+      },
+      {
+        name: 'cmdb_sessions',
+        path: '/cmdb/sessions',
+        component: 'view.cmdb_sessions',
+        meta: {
+          title: 'cmdb_sessions',
+          i18nKey: 'route.cmdb_sessions'
         }
       },
       {

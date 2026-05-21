@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"oneops/backend/models"
+	"strconv"
 )
 
 // CMDBService CMDB服务
@@ -39,12 +40,36 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 		tx = tx.Where("provider = ?", provider)
 	}
 
-	// 标记是否需要JOIN分组表
-	needsGroupJoin := false
-	if groupID, ok := query["groupId"].(uint); ok && groupID > 0 {
-		needsGroupJoin = true
-		tx = tx.Joins("JOIN server_group_relations ON servers.id = server_group_relations.server_id").
-			Where("server_group_relations.group_id = ?", groupID)
+	// 标记是否需要过滤分组
+	var groupIDUint uint
+	if groupID, ok := query["groupId"]; ok && groupID != nil {
+		// 处理多种数字类型
+		switch v := groupID.(type) {
+		case uint:
+			groupIDUint = v
+		case uint64:
+			groupIDUint = uint(v)
+		case int:
+			groupIDUint = uint(v)
+		case int64:
+			groupIDUint = uint(v)
+		case float64:
+			groupIDUint = uint(v)
+		case float32:
+			groupIDUint = uint(v)
+		default:
+			// 尝试转换字符串
+			if strVal, ok := groupID.(string); ok {
+				if parsedVal, err := strconv.ParseUint(strVal, 10, 32); err == nil {
+					groupIDUint = uint(parsedVal)
+				}
+			}
+		}
+
+		// 使用子查询过滤分组
+		if groupIDUint > 0 {
+			tx = tx.Where("id IN (SELECT server_id FROM server_group_relations WHERE group_id = ?)", groupIDUint)
+		}
 	}
 
 	// 获取总数
@@ -52,16 +77,12 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 		return nil, 0, err
 	}
 
-	// 预加载关联数据
-	queryTx := tx.
+	// 预加载关联数据并查询
+	err := tx.
 		Preload("Cabinet").
 		Preload("Cabinet.Room").
 		Preload("Tags").
-		Preload("Groups")
-	if needsGroupJoin {
-		queryTx = queryTx.Distinct("servers.id")
-	}
-	err := queryTx.
+		Preload("Groups").
 		Order("id DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).

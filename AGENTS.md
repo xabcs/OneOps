@@ -593,7 +593,41 @@ const apiUrl = import.meta.env.VITE_SERVICE_BASE_URL;
 <claude-mem-context>
 # Memory Context
 
-# [OneOps] recent context, 2026-05-19 4:15pm GMT+8
+# [OneOps] recent context, 2026-05-21 8:45am GMT+8
 
-No previous sessions found.
+Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
+Format: ID TIME TYPE TITLE
+Fetch details: get_observations([IDs]) | Search: mem-search skill
+
+Stats: 28 obs (5,513t read) | 1,103t work | -400% savings
+
+### May 20, 2026
+128 2:47p 🔴 前端未正确处理后端返回的主机名重复错误
+129 " 🔵 使用debug技能进行结构化调试
+130 2:48p 🔵 搜索主机创建相关代码定位问题
+131 " 🔵 多维度搜索定位后端响应处理逻辑
+132 2:49p 🔵 CMDB groups 表已废弃
+133 2:50p 🔵 CMDB 服务器错误处理机制
+134 2:51p 🔵 Axios 请求处理机制详解
+135 " 🔵 Token 刷新和错误消息处理机制
+136 2:52p 🔵 CMDB 模块架构：servers 模块已集成 groups 功能
+137 2:53p 🔴 修复服务器创建/更新错误处理逻辑
+138 2:54p 🔵 TypeScript 类型检查发现大量预存错误
+139 " 🔵 cmdb_servers 模块代码质量问题
+140 2:55p 🔄 重构 cmdb_servers 错误处理逻辑，降低代码复杂度
+141 " 🔄 完成 cmdb_servers 模块错误处理重构
+142 4:18p 🔵 OneOps 资产管理与堡垒机集成方案设计
+143 " 🔵 OneOps 项目使用 write-spec 技能进行架构设计
+144 " 🔵 OneOps 代码库中资产管理和堡垒机相关功能搜索
+145 4:19p 🔵 OneOps 现有架构分析：完整的 CMDB 资产管理系统
+146 4:29p 🔵 OneOps 项目文档结构完整，为架构设计提供上下文
+147 4:30p ⚖️ OneOps 资产管理与堡垒机集成架构设计完成
+148 4:31p ✅ 资产管理与堡垒机集成设计文档已创建完成
+149 4:32p 🔵 OneOps 主机分组功能实现调研开始
+150 4:33p 🔵 OneOps 主机分组功能实现完整但菜单配置缺失
+151 4:34p 🔵 OneOps 前端主机分组路由配置完整可用
+152 4:35p 🔵 OneOps 角色权限系统架构确认
+153 4:36p 🔵 OneOps 菜单数据模型和初始化机制确认
+154 4:39p 🔵 OneOps 数据库初始化和菜单同步机制确认
+155 4:52p 🔴 修复前端未正确处理后端主机名重复错误
 </claude-mem-context>

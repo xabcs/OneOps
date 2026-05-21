@@ -31,14 +31,6 @@ export const request = createFlatRequest(
       refreshTokenPromise: null
     } as RequestInstanceState,
     transform(response: AxiosResponse<App.Service.Response<any>>) {
-      // 检查是否是业务错误（4xxxx）
-      const responseCode = response.data.code;
-      const businessErrorCode = parseInt(String(responseCode));
-      if (businessErrorCode >= 40000 && businessErrorCode < 50000) {
-        // 业务错误，返回完整响应，让业务代码处理
-        return response.data;
-      }
-      // 正常情况，返回数据部分
       return response.data.data;
     },
     async onRequest(config) {
@@ -67,12 +59,18 @@ export const request = createFlatRequest(
         request.state.errMsgStack = request.state.errMsgStack.filter(msg => msg !== response.data.msg);
       }
 
-      // 处理业务错误码（4xxxx）- 不抛出错误，让请求正常返回，业务代码检查响应
+      // 处理业务错误码（4xxxx）- 构造错误并抛出
       const businessErrorCode = parseInt(responseCode);
       if (businessErrorCode >= 40000 && businessErrorCode < 50000) {
-        // 业务错误，不抛出错误，直接返回响应
-        // 业务代码需要检查 response.data.code 来判断是否成功
-        return response.data;
+        // 业务错误，需要让 Promise reject 并传递错误信息
+        // 创建一个符合 axios 错误格式的对象
+        const businessError = {
+          response: response,
+          code: 'BACKEND_ERROR_CODE',
+          message: response.data.message
+        };
+        // 抛出错误让业务代码捕获
+        throw businessError;
       }
 
       // when the backend response code is in `logoutCodes`, it means the user will be logged out and redirected to login page

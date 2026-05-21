@@ -13,6 +13,7 @@ import {
 } from '@/service/api';
 import { ElNotification, ElMessageBox, FormInstance, FormRules } from 'element-plus';
 import { $t } from '@/locales';
+import ServerConnectDialog from '@/components/ServerConnectDialog/index.vue';
 
 defineOptions({ name: 'CmdbServers' });
 
@@ -110,6 +111,10 @@ const searchForm = reactive({
 
 // ========== SSH凭证相关 ==========
 const sshCredentials = ref<CMDB.SSHCredential[]>([]);
+
+// ========== 连接相关 ==========
+const connectDialogVisible = ref(false);
+const selectedServer = ref<CMDB.Server | null>(null);
 
 // ========== 对话框相关 ==========
 const dialogVisible = ref(false);
@@ -709,6 +714,63 @@ function handleEdit(row: CMDB.Server) {
   dialogVisible.value = true;
 }
 
+// 打开连接对话框
+function handleConnect(row: CMDB.Server) {
+  selectedServer.value = row;
+  connectDialogVisible.value = true;
+}
+
+// 连接成功处理
+function handleConnected(sessionId: number, websocketUrl: string) {
+  ElNotification({
+    title: '连接成功',
+    message: `会话ID: ${sessionId}`,
+    type: 'success',
+    duration: 3000
+  });
+  // TODO: 可以在这里打开终端窗口
+  console.log('Connected:', { sessionId, websocketUrl });
+}
+
+function throwIfRequestFailed(result: { error: unknown }) {
+  if (result.error) {
+    throw result.error;
+  }
+}
+
+function focusFormInput(selector: string) {
+  setTimeout(() => {
+    const input = document.querySelector(selector);
+    if (input instanceof HTMLInputElement) {
+      input.focus();
+    }
+  }, 100);
+}
+
+function handleSaveError(error: any) {
+  console.log('[handleSave] 捕获到错误:', error);
+  console.log('[handleSave] 错误响应:', error?.response);
+
+  const errorCode = error?.response?.data?.code;
+  const errorMessage = error?.response?.data?.message || error?.message;
+
+  console.log('[handleSave] 错误码:', errorCode, '错误消息:', errorMessage);
+
+  if (errorCode === 40001) {
+    submitError.value = errorMessage || '主机名已存在，请使用其他主机名';
+    focusFormInput('.hostname-input input');
+    return;
+  }
+
+  if (errorCode === 40002) {
+    submitError.value = errorMessage || 'IP地址已存在，请使用其他IP地址';
+    focusFormInput('.ip-input input');
+    return;
+  }
+
+  ElNotification.error(errorMessage || '操作失败，请稍后重试');
+}
+
 // 保存
 async function handleSave() {
   if (!serverFormRef.value) return;
@@ -716,11 +778,8 @@ async function handleSave() {
   // 清除之前的错误
   submitError.value = '';
 
-  console.log('[handleSave] 开始保存');
-
   try {
     await serverFormRef.value.validate();
-    console.log('[handleSave] 表单验证通过');
 
     const formData: CMDB.ServerForm = {
       ...serverForm,
@@ -736,49 +795,13 @@ async function handleSave() {
           : null
     };
 
-    console.log('[handleSave] 准备创建/更新主机');
-
     if (serverForm.id) {
-      const result: any = await fetchUpdateServer(serverForm.id, formData);
-      console.log('[handleSave] 更新结果:', result);
-
-      // 检查是否是业务错误
-      if (result && result.code !== undefined) {
-        throw new Error(result.message || '更新失败');
-      }
-
-      console.log('[handleSave] 更新成功');
+      const result = await fetchUpdateServer(serverForm.id, formData);
+      throwIfRequestFailed(result);
       ElNotification.success('更新成功');
     } else {
-      const result: any = await fetchCreateServer(formData);
-      console.log('[handleSave] 创建结果:', result);
-
-      // 检查是否是业务错误
-      if (result && result.code !== undefined) {
-        // 业务错误
-        if (result.code === 40001) {
-          submitError.value = result.message || '主机名已存在，请使用其他主机名';
-          setTimeout(() => {
-            const hostnameInput = document.querySelector('.hostname-input input');
-            if (hostnameInput instanceof HTMLInputElement) {
-              hostnameInput.focus();
-            }
-          }, 100);
-        } else if (result.code === 40002) {
-          submitError.value = result.message || 'IP地址已存在，请使用其他IP地址';
-          setTimeout(() => {
-            const ipInput = document.querySelector('.ip-input input');
-            if (ipInput instanceof HTMLInputElement) {
-              ipInput.focus();
-            }
-          }, 100);
-        } else {
-          ElNotification.error(result.message || '创建失败');
-        }
-        return; // 不继续执行
-      }
-
-      console.log('[handleSave] 创建成功');
+      const result = await fetchCreateServer(formData);
+      throwIfRequestFailed(result);
       ElNotification.success('创建成功');
     }
 
@@ -786,8 +809,7 @@ async function handleSave() {
     await getServers();
     await getGroups();
   } catch (error: any) {
-    console.log('[handleSave] 捕获到错误:', error);
-    ElNotification.error(error.message || '操作失败');
+    handleSaveError(error);
   }
 }
 
@@ -1017,10 +1039,7 @@ onUnmounted(() => {
             <ElTableColumn type="selection" width="50" align="center" />
             <ElTableColumn prop="hostname" label="主机名" min-width="150" show-overflow-tooltip>
               <template #default="{ row }">
-                <div class="flex items-center gap-6px">
-                  <icon-mdi-server class="text-16px text-gray-400" />
-                  <span class="text-blue-600 cursor-pointer hover-underline">{{ row.hostname }}</span>
-                </div>
+                <span class="text-blue-600 cursor-pointer hover-underline">{{ row.hostname }}</span>
               </template>
             </ElTableColumn>
             <ElTableColumn prop="ip" label="IP地址" width="140" show-overflow-tooltip />
@@ -1065,8 +1084,9 @@ onUnmounted(() => {
                 </ElTag>
               </template>
             </ElTableColumn>
-            <ElTableColumn label="操作" width="160" align="center" fixed="right">
+            <ElTableColumn label="操作" width="240" align="center" fixed="right">
               <template #default="{ row }">
+                <ElButton type="success" plain size="small" @click="handleConnect(row)">连接</ElButton>
                 <ElButton type="primary" plain size="small" @click="handleEdit(row)">编辑</ElButton>
                 <ElButton type="danger" plain size="small" @click="handleDelete(row)">删除</ElButton>
               </template>
@@ -1238,6 +1258,16 @@ onUnmounted(() => {
         <ElButton type="primary" @click="handleSaveGroup">确定</ElButton>
       </template>
     </ElDialog>
+
+    <!-- 连接对话框 -->
+    <ServerConnectDialog
+      v-model:visible="connectDialogVisible"
+      :server-id="selectedServer?.id || 0"
+      :server-name="selectedServer?.hostname || ''"
+      :server-ip="selectedServer?.ip || ''"
+      :ssh-credential-id="selectedServer?.sshCredentialId"
+      @connected="handleConnected"
+    />
   </div>
 </template>
 
