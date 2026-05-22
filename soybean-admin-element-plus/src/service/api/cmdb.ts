@@ -388,7 +388,7 @@ export function fetchTestSSHCredential(id: number, testIp: string, testPort: num
  */
 export function fetchConnectServer(serverId: number, data: {
   protocol: 'ssh' | 'sftp';
-  loginAccount: string;
+  credentialId: number;
 }) {
   return request<{
     sessionId: number;
@@ -403,12 +403,12 @@ export function fetchConnectServer(serverId: number, data: {
 }
 
 /**
- * 检查连接权限
+ * 检查连接权限（返回可用凭证列表）
  */
 export function fetchCheckConnectPermission(serverId: number) {
   return request<{
     hasPermission: boolean;
-    allowedAccounts: string[];
+    credentials: CMDB.SSHCredential[];
   }>({
     url: `/cmdb/servers/${serverId}/permission`,
     method: 'get'

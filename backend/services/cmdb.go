@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"oneops/backend/models"
 	"strconv"
+
+	"gorm.io/gorm"
 )
 
 // CMDBService CMDB服务
@@ -77,12 +79,9 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 		return nil, 0, err
 	}
 
-	// 预加载关联数据并查询
+	// 列表页只预加载凭证（显示凭证数量徽章），其余关联数据在详情接口按需加载
 	err := tx.
-		Preload("Cabinet").
-		Preload("Cabinet.Room").
-		Preload("Tags").
-		Preload("Groups").
+		Preload("Credentials").
 		Order("id DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
@@ -98,6 +97,7 @@ func (s *CMDBService) GetServerByID(id uint) (*models.Server, error) {
 		Preload("Cabinet").
 		Preload("Cabinet.Room").
 		Preload("Tags").
+		Preload("Credentials").
 		First(&server, id).Error
 	return &server, err
 }
@@ -137,6 +137,24 @@ func (s *CMDBService) CreateServer(server *models.Server, operator string) error
 		}
 	}
 
+	// 处理凭证关联（多凭证）
+	if len(server.CredentialIDs) > 0 {
+		for _, credID := range server.CredentialIDs {
+			rel := models.ServerCredential{ServerID: server.ID, CredentialID: credID}
+			if err := tx.Create(&rel).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("创建凭证关联失败: %w", err)
+			}
+		}
+	} else if server.SSHCredentialID != 0 {
+		// 向后兼容：单凭证字段自动迁移到多凭证表
+		rel := models.ServerCredential{ServerID: server.ID, CredentialID: server.SSHCredentialID}
+		tx.Create(&rel) // 忽略错误（重复时不影响流程）
+	} else if server.CredentialID != 0 {
+		rel := models.ServerCredential{ServerID: server.ID, CredentialID: server.CredentialID}
+		tx.Create(&rel)
+	}
+
 	// 提交事务
 	return tx.Commit().Error
 }
@@ -165,8 +183,11 @@ func (s *CMDBService) UpdateServer(id uint, updates map[string]interface{}, oper
 		}
 	}()
 
+	// 过滤掉关联对象和虚拟字段，只保留实际数据库列
+	columnUpdates := filterServerColumns(updates)
+
 	// 更新服务器基本信息
-	if err := tx.Model(&models.Server{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+	if err := tx.Model(&models.Server{}).Where("id = ?", id).Updates(columnUpdates).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -192,8 +213,74 @@ func (s *CMDBService) UpdateServer(id uint, updates map[string]interface{}, oper
 		}
 	}
 
+	// 处理凭证关联更新（支持 JSON 数组，来自前端）
+	if rawCredIDs, exists := updates["credentialIds"]; exists {
+		credentialIDs := extractUintSlice(rawCredIDs)
+		// 删除旧的凭证关联
+		if err := tx.Where("server_id = ?", id).Delete(&models.ServerCredential{}).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("删除旧凭证关联失败: %w", err)
+		}
+		// 创建新的凭证关联
+		for _, credID := range credentialIDs {
+			rel := models.ServerCredential{ServerID: id, CredentialID: credID}
+			if err := tx.Create(&rel).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("创建凭证关联失败: %w", err)
+			}
+		}
+		// 同步 SSHCredentialID（取第一个凭证作为默认，向后兼容）
+		if len(credentialIDs) > 0 {
+			tx.Model(&models.Server{}).Where("id = ?", id).Update("ssh_credential_id", credentialIDs[0])
+		}
+	}
+
 	// 提交事务
 	return tx.Commit().Error
+}
+
+// filterServerColumns 过滤掉非数据库列字段（关联对象、虚拟字段），只保留可直接更新的列
+func filterServerColumns(updates map[string]interface{}) map[string]interface{} {
+	// 这些键是关联对象或 gorm:"-" 虚拟字段，不能直接作为 SQL 列名
+	skipKeys := map[string]bool{
+		"cloudInfo":    true,
+		"credential":   true,
+		"credentials":  true,
+		"credentialIds": true,
+		"cabinet":      true,
+		"tags":         true,
+		"groups":       true,
+		"groupIds":     true,
+		"sshCredential": true,
+		"business":     true,
+		"cloudInfoData": true,
+		"id":           true, // 主键不允许更新
+		"createdAt":    true,
+	}
+	result := make(map[string]interface{}, len(updates))
+	for k, v := range updates {
+		if !skipKeys[k] {
+			result[k] = v
+		}
+	}
+	return result
+}
+
+// extractUintSlice 从 interface{} 中提取 []uint（兼容 JSON 反序列化的 []interface{}/[]float64）
+func extractUintSlice(val interface{}) []uint {
+	switch v := val.(type) {
+	case []uint:
+		return v
+	case []interface{}:
+		result := make([]uint, 0, len(v))
+		for _, item := range v {
+			if f, ok := item.(float64); ok {
+				result = append(result, uint(f))
+			}
+		}
+		return result
+	}
+	return nil
 }
 
 // DeleteServer 删除服务器
@@ -461,22 +548,37 @@ func (s *CMDBService) GetServerStats() (map[string]interface{}, error) {
 
 // GetServerConfig 通过SSH获取服务器配置信息
 func (s *CMDBService) GetServerConfig(hostname, ip, sshUser string, sshPort int) (map[string]interface{}, error) {
-	config := make(map[string]interface{})
+	// 先通过 IP 或 hostname 查找 Server
+	var server models.Server
+	tx := db.Preload("SSHCredential")
+	if ip != "" {
+		tx = tx.Where("ip = ?", ip)
+	} else if hostname != "" {
+		tx = tx.Where("hostname = ?", hostname)
+	}
+	if err := tx.First(&server).Error; err != nil {
+		return nil, fmt.Errorf("服务器不存在: %v", err)
+	}
 
-	// TODO: 实现SSH连接和命令执行
-	// 这里需要使用golang.org/x/crypto/ssh库来连接服务器
-	// 然后执行命令获取配置信息
+	// 同步采集硬件配置
+	SyncServerHardwareConfig(server.ID)
 
-	// 临时返回模拟数据，实际应该通过SSH获取
-	config["cpu"] = 4
-	config["memory"] = 8  // GB
-	config["disk"] = 200  // GB
-	config["os"] = "Ubuntu"
-	config["osVersion"] = "22.04"
-	config["arch"] = "x86_64"
-	config["hostname"] = hostname
+	// 从 DB 读取最新配置
+	var updated models.Server
+	if err := db.First(&updated, server.ID).Error; err != nil {
+		return nil, fmt.Errorf("读取服务器配置失败: %v", err)
+	}
 
-	return config, nil
+	result := map[string]interface{}{
+		"cpu":       updated.CPU,
+		"memory":    updated.Memory,
+		"disk":      updated.Disk,
+		"os":        updated.OS,
+		"osVersion": updated.OSVersion,
+		"arch":      updated.Arch,
+		"hostname":  updated.Hostname,
+	}
+	return result, nil
 }
 
 // ========== 主机分组管理 ==========
@@ -484,7 +586,10 @@ func (s *CMDBService) GetServerConfig(hostname, ip, sshUser string, sshPort int)
 // GetServerGroups 获取主机分组列表（树形结构）
 func (s *CMDBService) GetServerGroups() ([]models.ServerGroup, error) {
 	var groups []models.ServerGroup
-	err := db.Preload("Servers").Order("sort_order ASC, id ASC").Find(&groups).Error
+	// 仅加载 ID，避免把所有 Server 字段全部拉出来（列表页只需要计数）
+	err := db.Preload("Servers", func(db *gorm.DB) *gorm.DB {
+		return db.Select("servers.id")
+	}).Order("sort_order ASC, id ASC").Find(&groups).Error
 	if err != nil {
 		return nil, err
 	}

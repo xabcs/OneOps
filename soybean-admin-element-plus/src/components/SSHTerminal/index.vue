@@ -4,7 +4,7 @@ import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { WebLinksAddon } from 'xterm-addon-web-links';
 import 'xterm/css/xterm.css';
-import { $t } from '@/locales';
+import { localStg } from '@/utils/storage';
 
 interface Props {
   sessionId: number;
@@ -31,6 +31,7 @@ let terminal: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
 let ws: WebSocket | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let wasConnected = false; // 本次连接是否成功过 onopen
 
 // 初始化终端
 function initTerminal() {
@@ -71,6 +72,14 @@ function initTerminal() {
 
   terminal.open(terminalRef.value);
   fitAddon.fit();
+  terminal.focus();
+
+  // 将用户键盘输入通过 WebSocket 发送到后端 SSH 代理
+  terminal.onData((data) => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(data);
+    }
+  });
 
   // 欢迎信息
   terminal.writeln(`\x1b[1;32m正在连接到 ${props.serverName} (${props.serverIp})...\x1b[0m\r\n`);
@@ -88,46 +97,83 @@ function connect() {
     return;
   }
 
-  const wsUrl = props.websocketUrl.startsWith('ws')
-    ? props.websocketUrl
-    : `ws://${window.location.host}${props.websocketUrl}`;
+  // 获取 token（SoybeanAdmin 使用带前缀的 storage key）
+  const token = localStg.get('token');
 
+  // 构建 WebSocket URL
+  // 开发环境：VITE_SERVICE_BASE_URL 是绝对地址（如 http://localhost:8082/api），直连后端
+  //           避免通过 Vite 代理，因为 Vite HMR 也使用 WebSocket，两者会冲突
+  // 生产环境：VITE_SERVICE_BASE_URL 通常为相对路径，使用当前域名（前后端同源）
+  let wsUrl: string;
+  const serviceUrl = import.meta.env.VITE_SERVICE_BASE_URL as string;
+
+  if (serviceUrl && /^https?:\/\//.test(serviceUrl)) {
+    // 绝对 URL（开发环境）：直接连接后端，去掉末尾 /api
+    const wsBase = serviceUrl
+      .replace(/^http:\/\//, 'ws://')
+      .replace(/^https:\/\//, 'wss://')
+      .replace(/\/api\/?$/, '');
+    wsUrl = `${wsBase}${props.websocketUrl}`;
+  } else {
+    // 相对 URL（生产环境）：同源直连
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    wsUrl = `${protocol}://${window.location.host}${props.websocketUrl}`;
+  }
+
+  if (token) {
+    wsUrl += `?token=${encodeURIComponent(token)}`;
+  }
+
+  wasConnected = false;
   ws = new WebSocket(wsUrl);
 
   ws.onopen = () => {
+    wasConnected = true;
     if (terminal) {
       terminal.writeln(`\x1b[1;32m连接成功！\x1b[0m\r\n`);
+      terminal.focus();
       emit('connected');
     }
   };
 
-  ws.onmessage = (event) => {
-    if (terminal) {
+  ws.onmessage = async (event) => {
+    if (!terminal) return;
+    if (event.data instanceof Blob) {
+      const text = await event.data.text();
+      terminal.write(text);
+    } else {
       terminal.write(event.data);
     }
   };
 
-  ws.onerror = (error) => {
-    console.error('WebSocket error:', error);
-    if (terminal) {
-      terminal.writeln(`\x1b[1;31m连接错误\x1b[0m\r\n`);
+  ws.onerror = () => {
+    if (terminal && !wasConnected) {
+      terminal.writeln(`\x1b[1;31m无法建立连接，请检查：SSH 凭证是否已绑定、服务器是否可达\x1b[0m\r\n`);
     }
-    emit('error', 'WebSocket 连接错误');
   };
 
   ws.onclose = (event) => {
     if (terminal) {
       terminal.writeln(`\r\n\x1b[1;33m连接已断开 (code: ${event.code})\x1b[0m\r\n`);
+      if (event.reason) {
+        terminal.writeln(`\x1b[1;31m原因: ${event.reason}\x1b[0m\r\n`);
+      }
     }
     emit('disconnected', `连接断开: ${event.code}`);
 
-    // 自动重连（仅非正常断开）
-    if (event.code !== 1000 && reconnectTimer === null) {
+    // 1000=正常关闭，1011=服务端错误（SSH失败等永久性错误）不重连
+    // wasConnected=false 说明本次会话从未成功（凭证缺失/SSH失败/会话已关闭），重连无意义
+    const isSessionDead = !wasConnected;
+    const noRetry = event.code === 1000 || event.code === 1011 || isSessionDead;
+    if (!noRetry && reconnectTimer === null) {
       terminal?.writeln(`\x1b[1;33m3秒后尝试重连...\x1b[0m\r\n`);
       reconnectTimer = setTimeout(() => {
         reconnectTimer = null;
         connect();
       }, 3000);
+    } else if (isSessionDead && event.code !== 1000) {
+      // 会话彻底失败，通知父组件
+      emit('error', '连接失败，请检查 SSH 凭证配置或服务器可达性');
     }
   };
 }
@@ -135,12 +181,11 @@ function connect() {
 // 调整终端大小
 function resizeTerminal(rows: number, cols: number) {
   if (ws && ws.readyState === WebSocket.OPEN) {
-    // 调用后端接口调整终端大小
-    fetch(`/api/cmdb/sessions/${props.sessionId}/resize`, {
+    fetch(`/proxy-default/cmdb/sessions/${props.sessionId}/resize`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        'Authorization': `Bearer ${localStg.get('token') || ''}`
       },
       body: JSON.stringify({ rows, cols })
     }).catch(err => console.error('Failed to resize terminal:', err));

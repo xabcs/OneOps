@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { views } from '@/router/elegant/imports';
 import {
   fetchGetServers,
   fetchCreateServer,
@@ -9,13 +11,20 @@ import {
   fetchCreateServerGroup,
   fetchUpdateServerGroup,
   fetchDeleteServerGroup,
-  fetchGetSSHCredentials
+  fetchGetSSHCredentials,
+  fetchGetBusinessUnits,
+  fetchGetSessions,
+  fetchCheckConnectPermission
 } from '@/service/api';
 import { ElNotification, ElMessageBox, FormInstance, FormRules } from 'element-plus';
+import { ArrowDown } from '@element-plus/icons-vue';
 import { $t } from '@/locales';
 import ServerConnectDialog from '@/components/ServerConnectDialog/index.vue';
 
 defineOptions({ name: 'CmdbServers' });
+
+const router = useRouter();
+const currentLoginAccount = ref('');
 
 interface TreeNode {
   id: number;
@@ -112,9 +121,19 @@ const searchForm = reactive({
 // ========== SSH凭证相关 ==========
 const sshCredentials = ref<CMDB.SSHCredential[]>([]);
 
+// ========== 业务系统相关 ==========
+const businessUnits = ref<CMDB.BusinessUnit[]>([]);
+
 // ========== 连接相关 ==========
 const connectDialogVisible = ref(false);
 const selectedServer = ref<CMDB.Server | null>(null);
+
+// SSH终端相关
+const sshTerminalVisible = ref(false);
+const sshSessionId = ref<number>(0);
+const sshWebsocketUrl = ref('');
+const sshServerName = ref('');
+const sshServerIp = ref('');
 
 // ========== 对话框相关 ==========
 const dialogVisible = ref(false);
@@ -128,11 +147,17 @@ const serverForm = reactive<CMDB.ServerForm & { groupIds?: number[] }>({
   hostname: '',
   ip: '',
   innerIp: '',
-  credentialId: undefined as unknown as number,
+  credentialIds: [],
   serverType: 'vm',
   groupIds: [],
   sshPort: 22,
-  remarks: ''
+  remarks: '',
+  env: 'test' as CMDB.ServerEnv,
+  cpu: 0,
+  memory: 0,
+  disk: 0,
+  os: '',
+  businessId: undefined as unknown as number
 });
 
 // 云主机表单
@@ -156,8 +181,8 @@ const serverFormRules: FormRules = {
     { required: true, message: '请输入连接IP', trigger: 'blur' },
     { pattern: /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/, message: '请输入有效的IP地址', trigger: 'blur' }
   ],
-  credentialId: [
-    { required: true, message: '请选择SSH凭证', trigger: 'change' }
+  credentialIds: [
+    { required: true, type: 'array', min: 1, message: '请至少选择一个SSH凭证', trigger: 'change' }
   ]
 };
 
@@ -656,11 +681,17 @@ function handleAdd() {
     hostname: '',
     ip: '',
     innerIp: '',
-    credentialId: undefined as unknown as number,
+    credentialIds: [],
     serverType: 'vm',
     groupIds: selectedGroupId.value ? [selectedGroupId.value] : [],
     sshPort: 22,
-    remarks: ''
+    remarks: '',
+    env: 'test' as CMDB.ServerEnv,
+    cpu: 0,
+    memory: 0,
+    disk: 0,
+    os: '',
+    businessId: undefined as unknown as number
   });
   Object.assign(cloudForm, {
     provider: 'aliyun',
@@ -684,11 +715,17 @@ function handleEdit(row: CMDB.Server) {
     hostname: row.hostname,
     ip: row.ip,
     innerIp: row.innerIp,
-    credentialId: row.credentialId || undefined as unknown as number,
+    credentialIds: row.credentials?.map(c => c.id) || (row.sshCredentialId ? [row.sshCredentialId] : []),
     serverType: row.serverType,
     groupIds: row.groups?.map(g => g.id) || [],
     sshPort: row.sshPort,
-    remarks: row.remarks
+    remarks: row.remarks,
+    env: row.env || 'test',
+    cpu: row.cpu || 0,
+    memory: row.memory || 0,
+    disk: row.disk || 0,
+    os: row.os || '',
+    businessId: row.businessId || (undefined as unknown as number)
   });
   if (row.cloudInfo) {
     Object.assign(cloudForm, {
@@ -721,15 +758,17 @@ function handleConnect(row: CMDB.Server) {
 }
 
 // 连接成功处理
-function handleConnected(sessionId: number, websocketUrl: string) {
-  ElNotification({
-    title: '连接成功',
-    message: `会话ID: ${sessionId}`,
-    type: 'success',
-    duration: 3000
+function handleConnected(sessionId: number, websocketUrl: string, loginAccount?: string) {
+  connectDialogVisible.value = false;
+
+  const params = new URLSearchParams({
+    websocketUrl,
+    serverName: selectedServer.value?.hostname || '',
+    serverIp: selectedServer.value?.ip || '',
+    loginAccount: loginAccount || currentLoginAccount.value || 'root'
   });
-  // TODO: 可以在这里打开终端窗口
-  console.log('Connected:', { sessionId, websocketUrl });
+
+  window.open(`/cmdb/terminal/${sessionId}?${params.toString()}`, '_blank');
 }
 
 function throwIfRequestFailed(result: { error: unknown }) {
@@ -834,6 +873,40 @@ function handleDelete(row: CMDB.Server) {
     .catch(() => {});
 }
 
+// 更多操作
+function handleMoreAction(cmd: string, row: CMDB.Server) {
+  if (cmd === 'delete') handleDelete(row);
+}
+
+// 详情抽屉
+const drawerVisible = ref(false);
+const drawerServer = ref<CMDB.Server | null>(null);
+const drawerActiveTab = ref('overview');
+const drawerSessions = ref<any[]>([]);
+const drawerPermission = ref<{ credentials: CMDB.SSHCredential[] }>({ credentials: [] });
+const drawerLoading = ref(false);
+
+async function handleViewDetail(row: CMDB.Server) {
+  drawerServer.value = row;
+  drawerVisible.value = true;
+  drawerActiveTab.value = 'overview';
+  drawerLoading.value = true;
+  try {
+    const [sessionsRes, permRes] = await Promise.allSettled([
+      fetchGetSessions({ serverId: row.id, pageSize: 10, page: 1 }),
+      fetchCheckConnectPermission(row.id)
+    ]);
+    if (sessionsRes.status === 'fulfilled') {
+      drawerSessions.value = sessionsRes.value.data?.list || [];
+    }
+    if (permRes.status === 'fulfilled') {
+      drawerPermission.value = permRes.value.data || { credentials: [] };
+    }
+  } finally {
+    drawerLoading.value = false;
+  }
+}
+
 // 获取节点类名
 function getNodeClass(node: TreeNode) {
   const classes = ['custom-tree-node'];
@@ -856,6 +929,11 @@ onMounted(() => {
   getGroups();
   getSSHCredentials();
   getServers();
+
+  // 加载业务系统列表
+  fetchGetBusinessUnits().then(res => {
+    businessUnits.value = res.data || [];
+  }).catch(() => {});
 
   // 添加全局点击监听器来关闭右键菜单
   document.addEventListener('click', handleGlobalClick);
@@ -1039,7 +1117,7 @@ onUnmounted(() => {
             <ElTableColumn type="selection" width="50" align="center" />
             <ElTableColumn prop="hostname" label="主机名" min-width="150" show-overflow-tooltip>
               <template #default="{ row }">
-                <span class="text-blue-600 cursor-pointer hover-underline">{{ row.hostname }}</span>
+                <span class="cursor-pointer text-primary hover:underline" @click="handleViewDetail(row)">{{ row.hostname }}</span>
               </template>
             </ElTableColumn>
             <ElTableColumn prop="ip" label="IP地址" width="140" show-overflow-tooltip />
@@ -1051,6 +1129,22 @@ onUnmounted(() => {
             <ElTableColumn label="配置" width="120" align="center">
               <template #default="{ row }">
                 <span class="text-gray-600">{{ row.cpu }}C / {{ row.memory }}G</span>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="磁盘" width="80" align="center">
+              <template #default="{ row }">
+                <span class="text-gray-600">{{ row.disk ? `${row.disk}G` : '-' }}</span>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="环境" width="80" align="center">
+              <template #default="{ row }">
+                <el-tag
+                  :type="row.env === 'prod' ? 'danger' : row.env === 'test' ? 'warning' : 'info'"
+                  size="small"
+                  effect="plain"
+                >
+                  {{ row.env === 'prod' ? '生产' : row.env === 'test' ? '测试' : row.env || '-' }}
+                </el-tag>
               </template>
             </ElTableColumn>
             <ElTableColumn prop="os" label="操作系统" min-width="120" show-overflow-tooltip>
@@ -1084,11 +1178,37 @@ onUnmounted(() => {
                 </ElTag>
               </template>
             </ElTableColumn>
-            <ElTableColumn label="操作" width="240" align="center" fixed="right">
+            <ElTableColumn label="凭证" width="80" align="center">
+              <template #default="{ row }">
+                <el-tag
+                  :type="row.credentials?.length ? 'success' : 'warning'"
+                  size="small"
+                  effect="plain"
+                >
+                  {{ row.credentials?.length ? `${row.credentials.length}个` : '未配置' }}
+                </el-tag>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="最近连接" width="150" show-overflow-tooltip>
+              <template #default="{ row }">
+                <span class="text-gray-500 text-xs">
+                  {{ row.lastConnectTime ? new Date(row.lastConnectTime).toLocaleString('zh-CN') : '-' }}
+                </span>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="操作" width="260" align="center" fixed="right">
               <template #default="{ row }">
                 <ElButton type="success" plain size="small" @click="handleConnect(row)">连接</ElButton>
-                <ElButton type="primary" plain size="small" @click="handleEdit(row)">编辑</ElButton>
-                <ElButton type="danger" plain size="small" @click="handleDelete(row)">删除</ElButton>
+                <ElButton type="primary" plain size="small" @click="handleViewDetail(row)">详情</ElButton>
+                <ElButton type="default" plain size="small" @click="handleEdit(row)">编辑</ElButton>
+                <el-dropdown trigger="click" @command="(cmd: string) => handleMoreAction(cmd, row)">
+                  <ElButton size="small" plain>更多<el-icon class="el-icon--right"><arrow-down /></el-icon></ElButton>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <el-dropdown-item command="delete" style="color: #f56c6c">删除</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
               </template>
             </ElTableColumn>
           </ElTable>
@@ -1167,12 +1287,19 @@ onUnmounted(() => {
           </ElFormItem>
         </template>
 
-        <ElFormItem label="SSH凭证" prop="credentialId">
-          <ElSelect v-model="serverForm.credentialId" placeholder="请选择SSH凭证" style="width: 100%">
+        <ElFormItem label="SSH凭证" prop="credentialIds">
+          <ElSelect
+            v-model="serverForm.credentialIds"
+            placeholder="请选择SSH凭证（可多选）"
+            style="width: 100%"
+            multiple
+            collapse-tags
+            collapse-tags-tooltip
+          >
             <ElOption
               v-for="cred in sshCredentials"
               :key="cred.id"
-              :label="`${cred.name} (${cred.username})`"
+              :label="`${cred.name}（${cred.username}）`"
               :value="cred.id"
             />
           </ElSelect>
@@ -1193,6 +1320,38 @@ onUnmounted(() => {
             placeholder="请选择分组"
             style="width: 100%"
           />
+        </ElFormItem>
+
+        <ElFormItem label="环境" prop="env">
+          <ElSelect v-model="serverForm.env" placeholder="请选择环境" style="width: 100%">
+            <ElOption label="生产" value="prod" />
+            <ElOption label="测试" value="test" />
+            <ElOption label="开发" value="dev" />
+          </ElSelect>
+        </ElFormItem>
+
+        <ElFormItem label="业务系统">
+          <ElSelect v-model="serverForm.businessId" placeholder="请选择业务系统" clearable style="width: 100%">
+            <ElOption
+              v-for="unit in businessUnits"
+              :key="unit.id"
+              :label="unit.name"
+              :value="unit.id"
+            />
+          </ElSelect>
+        </ElFormItem>
+
+        <ElFormItem label="硬件配置">
+          <div style="display: flex; gap: 8px; width: 100%">
+            <ElInputNumber v-model="serverForm.cpu" :min="0" :max="1024" placeholder="CPU核" style="flex: 1" />
+            <ElInputNumber v-model="serverForm.memory" :min="0" :max="65536" placeholder="内存GB" style="flex: 1" />
+            <ElInputNumber v-model="serverForm.disk" :min="0" :max="999999" placeholder="磁盘GB" style="flex: 1" />
+          </div>
+          <div style="font-size: 12px; color: #909399; margin-top: 4px">添加后系统将自动通过 SSH 同步硬件信息，也可手动填写</div>
+        </ElFormItem>
+
+        <ElFormItem label="操作系统">
+          <ElInput v-model="serverForm.os" placeholder="如 Ubuntu 22.04 / CentOS 7" style="width: 100%" />
         </ElFormItem>
 
         <ElFormItem label="备注">
@@ -1265,9 +1424,95 @@ onUnmounted(() => {
       :server-id="selectedServer?.id || 0"
       :server-name="selectedServer?.hostname || ''"
       :server-ip="selectedServer?.ip || ''"
-      :ssh-credential-id="selectedServer?.sshCredentialId"
+      :server-env="selectedServer?.env"
       @connected="handleConnected"
     />
+
+    <!-- SSH终端已改为路由跳转，保留连接对话框 -->
+
+    <!-- 主机详情抽屉 -->
+    <el-drawer
+      v-model="drawerVisible"
+      direction="rtl"
+      size="820px"
+      :title="drawerServer?.hostname || '主机详情'"
+      destroy-on-close
+    >
+      <div v-if="drawerServer">
+        <el-tabs v-model="drawerActiveTab">
+          <!-- 概览 Tab -->
+          <el-tab-pane label="概览" name="overview">
+            <el-descriptions :column="2" border>
+              <el-descriptions-item label="主机名">{{ drawerServer.hostname }}</el-descriptions-item>
+              <el-descriptions-item label="连接IP">{{ drawerServer.ip }}</el-descriptions-item>
+              <el-descriptions-item label="内网IP">{{ drawerServer.innerIp || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="SSH端口">{{ drawerServer.sshPort || 22 }}</el-descriptions-item>
+              <el-descriptions-item label="操作系统">{{ drawerServer.os || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="环境">
+                <el-tag :type="drawerServer.env === 'prod' ? 'danger' : drawerServer.env === 'test' ? 'warning' : 'info'" size="small">
+                  {{ drawerServer.env === 'prod' ? '生产' : drawerServer.env === 'test' ? '测试' : drawerServer.env || '-' }}
+                </el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="CPU">{{ drawerServer.cpu ? `${drawerServer.cpu} 核` : '-' }}</el-descriptions-item>
+              <el-descriptions-item label="内存">{{ drawerServer.memory ? `${drawerServer.memory} GB` : '-' }}</el-descriptions-item>
+              <el-descriptions-item label="磁盘">{{ drawerServer.disk ? `${drawerServer.disk} GB` : '-' }}</el-descriptions-item>
+              <el-descriptions-item label="状态">
+                <el-tag :type="drawerServer.status === 1 ? 'success' : 'danger'" size="small">
+                  {{ drawerServer.status === 1 ? '正常' : '停用' }}
+                </el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="最近连接">{{ drawerServer.lastConnectTime || '-' }}</el-descriptions-item>
+              <el-descriptions-item label="备注" :span="2">{{ drawerServer.remark || '-' }}</el-descriptions-item>
+            </el-descriptions>
+          </el-tab-pane>
+
+          <!-- 连接 Tab -->
+          <el-tab-pane label="连接信息" name="connect">
+            <el-descriptions :column="1" border>
+              <el-descriptions-item label="SSH端口">{{ drawerServer.sshPort || 22 }}</el-descriptions-item>
+              <el-descriptions-item label="绑定凭证">
+                <el-tag :type="drawerServer.credentials?.length ? 'success' : 'warning'" size="small">
+                  {{ drawerServer.credentials?.length ? `${drawerServer.credentials.length} 个已绑定` : '未配置' }}
+                </el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="可用凭证">
+                <div>
+                  <el-tag
+                    v-for="cred in drawerPermission.credentials"
+                    :key="cred.id"
+                    size="small"
+                    style="margin-right: 4px; margin-bottom: 4px"
+                  >{{ cred.name }}（{{ cred.username }}）</el-tag>
+                  <span v-if="!drawerPermission.credentials?.length" class="text-gray-400">暂无数据</span>
+                </div>
+              </el-descriptions-item>
+            </el-descriptions>
+            <div style="margin-top: 16px">
+              <el-button type="success" @click="handleConnect(drawerServer)">连接此主机</el-button>
+            </div>
+          </el-tab-pane>
+
+          <!-- 会话记录 Tab -->
+          <el-tab-pane label="会话记录" name="sessions">
+            <el-table :data="drawerSessions" v-loading="drawerLoading" size="small">
+              <el-table-column prop="username" label="用户" width="100" />
+              <el-table-column prop="loginAccount" label="登录账号" width="100" />
+              <el-table-column prop="protocol" label="协议" width="70">
+                <template #default="{ row }">
+                  <el-tag size="small">{{ row.protocol?.toUpperCase() }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="startedAt" label="开始时间" min-width="150" />
+              <el-table-column prop="status" label="状态" width="80">
+                <template #default="{ row }">
+                  <el-tag :type="row.status === 'active' ? 'success' : 'info'" size="small">{{ row.status }}</el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
+        </el-tabs>
+      </div>
+    </el-drawer>
   </div>
 </template>
 

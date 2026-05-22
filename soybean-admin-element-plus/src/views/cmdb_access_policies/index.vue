@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, h } from 'vue';
+import { ElMessageBox } from 'element-plus';
 import {
   fetchGetAccessPolicies,
   fetchCreateAccessPolicy,
   fetchUpdateAccessPolicy,
   fetchDeleteAccessPolicy
 } from '@/service/api/cmdb';
-import { $t } from '@/locales';
 
 defineOptions({
   name: 'CMDBAccessPolicies'
@@ -74,12 +74,12 @@ const weekdayOptions = [
 async function getPolicies() {
   loading.value = true;
   try {
-    const result = await fetchGetAccessPolicies({
+    const { data } = await fetchGetAccessPolicies({
       page: pagination.value.page,
       pageSize: pagination.value.pageSize
     });
-    policies.value = result.list;
-    total.value = result.total;
+    policies.value = data?.list || [];
+    total.value = data?.total || 0;
   } catch (error) {
     window.$message?.error('获取策略列表失败');
   } finally {
@@ -117,17 +117,19 @@ function handleEdit(policy: Bastion.AccessPolicy) {
 
 // 删除策略
 async function handleDelete(policy: Bastion.AccessPolicy) {
-  const confirmed = await window.$confirm?.(
-    `确定要删除策略"${policy.name}"吗？`,
-    '确认删除',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }
-  );
-
-  if (!confirmed) return;
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除策略"${policy.name}"吗？`,
+      '确认删除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    );
+  } catch {
+    return;
+  }
 
   try {
     await fetchDeleteAccessPolicy(policy.id);
@@ -233,7 +235,7 @@ onMounted(() => {
       <template #header>
         <div class="card-header">
           <span class="title">访问策略管理</span>
-          <el-button type="primary" :icon="ICON_REGISTRY.plus" @click="handleCreate">
+          <el-button type="primary" @click="handleCreate">
             新增策略
           </el-button>
         </div>
@@ -401,9 +403,10 @@ onMounted(() => {
 
         <el-form-item label="授权对象ID" prop="subjectId">
           <el-input
-            v-model.number="currentPolicy.subjectId"
+            :model-value="Array.isArray(currentPolicy.subjectId) ? currentPolicy.subjectId[0] : currentPolicy.subjectId"
             type="number"
             placeholder="请输入授权对象ID"
+            @update:model-value="currentPolicy.subjectId = Number($event)"
           />
         </el-form-item>
 
@@ -424,10 +427,11 @@ onMounted(() => {
 
         <el-form-item label="资产范围ID" prop="assetScopeId">
           <el-input
-            v-model.number="currentPolicy.assetScopeId"
+            :model-value="Array.isArray(currentPolicy.assetScopeId) ? currentPolicy.assetScopeId[0] : currentPolicy.assetScopeId"
             type="number"
             placeholder="选择全部资产时可填0"
             :disabled="currentPolicy.assetScopeType === 'all'"
+            @update:model-value="currentPolicy.assetScopeId = Number($event)"
           />
         </el-form-item>
 
@@ -444,10 +448,10 @@ onMounted(() => {
             </el-tag>
             <el-input
               v-if="!currentPolicy.loginAccounts || currentPolicy.loginAccounts.length === 0"
-              v-model="currentPolicy.loginAccounts[0]"
               placeholder="输入账号后按回车"
               size="small"
               style="width: 150px"
+              @change="(val: string) => { if (val) { currentPolicy.loginAccounts = [val]; } }"
             />
           </div>
         </el-form-item>
@@ -492,7 +496,6 @@ onMounted(() => {
             </el-tag>
             <el-button
               size="small"
-              :icon="ICON_REGISTRY.plus"
               @click="handleAddHighRiskCommand"
             >
               添加

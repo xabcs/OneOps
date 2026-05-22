@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"oneops/backend/models"
 	"strings"
+	"time"
 )
 
 // RBACService 权限服务
@@ -41,11 +42,19 @@ func (s *RBACService) GetUserRoles(userID uint) ([]*models.Role, error) {
 	return roles, err
 }
 
-// BuildMenuTreeAndPermissions 构建菜单树和权限列表
-func (s *RBACService) BuildMenuTreeAndPermissions(userID uint) ([]*models.Menu, []string, error) {
+// BuildMenuTreeAndPermissions 构建菜单树和权限列表，同时返回角色（避免调用方重复查询）
+func (s *RBACService) BuildMenuTreeAndPermissions(userID uint) ([]*models.Menu, []string, []*models.Role, error) {
+	// 先查缓存
+	rbacCache.mu.RLock()
+	if entry, ok := rbacCache.entries[userID]; ok && time.Now().Before(entry.expireAt) {
+		rbacCache.mu.RUnlock()
+		return entry.menuTree, entry.permissions, entry.roles, nil
+	}
+	rbacCache.mu.RUnlock()
+
 	roles, err := s.GetUserRoles(userID)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// 检查是否是管理员
@@ -69,7 +78,7 @@ func (s *RBACService) BuildMenuTreeAndPermissions(userID uint) ([]*models.Menu, 
 	var allMenus []*models.Menu
 	err = db.Where("status = 1").Order("sort ASC").Find(&allMenus).Error
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// 如果是管理员，拥有所有菜单
@@ -89,7 +98,17 @@ func (s *RBACService) BuildMenuTreeAndPermissions(userID uint) ([]*models.Menu, 
 		permissions = append(permissions, "*:*:*")
 	}
 
-	return menuTree, permissions, nil
+	// 写入缓存
+	rbacCache.mu.Lock()
+	rbacCache.entries[userID] = &rbacCacheEntry{
+		menuTree:    menuTree,
+		permissions: permissions,
+		roles:       roles,
+		expireAt:    time.Now().Add(rbacCacheTTL),
+	}
+	rbacCache.mu.Unlock()
+
+	return menuTree, permissions, roles, nil
 }
 
 // buildMenuTree 递归构建菜单树

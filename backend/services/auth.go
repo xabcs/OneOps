@@ -59,7 +59,7 @@ func (s *AuthService) GetUserInfo(userID uint) (*UserInfo, error) {
 
 	// 获取菜单树和权限
 	rbacService := NewRBACService()
-	menuTree, permissions, err := rbacService.BuildMenuTreeAndPermissions(user.ID)
+	menuTree, permissions, _, err := rbacService.BuildMenuTreeAndPermissions(user.ID)
 	if err != nil {
 		return nil, err
 	}

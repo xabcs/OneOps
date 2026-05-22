@@ -19,8 +19,17 @@ func NewInitService() *InitService {
 
 // InitDatabase 初始化数据库（创建表和初始数据）
 func (s *InitService) InitDatabase() error {
-	// 自动创建表
-	err := db.AutoMigrate(
+	// 在底层 sql.DB 上关闭外键检查（确保与 AutoMigrate 使用同一连接池生效）
+	sqlDB, _ := db.DB()
+	sqlDB.Exec("SET FOREIGN_KEY_CHECKS=0")
+	defer sqlDB.Exec("SET FOREIGN_KEY_CHECKS=1")
+
+	// 清理历史遗留的外键约束（忽略错误，约束不存在时正常失败）
+	db.Exec("ALTER TABLE cabinets DROP FOREIGN KEY IF EXISTS cabinets_ibfk_1")
+	db.Exec("ALTER TABLE cabinets DROP FOREIGN KEY IF EXISTS fk_server_rooms_cabinets")
+
+	migrateErr := db.AutoMigrate(
+		// 无外键依赖的基础表
 		&models.User{},
 		&models.Role{},
 		&models.Menu{},
@@ -28,22 +37,32 @@ func (s *InitService) InitDatabase() error {
 		&models.OperationLog{},
 		&models.SystemEventLog{},
 		&models.BusinessUnit{},
+		&models.SSHCredential{},
+		// 有外键依赖的表（按依赖顺序）
 		&models.ServerRoom{},
 		&models.Cabinet{},
-		&models.SSHCredential{},
 		&models.Server{},
 		&models.ServerTag{},
 		&models.ServerTagRelation{},
 		&models.ServerGroup{},
 		&models.ServerGroupRelation{},
+		&models.ServerCredential{},
 		&models.CloudServer{},
 		&models.AssetChange{},
+		// 堡垒机相关表
+		&models.AssetAccessPolicy{},
+		&models.BastionSession{},
+		&models.BastionCommand{},
+		&models.BastionFileTransfer{},
+		&models.BastionApproval{},
 	)
-	if err != nil {
-		return err
+
+	if migrateErr != nil {
+		// AutoMigrate 失败只记录警告，不阻止数据初始化（菜单/角色同步必须执行）
+		logger.Warn("AutoMigrate 部分失败，继续执行数据初始化", zap.Error(migrateErr))
 	}
 
-	// 检查是否需要初始化数据
+	// 无论 AutoMigrate 是否完全成功，都执行数据初始化
 	return s.initData()
 }
 
@@ -113,8 +132,13 @@ func (s *InitService) initMenus() error {
 func (s *InitService) syncMenus() error {
 	logger.Info("开始同步菜单数据...")
 
+	// 清除旧 cmdb 菜单（ID 20-40），重新写入新层级结构
+	if err := db.Where("id >= 20 AND id <= 40").Delete(&models.Menu{}).Error; err != nil {
+		logger.Error("清除旧 cmdb 菜单失败", zap.Error(err))
+		return err
+	}
+
 	// 定义动态路由菜单（用于 SoybeanAdmin 动态路由模式）
-	// 只包含前端实际存在的页面
 	menus := []models.Menu{
 		// 一级菜单
 		{ID: 1, Name: "首页", Icon: "mdi:monitor-dashboard", Path: "/home", Permission: "", MenuType: "menu", Sort: 1, Status: 1, ParentID: 0},
@@ -124,13 +148,27 @@ func (s *InitService) syncMenus() error {
 		{ID: 5, Name: "菜单管理", Icon: "material-symbols:route", Path: "/manage/menu", Permission: "system:menu:query", Sort: 3, Status: 1, ParentID: 2, MenuType: "menu"},
 		{ID: 13, Name: "关于", Icon: "fluent:book-information-24-regular", Path: "/about", Permission: "", MenuType: "menu", Sort: 5, Status: 1, ParentID: 0},
 		{ID: 14, Name: "用户中心", Icon: "mdi:user-circle-outline", Path: "/user-center", Permission: "", MenuType: "menu", Sort: 6, Status: 1, ParentID: 0},
+		// 资产管理一级目录
 		{ID: 20, Name: "资产管理", Icon: "mdi:server-network", Path: "/cmdb", Permission: "", MenuType: "directory", Sort: 3, Status: 1, ParentID: 0},
-		{ID: 21, Name: "服务器管理", Icon: "mdi:server", Path: "/cmdb/servers", Permission: "cmdb:server:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 20},
-		{ID: 22, Name: "业务管理", Icon: "mdi:sitemap", Path: "/cmdb/business", Permission: "cmdb:business:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 20},
-		{ID: 23, Name: "机房管理", Icon: "mdi:office-building-marker", Path: "/cmdb/rooms", Permission: "cmdb:room:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 20},
-		{ID: 24, Name: "标签管理", Icon: "mdi:tag-multiple", Path: "/cmdb/tags", Permission: "cmdb:tag:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 20},
-		{ID: 25, Name: "变更记录", Icon: "mdi:history", Path: "/cmdb/changes", Permission: "cmdb:change:query", MenuType: "menu", Sort: 5, Status: 1, ParentID: 20},
-		{ID: 26, Name: "SSH凭证", Icon: "mdi:key-variant", Path: "/cmdb/ssh-credentials", Permission: "cmdb:credential:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 20},
+		// 资产管理二级菜单
+		{ID: 21, Name: "资产总览", Icon: "mdi:view-dashboard", Path: "/cmdb/dashboard", Permission: "cmdb:server:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 20},
+		{ID: 22, Name: "主机资产", Icon: "mdi:server", Path: "/cmdb/servers", Permission: "cmdb:server:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 20},
+		// 访问控制目录
+		{ID: 23, Name: "访问控制", Icon: "mdi:shield-lock", Path: "/cmdb/access", Permission: "", MenuType: "directory", Sort: 3, Status: 1, ParentID: 20},
+		{ID: 24, Name: "访问策略", Icon: "mdi:file-lock", Path: "/cmdb/access/policies", Permission: "cmdb:access-policy:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 23},
+		{ID: 25, Name: "凭证库", Icon: "mdi:key", Path: "/cmdb/access/credentials", Permission: "cmdb:credential:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 23},
+		// 会话审计目录
+		{ID: 26, Name: "会话审计", Icon: "mdi:clipboard-text-clock", Path: "/cmdb/audit", Permission: "", MenuType: "directory", Sort: 4, Status: 1, ParentID: 20},
+		{ID: 27, Name: "在线会话", Icon: "mdi:monitor", Path: "/cmdb/audit/online", Permission: "cmdb:session:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 26},
+		{ID: 28, Name: "历史会话", Icon: "mdi:history", Path: "/cmdb/audit/sessions", Permission: "cmdb:session:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 26},
+		{ID: 29, Name: "命令审计", Icon: "mdi:console", Path: "/cmdb/audit/commands", Permission: "cmdb:command:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 26},
+		// 资产配置目录
+		{ID: 30, Name: "资产配置", Icon: "mdi:cog", Path: "/cmdb/config", Permission: "", MenuType: "directory", Sort: 5, Status: 1, ParentID: 20},
+		{ID: 31, Name: "业务系统", Icon: "mdi:domain", Path: "/cmdb/config/business", Permission: "cmdb:business:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 30},
+		{ID: 32, Name: "机房机柜", Icon: "mdi:office-building", Path: "/cmdb/config/rooms", Permission: "cmdb:room:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 30},
+		{ID: 33, Name: "标签管理", Icon: "mdi:tag", Path: "/cmdb/config/tags", Permission: "cmdb:tag:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 30},
+		// 资产变更
+		{ID: 34, Name: "资产变更", Icon: "mdi:clock-edit", Path: "/cmdb/changes", Permission: "cmdb:change:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 20},
 	}
 
 	addedCount := 0
@@ -195,11 +233,11 @@ func (s *InitService) syncRoleMenus() error {
 
 	// 定义5个内置角色的菜单权限（动态路由模式）
 	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26} // 超级管理员：所有权限
-	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26}               // 运维工程师：资产管理权限
-	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 23, 24, 25}                   // 审计员：资产和变更查看权限
-	userMenuIDs := []uint{1}                                                  // 普通用户：仅首页
-	testMenuIDs := []uint{1, 13, 20, 21, 22, 23, 24, 25, 26}                  // 测试角色：首页、关于和资产管理
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34} // 超级管理员：所有权限
+	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34}               // 运维工程师：资产管理权限
+	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34}                                           // 审计员：资产和审计查看权限
+	userMenuIDs := []uint{1}                                                                                   // 普通用户：仅首页
+	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34}                                              // 测试角色：首页、关于和资产管理
 
 	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
 	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)
@@ -269,11 +307,11 @@ func (s *InitService) syncRoleMenus() error {
 func (s *InitService) initRoles() error {
 	// 定义5个内置角色的菜单权限（动态路由模式）
 	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26} // 超级管理员：所有权限
-	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26}               // 运维工程师：资产管理权限
-	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 23, 24, 25}                   // 审计员：资产和变更查看权限
-	userMenuIDs := []uint{1}                                                  // 普通用户：仅首页
-	testMenuIDs := []uint{1, 13, 20, 21, 22, 23, 24, 25, 26}                  // 测试角色：首页、关于和资产管理
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34} // 超级管理员：所有权限
+	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34}               // 运维工程师：资产管理权限
+	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34}                                           // 审计员：资产和审计查看权限
+	userMenuIDs := []uint{1}                                                                                   // 普通用户：仅首页
+	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34}                                              // 测试角色：首页、关于和资产管理
 
 	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
 	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)

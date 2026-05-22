@@ -1,0 +1,205 @@
+<script setup lang="ts">
+import { onMounted, onUnmounted, ref } from 'vue';
+import { ElMessageBox } from 'element-plus';
+import { fetchGetActiveSessions, fetchGetSessionStats, fetchTerminateSession } from '@/service/api/cmdb';
+
+defineOptions({ name: 'CmdbAuditOnline' });
+
+const loading = ref(false);
+const sessions = ref<Bastion.BastionSession[]>([]);
+const stats = ref({ active: 0, today: 0 });
+
+let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+async function getActiveSessions() {
+  loading.value = true;
+  try {
+    const { data } = await fetchGetActiveSessions();
+    sessions.value = data || [];
+  } catch (error) {
+    window.$message?.error('获取活跃会话失败');
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function getStats() {
+  try {
+    const { data } = await fetchGetSessionStats();
+    if (data) stats.value = data;
+  } catch (error) {
+    console.error('获取统计失败:', error);
+  }
+}
+
+async function handleTerminate(session: Bastion.BastionSession) {
+  try {
+    await ElMessageBox.confirm(
+      `确定要断开会话吗？\n用户: ${session.username}\n服务器: ${session.server?.hostname || session.serverId}`,
+      '确认断开',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    );
+  } catch {
+    return;
+  }
+
+  try {
+    await fetchTerminateSession(session.id);
+    window.$message?.success('会话已断开');
+    refresh();
+  } catch (error: any) {
+    window.$message?.error(error.message || '断开会话失败');
+  }
+}
+
+function refresh() {
+  getActiveSessions();
+  getStats();
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}秒`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟`;
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return `${hours}小时${minutes}分钟`;
+}
+
+function formatTime(time: string): string {
+  return time ? new Date(time).toLocaleString('zh-CN') : '-';
+}
+
+onMounted(() => {
+  refresh();
+  refreshTimer = setInterval(refresh, 30000);
+});
+
+onUnmounted(() => {
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+});
+</script>
+
+<template>
+  <div class="online-page">
+    <el-card shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span class="title">在线会话</span>
+          <el-button type="primary" @click="refresh">刷新</el-button>
+        </div>
+      </template>
+
+      <div class="stats-cards">
+        <div class="stat-card stat-active">
+          <div class="stat-value">{{ stats.active }}</div>
+          <div class="stat-label">当前活跃会话</div>
+        </div>
+        <div class="stat-card stat-today">
+          <div class="stat-value">{{ stats.today }}</div>
+          <div class="stat-label">今日会话总数</div>
+        </div>
+      </div>
+
+      <el-table
+        v-loading="loading"
+        :data="sessions"
+        stripe
+        style="width: 100%; margin-top: 16px"
+      >
+        <el-table-column prop="id" label="会话ID" width="80" />
+        <el-table-column prop="username" label="用户名" width="120" />
+        <el-table-column label="服务器" width="160">
+          <template #default="{ row }">
+            {{ row.server?.hostname || `ID:${row.serverId}` }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="loginAccount" label="登录账号" width="120" />
+        <el-table-column prop="clientIp" label="客户端IP" width="140" />
+        <el-table-column prop="protocol" label="协议" width="90">
+          <template #default="{ row }">
+            <el-tag :type="row.protocol === 'ssh' ? 'primary' : 'success'" size="small">
+              {{ row.protocol?.toUpperCase() }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="开始时间" width="180">
+          <template #default="{ row }">
+            {{ formatTime(row.startedAt || '') }}
+          </template>
+        </el-table-column>
+        <el-table-column label="时长" width="110">
+          <template #default="{ row }">
+            {{ formatDuration(row.duration || 0) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="90">
+          <template #default="{ row }">
+            <el-tag type="success" size="small">活跃</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120" fixed="right">
+          <template #default="{ row }">
+            <el-button type="danger" size="small" @click="handleTerminate(row)">强制断开</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+  </div>
+</template>
+
+<style scoped>
+.online-page {
+  padding: 16px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.stats-cards {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  flex: 1;
+  border-radius: 8px;
+  padding: 20px;
+  color: white;
+  text-align: center;
+}
+
+.stat-active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-today {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 14px;
+  opacity: 0.9;
+}
+</style>

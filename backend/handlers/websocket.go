@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"oneops/backend/models"
@@ -53,26 +54,63 @@ func (h *SSHWebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 // HandleWebSocket 处理 WebSocket 连接
 func (h *SSHWebSocketHandler) HandleWebSocket(ctx *gin.Context) {
+	// 添加调试日志
+	println("[DEBUG] HandleWebSocket called")
+	println("[DEBUG] Path:", ctx.Request.URL.Path)
+	println("[DEBUG] Query:", ctx.Request.URL.RawQuery)
+	println("[DEBUG] Method:", ctx.Request.Method)
+
 	// 获取会话ID
 	sessionIDStr := ctx.Param("id")
 	sessionID, err := strconv.ParseUint(sessionIDStr, 10, 32)
 	if err != nil {
+		println("[DEBUG] 无效的会话ID:", sessionIDStr)
 		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的会话ID"))
 		return
 	}
 
-	// 获取用户信息
-	userID := ctx.GetUint("userId")
+	println("[DEBUG] SessionID:", sessionID)
+
+	// 获取用户信息 - 支持两种方式：header或query参数
+	userID := ctx.GetUint("user_id")
+	token := ctx.Query("token")
+
+	if userID == 0 && token != "" {
+		// 从token解析用户ID
+		claims, err := utils.ParseToken(token)
+		if err == nil {
+			userID = claims.UserID
+			println("[DEBUG] 从token解析userID:", userID)
+		}
+	}
+
 	if userID == 0 {
+		println("[DEBUG] userID为0，未认证")
+		// 对于WebSocket，返回401但不升级为WebSocket
 		ctx.JSON(http.StatusOK, utils.ErrorUnauthorized("未认证"))
 		return
 	}
 
-	// 获取会话信息
+	println("[DEBUG] UserID:", userID)
+
+	// 获取会话信息 - 需要预加载关联数据
 	session, err := h.bastionService.GetSessionByID(uint(sessionID))
 	if err != nil {
+		println("[DEBUG] 获取会话失败:", err)
 		ctx.JSON(http.StatusOK, utils.ErrorInternal("会话不存在"))
 		return
+	}
+
+	println("[DEBUG] Session loaded:", session.ID, "ServerID:", session.ServerID, "Status:", session.Status)
+	if session.Server != nil {
+		println("[DEBUG] Server IP:", session.Server.IP, "Port:", session.Server.SSHPort)
+	} else {
+		println("[DEBUG] Server is nil!")
+	}
+	if session.SSHCredential != nil {
+		println("[DEBUG] SSH Credential found:", session.SSHCredential.Name)
+	} else {
+		println("[DEBUG] SSH Credential is nil!")
 	}
 
 	// 验证会话归属
@@ -99,7 +137,7 @@ func (h *SSHWebSocketHandler) HandleWebSocket(ctx *gin.Context) {
 	sshClient, err := h.connectToServer(session)
 	if err != nil {
 		log.Printf("SSH 连接失败: %v", err)
-		h.sendErrorMessage(conn, fmt.Sprintf("SSH 连接失败: %v", err))
+		h.closeWithError(conn, fmt.Sprintf("SSH 连接失败: %v", err), websocket.CloseInternalServerErr)
 		h.bastionService.CloseSession(session.ID, "SSH 连接失败")
 		return
 	}
@@ -109,23 +147,37 @@ func (h *SSHWebSocketHandler) HandleWebSocket(ctx *gin.Context) {
 	sshSession, err := sshClient.NewSession()
 	if err != nil {
 		log.Printf("创建 SSH 会话失败: %v", err)
-		h.sendErrorMessage(conn, fmt.Sprintf("创建 SSH 会话失败: %v", err))
+		h.closeWithError(conn, fmt.Sprintf("创建 SSH 会话失败: %v", err), websocket.CloseInternalServerErr)
 		h.bastionService.CloseSession(session.ID, "创建 SSH 会话失败")
 		return
 	}
 	defer sshSession.Close()
 
+	// 必须在 Shell() 之前获取 stdin/stdout pipe，否则 ssh 包会报 "already set"
+	stdinPipe, err := sshSession.StdinPipe()
+	if err != nil {
+		h.closeWithError(conn, fmt.Sprintf("获取 stdin 管道失败: %v", err), websocket.CloseInternalServerErr)
+		h.bastionService.CloseSession(session.ID, "获取 stdin 管道失败")
+		return
+	}
+	stdoutPipe, err := sshSession.StdoutPipe()
+	if err != nil {
+		h.closeWithError(conn, fmt.Sprintf("获取 stdout 管道失败: %v", err), websocket.CloseInternalServerErr)
+		h.bastionService.CloseSession(session.ID, "获取 stdout 管道失败")
+		return
+	}
+
 	// 设置终端模式
 	modes := ssh.TerminalModes{
-		ssh.ECHO:          1,     // 启用回显
-		ssh.TTY_OP_ISPEED: 14400, // 输入速度 = 14.4kbaud
-		ssh.TTY_OP_OSPEED: 14400, // 输出速度 = 14.4kbaud
+		ssh.ECHO:          1,
+		ssh.TTY_OP_ISPEED: 14400,
+		ssh.TTY_OP_OSPEED: 14400,
 	}
 
 	// 设置伪终端
-	if err := sshSession.RequestPty("xterm", 80, 40, modes); err != nil {
+	if err := sshSession.RequestPty("xterm-256color", 40, 80, modes); err != nil {
 		log.Printf("设置伪终端失败: %v", err)
-		h.sendErrorMessage(conn, fmt.Sprintf("设置伪终端失败: %v", err))
+		h.closeWithError(conn, fmt.Sprintf("设置伪终端失败: %v", err), websocket.CloseInternalServerErr)
 		h.bastionService.CloseSession(session.ID, "设置伪终端失败")
 		return
 	}
@@ -133,7 +185,7 @@ func (h *SSHWebSocketHandler) HandleWebSocket(ctx *gin.Context) {
 	// 启动远程 shell
 	if err := sshSession.Shell(); err != nil {
 		log.Printf("启动 shell 失败: %v", err)
-		h.sendErrorMessage(conn, fmt.Sprintf("启动 shell 失败: %v", err))
+		h.closeWithError(conn, fmt.Sprintf("启动 shell 失败: %v", err), websocket.CloseInternalServerErr)
 		h.bastionService.CloseSession(session.ID, "启动 shell 失败")
 		return
 	}
@@ -150,20 +202,20 @@ func (h *SSHWebSocketHandler) HandleWebSocket(ctx *gin.Context) {
 	// 记录连接成功
 	log.Printf("SSH 会话 %d 已建立", session.ID)
 
-	// 启动双向数据转发
+	// 启动双向数据转发（pipe 已在 Shell() 前获取，直接传入）
 	var wg sync.WaitGroup
 	wg.Add(2)
 
 	// WebSocket -> SSH
 	go func() {
 		defer wg.Done()
-		h.forwardWebSocketToSSH(conn, sshSession, session)
+		h.forwardWebSocketToSSH(conn, stdinPipe, session)
 	}()
 
 	// SSH -> WebSocket
 	go func() {
 		defer wg.Done()
-		h.forwardSSHToWebSocket(sshSession, conn, session)
+		h.forwardSSHToWebSocket(stdoutPipe, conn, session)
 	}()
 
 	// 等待转发结束
@@ -223,19 +275,12 @@ func (h *SSHWebSocketHandler) connectToServer(session *models.BastionSession) (*
 }
 
 // forwardWebSocketToSSH 从 WebSocket 转发数据到 SSH
-func (h *SSHWebSocketHandler) forwardWebSocketToSSH(conn *websocket.Conn, sshSession *ssh.Session, session *models.BastionSession) {
+func (h *SSHWebSocketHandler) forwardWebSocketToSSH(conn *websocket.Conn, stdinPipe io.WriteCloser, session *models.BastionSession) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("WebSocket -> SSH 转发异常: %v", r)
 		}
 	}()
-
-	// 获取 SSH 会话的 stdin 管道
-	stdinPipe, err := sshSession.StdinPipe()
-	if err != nil {
-		log.Printf("获取 stdin 管道失败: %v", err)
-		return
-	}
 
 	// 记录命令缓冲区
 	var commandBuffer []byte
@@ -261,7 +306,6 @@ func (h *SSHWebSocketHandler) forwardWebSocketToSSH(conn *websocket.Conn, sshSes
 
 		// 检测命令结束（换行符）
 		if len(message) > 0 && (message[len(message)-1] == '\n' || message[len(message)-1] == '\r') {
-			// 记录命令（去掉控制字符）
 			command := string(cleanCommand(commandBuffer))
 			if command != "" {
 				h.bastionService.RecordCommand(session.ID, command, 0, "")
@@ -272,41 +316,47 @@ func (h *SSHWebSocketHandler) forwardWebSocketToSSH(conn *websocket.Conn, sshSes
 }
 
 // forwardSSHToWebSocket 从 SSH 转发数据到 WebSocket
-func (h *SSHWebSocketHandler) forwardSSHToWebSocket(sshSession *ssh.Session, conn *websocket.Conn, session *models.BastionSession) {
+func (h *SSHWebSocketHandler) forwardSSHToWebSocket(stdoutPipe io.Reader, conn *websocket.Conn, session *models.BastionSession) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("SSH -> WebSocket 转发异常: %v", r)
 		}
 	}()
 
-	// 获取 SSH 会话的 stdout 管道
-	stdoutPipe, err := sshSession.StdoutPipe()
-	if err != nil {
-		log.Printf("获取 stdout 管道失败: %v", err)
-		return
-	}
-
-	// 读取 SSH 输出
-	output := make([]byte, 1024)
+	// 读取 SSH 输出并转发到 WebSocket
+	output := make([]byte, 32*1024)
 	for {
 		n, err := stdoutPipe.Read(output)
-		if err != nil {
-			log.Printf("SSH 读取错误: %v", err)
-			return
+		if n > 0 {
+			if werr := conn.WriteMessage(websocket.TextMessage, output[:n]); werr != nil {
+				log.Printf("WebSocket 写入错误: %v", werr)
+				return
+			}
 		}
-
-		// 发送到 WebSocket
-		if err := conn.WriteMessage(websocket.TextMessage, output[:n]); err != nil {
-			log.Printf("WebSocket 写入错误: %v", err)
+		if err != nil {
+			log.Printf("SSH 读取结束: %v", err)
 			return
 		}
 	}
 }
 
-// sendErrorMessage 发送错误消息
-func (h *SSHWebSocketHandler) sendErrorMessage(conn *websocket.Conn, message string) {
-	conn.WriteMessage(websocket.TextMessage, []byte("\r\n\x1b[31m"+message+"\x1b[0m\r\n"))
+// closeWithError 发送错误消息并等待 WS 关闭握手完成，确保客户端能收到 close 帧
+func (h *SSHWebSocketHandler) closeWithError(conn *websocket.Conn, msg string, closeCode int) {
+	// 1. 先把错误消息写到终端
+	conn.WriteMessage(websocket.TextMessage, []byte("\r\n\x1b[31m"+msg+"\x1b[0m\r\n"))
+	// 2. 发送 close 帧
+	closeMsg := websocket.FormatCloseMessage(closeCode, msg)
+	conn.WriteControl(websocket.CloseMessage, closeMsg, time.Now().Add(2*time.Second))
+	// 3. 等待客户端回复 close 帧（最多 2 秒），否则 defer conn.Close() 直接关 TCP 会导致浏览器看到 1006
+	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	for {
+		if _, _, err := conn.ReadMessage(); err != nil {
+			break
+		}
+	}
 }
+
+
 
 // heartbeat 心跳检测
 func (h *SSHWebSocketHandler) heartbeat(sessionID uint, conn *websocket.Conn, stop chan struct{}) {

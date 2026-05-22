@@ -24,78 +24,63 @@ func NewBastionService() *BastionService {
 
 // ========== 连接权限检查 ==========
 
-// CheckConnectPermission 检查用户是否有连接指定服务器的权限
-func (s *BastionService) CheckConnectPermission(userID uint, serverID uint) (bool, []string, error) {
+// CheckConnectPermission 检查用户是否有连接指定服务器的权限，返回允许使用的凭证列表
+func (s *BastionService) CheckConnectPermission(userID uint, serverID uint) (bool, []models.SSHCredential, error) {
 	// 1. 获取用户信息
 	var user models.User
 	if err := s.db.First(&user, userID).Error; err != nil {
 		return false, nil, fmt.Errorf("用户不存在: %w", err)
 	}
 
-	// 2. 获取用户的角色ID列表
+	// 2. 获取服务器及其绑定的凭证
+	var server models.Server
+	if err := s.db.Preload("Credentials").First(&server, serverID).Error; err != nil {
+		return false, nil, fmt.Errorf("服务器不存在: %w", err)
+	}
+
+	// 3. 服务器未绑定任何凭证
+	if len(server.Credentials) == 0 {
+		return false, nil, fmt.Errorf("服务器未绑定凭证，请先在主机编辑页面绑定 SSH 凭证")
+	}
+
+	// 4. 获取用户角色
 	roleIDs, err := parseRoleIDs(user.RoleIDs)
 	if err != nil {
 		return false, nil, fmt.Errorf("解析用户角色失败: %w", err)
 	}
 
-	// 3. 检查是否是超级管理员（角色ID为1）
+	// 5. 超级管理员（角色 ID=1）可使用所有凭证
 	for _, roleID := range roleIDs {
-		if roleID == 1 { // 超级管理员角色ID通常是1
-			// 超级管理员返回所有可用账号
-			return true, s.getAvailableAccounts(serverID), nil
+		if roleID == 1 {
+			return true, server.Credentials, nil
 		}
 	}
 
-	// 4. 获取服务器信息
-	var server models.Server
-	if err := s.db.Preload("SSHCredential").First(&server, serverID).Error; err != nil {
-		return false, nil, fmt.Errorf("服务器不存在: %w", err)
-	}
-
-	// 5. 检查服务器是否绑定了SSH凭证
-	if server.SSHCredentialID == 0 {
-		return false, nil, fmt.Errorf("服务器未绑定SSH凭证")
-	}
-
-	// 6. 查询用户的访问策略
+	// 6. 查询用户角色对应的访问策略
 	var policies []models.AssetAccessPolicy
 	err = s.db.Where("status = 1 AND subject_type = ? AND subject_id IN (?)",
-		"role",
-		roleIDs,
+		"role", roleIDs,
 	).Find(&policies).Error
-
 	if err != nil {
 		return false, nil, err
 	}
 
-	// 7. 检查是否有匹配的策略
-	allowedAccounts := make([]string, 0)
-	hasPermission := false
-
+	// 7. 检查是否有匹配当前服务器的策略
+	hasAccess := false
 	for _, policy := range policies {
 		if s.matchesPolicy(policy, serverID, &server) {
-			hasPermission = true
-			// 合并允许的账号
-			allowedAccounts = append(allowedAccounts, policy.LoginAccounts...)
+			hasAccess = true
+			break
 		}
 	}
 
-	if !hasPermission {
+	if !hasAccess {
 		return false, nil, fmt.Errorf("没有访问权限")
 	}
 
-	// 去重
-	allowedAccounts = unique(allowedAccounts)
-
-	// 8. 检查是否需要审批
-	for _, policy := range policies {
-		if s.matchesPolicy(policy, serverID, &server) && policy.RequireApproval {
-			// TODO: 检查是否有有效的审批记录
-			return true, allowedAccounts, nil
-		}
-	}
-
-	return true, allowedAccounts, nil
+	// 8. 有权限则返回服务器所有绑定凭证
+	// （后续可在策略中加 allowed_credential_ids 做更细粒度控制）
+	return true, server.Credentials, nil
 }
 
 // matchesPolicy 检查策略是否匹配服务器
@@ -127,18 +112,12 @@ func (s *BastionService) matchesPolicy(policy models.AssetAccessPolicy, serverID
 	}
 }
 
-// getAvailableAccounts 获取服务器可用的登录账号
-func (s *BastionService) getAvailableAccounts(serverID uint) []string {
-	// 返回常用的系统账号
-	return []string{"root", "admin"}
-}
-
 // ========== 会话管理 ==========
 
-// CreateSSHSession 创建SSH会话
-func (s *BastionService) CreateSSHSession(userID uint, serverID uint, loginAccount string, clientIP string, protocol string) (*models.BastionSession, error) {
-	// 1. 检查权限
-	hasPermission, allowedAccounts, err := s.CheckConnectPermission(userID, serverID)
+// CreateSSHSession 创建SSH会话（凭证即账号：loginAccount 直接取 credential.Username）
+func (s *BastionService) CreateSSHSession(userID uint, serverID uint, credentialID uint, clientIP string, protocol string) (*models.BastionSession, error) {
+	// 1. 检查权限，获取允许的凭证列表
+	hasPermission, allowedCredentials, err := s.CheckConnectPermission(userID, serverID)
 	if err != nil {
 		return nil, err
 	}
@@ -146,18 +125,16 @@ func (s *BastionService) CreateSSHSession(userID uint, serverID uint, loginAccou
 		return nil, fmt.Errorf("没有连接权限")
 	}
 
-	// 2. 检查登录账号是否在允许列表中
-	if len(allowedAccounts) > 0 {
-		accountAllowed := false
-		for _, acc := range allowedAccounts {
-			if acc == loginAccount {
-				accountAllowed = true
-				break
-			}
+	// 2. 确认所选凭证在允许列表中
+	var chosenCredential *models.SSHCredential
+	for i := range allowedCredentials {
+		if allowedCredentials[i].ID == credentialID {
+			chosenCredential = &allowedCredentials[i]
+			break
 		}
-		if !accountAllowed {
-			return nil, fmt.Errorf("不允许使用账号 %s 连接", loginAccount)
-		}
+	}
+	if chosenCredential == nil {
+		return nil, fmt.Errorf("不允许使用该凭证")
 	}
 
 	// 3. 获取用户信息
@@ -166,32 +143,26 @@ func (s *BastionService) CreateSSHSession(userID uint, serverID uint, loginAccou
 		return nil, fmt.Errorf("用户不存在: %w", err)
 	}
 
-	// 4. 创建会话记录
+	// 4. 创建会话，LoginAccount 直接取凭证的 Username（凭证即账号）
 	now := time.Now()
 	session := &models.BastionSession{
-		ServerID:     serverID,
-		UserID:       userID,
-		Username:     user.Username,
-		LoginAccount: loginAccount,
-		ClientIP:     clientIP,
-		Protocol:     protocol,
-		StartedAt:    &now,
-		Status:       "active",
+		ServerID:        serverID,
+		UserID:          userID,
+		Username:        user.Username,
+		LoginAccount:    chosenCredential.Username, // 凭证 username = OS 登录用户
+		ClientIP:        clientIP,
+		Protocol:        protocol,
+		SSHCredentialID: credentialID,
+		StartedAt:       &now,
+		Status:          "active",
 	}
 
-	// 5. 获取服务器的SSH凭证ID
-	var server models.Server
-	if err := s.db.First(&server, serverID).Error; err != nil {
-		return nil, fmt.Errorf("服务器不存在: %w", err)
-	}
-	session.SSHCredentialID = server.SSHCredentialID
-
-	// 6. 保存会话
+	// 5. 保存会话
 	if err := s.db.Create(session).Error; err != nil {
 		return nil, fmt.Errorf("创建会话失败: %w", err)
 	}
 
-	// 7. 更新服务器最后连接时间
+	// 6. 更新服务器最后连接时间
 	s.db.Model(&models.Server{}).Where("id = ?", serverID).Update("last_connect_time", now)
 
 	return session, nil

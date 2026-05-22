@@ -100,39 +100,40 @@ func (c *RouteController) GetUserRoutes(ctx *gin.Context) {
 		return
 	}
 
-	// 获取用户信息和角色
-	userIDUint, _ := strconv.ParseUint(strconv.FormatUint(uint64(userID.(uint)), 10), 10, 32)
+	// 获取用户菜单（BuildMenuTreeAndPermissions 内部已查角色，无需额外调用 GetUserRoles）
+	userIDUint := userID.(uint)
 	rbacService := services.NewRBACService()
-	roles, err := rbacService.GetUserRoles(uint(userIDUint))
-	if err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorInternal("获取用户角色失败"))
-		return
-	}
-
-	// 构建角色代码列表
-	roleCodes := make([]string, len(roles))
-	for i, role := range roles {
-		roleCodes[i] = role.Code
-	}
-
-	// 检查是否是超级管理员
-	isSuper := false
-	for _, code := range roleCodes {
-		if code == "R_SUPER" || code == "admin" {
-			isSuper = true
-			break
-		}
-	}
-
-	// 获取用户菜单
-	menuTree, _, err := rbacService.BuildMenuTreeAndPermissions(uint(userIDUint))
+	menuTree, _, roles, err := rbacService.BuildMenuTreeAndPermissions(userIDUint)
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal("获取菜单失败"))
 		return
 	}
 
+	// 检查是否是超级管理员
+	isSuper := false
+	for _, role := range roles {
+		if role.Code == "R_SUPER" || role.Code == "admin" {
+			isSuper = true
+			break
+		}
+	}
+
 	// 将菜单转换为前端路由格式
 	routes := c.convertMenusToRoutes(menuTree, isSuper)
+
+	// 追加固定的隐藏路由（不在菜单中显示，但需要动态路由系统识别）
+	routes = append(routes, map[string]interface{}{
+		"id":        "cmdb_terminal",
+		"name":      "cmdb_terminal",
+		"path":      "/cmdb/terminal/:id",
+		"props":     true,
+		"component": "view.cmdb_terminal",
+		"meta": map[string]interface{}{
+			"title":      "cmdb_terminal",
+			"i18nKey":    "route.cmdb_terminal",
+			"hideInMenu": true,
+		},
+	})
 
 	// 返回路由和首页
 	result := map[string]interface{}{
@@ -247,6 +248,10 @@ func (c *RouteController) generateComponent(path string, parentID uint, hasChild
 		// 如果没有子菜单（单页面），返回完整组件路径
 		return "layout.base$view." + routeName
 	}
-	// 二级及以下菜单使用 view 前缀
+	// 二级及以下菜单：如果有子菜单（目录类型），不设置 component，依靠 redirect 跳转到第一个子路由
+	if hasChildren {
+		return ""
+	}
+	// 叶子菜单使用 view 前缀
 	return "view." + routeName
 }

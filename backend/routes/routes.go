@@ -172,10 +172,8 @@ func SetupRoutes(r *gin.Engine) {
 			cmdb.GET("/sessions/:id/file-transfers", bastionController.GetSessionFileTransfers)
 			cmdb.POST("/sessions/:id/resize", sshHandler.ResizePTY)
 
-			// WebSocket SSH 连接
-			cmdb.GET("/sessions/:id/ws", func(ctx *gin.Context) {
-				sshHandler.HandleWebSocket(ctx)
-			})
+			// WebSocket SSH 连接（不经过 Auth 中间件，由 handler 自行从 query param 验证 token）
+			// 注意：此路由注册在 cmdb 组外，见下方
 
 			// 命令审计
 			cmdb.GET("/commands", bastionController.GetCommands)
@@ -190,6 +188,11 @@ func SetupRoutes(r *gin.Engine) {
 			cmdb.PUT("/access-policies/:id", bastionController.UpdateAccessPolicy)
 			cmdb.DELETE("/access-policies/:id", bastionController.DeleteAccessPolicy)
 		}
+
+		// WebSocket SSH 连接（不经过 Auth 中间件，handler 自行从 query param 验证 token）
+		api.GET("/cmdb/sessions/:id/ws", func(ctx *gin.Context) {
+			sshHandler.HandleWebSocket(ctx)
+		})
 
 		// 动态路由接口（需要认证）
 		routeGroup := api.Group("/route")

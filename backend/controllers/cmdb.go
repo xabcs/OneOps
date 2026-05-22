@@ -112,6 +112,9 @@ func (c *CMDBController) CreateServer(ctx *gin.Context) {
 		return
 	}
 
+	// 异步采集硬件配置
+	go services.SyncServerHardwareConfig(server.ID)
+
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("服务器创建成功"))
 }
 
@@ -150,6 +153,9 @@ func (c *CMDBController) UpdateServer(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
+
+	// 异步采集硬件配置
+	go services.SyncServerHardwareConfig(uint(id))
 
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("服务器更新成功"))
 }

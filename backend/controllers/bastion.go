@@ -7,6 +7,7 @@ import (
 	"oneops/backend/utils"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -56,20 +57,20 @@ func (c *BastionController) ConnectServer(ctx *gin.Context) {
 		return
 	}
 
-	println("[DEBUG] userID:", userID, "serverID:", serverID, "loginAccount:", req.LoginAccount)
+	println("[DEBUG] userID:", userID, "serverID:", serverID, "credentialID:", req.CredentialID)
 
 	// 获取客户端IP
 	clientIP := ctx.ClientIP()
 
 	// 检查权限并创建会话
-	session, err := c.bastionService.CreateSSHSession(userID, uint(serverID), req.LoginAccount, clientIP, req.Protocol)
+	session, err := c.bastionService.CreateSSHSession(userID, uint(serverID), req.CredentialID, clientIP, req.Protocol)
 	if err != nil {
 		// 检查是否是权限错误
-		if strings.Contains(err.Error(), "没有访问权限") {
+		if strings.Contains(err.Error(), "没有访问权限") || strings.Contains(err.Error(), "没有连接权限") {
 			ctx.JSON(http.StatusOK, utils.ErrorForbidden("没有连接权限"))
 			return
 		}
-		if strings.Contains(err.Error(), "不允许使用账号") {
+		if strings.Contains(err.Error(), "不允许使用该凭证") {
 			ctx.JSON(http.StatusOK, utils.ErrorForbidden(err.Error()))
 			return
 		}
@@ -465,7 +466,7 @@ func (c *BastionController) GetSessionStats(ctx *gin.Context) {
 	}
 
 	// 今日会话数
-	today := "2024-01-01" // TODO: 使用当前日期
+	today := time.Now().Format("2006-01-02")
 	todayFilter := models.SessionFilter{
 		StartDate: &today,
 	}
@@ -498,15 +499,15 @@ func (c *BastionController) CheckConnectPermission(ctx *gin.Context) {
 		return
 	}
 
-	// 检查权限
-	hasPermission, allowedAccounts, err := c.bastionService.CheckConnectPermission(userID, uint(serverID))
+	// 检查权限，返回可用凭证列表
+	hasPermission, credentials, err := c.bastionService.CheckConnectPermission(userID, uint(serverID))
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"hasPermission":  hasPermission,
-		"allowedAccounts": allowedAccounts,
+		"hasPermission": hasPermission,
+		"credentials":   credentials,
 	}))
 }

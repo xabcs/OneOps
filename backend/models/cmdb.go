@@ -91,8 +91,8 @@ type Server struct {
 	OS                string     `json:"os" gorm:"size:50"`                             // 操作系统
 	OSVersion         string     `json:"osVersion" gorm:"size:50"`                      // 系统版本
 	Arch              string     `json:"arch" gorm:"size:20;default:'x86_64'"`          // 系统架构
-	Env               string     `json:"env" gorm:"size:10;default:'test';index"`       // 环境
-	Status            string     `json:"status" gorm:"size:20;default:'unknown';index"` // 状态
+	Env               string     `json:"env" gorm:"type:varchar(20);default:'test';index"`       // 环境
+	Status            string     `json:"status" gorm:"type:varchar(20);default:'unknown';index"` // 状态
 	SSHPort           int        `json:"sshPort" gorm:"default:22"`                     // SSH端口
 	SSHUser           string     `json:"sshUser" gorm:"size:50;default:'root'"`         // SSH用户
 	CredentialID      uint       `json:"credentialId" gorm:"index"`                     // SSH凭证ID（兼容旧字段）
@@ -114,17 +114,25 @@ type Server struct {
 	Remarks           string     `json:"remarks" gorm:"type:text"`                      // 备注
 	LastCheckTime     *time.Time `json:"lastCheckTime"`                                 // 最后连通性检查时间
 	LastConnectTime   *time.Time `json:"lastConnectTime"`                               // 最后连接时间
-	ConnectivityStatus string    `json:"connectivityStatus" gorm:"type:enum('online','offline','unknown');default:'unknown'"` // 连通性状态
-	CreatedAt         time.Time  `json:"createdAt" gorm:"autoCreateTime"`
-	UpdatedAt         time.Time  `json:"updatedAt" gorm:"autoUpdateTime"`
+	ConnectivityStatus string     `json:"connectivityStatus" gorm:"type:enum('online','offline','unknown');default:'unknown'"` // 连通性状态
+	BusinessID         uint       `json:"businessId" gorm:"index"`
+	Business           *BusinessUnit `json:"business,omitempty" gorm:"foreignKey:BusinessID;constraint:OnDelete:SET NULL"`
+	CPUUsage           float64    `json:"cpuUsage" gorm:"default:0"`
+	MemoryUsage        float64    `json:"memoryUsage" gorm:"default:0"`
+	DiskUsage          float64    `json:"diskUsage" gorm:"default:0"`
+	MetricsUpdatedAt   *time.Time `json:"metricsUpdatedAt"`
+	CreatedAt          time.Time  `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt          time.Time  `json:"updatedAt" gorm:"autoUpdateTime"`
 
 	// 关联
-	SSHCredential *SSHCredential `json:"sshCredential,omitempty" gorm:"foreignKey:SSHCredentialID;constraint:OnDelete:SET NULL"`
-	Cabinet       *Cabinet       `json:"cabinet,omitempty" gorm:"foreignKey:CabinetID;constraint:OnDelete:SET NULL"`
-	Tags          []ServerTag    `json:"tags,omitempty" gorm:"many2many:server_tag_relations;constraint:OnDelete:CASCADE"`
-	Groups        []ServerGroup  `json:"groups,omitempty" gorm:"many2many:server_group_relations;constraint:OnDelete:CASCADE"`
-	CloudInfo     *CloudServer   `json:"cloudInfo,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:SET NULL"`
-	GroupIDs      []uint         `json:"groupIds,omitempty" gorm:"-"`
+	SSHCredential *SSHCredential  `json:"sshCredential,omitempty" gorm:"foreignKey:SSHCredentialID;constraint:OnDelete:SET NULL"`
+	Cabinet       *Cabinet        `json:"cabinet,omitempty" gorm:"foreignKey:CabinetID;constraint:OnDelete:SET NULL"`
+	Tags          []ServerTag     `json:"tags,omitempty" gorm:"many2many:server_tag_relations;constraint:OnDelete:CASCADE"`
+	Groups        []ServerGroup   `json:"groups,omitempty" gorm:"many2many:server_group_relations;constraint:OnDelete:CASCADE"`
+	CloudInfo     *CloudServer    `json:"cloudInfo,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:SET NULL"`
+	Credentials   []SSHCredential `json:"credentials,omitempty" gorm:"many2many:server_credentials;joinForeignKey:ServerID;joinReferences:CredentialID"`
+	GroupIDs      []uint          `json:"groupIds,omitempty" gorm:"-"`
+	CredentialIDs []uint          `json:"credentialIds,omitempty" gorm:"-"`
 }
 
 // TableName 指定表名
@@ -257,7 +265,7 @@ type SSHCredential struct {
 	UpdatedAt   time.Time        `json:"updatedAt" gorm:"autoUpdateTime"`
 
 	// 关联
-	Servers []Server `json:"servers,omitempty" gorm:"foreignKey:CredentialID"`
+	Servers []Server `json:"servers,omitempty" gorm:"many2many:server_credentials;joinForeignKey:CredentialID;joinReferences:ServerID"`
 }
 
 // TableName 指定表名
@@ -291,4 +299,15 @@ type CloudServer struct {
 // TableName 指定表名
 func (CloudServer) TableName() string {
 	return "cloud_servers"
+}
+
+// ServerCredential 服务器-凭证多对多关联表
+type ServerCredential struct {
+	ServerID     uint `json:"serverId" gorm:"primaryKey"`
+	CredentialID uint `json:"credentialId" gorm:"primaryKey"`
+}
+
+// TableName 指定表名
+func (ServerCredential) TableName() string {
+	return "server_credentials"
 }

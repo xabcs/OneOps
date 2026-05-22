@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
+import { ElMessageBox } from 'element-plus';
 import { fetchGetSessions, fetchTerminateSession, fetchGetActiveSessions, fetchGetSessionStats } from '@/service/api/cmdb';
-import { $t } from '@/locales';
 
 defineOptions({
   name: 'CMDBSessions'
@@ -30,21 +30,6 @@ const filters = ref<{
   endDate?: string;
 }>({});
 
-// 表格列定义
-const columns = computed(() => [
-  { prop: 'id', label: '会话ID', width: 80 },
-  { prop: 'username', label: '用户', width: 100 },
-  { prop: 'server', label: '服务器', width: 150 },
-  { prop: 'serverIp', label: 'IP地址', width: 120 },
-  { prop: 'loginAccount', label: '登录账号', width: 100 },
-  { prop: 'clientIp', label: '客户端IP', width: 120 },
-  { prop: 'protocol', label: '协议', width: 80 },
-  { prop: 'startedAt', label: '开始时间', width: 160 },
-  { prop: 'duration', label: '持续时长', width: 100 },
-  { prop: 'status', label: '状态', width: 100 },
-  { prop: 'actions', label: '操作', width: 150, fixed: 'right' }
-]);
-
 // 获取会话列表
 async function getSessions() {
   loading.value = true;
@@ -59,9 +44,9 @@ async function getSessions() {
       params.status = 'active';
     }
 
-    const result = await fetchGetSessions(params);
-    sessions.value = result.list;
-    total.value = result.total;
+    const { data } = await fetchGetSessions(params);
+    sessions.value = data?.list || [];
+    total.value = data?.total || 0;
   } catch (error) {
     window.$message?.error('获取会话列表失败');
   } finally {
@@ -73,7 +58,8 @@ async function getSessions() {
 async function getActiveSessions() {
   loading.value = true;
   try {
-    sessions.value = await fetchGetActiveSessions();
+    const { data } = await fetchGetActiveSessions();
+    sessions.value = data || [];
     total.value = sessions.value.length;
   } catch (error) {
     window.$message?.error('获取活跃会话失败');
@@ -85,7 +71,8 @@ async function getActiveSessions() {
 // 获取统计数据
 async function getStats() {
   try {
-    stats.value = await fetchGetSessionStats();
+    const { data } = await fetchGetSessionStats();
+    if (data) stats.value = data;
   } catch (error) {
     console.error('获取统计失败:', error);
   }
@@ -93,17 +80,19 @@ async function getStats() {
 
 // 终止会话
 async function handleTerminate(session: Bastion.BastionSession) {
-  const confirmed = await window.$confirm?.(
-    `确定要断开会话吗？\n用户: ${session.username}\n服务器: ${session.server?.hostname || session.serverId}`,
-    '确认断开',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }
-  );
-
-  if (!confirmed) return;
+  try {
+    await ElMessageBox.confirm(
+      `确定要断开会话吗？\n用户: ${session.username}\n服务器: ${session.server?.hostname || session.serverId}`,
+      '确认断开',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    );
+  } catch {
+    return;
+  }
 
   try {
     await fetchTerminateSession(session.id);
@@ -197,7 +186,7 @@ onMounted(() => {
       <template #header>
         <div class="card-header">
           <span class="title">会话审计</span>
-          <el-button type="primary" :icon="ICON_REGISTRY.refresh" @click="refresh">
+          <el-button type="primary" @click="refresh">
             刷新
           </el-button>
         </div>
@@ -267,7 +256,6 @@ onMounted(() => {
                 <el-button
                   type="danger"
                   size="small"
-                  :icon="ICON_REGISTRY.videoStop"
                   @click="handleTerminate(row)"
                 >
                   断开
@@ -275,7 +263,6 @@ onMounted(() => {
                 <el-button
                   type="primary"
                   size="small"
-                  :icon="ICON_REGISTRY.fileDocument"
                   @click="handleViewDetail(row)"
                 >
                   详情
@@ -340,7 +327,6 @@ onMounted(() => {
                 <el-button
                   type="primary"
                   size="small"
-                  :icon="ICON_REGISTRY.fileDocument"
                   @click="handleViewDetail(row)"
                 >
                   详情

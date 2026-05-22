@@ -33,6 +33,23 @@ type TimeWindow struct {
 	Days  []int  `json:"days"`  // 1-7, 1=周一
 }
 
+// Scan 实现 sql.Scanner 接口
+func (tw *TimeWindow) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return nil
+	}
+	return json.Unmarshal(bytes, tw)
+}
+
+// Value 实现 driver.Valuer 接口
+func (tw TimeWindow) Value() (driver.Value, error) {
+	return json.Marshal(tw)
+}
+
 // StringArray 用于存储JSON数组
 type StringArray []string
 
@@ -134,7 +151,7 @@ type BastionApproval struct {
 // ConnectRequest 连接请求
 type ConnectRequest struct {
 	Protocol     string `json:"protocol" binding:"required,oneof=ssh sftp"`
-	LoginAccount string `json:"loginAccount" binding:"required"`
+	CredentialID uint   `json:"credentialId" binding:"required"` // 选择的凭证 ID，登录账号从凭证的 username 派生
 }
 
 // ConnectResponse 连接响应

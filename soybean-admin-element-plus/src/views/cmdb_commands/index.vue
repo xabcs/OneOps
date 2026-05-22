@@ -46,9 +46,9 @@ async function getCommands() {
       ...filters.value
     };
 
-    const result = await fetchGetCommands(params);
-    commands.value = result.list;
-    total.value = result.total;
+    const { data } = await fetchGetCommands(params);
+    commands.value = data?.list || [];
+    total.value = data?.total || 0;
   } catch (error) {
     window.$message?.error('获取命令列表失败');
   } finally {
@@ -144,7 +144,7 @@ onMounted(() => {
       <template #header>
         <div class="card-header">
           <span class="title">命令审计</span>
-          <el-button type="primary" :icon="ICON_REGISTRY.refresh" @click="getCommands">
+          <el-button type="primary" @click="getCommands">
             刷新
           </el-button>
         </div>

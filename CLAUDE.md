@@ -588,3 +588,139 @@ const apiUrl = import.meta.env.VITE_SERVICE_BASE_URL;
 ### 热加载不工作
 - 后端：确认 Air 已安装（`go install github.com/air-verse/air@latest`）
 - 前端：确认 `DISABLE_HMR` 环境变量未设置
+
+## RBAC 权限系统说明
+
+### 用户菜单树权限是什么
+
+"菜单树权限"控制用户能看到哪些导航菜单、能访问哪些功能页面。
+
+**菜单树**是左侧导航栏的完整层级结构，例如：
+```
+资产管理
+├─ 资产总览
+├─ 主机资产
+├─ 访问控制
+│  ├─ 访问策略
+│  └─ 凭证库
+└─ 会话审计
+   ├─ 在线会话
+   └─ 历史会话
+```
+
+**权限标识（permission string）** 在设计上用于按钮级别的细粒度控制（如 `cmdb:server:query`），但**目前在本项目中完全未被实际使用**：
+
+- **后端**：没有任何中间件读取这些字符串做 API 鉴权，所有接口只校验 JWT 合法性
+- **前端**：`useAuth()` / `hasAuth()` 函数存在但在所有业务页面中均未调用，只出现在框架演示页 `function/toggle-auth/index.vue`
+- **`*:*:*`**：同样只是生成后存入 store，没有任何代码消费它
+
+权限标识从用户有权访问的菜单记录的 `permission` 字段中提取（见 `rbac.go` 的 `extractPermissions`），随登录接口返回给前端存入 `authStore.userInfo.permissions`，但后续无人使用。
+
+### 数据来源（三张表）
+
+```
+menus 表  → 存所有菜单（路径、图标、permission 标识）
+roles 表  → 存角色，menu_ids 字段（JSON 数组）记录该角色可访问的菜单 ID
+users 表  → 存用户，role_ids 字段（JSON 数组）记录该用户拥有的角色 ID
+```
+
+用户每次请求 `/api/route/getUserRoutes` 时，后端做三步：
+1. `SELECT users WHERE id=?` → 拿到 `role_ids`
+2. `SELECT roles WHERE id IN (...)` → 拿到每个角色的 `menu_ids`
+3. `SELECT menus WHERE status=1` → 过滤出有权限的菜单，组装成树形结构
+
+### 关键实现文件
+
+| 文件 | 作用 |
+|------|------|
+| `backend/services/rbac.go` | `BuildMenuTreeAndPermissions` — 核心查询逻辑，带 5 分钟内存缓存 |
+| `backend/services/rbac_cache.go` | RBAC 缓存定义，`InvalidateRBACCache(userID)` 用于失效 |
+| `backend/controllers/route.go` | `GetUserRoutes` — 调用 RBAC 服务，将菜单转换为前端路由格式 |
+| `backend/services/init.go` | `syncMenus` / `syncRoleMenus` — 启动时自动同步菜单和角色数据 |
+
+### 缓存策略
+
+菜单树结果缓存在内存中，TTL 为 5 分钟（`rbacCacheTTL`）。
+
+- 菜单/角色变更后，调用 `InvalidateRBACCache(0)` 清除所有用户缓存
+- 用户登录时（`auth.go`）会预热该用户的缓存，后续 `getUserRoutes` 直接命中（~10ms）
+- 不缓存时每次需 3 次远程 DB 查询（~300ms）
+
+## 权限系统设计原则
+
+### 当前采用的方案：两层权限 + 审计
+
+本项目是内部运维平台，权限设计遵循"够用即止"原则：
+
+**第一层：功能权限（菜单 RBAC）**
+- 控制"你能看到哪些页面"，由角色绑定菜单 ID 实现
+- 已生效，无需额外开发
+
+**第二层：连接权限（访问策略表）**
+- 控制"你能 SSH 进哪台服务器"，由 `asset_access_policies` 表实现
+- 校验逻辑在 `backend/services/bastion.go` 的 `CheckConnectPermission`
+- 管理员（角色 ID=1）直接放行；其他角色需匹配策略表
+
+**审计作为核心安全机制**
+- 内部平台的安全依赖"知道自己被审计"的约束，而非复杂权限拦截
+- 每次连接、每条命令全部关联用户 + 主机 + 会话 ID
+
+### 审批流为什么暂不规划
+
+审批功能（`bastion_approvals` 表 + 审批记录页 + 审批状态校验）开发成本较高，对当前阶段不必要：
+
+**替代方案：访问策略 `time_window` 字段**
+- 需要临时授权时，管理员直接在访问策略表中设置时间窗口（`time_window`），到期自动失效
+- 和审批流的效果等价：控制"谁在什么时间段内能连哪台机器"
+- 无需额外的审批申请/通知/审批通过/过期清理等状态机
+
+**当前连接权限控制流程（代替审批）：**
+```text
+用户申请访问 → 管理员在访问策略表中新增或调整策略（设置 time_window）
+→ 用户在窗口期内正常连接 → 过期后策略不再命中，自动拒绝
+```
+
+**审批流何时再规划（P2+）：**
+- 团队规模较大，管理员无法及时手动调整策略
+- 有合规要求，需要留存完整的申请/审批/过期审计链路
+- 需要申请人自助提交，不依赖管理员操作
+
+### 权限点体系（cmdb:server:connect 等）为什么暂不实现
+
+权限点体系需要**前后端四个环节同时配合**：
+
+```
+① 后端维护独立的按钮权限码数据源（区别于菜单 permission 字段）
+        ↓
+② 登录接口返回 buttons 数组（区别于 permissions 字段）
+        ↓
+③ 前端 hasAuth('cmdb:server:connect') 控制按钮显示
+        ↓
+④ 后端接口中间件校验用户是否持有该权限码
+```
+
+**当前未实现的原因：**
+- 后端没有独立按钮权限数据源，权限字符串全来自菜单 `permission` 字段
+- 后端返回 `permissions` 字段，前端 `hasAuth()` 读 `buttons` 字段，字段名不对应
+- 所有业务页面均未调用 `hasAuth()`，权限字符串生成后无人消费
+- 对内部平台而言，维护这四个环节的同步成本高于收益
+
+**前端连接按钮的正确做法：**
+```vue
+<!-- 状态由后端 CheckConnectPermission 接口返回值驱动，不用 hasAuth -->
+<el-button
+  :disabled="!server.credentials?.length"
+  @click="handleConnect"
+>
+  连接
+</el-button>
+```
+
+### 未来（P2+）才考虑权限点体系的场景
+
+- 平台用户规模超过 500 人
+- 有外部合规审查要求（等保、SOC2 等）
+- 出现多租户隔离需求
+- 需要按按钮级别差异化不同角色的操作能力
+
+届时需要同步改造：后端按钮权限表 + 登录接口 + 前端 store 类型定义 + 各业务页面 `hasAuth` 调用点 + 后端接口校验中间件。

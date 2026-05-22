@@ -33,7 +33,10 @@ func InitDB(cfg *config.DatabaseConfig) error {
 
 	// 连接到指定数据库
 	dsn := cfg.GetDSN()
-	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
+		// 迁移时不自动创建外键约束，避免因表顺序或已有约束导致 AutoMigrate 失败
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
 	if err != nil {
 		return err
 	}

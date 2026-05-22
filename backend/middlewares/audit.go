@@ -57,8 +57,15 @@ func (m *AuditMiddleware) OperationLog() gin.HandlerFunc {
 		// 获取用户信息
 		userID, username, nickname := m.getUserInfo(c)
 
-		// 记录操作日志
-		m.recordOperationLog(c, userID, username, nickname, requestBody, writer.body.Bytes(), duration)
+		// 异步写审计日志，不阻塞响应
+		method := c.Request.Method
+		path := c.Request.URL.Path
+		statusCode := c.Writer.Status()
+		ip := c.ClientIP()
+		userAgent := c.Request.UserAgent()
+		respBody := append([]byte(nil), writer.body.Bytes()...)
+		reqBody := append([]byte(nil), requestBody...)
+		go m.recordOperationLog2(userID, username, nickname, method, path, statusCode, ip, userAgent, reqBody, respBody, duration)
 	}
 }
 
@@ -80,6 +87,11 @@ func (m *AuditMiddleware) shouldSkipAudit(c *gin.Context) bool {
 
 	// 跳过登录请求（有专门的登录日志记录）
 	if path == "/api/login" {
+		return true
+	}
+
+	// 跳过 WebSocket 升级请求（包装的 ResponseWriter 不实现 Hijacker，会导致 WS 升级失败）
+	if strings.EqualFold(c.GetHeader("Upgrade"), "websocket") {
 		return true
 	}
 
@@ -165,6 +177,46 @@ func (m *AuditMiddleware) recordOperationLog(c *gin.Context, userID uint, userna
 		duration,
 		status,
 		errorMsg,
+	)
+}
+
+// recordOperationLog2 不依赖 gin.Context 的审计写入（用于 goroutine 异步调用）
+func (m *AuditMiddleware) recordOperationLog2(userID uint, username, nickname, method, path string,
+	statusCode int, ip, userAgent string, requestBody, responseBody []byte, duration int) {
+
+	module := m.getModuleFromPath(path)
+	action := m.getActionFromMethodAndPath(method, path)
+	description := m.generateDescription(module, action, path)
+
+	var params interface{}
+	if len(requestBody) > 0 {
+		json.Unmarshal(requestBody, &params)
+	}
+
+	var response interface{}
+	if len(responseBody) > 0 && statusCode < 400 {
+		json.Unmarshal(responseBody, &response)
+	}
+
+	status := "success"
+	errorMsg := ""
+	if statusCode >= 400 {
+		status = "failed"
+		var errResp struct {
+			Message string `json:"message"`
+		}
+		if json.Unmarshal(responseBody, &errResp) == nil && errResp.Message != "" {
+			errorMsg = errResp.Message
+		}
+	}
+
+	m.auditService.LogOperation(
+		userID, username, nickname,
+		module, action, description,
+		method, path,
+		params, response,
+		statusCode, ip, userAgent,
+		duration, status, errorMsg,
 	)
 }
 

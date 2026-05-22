@@ -1,83 +1,119 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { fetchConnectServer, fetchCheckConnectPermission } from '@/service/api/cmdb';
-import { $t } from '@/locales';
-import { useAuthStore } from '@/store/modules/auth';
+import { ref, computed, watch } from 'vue';
+import {
+  fetchCheckConnectPermission,
+  fetchConnectServer,
+  fetchGetSessions
+} from '@/service/api/cmdb';
 
 interface Props {
   visible: boolean;
   serverId: number;
   serverName: string;
   serverIp: string;
-  sshCredentialId?: number;
+  serverEnv?: string;
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: 'update:visible', value: boolean): void;
-  (e: 'connected', sessionId: number, websocketUrl: string): void;
+  (e: 'connected', sessionId: number, websocketUrl: string, loginAccount: string): void;
 }>();
-
-const authStore = useAuthStore();
 
 const loading = ref(false);
 const connecting = ref(false);
-const selectedAccount = ref('root');
-const allowedAccounts = ref<string[]>([]);
+const selectedCredentialId = ref<number | undefined>(undefined);
+const availableCredentials = ref<CMDB.SSHCredential[]>([]);
 const hasPermission = ref(true);
 const permissionError = ref('');
-
-const protocolOptions = [
-  { label: 'SSH 终端', value: 'ssh' },
-  { label: 'SFTP', value: 'sftp' }
-];
+const connectReason = ref('');
+const recentSession = ref<any>(null);
 
 const selectedProtocol = ref('ssh');
 
-// 检查连接权限
+// 当前选中的凭证对象
+const selectedCredential = computed(() =>
+  availableCredentials.value.find(c => c.id === selectedCredentialId.value)
+);
+
+// 检查连接权限，获取可用凭证列表
 async function checkPermission() {
   loading.value = true;
+  hasPermission.value = true;
+  permissionError.value = '';
+  availableCredentials.value = [];
+  selectedCredentialId.value = undefined;
+
   try {
-    const result = await fetchCheckConnectPermission(props.serverId);
-    hasPermission.value = result.hasPermission;
-    allowedAccounts.value = result.allowedAccounts || [];
+    const { data, error } = await fetchCheckConnectPermission(props.serverId);
+
+    if (error) {
+      hasPermission.value = false;
+      permissionError.value = error.message || '检查权限失败';
+      return;
+    }
+
+    if (data) {
+      hasPermission.value = data.hasPermission;
+      availableCredentials.value = data.credentials || [];
+    } else {
+      hasPermission.value = false;
+      permissionError.value = '响应格式错误';
+      return;
+    }
 
     if (!hasPermission.value) {
       permissionError.value = '您没有连接此服务器的权限';
-    } else if (allowedAccounts.value.length === 0) {
-      // 使用默认账号
-      allowedAccounts.value = ['root'];
+    } else if (availableCredentials.value.length === 0) {
+      permissionError.value = '服务器未绑定任何凭证，请先在主机编辑页面绑定 SSH 凭证';
+      hasPermission.value = false;
+    } else {
+      // 默认选中第一个凭证
+      selectedCredentialId.value = availableCredentials.value[0].id;
     }
-
-    // 设置默认选中的账号
-    if (allowedAccounts.value.length > 0) {
-      selectedAccount.value = allowedAccounts.value[0];
-    }
-  } catch (error: any) {
+  } catch (err: any) {
     hasPermission.value = false;
-    permissionError.value = error.message || '检查权限失败';
+    permissionError.value = err?.message || '检查权限失败';
   } finally {
     loading.value = false;
   }
 }
 
+// 加载最近连接记录
+async function loadRecentSession() {
+  try {
+    const { data } = await fetchGetSessions({ serverId: props.serverId, pageSize: 1, page: 1 });
+    recentSession.value = data?.list?.[0] || null;
+  } catch {
+    recentSession.value = null;
+  }
+}
+
 // 连接服务器
 async function handleConnect() {
-  if (!hasPermission.value) {
-    return;
-  }
+  if (!hasPermission.value || !selectedCredentialId.value) return;
 
   connecting.value = true;
   try {
-    const result = await fetchConnectServer(props.serverId, {
+    const { data, error } = await fetchConnectServer(props.serverId, {
       protocol: selectedProtocol.value as 'ssh' | 'sftp',
-      loginAccount: selectedAccount.value
+      credentialId: selectedCredentialId.value
     });
 
-    emit('connected', result.sessionId, result.websocketUrl);
-    handleClose();
-  } catch (error: any) {
-    window.$message?.error(error.message || '连接失败');
+    if (error) {
+      window.$message?.error(`连接失败: ${error.message || '未知错误'}`);
+      return;
+    }
+
+    if (data?.sessionId) {
+      const loginAccount = selectedCredential.value?.username || '';
+      emit('connected', data.sessionId, data.websocketUrl, loginAccount);
+      handleClose();
+    } else {
+      window.$message?.error('连接失败: 未获取到会话信息');
+    }
+  } catch (err: any) {
+    window.$message?.error(err.message || '连接失败');
   } finally {
     connecting.value = false;
   }
@@ -91,7 +127,10 @@ function handleClose() {
 // 监听 visible 变化
 watch(() => props.visible, (visible) => {
   if (visible) {
+    connectReason.value = '';
+    selectedProtocol.value = 'ssh';
     checkPermission();
+    loadRecentSession();
   }
 });
 </script>
@@ -99,127 +138,172 @@ watch(() => props.visible, (visible) => {
 <template>
   <el-dialog
     :model-value="visible"
-    :title="`连接服务器: ${serverName} (${serverIp})`"
-    width="500px"
+    :title="`连接主机：${serverName}`"
+    width="760px"
     :close-on-click-modal="false"
-    @update:model-value="handleClose"
+    @close="handleClose"
   >
-    <el-skeleton v-if="loading" :rows="3" animated />
-
-    <div v-else class="connect-dialog-content">
+    <div v-loading="loading">
       <!-- 无权限提示 -->
-      <el-alert
-        v-if="!hasPermission"
-        type="error"
-        :closable="false"
-        show-icon
-        :title="permissionError"
-        style="margin-bottom: 20px"
-      />
+      <el-alert v-if="!hasPermission" type="error" :closable="false" style="margin-bottom: 16px">
+        {{ permissionError || '您没有连接此主机的权限' }}
+      </el-alert>
 
-      <!-- 连接配置 -->
-      <el-form v-else label-width="100px" @submit.prevent="handleConnect">
-        <el-form-item label="连接方式">
-          <el-radio-group v-model="selectedProtocol">
-            <el-radio-button
-              v-for="option in protocolOptions"
-              :key="option.value"
-              :value="option.value"
-              :label="option.label"
-            />
-          </el-radio-group>
-        </el-form-item>
+      <el-row :gutter="24">
+        <!-- 左栏：连接配置 -->
+        <el-col :span="12">
+          <div class="config-section">
+            <div class="section-title">连接配置</div>
 
-        <el-form-item label="登录账号">
-          <el-select
-            v-model="selectedAccount"
-            placeholder="选择登录账号"
-            style="width: 100%"
-          >
-            <el-option
-              v-for="account in allowedAccounts"
-              :key="account"
-              :value="account"
-              :label="account"
-            />
-          </el-select>
-        </el-form-item>
+            <el-form label-position="top" size="default">
+              <el-form-item label="连接协议">
+                <el-radio-group v-model="selectedProtocol" :disabled="!hasPermission">
+                  <el-radio value="ssh">SSH 终端</el-radio>
+                  <el-radio value="sftp" disabled>SFTP 传输</el-radio>
+                </el-radio-group>
+              </el-form-item>
 
-        <el-form-item label="服务器信息">
-          <div class="server-info">
-            <p><strong>服务器:</strong> {{ serverName }}</p>
-            <p><strong>IP 地址:</strong> {{ serverIp }}</p>
-            <p v-if="sshCredentialId">
-              <strong>凭证:</strong> <span class="text-success">已配置</span>
-            </p>
-            <p v-else>
-              <strong>凭证:</strong> <span class="text-warning">未配置</span>
-            </p>
+              <el-form-item label="登录凭证">
+                <el-select
+                  v-model="selectedCredentialId"
+                  placeholder="选择 SSH 凭证"
+                  style="width: 100%"
+                  :disabled="!hasPermission"
+                >
+                  <el-option
+                    v-for="cred in availableCredentials"
+                    :key="cred.id"
+                    :value="cred.id"
+                    :label="`${cred.name}（${cred.username}）`"
+                  />
+                </el-select>
+              </el-form-item>
+
+              <el-form-item label="连接原因">
+                <el-input
+                  v-model="connectReason"
+                  placeholder="请输入连接原因（生产环境必填）"
+                  type="textarea"
+                  :rows="2"
+                  :disabled="!hasPermission"
+                />
+              </el-form-item>
+            </el-form>
           </div>
-        </el-form-item>
+        </el-col>
 
-        <!-- 提示信息 -->
-        <el-alert
-          type="info"
-          :closable="false"
-          show-icon
-          title="连接说明"
-        >
-          <ul class="connect-tips">
-            <li>所有连接操作都会被记录和审计</li>
-            <li>请勿执行危险操作，命令会被实时监控</li>
-            <li>连接超时时间: 30 分钟无操作自动断开</li>
-          </ul>
-        </el-alert>
-      </el-form>
+        <!-- 右栏：安全上下文 -->
+        <el-col :span="12">
+          <div class="context-section">
+            <div class="section-title">安全上下文</div>
+
+            <div class="context-item">
+              <span class="context-label">主机环境</span>
+              <el-tag
+                :type="props.serverEnv === 'prod' ? 'danger' : props.serverEnv === 'test' ? 'warning' : 'info'"
+                size="small"
+              >
+                {{ props.serverEnv === 'prod' ? '生产环境' : props.serverEnv === 'test' ? '测试环境' : '开发环境' }}
+              </el-tag>
+            </div>
+
+            <div class="context-item">
+              <span class="context-label">凭证状态</span>
+              <el-tag :type="availableCredentials.length > 0 ? 'success' : 'warning'" size="small">
+                {{ availableCredentials.length > 0 ? `${availableCredentials.length} 个可用` : '未配置' }}
+              </el-tag>
+            </div>
+
+            <div class="context-item">
+              <span class="context-label">最近连接</span>
+              <span class="context-value">
+                <template v-if="recentSession">
+                  {{ recentSession.username }} · {{ recentSession.startedAt?.substring(0, 16) }}
+                </template>
+                <template v-else>暂无记录</template>
+              </span>
+            </div>
+
+            <div class="context-item">
+              <span class="context-label">登录账号</span>
+              <span class="context-value">
+                {{ selectedCredential?.username || '—' }}
+              </span>
+            </div>
+
+            <el-alert
+              v-if="props.serverEnv === 'prod'"
+              type="warning"
+              :closable="false"
+              title="生产环境操作将被完整审计，请谨慎操作"
+              style="margin-top: 12px"
+            />
+            <el-alert
+              v-else
+              type="info"
+              :closable="false"
+              title="本次连接操作将被记录，可在会话审计中查看"
+              style="margin-top: 12px"
+            />
+          </div>
+        </el-col>
+      </el-row>
     </div>
 
     <template #footer>
       <el-button @click="handleClose">取消</el-button>
       <el-button
+        v-if="!loading && hasPermission && availableCredentials.length === 0"
+        type="warning"
+        @click="handleClose"
+      >
+        去绑定凭证
+      </el-button>
+      <el-button
+        v-else
         type="primary"
+        :disabled="!hasPermission || !selectedCredentialId"
         :loading="connecting"
-        :disabled="!hasPermission"
         @click="handleConnect"
       >
-        {{ connecting ? '连接中...' : '连接' }}
+        连接
       </el-button>
     </template>
   </el-dialog>
 </template>
 
 <style scoped>
-.connect-dialog-content {
-  padding: 10px 0;
+.config-section,
+.context-section {
+  padding: 4px 0;
 }
 
-.server-info {
-  background: #f5f7fa;
-  padding: 12px;
-  border-radius: 4px;
+.section-title {
   font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ebeef5;
 }
 
-.server-info p {
-  margin: 4px 0;
+.context-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 8px;
 }
 
-.text-success {
-  color: #67c23a;
-}
-
-.text-warning {
-  color: #e6a23c;
-}
-
-.connect-tips {
-  margin: 8px 0 0 0;
-  padding-left: 20px;
+.context-label {
   font-size: 13px;
+  color: #606266;
+  min-width: 70px;
+  flex-shrink: 0;
+  padding-top: 2px;
 }
 
-.connect-tips li {
-  margin: 4px 0;
-  color: #606266;
+.context-value {
+  font-size: 13px;
+  color: #303133;
 }
 </style>

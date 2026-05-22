@@ -46,8 +46,16 @@ declare namespace CMDB {
     createdAt: string;
     updatedAt: string;
     lastCheckTime?: string;
+    connectivityStatus?: 'online' | 'offline' | 'unknown';
+    lastConnectTime?: string;
+    sshCredentialId?: number;
+    cpuUsage?: number;
+    memoryUsage?: number;
+    diskUsage?: number;
+    metricsUpdatedAt?: string;
     // 关联数据
     credential?: SSHCredential;
+    credentials?: SSHCredential[];
     cabinet?: Cabinet;
     tags?: ServerTag[];
     groups?: ServerGroup[];
@@ -188,12 +196,21 @@ declare namespace CMDB {
     hostname: string;
     ip: string;
     innerIp?: string;
-    credentialId: number;
+    credentialIds: number[];
     serverType: ServerType;
     groupIds?: number[];
     sshPort?: number;
     remarks?: string;
     cloudInfo?: CloudServerForm | null;
+    env?: ServerEnv;
+    cpu?: number;
+    memory?: number;
+    disk?: number;
+    os?: string;
+    osVersion?: string;
+    businessId?: number;
+    cabinetId?: number;
+    tagIds?: number[];
   };
 
   /** 云主机表单 */
@@ -301,6 +318,7 @@ declare namespace CMDB {
   /** 服务器统计 */
   type ServerStats = {
     total: number;
+    online: number;
     byEnv: Record<string, number>;
     byStatus: Record<string, number>;
     byProvider: Record<string, number>;
@@ -439,7 +457,7 @@ declare namespace Bastion {
   /** 连接请求 */
   type ConnectRequest = {
     protocol: Protocol;
-    loginAccount: string;
+    credentialId: number;
   };
 
   /** 连接响应 */
