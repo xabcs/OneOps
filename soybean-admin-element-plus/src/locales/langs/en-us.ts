@@ -232,6 +232,7 @@ const local: App.I18n.Schema = {
     cmdb_config_business: 'Business Units',
     cmdb_config_rooms: 'Server Rooms',
     cmdb_config_tags: 'Tag Management',
+    cmdb_config_agents: 'Agent Management',
     cmdb_terminal: 'SSH Terminal',
     plugin: 'Plugin',
     plugin_copy: 'Copy',

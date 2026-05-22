@@ -330,11 +330,13 @@ export function fetchGetAssetChanges(params?: {
 
 /**
  * 获取SSH凭证列表
+ * @param type 凭证类型筛选：'user'=用户连接凭证，'system'=系统运维凭证，不传=全部
  */
-export function fetchGetSSHCredentials() {
+export function fetchGetSSHCredentials(type?: CMDB.CredentialType) {
   return request<CMDB.SSHCredential[]>({
     url: '/cmdb/ssh-credentials',
-    method: 'get'
+    method: 'get',
+    params: type ? { type } : undefined
   });
 }
 
@@ -405,6 +407,13 @@ export function fetchConnectServer(serverId: number, data: {
 /**
  * 检查连接权限（返回可用凭证列表）
  */
+export function fetchSyncServerMetrics(serverId: number) {
+  return request<null>({
+    url: `/cmdb/servers/${serverId}/sync-metrics`,
+    method: 'post'
+  });
+}
+
 export function fetchCheckConnectPermission(serverId: number) {
   return request<{
     hasPermission: boolean;
@@ -619,6 +628,95 @@ export function fetchUpdateAccessPolicy(id: number, data: Partial<Bastion.Access
 export function fetchDeleteAccessPolicy(id: number) {
   return request({
     url: `/cmdb/access-policies/${id}`,
+    method: 'delete'
+  });
+}
+
+/**
+ * 部署 Agent
+ */
+export function fetchDeployAgent(serverId: number) {
+  return request<null>({
+    url: `/cmdb/servers/${serverId}/agent/deploy`,
+    method: 'post'
+  });
+}
+
+/**
+ * 重启 Agent
+ */
+export function fetchRestartAgent(serverId: number) {
+  return request<null>({
+    url: `/cmdb/servers/${serverId}/agent/restart`,
+    method: 'post'
+  });
+}
+
+/**
+ * 卸载 Agent
+ */
+export function fetchUninstallAgent(serverId: number) {
+  return request<null>({
+    url: `/cmdb/servers/${serverId}/agent/uninstall`,
+    method: 'post'
+  });
+}
+
+/**
+ * 查询 Agent 状态
+ */
+export function fetchGetAgentStatus(serverId: number) {
+  return request<{ agentStatus: string; agentPort: number; agentVersion: string; lastHeartbeatAt: string }>({
+    url: `/cmdb/servers/${serverId}/agent/status`,
+    method: 'get'
+  });
+}
+
+/**
+ * 获取 Agent 管理列表
+ */
+export function fetchGetAgentList(params?: {
+  hostname?: string;
+  ip?: string;
+  agentStatus?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  return request<CMDB.PageResponse<CMDB.Server>>({
+    url: '/cmdb/agents',
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 批量部署 Agent
+ */
+export function fetchBatchDeployAgent(serverIds: number[]) {
+  return request<null>({
+    url: '/cmdb/agents/batch-deploy',
+    method: 'post',
+    data: { serverIds }
+  });
+}
+
+/**
+ * 批量卸载 Agent
+ */
+export function fetchBatchUninstallAgent(serverIds: number[]) {
+  return request<null>({
+    url: '/cmdb/agents/batch-uninstall',
+    method: 'post',
+    data: { serverIds }
+  });
+}
+
+/**
+ * 删除 Agent 记录（仅清空数据库，不 SSH）
+ */
+export function fetchDeleteAgentRecord(serverId: number) {
+  return request<null>({
+    url: `/cmdb/agents/${serverId}`,
     method: 'delete'
   });
 }

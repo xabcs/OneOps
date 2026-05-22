@@ -121,12 +121,18 @@ type Server struct {
 	MemoryUsage        float64    `json:"memoryUsage" gorm:"default:0"`
 	DiskUsage          float64    `json:"diskUsage" gorm:"default:0"`
 	MetricsUpdatedAt   *time.Time `json:"metricsUpdatedAt"`
+	AgentStatus        string     `json:"agentStatus" gorm:"type:varchar(20);default:'uninstalled';index"` // uninstalled | running | offline
+	AgentPort          int        `json:"agentPort" gorm:"default:9100"`
+	AgentVersion       string     `json:"agentVersion" gorm:"size:50"`
+	LastHeartbeatAt    *time.Time `json:"lastHeartbeatAt"`
+	SystemCredentialID uint       `json:"systemCredentialId" gorm:"index"` // 系统运维凭证（Agent部署/采集专用）
 	CreatedAt          time.Time  `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt          time.Time  `json:"updatedAt" gorm:"autoUpdateTime"`
 
 	// 关联
-	SSHCredential *SSHCredential  `json:"sshCredential,omitempty" gorm:"foreignKey:SSHCredentialID;constraint:OnDelete:SET NULL"`
-	Cabinet       *Cabinet        `json:"cabinet,omitempty" gorm:"foreignKey:CabinetID;constraint:OnDelete:SET NULL"`
+	SSHCredential    *SSHCredential  `json:"sshCredential,omitempty" gorm:"foreignKey:SSHCredentialID;constraint:OnDelete:SET NULL"`
+	SystemCredential *SSHCredential  `json:"systemCredential,omitempty" gorm:"foreignKey:SystemCredentialID;constraint:OnDelete:SET NULL"`
+	Cabinet          *Cabinet        `json:"cabinet,omitempty" gorm:"foreignKey:CabinetID;constraint:OnDelete:SET NULL"`
 	Tags          []ServerTag     `json:"tags,omitempty" gorm:"many2many:server_tag_relations;constraint:OnDelete:CASCADE"`
 	Groups        []ServerGroup   `json:"groups,omitempty" gorm:"many2many:server_group_relations;constraint:OnDelete:CASCADE"`
 	CloudInfo     *CloudServer    `json:"cloudInfo,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:SET NULL"`
@@ -248,21 +254,30 @@ const (
 	SSHAuthKey      SSHPublicKeyAuth = "key"      // 密钥认证
 )
 
+// CredentialType 凭证用途类型
+type CredentialType string
+
+const (
+	CredentialTypeUser   CredentialType = "user"   // 用于用户堡垒连接
+	CredentialTypeSystem CredentialType = "system" // 用于系统自动化运维（Agent 部署/采集）
+)
+
 // SSHCredential SSH认证凭证
 type SSHCredential struct {
-	ID          uint             `json:"id" gorm:"primaryKey"`
-	Name        string           `json:"name" gorm:"size:100;not null"`
-	Description string           `json:"description" gorm:"type:text"`
-	Username    string           `json:"username" gorm:"size:50;not null"`
-	AuthType    SSHPublicKeyAuth `json:"authType" gorm:"size:20;default:'password'"`
-	Password    string           `json:"password,omitempty" gorm:"size:255"`    // 加密存储
-	PrivateKey  string           `json:"privateKey,omitempty" gorm:"type:text"` // 加密存储
-	Passphrase  string           `json:"passphrase,omitempty" gorm:"size:255"`  // 加密存储
-	Port        int              `json:"port" gorm:"default:22"`
-	SortOrder   int              `json:"sortOrder" gorm:"default:0"`
-	Status      int              `json:"status" gorm:"default:1"`
-	CreatedAt   time.Time        `json:"createdAt" gorm:"autoCreateTime"`
-	UpdatedAt   time.Time        `json:"updatedAt" gorm:"autoUpdateTime"`
+	ID             uint           `json:"id" gorm:"primaryKey"`
+	Name           string         `json:"name" gorm:"size:100;not null"`
+	Description    string         `json:"description" gorm:"type:text"`
+	Username       string         `json:"username" gorm:"size:50;not null"`
+	AuthType       SSHPublicKeyAuth `json:"authType" gorm:"size:20;default:'password'"`
+	Password       string         `json:"password,omitempty" gorm:"size:255"`    // 加密存储
+	PrivateKey     string         `json:"privateKey,omitempty" gorm:"type:text"` // 加密存储
+	Passphrase     string         `json:"passphrase,omitempty" gorm:"size:255"`  // 加密存储
+	Port           int            `json:"port" gorm:"default:22"`
+	CredentialType CredentialType `json:"credentialType" gorm:"type:varchar(10);not null;default:'user'"` // user | system
+	SortOrder      int            `json:"sortOrder" gorm:"default:0"`
+	Status         int            `json:"status" gorm:"default:1"`
+	CreatedAt      time.Time      `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt      time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 
 	// 关联
 	Servers []Server `json:"servers,omitempty" gorm:"many2many:server_credentials;joinForeignKey:CredentialID;joinReferences:ServerID"`

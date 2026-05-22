@@ -464,6 +464,117 @@ func (c *CMDBController) GetAssetChanges(ctx *gin.Context) {
 	}))
 }
 
+// SyncServerMetrics 手动触发单台主机使用率采集（智能分发：Agent 运行时走 HTTP 拉取，否则 SSH fallback）
+func (c *CMDBController) SyncServerMetrics(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的服务器ID"))
+		return
+	}
+
+	server, err := c.cmdbService.GetServerByID(uint(id))
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("服务器不存在"))
+		return
+	}
+
+	if server.AgentStatus == "running" {
+		svc := services.NewAgentService()
+		go svc.PullMetrics(uint(id))
+		ctx.JSON(http.StatusOK, utils.SuccessWithMessage("Agent 指标拉取任务已提交"))
+	} else {
+		go services.SyncServerMetrics(uint(id))
+		ctx.JSON(http.StatusOK, utils.SuccessWithMessage("SSH 采集任务已提交"))
+	}
+}
+
+// ========== Agent 管理 ==========
+
+// DeployAgent 部署 Agent 到目标主机
+func (c *CMDBController) DeployAgent(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的服务器ID"))
+		return
+	}
+
+	svc := services.NewAgentService()
+	go func() {
+		if err := svc.DeployAgent(uint(id)); err != nil {
+			services.MarkAgentFailed(uint(id), err.Error())
+		}
+	}()
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("Agent 部署任务已提交"))
+}
+
+// RestartAgent 重启目标主机 Agent 服务
+func (c *CMDBController) RestartAgent(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的服务器ID"))
+		return
+	}
+
+	svc := services.NewAgentService()
+	go svc.RestartAgent(uint(id))
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("Agent 重启任务已提交"))
+}
+
+// UninstallAgent 卸载目标主机 Agent
+func (c *CMDBController) UninstallAgent(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的服务器ID"))
+		return
+	}
+
+	svc := services.NewAgentService()
+	go svc.UninstallAgent(uint(id))
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("Agent 卸载任务已提交"))
+}
+
+// GetAgentStatus 查询 Agent 当前状态
+func (c *CMDBController) GetAgentStatus(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的服务器ID"))
+		return
+	}
+
+	server, err := c.cmdbService.GetServerByID(uint(id))
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("服务器不存在"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"agentStatus":     server.AgentStatus,
+		"agentPort":       server.AgentPort,
+		"agentVersion":    server.AgentVersion,
+		"lastHeartbeatAt": server.LastHeartbeatAt,
+	}))
+}
+
+// ReceiveAgentHeartbeat 接收 Agent 心跳（不经过 Auth 中间件）
+func (c *CMDBController) ReceiveAgentHeartbeat(ctx *gin.Context) {
+	var data services.AgentHeartbeatData
+	if err := ctx.ShouldBindJSON(&data); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("参数错误"))
+		return
+	}
+
+	svc := services.NewAgentService()
+	if err := svc.ReceiveHeartbeat(data); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("ok"))
+}
+
 // GetServerStats 获取服务器统计信息
 func (c *CMDBController) GetServerStats(ctx *gin.Context) {
 	stats, err := c.cmdbService.GetServerStats()
@@ -652,9 +763,10 @@ func (c *CMDBController) GetServersByGroup(ctx *gin.Context) {
 
 // ========== SSH凭证管理 ==========
 
-// GetSSHCredentials 获取SSH凭证列表
+// GetSSHCredentials 获取SSH凭证列表，支持 ?type=user|system 筛选
 func (c *CMDBController) GetSSHCredentials(ctx *gin.Context) {
-	credentials, err := c.cmdbService.GetSSHCredentials()
+	credentialType := ctx.Query("type") // "" | "user" | "system"
+	credentials, err := c.cmdbService.GetSSHCredentials(credentialType)
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -762,4 +874,100 @@ func (c *CMDBController) TestSSHCredential(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(result))
+}
+
+// ========== Agent 管理页面专用接口 ==========
+
+// GetAgentList 获取 Agent 管理列表（带筛选分页）
+func (c *CMDBController) GetAgentList(ctx *gin.Context) {
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+
+	query := make(map[string]interface{})
+	if hostname := ctx.Query("hostname"); hostname != "" {
+		query["hostname"] = hostname
+	}
+	if ip := ctx.Query("ip"); ip != "" {
+		query["ip"] = ip
+	}
+	if status := ctx.Query("agentStatus"); status != "" {
+		query["agentStatus"] = status
+	}
+
+	servers, total, err := c.cmdbService.GetServers(query, page, pageSize)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"list":  servers,
+		"total": total,
+	}))
+}
+
+// BatchDeployAgent 批量部署 Agent
+func (c *CMDBController) BatchDeployAgent(ctx *gin.Context) {
+	var req struct {
+		ServerIDs []uint `json:"serverIds"`
+	}
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("参数错误"))
+		return
+	}
+	if len(req.ServerIDs) == 0 {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("serverIds 不能为空"))
+		return
+	}
+
+	svc := services.NewAgentService()
+	for _, id := range req.ServerIDs {
+		serverID := id
+		go func() {
+			if err := svc.DeployAgent(serverID); err != nil {
+				_ = err
+			}
+		}()
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("批量 Agent 部署任务已提交"))
+}
+
+// BatchUninstallAgent 批量卸载 Agent
+func (c *CMDBController) BatchUninstallAgent(ctx *gin.Context) {
+	var req struct {
+		ServerIDs []uint `json:"serverIds"`
+	}
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("参数错误"))
+		return
+	}
+	if len(req.ServerIDs) == 0 {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("serverIds 不能为空"))
+		return
+	}
+
+	svc := services.NewAgentService()
+	for _, id := range req.ServerIDs {
+		serverID := id
+		go svc.UninstallAgent(serverID)
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("批量 Agent 卸载任务已提交"))
+}
+
+// DeleteAgentRecord 删除 Agent 记录（仅清空字段，不 SSH）
+func (c *CMDBController) DeleteAgentRecord(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的服务器ID"))
+		return
+	}
+
+	if err := c.cmdbService.ClearAgentRecord(uint(id)); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("Agent 记录已清除"))
 }

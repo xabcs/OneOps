@@ -53,9 +53,15 @@ declare namespace CMDB {
     memoryUsage?: number;
     diskUsage?: number;
     metricsUpdatedAt?: string;
+    agentStatus?: 'uninstalled' | 'running' | 'offline';
+    agentPort?: number;
+    agentVersion?: string;
+    lastHeartbeatAt?: string;
+    systemCredentialId?: number;
     // 关联数据
     credential?: SSHCredential;
     credentials?: SSHCredential[];
+    systemCredential?: SSHCredential;
     cabinet?: Cabinet;
     tags?: ServerTag[];
     groups?: ServerGroup[];
@@ -196,7 +202,8 @@ declare namespace CMDB {
     hostname: string;
     ip: string;
     innerIp?: string;
-    credentialIds: number[];
+    credentialIds: number[];       // 用户连接凭证（多选，credential_type=user）
+    systemCredentialId?: number;   // 系统运维凭证（单选，credential_type=system）
     serverType: ServerType;
     groupIds?: number[];
     sshPort?: number;
@@ -229,6 +236,9 @@ declare namespace CMDB {
     chargeType?: string;
   };
 
+  /** SSH凭证用途类型 */
+  type CredentialType = 'user' | 'system';
+
   /** SSH凭证表单 */
   type SSHCredentialForm = {
     id?: number;
@@ -239,6 +249,7 @@ declare namespace CMDB {
     password?: string;
     privateKey?: string;
     passphrase?: string;
+    credentialType: CredentialType;
     status?: number;
   };
 
@@ -250,6 +261,7 @@ declare namespace CMDB {
     username: string;
     authType: 'password' | 'key';
     port: number;
+    credentialType: CredentialType;
     sortOrder: number;
     status: number;
     createdAt: string;

@@ -52,6 +52,15 @@ func main() {
 		logger.Info("数据库初始化完成")
 	}
 
+	// 清理上次运行遗留的孤儿活跃会话（重启时必须执行，避免在线会话列表显示失效数据）
+	services.CleanupOrphanedSessions()
+
+	// 启动使用率定时采集调度器（每 5 分钟采集全部在线主机）
+	go services.StartMetricsScheduler()
+
+	// 启动 Agent 指标采集调度器（每 5 分钟 HTTP 拉取 agent_status=running 主机，每 1 分钟检测心跳超时）
+	go services.StartAgentMetricsScheduler()
+
 	// 创建 Gin 引擎
 	r := gin.Default()
 

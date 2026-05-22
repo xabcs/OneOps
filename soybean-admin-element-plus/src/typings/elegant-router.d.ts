@@ -58,6 +58,7 @@ declare module "@elegant-router/types" {
     "cmdb_changes": "/cmdb/changes";
     "cmdb_commands": "/cmdb/commands";
     "cmdb_config": "/cmdb/config";
+    "cmdb_config_agents": "/cmdb/config/agents";
     "cmdb_config_business": "/cmdb/config/business";
     "cmdb_config_rooms": "/cmdb/config/rooms";
     "cmdb_config_tags": "/cmdb/config/tags";
@@ -217,6 +218,7 @@ declare module "@elegant-router/types" {
     | "cmdb_business"
     | "cmdb_changes"
     | "cmdb_commands"
+    | "cmdb_config_agents"
     | "cmdb_config_business"
     | "cmdb_config_rooms"
     | "cmdb_config_tags"

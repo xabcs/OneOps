@@ -234,6 +234,7 @@ const local: App.I18n.Schema = {
     cmdb_config_business: '业务系统',
     cmdb_config_rooms: '机房机柜',
     cmdb_config_tags: '标签管理',
+    cmdb_config_agents: 'Agent 管理',
     cmdb_terminal: 'SSH 终端',
     plugin_copy: '剪贴板',
     plugin_charts: '图表',

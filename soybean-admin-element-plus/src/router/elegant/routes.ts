@@ -295,6 +295,17 @@ export const generatedRoutes: GeneratedRoute[] = [
         },
         children: [
           {
+            name: 'cmdb_config_agents',
+            path: '/cmdb/config/agents',
+            component: 'view.cmdb_config_agents',
+            meta: {
+              title: 'cmdb_config_agents',
+              i18nKey: 'route.cmdb_config_agents',
+              icon: 'mdi:robot',
+              order: 4
+            }
+          },
+          {
             name: 'cmdb_config_business',
             path: '/cmdb/config/business',
             component: 'view.cmdb_config_business',

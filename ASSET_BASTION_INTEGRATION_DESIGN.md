@@ -47,7 +47,8 @@ OneOps 当前具备 CMDB 资产管理基础能力（主机、分组、业务系�
 ├─ 资产配置              /cmdb/config
 │  ├─ 业务系统           /cmdb/config/business         阶段一
 │  ├─ 机房机柜           /cmdb/config/rooms            阶段一
-│  └─ 标签管理           /cmdb/config/tags             阶段一
+│  ├─ 标签管理           /cmdb/config/tags             阶段一
+│  └─ Agent 管理         /cmdb/config/agents           阶段二
 └─ 资产变更              /cmdb/changes                 已有
 
 隐藏路由（hideInMenu）
@@ -181,6 +182,214 @@ bastion_file_transfers
 ```
 bastion_approvals — 暂不建表，用访问策略 time_window 代替临时授权
 ```
+
+---
+
+## 凭证分层设计
+
+### 问题背景
+
+现有 `ssh_credentials` 表被两类操作混用：
+
+| 操作类型 | 执行者 | 典型权限需求 |
+|----------|--------|-------------|
+| **用户堡垒连接** | 人工，通过 Web Terminal | 受限账号（`ops`/`deploy`），禁止 rm -rf 等高危命令，受访问策略约束 |
+| **系统自动化运维** | OneOps 后端，无人工干预 | 高权限账号（`root` 或具备 sudo），需要安装软件、写 systemd 配置、重启服务 |
+
+混用同一凭证会导致两难：
+- 用凭证满足系统操作 → 用户堡垒连接时账号权限过大，增加审计风险
+- 用用户凭证做系统操作 → 权限不够，Agent 部署失败（无法 `systemctl enable`、无法写 `/etc/systemd/`）
+
+**当前 Agent 部署失败的根本原因之一：** `loadServerWithCredential` 拿用户绑定凭证（可能是 `ops` 用户），SSH 过去执行 `systemctl enable oneops-agent` 失败，但错误被静默丢弃。
+
+### 设计方案
+
+**在现有 `SSHCredential` 表增加 `credential_type` 字段**（扩展现有表，不新建表），并在 `Server` 表增加 `system_credential_id` 字段：
+
+```
+ssh_credentials 表新增字段：
+  credential_type  ENUM('user', 'system')  DEFAULT 'user'
+    - user：用于用户堡垒连接，在连接弹窗凭证选择器中可见
+    - system：用于系统自动化运维，在连接弹窗中隐藏，仅用于 Agent 部署/重启/卸载及 SSH 采集
+
+servers 表新增字段：
+  system_credential_id  BIGINT UNSIGNED  NULL（外键指向 ssh_credentials.id）
+    - 专供 Agent 部署、systemctl 操作、SSH 指标采集使用
+    - 为空时 Agent 部署直接返回错误，不 fallback 到用户凭证
+```
+
+### 两类凭证的使用边界
+
+```
+                    ┌────────────────────────────────────────┐
+                    │          ssh_credentials               │
+                    │  credential_type = 'user'              │
+                    │  典型：ops / deploy / 业务账号         │
+                    └──────────────┬─────────────────────────┘
+                                   │  用于堡垒连接
+                     ┌─────────────▼──────────────┐
+                     │  bastion_sessions（用户会话） │
+                     │  CheckConnectPermission 校验 │
+                     │  全程审计命令 + 会话           │
+                     └────────────────────────────┘
+
+                    ┌────────────────────────────────────────┐
+                    │          ssh_credentials               │
+                    │  credential_type = 'system'            │
+                    │  典型：root / ansible / oneops-agent   │
+                    └──────────────┬─────────────────────────┘
+                                   │  用于系统操作
+                     ┌─────────────▼──────────────┐
+                     │  Agent 部署 / 重启 / 卸载    │
+                     │  SSH 指标采集                 │
+                     │  硬件配置采集                 │
+                     └────────────────────────────┘
+```
+
+系统凭证**永远不会出现在**以下场景：
+- 连接弹窗的凭证选择列表
+- `CheckConnectPermission` 返回的可用凭证
+- `bastion_sessions` 会话记录
+- 用户视角的凭证管理（`/cmdb/access/credentials`）
+
+用户凭证**永远不会被用于**以下场景：
+- Agent 部署 / 重启 / 卸载
+- SSH 指标采集
+- 任何由 OneOps 后端自动发起的 SSH 操作
+
+### 数据模型变更
+
+**`SSHCredential` 新增字段：**
+
+```go
+// CredentialType 凭证用途类型
+type CredentialType string
+
+const (
+    CredentialTypeUser   CredentialType = "user"   // 用于用户堡垒连接
+    CredentialTypeSystem CredentialType = "system" // 用于系统自动化运维
+)
+
+type SSHCredential struct {
+    // ...现有字段...
+    CredentialType CredentialType `json:"credentialType" gorm:"type:enum('user','system');default:'user'"`
+}
+```
+
+**`Server` 新增字段：**
+
+```go
+type Server struct {
+    // ...现有字段...
+    SystemCredentialID uint           `json:"systemCredentialId" gorm:"index"`
+    SystemCredential   *SSHCredential `json:"systemCredential,omitempty" gorm:"foreignKey:SystemCredentialID;constraint:OnDelete:SET NULL"`
+}
+```
+
+### 后端逻辑变更
+
+**`AgentService.loadServerWithCredential` 重命名为 `loadServerForAgent`，强制使用系统凭证：**
+
+```
+loadServerForAgent(serverID) 查找逻辑：
+  1. server.SystemCredentialID → db.First(&cred, server.SystemCredentialID)
+  2. 为空 → 直接返回错误"主机未配置系统运维凭证，请在主机编辑页绑定 credential_type=system 的凭证"
+     （不 fallback 到用户凭证，两类凭证完全隔离）
+```
+
+**`dialSSH` 函数**无需改动，入参 `*models.Server` 已包含解析出的凭证。
+
+**`bastion.go` 的 `CheckConnectPermission`**：查询 `server.Credentials` 时过滤 `credential_type = 'user'`，确保系统凭证不出现在连接弹窗。
+
+### API 变更
+
+```
+# 凭证 CRUD 接口新增 type 筛选参数
+GET /api/cmdb/credentials?type=user      仅返回用户凭证（连接弹窗使用）
+GET /api/cmdb/credentials?type=system    仅返回系统凭证（主机编辑绑定使用）
+GET /api/cmdb/credentials               返回全部（凭证库管理页使用）
+
+# 创建/编辑凭证时新增 credentialType 字段
+POST /api/cmdb/credentials              body 新增 credentialType: 'user'|'system'
+PUT  /api/cmdb/credentials/:id          body 新增 credentialType: 'user'|'system'
+
+# 主机接口无变化，systemCredentialId 随 Server CRUD 正常读写
+```
+
+### 前端页面设计
+
+#### 凭证库页面（/cmdb/access/credentials）
+
+**改动：顶部增加凭证类型切换 Tab**
+
+```
+[全部凭证] [用户凭证] [系统凭证]
+
+表格列：凭证名称 | 类型标签 | 认证方式 | 用户名 | 已绑定主机数 | 创建时间 | 操作
+
+类型标签：
+  - 用户凭证：蓝色 tag "用户连接"
+  - 系统凭证：橙色 tag "系统运维"
+```
+
+**新增/编辑凭证弹窗**：增加「凭证用途」单选：
+```
+凭证用途 *
+  ● 用户连接    → credential_type = 'user'
+               （用于用户堡垒 SSH，受访问策略约束）
+  ○ 系统运维    → credential_type = 'system'
+               （仅供 OneOps 后端 Agent 部署、采集使用，不出现在用户连接列表）
+```
+
+#### 主机编辑弹窗（ServerEditDialog）
+
+**改动：凭证部分拆分为两个字段**
+
+```
+用户连接凭证    [下拉选择 type=user 的凭证 ▼]
+               ℹ 用于用户通过堡垒机建立 SSH 会话，可绑定多个
+
+系统运维凭证    [下拉选择 type=system 的凭证 ▼]
+               ℹ 用于 Agent 部署、systemctl 操作、指标采集，需具备 root 或 sudo 权限
+               △ 未配置时 Agent 部署将使用用户连接凭证（可能失败）
+```
+
+后端：主机 `PATCH /api/cmdb/servers/:id` 接受 `systemCredentialId` 字段更新。
+
+#### Agent 管理页（/cmdb/config/agents）
+
+**改动：表格新增"系统凭证"列**
+
+```
+主机名 | IP | Agent状态 | 版本 | 系统凭证 | 最近心跳 | 操作
+
+系统凭证列显示：
+  - 已配置：绿色文字 "root@cred-name"（凭证名称+用户名）
+  - 未配置：红色警告 "✗ 未配置"，鼠标 hover 显示"Agent 部署需要系统运维凭证，请先在主机编辑页绑定"
+```
+
+批量部署前置校验：若勾选主机中有未配置系统凭证的主机，**阻断部署并提示**：
+
+```
+以下 N 台主机未配置系统运维凭证，无法部署：
+  - server-01 (192.168.1.1)
+  - server-02 (192.168.1.2)
+
+请先在主机编辑页为这些主机绑定 credential_type=system 的凭证，再执行部署。
+
+[关闭]   [去配置 →]
+```
+
+（不提供"仍然部署"选项，两类凭证完全隔离，无 fallback 路径）
+
+### 实现顺序
+
+1. **数据模型**：`SSHCredential` 加 `credential_type`，`Server` 加 `system_credential_id`，`AutoMigrate` 自动建列
+2. **后端逻辑**：`AgentService` 的凭证加载逻辑修改，`CheckConnectPermission` 过滤系统凭证
+3. **凭证 CRUD**：接口支持 `type` 筛选和 `credentialType` 字段读写
+4. **前端凭证库**：增加类型 Tab 和创建/编辑弹窗的凭证用途字段
+5. **前端主机编辑**：拆分凭证字段
+6. **前端 Agent 管理**：增加系统凭证列和批量部署预检
 
 ---
 
@@ -438,14 +647,113 @@ GET/POST/PUT/DELETE /api/cmdb/tags
 
 #### 主机使用率列（主机资产页增强）
 
-`servers` 表新增字段：`cpu_usage`/`memory_usage`/`disk_usage`/`metrics_updated_at`。
+**数据模型新增字段**：
 
-主机表格新增"使用率"列，进度条展示，颜色按阈值：绿色 < 70%、黄色 70~90%、红色 > 90%。未采集时显示"未采集"+ Tooltip（上次采集时间）。
+`servers` 表新增：`cpu_usage` / `memory_usage` / `disk_usage` / `metrics_updated_at` / `agent_status` / `agent_port` / `agent_version`。
 
-后端新增定时任务，每 5 分钟对 `status=online` 的主机通过 SSH 采集使用率写入数据库：
-- CPU 使用率：`top -bn1`
-- 内存使用率：`free`
-- 磁盘使用率：`df /`
+- `agent_status`：`uninstalled`（未安装）/ `running`（运行中）/ `offline`（离线/心跳超时）
+- `agent_port`：Agent HTTP 监听端口，默认 9100，支持按主机覆盖
+- `agent_version`：已部署的 Agent 版本号
+
+**Agent 方案（替代 SSH shell 采集）**：
+
+采集方式从"每次 SSH 执行 top/free/df 解析"改为"在目标主机部署自研轻量 Agent，后端定时 HTTP 拉取"。
+
+```
+目标主机 Agent (gopsutil)
+  └─ 暴露 HTTP :9100/metrics  ←── 每5分钟 HTTP GET ── OneOps 调度器 ──→ MySQL
+
+Agent 部署（一次性）：
+  OneOps 后端 ──SSH──→ 上传预编译二进制 ──→ 启动 systemd 服务
+  （部署完成后不再依赖 SSH 凭证做采集）
+```
+
+**Agent 实现**：
+
+- 使用 `gopsutil` 库直接读取 `/proc`，精度高且跨发行版兼容
+- 暴露 HTTP JSON 接口（`GET /metrics`），返回 CPU%、内存%、磁盘%、load5、进程总数
+- 定期向 OneOps 后端发送心跳（`POST /api/cmdb/agent/heartbeat`），携带 hostname / IP / PID / 版本
+- 以 systemd 服务运行，`Restart=always`，崩溃自动重启
+- 预编译各平台二进制（linux/amd64、linux/arm64），存放在 OneOps 服务器，部署时通过 SSH SCP 传输 + 启动，不在运行时动态生成代码编译
+
+**Agent 部署流程**：
+
+1. 用户在主机表格或 Agent 管理界面选择目标主机，点击"部署 Agent"
+2. 后端使用主机绑定的**系统运维凭证**（`system_credential_id`）将预编译二进制 SCP 到目标主机 `/opt/oneops-agent/`；若未配置系统凭证，直接返回错误，不 fallback
+3. 通过 SSH 执行 systemd 注册和启动命令（需 root 或 sudo 权限）
+4. 前端轮询 Agent 状态直到变为 `running` 或 `failed`
+5. Agent 启动后开始发送心跳，后端收到心跳后更新 `agent_status=running`
+
+**后端调度器改动**：
+
+- `StartMetricsScheduler` 每 5 分钟对 `agent_status=running` 的主机发起 HTTP GET `http://{innerIP}:{agentPort}/metrics`
+- 解析 JSON 响应写入 `cpu_usage` / `memory_usage` / `disk_usage` / `metrics_updated_at`
+- 心跳超时检测（> 3 分钟无心跳）将 `agent_status` 置为 `offline`，停止采集
+
+**前端展示**：
+
+主机表格新增两列：
+- "使用率"（宽 160px）：Agent 运行且有采集数据时，显示 CPU/MEM/DSK 三条进度条，颜色按阈值（绿 <70%、黄 70-90%、红 >90%）；`uninstalled` 时显示灰色"未安装"标签；`offline` 时显示橙色"Agent 离线"标签；`running` 首次采集中显示绿色"采集中"标签
+- "Agent"（宽 130px）：状态徽标 + 操作入口
+  - `running`：绿色"运行中"徽标，hover 时 tooltip 显示版本号（如 `v1.0.0`）
+  - `offline`：红色"离线"徽标 + "重启"链接按钮（直接触发重启，无需打开更多菜单）
+  - `uninstalled`：灰色"未安装"徽标 + "部署"链接按钮（直接触发部署）
+
+主机"更多"下拉菜单 Agent 相关选项（根据当前 agent_status 动态显示）：
+
+| agent_status | 显示选项 |
+|---|---|
+| `running` | 刷新指标 / 重启 Agent / 卸载 Agent |
+| `offline` | 重启 Agent / 卸载 Agent |
+| `uninstalled` | 部署 Agent |
+
+**轮询终态规则**：部署、重启操作提交后轮询预期终态 `running`；卸载操作提交后轮询预期终态 `uninstalled`。轮询每 3 秒一次，最多 20 次，达到预期终态或超时后均停止并刷新列表。
+
+#### 独立 Agent 管理页面（/cmdb/config/agents）
+
+在"资产配置"目录下设置独立 Agent 管理页面，补充主机表格内嵌操作无法覆盖的批量场景。
+
+**页面布局**：
+
+```
+顶部工具栏
+  [搜索框: 主机名/IP]  [状态筛选: 全部/运行中/离线/未安装]  [刷新]  [批量部署]  [批量卸载]
+
+Agent 列表（el-table）
+  □  主机名称  IP地址  内网IP  版本  状态  监听端口  最近心跳  操作
+  □  web-01   1.2.3.4  -      v1.0  运行中  9100   2分钟前   [重启] [卸载] [删除记录]
+  □  db-01    1.2.3.5  -      -     未安装   -      -        [部署]
+  □  redis-01 1.2.3.6  -      v1.0  离线    9100   8分钟前   [重启] [卸载] [删除记录]
+```
+
+**状态徽标颜色**：
+- `running`：绿色"运行中"
+- `offline`：红色"离线"（tooltip 显示最近心跳时间）
+- `uninstalled`：灰色"未安装"
+
+**搜索与筛选**：
+- 主机名 / IP 模糊搜索
+- Agent 状态单选（全部 / 运行中 / 离线 / 未安装）
+- 分页（pageSize 默认 20）
+
+**操作说明**：
+
+| 操作 | 条件 | 行为 |
+|------|------|------|
+| 部署 | `uninstalled` | 调用 deploy 接口，轮询至 `running` |
+| 重启 | `offline` 或 `running` | 调用 restart 接口，轮询至 `running` |
+| 卸载 | `running` 或 `offline` | 二次确认 → 调用 uninstall 接口，轮询至 `uninstalled` |
+| 删除记录 | `offline` 或 `uninstalled` | 二次确认 → 清除该主机的 agent 字段（不 SSH，仅更新数据库），立即刷新列表 |
+| 批量部署 | 勾选若干 `uninstalled` 主机 | 逐台串行调用 deploy，工具栏显示进度（X/Y 台完成） |
+| 批量卸载 | 勾选若干 `running`/`offline` 主机 | 二次确认 → 逐台串行调用 uninstall |
+
+**轮询策略**：操作后同样采用 3 秒/次、最多 20 次的轮询，达到预期终态停止；批量操作时各主机独立轮询互不阻塞。
+
+**与主机表格内嵌操作的关系**：
+
+两者并存、互补：
+- 主机资产表格的 Agent 列提供单台快速操作（部署/重启），适合偶发场景
+- 独立 Agent 管理页面提供批量视角和完整状态总览，适合批量部署或集中排查离线 Agent
 
 ### 后端接口
 
@@ -460,8 +768,25 @@ DELETE /api/cmdb/access-policies/:id
 GET /api/cmdb/stats/servers     主机统计（按环境、状态分布）
 GET /api/cmdb/stats/sessions    会话统计（今日/活跃/近7天趋势）
 
-# 监控采集
-POST /api/cmdb/servers/:id/sync-metrics   手动触发单台主机使用率采集
+# Agent 管理
+POST /api/cmdb/servers/:id/agent/deploy     部署 Agent（异步，优先用系统凭证 SCP + 启动，见"凭证分层设计"）
+POST /api/cmdb/servers/:id/agent/restart    重启 Agent（SSH 执行 systemctl restart，用系统凭证）
+POST /api/cmdb/servers/:id/agent/uninstall  卸载 Agent（SSH 执行 systemctl stop + 文件清理，用系统凭证）
+GET  /api/cmdb/servers/:id/agent/status     查询 Agent 当前状态
+
+# Agent 管理页面专用接口
+GET  /api/cmdb/agents                       Agent 列表（支持 hostname/ip/status 筛选 + 分页）
+POST /api/cmdb/agents/batch-deploy          批量部署（body: { serverIds: [1,2,3] }）
+POST /api/cmdb/agents/batch-uninstall       批量卸载（body: { serverIds: [1,2,3] }）
+DELETE /api/cmdb/agents/:id                 删除 Agent 记录（仅清空数据库 agent 字段，不 SSH）
+
+# Agent 心跳接收（由 Agent 主动上报，不需要 Auth 中间件）
+POST /api/cmdb/agent/heartbeat              接收 Agent 心跳，更新 agent_status 和 last_heartbeat_at
+
+# 手动触发单台指标采集（智能分发）
+POST /api/cmdb/servers/:id/sync-metrics
+     当 agent_status=running → 触发 Agent HTTP GET /metrics 拉取
+     否则 → fallback 到 SSH 采集（top/free/df）
 ```
 
 ### 前后端联调目标
@@ -470,13 +795,19 @@ POST /api/cmdb/servers/:id/sync-metrics   手动触发单台主机使用率采�
 - 策略停用后连接判断实时变化
 - 设置 `time_window` 的临时策略在窗口外不命中
 - 资产总览页数据来自后端真实接口
-- 主机使用率在 5 分钟内自动更新
+- Agent 部署流程完整可用：部署 → 轮询状态 → 变为"运行中" → 使用率列有数据
+- Agent 心跳超时后 `agent_status` 自动变为 `offline`，使用率列显示"Agent 离线"
+- 手动触发"刷新指标"3 秒后表格自动刷新使用率数据
+- Agent 管理页面可查看全量主机的 Agent 状态，支持按状态筛选
+- 批量部署：勾选多台未安装主机 → 点击批量部署 → 进度条展示各台完成情况
+- 离线 Agent 可在管理页面删除记录（仅清库，不 SSH），记录删除后该主机 Agent 列显示"未安装"
 
 ### 验收标准
 
 - 演示路径：创建策略 → 用户连接被允许 → 停用策略 → 用户无法连接 → 启用临时时间窗口 → 窗口内可连接
 - 策略支持主机、分组、标签、业务系统四种资产范围中的至少两种
 - 资产总览数据正确，不依赖 Mock
+- 演示 Agent 部署：选择一台有 SSH 凭证的主机 → 部署 Agent → 状态变为"运行中" → 使用率列展示真实数据
 - 阶段一的 SSH 连接能力不回归
 
 ---
@@ -583,7 +914,28 @@ GET  /api/cmdb/sessions/:id/file-transfers  单会话文件传输记录
 - **Kubernetes exec**：client-go + WebSocket/stream，支持 Pod exec、日志查看
 - **数据库登录代理**：独立代理服务，支持 MySQL/PostgreSQL 登录审计，与 SSH 代理解耦
 
-### 凭证系统升级
+### 监控采集架构演进（Pushgateway）
+
+当前 Agent 方案为 OneOps 主动 HTTP 拉取（pull 模式），要求 OneOps 服务器能访问目标主机 agentPort（默认 9100）。
+
+面对内网主机或防火墙隔离场景，可引入 Prometheus Pushgateway 升级为推送模式：
+
+```
+目标主机 Agent ──每30秒 PUSH──→ Pushgateway :9091
+Prometheus :9090 ──scrape──→ Pushgateway
+OneOps 后端 ──PromQL──→ Prometheus → 写 MySQL / 返回前端
+```
+
+升级收益：
+- 解决 OneOps 无法主动访问内网主机的网络问题（Agent 只需能访问 Pushgateway）
+- Prometheus 存储时序数据，可做历史趋势图和告警规则
+- 支持进程监控、HTTP 探活、Ping 等扩展业务监控
+
+升级前置条件：当前 pull 模式稳定运行；需要时序历史数据；存在防火墙隔离场景。
+
+触发时机：被管主机数量超过 200 台，或出现大量防火墙后主机，或需要监控历史趋势功能。
+
+**注意**：引入 Pushgateway 需同步实现心跳超时触发清理（`DELETE /metrics/job/{hostname}`），防止离线主机数据在 Pushgateway 中永久残留。
 
 从 MySQL AES-GCM 加密存储迁移到 Vault、云 KMS 或企业密钥管理系统，满足更高合规要求。
 

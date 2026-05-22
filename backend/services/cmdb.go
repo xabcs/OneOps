@@ -41,6 +41,9 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 	if provider, ok := query["provider"].(string); ok && provider != "" {
 		tx = tx.Where("provider = ?", provider)
 	}
+	if agentStatus, ok := query["agentStatus"].(string); ok && agentStatus != "" {
+		tx = tx.Where("agent_status = ?", agentStatus)
+	}
 
 	// 标记是否需要过滤分组
 	var groupIDUint uint
@@ -660,10 +663,14 @@ func (s *CMDBService) GetServersByGroup(groupID uint) ([]models.Server, error) {
 
 // ========== SSH凭证管理 ==========
 
-// GetSSHCredentials 获取SSH凭证列表
-func (s *CMDBService) GetSSHCredentials() ([]models.SSHCredential, error) {
+// GetSSHCredentials 获取SSH凭证列表，credentialType 为空时返回全部
+func (s *CMDBService) GetSSHCredentials(credentialType string) ([]models.SSHCredential, error) {
 	var credentials []models.SSHCredential
-	err := db.Order("sort_order ASC, id ASC").Find(&credentials).Error
+	tx := db.Order("sort_order ASC, id ASC")
+	if credentialType == "user" || credentialType == "system" {
+		tx = tx.Where("credential_type = ?", credentialType)
+	}
+	err := tx.Find(&credentials).Error
 	return credentials, err
 }
 
@@ -721,4 +728,18 @@ func (s *CMDBService) TestSSHCredential(id uint, testIP string, testPort int) (m
 	result["test_port"] = testPort
 
 	return result, nil
+}
+
+// ClearAgentRecord 清空服务器的 Agent 相关字段（不 SSH，仅数据库操作）
+func (s *CMDBService) ClearAgentRecord(id uint) error {
+	return db.Model(&models.Server{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"agent_status":       "uninstalled",
+		"agent_version":      "",
+		"agent_port":         0,
+		"last_heartbeat_at":  nil,
+		"cpu_usage":          0,
+		"memory_usage":       0,
+		"disk_usage":         0,
+		"metrics_updated_at": nil,
+	}).Error
 }

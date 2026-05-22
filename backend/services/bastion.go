@@ -32,15 +32,15 @@ func (s *BastionService) CheckConnectPermission(userID uint, serverID uint) (boo
 		return false, nil, fmt.Errorf("用户不存在: %w", err)
 	}
 
-	// 2. 获取服务器及其绑定的凭证
+	// 2. 获取服务器及其绑定的用户凭证（credential_type='user'，系统凭证不出现在连接弹窗）
 	var server models.Server
-	if err := s.db.Preload("Credentials").First(&server, serverID).Error; err != nil {
+	if err := s.db.Preload("Credentials", "credential_type = ?", models.CredentialTypeUser).First(&server, serverID).Error; err != nil {
 		return false, nil, fmt.Errorf("服务器不存在: %w", err)
 	}
 
-	// 3. 服务器未绑定任何凭证
+	// 3. 服务器未绑定任何用户凭证
 	if len(server.Credentials) == 0 {
-		return false, nil, fmt.Errorf("服务器未绑定凭证，请先在主机编辑页面绑定 SSH 凭证")
+		return false, nil, fmt.Errorf("服务器未绑定用户连接凭证，请先在主机编辑页面绑定 credential_type=user 的 SSH 凭证")
 	}
 
 	// 4. 获取用户角色
@@ -190,6 +190,26 @@ func (s *BastionService) CloseSession(sessionID uint, reason string) error {
 	}
 
 	return s.db.Model(&models.BastionSession{}).Where("id = ?", sessionID).Updates(updates).Error
+}
+
+// CleanupOrphanedSessions 将数据库中所有 status=active 的会话标记为 interrupted
+// 用于后端重启时清理上次运行遗留的孤儿会话
+func CleanupOrphanedSessions() {
+	now := time.Now()
+	result := db.Model(&models.BastionSession{}).
+		Where("status = ?", "active").
+		Updates(map[string]interface{}{
+			"status":       "interrupted",
+			"ended_at":     now,
+			"close_reason": "服务器重启，会话已中断",
+		})
+	if result.Error != nil {
+		return
+	}
+	if result.RowsAffected > 0 {
+		// 使用 fmt 避免循环依赖 logger（bastion.go 不导入 logger 包）
+		fmt.Printf("[startup] 清理孤儿会话 %d 条\n", result.RowsAffected)
+	}
 }
 
 // GetActiveSessions 获取活跃会话列表

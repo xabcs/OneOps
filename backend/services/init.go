@@ -167,6 +167,7 @@ func (s *InitService) syncMenus() error {
 		{ID: 31, Name: "业务系统", Icon: "mdi:domain", Path: "/cmdb/config/business", Permission: "cmdb:business:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 30},
 		{ID: 32, Name: "机房机柜", Icon: "mdi:office-building", Path: "/cmdb/config/rooms", Permission: "cmdb:room:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 30},
 		{ID: 33, Name: "标签管理", Icon: "mdi:tag", Path: "/cmdb/config/tags", Permission: "cmdb:tag:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 30},
+		{ID: 35, Name: "Agent 管理", Icon: "mdi:robot", Path: "/cmdb/config/agents", Permission: "cmdb:agent:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 30},
 		// 资产变更
 		{ID: 34, Name: "资产变更", Icon: "mdi:clock-edit", Path: "/cmdb/changes", Permission: "cmdb:change:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 20},
 	}
@@ -233,8 +234,8 @@ func (s *InitService) syncRoleMenus() error {
 
 	// 定义5个内置角色的菜单权限（动态路由模式）
 	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34} // 超级管理员：所有权限
-	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34}               // 运维工程师：资产管理权限
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35} // 超级管理员：所有权限
+	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35}               // 运维工程师：资产管理权限
 	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34}                                           // 审计员：资产和审计查看权限
 	userMenuIDs := []uint{1}                                                                                   // 普通用户：仅首页
 	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34}                                              // 测试角色：首页、关于和资产管理
@@ -307,8 +308,8 @@ func (s *InitService) syncRoleMenus() error {
 func (s *InitService) initRoles() error {
 	// 定义5个内置角色的菜单权限（动态路由模式）
 	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34} // 超级管理员：所有权限
-	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34}               // 运维工程师：资产管理权限
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35} // 超级管理员：所有权限
+	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35}               // 运维工程师：资产管理权限
 	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34}                                           // 审计员：资产和审计查看权限
 	userMenuIDs := []uint{1}                                                                                   // 普通用户：仅首页
 	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34}                                              // 测试角色：首页、关于和资产管理

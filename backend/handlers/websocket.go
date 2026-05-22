@@ -276,6 +276,10 @@ func (h *SSHWebSocketHandler) connectToServer(session *models.BastionSession) (*
 
 // forwardWebSocketToSSH 从 WebSocket 转发数据到 SSH
 func (h *SSHWebSocketHandler) forwardWebSocketToSSH(conn *websocket.Conn, stdinPipe io.WriteCloser, session *models.BastionSession) {
+	// 关键：函数退出时关闭 stdinPipe，向远端 shell 发送 EOF
+	// 这样 SSH 会话会结束，forwardSSHToWebSocket 的 Read 会返回 error，wg.Wait() 才能解除阻塞
+	defer stdinPipe.Close()
+
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("WebSocket -> SSH 转发异常: %v", r)

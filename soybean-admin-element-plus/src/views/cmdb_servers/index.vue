@@ -14,7 +14,12 @@ import {
   fetchGetSSHCredentials,
   fetchGetBusinessUnits,
   fetchGetSessions,
-  fetchCheckConnectPermission
+  fetchCheckConnectPermission,
+  fetchSyncServerMetrics,
+  fetchDeployAgent,
+  fetchRestartAgent,
+  fetchUninstallAgent,
+  fetchGetAgentStatus
 } from '@/service/api';
 import { ElNotification, ElMessageBox, FormInstance, FormRules } from 'element-plus';
 import { ArrowDown } from '@element-plus/icons-vue';
@@ -119,7 +124,8 @@ const searchForm = reactive({
 });
 
 // ========== SSH凭证相关 ==========
-const sshCredentials = ref<CMDB.SSHCredential[]>([]);
+const userCredentials = ref<CMDB.SSHCredential[]>([]);   // credential_type=user
+const systemCredentials = ref<CMDB.SSHCredential[]>([]);  // credential_type=system
 
 // ========== 业务系统相关 ==========
 const businessUnits = ref<CMDB.BusinessUnit[]>([]);
@@ -148,6 +154,7 @@ const serverForm = reactive<CMDB.ServerForm & { groupIds?: number[] }>({
   ip: '',
   innerIp: '',
   credentialIds: [],
+  systemCredentialId: undefined,
   serverType: 'vm',
   groupIds: [],
   sshPort: 22,
@@ -312,11 +319,15 @@ async function getServers() {
   }
 }
 
-// 获取SSH凭证列表
+// 获取SSH凭证列表（分类加载）
 async function getSSHCredentials() {
   try {
-    const { data } = await fetchGetSSHCredentials();
-    sshCredentials.value = data || [];
+    const [userRes, systemRes] = await Promise.all([
+      fetchGetSSHCredentials('user'),
+      fetchGetSSHCredentials('system')
+    ]);
+    userCredentials.value = userRes.data || [];
+    systemCredentials.value = systemRes.data || [];
   } catch (error) {
     console.error('获取SSH凭证失败:', error);
   }
@@ -682,6 +693,7 @@ function handleAdd() {
     ip: '',
     innerIp: '',
     credentialIds: [],
+    systemCredentialId: undefined,
     serverType: 'vm',
     groupIds: selectedGroupId.value ? [selectedGroupId.value] : [],
     sshPort: 22,
@@ -715,7 +727,9 @@ function handleEdit(row: CMDB.Server) {
     hostname: row.hostname,
     ip: row.ip,
     innerIp: row.innerIp,
-    credentialIds: row.credentials?.map(c => c.id) || (row.sshCredentialId ? [row.sshCredentialId] : []),
+    credentialIds: row.credentials?.filter(c => c.credentialType === 'user').map(c => c.id)
+      || (row.sshCredentialId ? [row.sshCredentialId] : []),
+    systemCredentialId: row.systemCredentialId || row.systemCredential?.id || undefined,
     serverType: row.serverType,
     groupIds: row.groups?.map(g => g.id) || [],
     sshPort: row.sshPort,
@@ -876,6 +890,94 @@ function handleDelete(row: CMDB.Server) {
 // 更多操作
 function handleMoreAction(cmd: string, row: CMDB.Server) {
   if (cmd === 'delete') handleDelete(row);
+  if (cmd === 'sync-metrics') handleSyncMetrics(row);
+  if (cmd === 'agent-deploy') handleAgentDeploy(row);
+  if (cmd === 'agent-restart') handleAgentRestart(row);
+  if (cmd === 'agent-uninstall') handleAgentUninstall(row);
+}
+
+async function handleSyncMetrics(row: CMDB.Server) {
+  try {
+    await fetchSyncServerMetrics(row.id);
+    ElNotification.info('采集中，3秒后自动刷新...');
+    setTimeout(() => {
+      getServers();
+    }, 3000);
+  } catch {
+    ElNotification.error('提交采集任务失败');
+  }
+}
+
+// Agent 操作（部署/重启/卸载），提交后轮询状态最多 20 次
+async function handleAgentDeploy(row: CMDB.Server) {
+  try {
+    await fetchDeployAgent(row.id);
+    ElNotification.info('Agent 部署任务已提交，正在轮询状态...');
+    pollAgentStatus(row.id, 'running');
+  } catch {
+    ElNotification.error('Agent 部署失败');
+  }
+}
+
+async function handleAgentRestart(row: CMDB.Server) {
+  try {
+    await fetchRestartAgent(row.id);
+    ElNotification.info('Agent 重启任务已提交...');
+    pollAgentStatus(row.id, 'running');
+  } catch {
+    ElNotification.error('Agent 重启失败');
+  }
+}
+
+async function handleAgentUninstall(row: CMDB.Server) {
+  try {
+    await ElMessageBox.confirm(`确认卸载 ${row.hostname} 上的 Agent？`, '卸载确认', { type: 'warning' });
+    await fetchUninstallAgent(row.id);
+    ElNotification.info('Agent 卸载任务已提交...');
+    pollAgentStatus(row.id, 'uninstalled');
+  } catch {
+    // 取消或失败，忽略
+  }
+}
+
+// 轮询 Agent 状态（每3秒，最多20次）
+// expectedStatus: 达到该状态则提前终止；超时后无论状态都终止
+function pollAgentStatus(serverId: number, expectedStatus: CMDB.Server['agentStatus'] = 'running', maxTimes = 20) {
+  let count = 0;
+  const timer = setInterval(async () => {
+    count++;
+    try {
+      const res = await fetchGetAgentStatus(serverId);
+      const status = res.data?.agentStatus as CMDB.Server['agentStatus'];
+      // 实时更新表格中对应行
+      const idx = tableData.value.findIndex(s => s.id === serverId);
+      if (idx !== -1 && res.data) {
+        tableData.value[idx] = {
+          ...tableData.value[idx],
+          agentStatus: status,
+          agentPort: res.data.agentPort,
+          agentVersion: res.data.agentVersion,
+          lastHeartbeatAt: res.data.lastHeartbeatAt
+        };
+      }
+      // 达到预期终态或超过最大次数则停止
+      if (status === expectedStatus || count >= maxTimes) {
+        clearInterval(timer);
+        getServers();
+      }
+    } catch {
+      if (count >= maxTimes) {
+        clearInterval(timer);
+        getServers();
+      }
+    }
+  }, 3000);
+}
+
+function getUsageColor(value: number = 0): string {
+  if (value >= 90) return '#f56c6c';
+  if (value >= 70) return '#e6a23c';
+  return '#67c23a';
 }
 
 // 详情抽屉
@@ -1196,6 +1298,90 @@ onUnmounted(() => {
                 </span>
               </template>
             </ElTableColumn>
+            <ElTableColumn label="使用率" width="160" align="center">
+              <template #default="{ row }">
+                <template v-if="row.agentStatus === 'offline'">
+                  <el-tag type="warning" size="small">Agent 离线</el-tag>
+                </template>
+                <template v-else-if="row.agentStatus === 'uninstalled' || !row.agentStatus">
+                  <el-tag type="info" size="small">未安装</el-tag>
+                </template>
+                <template v-else-if="row.metricsUpdatedAt">
+                  <div class="text-xs space-y-1px">
+                    <div class="flex items-center gap-4px">
+                      <span class="w-28px text-gray-400">CPU</span>
+                      <el-progress
+                        :percentage="Math.round(row.cpuUsage || 0)"
+                        :color="getUsageColor(row.cpuUsage)"
+                        :stroke-width="4"
+                        style="flex:1"
+                        :show-text="false"
+                      />
+                      <span :style="{ color: getUsageColor(row.cpuUsage), width: '32px', textAlign: 'right' }">{{ Math.round(row.cpuUsage || 0) }}%</span>
+                    </div>
+                    <div class="flex items-center gap-4px">
+                      <span class="w-28px text-gray-400">MEM</span>
+                      <el-progress
+                        :percentage="Math.round(row.memoryUsage || 0)"
+                        :color="getUsageColor(row.memoryUsage)"
+                        :stroke-width="4"
+                        style="flex:1"
+                        :show-text="false"
+                      />
+                      <span :style="{ color: getUsageColor(row.memoryUsage), width: '32px', textAlign: 'right' }">{{ Math.round(row.memoryUsage || 0) }}%</span>
+                    </div>
+                    <div class="flex items-center gap-4px">
+                      <span class="w-28px text-gray-400">DSK</span>
+                      <el-progress
+                        :percentage="Math.round(row.diskUsage || 0)"
+                        :color="getUsageColor(row.diskUsage)"
+                        :stroke-width="4"
+                        style="flex:1"
+                        :show-text="false"
+                      />
+                      <span :style="{ color: getUsageColor(row.diskUsage), width: '32px', textAlign: 'right' }">{{ Math.round(row.diskUsage || 0) }}%</span>
+                    </div>
+                  </div>
+                </template>
+                <template v-else>
+                  <el-tooltip content="Agent 运行中，等待首次采集" placement="top">
+                    <el-tag type="success" size="small">采集中</el-tag>
+                  </el-tooltip>
+                </template>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="Agent" width="130" align="center">
+              <template #default="{ row }">
+                <div class="flex flex-col items-center gap-4px">
+                  <el-tooltip
+                    :content="row.agentStatus === 'running' && row.agentVersion ? `v${row.agentVersion}` : ''"
+                    :disabled="!(row.agentStatus === 'running' && row.agentVersion)"
+                    placement="top"
+                  >
+                    <el-tag
+                      :type="row.agentStatus === 'running' ? 'success' : row.agentStatus === 'offline' ? 'danger' : 'info'"
+                      size="small"
+                    >
+                      {{ row.agentStatus === 'running' ? '运行中' : row.agentStatus === 'offline' ? '离线' : '未安装' }}
+                    </el-tag>
+                  </el-tooltip>
+                  <ElButton
+                    v-if="!row.agentStatus || row.agentStatus === 'uninstalled'"
+                    size="small"
+                    type="primary"
+                    link
+                    @click.stop="handleAgentDeploy(row)"
+                  >部署</ElButton>
+                  <ElButton
+                    v-else-if="row.agentStatus === 'offline'"
+                    size="small"
+                    type="warning"
+                    link
+                    @click.stop="handleAgentRestart(row)"
+                  >重启</ElButton>
+                </div>
+              </template>
+            </ElTableColumn>
             <ElTableColumn label="操作" width="260" align="center" fixed="right">
               <template #default="{ row }">
                 <ElButton type="success" plain size="small" @click="handleConnect(row)">连接</ElButton>
@@ -1205,6 +1391,10 @@ onUnmounted(() => {
                   <ElButton size="small" plain>更多<el-icon class="el-icon--right"><arrow-down /></el-icon></ElButton>
                   <template #dropdown>
                     <el-dropdown-menu>
+                      <el-dropdown-item v-if="row.agentStatus === 'running'" command="sync-metrics">刷新指标</el-dropdown-item>
+                      <el-dropdown-item v-if="!row.agentStatus || row.agentStatus === 'uninstalled'" command="agent-deploy">部署 Agent</el-dropdown-item>
+                      <el-dropdown-item v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'" command="agent-restart">重启 Agent</el-dropdown-item>
+                      <el-dropdown-item v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'" command="agent-uninstall">卸载 Agent</el-dropdown-item>
                       <el-dropdown-item command="delete" style="color: #f56c6c">删除</el-dropdown-item>
                     </el-dropdown-menu>
                   </template>
@@ -1287,22 +1477,40 @@ onUnmounted(() => {
           </ElFormItem>
         </template>
 
-        <ElFormItem label="SSH凭证" prop="credentialIds">
+        <ElFormItem label="用户连接凭证" prop="credentialIds">
           <ElSelect
             v-model="serverForm.credentialIds"
-            placeholder="请选择SSH凭证（可多选）"
+            placeholder="请选择用户连接凭证（可多选）"
             style="width: 100%"
             multiple
             collapse-tags
             collapse-tags-tooltip
           >
             <ElOption
-              v-for="cred in sshCredentials"
+              v-for="cred in userCredentials"
               :key="cred.id"
               :label="`${cred.name}（${cred.username}）`"
               :value="cred.id"
             />
           </ElSelect>
+          <div class="mt-4px text-12px text-gray-400">用于用户堡垒 SSH，受访问策略约束</div>
+        </ElFormItem>
+
+        <ElFormItem label="系统运维凭证">
+          <ElSelect
+            v-model="serverForm.systemCredentialId"
+            placeholder="请选择系统运维凭证（Agent 部署专用）"
+            style="width: 100%"
+            clearable
+          >
+            <ElOption
+              v-for="cred in systemCredentials"
+              :key="cred.id"
+              :label="`${cred.name}（${cred.username}）`"
+              :value="cred.id"
+            />
+          </ElSelect>
+          <div class="mt-4px text-12px text-gray-400">用于 Agent 部署 / 重启 / 卸载，需 root 或 sudo 权限；未配置时无法部署 Agent</div>
         </ElFormItem>
 
         <ElFormItem label="SSH端口">

@@ -118,6 +118,19 @@ func SetupRoutes(r *gin.Engine) {
 			cmdb.GET("/servers/:id", cmdbController.GetServerByID)
 			cmdb.POST("/servers/:id/connect", bastionController.ConnectServer)
 			cmdb.GET("/servers/:id/permission", bastionController.CheckConnectPermission)
+			cmdb.POST("/servers/:id/sync-metrics", cmdbController.SyncServerMetrics)
+
+			// Agent 管理
+			cmdb.POST("/servers/:id/agent/deploy", cmdbController.DeployAgent)
+			cmdb.POST("/servers/:id/agent/restart", cmdbController.RestartAgent)
+			cmdb.POST("/servers/:id/agent/uninstall", cmdbController.UninstallAgent)
+			cmdb.GET("/servers/:id/agent/status", cmdbController.GetAgentStatus)
+
+			// Agent 管理页面专用接口
+			cmdb.GET("/agents", cmdbController.GetAgentList)
+			cmdb.POST("/agents/batch-deploy", cmdbController.BatchDeployAgent)
+			cmdb.POST("/agents/batch-uninstall", cmdbController.BatchUninstallAgent)
+			cmdb.DELETE("/agents/:id", cmdbController.DeleteAgentRecord)
 
 			// 主机分组管理
 			cmdb.GET("/groups", cmdbController.GetServerGroups)
@@ -193,6 +206,9 @@ func SetupRoutes(r *gin.Engine) {
 		api.GET("/cmdb/sessions/:id/ws", func(ctx *gin.Context) {
 			sshHandler.HandleWebSocket(ctx)
 		})
+
+		// Agent 心跳（不经过 Auth 中间件，由 Agent 直接上报）
+		api.POST("/cmdb/agent/heartbeat", cmdbController.ReceiveAgentHeartbeat)
 
 		// 动态路由接口（需要认证）
 		routeGroup := api.Group("/route")

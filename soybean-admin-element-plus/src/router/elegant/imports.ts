@@ -36,6 +36,7 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   cmdb_business: () => import("@/views/cmdb_business/index.vue"),
   cmdb_changes: () => import("@/views/cmdb_changes/index.vue"),
   cmdb_commands: () => import("@/views/cmdb_commands/index.vue"),
+  cmdb_config_agents: () => import("@/views/cmdb_config_agents/index.vue"),
   cmdb_config_business: () => import("@/views/cmdb_config_business/index.vue"),
   cmdb_config_rooms: () => import("@/views/cmdb_config_rooms/index.vue"),
   cmdb_config_tags: () => import("@/views/cmdb_config_tags/index.vue"),
