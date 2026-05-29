@@ -39,12 +39,14 @@ function initTerminal() {
 
   terminal = new Terminal({
     cursorBlink: true,
+    cursorStyle: 'bar',
+    cursorWidth: 2,
     fontSize: 14,
     fontFamily: 'Menlo, Monaco, "Courier New", monospace',
     theme: {
       background: '#1e1e1e',
       foreground: '#d4d4d4',
-      cursor: '#ffffff',
+      cursor: '#0dbc79',
       black: '#000000',
       red: '#cd3131',
       green: '#0dbc79',
@@ -255,14 +257,14 @@ watch(
   width: 100%;
   height: 100%;
   background: #1e1e1e;
-  border-radius: 4px;
+  border-radius: 0;
   overflow: hidden;
 }
 
 .ssh-terminal {
   width: 100%;
   height: 100%;
-  padding: 8px;
+  padding: 6px;
 }
 
 :deep(.xterm) {
@@ -271,5 +273,19 @@ watch(
 
 :deep(.xterm .xterm-viewport) {
   background-color: #1e1e1e;
+}
+
+/* 增强光标闪烁效果 */
+:deep(.xterm .xterm-cursor-layer .xterm-cursor) {
+  animation: cursorBlink 1s step-end infinite;
+}
+
+@keyframes cursorBlink {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
 }
 </style>

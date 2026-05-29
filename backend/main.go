@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"oneops/backend/config"
+	"oneops/backend/handlers"
 	"oneops/backend/logger"
 	"oneops/backend/routes"
 	"oneops/backend/services"
@@ -59,6 +60,9 @@ func main() {
 
 	// 清理上次运行遗留的孤儿活跃会话（重启时必须执行，避免在线会话列表显示失效数据）
 	services.CleanupOrphanedSessions()
+
+	// 初始化 SessionManager（必须在服务启动前初始化）
+	handlers.InitSessionManager()
 
 	// 启动 Agent 指标采集调度器（每 5 分钟 HTTP 拉取 agent_status=running 主机，每 1 分钟检测心跳超时）
 	go services.StartAgentMetricsScheduler()

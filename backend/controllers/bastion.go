@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"oneops/backend/handlers"
 	"oneops/backend/models"
 	"oneops/backend/services"
 	"oneops/backend/utils"
@@ -210,6 +211,10 @@ func (c *BastionController) TerminateSession(ctx *gin.Context) {
 		return
 	}
 
+	// 1. 先断开 WebSocket 连接（从内存中移除会话）
+	handlers.GetSessionManager().TerminateSession(uint(sessionID))
+
+	// 2. 更新数据库状态
 	if err := c.bastionService.TerminateSession(uint(sessionID), operatorID); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return

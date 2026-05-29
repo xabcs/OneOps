@@ -25,7 +25,22 @@ var (
 			return true // 允许跨域，生产环境应该限制
 		},
 	}
+
+	// 全局 SessionManager 单例
+	globalSessionManager *SessionManager
 )
+
+// GetSessionManager 获取全局 SessionManager 实例
+func GetSessionManager() *SessionManager {
+	return globalSessionManager
+}
+
+// InitSessionManager 初始化 SessionManager（在服务启动时调用）
+func InitSessionManager() {
+	if globalSessionManager == nil {
+		globalSessionManager = NewSessionManager(services.NewBastionService())
+	}
+}
 
 // SSHWebSocketHandler SSH WebSocket 处理器
 type SSHWebSocketHandler struct {
@@ -37,7 +52,7 @@ type SSHWebSocketHandler struct {
 func NewSSHWebSocketHandler() *SSHWebSocketHandler {
 	return &SSHWebSocketHandler{
 		bastionService: services.NewBastionService(),
-		sessionManager: NewSessionManager(),
+		sessionManager: globalSessionManager,
 	}
 }
 
@@ -461,8 +476,9 @@ func (h *SSHWebSocketHandler) ResizePTY(ctx *gin.Context) {
 
 // SessionManager 会话管理器
 type SessionManager struct {
-	mu       sync.RWMutex
-	sessions map[uint]*SessionState
+	mu             sync.RWMutex
+	sessions       map[uint]*SessionState
+	bastionService *services.BastionService
 }
 
 // SessionState 会话状态
@@ -473,9 +489,10 @@ type SessionState struct {
 }
 
 // NewSessionManager 创建会话管理器
-func NewSessionManager() *SessionManager {
+func NewSessionManager(bastionService *services.BastionService) *SessionManager {
 	return &SessionManager{
-		sessions: make(map[uint]*SessionState),
+		sessions:       make(map[uint]*SessionState),
+		bastionService: bastionService,
 	}
 }
 
@@ -490,18 +507,20 @@ func (m *SessionManager) Add(sessionID uint, conn *websocket.Conn, sshSession *s
 	}
 }
 
-// Remove 移除会话
+// Remove 移除会话（总是更新数据库状态以防止僵尸会话）
 func (m *SessionManager) Remove(sessionID uint) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-	if session, ok := m.sessions[sessionID]; ok {
-		if session.Conn != nil {
-			session.Conn.Close()
-		}
-		if session.SSHSession != nil {
-			session.SSHSession.Close()
-		}
+	_, exists := m.sessions[sessionID]
+	if exists {
 		delete(m.sessions, sessionID)
+	}
+	m.mu.Unlock()
+
+	// 在锁外调用 CloseSession，避免死锁
+	// CloseSession 是幂等的，多次调用安全
+	// 这确保即使因错误提前退出，数据库状态也会被更新
+	if exists {
+		m.bastionService.CloseSession(sessionID, "会话已结束")
 	}
 }
 

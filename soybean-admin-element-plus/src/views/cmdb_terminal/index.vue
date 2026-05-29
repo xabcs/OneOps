@@ -79,17 +79,15 @@ onUnmounted(() => {
   <div class="terminal-page">
     <div class="terminal-header">
       <div class="host-info">
-        <ElTag type="success" size="small">SSH</ElTag>
+        <span class="ssh-badge">SSH</span>
         <span class="hostname">{{ serverName }}</span>
-        <span class="ip">{{ serverIp }}</span>
-        <ElDivider direction="vertical" />
+        <span class="separator">{{ serverIp }}</span>
         <span class="account">{{ loginAccount }}</span>
       </div>
       <div class="session-info">
-        <ElTag v-if="connected" type="success" size="small" effect="plain">已连接</ElTag>
-        <ElTag v-else type="info" size="small" effect="plain">连接中...</ElTag>
+        <span class="status-dot" :class="{ connected: connected }"></span>
         <span class="duration">{{ formatDuration(duration) }}</span>
-        <ElButton type="danger" size="small" plain @click="handleDisconnect">断开连接</ElButton>
+        <ElButton size="small" plain @click="handleDisconnect">断开</ElButton>
       </div>
     </div>
     <div class="terminal-body">
@@ -100,7 +98,7 @@ onUnmounted(() => {
           <div class="error-title">连接失败</div>
           <div class="error-msg">{{ errorMessage }}</div>
           <div class="error-hint">请确认：服务器已绑定 SSH 凭证，且凭证用户名/密码正确</div>
-          <ElButton type="primary" @click="router.push('/cmdb/servers')">返回主机列表</ElButton>
+          <ElButton type="primary" size="small" @click="router.push('/cmdb/servers')">返回主机列表</ElButton>
         </div>
       </div>
       <SSHTerminal
@@ -129,9 +127,9 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 16px;
-  height: 48px;
-  background: #252526;
+  padding: 0 12px;
+  height: 36px;
+  background: #2d2d2d;
   border-bottom: 1px solid #3c3c3c;
   flex-shrink: 0;
 }
@@ -140,29 +138,58 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   color: #cccccc;
+  font-size: 13px;
+}
+.ssh-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 18px;
+  background: #0dbc79;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 2px;
+  line-height: 1;
 }
 .hostname {
-  font-weight: 600;
+  font-weight: 500;
   color: #ffffff;
+  font-size: 13px;
 }
-.ip {
+.separator {
   font-size: 12px;
-  color: #9e9e9e;
+  color: #858585;
+  margin: 0 2px;
 }
 .account {
   font-size: 12px;
   color: #9cdcfe;
+  font-family: 'Menlo', 'Monaco', monospace;
 }
 .session-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #808080;
+  transition: background 0.2s;
+}
+.status-dot.connected {
+  background: #0dbc79;
+  box-shadow: 0 0 4px rgba(13, 188, 121, 0.5);
 }
 .duration {
-  font-family: 'Courier New', monospace;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
   color: #4ec9b0;
-  font-size: 14px;
-  min-width: 60px;
+  font-size: 12px;
+  min-width: 56px;
+  letter-spacing: 0.5px;
 }
 .terminal-body {
   flex: 1;
@@ -182,31 +209,31 @@ onUnmounted(() => {
   background: #252526;
   border: 1px solid #f44747;
   border-radius: 8px;
-  padding: 32px 40px;
+  padding: 24px 32px;
   text-align: center;
-  max-width: 420px;
+  max-width: 400px;
 }
 .error-icon {
-  font-size: 36px;
+  font-size: 32px;
   color: #f44747;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .error-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: #ffffff;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .error-msg {
-  font-size: 14px;
+  font-size: 13px;
   color: #f14c4c;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   word-break: break-all;
 }
 .error-hint {
-  font-size: 12px;
+  font-size: 11px;
   color: #9e9e9e;
-  margin-bottom: 20px;
-  line-height: 1.6;
+  margin-bottom: 16px;
+  line-height: 1.5;
 }
 </style>

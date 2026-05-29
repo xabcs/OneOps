@@ -168,15 +168,16 @@ func (s *BastionService) CreateSSHSession(userID uint, serverID uint, credential
 	return session, nil
 }
 
-// CloseSession 关闭会话
+// CloseSession 关闭会话（幂等：多次调用同一会话不会报错）
 func (s *BastionService) CloseSession(sessionID uint, reason string) error {
 	var session models.BastionSession
 	if err := s.db.First(&session, sessionID).Error; err != nil {
 		return fmt.Errorf("会话不存在: %w", err)
 	}
 
+	// 幂等性：如果会话已关闭，直接返回成功
 	if session.Status != "active" {
-		return fmt.Errorf("会话已关闭")
+		return nil
 	}
 
 	now := time.Now()
