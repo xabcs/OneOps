@@ -74,7 +74,7 @@ export default function useTable<ResponseData, ApiData, Column, Pagination exten
 
   const columnChecks = ref(getColumnChecks && columns ? getColumnChecks(columns()) : []) as Ref<TableColumnCheck[]>;
 
-  const $columns = computed(() => getColumns && columns ? getColumns(columns(), columnChecks.value) : []);
+  const $columns = computed(() => (getColumns && columns ? getColumns(columns(), columnChecks.value) : []));
 
   function reloadColumns() {
     if (!getColumnChecks || !columns) return;

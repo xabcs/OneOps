@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Server   ServerConfig   `yaml:"server"`
 	Database DatabaseConfig `yaml:"database"`
+	Redis    RedisConfig    `yaml:"redis"`
 	JWT      JWTConfig      `yaml:"jwt"`
 	Log      LogConfig      `yaml:"log"`
 	CORS     CORSConfig     `yaml:"cors"`
@@ -22,11 +23,21 @@ type ServerConfig struct {
 	Mode         string `yaml:"mode"`          // 运行模式: debug, release, test
 	ReadTimeout  int    `yaml:"read_timeout"`  // 读超时(秒)
 	WriteTimeout int    `yaml:"write_timeout"` // 写超时(秒)
+	ExternalURL  string `yaml:"external_url"` // 外部访问地址（Agent心跳上报）
 }
 
 // GetServerAddr 获取服务器地址
 func (c *ServerConfig) GetServerAddr() string {
 	return ":" + c.Port
+}
+
+// GetExternalURL 获取外部访问地址（用于Agent心跳）
+func (c *ServerConfig) GetExternalURL() string {
+	if c.ExternalURL != "" {
+		return c.ExternalURL
+	}
+	// 默认使用 localhost:port
+	return "http://localhost:" + c.Port
 }
 
 // DatabaseConfig 数据库配置
@@ -45,6 +56,30 @@ type DatabaseConfig struct {
 func (c *DatabaseConfig) GetDSN() string {
 	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		c.User, c.Password, c.Host, c.Port, c.DBName)
+}
+
+// RedisConfig Redis配置
+type RedisConfig struct {
+	Host         string `yaml:"host"`           // Redis主机
+	Port         string `yaml:"port"`           // Redis端口
+	Password     string `yaml:"password"`       // Redis密码
+	DB           int    `yaml:"db"`             // Redis数据库编号
+	PoolSize     int    `yaml:"pool_size"`      // 连接池大小
+	MinIdleConns int    `yaml:"min_idle_conns"` // 最小空闲连接数
+	DialTimeout  int    `yaml:"dial_timeout"`   // 连接超时时间(秒)
+	ReadTimeout  int    `yaml:"read_timeout"`   // 读取超时时间(秒)
+	WriteTimeout int    `yaml:"write_timeout"`  // 写入超时时间(秒)
+	Enabled      bool   `yaml:"enabled"`        // 是否启用Redis
+}
+
+// GetAddr 获取Redis地址
+func (c *RedisConfig) GetAddr() string {
+	return c.Host + ":" + c.Port
+}
+
+// IsEnabled 检查Redis是否启用
+func (c *RedisConfig) IsEnabled() bool {
+	return c.Enabled && c.Host != ""
 }
 
 // JWTConfig JWT配置
@@ -107,6 +142,18 @@ func GetConfig() *Config {
 				MaxOpenConns: 100,
 				LogLevel:     "warn",
 			},
+				Redis: RedisConfig{
+					Host:         getEnv("REDIS_HOST", "localhost"),
+					Port:         getEnv("REDIS_PORT", "6379"),
+					Password:     getEnv("REDIS_PASSWORD", ""),
+					DB:           0,
+					PoolSize:     10,
+					MinIdleConns: 5,
+					DialTimeout:  5,
+					ReadTimeout:  3,
+					WriteTimeout: 3,
+					Enabled:      getEnv("REDIS_ENABLED", "true") == "true",
+				},
 			JWT: JWTConfig{
 				Secret:     getEnv("JWT_SECRET", ""),
 				ExpireTime: 24,

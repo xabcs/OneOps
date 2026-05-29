@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import { fetchGetLoginLogs, fetchExportLoginLogs } from '@/service/api';
+import { onMounted, reactive, ref } from 'vue';
 import { ElNotification } from 'element-plus';
+import { fetchExportLoginLogs, fetchGetLoginLogs } from '@/service/api';
 import { exportFile } from '@/utils/file';
 
 defineOptions({ name: 'AuditLoginLogs' });
@@ -135,12 +135,7 @@ onMounted(() => {
         </ElFormItem>
         <ElFormItem label="状态">
           <ElSelect v-model="searchForm.status" placeholder="请选择状态" clearable style="width: 150px">
-            <ElOption
-              v-for="option in statusOptions"
-              :key="option.value"
-              :label="option.label"
-              :value="option.value"
-            />
+            <ElOption v-for="option in statusOptions" :key="option.value" :label="option.label" :value="option.value" />
           </ElSelect>
         </ElFormItem>
         <ElFormItem label="位置">
@@ -164,30 +159,14 @@ onMounted(() => {
           />
         </ElFormItem>
         <ElFormItem>
-          <ElButton type="primary" @click="handleSearch">
-            搜索
-          </ElButton>
-          <ElButton @click="handleReset">
-            重置
-          </ElButton>
-          <ElButton
-            type="success"
-            @click="handleExport"
-          >
-            导出
-          </ElButton>
+          <ElButton type="primary" @click="handleSearch">搜索</ElButton>
+          <ElButton @click="handleReset">重置</ElButton>
+          <ElButton type="success" @click="handleExport">导出</ElButton>
         </ElFormItem>
       </ElForm>
 
       <!-- 数据表格 -->
-      <ElTable
-        v-loading="loading"
-        :data="tableData"
-        border
-        stripe
-        class="h-full"
-        height="calc(100vh - 400px)"
-      >
+      <ElTable v-loading="loading" :data="tableData" border stripe class="h-full" height="calc(100vh - 400px)">
         <ElTableColumn prop="id" label="ID" width="70" align="center" />
         <ElTableColumn prop="username" label="用户名" width="100" align="center" />
         <ElTableColumn prop="nickname" label="昵称" width="100" align="center" />
@@ -220,7 +199,7 @@ onMounted(() => {
       </ElTable>
 
       <!-- 分页 -->
-      <div class="flex justify-end mt-16px">
+      <div class="mt-16px flex justify-end">
         <ElPagination
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.pageSize"

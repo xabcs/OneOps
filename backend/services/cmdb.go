@@ -82,9 +82,11 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 		return nil, 0, err
 	}
 
-	// 列表页只预加载凭证（显示凭证数量徽章），其余关联数据在详情接口按需加载
+	// 列表页预加载凭证、分组和属性（显示凭证数量、分组名称和属性值）
 	err := tx.
 		Preload("Credentials").
+		Preload("Groups").
+		Preload("Attributes").
 		Order("id DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
@@ -101,6 +103,8 @@ func (s *CMDBService) GetServerByID(id uint) (*models.Server, error) {
 		Preload("Cabinet.Room").
 		Preload("Tags").
 		Preload("Credentials").
+		Preload("Groups").
+		Preload("Attributes").
 		First(&server, id).Error
 	return &server, err
 }
@@ -196,7 +200,8 @@ func (s *CMDBService) UpdateServer(id uint, updates map[string]interface{}, oper
 	}
 
 	// 处理分组关联更新
-	if groupIDs, ok := updates["groupIds"].([]uint); ok {
+	if rawGroupIDs, exists := updates["groupIds"]; exists {
+		groupIDs := extractUintSlice(rawGroupIDs)
 		// 删除旧的分组关联
 		if err := tx.Where("server_id = ?", id).Delete(&models.ServerGroupRelation{}).Error; err != nil {
 			tx.Rollback()
@@ -562,9 +567,6 @@ func (s *CMDBService) GetServerConfig(hostname, ip, sshUser string, sshPort int)
 	if err := tx.First(&server).Error; err != nil {
 		return nil, fmt.Errorf("服务器不存在: %v", err)
 	}
-
-	// 同步采集硬件配置
-	SyncServerHardwareConfig(server.ID)
 
 	// 从 DB 读取最新配置
 	var updated models.Server

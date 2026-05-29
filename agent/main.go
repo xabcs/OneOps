@@ -29,11 +29,19 @@ var (
 
 // Metrics 指标结构
 type Metrics struct {
-	CPUUsage    float64 `json:"cpuUsage"`
-	MemoryUsage float64 `json:"memoryUsage"`
-	DiskUsage   float64 `json:"diskUsage"`
-	Load5       float64 `json:"load5"`
-	ProcessNum  int     `json:"processNum"`
+	CPUUsage       float64         `json:"cpuUsage"`
+	MemoryUsage    float64         `json:"memoryUsage"`
+	DiskUsage      float64         `json:"diskUsage"`
+	DiskPartitions []DiskPartition `json:"diskPartitions,omitempty"`
+	Load5          float64         `json:"load5"`
+	ProcessNum     int             `json:"processNum"`
+	Version        string          `json:"version"`
+}
+
+// DiskPartition 磁盘分区信息
+type DiskPartition struct {
+	Mount string  `json:"mount"`
+	Usage float64 `json:"usage"`
 }
 
 // HeartbeatPayload 心跳上报结构
@@ -54,7 +62,15 @@ type metricsCache struct {
 
 var cache = &metricsCache{}
 
-// startSampler 每 15 秒采样一次 CPU/内存/磁盘/load，cpu.Percent(0,...) 计算
+// extMetricsCache 扩展指标缓存
+type extMetricsCache struct {
+	mu      sync.RWMutex
+	current ExtendedMetrics
+}
+
+var extCache = &extMetricsCache{}
+
+// startSampler 每 60 秒采样一次 CPU/内存/磁盘/load，cpu.Percent(0,...) 计算
 // 两次调用之间的增量，精度远高于单次快照。
 // 启动时先做一次"热身"调用（结果丢弃），再等 3 秒后才正式采样，
 // 避免第一次读数恒为 0。
@@ -75,15 +91,27 @@ func startSampler() {
 			m.MemoryUsage = memInfo.UsedPercent
 		}
 
+		// 采集所有磁盘分区信息
+		var maxDiskUsage float64
 		if parts, err := disk.Partitions(false); err == nil {
 			for _, p := range parts {
-				if p.Mountpoint == "/" {
-					if u, err := disk.Usage(p.Mountpoint); err == nil {
-						m.DiskUsage = u.UsedPercent
+				// 过滤临时文件系统
+				if p.Fstype == "tmpfs" || p.Fstype == "devtmpfs" || p.Fstype == "overlay" || p.Fstype == "squashfs" || p.Fstype == "shm" {
+					continue
+				}
+				if u, err := disk.Usage(p.Mountpoint); err == nil {
+					partition := DiskPartition{
+						Mount: p.Mountpoint,
+						Usage: u.UsedPercent,
 					}
-					break
+					m.DiskPartitions = append(m.DiskPartitions, partition)
+					if u.UsedPercent > maxDiskUsage {
+						maxDiskUsage = u.UsedPercent
+					}
 				}
 			}
+			// 使用最大使用率作为整体磁盘使用率
+			m.DiskUsage = maxDiskUsage
 		}
 
 		if avg, err := load.Avg(); err == nil {
@@ -94,6 +122,9 @@ func startSampler() {
 			m.ProcessNum = len(procs)
 		}
 
+		// 添加版本号
+		m.Version = version
+
 		cache.mu.Lock()
 		cache.current = m
 		cache.mu.Unlock()
@@ -102,7 +133,7 @@ func startSampler() {
 	// 立刻采一次，填充缓存
 	sample()
 
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(60 * time.Second)
 	defer ticker.Stop()
 	for range ticker.C {
 		sample()
@@ -153,6 +184,24 @@ func main() {
 	// 后台持续采样（必须早于 HTTP 服务启动）
 	go startSampler()
 
+	// 后台采集扩展指标（每2分钟采集一次）
+	go func() {
+		// 立即采一次
+		extMetrics := CollectExtendedMetrics()
+		extCache.mu.Lock()
+		extCache.current = extMetrics
+		extCache.mu.Unlock()
+
+		ticker := time.NewTicker(2 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			extMetrics := CollectExtendedMetrics()
+			extCache.mu.Lock()
+			extCache.current = extMetrics
+			extCache.mu.Unlock()
+		}
+	}()
+
 	// 心跳
 	go func() {
 		sendHeartbeat()
@@ -167,6 +216,15 @@ func main() {
 		cache.mu.RLock()
 		m := cache.current
 		cache.mu.RUnlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(m)
+	})
+
+	http.HandleFunc("/extended-metrics", func(w http.ResponseWriter, r *http.Request) {
+		extCache.mu.RLock()
+		m := extCache.current
+		extCache.mu.RUnlock()
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(m)

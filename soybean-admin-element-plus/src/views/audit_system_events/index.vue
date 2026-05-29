@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import { fetchGetSystemEventLogs } from '@/service/api';
+import { onMounted, reactive, ref } from 'vue';
 import { ElNotification } from 'element-plus';
+import { fetchGetSystemEventLogs } from '@/service/api';
 
 defineOptions({ name: 'AuditSystemEvents' });
 
@@ -103,12 +103,7 @@ onMounted(() => {
       <ElForm :model="searchForm" inline class="search-form">
         <ElFormItem label="级别">
           <ElSelect v-model="searchForm.level" placeholder="请选择级别" clearable style="width: 150px">
-            <ElOption
-              v-for="option in levelOptions"
-              :key="option.value"
-              :label="option.label"
-              :value="option.value"
-            />
+            <ElOption v-for="option in levelOptions" :key="option.value" :label="option.label" :value="option.value" />
           </ElSelect>
         </ElFormItem>
         <ElFormItem label="来源">
@@ -135,23 +130,12 @@ onMounted(() => {
           />
         </ElFormItem>
         <ElFormItem>
-          <ElButton type="primary" @click="handleSearch">
-            搜索
-          </ElButton>
-          <ElButton @click="handleReset">
-            重置
-          </ElButton>
+          <ElButton type="primary" @click="handleSearch">搜索</ElButton>
+          <ElButton @click="handleReset">重置</ElButton>
         </ElFormItem>
       </ElForm>
 
-      <ElTable
-        v-loading="loading"
-        :data="tableData"
-        border
-        stripe
-        class="h-full"
-        height="calc(100vh - 400px)"
-      >
+      <ElTable v-loading="loading" :data="tableData" border stripe class="h-full" height="calc(100vh - 400px)">
         <ElTableColumn prop="id" label="ID" width="70" align="center" />
         <ElTableColumn label="级别" width="70" align="center">
           <template #default="{ row }">
@@ -168,7 +152,7 @@ onMounted(() => {
         <ElTableColumn prop="time" label="事件时间" width="160" align="center" />
       </ElTable>
 
-      <div class="flex justify-end mt-16px">
+      <div class="mt-16px flex justify-end">
         <ElPagination
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.pageSize"

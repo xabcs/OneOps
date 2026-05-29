@@ -1,6 +1,9 @@
 package models
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -79,6 +82,58 @@ func (Cabinet) TableName() string {
 	return "cabinets"
 }
 
+// DiskPartition 磁盘分区信息
+type DiskPartition struct {
+	Mount string  `json:"mount"` // 挂载点，如 /var, /home
+	Usage float64 `json:"usage"` // 使用率百分比
+}
+
+// Scan 实现 sql.Scanner 接口，用于从数据库读取 JSON 数据
+func (dp *DiskPartition) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("failed to unmarshal DiskPartition value: %v", value)
+	}
+	return json.Unmarshal(bytes, dp)
+}
+
+// Value 实现 driver.Valuer 接口，用于将数据写入数据库
+func (dp DiskPartition) Value() (driver.Value, error) {
+	return json.Marshal(dp)
+}
+
+// DiskPartitions 磁盘分区切片类型，用于实现 JSON 序列化
+type DiskPartitions []DiskPartition
+
+// Scan 实现 sql.Scanner 接口
+func (dp *DiskPartitions) Scan(value interface{}) error {
+	if value == nil {
+		*dp = nil
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		// 尝试字符串类型
+		str, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("failed to unmarshal DiskPartitions value: %v", value)
+		}
+		bytes = []byte(str)
+	}
+	return json.Unmarshal(bytes, dp)
+}
+
+// Value 实现 driver.Valuer 接口
+func (dp DiskPartitions) Value() (driver.Value, error) {
+	if len(dp) == 0 {
+		return nil, nil
+	}
+	return json.Marshal(dp)
+}
+
 // Server 服务器模型
 type Server struct {
 	ID                uint       `json:"id" gorm:"primaryKey"`
@@ -120,6 +175,10 @@ type Server struct {
 	CPUUsage           float64    `json:"cpuUsage" gorm:"default:0"`
 	MemoryUsage        float64    `json:"memoryUsage" gorm:"default:0"`
 	DiskUsage          float64    `json:"diskUsage" gorm:"default:0"`
+	Load1              float64    `json:"load1" gorm:"default:0"`
+	Load5              float64    `json:"load5" gorm:"default:0"`
+	Load15             float64    `json:"load15" gorm:"default:0"`
+	DiskPartitions     DiskPartitions `json:"diskPartitions,omitempty" gorm:"type:json"`
 	MetricsUpdatedAt   *time.Time `json:"metricsUpdatedAt"`
 	AgentStatus        string     `json:"agentStatus" gorm:"type:varchar(20);default:'uninstalled';index"` // uninstalled | running | offline
 	AgentPort          int        `json:"agentPort" gorm:"default:9100"`
@@ -137,6 +196,7 @@ type Server struct {
 	Groups        []ServerGroup   `json:"groups,omitempty" gorm:"many2many:server_group_relations;constraint:OnDelete:CASCADE"`
 	CloudInfo     *CloudServer    `json:"cloudInfo,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:SET NULL"`
 	Credentials   []SSHCredential `json:"credentials,omitempty" gorm:"many2many:server_credentials;joinForeignKey:ServerID;joinReferences:CredentialID"`
+	Attributes    []ServerAttribute `json:"attributes,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:CASCADE"`
 	GroupIDs      []uint          `json:"groupIds,omitempty" gorm:"-"`
 	CredentialIDs []uint          `json:"credentialIds,omitempty" gorm:"-"`
 }
@@ -325,4 +385,90 @@ type ServerCredential struct {
 // TableName 指定表名
 func (ServerCredential) TableName() string {
 	return "server_credentials"
+}
+
+// ========================================
+// Agent 版本管理相关模型
+// ========================================
+
+// AgentVersion Agent 版本模型
+type AgentVersion struct {
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	Version   string    `json:"version" gorm:"size:50;not null;uniqueIndex"` // 版本号
+	ReleaseNotes string  `json:"releaseNotes" gorm:"type:text"`                // 发布说明
+	Changelog  string    `json:"changelog" gorm:"type:text"`                  // 更新日志
+	ReleasedAt time.Time `json:"releasedAt"`                                  // 发布时间
+
+	// 二进制文件信息
+	AMD64BinaryPath string `json:"amd64BinaryPath" gorm:"size:255"`           // AMD64 二进制路径
+	AMD64BinaryHash string `json:"amd64BinaryHash" gorm:"size:64"`           // AMD64 文件哈希
+	AMD64BinarySize int64  `json:"amd64BinarySize"`                          // AMD64 文件大小
+	ARM64BinaryPath string `json:"arm64BinaryPath" gorm:"size:255"`           // ARM64 二进制路径
+	ARM64BinaryHash string `json:"arm64BinaryHash" gorm:"size:64"`           // ARM64 文件哈希
+	ARM64BinarySize int64  `json:"arm64BinarySize"`                          // ARM64 文件大小
+
+	// 版本状态
+	IsLatest     bool   `json:"isLatest" gorm:"default:0"`                   // 是否最新版本
+	IsDeprecated bool   `json:"isDeprecated" gorm:"default:0"`               // 是否弃用
+
+	// 功能支持
+	Features             string `json:"features" gorm:"type:json"`             // 功能列表 JSON
+	MinCompatibleVersion string `json:"minCompatibleVersion" gorm:"size:50"`  // 最小兼容版本
+	MaxCompatibleVersion string `json:"maxCompatibleVersion" gorm:"size:50"`  // 最大兼容版本
+
+	// 统计信息
+	DownloadCount int     `json:"downloadCount" gorm:"default:0"`             // 下载次数
+	DeployCount   int     `json:"deployCount" gorm:"default:0"`               // 部署次数
+
+	CreatedAt     time.Time `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt     time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
+}
+
+// TableName 指定表名
+func (AgentVersion) TableName() string {
+	return "agent_versions"
+}
+
+// AgentUpgradeTask Agent 升级任务模型
+type AgentUpgradeTask struct {
+	ID          uint      `json:"id" gorm:"primaryKey"`
+	TaskName    string    `json:"taskName" gorm:"size:100"`
+
+	// 升级目标信息
+	TargetVersion   string `json:"targetVersion" gorm:"size:50;not null"`   // 目标版本
+	TargetServerIDs string `json:"targetServerIds" gorm:"type:json"`         // 目标主机ID列表
+
+	// 任务状态
+	Status      string `json:"status" gorm:"type:varchar(20);default:'pending';index"` // pending|running|completed|failed|cancelled
+	CurrentStep int    `json:"currentStep" gorm:"default:0"`
+	TotalSteps  int    `json:"totalSteps" gorm:"default:0"`
+
+	// 进度统计
+	TotalCount   int `json:"totalCount" gorm:"default:0"`
+	SuccessCount int `json:"successCount" gorm:"default:0"`
+	FailedCount  int `json:"failedCount" gorm:"default:0"`
+	SkippedCount int `json:"skippedCount" gorm:"default:0"`
+
+	// 时间记录
+	StartedAt   *time.Time `json:"startedAt"`
+	CompletedAt *time.Time `json:"completedAt"`
+
+	// 详细日志
+	ErrorMessage string `json:"errorMessage" gorm:"type:text"`
+	OperationLog string `json:"operationLog" gorm:"type:json"`
+
+	CreatedBy string `json:"createdBy" gorm:"size:50"`
+	CreatedAt time.Time `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
+}
+
+// TableName 指定表名
+func (AgentUpgradeTask) TableName() string {
+	return "agent_upgrade_tasks"
+}
+
+// AgentVersionFeature 版本功能支持结构
+type AgentVersionFeature struct {
+	ExtendedMetrics bool `json:"extendedMetrics"` // 支持扩展指标
+	CustomConfigs   bool `json:"customConfigs"`  // 支持自定义配置
 }

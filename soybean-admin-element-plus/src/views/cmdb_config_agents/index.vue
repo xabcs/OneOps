@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessageBox, ElNotification } from 'element-plus';
 import {
-  fetchGetAgentList,
-  fetchDeployAgent,
-  fetchRestartAgent,
-  fetchUninstallAgent,
-  fetchGetAgentStatus,
   fetchBatchDeployAgent,
   fetchBatchUninstallAgent,
-  fetchDeleteAgentRecord
+  fetchDeleteAgentRecord,
+  fetchDeployAgent,
+  fetchGetAgentList,
+  fetchGetAgentStatus,
+  fetchGetLatestAgentVersion,
+  fetchRestartAgent,
+  fetchUninstallAgent,
+  fetchUpgradeAgent
 } from '@/service/api/cmdb';
 
 defineOptions({ name: 'CmdbConfigAgents' });
@@ -19,6 +21,10 @@ const loading = ref(false);
 const tableData = ref<CMDB.Server[]>([]);
 const total = ref(0);
 const selectedRows = ref<CMDB.Server[]>([]);
+
+// 版本相关状态
+const latestVersion = ref<CMDB.AgentVersion | null>(null);
+const upgradeVersions = ref<CMDB.AgentVersion[]>([]);
 
 // 分页
 const pagination = reactive({
@@ -52,6 +58,36 @@ function getAgentStatusTag(status?: string): { text: string; type: 'success' | '
   if (status === 'running') return { text: '运行中', type: 'success' };
   if (status === 'offline') return { text: '离线', type: 'danger' };
   return { text: '未安装', type: 'info' };
+}
+
+// ========== 版本相关函数 ==========
+/**
+ * 判断是否为最新版本
+ */
+function isLatestVersion(currentVersion?: string): boolean {
+  if (!currentVersion || !latestVersion.value) return false;
+  return currentVersion === latestVersion.value.version;
+}
+
+/**
+ * 获取版本状态标签
+ */
+function getVersionStatus(currentVersion?: string): { text: string; type: 'success' | 'warning' | 'info' } {
+  if (!currentVersion) return { text: '未安装', type: 'info' };
+  if (isLatestVersion(currentVersion)) return { text: '最新版', type: 'success' };
+  return { text: '可升级', type: 'warning' };
+}
+
+/**
+ * 获取版本列表
+ */
+async function getLatestVersion() {
+  try {
+    const { data } = await fetchGetLatestAgentVersion();
+    latestVersion.value = data;
+  } catch (err) {
+    console.error('获取最新版本失败', err);
+  }
 }
 
 // ========== 数据获取 ==========
@@ -124,15 +160,11 @@ async function handleRestart(row: CMDB.Server) {
 
 async function handleUninstall(row: CMDB.Server) {
   try {
-    await ElMessageBox.confirm(
-      `确认卸载主机 "${row.hostname}" 上的 Agent？`,
-      '卸载确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    );
+    await ElMessageBox.confirm(`确认卸载主机 "${row.hostname}" 上的 Agent？`, '卸载确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    });
   } catch {
     return;
   }
@@ -168,6 +200,40 @@ async function handleDeleteRecord(row: CMDB.Server) {
   }
 }
 
+async function handleUpgrade(row: CMDB.Server) {
+  if (!latestVersion.value) {
+    ElNotification.warning('无法获取最新版本信息');
+    return;
+  }
+
+  if (row.agentVersion === latestVersion.value.version) {
+    ElNotification.info('当前已是最新版本，无需升级');
+    return;
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确认将主机 "${row.hostname}" 的 Agent 从 v${row.agentVersion || '未知'} 升级到 v${latestVersion.value.version}？`,
+      '升级确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    );
+  } catch {
+    return;
+  }
+
+  try {
+    await fetchUpgradeAgent(row.id, latestVersion.value.version);
+    ElNotification.info(`${row.hostname} Agent 升级任务已提交，正在轮询状态...`);
+    pollAgentStatus(row.id, 'running');
+  } catch (err: any) {
+    ElNotification.error(`${row.hostname} Agent 升级失败: ${err.message || '未知错误'}`);
+  }
+}
+
 // ========== 批量操作 ==========
 const batchDeployable = computed(() =>
   selectedRows.value.filter(r => !r.agentStatus || r.agentStatus === 'uninstalled')
@@ -185,15 +251,11 @@ async function handleBatchDeploy() {
   }
 
   try {
-    await ElMessageBox.confirm(
-      `确认批量部署 ${targets.length} 台主机的 Agent？`,
-      '批量部署确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'info'
-      }
-    );
+    await ElMessageBox.confirm(`确认批量部署 ${targets.length} 台主机的 Agent？`, '批量部署确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'info'
+    });
   } catch {
     return;
   }
@@ -218,15 +280,11 @@ async function handleBatchUninstall() {
   }
 
   try {
-    await ElMessageBox.confirm(
-      `确认批量卸载 ${targets.length} 台主机的 Agent？`,
-      '批量卸载确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    );
+    await ElMessageBox.confirm(`确认批量卸载 ${targets.length} 台主机的 Agent？`, '批量卸载确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    });
   } catch {
     return;
   }
@@ -238,6 +296,53 @@ async function handleBatchUninstall() {
   } catch {
     ElNotification.error('批量卸载失败');
   }
+}
+
+// 可升级的主机（运行中且不是最新版本）
+const batchUpgradeable = computed(() =>
+  selectedRows.value.filter(r => {
+    if (r.agentStatus !== 'running') return false;
+    if (!r.agentVersion) return false;
+    return !isLatestVersion(r.agentVersion);
+  })
+);
+
+async function handleBatchUpgrade() {
+  const targets = batchUpgradeable.value;
+  if (targets.length === 0) {
+    ElNotification.warning('请先勾选状态为"运行中"且需要升级的主机');
+    return;
+  }
+
+  if (!latestVersion.value) {
+    ElNotification.warning('无法获取最新版本信息');
+    return;
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确认批量升级 ${targets.length} 台主机的 Agent 到 v${latestVersion.value.version}？`,
+      '批量升级确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    );
+  } catch {
+    return;
+  }
+
+  batchProgress.value = { current: 0, total: targets.length, running: true };
+
+  for (const server of targets) {
+    await fetchUpgradeAgent(server.id, latestVersion.value.version).catch(() => {});
+    batchProgress.value.current++;
+    pollAgentStatus(server.id, 'running');
+  }
+
+  batchProgress.value.running = false;
+  ElNotification.success(`已提交 ${targets.length} 台主机的 Agent 升级任务`);
 }
 
 // ========== 表格事件 ==========
@@ -273,91 +378,88 @@ function handlePageSizeChange(pageSize: number) {
 // ========== 初始化 ==========
 onMounted(() => {
   getAgentList();
+  getLatestVersion();
 });
 </script>
 
 <template>
   <div class="agent-page">
-    <el-card shadow="never">
+    <ElCard shadow="never">
       <!-- 工具栏 -->
       <template #header>
         <div class="toolbar">
           <!-- 左侧搜索区 -->
-          <el-form :model="searchForm" inline class="search-form">
-            <el-form-item>
-              <el-input
+          <ElForm :model="searchForm" inline class="search-form">
+            <ElFormItem>
+              <ElInput
                 v-model="searchForm.hostname"
                 placeholder="主机名 / IP"
                 clearable
                 style="width: 200px"
                 @keyup.enter="handleSearch"
               />
-            </el-form-item>
-            <el-form-item>
-              <el-select
-                v-model="searchForm.agentStatus"
-                placeholder="全部状态"
-                clearable
-                style="width: 140px"
-              >
-                <el-option label="运行中" value="running" />
-                <el-option label="离线" value="offline" />
-                <el-option label="未安装" value="uninstalled" />
-              </el-select>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" plain @click="handleSearch">
+            </ElFormItem>
+            <ElFormItem>
+              <ElSelect v-model="searchForm.agentStatus" placeholder="全部状态" clearable style="width: 140px">
+                <ElOption label="运行中" value="running" />
+                <ElOption label="离线" value="offline" />
+                <ElOption label="未安装" value="uninstalled" />
+              </ElSelect>
+            </ElFormItem>
+            <ElFormItem>
+              <ElButton type="primary" plain @click="handleSearch">
                 <template #icon><icon-ic-round-search class="text-icon" /></template>
                 搜索
-              </el-button>
-              <el-button plain @click="handleReset">
+              </ElButton>
+              <ElButton plain @click="handleReset">
                 <template #icon><icon-ic-round-refresh class="text-icon" /></template>
                 重置
-              </el-button>
-            </el-form-item>
-          </el-form>
+              </ElButton>
+            </ElFormItem>
+          </ElForm>
 
           <!-- 右侧操作区 -->
-          <el-space>
+          <ElSpace>
             <!-- 批量部署进度提示 -->
             <span v-if="batchProgress.running" class="batch-progress-text">
               批量部署中：{{ batchProgress.current }} / {{ batchProgress.total }} 台
             </span>
 
-            <el-button
-              type="primary"
-              plain
-              :disabled="batchDeployable.length === 0"
-              @click="handleBatchDeploy"
-            >
+            <ElButton type="primary" plain :disabled="batchDeployable.length === 0" @click="handleBatchDeploy">
               <template #icon><icon-mdi-rocket-launch class="text-icon" /></template>
               批量部署
               <span v-if="batchDeployable.length > 0">（{{ batchDeployable.length }}）</span>
-            </el-button>
+            </ElButton>
 
-            <el-button
-              type="danger"
-              plain
-              :disabled="batchUninstallable.length === 0"
-              @click="handleBatchUninstall"
-            >
+            <ElButton type="danger" plain :disabled="batchUninstallable.length === 0" @click="handleBatchUninstall">
               <template #icon><icon-mdi-delete class="text-icon" /></template>
               批量卸载
               <span v-if="batchUninstallable.length > 0">（{{ batchUninstallable.length }}）</span>
-            </el-button>
+            </ElButton>
 
-            <el-button plain @click="getAgentList">
+            <ElButton
+              type="success"
+              plain
+              :disabled="batchUpgradeable.length === 0"
+              @click="handleBatchUpgrade"
+            >
+              <template #icon><icon-mdi-arrow-up-bold class="text-icon" /></template>
+              批量升级
+              <span v-if="batchUpgradeable.length > 0">（{{ batchUpgradeable.length }}）</span>
+            </ElButton>
+
+            <ElButton plain @click="getAgentList">
               <template #icon>
                 <icon-mdi-refresh class="text-icon" :class="{ 'animate-spin': loading }" />
               </template>
               刷新
-            </el-button>
-          </el-space>
+            </ElButton>
+          </ElSpace>
         </div>
       </template>
 
       <!-- Agent 列表 -->
-      <el-table
+      <ElTable
         v-loading="loading"
         :data="tableData"
         border
@@ -365,79 +467,94 @@ onMounted(() => {
         style="width: 100%"
         @selection-change="handleSelectionChange"
       >
-        <el-table-column type="selection" width="50" align="center" />
+        <ElTableColumn type="selection" width="50" align="center" />
 
-        <el-table-column prop="hostname" label="主机名称" min-width="150" show-overflow-tooltip>
+        <ElTableColumn prop="hostname" label="主机名称" min-width="150" show-overflow-tooltip>
           <template #default="{ row }">
             <span class="hostname-text">{{ row.hostname }}</span>
           </template>
-        </el-table-column>
+        </ElTableColumn>
 
-        <el-table-column prop="ip" label="IP地址" width="140" show-overflow-tooltip />
+        <ElTableColumn prop="ip" label="IP地址" width="140" show-overflow-tooltip />
 
-        <el-table-column prop="innerIp" label="内网IP" width="140" show-overflow-tooltip>
+        <ElTableColumn prop="innerIp" label="内网IP" width="140" show-overflow-tooltip>
           <template #default="{ row }">
             <span class="text-gray">{{ row.innerIp || '-' }}</span>
           </template>
-        </el-table-column>
+        </ElTableColumn>
 
-        <el-table-column prop="agentVersion" label="版本" width="100" align="center">
+        <ElTableColumn label="版本" width="140" align="center">
           <template #default="{ row }">
-            <span v-if="row.agentVersion" class="version-text">v{{ row.agentVersion }}</span>
+            <div v-if="row.agentVersion" class="version-cell">
+              <span class="version-text">v{{ row.agentVersion }}</span>
+              <ElTag
+                v-if="latestVersion && row.agentStatus === 'running'"
+                :type="getVersionStatus(row.agentVersion).type"
+                size="small"
+                class="version-tag"
+              >
+                {{ getVersionStatus(row.agentVersion).text }}
+              </ElTag>
+            </div>
             <span v-else class="text-gray">-</span>
           </template>
-        </el-table-column>
+        </ElTableColumn>
 
-        <el-table-column label="状态" width="100" align="center">
+        <ElTableColumn label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag
-              :type="getAgentStatusTag(row.agentStatus).type"
-              size="small"
-            >
+            <ElTag :type="getAgentStatusTag(row.agentStatus).type" size="small">
               {{ getAgentStatusTag(row.agentStatus).text }}
-            </el-tag>
+            </ElTag>
           </template>
-        </el-table-column>
+        </ElTableColumn>
 
-        <el-table-column prop="agentPort" label="监听端口" width="100" align="center">
+        <ElTableColumn prop="agentPort" label="监听端口" width="100" align="center">
           <template #default="{ row }">
             <span class="text-gray">{{ row.agentPort || '-' }}</span>
           </template>
-        </el-table-column>
+        </ElTableColumn>
 
-        <el-table-column label="最近心跳" width="130" align="center">
+        <ElTableColumn label="最近心跳" width="130" align="center">
           <template #default="{ row }">
             <span class="text-gray">{{ formatRelativeTime(row.lastHeartbeatAt) }}</span>
           </template>
-        </el-table-column>
+        </ElTableColumn>
 
-        <el-table-column label="操作" width="230" align="center" fixed="right">
+        <ElTableColumn label="操作" width="280" align="center" fixed="right">
           <template #default="{ row }">
             <!-- 未安装：只显示部署 -->
             <template v-if="!row.agentStatus || row.agentStatus === 'uninstalled'">
-              <el-button type="primary" size="small" @click="handleDeploy(row)">部署</el-button>
+              <ElButton type="primary" size="small" @click="handleDeploy(row)">部署</ElButton>
             </template>
 
-            <!-- 运行中：重启 + 卸载 + 删除记录 -->
+            <!-- 运行中：升级 + 重启 + 卸载 + 删除记录 -->
             <template v-else-if="row.agentStatus === 'running'">
-              <el-button type="warning" size="small" @click="handleRestart(row)">重启</el-button>
-              <el-button type="danger" size="small" plain @click="handleUninstall(row)">卸载</el-button>
-              <el-button type="info" size="small" plain @click="handleDeleteRecord(row)">删除记录</el-button>
+              <ElButton
+                v-if="!isLatestVersion(row.agentVersion)"
+                type="success"
+                size="small"
+                @click="handleUpgrade(row)"
+              >
+                升级
+              </ElButton>
+              <ElButton type="warning" size="small" @click="handleRestart(row)">重启</ElButton>
+              <ElButton type="danger" size="small" plain @click="handleUninstall(row)">卸载</ElButton>
+              <ElButton type="info" size="small" plain @click="handleDeleteRecord(row)">删除记录</ElButton>
             </template>
 
             <!-- 离线：重启 + 卸载 + 删除记录 -->
             <template v-else-if="row.agentStatus === 'offline'">
-              <el-button type="warning" size="small" @click="handleRestart(row)">重启</el-button>
-              <el-button type="danger" size="small" plain @click="handleUninstall(row)">卸载</el-button>
-              <el-button type="info" size="small" plain @click="handleDeleteRecord(row)">删除记录</el-button>
+              <ElButton type="warning" size="small" @click="handleRestart(row)">重启</ElButton>
+              <ElButton type="danger" size="small" plain @click="handleUninstall(row)">卸载</ElButton>
+              <ElButton type="info" size="small" plain @click="handleDeleteRecord(row)">删除记录</ElButton>
             </template>
           </template>
-        </el-table-column>
-      </el-table>
+        </ElTableColumn>
+      </ElTable>
 
       <!-- 分页 -->
       <div v-if="total > 0" class="pagination-bar">
-        <el-pagination
+        <ElPagination
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.pageSize"
           :page-sizes="[10, 20, 50, 100]"
@@ -447,7 +564,7 @@ onMounted(() => {
           @size-change="handlePageSizeChange"
         />
       </div>
-    </el-card>
+    </ElCard>
   </div>
 </template>
 
@@ -478,6 +595,17 @@ onMounted(() => {
   font-size: 12px;
   color: #67c23a;
   font-family: monospace;
+}
+
+.version-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.version-tag {
+  font-size: 11px;
 }
 
 .text-gray {

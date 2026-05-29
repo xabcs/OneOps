@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import {
-  fetchCheckConnectPermission,
-  fetchConnectServer,
-  fetchGetSessions
-} from '@/service/api/cmdb';
+import { computed, ref, watch } from 'vue';
+import { fetchCheckConnectPermission, fetchConnectServer, fetchGetSessions } from '@/service/api/cmdb';
 
 interface Props {
   visible: boolean;
@@ -32,9 +28,7 @@ const recentSession = ref<any>(null);
 const selectedProtocol = ref('ssh');
 
 // 当前选中的凭证对象
-const selectedCredential = computed(() =>
-  availableCredentials.value.find(c => c.id === selectedCredentialId.value)
-);
+const selectedCredential = computed(() => availableCredentials.value.find(c => c.id === selectedCredentialId.value));
 
 // 检查连接权限，获取可用凭证列表
 async function checkPermission() {
@@ -125,18 +119,21 @@ function handleClose() {
 }
 
 // 监听 visible 变化
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    connectReason.value = '';
-    selectedProtocol.value = 'ssh';
-    checkPermission();
-    loadRecentSession();
+watch(
+  () => props.visible,
+  visible => {
+    if (visible) {
+      connectReason.value = '';
+      selectedProtocol.value = 'ssh';
+      checkPermission();
+      loadRecentSession();
+    }
   }
-});
+);
 </script>
 
 <template>
-  <el-dialog
+  <ElDialog
     :model-value="visible"
     :title="`连接主机：${serverName}`"
     width="760px"
@@ -145,73 +142,73 @@ watch(() => props.visible, (visible) => {
   >
     <div v-loading="loading">
       <!-- 无权限提示 -->
-      <el-alert v-if="!hasPermission" type="error" :closable="false" style="margin-bottom: 16px">
+      <ElAlert v-if="!hasPermission" type="error" :closable="false" style="margin-bottom: 16px">
         {{ permissionError || '您没有连接此主机的权限' }}
-      </el-alert>
+      </ElAlert>
 
-      <el-row :gutter="24">
+      <ElRow :gutter="24">
         <!-- 左栏：连接配置 -->
-        <el-col :span="12">
+        <ElCol :span="12">
           <div class="config-section">
             <div class="section-title">连接配置</div>
 
-            <el-form label-position="top" size="default">
-              <el-form-item label="连接协议">
-                <el-radio-group v-model="selectedProtocol" :disabled="!hasPermission">
-                  <el-radio value="ssh">SSH 终端</el-radio>
-                  <el-radio value="sftp" disabled>SFTP 传输</el-radio>
-                </el-radio-group>
-              </el-form-item>
+            <ElForm label-position="top" size="default">
+              <ElFormItem label="连接协议">
+                <ElRadioGroup v-model="selectedProtocol" :disabled="!hasPermission">
+                  <ElRadio value="ssh">SSH 终端</ElRadio>
+                  <ElRadio value="sftp" disabled>SFTP 传输</ElRadio>
+                </ElRadioGroup>
+              </ElFormItem>
 
-              <el-form-item label="登录凭证">
-                <el-select
+              <ElFormItem label="登录凭证">
+                <ElSelect
                   v-model="selectedCredentialId"
                   placeholder="选择 SSH 凭证"
                   style="width: 100%"
                   :disabled="!hasPermission"
                 >
-                  <el-option
+                  <ElOption
                     v-for="cred in availableCredentials"
                     :key="cred.id"
                     :value="cred.id"
                     :label="`${cred.name}（${cred.username}）`"
                   />
-                </el-select>
-              </el-form-item>
+                </ElSelect>
+              </ElFormItem>
 
-              <el-form-item label="连接原因">
-                <el-input
+              <ElFormItem label="连接原因">
+                <ElInput
                   v-model="connectReason"
                   placeholder="请输入连接原因（生产环境必填）"
                   type="textarea"
                   :rows="2"
                   :disabled="!hasPermission"
                 />
-              </el-form-item>
-            </el-form>
+              </ElFormItem>
+            </ElForm>
           </div>
-        </el-col>
+        </ElCol>
 
         <!-- 右栏：安全上下文 -->
-        <el-col :span="12">
+        <ElCol :span="12">
           <div class="context-section">
             <div class="section-title">安全上下文</div>
 
             <div class="context-item">
               <span class="context-label">主机环境</span>
-              <el-tag
+              <ElTag
                 :type="props.serverEnv === 'prod' ? 'danger' : props.serverEnv === 'test' ? 'warning' : 'info'"
                 size="small"
               >
                 {{ props.serverEnv === 'prod' ? '生产环境' : props.serverEnv === 'test' ? '测试环境' : '开发环境' }}
-              </el-tag>
+              </ElTag>
             </div>
 
             <div class="context-item">
               <span class="context-label">凭证状态</span>
-              <el-tag :type="availableCredentials.length > 0 ? 'success' : 'warning'" size="small">
+              <ElTag :type="availableCredentials.length > 0 ? 'success' : 'warning'" size="small">
                 {{ availableCredentials.length > 0 ? `${availableCredentials.length} 个可用` : '未配置' }}
-              </el-tag>
+              </ElTag>
             </div>
 
             <div class="context-item">
@@ -231,14 +228,14 @@ watch(() => props.visible, (visible) => {
               </span>
             </div>
 
-            <el-alert
+            <ElAlert
               v-if="props.serverEnv === 'prod'"
               type="warning"
               :closable="false"
               title="生产环境操作将被完整审计，请谨慎操作"
               style="margin-top: 12px"
             />
-            <el-alert
+            <ElAlert
               v-else
               type="info"
               :closable="false"
@@ -246,20 +243,20 @@ watch(() => props.visible, (visible) => {
               style="margin-top: 12px"
             />
           </div>
-        </el-col>
-      </el-row>
+        </ElCol>
+      </ElRow>
     </div>
 
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
-      <el-button
+      <ElButton @click="handleClose">取消</ElButton>
+      <ElButton
         v-if="!loading && hasPermission && availableCredentials.length === 0"
         type="warning"
         @click="handleClose"
       >
         去绑定凭证
-      </el-button>
-      <el-button
+      </ElButton>
+      <ElButton
         v-else
         type="primary"
         :disabled="!hasPermission || !selectedCredentialId"
@@ -267,9 +264,9 @@ watch(() => props.visible, (visible) => {
         @click="handleConnect"
       >
         连接
-      </el-button>
+      </ElButton>
     </template>
-  </el-dialog>
+  </ElDialog>
 </template>
 
 <style scoped>

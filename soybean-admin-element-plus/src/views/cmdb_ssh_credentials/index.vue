@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import { ElNotification, ElMessageBox, FormInstance, FormRules } from 'element-plus';
+import { onMounted, reactive, ref } from 'vue';
+import type { FormInstance, FormRules } from 'element-plus';
+import { ElMessageBox, ElNotification } from 'element-plus';
 import {
-  fetchGetSSHCredentials,
   fetchCreateSSHCredential,
-  fetchUpdateSSHCredential,
   fetchDeleteSSHCredential,
-  fetchTestSSHCredential
+  fetchGetSSHCredentials,
+  fetchTestSSHCredential,
+  fetchUpdateSSHCredential
 } from '@/service/api/cmdb';
 
 defineOptions({ name: 'CmdbSshCredentials' });
@@ -39,9 +40,7 @@ const rules: FormRules = {
     { required: true, message: '请输入凭证名称', trigger: 'blur' },
     { min: 2, max: 100, message: '凭证名称长度在 2 到 100 个字符', trigger: 'blur' }
   ],
-  username: [
-    { required: true, message: '请输入SSH用户名', trigger: 'blur' }
-  ],
+  username: [{ required: true, message: '请输入SSH用户名', trigger: 'blur' }],
   password: [
     {
       validator: (rule, value, callback) => {
@@ -106,7 +105,7 @@ function handleEdit(row: CMDB.SSHCredential) {
     name: row.name,
     description: row.description,
     username: row.username,
-    authType: row.authType,
+    authType: row.authType
   });
   dialogVisible.value = true;
 }
@@ -183,7 +182,7 @@ async function handleTest(row: CMDB.SSHCredential) {
 
   testLoading.value = true;
   try {
-    const { data } = await fetchTestSSHCredential(row.id, testIp.value, parseInt(testPort.value));
+    const { data } = await fetchTestSSHCredential(row.id, testIp.value, Number.parseInt(testPort.value));
     if (data.success) {
       ElNotification.success(`连接测试成功：${data.message || '可以连接'}`);
     } else {

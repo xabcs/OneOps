@@ -96,11 +96,16 @@ function formatTime(time: string): string {
 
 function getStatusType(status: string): 'success' | 'info' | 'warning' | 'danger' {
   switch (status) {
-    case 'active': return 'success';
-    case 'closed': return 'info';
-    case 'error': return 'danger';
-    case 'terminated': return 'warning';
-    default: return 'info';
+    case 'active':
+      return 'success';
+    case 'closed':
+      return 'info';
+    case 'error':
+      return 'danger';
+    case 'terminated':
+      return 'warning';
+    default:
+      return 'info';
   }
 }
 
@@ -121,28 +126,28 @@ onMounted(() => {
 
 <template>
   <div class="sessions-page">
-    <el-card shadow="never">
+    <ElCard shadow="never">
       <template #header>
         <div class="card-header">
           <span class="title">历史会话</span>
-          <el-button type="primary" @click="getSessions">刷新</el-button>
+          <ElButton type="primary" @click="getSessions">刷新</ElButton>
         </div>
       </template>
 
       <div class="filter-bar">
-        <el-form :inline="true" :model="filters">
-          <el-form-item label="状态">
-            <el-select v-model="filters.status" placeholder="全部状态" clearable style="width: 130px">
-              <el-option v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="协议">
-            <el-select v-model="filters.protocol" placeholder="全部协议" clearable style="width: 110px">
-              <el-option v-for="opt in protocolOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="时间范围">
-            <el-date-picker
+        <ElForm :inline="true" :model="filters">
+          <ElFormItem label="状态">
+            <ElSelect v-model="filters.status" placeholder="全部状态" clearable style="width: 130px">
+              <ElOption v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+            </ElSelect>
+          </ElFormItem>
+          <ElFormItem label="协议">
+            <ElSelect v-model="filters.protocol" placeholder="全部协议" clearable style="width: 110px">
+              <ElOption v-for="opt in protocolOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+            </ElSelect>
+          </ElFormItem>
+          <ElFormItem label="时间范围">
+            <ElDatePicker
               v-model="dateRange"
               type="daterange"
               range-separator="至"
@@ -151,67 +156,62 @@ onMounted(() => {
               value-format="YYYY-MM-DD"
               style="width: 240px"
             />
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="handleSearch">搜索</el-button>
-            <el-button @click="handleReset">重置</el-button>
-          </el-form-item>
-        </el-form>
+          </ElFormItem>
+          <ElFormItem>
+            <ElButton type="primary" @click="handleSearch">搜索</ElButton>
+            <ElButton @click="handleReset">重置</ElButton>
+          </ElFormItem>
+        </ElForm>
       </div>
 
-      <el-table
-        v-loading="loading"
-        :data="sessions"
-        stripe
-        style="width: 100%; margin-top: 16px"
-      >
-        <el-table-column prop="id" label="ID" width="70" />
-        <el-table-column prop="username" label="用户名" width="110" />
-        <el-table-column label="服务器" width="160">
+      <ElTable v-loading="loading" :data="sessions" stripe style="width: 100%; margin-top: 16px">
+        <ElTableColumn prop="id" label="ID" width="70" />
+        <ElTableColumn prop="username" label="用户名" width="110" />
+        <ElTableColumn label="服务器" width="160">
           <template #default="{ row }">
             {{ row.server?.hostname || row.server?.ip || `ID:${row.serverId}` }}
           </template>
-        </el-table-column>
-        <el-table-column prop="loginAccount" label="登录账号" width="120" />
-        <el-table-column prop="clientIp" label="客户端IP" width="140" />
-        <el-table-column prop="protocol" label="协议" width="90">
+        </ElTableColumn>
+        <ElTableColumn prop="loginAccount" label="登录账号" width="120" />
+        <ElTableColumn prop="clientIp" label="客户端IP" width="140" />
+        <ElTableColumn prop="protocol" label="协议" width="90">
           <template #default="{ row }">
-            <el-tag :type="row.protocol === 'ssh' ? 'primary' : 'success'" size="small">
+            <ElTag :type="row.protocol === 'ssh' ? 'primary' : 'success'" size="small">
               {{ row.protocol?.toUpperCase() }}
-            </el-tag>
+            </ElTag>
           </template>
-        </el-table-column>
-        <el-table-column label="开始时间" width="180">
+        </ElTableColumn>
+        <ElTableColumn label="开始时间" width="180">
           <template #default="{ row }">
             {{ formatTime(row.startedAt || '') }}
           </template>
-        </el-table-column>
-        <el-table-column label="时长" width="110">
+        </ElTableColumn>
+        <ElTableColumn label="时长" width="110">
           <template #default="{ row }">
             {{ formatDuration(row.duration) }}
           </template>
-        </el-table-column>
-        <el-table-column label="状态" width="90">
+        </ElTableColumn>
+        <ElTableColumn label="状态" width="90">
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)" size="small">
+            <ElTag :type="getStatusType(row.status)" size="small">
               {{ getStatusText(row.status) }}
-            </el-tag>
+            </ElTag>
           </template>
-        </el-table-column>
-        <el-table-column label="关闭原因" width="150" show-overflow-tooltip>
+        </ElTableColumn>
+        <ElTableColumn label="关闭原因" width="150" show-overflow-tooltip>
           <template #default="{ row }">
             {{ row.closeReason || '-' }}
           </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100" fixed="right">
+        </ElTableColumn>
+        <ElTableColumn label="操作" width="100" fixed="right">
           <template #default="{ row }">
-            <el-button type="primary" size="small" @click="handleViewDetail(row)">详情</el-button>
+            <ElButton type="primary" size="small" @click="handleViewDetail(row)">详情</ElButton>
           </template>
-        </el-table-column>
-      </el-table>
+        </ElTableColumn>
+      </ElTable>
 
       <div class="pagination-wrapper">
-        <el-pagination
+        <ElPagination
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.pageSize"
           :total="total"
@@ -221,7 +221,7 @@ onMounted(() => {
           @current-change="handlePageChange"
         />
       </div>
-    </el-card>
+    </ElCard>
   </div>
 </template>
 

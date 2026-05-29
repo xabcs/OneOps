@@ -121,20 +121,6 @@ func (c *RouteController) GetUserRoutes(ctx *gin.Context) {
 	// 将菜单转换为前端路由格式
 	routes := c.convertMenusToRoutes(menuTree, isSuper)
 
-	// 追加固定的隐藏路由（不在菜单中显示，但需要动态路由系统识别）
-	routes = append(routes, map[string]interface{}{
-		"id":        "cmdb_terminal",
-		"name":      "cmdb_terminal",
-		"path":      "/cmdb/terminal/:id",
-		"props":     true,
-		"component": "view.cmdb_terminal",
-		"meta": map[string]interface{}{
-			"title":      "cmdb_terminal",
-			"i18nKey":    "route.cmdb_terminal",
-			"hideInMenu": true,
-		},
-	})
-
 	// 返回路由和首页
 	result := map[string]interface{}{
 		"routes": routes,
@@ -177,7 +163,71 @@ func (c *RouteController) convertMenusToRoutes(menus []*models.Menu, isSuper boo
 		routes = append(routes, route)
 	}
 
+	// 添加隐藏路由到对应的父路由下
+	c.appendHiddenRoutesToMenuTree(routes)
+
 	return routes
+}
+
+// appendHiddenRoutesToMenuTree 将隐藏路由添加到菜单树中
+func (c *RouteController) appendHiddenRoutesToMenuTree(routes []map[string]interface{}) {
+	for _, route := range routes {
+		// 为 monitoring 路由添加 servers-detail 子路由
+		if route["name"] == "monitoring" {
+			var children []map[string]interface{}
+			if existingChildren, ok := route["children"].([]map[string]interface{}); ok {
+				children = existingChildren
+			} else if existingChildren, ok := route["children"].([]interface{}); ok {
+				for _, child := range existingChildren {
+					if childMap, ok := child.(map[string]interface{}); ok {
+						children = append(children, childMap)
+					}
+				}
+			}
+			// 添加 servers-detail 子路由
+			children = append(children, map[string]interface{}{
+				"id":        "monitoring_servers-detail",
+				"name":      "monitoring_servers-detail",
+				"path":      "/monitoring/servers-detail",
+				"component": "view.monitoring_servers-detail",
+				"meta": map[string]interface{}{
+					"title":      "monitoring_servers-detail",
+					"i18nKey":    "route.monitoring_servers-detail",
+					"hideInMenu": true,
+					"activeMenu": "monitoring_servers",
+				},
+			})
+			route["children"] = children
+		}
+
+		// 为 cmdb 路由添加 terminal 子路由
+		if route["name"] == "cmdb" {
+			var children []map[string]interface{}
+			if existingChildren, ok := route["children"].([]map[string]interface{}); ok {
+				children = existingChildren
+			} else if existingChildren, ok := route["children"].([]interface{}); ok {
+				for _, child := range existingChildren {
+					if childMap, ok := child.(map[string]interface{}); ok {
+						children = append(children, childMap)
+					}
+				}
+			}
+			// 添加 terminal 子路由
+			children = append(children, map[string]interface{}{
+				"id":        "cmdb_terminal",
+				"name":      "cmdb_terminal",
+				"path":      "/cmdb/terminal/:id",
+				"props":     true,
+				"component": "view.cmdb_terminal",
+				"meta": map[string]interface{}{
+					"title":      "cmdb_terminal",
+					"i18nKey":    "route.cmdb_terminal",
+					"hideInMenu": true,
+				},
+			})
+			route["children"] = children
+		}
+	}
 }
 
 // buildRouteFromMenu 根据菜单构建路由

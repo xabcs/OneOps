@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue';
-import { ElNotification, ElMessageBox, FormInstance, FormRules } from 'element-plus';
+import { computed, onMounted, reactive, ref } from 'vue';
+import type { FormInstance, FormRules } from 'element-plus';
+import { ElMessageBox, ElNotification } from 'element-plus';
+import { Key, Setting, User } from '@element-plus/icons-vue';
 import {
-  fetchGetSSHCredentials,
   fetchCreateSSHCredential,
-  fetchUpdateSSHCredential,
   fetchDeleteSSHCredential,
-  fetchTestSSHCredential
+  fetchGetSSHCredentials,
+  fetchTestSSHCredential,
+  fetchUpdateSSHCredential
 } from '@/service/api/cmdb';
 
 defineOptions({ name: 'CmdbAccessCredentials' });
@@ -190,7 +192,7 @@ async function handleTest(row: CMDB.SSHCredential) {
 
   testLoading.value = true;
   try {
-    const { data } = await fetchTestSSHCredential(row.id, testIp.value, parseInt(testPort.value));
+    const { data } = await fetchTestSSHCredential(row.id, testIp.value, Number.parseInt(testPort.value));
     if (data.success) {
       ElNotification.success(`连接测试成功：${data.message || '可以连接'}`);
     } else {
@@ -235,7 +237,7 @@ onMounted(() => {
           <ElTabPane name="user">
             <template #label>
               <span class="flex items-center gap-4px">
-                <el-icon><User /></el-icon>
+                <ElIcon><User /></ElIcon>
                 用户连接凭证
               </span>
             </template>
@@ -243,7 +245,7 @@ onMounted(() => {
           <ElTabPane name="system">
             <template #label>
               <span class="flex items-center gap-4px">
-                <el-icon><Setting /></el-icon>
+                <ElIcon><Setting /></ElIcon>
                 系统运维凭证
               </span>
             </template>
@@ -319,7 +321,9 @@ onMounted(() => {
           <ElRadioGroup v-model="form.credentialType" class="mt-8px">
             <ElRadio value="system">
               <span class="font-medium">系统运维</span>
-              <span class="ml-6px text-12px text-gray-400">供 OneOps 后端 Agent 部署、采集使用，需 root / sudo 权限</span>
+              <span class="ml-6px text-12px text-gray-400">
+                供 OneOps 后端 Agent 部署、采集使用，需 root / sudo 权限
+              </span>
             </ElRadio>
           </ElRadioGroup>
         </ElFormItem>

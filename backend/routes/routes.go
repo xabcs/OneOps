@@ -28,9 +28,11 @@ func SetupRoutes(r *gin.Engine) {
 	userController := controllers.NewUserController()
 	auditController := controllers.NewAuditController()
 	monitoringController := controllers.NewMonitoringController()
+	wsMonitoringController := controllers.NewMonitoringWebSocketController()
 	routeController := controllers.NewRouteController()
 	cmdbController := controllers.NewCMDBController()
 	bastionController := controllers.NewBastionController()
+	attributeController := controllers.NewAttributeController()
 	sshHandler := handlers.NewSSHWebSocketHandler()
 
 	// API 路由组
@@ -51,6 +53,7 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			// 菜单管理
 			system.GET("/menus", menuController.GetMenus)
+			system.GET("/menus/tree", menuController.GetMenuTree)
 			system.POST("/menus", menuController.CreateMenu)
 			system.PUT("/menus/:id", menuController.UpdateMenu)
 			system.DELETE("/menus/:id", menuController.DeleteMenu)
@@ -66,6 +69,18 @@ func SetupRoutes(r *gin.Engine) {
 			system.POST("/users", userController.CreateUser)
 			system.PUT("/users/:id", userController.UpdateUser)
 			system.DELETE("/users/:id", userController.DeleteUser)
+			system.PUT("/users/:id/password", userController.ResetPassword)
+
+			// 属性管理
+			system.GET("/attributes", attributeController.GetAttributeDefinitions)
+			system.POST("/attributes", attributeController.CreateAttributeDefinition)
+			system.PUT("/attributes/:id", attributeController.UpdateAttributeDefinition)
+			system.DELETE("/attributes/:id", attributeController.DeleteAttributeDefinition)
+			system.GET("/attributes/:id", attributeController.GetAttributeDefinitionByID)
+
+			// 主机属性管理
+			system.GET("/server-attributes/:serverId", attributeController.GetServerAttributes)
+			system.POST("/server-attributes/:serverId", attributeController.SaveServerAttributes)
 		}
 
 		// 审计管理路由（需要认证）
@@ -92,16 +107,51 @@ func SetupRoutes(r *gin.Engine) {
 
 		// 监控管理路由（需要认证）
 		monitoring := api.Group("/monitoring")
-		monitoring.Use(middlewares.Auth())
+		{
+			// WebSocket 实时推送（由 handler 自行验证 token，不经过 Auth 中间件）
+			monitoring.GET("/ws", func(ctx *gin.Context) {
+				wsMonitoringController.HandleWebSocket(ctx)
+			})
+		}
+
+		// 监控管理路由（需要认证）
+		monitoringAuth := api.Group("/monitoring")
+		monitoringAuth.Use(middlewares.Auth())
 		{
 			// Grafana面板URL
-			monitoring.GET("/grafana/url", monitoringController.GetGrafanaUrl)
+			monitoringAuth.GET("/grafana/url", monitoringController.GetGrafanaUrl)
 			// 监控数据
-			monitoring.GET("/stats", monitoringController.GetMonitoringStats)
+			monitoringAuth.GET("/stats", monitoringController.GetMonitoringStats)
 			// 刷新监控数据
-			monitoring.POST("/refresh", monitoringController.RefreshMonitoring)
-			// 处理告警
-			monitoring.POST("/alert/handle", monitoringController.HandleAlert)
+			monitoringAuth.POST("/refresh", monitoringController.RefreshMonitoring)
+			monitoringAuth.POST("/alert/handle", monitoringController.HandleAlert)
+
+			// Agent 监控增强 API (P0)
+			monitoring.GET("/overview", monitoringController.GetOverview)
+			monitoring.GET("/alerts", monitoringController.GetAlerts)
+			monitoring.POST("/alerts/:id/acknowledge", monitoringController.AcknowledgeAlert)
+			monitoring.GET("/alerts/stats", monitoringController.GetAlertStats)
+
+				// 告警规则管理 API (P0 - 动态配置)
+			monitoring.GET("/alerts/rules", monitoringController.GetAlertRules)
+			monitoring.POST("/alerts/rules", monitoringController.CreateAlertRule)
+			monitoring.PUT("/alerts/rules/:id", monitoringController.UpdateAlertRule)
+			monitoring.DELETE("/alerts/rules/:id", monitoringController.DeleteAlertRule)
+			monitoring.PUT("/alerts/rules/:id/status", monitoringController.UpdateAlertRuleStatus)
+
+			// 通知渠道管理 API (P2)
+			monitoring.GET("/notifications/channels", monitoringController.GetNotificationChannels)
+			monitoring.POST("/notifications/channels", monitoringController.CreateNotificationChannel)
+			monitoring.PUT("/notifications/channels/:id", monitoringController.UpdateNotificationChannel)
+			monitoring.DELETE("/notifications/channels/:id", monitoringController.DeleteNotificationChannel)
+			monitoring.POST("/notifications/channels/:id/test", monitoringController.TestNotificationChannel)
+
+				// 巡检报告 API (P3)
+				monitoring.GET("/reports", monitoringController.GetReports)
+				monitoring.POST("/reports", monitoringController.CreateReport)
+				monitoring.GET("/reports/:id", monitoringController.GetReportDetail)
+				monitoring.GET("/reports/:id/export", monitoringController.ExportReport)
+				monitoring.DELETE("/reports/:id", monitoringController.DeleteReport)
 		}
 
 		// CMDB资产管理路由（需要认证）
@@ -125,12 +175,22 @@ func SetupRoutes(r *gin.Engine) {
 			cmdb.POST("/servers/:id/agent/restart", cmdbController.RestartAgent)
 			cmdb.POST("/servers/:id/agent/uninstall", cmdbController.UninstallAgent)
 			cmdb.GET("/servers/:id/agent/status", cmdbController.GetAgentStatus)
+			cmdb.POST("/servers/:id/test-connection", cmdbController.TestSSHConnection)
 
 			// Agent 管理页面专用接口
 			cmdb.GET("/agents", cmdbController.GetAgentList)
 			cmdb.POST("/agents/batch-deploy", cmdbController.BatchDeployAgent)
 			cmdb.POST("/agents/batch-uninstall", cmdbController.BatchUninstallAgent)
 			cmdb.DELETE("/agents/:id", cmdbController.DeleteAgentRecord)
+
+			// Agent 监控增强 API (P0) - 主机相关监控接口
+			cmdb.GET("/servers/:id/extended-metrics", monitoringController.GetServerExtendedMetrics)
+			cmdb.GET("/servers/:id/metrics/history", monitoringController.GetServerMetricsHistory)
+			cmdb.GET("/servers/:id/hardware", monitoringController.GetServerHardware)
+			cmdb.GET("/servers/:id/processes", monitoringController.GetServerProcesses)
+			cmdb.GET("/servers/:id/services", monitoringController.GetServerServices)
+			cmdb.GET("/servers/:id/network", monitoringController.GetServerNetwork)
+			cmdb.GET("/servers/:id/security", monitoringController.GetServerSecurity)
 
 			// 主机分组管理
 			cmdb.GET("/groups", cmdbController.GetServerGroups)
@@ -209,6 +269,19 @@ func SetupRoutes(r *gin.Engine) {
 
 		// Agent 心跳（不经过 Auth 中间件，由 Agent 直接上报）
 		api.POST("/cmdb/agent/heartbeat", cmdbController.ReceiveAgentHeartbeat)
+
+		// Agent 版本管理接口（需要认证）
+		api.GET("/cmdb/agent-versions", cmdbController.GetAgentVersions)
+		api.GET("/cmdb/agent-versions/latest", cmdbController.GetLatestAgentVersion)
+		api.GET("/cmdb/agent-versions/:id", cmdbController.GetAgentVersionByID)
+		api.POST("/cmdb/agent-versions", cmdbController.CreateAgentVersion)
+		api.PUT("/cmdb/agent-versions/:id", cmdbController.UpdateAgentVersion)
+		api.DELETE("/cmdb/agent-versions/:id", cmdbController.DeleteAgentVersion)
+
+		// Agent 升级管理接口（需要认证）
+		api.POST("/cmdb/servers/:id/agent/upgrade", cmdbController.UpgradeAgent)
+		api.GET("/cmdb/agent-upgrade-tasks", cmdbController.GetUpgradeTasks)
+		api.GET("/cmdb/agent-upgrade-tasks/:id", cmdbController.GetUpgradeTaskByID)
 
 		// 动态路由接口（需要认证）
 		routeGroup := api.Group("/route")

@@ -38,6 +38,7 @@ func (s *InitService) InitDatabase() error {
 		&models.SystemEventLog{},
 		&models.BusinessUnit{},
 		&models.SSHCredential{},
+		&models.AttributeDefinition{},
 		// 有外键依赖的表（按依赖顺序）
 		&models.ServerRoom{},
 		&models.Cabinet{},
@@ -47,6 +48,7 @@ func (s *InitService) InitDatabase() error {
 		&models.ServerGroup{},
 		&models.ServerGroupRelation{},
 		&models.ServerCredential{},
+		&models.ServerAttribute{},
 		&models.CloudServer{},
 		&models.AssetChange{},
 		// 堡垒机相关表
@@ -62,8 +64,89 @@ func (s *InitService) InitDatabase() error {
 		logger.Warn("AutoMigrate 部分失败，继续执行数据初始化", zap.Error(migrateErr))
 	}
 
+	// 执行 SQL 迁移脚本（添加磁盘分区字段等）
+	if err := s.runMigrations(); err != nil {
+		logger.Warn("SQL 迁移执行失败，继续执行数据初始化", zap.Error(err))
+	}
+
 	// 无论 AutoMigrate 是否完全成功，都执行数据初始化
 	return s.initData()
+}
+
+// runMigrations 执行 SQL 迁移脚本
+func (s *InitService) runMigrations() error {
+	logger.Info("开始执行 SQL 迁移...")
+
+	// 添加 menu_ids 字段到 roles 表
+	menuIDsSQL := `
+		ALTER TABLE roles
+		ADD COLUMN IF NOT EXISTS menu_ids JSON NULL
+		COMMENT '菜单ID列表(JSON数组)，如 [1,2,3]'
+		AFTER description;
+	`
+
+	if err := db.Exec(menuIDsSQL).Error; err != nil {
+		logger.Debug("添加 menu_ids 字段（可能已存在）", zap.Error(err))
+	}
+
+	// 添加 disk_partitions 字段到 servers 表
+	migrationSQL := `
+		ALTER TABLE servers
+		ADD COLUMN IF NOT EXISTS disk_partitions JSON NULL
+		COMMENT '磁盘分区信息 [{"mount":"/","usage":80.5},{"mount":"/var","usage":90.2}]'
+		AFTER disk_usage;
+	`
+
+	if err := db.Exec(migrationSQL).Error; err != nil {
+		logger.Debug("添加 disk_partitions 字段（可能已存在）", zap.Error(err))
+	}
+
+	// 创建 agent_metrics 表（监控指标存储）
+	createMetricsTable := `
+		CREATE TABLE IF NOT EXISTS agent_metrics (
+			id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+			server_id INT UNSIGNED NOT NULL COMMENT '主机ID',
+			metric_type VARCHAR(50) NOT NULL COMMENT '指标类型: performance/system/hardware/service/process/network/security',
+			metric_data LONGTEXT NOT NULL COMMENT 'JSON格式指标数据',
+			report_time DATETIME NOT NULL COMMENT '采集时间',
+			received_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '接收时间',
+			INDEX idx_server_type_time (server_id, metric_type, received_at),
+			INDEX idx_report_time (report_time)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Agent指标数据表';
+	`
+	if err := db.Exec(createMetricsTable).Error; err != nil {
+		logger.Warn("创建 agent_metrics 表失败", zap.Error(err))
+	}
+
+	// 创建告警表
+	createAlertsTable := `
+		CREATE TABLE IF NOT EXISTS agent_alerts (
+			id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+			server_id INT UNSIGNED NOT NULL COMMENT '主机ID',
+			hostname VARCHAR(100) NOT NULL COMMENT '主机名',
+			ip VARCHAR(50) NOT NULL COMMENT 'IP地址',
+			rule_id VARCHAR(50) NOT NULL COMMENT '规则ID',
+			level VARCHAR(20) NOT NULL COMMENT '告警级别: critical/high/medium/low/info',
+			message VARCHAR(500) NOT NULL COMMENT '告警内容',
+			metric_value DECIMAL(10,2) COMMENT '当前值',
+			threshold DECIMAL(10,2) COMMENT '阈值',
+			first_seen DATETIME NOT NULL COMMENT '首次触发时间',
+			last_seen DATETIME NOT NULL COMMENT '最近触发时间',
+			acknowledged TINYINT(1) DEFAULT 0 COMMENT '是否已确认',
+			acknowledged_by VARCHAR(100) COMMENT '确认人',
+			acknowledged_at DATETIME COMMENT '确认时间',
+			resolved_at DATETIME COMMENT '恢复时间',
+			INDEX idx_server_level (server_id, level),
+			INDEX idx_acknowledged (acknowledged, first_seen),
+			INDEX idx_first_seen (first_seen)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='告警记录表';
+	`
+	if err := db.Exec(createAlertsTable).Error; err != nil {
+		logger.Warn("创建 agent_alerts 表失败", zap.Error(err))
+	}
+
+	logger.Info("SQL 迁移执行完成")
+	return nil
 }
 
 // initData 初始化和同步数据（自动检测并添加新菜单）
@@ -92,6 +175,20 @@ func (s *InitService) initData() error {
 	db.Model(&models.User{}).Count(&userCount)
 	if userCount == 0 {
 		if err := s.initUsers(); err != nil {
+			return err
+		}
+	}
+
+	// 检查属性定义表是否为空
+	var attrCount int64
+	db.Model(&models.AttributeDefinition{}).Count(&attrCount)
+	if attrCount == 0 {
+		if err := s.initAttributes(); err != nil {
+			return err
+		}
+	} else {
+		// 同步属性定义（确保包含所有预置属性）
+		if err := s.syncAttributes(); err != nil {
 			return err
 		}
 	}
@@ -132,9 +229,9 @@ func (s *InitService) initMenus() error {
 func (s *InitService) syncMenus() error {
 	logger.Info("开始同步菜单数据...")
 
-	// 清除旧 cmdb 菜单（ID 20-40），重新写入新层级结构
-	if err := db.Where("id >= 20 AND id <= 40").Delete(&models.Menu{}).Error; err != nil {
-		logger.Error("清除旧 cmdb 菜单失败", zap.Error(err))
+	// 清除旧菜单（ID 20-50），重新写入新层级结构（包含监控中心）
+	if err := db.Where("id >= 20 AND id <= 50").Delete(&models.Menu{}).Error; err != nil {
+		logger.Error("清除旧菜单失败", zap.Error(err))
 		return err
 	}
 
@@ -168,8 +265,18 @@ func (s *InitService) syncMenus() error {
 		{ID: 32, Name: "机房机柜", Icon: "mdi:office-building", Path: "/cmdb/config/rooms", Permission: "cmdb:room:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 30},
 		{ID: 33, Name: "标签管理", Icon: "mdi:tag", Path: "/cmdb/config/tags", Permission: "cmdb:tag:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 30},
 		{ID: 35, Name: "Agent 管理", Icon: "mdi:robot", Path: "/cmdb/config/agents", Permission: "cmdb:agent:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 30},
+		{ID: 36, Name: "属性管理", Icon: "mdi:format-list-bulleted", Path: "/system/attributes", Permission: "system:attribute:query", MenuType: "menu", Sort: 5, Status: 1, ParentID: 30},
 		// 资产变更
 		{ID: 34, Name: "资产变更", Icon: "mdi:clock-edit", Path: "/cmdb/changes", Permission: "cmdb:change:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 20},
+		// 监控中心一级目录
+		{ID: 40, Name: "监控中心", Icon: "mdi:chart-line", Path: "/monitoring", Permission: "", MenuType: "directory", Sort: 4, Status: 1, ParentID: 0},
+		// 监控中心二级菜单
+		{ID: 41, Name: "监控概览", Icon: "mdi:gauge", Path: "/monitoring/overview", Permission: "monitoring:overview:view", MenuType: "menu", Sort: 1, Status: 1, ParentID: 40},
+		{ID: 42, Name: "主机监控", Icon: "mdi:server", Path: "/monitoring/servers", Permission: "monitoring:servers:view", MenuType: "menu", Sort: 2, Status: 1, ParentID: 40},
+			{ID: 43, Name: "趋势分析", Icon: "mdi:chart-areaspline", Path: "/monitoring/trends", Permission: "monitoring:trends:view", MenuType: "menu", Sort: 3, Status: 1, ParentID: 40},
+			{ID: 44, Name: "告警管理", Icon: "mdi:bell-alert", Path: "/monitoring/alerts", Permission: "monitoring:alerts:view", MenuType: "menu", Sort: 4, Status: 1, ParentID: 40},
+			{ID: 45, Name: "监控设置", Icon: "mdi:cog", Path: "/monitoring/settings", Permission: "monitoring:settings:view", MenuType: "menu", Sort: 5, Status: 1, ParentID: 40},
+			{ID: 46, Name: "巡检报告", Icon: "mdi:file-document", Path: "/monitoring/reports", Permission: "monitoring:reports:view", MenuType: "menu", Sort: 6, Status: 1, ParentID: 40},
 	}
 
 	addedCount := 0
@@ -233,12 +340,12 @@ func (s *InitService) syncRoleMenus() error {
 	logger.Info("开始同步角色菜单权限...")
 
 	// 定义5个内置角色的菜单权限（动态路由模式）
-	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35} // 超级管理员：所有权限
-	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35}               // 运维工程师：资产管理权限
-	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34}                                           // 审计员：资产和审计查看权限
-	userMenuIDs := []uint{1}                                                                                   // 普通用户：仅首页
-	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34}                                              // 测试角色：首页、关于和资产管理
+	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46} // 超级管理员：所有权限
+	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46}               // 运维工程师：含监控权限
+	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44}                                                    // 审计员：含监控查看权限
+	userMenuIDs := []uint{1}                                                                                                            // 普通用户：仅首页
+	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44, 45, 46}                                                       // 测试角色：含监控权限
 
 	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
 	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)
@@ -307,12 +414,12 @@ func (s *InitService) syncRoleMenus() error {
 // initRoles 初始化角色数据
 func (s *InitService) initRoles() error {
 	// 定义5个内置角色的菜单权限（动态路由模式）
-	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35} // 超级管理员：所有权限
-	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35}               // 运维工程师：资产管理权限
-	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34}                                           // 审计员：资产和审计查看权限
-	userMenuIDs := []uint{1}                                                                                   // 普通用户：仅首页
-	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34}                                              // 测试角色：首页、关于和资产管理
+	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46} // 超级管理员：所有权限
+	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46}               // 运维工程师：含监控权限
+	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44}                                                    // 审计员：含监控查看权限
+	userMenuIDs := []uint{1}                                                                                                            // 普通用户：仅首页
+	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44, 45, 46}                                                       // 测试角色：含监控权限
 
 	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
 	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)
@@ -368,4 +475,223 @@ func (s *InitService) initUsers() error {
 	}
 
 	return db.Create(&user).Error
+}
+
+// initAttributes 初始化属性定义数据
+func (s *InitService) initAttributes() error {
+	logger.Info("开始初始化属性定义数据...")
+
+	attributes := []models.AttributeDefinition{
+		{
+			Name:     "业务系统",
+			Key:      "business_system",
+			Category: "system",
+			Type:     "select",
+			Options:  `[{"value":"ecommerce","label":"电商系统"},{"value":"crm","label":"CRM系统"},{"value":"erp","label":"ERP系统"},{"value":"monitor","label":"监控系统"}]`,
+			SortOrder: 1,
+			Status:    1,
+			Description: "主机所属的业务系统",
+		},
+		{
+			Name:     "机房",
+			Key:      "room",
+			Category: "location",
+			Type:     "select",
+			Options:  `[{"value":"hz","label":"杭州机房"},{"value":"bj","label":"北京机房"},{"value":"sh","label":"上海机房"},{"value":"sz","label":"深圳机房"}]`,
+			SortOrder: 2,
+			Status:    1,
+			Description: "主机所在的机房",
+		},
+		{
+			Name:     "机柜",
+			Key:      "cabinet",
+			Category: "location",
+			Type:     "text",
+			SortOrder: 3,
+			Status:    1,
+			Description: "主机所在的机柜",
+		},
+		{
+			Name:         "环境",
+			Key:          "env",
+			Category:     "environment",
+			Type:         "select",
+			Options:      `[{"value":"prod","label":"生产"},{"value":"test","label":"测试"},{"value":"dev","label":"开发"}]`,
+			DefaultValue: "test",
+			Required:     false,
+			SortOrder:    4,
+			Status:       1,
+			Description:  "主机运行环境",
+		},
+		{
+			Name:     "标签",
+			Key:      "tags",
+			Category: "system",
+			Type:     "multiselect",
+			Options:  `[{"value":"important","label":"重要"},{"value":"backup","label":"备份节点"},{"value":"monitor","label":"监控节点"},{"value":"web","label":"Web服务器"},{"value":"db","label":"数据库服务器"}]`,
+			SortOrder: 5,
+			Status:    1,
+			Description: "主机的标签分类",
+		},
+		{
+			Name:     "所属项目",
+			Key:      "project",
+			Category: "system",
+			Type:     "text",
+			SortOrder: 6,
+			Status:    1,
+			Description: "主机所属的项目",
+		},
+		{
+			Name:     "购买日期",
+			Key:      "purchase_date",
+			Category: "hardware",
+			Type:     "date",
+			SortOrder: 7,
+			Status:    1,
+			Description: "主机购买日期",
+		},
+		{
+			Name:     "过保日期",
+			Key:      "warranty_date",
+			Category: "hardware",
+			Type:     "date",
+			SortOrder: 8,
+			Status:    1,
+			Description: "主机过保日期",
+		},
+		{
+			Name:     "责任人",
+			Key:      "owner",
+			Category: "system",
+			Type:     "text",
+			SortOrder: 9,
+			Status:    1,
+			Description: "主机责任人",
+		},
+		{
+			Name:     "联系方式",
+			Key:      "contact",
+			Category: "system",
+			Type:     "text",
+			SortOrder: 10,
+			Status:    1,
+			Description: "责任人联系方式",
+		},
+		{
+			Name:     "备注",
+			Key:      "remark",
+			Category: "custom",
+			Type:     "text",
+			SortOrder: 11,
+			Status:    1,
+			Description: "主机备注信息",
+		},
+	}
+
+	for _, attr := range attributes {
+		if err := db.Create(&attr).Error; err != nil {
+			logger.Error("创建属性定义失败",
+				zap.String("name", attr.Name),
+				zap.String("key", attr.Key),
+				zap.Any("error", err))
+			return err
+		}
+		logger.Info("创建属性定义",
+			zap.String("name", attr.Name),
+			zap.String("key", attr.Key),
+			zap.Uint("id", attr.ID))
+	}
+
+	logger.Info("属性定义初始化完成", zap.Int("total", len(attributes)))
+	return nil
+}
+// syncAttributes 同步属性定义（增量更新）
+func (s *InitService) syncAttributes() error {
+	logger.Info("开始同步属性定义数据...")
+
+	// 定义预置属性（通过 key 唯一标识）
+	builtinAttributes := []struct {
+		name        string
+		key         string
+		category    string
+		attrType    string
+		options     string
+		defaultVal  string
+		required    bool
+		sortOrder   int
+		description string
+	}{
+		{"业务系统", "business_system", "system", "select", `[{"value":"ecommerce","label":"电商系统"},{"value":"crm","label":"CRM系统"},{"value":"erp","label":"ERP系统"},{"value":"monitor","label":"监控系统"}]`, "", false, 1, "主机所属的业务系统"},
+		{"机房", "room", "location", "select", `[{"value":"hz","label":"杭州机房"},{"value":"bj","label":"北京机房"},{"value":"sh","label":"上海机房"},{"value":"sz","label":"深圳机房"}]`, "", false, 2, "主机所在的机房"},
+		{"机柜", "cabinet", "location", "text", "", "", false, 3, "主机所在的机柜"},
+		{"环境", "env", "environment", "select", `[{"value":"prod","label":"生产"},{"value":"test","label":"测试"},{"value":"dev","label":"开发"}]`, "test", false, 4, "主机运行环境"},
+		{"标签", "tags", "system", "multiselect", `[{"value":"important","label":"重要"},{"value":"backup","label":"备份节点"},{"value":"monitor","label":"监控节点"},{"value":"web","label":"Web服务器"},{"value":"db","label":"数据库服务器"}]`, "", false, 5, "主机的标签分类"},
+		{"所属项目", "project", "system", "text", "", "", false, 6, "主机所属的项目"},
+		{"购买日期", "purchase_date", "hardware", "date", "", "", false, 7, "主机购买日期"},
+		{"过保日期", "warranty_date", "hardware", "date", "", "", false, 8, "主机过保日期"},
+		{"责任人", "owner", "system", "text", "", "", false, 9, "主机责任人"},
+		{"联系方式", "contact", "system", "text", "", "", false, 10, "责任人联系方式"},
+		{"备注", "remark", "custom", "text", "", "", false, 11, "主机备注信息"},
+	}
+
+	addedCount := 0
+	updatedCount := 0
+
+	for _, builtinAttr := range builtinAttributes {
+		var existingAttr models.AttributeDefinition
+		// 使用 GORM 的方式查询，避免 SQL 保留字问题
+		err := db.Where(&models.AttributeDefinition{Key: builtinAttr.key}).First(&existingAttr).Error
+
+		if err == nil {
+			// 属性已存在，更新数据（保持数据同步）
+			db.Model(&existingAttr).Updates(map[string]interface{}{
+				"name":         builtinAttr.name,
+				"category":     builtinAttr.category,
+				"type":         builtinAttr.attrType,
+				"options":      builtinAttr.options,
+				"default_value": builtinAttr.defaultVal,
+				"required":     builtinAttr.required,
+				"sort_order":   builtinAttr.sortOrder,
+				"status":       1,
+				"description":  builtinAttr.description,
+			})
+			updatedCount++
+			logger.Debug("更新属性定义",
+				zap.String("name", builtinAttr.name),
+				zap.String("key", builtinAttr.key))
+		} else {
+			// 属性不存在，添加新属性
+			newAttr := models.AttributeDefinition{
+				Name:         builtinAttr.name,
+				Key:          builtinAttr.key,
+				Category:     builtinAttr.category,
+				Type:         builtinAttr.attrType,
+				Options:      builtinAttr.options,
+				DefaultValue: builtinAttr.defaultVal,
+				Required:     builtinAttr.required,
+				SortOrder:    builtinAttr.sortOrder,
+				Status:       1,
+				Description:  builtinAttr.description,
+			}
+			if err := db.Create(&newAttr).Error; err != nil {
+				logger.Error("添加属性定义失败",
+					zap.String("name", builtinAttr.name),
+					zap.String("key", builtinAttr.key),
+					zap.Any("error", err))
+				return err
+			}
+			addedCount++
+			logger.Info("添加属性定义",
+				zap.String("name", builtinAttr.name),
+				zap.String("key", builtinAttr.key),
+				zap.Uint("id", newAttr.ID))
+		}
+	}
+
+	logger.Info("属性定义同步完成",
+		zap.Int("added", addedCount),
+		zap.Int("updated", updatedCount),
+		zap.Int("total", len(builtinAttributes)))
+	return nil
 }

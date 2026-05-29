@@ -66,12 +66,7 @@ export function fetchGetServerStats() {
 /**
  * 获取服务器配置（通过SSH）
  */
-export function fetchGetServerConfig(data: {
-  hostname: string;
-  ip: string;
-  sshUser?: string;
-  sshPort?: number;
-}) {
+export function fetchGetServerConfig(data: { hostname: string; ip: string; sshUser?: string; sshPort?: number }) {
   return request<{
     cpu: number;
     memory: number;
@@ -143,10 +138,13 @@ export function fetchAssignServerToGroup(serverId: number, groupId: number) {
 /**
  * 获取指定分组下的服务器列表
  */
-export function fetchGetServersByGroup(groupId: number, params?: {
-  page?: number;
-  pageSize?: number;
-}) {
+export function fetchGetServersByGroup(
+  groupId: number,
+  params?: {
+    page?: number;
+    pageSize?: number;
+  }
+) {
   return request<CMDB.PageResponse<CMDB.Server>>({
     url: `/cmdb/group-servers/${groupId}`,
     method: 'get',
@@ -388,10 +386,13 @@ export function fetchTestSSHCredential(id: number, testIp: string, testPort: num
 /**
  * 连接服务器
  */
-export function fetchConnectServer(serverId: number, data: {
-  protocol: 'ssh' | 'sftp';
-  credentialId: number;
-}) {
+export function fetchConnectServer(
+  serverId: number,
+  data: {
+    protocol: 'ssh' | 'sftp';
+    credentialId: number;
+  }
+) {
   return request<{
     sessionId: number;
     websocketUrl: string;
@@ -427,10 +428,13 @@ export function fetchCheckConnectPermission(serverId: number) {
 /**
  * 获取服务器的会话列表
  */
-export function fetchGetServerSessions(serverId: number, params?: {
-  page?: number;
-  pageSize?: number;
-}) {
+export function fetchGetServerSessions(
+  serverId: number,
+  params?: {
+    page?: number;
+    pageSize?: number;
+  }
+) {
   return request<CMDB.PageResponse<Bastion.BastionSession>>({
     url: `/cmdb/servers/${serverId}/sessions`,
     method: 'get',
@@ -565,10 +569,13 @@ export function fetchGetFileTransfers(params?: {
 /**
  * 调整终端大小
  */
-export function fetchResizeTerminal(sessionId: number, data: {
-  rows: number;
-  cols: number;
-}) {
+export function fetchResizeTerminal(
+  sessionId: number,
+  data: {
+    rows: number;
+    cols: number;
+  }
+) {
   return request({
     url: `/cmdb/sessions/${sessionId}/resize`,
     method: 'post',
@@ -579,10 +586,7 @@ export function fetchResizeTerminal(sessionId: number, data: {
 /**
  * 获取访问策略列表
  */
-export function fetchGetAccessPolicies(params?: {
-  page?: number;
-  pageSize?: number;
-}) {
+export function fetchGetAccessPolicies(params?: { page?: number; pageSize?: number }) {
   return request<CMDB.PageResponse<Bastion.AccessPolicy>>({
     url: '/cmdb/access-policies',
     method: 'get',
@@ -718,5 +722,152 @@ export function fetchDeleteAgentRecord(serverId: number) {
   return request<null>({
     url: `/cmdb/agents/${serverId}`,
     method: 'delete'
+  });
+}
+
+/**
+ * 获取主机属性列表
+ */
+export function fetchGetServerAttributes(serverId: number) {
+  return request<System.ServerAttribute[]>({
+    url: `/system/server-attributes/${serverId}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 保存主机属性列表
+ */
+export function fetchSaveServerAttributes(serverId: number, data: System.ServerAttribute[]) {
+  return request({
+    url: `/system/server-attributes/${serverId}`,
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 测试SSH连接
+ */
+export function fetchTestSSHConnection(serverId: number) {
+  return request<{
+    success: boolean;
+    message: string;
+    host?: string;
+    port?: number;
+    user?: string;
+    latency?: string;
+  }>({
+    url: `/cmdb/servers/${serverId}/test-connection`,
+    method: 'post'
+  });
+}
+
+// ========================================
+// Agent 版本管理 API
+// ========================================
+
+/**
+ * 获取 Agent 版本列表
+ */
+export function fetchGetAgentVersions() {
+  return request<CMDB.AgentVersion[]>({
+    url: '/cmdb/agent-versions',
+    method: 'get'
+  });
+}
+
+/**
+ * 获取最新 Agent 版本
+ */
+export function fetchGetLatestAgentVersion() {
+  return request<CMDB.AgentVersion>({
+    url: '/cmdb/agent-versions/latest',
+    method: 'get'
+  });
+}
+
+/**
+ * 获取指定版本详情
+ */
+export function fetchGetAgentVersionByID(id: number) {
+  return request<CMDB.AgentVersion>({
+    url: `/cmdb/agent-versions/${id}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 创建 Agent 版本
+ */
+export function fetchCreateAgentVersion(data: CMDB.AgentVersionForm) {
+  return request({
+    url: '/cmdb/agent-versions',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 更新 Agent 版本
+ */
+export function fetchUpdateAgentVersion(id: number, data: Partial<CMDB.AgentVersionForm>) {
+  return request({
+    url: `/cmdb/agent-versions/${id}`,
+    method: 'put',
+    data
+  });
+}
+
+/**
+ * 删除 Agent 版本
+ */
+export function fetchDeleteAgentVersion(id: number) {
+  return request({
+    url: `/cmdb/agent-versions/${id}`,
+    method: 'delete'
+  });
+}
+
+// ========================================
+// Agent 升级管理 API
+// ========================================
+
+/**
+ * 升级单台主机的 Agent
+ */
+export function fetchUpgradeAgent(serverId: number, targetVersion: string) {
+  return request({
+    url: `/cmdb/servers/${serverId}/agent/upgrade`,
+    method: 'post',
+    data: { targetVersion }
+  });
+}
+
+/**
+ * 获取升级任务列表
+ */
+export function fetchGetUpgradeTasks(params?: {
+  page?: number;
+  pageSize?: number;
+  status?: string;
+}) {
+  return request<{
+    list: CMDB.AgentUpgradeTask[];
+    total: number;
+  }>({
+    url: '/cmdb/agent-upgrade-tasks',
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取升级任务详情
+ */
+export function fetchGetUpgradeTaskByID(taskId: number) {
+  return request<CMDB.AgentUpgradeTask>({
+    url: `/cmdb/agent-upgrade-tasks/${taskId}`,
+    method: 'get'
   });
 }

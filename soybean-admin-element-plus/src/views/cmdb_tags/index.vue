@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
-import {
-  fetchCreateServerTag,
-  fetchDeleteServerTag,
-  fetchGetServerTags,
-  fetchUpdateServerTag
-} from '@/service/api';
 import { ElMessageBox, ElNotification, type FormInstance, type FormRules } from 'element-plus';
+import { fetchCreateServerTag, fetchDeleteServerTag, fetchGetServerTags, fetchUpdateServerTag } from '@/service/api';
 
 defineOptions({ name: 'CmdbTags' });
 
@@ -123,7 +118,7 @@ onMounted(() => {
             <span
               v-if="row.color"
               :style="{ backgroundColor: row.color }"
-              class="inline-block w-40px h-22px rounded-4px align-middle"
+              class="inline-block h-22px w-40px rounded-4px align-middle"
             />
           </template>
         </ElTableColumn>

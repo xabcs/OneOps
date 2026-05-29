@@ -1,6 +1,6 @@
 <script setup lang="tsx">
-import { ref, computed, onMounted } from 'vue';
-import { fetchGetUserList, fetchGetAllRoles, fetchDeleteUser } from '@/service/api';
+import { computed, onMounted, ref } from 'vue';
+import { fetchDeleteUser, fetchGetAllRoles, fetchGetUserList } from '@/service/api';
 import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import UserOperateDrawer from './modules/user-operate-drawer.vue';
@@ -22,11 +22,11 @@ const roleMap = computed(() => {
 // 预定义的颜色列表（涵盖多种颜色，确保不同角色编码显示不同颜色）
 // 包含 Element Plus 主题色 + 自定义颜色
 const COLOR_PALETTE: Array<{ type: UI.ThemeColor; customClass?: string }> = [
-  { type: 'primary' },     // 蓝色
-  { type: 'success' },     // 绿色
-  { type: 'warning' },     // 橙色
-  { type: 'danger' },      // 红色
-  { type: 'info' }         // 灰色
+  { type: 'primary' }, // 蓝色
+  { type: 'success' }, // 绿色
+  { type: 'warning' }, // 橙色
+  { type: 'danger' }, // 红色
+  { type: 'info' } // 灰色
 ];
 
 // 字符串哈希函数
@@ -34,8 +34,8 @@ function stringHash(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // 转换为32位整数
+    hash = (hash << 5) - hash + char;
+    hash &= hash; // 转换为32位整数
   }
   return Math.abs(hash);
 }
@@ -109,7 +109,7 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
       minWidth: 150,
       formatter: row => {
         if (!row.roleIds || row.roleIds.length === 0) {
-          return <span class="text-gray pl-12px">-</span>;
+          return <span class="pl-12px text-gray">-</span>;
         }
 
         // 将 roleIds 数组转换为角色标签
@@ -130,10 +130,10 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
           .filter(Boolean);
 
         if (roleTags.length === 0) {
-          return <span class="text-gray pl-12px">-</span>;
+          return <span class="pl-12px text-gray">-</span>;
         }
 
-        return <div class="flex items-center gap-4px flex-wrap pl-12px">{roleTags}</div>;
+        return <div class="flex flex-wrap items-center gap-4px pl-12px">{roleTags}</div>;
       }
     },
     {
@@ -201,16 +201,8 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
   ]
 });
 
-const {
-  drawerVisible,
-  operateType,
-  editingData,
-  handleAdd,
-  handleEdit,
-  checkedRowKeys,
-  onBatchDeleted,
-  onDeleted
-} = useTableOperate(data, 'id', getData);
+const { drawerVisible, operateType, editingData, handleAdd, handleEdit, checkedRowKeys, onBatchDeleted, onDeleted } =
+  useTableOperate(data, 'id', getData);
 
 // 重置密码相关
 const resetPasswordVisible = ref(false);

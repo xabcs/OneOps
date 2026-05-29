@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue';
+import { onUnmounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { ElMessageBox } from 'element-plus';
 import SSHTerminal from '@/components/SSHTerminal/index.vue';
@@ -22,7 +22,9 @@ const duration = ref(0);
 let timer: ReturnType<typeof setInterval> | null = null;
 
 function startTimer() {
-  timer = setInterval(() => { duration.value++; }, 1000);
+  timer = setInterval(() => {
+    duration.value++;
+  }, 1000);
 }
 
 function formatDuration(s: number) {
@@ -39,14 +41,20 @@ function handleConnected() {
 
 function handleDisconnected() {
   connected.value = false;
-  if (timer) { clearInterval(timer); timer = null; }
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
 }
 
 function handleError(msg: string) {
   hasError.value = true;
   errorMessage.value = msg;
   connected.value = false;
-  if (timer) { clearInterval(timer); timer = null; }
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
 }
 
 async function handleDisconnect() {
@@ -71,17 +79,17 @@ onUnmounted(() => {
   <div class="terminal-page">
     <div class="terminal-header">
       <div class="host-info">
-        <el-tag type="success" size="small">SSH</el-tag>
+        <ElTag type="success" size="small">SSH</ElTag>
         <span class="hostname">{{ serverName }}</span>
         <span class="ip">{{ serverIp }}</span>
-        <el-divider direction="vertical" />
+        <ElDivider direction="vertical" />
         <span class="account">{{ loginAccount }}</span>
       </div>
       <div class="session-info">
-        <el-tag v-if="connected" type="success" size="small" effect="plain">已连接</el-tag>
-        <el-tag v-else type="info" size="small" effect="plain">连接中...</el-tag>
+        <ElTag v-if="connected" type="success" size="small" effect="plain">已连接</ElTag>
+        <ElTag v-else type="info" size="small" effect="plain">连接中...</ElTag>
         <span class="duration">{{ formatDuration(duration) }}</span>
-        <el-button type="danger" size="small" plain @click="handleDisconnect">断开连接</el-button>
+        <ElButton type="danger" size="small" plain @click="handleDisconnect">断开连接</ElButton>
       </div>
     </div>
     <div class="terminal-body">
@@ -92,7 +100,7 @@ onUnmounted(() => {
           <div class="error-title">连接失败</div>
           <div class="error-msg">{{ errorMessage }}</div>
           <div class="error-hint">请确认：服务器已绑定 SSH 凭证，且凭证用户名/密码正确</div>
-          <el-button type="primary" @click="router.push('/cmdb/servers')">返回主机列表</el-button>
+          <ElButton type="primary" @click="router.push('/cmdb/servers')">返回主机列表</ElButton>
         </div>
       </div>
       <SSHTerminal

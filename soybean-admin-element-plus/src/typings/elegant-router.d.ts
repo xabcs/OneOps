@@ -88,6 +88,14 @@ declare module "@elegant-router/types" {
     "manage_role": "/manage/role";
     "manage_user": "/manage/user";
     "manage_user-detail": "/manage/user-detail/:id";
+    "monitoring": "/monitoring";
+    "monitoring_alerts": "/monitoring/alerts";
+    "monitoring_overview": "/monitoring/overview";
+    "monitoring_reports": "/monitoring/reports";
+    "monitoring_servers": "/monitoring/servers";
+    "monitoring_servers-detail": "/monitoring/servers-detail";
+    "monitoring_settings": "/monitoring/settings";
+    "monitoring_trends": "/monitoring/trends";
     "multi-menu": "/multi-menu";
     "multi-menu_first": "/multi-menu/first";
     "multi-menu_first_child": "/multi-menu/first/child";
@@ -118,6 +126,8 @@ declare module "@elegant-router/types" {
     "plugin_tables_vtable": "/plugin/tables/vtable";
     "plugin_typeit": "/plugin/typeit";
     "plugin_video": "/plugin/video";
+    "system": "/system";
+    "system_attributes": "/system/attributes";
     "user-center": "/user-center";
   };
 
@@ -176,8 +186,10 @@ declare module "@elegant-router/types" {
     | "iframe-page"
     | "login"
     | "manage"
+    | "monitoring"
     | "multi-menu"
     | "plugin"
+    | "system"
     | "user-center"
   >;
 
@@ -242,6 +254,13 @@ declare module "@elegant-router/types" {
     | "manage_role"
     | "manage_user-detail"
     | "manage_user"
+    | "monitoring_alerts"
+    | "monitoring_overview"
+    | "monitoring_reports"
+    | "monitoring_servers-detail"
+    | "monitoring_servers"
+    | "monitoring_settings"
+    | "monitoring_trends"
     | "multi-menu_first_child"
     | "multi-menu_second_child_home"
     | "plugin_barcode"
@@ -263,6 +282,7 @@ declare module "@elegant-router/types" {
     | "plugin_tables_vtable"
     | "plugin_typeit"
     | "plugin_video"
+    | "system_attributes"
     | "user-center"
   >;
 

@@ -1,16 +1,16 @@
 <script setup lang="tsx">
-import { ref, computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { ElNotification } from 'element-plus';
 import { useBoolean } from '@sa/hooks';
-import { fetchGetMenuTree, fetchDeleteMenu, fetchUpdateMenu } from '@/service/api';
-import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
-import { $t } from '@/locales';
 import { Icon } from '@iconify/vue';
+import { jsonClone } from '@sa/utils';
+import { Bottom, Plus, Top } from '@element-plus/icons-vue';
+import { fetchDeleteMenu, fetchGetMenuTree, fetchUpdateMenu } from '@/service/api';
 import { useAuthStore } from '@/store/modules/auth';
 import { useRouteStore } from '@/store/modules/route';
-import { jsonClone } from '@sa/utils';
+import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
+import { $t } from '@/locales';
 import MenuOperateDrawer from './modules/menu-operate-drawer.vue';
-import { ElNotification } from 'element-plus';
-import { Top, Bottom, Plus } from '@element-plus/icons-vue';
 
 defineOptions({ name: 'MenuManage' });
 
@@ -79,10 +79,7 @@ function cleanMenuTree(tree: Api.SystemManage.Menu[]): Api.SystemManage.Menu[] {
   };
 
   // 分配层级序号
-  const assignHierarchyIndex = (
-    list: Api.SystemManage.Menu[],
-    prefix: string = ''
-  ): Api.SystemManage.Menu[] => {
+  const assignHierarchyIndex = (list: Api.SystemManage.Menu[], prefix: string = ''): Api.SystemManage.Menu[] => {
     let siblingIndex = 1;
 
     return list.map(item => {
@@ -92,10 +89,7 @@ function cleanMenuTree(tree: Api.SystemManage.Menu[]): Api.SystemManage.Menu[] {
 
       // 递归处理子节点
       if (item.children && Array.isArray(item.children) && item.children.length > 0) {
-        currentItem.children = assignHierarchyIndex(
-          item.children,
-          currentItem.hierarchyIndex
-        );
+        currentItem.children = assignHierarchyIndex(item.children, currentItem.hierarchyIndex);
       }
 
       siblingIndex++;
@@ -241,11 +235,15 @@ const { columns, columnChecks, data, loading, getData, getDataByPage } = useUIPa
       formatter: row => {
         const menuType = row.menuType || 'menu';
         const typeMap: Record<string, { text: string; type: any }> = {
-          'directory': { text: '目录', type: 'primary' },
-          'menu': { text: '菜单', type: 'success' }
+          directory: { text: '目录', type: 'primary' },
+          menu: { text: '菜单', type: 'success' }
         };
         const config = typeMap[menuType] || { text: '菜单', type: 'info' };
-        return <ElTag size="small" type={config.type}>{config.text}</ElTag>;
+        return (
+          <ElTag size="small" type={config.type}>
+            {config.text}
+          </ElTag>
+        );
       }
     },
     {
@@ -272,7 +270,11 @@ const { columns, columnChecks, data, loading, getData, getDataByPage } = useUIPa
       align: 'center',
       formatter: row => {
         if (row.permission) {
-          return <ElTag size="small" type="info">{row.permission}</ElTag>;
+          return (
+            <ElTag size="small" type="info">
+              {row.permission}
+            </ElTag>
+          );
         }
         return <span class="text-tertiary">-</span>;
       }
@@ -343,12 +345,7 @@ const { columns, columnChecks, data, loading, getData, getDataByPage } = useUIPa
               添加子菜单
             </ElButton>
           )}
-          <ElButton
-            type="primary"
-            plain
-            size="small"
-            onClick={() => handleEdit(row.id)}
-          >
+          <ElButton type="primary" plain size="small" onClick={() => handleEdit(row.id)}>
             {$t('common.edit')}
           </ElButton>
           <ElPopconfirm title={$t('common.confirmDelete')} onConfirm={() => handleDelete(row.id)}>
@@ -453,7 +450,12 @@ async function handleMove(row: Api.SystemManage.Menu, direction: 'up' | 'down') 
   console.log('🔄 菜单排序:', {
     direction,
     current: { id: row.id, name: row.name, sort: originalSort, hierarchyIndex: row.hierarchyIndex },
-    target: { id: targetRow.id, name: targetRow.name, sort: targetOriginalSort, hierarchyIndex: targetRow.hierarchyIndex },
+    target: {
+      id: targetRow.id,
+      name: targetRow.name,
+      sort: targetOriginalSort,
+      hierarchyIndex: targetRow.hierarchyIndex
+    },
     parentId: row.parentId
   });
 
@@ -620,23 +622,19 @@ async function handleFilterChange() {
                 <SvgIcon icon="ri:search-line" />
               </template>
             </ElInput>
-            <ElButton type="primary" :icon="Plus" @click="handleAdd">
-              新增菜单
-            </ElButton>
-            <ElButton :icon="Top" @click="getData">
-              刷新
-            </ElButton>
+            <ElButton type="primary" :icon="Plus" @click="handleAdd">新增菜单</ElButton>
+            <ElButton :icon="Top" @click="getData">刷新</ElButton>
           </div>
         </div>
       </template>
       <div class="h-[calc(100%-52px)]">
         <ElTable
+          :key="tableKey"
           v-loading="loading"
           height="100%"
           border
           class="sm:h-full"
           :data="data"
-          :key="tableKey"
           row-key="id"
           :tree-props="{ children: 'children', indent: 20 }"
         >

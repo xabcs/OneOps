@@ -140,155 +140,131 @@ onMounted(() => {
 
 <template>
   <div class="commands-page">
-    <el-card shadow="never">
+    <ElCard shadow="never">
       <template #header>
         <div class="card-header">
           <span class="title">命令审计</span>
-          <el-button type="primary" @click="getCommands">
-            刷新
-          </el-button>
+          <ElButton type="primary" @click="getCommands">刷新</ElButton>
         </div>
       </template>
 
       <!-- 筛选条件 -->
       <div class="filter-bar">
-        <el-form :inline="true" :model="filters">
-          <el-form-item label="命令">
-            <el-input
+        <ElForm :inline="true" :model="filters">
+          <ElFormItem label="命令">
+            <ElInput
               v-model="filters.command"
               placeholder="输入命令关键字"
               clearable
               style="width: 200px"
               @keyup.enter="handleSearch"
             />
-          </el-form-item>
+          </ElFormItem>
 
-          <el-form-item label="风险等级">
-            <el-select
-              v-model="filters.riskLevel"
-              placeholder="选择风险等级"
-              clearable
-              style="width: 150px"
-            >
-              <el-option
+          <ElFormItem label="风险等级">
+            <ElSelect v-model="filters.riskLevel" placeholder="选择风险等级" clearable style="width: 150px">
+              <ElOption
                 v-for="option in riskLevelOptions"
                 :key="option.value"
                 :value="option.value"
                 :label="option.label"
               />
-            </el-select>
-          </el-form-item>
+            </ElSelect>
+          </ElFormItem>
 
-          <el-form-item label="是否拦截">
-            <el-select
-              v-model="filters.blocked"
-              placeholder="选择"
-              clearable
-              style="width: 120px"
-            >
-              <el-option :value="true" label="是" />
-              <el-option :value="false" label="否" />
-            </el-select>
-          </el-form-item>
+          <ElFormItem label="是否拦截">
+            <ElSelect v-model="filters.blocked" placeholder="选择" clearable style="width: 120px">
+              <ElOption :value="true" label="是" />
+              <ElOption :value="false" label="否" />
+            </ElSelect>
+          </ElFormItem>
 
-          <el-form-item>
-            <el-button type="primary" @click="handleSearch">
-              搜索
-            </el-button>
-            <el-button @click="handleReset">
-              重置
-            </el-button>
-          </el-form-item>
-        </el-form>
+          <ElFormItem>
+            <ElButton type="primary" @click="handleSearch">搜索</ElButton>
+            <ElButton @click="handleReset">重置</ElButton>
+          </ElFormItem>
+        </ElForm>
       </div>
 
       <!-- 命令表格 -->
-      <el-table
+      <ElTable
         v-loading="loading"
         :data="commands"
         stripe
         style="width: 100%; margin-top: 16px"
         :default-sort="{ prop: 'executedAt', order: 'descending' }"
       >
-        <el-table-column prop="id" label="ID" width="60" />
+        <ElTableColumn prop="id" label="ID" width="60" />
 
-        <el-table-column label="会话ID" width="80">
+        <ElTableColumn label="会话ID" width="80">
           <template #default="{ row }">
             {{ row.sessionId }}
           </template>
-        </el-table-column>
+        </ElTableColumn>
 
-        <el-table-column label="用户" width="100">
+        <ElTableColumn label="用户" width="100">
           <template #default="{ row }">
             {{ row.session?.user?.username || '-' }}
           </template>
-        </el-table-column>
+        </ElTableColumn>
 
-        <el-table-column label="服务器" width="120">
+        <ElTableColumn label="服务器" width="120">
           <template #default="{ row }">
             {{ row.session?.server?.hostname || '-' }}
           </template>
-        </el-table-column>
+        </ElTableColumn>
 
-        <el-table-column label="命令" min-width="300">
+        <ElTableColumn label="命令" min-width="300">
           <template #default="{ row }">
             <div class="command-cell">
               <code class="command-text" :style="{ color: getRiskLevelColor(row.riskLevel) }">
                 {{ row.command }}
               </code>
-              <el-tag v-if="row.blocked" type="danger" size="small" style="margin-left: 8px">
-                已拦截
-              </el-tag>
+              <ElTag v-if="row.blocked" type="danger" size="small" style="margin-left: 8px">已拦截</ElTag>
             </div>
           </template>
-        </el-table-column>
+        </ElTableColumn>
 
-        <el-table-column label="风险等级" width="100">
+        <ElTableColumn label="风险等级" width="100">
           <template #default="{ row }">
-            <el-tag :type="getRiskLevelType(row.riskLevel)" size="small">
+            <ElTag :type="getRiskLevelType(row.riskLevel)" size="small">
               {{ getRiskLevelText(row.riskLevel) }}
-            </el-tag>
+            </ElTag>
           </template>
-        </el-table-column>
+        </ElTableColumn>
 
-        <el-table-column label="退出码" width="80">
+        <ElTableColumn label="退出码" width="80">
           <template #default="{ row }">
             <span :class="row.exitCode === 0 ? 'text-success' : 'text-danger'">
               {{ row.exitCode ?? '-' }}
             </span>
           </template>
-        </el-table-column>
+        </ElTableColumn>
 
-        <el-table-column label="执行时间" width="160">
+        <ElTableColumn label="执行时间" width="160">
           <template #default="{ row }">
             {{ formatTime(row.executedAt || '') }}
           </template>
-        </el-table-column>
+        </ElTableColumn>
 
-        <el-table-column label="输出摘要" width="200">
+        <ElTableColumn label="输出摘要" width="200">
           <template #default="{ row }">
-            <el-text truncated :title="row.outputSummary">
+            <ElText truncated :title="row.outputSummary">
               {{ row.outputSummary || '-' }}
-            </el-text>
+            </ElText>
           </template>
-        </el-table-column>
+        </ElTableColumn>
 
-        <el-table-column label="操作" width="100" fixed="right">
+        <ElTableColumn label="操作" width="100" fixed="right">
           <template #default="{ row }">
-            <el-button
-              type="primary"
-              size="small"
-              @click="handleViewDetail(row)"
-            >
-              详情
-            </el-button>
+            <ElButton type="primary" size="small" @click="handleViewDetail(row)">详情</ElButton>
           </template>
-        </el-table-column>
-      </el-table>
+        </ElTableColumn>
+      </ElTable>
 
       <!-- 分页 -->
       <div class="pagination-wrapper">
-        <el-pagination
+        <ElPagination
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.pageSize"
           :total="total"
@@ -298,7 +274,7 @@ onMounted(() => {
           @current-change="handlePageChange"
         />
       </div>
-    </el-card>
+    </ElCard>
   </div>
 </template>
 

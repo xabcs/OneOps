@@ -75,14 +75,14 @@ function initTerminal() {
   terminal.focus();
 
   // 将用户键盘输入通过 WebSocket 发送到后端 SSH 代理
-  terminal.onData((data) => {
+  terminal.onData(data => {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(data);
     }
   });
 
   // 欢迎信息
-  terminal.writeln(`\x1b[1;32m正在连接到 ${props.serverName} (${props.serverIp})...\x1b[0m\r\n`);
+  terminal.writeln(`\x1B[1;32m正在连接到 ${props.serverName} (${props.serverIp})...\x1B[0m\r\n`);
 
   // 监听终端尺寸变化
   terminal.onResize(({ rows, cols }) => {
@@ -130,13 +130,13 @@ function connect() {
   ws.onopen = () => {
     wasConnected = true;
     if (terminal) {
-      terminal.writeln(`\x1b[1;32m连接成功！\x1b[0m\r\n`);
+      terminal.writeln(`\x1B[1;32m连接成功！\x1B[0m\r\n`);
       terminal.focus();
       emit('connected');
     }
   };
 
-  ws.onmessage = async (event) => {
+  ws.onmessage = async event => {
     if (!terminal) return;
     if (event.data instanceof Blob) {
       const text = await event.data.text();
@@ -148,15 +148,15 @@ function connect() {
 
   ws.onerror = () => {
     if (terminal && !wasConnected) {
-      terminal.writeln(`\x1b[1;31m无法建立连接，请检查：SSH 凭证是否已绑定、服务器是否可达\x1b[0m\r\n`);
+      terminal.writeln(`\x1B[1;31m无法建立连接，请检查：SSH 凭证是否已绑定、服务器是否可达\x1B[0m\r\n`);
     }
   };
 
-  ws.onclose = (event) => {
+  ws.onclose = event => {
     if (terminal) {
-      terminal.writeln(`\r\n\x1b[1;33m连接已断开 (code: ${event.code})\x1b[0m\r\n`);
+      terminal.writeln(`\r\n\x1B[1;33m连接已断开 (code: ${event.code})\x1B[0m\r\n`);
       if (event.reason) {
-        terminal.writeln(`\x1b[1;31m原因: ${event.reason}\x1b[0m\r\n`);
+        terminal.writeln(`\x1B[1;31m原因: ${event.reason}\x1B[0m\r\n`);
       }
     }
     emit('disconnected', `连接断开: ${event.code}`);
@@ -166,7 +166,7 @@ function connect() {
     const isSessionDead = !wasConnected;
     const noRetry = event.code === 1000 || event.code === 1011 || isSessionDead;
     if (!noRetry && reconnectTimer === null) {
-      terminal?.writeln(`\x1b[1;33m3秒后尝试重连...\x1b[0m\r\n`);
+      terminal?.writeln(`\x1B[1;33m3秒后尝试重连...\x1B[0m\r\n`);
       reconnectTimer = setTimeout(() => {
         reconnectTimer = null;
         connect();
@@ -185,7 +185,7 @@ function resizeTerminal(rows: number, cols: number) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStg.get('token') || ''}`
+        Authorization: `Bearer ${localStg.get('token') || ''}`
       },
       body: JSON.stringify({ rows, cols })
     }).catch(err => console.error('Failed to resize terminal:', err));
@@ -229,16 +229,19 @@ function handleResize() {
 }
 
 // 监听 sessionId 变化
-watch(() => props.sessionId, (newId) => {
-  if (newId && newId !== 0) {
-    disconnect();
-    if (terminal) {
-      terminal.reset();
-      terminal.writeln(`\r\n\x1b[1;32m正在连接到新会话...\x1b[0m\r\n`);
+watch(
+  () => props.sessionId,
+  newId => {
+    if (newId && newId !== 0) {
+      disconnect();
+      if (terminal) {
+        terminal.reset();
+        terminal.writeln(`\r\n\x1B[1;32m正在连接到新会话...\x1B[0m\r\n`);
+      }
+      connect();
     }
-    connect();
   }
-});
+);
 </script>
 
 <template>

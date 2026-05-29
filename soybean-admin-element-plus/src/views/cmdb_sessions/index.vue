@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { ElMessageBox } from 'element-plus';
-import { fetchGetSessions, fetchTerminateSession, fetchGetActiveSessions, fetchGetSessionStats } from '@/service/api/cmdb';
+import {
+  fetchGetActiveSessions,
+  fetchGetSessionStats,
+  fetchGetSessions,
+  fetchTerminateSession
+} from '@/service/api/cmdb';
 
 defineOptions({
   name: 'CMDBSessions'
@@ -182,13 +187,11 @@ onMounted(() => {
 
 <template>
   <div class="sessions-page">
-    <el-card shadow="never">
+    <ElCard shadow="never">
       <template #header>
         <div class="card-header">
           <span class="title">会话审计</span>
-          <el-button type="primary" @click="refresh">
-            刷新
-          </el-button>
+          <ElButton type="primary" @click="refresh">刷新</ElButton>
         </div>
       </template>
 
@@ -205,139 +208,111 @@ onMounted(() => {
       </div>
 
       <!-- 标签页 -->
-      <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-        <el-tab-pane label="活跃会话" name="active">
-          <el-table
-            v-loading="loading"
-            :data="sessions"
-            stripe
-            style="width: 100%; margin-top: 16px"
-          >
-            <el-table-column prop="id" label="会话ID" width="80" />
-            <el-table-column prop="username" label="用户" width="100" />
-            <el-table-column label="服务器" width="150">
+      <ElTabs v-model="activeTab" @tab-change="handleTabChange">
+        <ElTabPane label="活跃会话" name="active">
+          <ElTable v-loading="loading" :data="sessions" stripe style="width: 100%; margin-top: 16px">
+            <ElTableColumn prop="id" label="会话ID" width="80" />
+            <ElTableColumn prop="username" label="用户" width="100" />
+            <ElTableColumn label="服务器" width="150">
               <template #default="{ row }">
                 {{ row.server?.hostname || `ID:${row.serverId}` }}
               </template>
-            </el-table-column>
-            <el-table-column label="IP地址" width="120">
+            </ElTableColumn>
+            <ElTableColumn label="IP地址" width="120">
               <template #default="{ row }">
                 {{ row.server?.ip || '-' }}
               </template>
-            </el-table-column>
-            <el-table-column prop="loginAccount" label="登录账号" width="100" />
-            <el-table-column prop="clientIp" label="客户端IP" width="120" />
-            <el-table-column prop="protocol" label="协议" width="80">
+            </ElTableColumn>
+            <ElTableColumn prop="loginAccount" label="登录账号" width="100" />
+            <ElTableColumn prop="clientIp" label="客户端IP" width="120" />
+            <ElTableColumn prop="protocol" label="协议" width="80">
               <template #default="{ row }">
-                <el-tag :type="row.protocol === 'ssh' ? 'primary' : 'success'" size="small">
+                <ElTag :type="row.protocol === 'ssh' ? 'primary' : 'success'" size="small">
                   {{ row.protocol.toUpperCase() }}
-                </el-tag>
+                </ElTag>
               </template>
-            </el-table-column>
-            <el-table-column label="开始时间" width="160">
+            </ElTableColumn>
+            <ElTableColumn label="开始时间" width="160">
               <template #default="{ row }">
                 {{ formatTime(row.startedAt || '') }}
               </template>
-            </el-table-column>
-            <el-table-column label="持续时长" width="100">
+            </ElTableColumn>
+            <ElTableColumn label="持续时长" width="100">
               <template #default="{ row }">
                 {{ formatDuration(row.duration) }}
               </template>
-            </el-table-column>
-            <el-table-column label="状态" width="100">
+            </ElTableColumn>
+            <ElTableColumn label="状态" width="100">
               <template #default="{ row }">
-                <el-tag :type="getStatusType(row.status)" size="small">
+                <ElTag :type="getStatusType(row.status)" size="small">
                   {{ getStatusText(row.status) }}
-                </el-tag>
+                </ElTag>
               </template>
-            </el-table-column>
-            <el-table-column label="操作" width="150" fixed="right">
+            </ElTableColumn>
+            <ElTableColumn label="操作" width="150" fixed="right">
               <template #default="{ row }">
-                <el-button
-                  type="danger"
-                  size="small"
-                  @click="handleTerminate(row)"
-                >
-                  断开
-                </el-button>
-                <el-button
-                  type="primary"
-                  size="small"
-                  @click="handleViewDetail(row)"
-                >
-                  详情
-                </el-button>
+                <ElButton type="danger" size="small" @click="handleTerminate(row)">断开</ElButton>
+                <ElButton type="primary" size="small" @click="handleViewDetail(row)">详情</ElButton>
               </template>
-            </el-table-column>
-          </el-table>
-        </el-tab-pane>
+            </ElTableColumn>
+          </ElTable>
+        </ElTabPane>
 
-        <el-tab-pane label="历史会话" name="history">
-          <el-table
-            v-loading="loading"
-            :data="sessions"
-            stripe
-            style="width: 100%; margin-top: 16px"
-          >
-            <el-table-column prop="id" label="会话ID" width="80" />
-            <el-table-column prop="username" label="用户" width="100" />
-            <el-table-column label="服务器" width="150">
+        <ElTabPane label="历史会话" name="history">
+          <ElTable v-loading="loading" :data="sessions" stripe style="width: 100%; margin-top: 16px">
+            <ElTableColumn prop="id" label="会话ID" width="80" />
+            <ElTableColumn prop="username" label="用户" width="100" />
+            <ElTableColumn label="服务器" width="150">
               <template #default="{ row }">
                 {{ row.server?.hostname || `ID:${row.serverId}` }}
               </template>
-            </el-table-column>
-            <el-table-column label="IP地址" width="120">
+            </ElTableColumn>
+            <ElTableColumn label="IP地址" width="120">
               <template #default="{ row }">
                 {{ row.server?.ip || '-' }}
               </template>
-            </el-table-column>
-            <el-table-column prop="loginAccount" label="登录账号" width="100" />
-            <el-table-column prop="clientIp" label="客户端IP" width="120" />
-            <el-table-column prop="protocol" label="协议" width="80">
+            </ElTableColumn>
+            <ElTableColumn prop="loginAccount" label="登录账号" width="100" />
+            <ElTableColumn prop="clientIp" label="客户端IP" width="120" />
+            <ElTableColumn prop="protocol" label="协议" width="80">
               <template #default="{ row }">
-                <el-tag :type="row.protocol === 'ssh' ? 'primary' : 'success'" size="small">
+                <ElTag :type="row.protocol === 'ssh' ? 'primary' : 'success'" size="small">
                   {{ row.protocol.toUpperCase() }}
-                </el-tag>
+                </ElTag>
               </template>
-            </el-table-column>
-            <el-table-column label="开始时间" width="160">
+            </ElTableColumn>
+            <ElTableColumn label="开始时间" width="160">
               <template #default="{ row }">
                 {{ formatTime(row.startedAt || '') }}
               </template>
-            </el-table-column>
-            <el-table-column label="持续时长" width="100">
+            </ElTableColumn>
+            <ElTableColumn label="持续时长" width="100">
               <template #default="{ row }">
                 {{ formatDuration(row.duration) }}
               </template>
-            </el-table-column>
-            <el-table-column label="状态" width="100">
+            </ElTableColumn>
+            <ElTableColumn label="状态" width="100">
               <template #default="{ row }">
-                <el-tag :type="getStatusType(row.status)" size="small">
+                <ElTag :type="getStatusType(row.status)" size="small">
                   {{ getStatusText(row.status) }}
-                </el-tag>
+                </ElTag>
               </template>
-            </el-table-column>
-            <el-table-column label="关闭原因" width="150">
+            </ElTableColumn>
+            <ElTableColumn label="关闭原因" width="150">
               <template #default="{ row }">
                 {{ row.closeReason || '-' }}
               </template>
-            </el-table-column>
-            <el-table-column label="操作" width="120" fixed="right">
+            </ElTableColumn>
+            <ElTableColumn label="操作" width="120" fixed="right">
               <template #default="{ row }">
-                <el-button
-                  type="primary"
-                  size="small"
-                  @click="handleViewDetail(row)"
-                >
-                  详情
-                </el-button>
+                <ElButton type="primary" size="small" @click="handleViewDetail(row)">详情</ElButton>
               </template>
-            </el-table-column>
-          </el-table>
+            </ElTableColumn>
+          </ElTable>
 
           <!-- 分页 -->
           <div class="pagination-wrapper">
-            <el-pagination
+            <ElPagination
               v-model:current-page="pagination.page"
               v-model:page-size="pagination.pageSize"
               :total="total"
@@ -347,9 +322,9 @@ onMounted(() => {
               @current-change="handlePageChange"
             />
           </div>
-        </el-tab-pane>
-      </el-tabs>
-    </el-card>
+        </ElTabPane>
+      </ElTabs>
+    </ElCard>
   </div>
 </template>
 

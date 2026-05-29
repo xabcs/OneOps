@@ -593,13 +593,13 @@ const apiUrl = import.meta.env.VITE_SERVICE_BASE_URL;
 <claude-mem-context>
 # Memory Context
 
-# [OneOps] recent context, 2026-05-21 9:42am GMT+8
+# [OneOps] recent context, 2026-05-28 10:04am GMT+8
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 28 obs (5,513t read) | 1,103t work | -400% savings
+Stats: 37 obs (7,308t read) | 190,353t work | 96% savings
 
 ### May 20, 2026
 128 2:47p 🔴 前端未正确处理后端返回的主机名重复错误
@@ -630,4 +630,16 @@ Stats: 28 obs (5,513t read) | 1,103t work | -400% savings
 153 4:36p 🔵 OneOps 菜单数据模型和初始化机制确认
 154 4:39p 🔵 OneOps 数据库初始化和菜单同步机制确认
 155 4:52p 🔴 修复前端未正确处理后端主机名重复错误
+### May 25, 2026
+156 9:02a ⚖️ 资产管理功能优化计划启动
+157 9:03a 🔵 启动后端资产管理代码只读分析 Agent
+158 " 🔵 OneOpsV2 后端资产管理模块代码分析
+159 " 🔵 soybean-admin-element-plus 资产管理模块文件结构
+160 " 🔵 资产管理页面字段与 API 接口映射关系
+161 " 🔵 资产管理前端用户体验问题与改造建议
+162 9:05a 🔵 OneOps 堡垒机访问策略完整架构
+163 " 🔵 授权对象填 ID 来源分析与资产树 API 可复用性
+164 " 🔵 审批功能去除影响面分析
+
+Access 190k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

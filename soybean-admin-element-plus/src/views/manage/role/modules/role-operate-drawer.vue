@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { useForm, useFormRules } from '@/hooks/common/form';
 import { fetchCreateRole, fetchUpdateRole } from '@/service/api';
+import { useForm, useFormRules } from '@/hooks/common/form';
 import { $t } from '@/locales';
 
 defineOptions({ name: 'RoleOperateDrawer' });
@@ -93,9 +93,7 @@ async function handleSubmit() {
       }
     : model.value;
 
-  const { error } = isEdit.value
-    ? await fetchUpdateRole(roleId.value, submitData)
-    : await fetchCreateRole(submitData);
+  const { error } = isEdit.value ? await fetchUpdateRole(roleId.value, submitData) : await fetchCreateRole(submitData);
 
   if (!error) {
     window.$message?.success(isEdit.value ? $t('common.updateSuccess') : '添加成功');

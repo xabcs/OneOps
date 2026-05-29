@@ -1,30 +1,41 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { views } from '@/router/elegant/imports';
+import type { FormInstance, FormRules } from 'element-plus';
+import { ElMessageBox, ElNotification } from 'element-plus';
+import { ArrowDown, Delete, Document, Edit, Link, More, Plus, Refresh, RefreshRight } from '@element-plus/icons-vue';
 import {
-  fetchGetServers,
-  fetchCreateServer,
-  fetchUpdateServer,
-  fetchDeleteServer,
-  fetchGetServerGroups,
-  fetchCreateServerGroup,
-  fetchUpdateServerGroup,
-  fetchDeleteServerGroup,
-  fetchGetSSHCredentials,
-  fetchGetBusinessUnits,
-  fetchGetSessions,
+  fetchBatchDeployAgent,
+  fetchBatchUninstallAgent,
   fetchCheckConnectPermission,
-  fetchSyncServerMetrics,
+  fetchCreateServer,
+  fetchCreateServerGroup,
+  fetchDeleteServer,
+  fetchDeleteServerGroup,
   fetchDeployAgent,
+  fetchGetAgentStatus,
+  fetchGetAttributes,
+  fetchGetBusinessUnits,
+  fetchGetCabinets,
+  fetchGetSSHCredentials,
+  fetchGetServerAttributes,
+  fetchGetServerGroups,
+  fetchGetServerRooms,
+  fetchGetServerTags,
+  fetchGetServers,
+  fetchGetSessions,
   fetchRestartAgent,
+  fetchSaveServerAttributes,
+  fetchSyncServerMetrics,
+  fetchTestSSHConnection,
   fetchUninstallAgent,
-  fetchGetAgentStatus
+  fetchUpdateServer,
+  fetchUpdateServerGroup
 } from '@/service/api';
-import { ElNotification, ElMessageBox, FormInstance, FormRules } from 'element-plus';
-import { ArrowDown } from '@element-plus/icons-vue';
+import { views } from '@/router/elegant/imports';
 import { $t } from '@/locales';
 import ServerConnectDialog from '@/components/ServerConnectDialog/index.vue';
+import { AlertBadge, MiniTrendChart, ServiceStatusIcon } from '@/components/MonitoringComponents';
 
 defineOptions({ name: 'CmdbServers' });
 
@@ -74,9 +85,7 @@ const groupFormRules: FormRules = {
     { required: true, message: '请输入分组名称', trigger: 'blur' },
     { min: 2, max: 50, message: '分组名称长度在 2 到 50 个字符', trigger: 'blur' }
   ],
-  parentId: [
-    { required: true, message: '请选择父分组', trigger: 'change' }
-  ]
+  parentId: [{ required: true, message: '请选择父分组', trigger: 'change' }]
 };
 
 // 全局点击处理，用于关闭右键菜单
@@ -124,11 +133,18 @@ const searchForm = reactive({
 });
 
 // ========== SSH凭证相关 ==========
-const userCredentials = ref<CMDB.SSHCredential[]>([]);   // credential_type=user
-const systemCredentials = ref<CMDB.SSHCredential[]>([]);  // credential_type=system
+const userCredentials = ref<CMDB.SSHCredential[]>([]); // credential_type=user
+const systemCredentials = ref<CMDB.SSHCredential[]>([]); // credential_type=system
 
 // ========== 业务系统相关 ==========
 const businessUnits = ref<CMDB.BusinessUnit[]>([]);
+
+// ========== 机房机柜相关 ==========
+const serverRooms = ref<CMDB.ServerRoom[]>([]);
+const cabinets = ref<CMDB.Cabinet[]>([]);
+
+// ========== 标签相关 ==========
+const serverTags = ref<CMDB.ServerTag[]>([]);
 
 // ========== 连接相关 ==========
 const connectDialogVisible = ref(false);
@@ -147,9 +163,21 @@ const dialogTitle = ref('');
 const serverFormRef = ref<FormInstance>();
 const serverType = ref<'normal' | 'cloud'>('normal');
 const submitError = ref(''); // 提交错误信息
+const activeCollapse = ref<string[]>([]); // 折叠面板激活项（新增时默认折叠）
+
+// 编辑抽屉
+const editDrawerVisible = ref(false);
+const editDrawerActiveTab = ref('basic'); // basic | advanced | attributes
+
+// 动态属性相关
+const attributeDefinitions = ref<Api.SystemManage.AttributeDefinition[]>([]);
+const serverAttributes = ref<Api.SystemManage.ServerAttribute[]>([]);
+const loadingAttributes = ref(false);
 
 // 主机表单
-const serverForm = reactive<CMDB.ServerForm & { groupIds?: number[] }>({
+const serverForm = reactive<
+  CMDB.ServerForm & { groupIds?: number[]; tagIds?: number[]; roomId?: number; cabinetId?: number }
+>({
   hostname: '',
   ip: '',
   innerIp: '',
@@ -157,6 +185,9 @@ const serverForm = reactive<CMDB.ServerForm & { groupIds?: number[] }>({
   systemCredentialId: undefined,
   serverType: 'vm',
   groupIds: [],
+  tagIds: [],
+  roomId: undefined,
+  cabinetId: undefined,
   sshPort: 22,
   remarks: '',
   env: 'test' as CMDB.ServerEnv,
@@ -188,9 +219,7 @@ const serverFormRules: FormRules = {
     { required: true, message: '请输入连接IP', trigger: 'blur' },
     { pattern: /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/, message: '请输入有效的IP地址', trigger: 'blur' }
   ],
-  credentialIds: [
-    { required: true, type: 'array', min: 1, message: '请至少选择一个SSH凭证', trigger: 'change' }
-  ]
+  credentialIds: [{ required: true, type: 'array', min: 1, message: '请至少选择一个SSH凭证', trigger: 'change' }]
 };
 
 // ========== 辅助函数 ==========
@@ -213,9 +242,8 @@ function buildFullTree(groups: CMDB.ServerGroup[]): TreeNode[] {
     const node: TreeNode = {
       ...group,
       serverCount: countServers(group),
-      children: group.children && group.children.length > 0
-        ? group.children.map(child => addServerCount(child))
-        : undefined
+      children:
+        group.children && group.children.length > 0 ? group.children.map(child => addServerCount(child)) : undefined
     };
     return node;
   }
@@ -263,7 +291,9 @@ const filteredGroupTree = computed(() => {
 // 用于表单选择的分组树（不包含根节点）
 const groupTreeForSelect = computed(() => {
   if (groupTree.value.length === 0) return [];
-  return groupTree.value[0].children || [];
+  const children = groupTree.value[0].children || [];
+  console.log('groupTreeForSelect 更新:', children);
+  return children;
 });
 
 // ========== 数据获取 ==========
@@ -322,14 +352,72 @@ async function getServers() {
 // 获取SSH凭证列表（分类加载）
 async function getSSHCredentials() {
   try {
-    const [userRes, systemRes] = await Promise.all([
-      fetchGetSSHCredentials('user'),
-      fetchGetSSHCredentials('system')
-    ]);
+    const [userRes, systemRes] = await Promise.all([fetchGetSSHCredentials('user'), fetchGetSSHCredentials('system')]);
     userCredentials.value = userRes.data || [];
     systemCredentials.value = systemRes.data || [];
   } catch (error) {
     console.error('获取SSH凭证失败:', error);
+  }
+}
+
+// 获取机房列表
+async function getServerRooms() {
+  try {
+    const { data } = await fetchGetServerRooms();
+    serverRooms.value = data || [];
+  } catch (error) {
+    console.error('获取机房列表失败:', error);
+  }
+}
+
+// 获取机柜列表
+async function getCabinets(roomId?: number) {
+  try {
+    const { data } = await fetchGetCabinets(roomId);
+    cabinets.value = data || [];
+  } catch (error) {
+    console.error('获取机柜列表失败:', error);
+  }
+}
+
+// 获取标签列表
+async function getServerTags() {
+  try {
+    const { data } = await fetchGetServerTags();
+    serverTags.value = data || [];
+  } catch (error) {
+    console.error('获取标签列表失败:', error);
+  }
+}
+
+// 加载系统选项（从属性定义获取所有属性）
+async function getSystemOptions() {
+  try {
+    // 加载所有属性，不限制 category
+    const { data } = await fetchGetAttributes();
+    const attributes = data || [];
+
+    // 按 sortOrder 排序所有属性
+    const sortedAttrs = attributes.sort(
+      (a: Api.SystemManage.AttributeDefinition, b: Api.SystemManage.AttributeDefinition) => a.sortOrder - b.sortOrder
+    );
+
+    // 统一存储到 attributeDefinitions
+    attributeDefinitions.value = sortedAttrs;
+  } catch (error) {
+    console.error('加载系统选项失败:', error);
+    // 降级使用空对象，前端会显示提示
+    attributeDefinitions.value = [];
+  }
+}
+
+// 机房变化时加载机柜
+function handleRoomChange(roomId: number) {
+  serverForm.cabinetId = undefined;
+  if (roomId) {
+    getCabinets(roomId);
+  } else {
+    cabinets.value = [];
   }
 }
 
@@ -395,6 +483,31 @@ function handleAddGroup() {
   contextMenuVisible.value = false;
   // 打开添加子分组对话框
   handleOpenAddChildDialog(currentNode.value.id);
+}
+
+// 添加主机到当前分组
+function handleAddServer() {
+  if (!currentNode.value) return;
+
+  // 关闭右键菜单
+  contextMenuVisible.value = false;
+
+  // 设置选中的分组ID（用于表单初始化时预选）
+  if (currentNode.value.id !== 0) {
+    selectedGroupId.value = currentNode.value.id;
+    console.log('设置 selectedGroupId:', currentNode.value.id, '分组名称:', currentNode.value.name);
+  }
+
+  // 确保分组数据已加载
+  if (groupTree.value.length === 0) {
+    console.log('分组数据未加载，先加载分组数据');
+    getGroups().then(() => {
+      setTimeout(() => handleAdd(), 100);
+    });
+  } else {
+    // 打开新增对话框（会自动使用 selectedGroupId 预选分组）
+    handleAdd();
+  }
 }
 
 // 添加根分组
@@ -683,11 +796,188 @@ function handleBatchDelete() {
     .catch(() => {});
 }
 
+// 批量部署 Agent
+
+// 批量测试SSH连接
+async function handleBatchTestConnection() {
+  if (selectedIds.value.length === 0) {
+    ElNotification.warning('请先选择要测试连接的主机');
+    return;
+  }
+
+  const results = {
+    success: 0,
+    failed: 0,
+    details: [] as Array<{ id: number; hostname: string; success: boolean; message: string }>
+  };
+
+  ElNotification.info(`正在测试 ${selectedIds.value.length} 台主机的SSH连接...`);
+
+  // 逐个测试连接（串行以避免过多并发连接）
+  for (const serverId of selectedIds.value) {
+    const server = tableData.value.find(s => s.id === serverId);
+    if (!server) continue;
+
+    try {
+      const testResult = await fetchTestSSHConnection(serverId);
+      results.details.push({
+        id: serverId,
+        hostname: server.hostname || server.ip,
+        success: testResult.data.success,
+        message: testResult.data.message
+      });
+
+      if (testResult.data.success) {
+        results.success++;
+      } else {
+        results.failed++;
+      }
+    } catch (error: any) {
+      results.failed++;
+      results.details.push({
+        id: serverId,
+        hostname: server.hostname || server.ip,
+        success: false,
+        message: error?.response?.data?.message || error?.message || '连接测试失败'
+      });
+    }
+  }
+
+  // 显示结果汇总
+  const summary = `SSH连接测试完成：
+成功: ${results.success} 台
+失败: ${results.failed} 台`;
+
+  if (results.failed > 0) {
+    const failedServers = results.details
+      .filter(d => !d.success)
+      .map(d => `- ${d.hostname}: ${d.message}`)
+      .join('\n');
+    await ElMessageBox.alert(
+      `${summary}\n\n以下主机连接失败：\n${failedServers}\n\n请检查主机配置和网络连接。`,
+      '连接测试结果',
+      { type: 'warning', confirmButtonText: '我知道了' }
+    );
+  } else {
+    ElNotification.success(`${summary}\n所有主机连接测试成功！`);
+  }
+}
+
+async function handleBatchDeploy() {
+  if (selectedIds.value.length === 0) {
+    ElNotification.warning('请先选择要部署 Agent 的主机');
+    return;
+  }
+
+  // 检查选中的主机是否都已配置系统运维凭证
+  const serversWithoutCred = tableData.value
+    .filter(s => selectedIds.value.includes(s.id))
+    .filter(s => !s.systemCredentialId || s.systemCredentialId === 0);
+
+  if (serversWithoutCred.length > 0) {
+    const serverNames = serversWithoutCred.map(s => s.hostname || s.ip).join('、');
+    await ElMessageBox.alert(
+      `以下主机未配置系统运维凭证，无法部署：\n\n${serverNames}\n\n请先编辑主机配置系统运维凭证`,
+      '凭证未配置',
+      { type: 'warning', confirmButtonText: '我知道了' }
+    );
+    return;
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要为选中的 ${selectedIds.value.length} 台主机部署 Agent 吗？部署过程可能需要几分钟，请耐心等待。`,
+      '批量部署确认',
+      { type: 'info', confirmButtonText: '确认部署', cancelButtonText: '取消' }
+    );
+
+    await fetchBatchDeployAgent(selectedIds.value);
+    ElNotification.success(`批量部署任务已提交，正在后台执行 ${selectedIds.value.length} 台主机的 Agent 部署`);
+
+    // 对每台主机开始轮询状态
+    selectedIds.value.forEach(serverId => {
+      pollAgentStatus(serverId, 'running');
+    });
+
+    selectedIds.value = [];
+  } catch (error: any) {
+    if (error === 'cancel') return;
+    console.error('批量部署失败:', error);
+    const errorMsg = error?.response?.data?.message || error?.message || '批量部署失败';
+    ElNotification.error(`批量部署失败：${errorMsg}`);
+  }
+}
+
+// 批量卸载 Agent
+async function handleBatchUninstall() {
+  if (selectedIds.value.length === 0) {
+    ElNotification.warning('请先选择要卸载 Agent 的主机');
+    return;
+  }
+
+  // 检查选中的主机是否都已配置系统运维凭证
+  const serversWithoutCred = tableData.value
+    .filter(s => selectedIds.value.includes(s.id))
+    .filter(s => !s.systemCredentialId || s.systemCredentialId === 0);
+
+  if (serversWithoutCred.length > 0) {
+    const serverNames = serversWithoutCred.map(s => s.hostname || s.ip).join('、');
+    await ElMessageBox.alert(
+      `以下主机未配置系统运维凭证，无法卸载：\n\n${serverNames}\n\n请先编辑主机配置系统运维凭证`,
+      '凭证未配置',
+      { type: 'warning', confirmButtonText: '我知道了' }
+    );
+    return;
+  }
+
+  // 检查是否有主机实际运行着 Agent
+  const serversNotRunning = tableData.value
+    .filter(s => selectedIds.value.includes(s.id))
+    .filter(s => s.agentStatus !== 'running' && s.agentStatus !== 'offline');
+
+  if (serversNotRunning.length === selectedIds.value.length) {
+    await ElMessageBox.alert('选中的主机中没有运行中的 Agent，无需卸载。', '提示', {
+      type: 'info',
+      confirmButtonText: '我知道了'
+    });
+    return;
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要从选中的 ${selectedIds.value.length} 台主机卸载 Agent 吗？卸载后主机将不再上报监控数据。`,
+      '批量卸载确认',
+      { type: 'warning', confirmButtonText: '确认卸载', cancelButtonText: '取消' }
+    );
+
+    await fetchBatchUninstallAgent(selectedIds.value);
+    ElNotification.success(`批量卸载任务已提交，正在后台执行 ${selectedIds.value.length} 台主机的 Agent 卸载`);
+
+    // 对每台主机开始轮询状态
+    selectedIds.value.forEach(serverId => {
+      pollAgentStatus(serverId, 'uninstalled');
+    });
+
+    selectedIds.value = [];
+  } catch (error: any) {
+    if (error === 'cancel') return;
+    console.error('批量卸载失败:', error);
+    const errorMsg = error?.response?.data?.message || error?.message || '批量卸载失败';
+    ElNotification.error(`批量卸载失败：${errorMsg}`);
+  }
+}
+
 // 打开新增对话框
 function handleAdd() {
   dialogTitle.value = '创建主机';
   serverType.value = 'normal';
   submitError.value = ''; // 清除错误信息
+  activeCollapse.value = []; // 默认折叠所有面板
+
+  const groupIds = selectedGroupId.value ? [selectedGroupId.value] : [];
+  console.log('handleAdd - selectedGroupId:', selectedGroupId.value, '设置 groupIds:', groupIds);
+  console.log('handleAdd - groupTreeForSelect:', JSON.stringify(groupTreeForSelect.value));
+
   Object.assign(serverForm, {
     hostname: '',
     ip: '',
@@ -696,6 +986,9 @@ function handleAdd() {
     systemCredentialId: undefined,
     serverType: 'vm',
     groupIds: selectedGroupId.value ? [selectedGroupId.value] : [],
+    tagIds: [],
+    roomId: undefined,
+    cabinetId: undefined,
     sshPort: 22,
     remarks: '',
     env: 'test' as CMDB.ServerEnv,
@@ -705,6 +998,8 @@ function handleAdd() {
     os: '',
     businessId: undefined as unknown as number
   });
+  // 清空机柜列表
+  cabinets.value = [];
   Object.assign(cloudForm, {
     provider: 'aliyun',
     instanceId: '',
@@ -715,23 +1010,38 @@ function handleAdd() {
     chargeType: 'postpay'
   });
   dialogVisible.value = true;
+  // 加载属性定义
+  loadAttributeDefinitions();
+  // 清空属性值
+  serverAttributes.value = [];
+
+  // 确保分组选择器正确显示（调试）
+  setTimeout(() => {
+    console.log('setTimeout检查 - serverForm.groupIds:', serverForm.groupIds);
+    console.log('setTimeout检查 - groupTreeForSelect.value.length:', groupTreeForSelect.value.length);
+  }, 200);
 }
 
-// 打开编辑对话框
+// 打开编辑抽屉
 function handleEdit(row: CMDB.Server) {
   dialogTitle.value = '编辑主机';
   serverType.value = row.cloudInfo ? 'cloud' : 'normal';
   submitError.value = ''; // 清除错误信息
+  editDrawerActiveTab.value = 'basic'; // 默认显示基础信息tab
   Object.assign(serverForm, {
     id: row.id,
     hostname: row.hostname,
     ip: row.ip,
     innerIp: row.innerIp,
-    credentialIds: row.credentials?.filter(c => c.credentialType === 'user').map(c => c.id)
-      || (row.sshCredentialId ? [row.sshCredentialId] : []),
+    credentialIds:
+      row.credentials?.filter(c => c.credentialType === 'user').map(c => c.id) ||
+      (row.sshCredentialId ? [row.sshCredentialId] : []),
     systemCredentialId: row.systemCredentialId || row.systemCredential?.id || undefined,
     serverType: row.serverType,
     groupIds: row.groups?.map(g => g.id) || [],
+    tagIds: row.tags?.map(t => t.id) || [],
+    roomId: row.cabinet?.roomId,
+    cabinetId: row.cabinetId,
     sshPort: row.sshPort,
     remarks: row.remarks,
     env: row.env || 'test',
@@ -741,6 +1051,10 @@ function handleEdit(row: CMDB.Server) {
     os: row.os || '',
     businessId: row.businessId || (undefined as unknown as number)
   });
+  // 如果有机房，加载对应的机柜列表
+  if (row.cabinet?.roomId) {
+    getCabinets(row.cabinet.roomId);
+  }
   if (row.cloudInfo) {
     Object.assign(cloudForm, {
       provider: row.provider as any,
@@ -762,13 +1076,49 @@ function handleEdit(row: CMDB.Server) {
       chargeType: 'postpay'
     });
   }
-  dialogVisible.value = true;
+  editDrawerVisible.value = true; // 打开抽屉
+  // 加载属性定义
+  loadAttributeDefinitions();
+  // 加载主机属性
+  loadServerAttributes(row.id);
+}
+
+// 加载属性定义
+async function loadAttributeDefinitions() {
+  try {
+    const { data } = await fetchGetAttributes();
+    attributeDefinitions.value = data || [];
+  } catch (error) {
+    console.error('加载属性定义失败:', error);
+  }
+}
+
+// 加载主机属性
+async function loadServerAttributes(serverId: number) {
+  loadingAttributes.value = true;
+  try {
+    const { data } = await fetchGetServerAttributes(serverId);
+    serverAttributes.value = data || [];
+  } catch (error) {
+    console.error('加载主机属性失败:', error);
+    serverAttributes.value = [];
+  } finally {
+    loadingAttributes.value = false;
+  }
 }
 
 // 打开连接对话框
 function handleConnect(row: CMDB.Server) {
   selectedServer.value = row;
   connectDialogVisible.value = true;
+}
+
+// 查看监控详情
+function handleViewMonitoring(row: CMDB.Server) {
+  router.push({
+    name: 'monitoring_servers-detail',
+    query: { id: String(row.id) }
+  });
 }
 
 // 连接成功处理
@@ -824,6 +1174,27 @@ function handleSaveError(error: any) {
   ElNotification.error(errorMessage || '操作失败，请稍后重试');
 }
 
+// 保存主机属性
+async function saveServerAttributes(serverId: number) {
+  try {
+    // 只保存有值的属性
+    const attributesToSave = serverAttributes.value
+      .filter(attr => attr.attributeValue && attr.attributeValue.trim() !== '')
+      .map(attr => ({
+        attributeId: attr.attributeId,
+        attributeKey: attr.attributeKey,
+        attributeValue: attr.attributeValue
+      }));
+
+    if (attributesToSave.length > 0) {
+      await fetchSaveServerAttributes(serverId, attributesToSave);
+    }
+  } catch (error) {
+    console.error('保存主机属性失败:', error);
+    // 不阻塞主流程，只记录错误
+  }
+}
+
 // 保存
 async function handleSave() {
   if (!serverFormRef.value) return;
@@ -848,21 +1219,142 @@ async function handleSave() {
           : null
     };
 
+    // 移除不需要发送到后端的字段（这些是前端辅助字段，不是数据库字段）
+    delete (formData as any).tagIds;   // Tags 通过 many2many 关联表处理
+    delete (formData as any).groupIds; // Groups 通过 many2many 关联表处理
+    delete (formData as any).roomId;   // 机房ID，不是服务器字段
+
     if (serverForm.id) {
       const result = await fetchUpdateServer(serverForm.id, formData);
       throwIfRequestFailed(result);
+      // 保存主机属性
+      await saveServerAttributes(serverForm.id);
       ElNotification.success('更新成功');
     } else {
       const result = await fetchCreateServer(formData);
       throwIfRequestFailed(result);
+      // 保存主机属性（新创建的主机）
+      const newServerId = (result as any).data?.id;
+      if (newServerId) {
+        await saveServerAttributes(newServerId);
+      }
       ElNotification.success('创建成功');
     }
 
+    // 关闭对话框和抽屉
     dialogVisible.value = false;
+    editDrawerVisible.value = false;
     await getServers();
     await getGroups();
   } catch (error: any) {
     handleSaveError(error);
+  }
+}
+
+// 获取属性值
+function getAttributeValue(attributeId: number): string {
+  const attr = serverAttributes.value.find(a => a.attributeId === attributeId);
+  if (!attr) {
+    return '';
+  }
+  return attr.attributeValue || '';
+}
+
+// 设置属性值
+function setAttributeValue(attributeId: number, value: any): void {
+  let attr = serverAttributes.value.find(a => a.attributeId === attributeId);
+  if (!attr) {
+    const definition = attributeDefinitions.value.find(d => d.id === attributeId);
+    attr = {
+      id: 0,
+      serverId: 0,
+      attributeId,
+      attributeKey: definition?.key || '',
+      attributeValue: String(value),
+      valueType: 'string',
+      category: definition?.category || '',
+      createdAt: '',
+      updatedAt: ''
+    };
+    serverAttributes.value.push(attr);
+  }
+  if (attr) {
+    attr.attributeValue = String(value);
+  }
+}
+
+// 获取多选属性值
+function getAttributeMultiValue(attributeId: number) {
+  const attr = serverAttributes.value.find(a => a.attributeId === attributeId);
+  if (!attr) {
+    return [];
+  }
+  try {
+    return JSON.parse(attr.attributeValue || '[]');
+  } catch {
+    return [];
+  }
+}
+
+// 设置多选属性值
+function setAttributeMultiValue(attributeId: number, values: string[]): void {
+  let attr = serverAttributes.value.find(a => a.attributeId === attributeId);
+  if (!attr) {
+    const definition = attributeDefinitions.value.find(d => d.id === attributeId);
+    attr = {
+      id: 0,
+      serverId: 0,
+      attributeId,
+      attributeKey: definition?.key || '',
+      attributeValue: '[]',
+      valueType: 'string',
+      category: definition?.category || '',
+      createdAt: '',
+      updatedAt: ''
+    };
+    serverAttributes.value.push(attr);
+  }
+  if (attr) {
+    attr.attributeValue = JSON.stringify(values);
+  }
+}
+
+// 获取属性显示名称
+function getAttributeDisplayName(attr: Api.SystemManage.ServerAttribute): string {
+  const definition = attributeDefinitions.value.find(d => d.id === attr.attributeId);
+  if (!definition) return attr.attributeValue;
+
+  // 对于select/multiselect类型，尝试获取选项的标签
+  if (definition.type === 'select' || definition.type === 'multiselect') {
+    try {
+      const options = parseAttributeOptions(definition.options);
+      if (definition.type === 'select') {
+        const option = options.find((o: any) => o.value === attr.attributeValue);
+        return option ? `${definition.name}: ${option.label}` : `${definition.name}: ${attr.attributeValue}`;
+      }
+      const values = JSON.parse(attr.attributeValue || '[]');
+      const labels = values
+        .map((v: string) => {
+          const option = options.find((o: any) => o.value === v);
+          return option ? option.label : v;
+        })
+        .join(', ');
+      return `${definition.name}: ${labels}`;
+    } catch {
+      return `${definition.name}: ${attr.attributeValue}`;
+    }
+  }
+
+  return `${definition.name}: ${attr.attributeValue}`;
+}
+
+// 解析属性选项
+function parseAttributeOptions(optionsStr: string) {
+  if (!optionsStr) return [];
+  try {
+    return JSON.parse(optionsStr);
+  } catch {
+    return [];
   }
 }
 
@@ -890,6 +1382,7 @@ function handleDelete(row: CMDB.Server) {
 // 更多操作
 function handleMoreAction(cmd: string, row: CMDB.Server) {
   if (cmd === 'delete') handleDelete(row);
+  if (cmd === 'edit') handleEdit(row);
   if (cmd === 'sync-metrics') handleSyncMetrics(row);
   if (cmd === 'agent-deploy') handleAgentDeploy(row);
   if (cmd === 'agent-restart') handleAgentRestart(row);
@@ -911,11 +1404,41 @@ async function handleSyncMetrics(row: CMDB.Server) {
 // Agent 操作（部署/重启/卸载），提交后轮询状态最多 20 次
 async function handleAgentDeploy(row: CMDB.Server) {
   try {
-    await fetchDeployAgent(row.id);
-    ElNotification.info('Agent 部署任务已提交，正在轮询状态...');
+    // 先测试SSH连接
+    const testResult = await fetchTestSSHConnection(row.id);
+    if (!testResult.data.success) {
+      await ElMessageBox.alert(`${testResult.data.message}`, '连接失败', {
+        type: 'error',
+        confirmButtonText: '我知道了'
+      });
+      return;
+    }
+
+    // 连接成功，显示提示并继续部署
+    const res = await fetchDeployAgent(row.id);
+    ElNotification.success({
+      message: `Agent 部署任务已提交，正在后台执行...\nSSH连接测试成功（延迟: ${testResult.data.latency}）`,
+      duration: 3000
+    });
     pollAgentStatus(row.id, 'running');
-  } catch {
-    ElNotification.error('Agent 部署失败');
+  } catch (error: any) {
+    console.error('Agent 部署失败:', error);
+    // 检查是否是凭证未配置的错误
+    const errorMsg = error?.response?.data?.message || error?.message || '部署失败';
+    if (errorMsg.includes('系统运维凭证') || errorMsg.includes('systemCredential')) {
+      ElNotification.error({
+        message: '部署失败：主机未配置系统运维凭证，请先在主机编辑页配置',
+        duration: 0,
+        customClass: 'agent-error-notification'
+      });
+    } else if (errorMsg.includes('SSH 连接失败')) {
+      ElNotification.error({
+        message: `部署失败：无法连接到主机 ${row.hostname || row.ip}`,
+        duration: 0
+      });
+    } else {
+      ElNotification.error(`Agent 部署失败：${errorMsg}`);
+    }
   }
 }
 
@@ -924,19 +1447,66 @@ async function handleAgentRestart(row: CMDB.Server) {
     await fetchRestartAgent(row.id);
     ElNotification.info('Agent 重启任务已提交...');
     pollAgentStatus(row.id, 'running');
-  } catch {
-    ElNotification.error('Agent 重启失败');
+  } catch (error: any) {
+    console.error('Agent 重启失败:', error);
+    const errorMsg = error?.response?.data?.message || error?.message || '重启失败';
+    if (errorMsg.includes('SSH 连接失败')) {
+      ElNotification.error({
+        message: `重启失败：无法连接到主机 ${row.hostname || row.ip}`,
+        duration: 0
+      });
+    } else {
+      ElNotification.error(`Agent 重启失败：${errorMsg}`);
+    }
   }
 }
 
 async function handleAgentUninstall(row: CMDB.Server) {
   try {
-    await ElMessageBox.confirm(`确认卸载 ${row.hostname} 上的 Agent？`, '卸载确认', { type: 'warning' });
+    await ElMessageBox.confirm(`确认卸载 ${row.hostname} 上的 Agent？卸载后主机将不再上报监控数据。`, '卸载确认', {
+      type: 'warning',
+      confirmButtonText: '确认卸载',
+      cancelButtonText: '取消'
+    });
+
+    // 先测试SSH连接
+    const testResult = await fetchTestSSHConnection(row.id);
+    if (!testResult.data.success) {
+      await ElMessageBox.alert(`${testResult.data.message}`, '连接失败', {
+        type: 'error',
+        confirmButtonText: '我知道了'
+      });
+      return;
+    }
+
+    // 连接成功，继续卸载
     await fetchUninstallAgent(row.id);
-    ElNotification.info('Agent 卸载任务已提交...');
+    ElNotification.success({
+      message: `Agent 卸载任务已提交，正在后台执行...\nSSH连接测试成功（延迟: ${testResult.data.latency}）`,
+      duration: 3000
+    });
     pollAgentStatus(row.id, 'uninstalled');
-  } catch {
-    // 取消或失败，忽略
+  } catch (error: any) {
+    // 用户取消操作
+    if (error === 'cancel') {
+      return;
+    }
+    console.error('Agent 卸载失败:', error);
+    const errorMsg = error?.response?.data?.message || error?.message || '卸载失败';
+    if (errorMsg.includes('系统运维凭证') || errorMsg.includes('systemCredential')) {
+      ElNotification.error({
+        message: '卸载失败：主机未配置系统运维凭证，请先在主机编辑页配置',
+        duration: 0,
+        customClass: 'agent-error-notification'
+      });
+    } else if (errorMsg.includes('SSH 连接失败')) {
+      ElNotification.error({
+        message: `卸载失败：无法连接到主机 ${row.hostname || row.ip}`,
+        duration: 0
+      });
+    } else {
+      ElNotification.error(`Agent 卸载失败：${errorMsg}`);
+    }
   }
 }
 
@@ -944,11 +1514,13 @@ async function handleAgentUninstall(row: CMDB.Server) {
 // expectedStatus: 达到该状态则提前终止；超时后无论状态都终止
 function pollAgentStatus(serverId: number, expectedStatus: CMDB.Server['agentStatus'] = 'running', maxTimes = 20) {
   let count = 0;
+  let previousStatus: string | null = null;
   const timer = setInterval(async () => {
     count++;
     try {
       const res = await fetchGetAgentStatus(serverId);
       const status = res.data?.agentStatus as CMDB.Server['agentStatus'];
+
       // 实时更新表格中对应行
       const idx = tableData.value.findIndex(s => s.id === serverId);
       if (idx !== -1 && res.data) {
@@ -959,15 +1531,44 @@ function pollAgentStatus(serverId: number, expectedStatus: CMDB.Server['agentSta
           agentVersion: res.data.agentVersion,
           lastHeartbeatAt: res.data.lastHeartbeatAt
         };
+
+        // 检测状态变化并通知
+        if (previousStatus !== null && previousStatus !== status) {
+          if (status === 'running') {
+            ElNotification.success(`主机 ${tableData.value[idx].hostname} 的 Agent 已成功部署并运行`);
+          } else if (status === 'uninstalled') {
+            ElNotification.success(`主机 ${tableData.value[idx].hostname} 的 Agent 已成功卸载`);
+          } else if (status === 'failed') {
+            ElNotification.warning(`主机 ${tableData.value[idx].hostname} 的 Agent 状态异常，请检查日志`);
+          }
+        }
+        previousStatus = status;
       }
-      // 达到预期终态或超过最大次数则停止
-      if (status === expectedStatus || count >= maxTimes) {
+
+      // 达到预期终态
+      if (status === expectedStatus) {
         clearInterval(timer);
-        getServers();
+        getServers(); // 刷新列表以获取完整数据
+        return;
       }
-    } catch {
+
+      // 超过最大次数，停止轮询
       if (count >= maxTimes) {
         clearInterval(timer);
+        const serverName = tableData.value.find(s => s.id === serverId)?.hostname || serverId;
+        if (status !== expectedStatus) {
+          ElNotification.warning(
+            `主机 ${serverName} 的 Agent 状态轮询超时（当前状态: ${status}），请手动刷新页面查看最新状态`
+          );
+        }
+        getServers(); // 刷新列表以获取完整数据
+      }
+    } catch (error: any) {
+      console.error('轮询 Agent 状态失败:', error);
+      // 如果连续失败多次，停止轮询
+      if (count >= maxTimes) {
+        clearInterval(timer);
+        ElNotification.error('轮询 Agent 状态失败，请刷新页面查看最新状态');
         getServers();
       }
     }
@@ -978,6 +1579,110 @@ function getUsageColor(value: number = 0): string {
   if (value >= 90) return '#f56c6c';
   if (value >= 70) return '#e6a23c';
   return '#67c23a';
+}
+
+// 获取指定属性的选项列表
+function getAttributeOptions(key: string): Array<{ label: string; value: string }> {
+  const attr = attributeDefinitions.value.find(a => a.key === key);
+  if (!attr || !attr.options) return [];
+
+  try {
+    return JSON.parse(attr.options);
+  } catch {
+    return [];
+  }
+}
+
+// 获取统一属性列表（排除特殊字段 env 和 server_type）
+function getUnifiedAttributes() {
+  return attributeDefinitions.value.filter(attr => attr.key !== 'env' && attr.key !== 'server_type');
+}
+
+// 获取指定属性某个值的显示标签
+function getAttributeLabel(key: string, value: string): string {
+  if (!value) return '-';
+
+  const options = getAttributeOptions(key);
+  const option = options.find(opt => opt.value === value);
+
+  // 如果找不到匹配的选项，返回空（数据不一致）
+  return option?.label || '-';
+}
+
+// 获取环境的显示信息（标签和颜色）
+function getEnvDisplayInfo(envValue: string) {
+  const options = getAttributeOptions('server_env');
+  const option = options.find(opt => opt.value === envValue);
+  const label = option?.label || envValue || '-';
+
+  // 根据值确定标签颜色
+  let type: 'success' | 'warning' | 'danger' | 'info' = 'info';
+  if (envValue === 'prod') type = 'danger';
+  else if (envValue === 'test') type = 'warning';
+  else if (envValue === 'dev') type = 'success';
+
+  return { label, type };
+}
+
+// 获取主机类型的显示信息
+function getServerTypeDisplayInfo(typeValue: string) {
+  return getAttributeLabel('server_type', typeValue);
+}
+
+// 获取磁盘最大使用率分区
+function getMaxDiskPartition(row: CMDB.Server) {
+  if (!row.diskPartitions || row.diskPartitions.length === 0) {
+    return { usage: row.diskUsage || 0, mount: '/' };
+  }
+  // 找到使用率最大的分区
+  const maxPartition = row.diskPartitions.reduce((max, partition) => (partition.usage > max.usage ? partition : max), {
+    usage: 0,
+    mount: '/'
+  });
+  return maxPartition;
+}
+
+// 格式化磁盘分区信息用于tooltip
+function formatDiskPartitions(row: CMDB.Server) {
+  if (!row.diskPartitions || row.diskPartitions.length === 0) {
+    return '暂无分区信息';
+  }
+  return row.diskPartitions
+    .sort((a, b) => b.usage - a.usage) // 按使用率降序排列
+    .map(p => `${p.mount}: ${p.usage}%`)
+    .join('\n');
+}
+
+// 格式化磁盘分区数据用于详情抽屉
+function formatDiskPartitionsForDrawer(server: CMDB.Server | null) {
+  if (!server || !server.diskPartitions || server.diskPartitions.length === 0) {
+    return [];
+  }
+  return server.diskPartitions
+    .slice() // 创建副本
+    .sort((a, b) => b.usage - a.usage) // 按使用率降序排列
+    .map(p => ({
+      mount: p.mount,
+      usage: p.usage
+    }));
+}
+
+// 格式化时间显示
+function formatTime(timeStr: string): string {
+  if (!timeStr) return '-';
+  const date = new Date(timeStr);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (minutes < 1) return '刚刚';
+  if (minutes < 60) return `${minutes} 分钟前`;
+  if (hours < 24) return `${hours} 小时前`;
+  if (days < 7) return `${days} 天前`;
+
+  return date.toLocaleDateString('zh-CN');
 }
 
 // 详情抽屉
@@ -1031,11 +1736,16 @@ onMounted(() => {
   getGroups();
   getSSHCredentials();
   getServers();
+  getServerRooms();
+  getServerTags();
+  getSystemOptions(); // 加载系统选项（环境、主机类型等）
 
   // 加载业务系统列表
-  fetchGetBusinessUnits().then(res => {
-    businessUnits.value = res.data || [];
-  }).catch(() => {});
+  fetchGetBusinessUnits()
+    .then(res => {
+      businessUnits.value = res.data || [];
+    })
+    .catch(() => {});
 
   // 添加全局点击监听器来关闭右键菜单
   document.addEventListener('click', handleGlobalClick);
@@ -1048,13 +1758,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="h-full flex gap-16px overflow-hidden">
+  <div class="h-full flex gap-12px overflow-hidden">
     <!-- 左侧分组树 -->
-    <div class="w-280px flex-shrink-0 flex flex-col">
-      <ElCard class="flex-1 flex flex-col" shadow="never">
+    <div class="w-220px flex flex-col flex-shrink-0">
+      <ElCard class="flex flex-col flex-1" shadow="never" body-style="padding: 12px;">
         <!-- 树头部 -->
-        <div class="flex items-center justify-between mb-12px">
-          <span class="text-14px font-bold text-gray-700">资产分组</span>
+        <div class="mb-8px flex items-center justify-between">
+          <span class="text-14px text-gray-700 font-bold">资产分组</span>
           <div class="flex items-center gap-4px">
             <ElButton link size="small" @click="handleAddRootGroup">
               <icon-mdi-plus class="text-16px" />
@@ -1064,13 +1774,7 @@ onUnmounted(() => {
             </ElButton>
           </div>
         </div>
-        <ElInput
-          v-model="groupSearchKeyword"
-          placeholder="搜索分组"
-          clearable
-          size="small"
-          class="mb-12px"
-        >
+        <ElInput v-model="groupSearchKeyword" placeholder="搜索分组" clearable size="small" class="mb-12px">
           <template #prefix>
             <icon-mdi-magnify class="text-16px text-gray-400" />
           </template>
@@ -1093,31 +1797,31 @@ onUnmounted(() => {
           >
             <template #default="{ node, data }">
               <div :class="getNodeClass(data)" class="w-full">
-                <div class="flex items-center justify-between w-full pr-8px group-node">
+                <div class="group-node w-full flex items-center justify-between pr-8px">
                   <!-- 编辑模式 -->
-                  <div v-if="editingNodeId === data.id" class="flex items-center gap-6px flex-1 min-w-0">
+                  <div v-if="editingNodeId === data.id" class="min-w-0 flex flex-1 items-center gap-6px">
                     <component
                       :is="'icon-' + data.icon.replace(':', '-')"
-                      class="text-16px flex-shrink-0"
+                      class="flex-shrink-0 text-16px"
                       :style="{ color: data.color }"
                     />
                     <input
                       ref="editInputRef"
                       v-model="editingNodeName"
-                      class="edit-input flex-1 min-w-0"
+                      class="edit-input min-w-0 flex-1"
                       @keydown="handleEditKeydown"
                       @blur="saveEditGroup"
                       @click.stop
                     />
                   </div>
                   <!-- 正常显示模式 -->
-                  <div v-else class="flex items-center gap-6px flex-1 min-w-0">
+                  <div v-else class="min-w-0 flex flex-1 items-center gap-6px">
                     <component
                       :is="'icon-' + data.icon.replace(':', '-')"
-                      class="text-16px flex-shrink-0"
+                      class="flex-shrink-0 text-16px"
                       :style="{ color: data.color }"
                     />
-                    <span class="text-14px truncate">{{ node.label }}</span>
+                    <span class="truncate text-14px">{{ node.label }}</span>
                   </div>
                   <ElTag
                     v-if="data.serverCount !== undefined && editingNodeId !== data.id"
@@ -1136,14 +1840,14 @@ onUnmounted(() => {
     </div>
 
     <!-- 右侧主机列表 -->
-    <div class="flex-1 min-w-0 flex flex-col">
+    <div class="min-w-0 flex flex-col flex-1">
       <!-- 主机列表卡片 -->
-      <ElCard class="flex-1" shadow="never">
+      <ElCard class="flex-1" shadow="never" body-style="padding: 12px;">
         <template #header>
-          <div class="flex items-center justify-between w-full">
+          <div class="w-full flex items-center justify-between">
             <div class="flex-1">
               <!-- 搜索表单 -->
-              <ElForm :model="searchForm" inline>
+              <ElForm :model="searchForm" inline class="search-form-compact">
                 <ElFormItem label="主机名">
                   <ElInput
                     v-model="searchForm.hostname"
@@ -1179,17 +1883,33 @@ onUnmounted(() => {
               </ElForm>
             </div>
             <ElSpace direction="horizontal" wrap justify="end">
-              <ElButton
-                v-if="selectedIds.length > 0"
-                type="danger"
-                plain
-                @click="handleBatchDelete"
-              >
-                <template #icon>
-                  <icon-ic-round-delete class="text-icon" />
-                </template>
-                批量删除 ({{ selectedIds.length }})
-              </ElButton>
+              <!-- 批量操作按钮组 -->
+              <template v-if="selectedIds.length > 0">
+                <ElButton type="success" plain @click="handleBatchTestConnection">
+                  <template #icon>
+                    <icon-mdi-wifi class="text-icon" />
+                  </template>
+                  测试连接 ({{ selectedIds.length }})
+                </ElButton>
+                <ElButton type="primary" plain @click="handleBatchDeploy">
+                  <template #icon>
+                    <icon-mdi-download class="text-icon" />
+                  </template>
+                  批量部署 ({{ selectedIds.length }})
+                </ElButton>
+                <ElButton type="warning" plain @click="handleBatchUninstall">
+                  <template #icon>
+                    <icon-mdi-delete-forever class="text-icon" />
+                  </template>
+                  批量卸载 ({{ selectedIds.length }})
+                </ElButton>
+                <ElButton type="danger" plain @click="handleBatchDelete">
+                  <template #icon>
+                    <icon-ic-round-delete class="text-icon" />
+                  </template>
+                  批量删除 ({{ selectedIds.length }})
+                </ElButton>
+              </template>
               <ElButton type="primary" plain @click="handleAdd">
                 <template #icon>
                   <icon-ic-round-plus class="text-icon" />
@@ -1207,205 +1927,193 @@ onUnmounted(() => {
         </template>
 
         <!-- 列表内容 -->
-        <div class="h-[calc(100%-52px)] overflow-auto">
+        <div class="h-[calc(100%-44px)] overflow-auto">
           <ElTable
             v-loading="loading"
             height="100%"
             border
             :data="tableData"
+            size="small"
+            :row-style="{ height: '48px' }"
+            :cell-style="{ padding: '8px 0' }"
+            :header-cell-style="{ backgroundColor: '#f5f7fa' }"
+            stripe
+            table-layout="fixed"
             @selection-change="handleSelectionChange"
             @select-all="handleSelectAll"
           >
             <ElTableColumn type="selection" width="50" align="center" />
-            <ElTableColumn prop="hostname" label="主机名" min-width="150" show-overflow-tooltip>
+            <ElTableColumn prop="hostname" label="主机名" min-width="140" show-overflow-tooltip>
               <template #default="{ row }">
-                <span class="cursor-pointer text-primary hover:underline" @click="handleViewDetail(row)">{{ row.hostname }}</span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn prop="ip" label="IP地址" width="140" show-overflow-tooltip />
-            <ElTableColumn prop="innerIp" label="内网IP" width="140" show-overflow-tooltip>
-              <template #default="{ row }">
-                <span class="text-gray-500">{{ row.innerIp || '-' }}</span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="配置" width="120" align="center">
-              <template #default="{ row }">
-                <span class="text-gray-600">{{ row.cpu }}C / {{ row.memory }}G</span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="磁盘" width="80" align="center">
-              <template #default="{ row }">
-                <span class="text-gray-600">{{ row.disk ? `${row.disk}G` : '-' }}</span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="环境" width="80" align="center">
-              <template #default="{ row }">
-                <el-tag
-                  :type="row.env === 'prod' ? 'danger' : row.env === 'test' ? 'warning' : 'info'"
-                  size="small"
-                  effect="plain"
-                >
-                  {{ row.env === 'prod' ? '生产' : row.env === 'test' ? '测试' : row.env || '-' }}
-                </el-tag>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn prop="os" label="操作系统" min-width="120" show-overflow-tooltip>
-              <template #default="{ row }">
-                <span class="text-gray-600">{{ row.os || '-' }}</span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="所属分组" min-width="120" show-overflow-tooltip>
-              <template #default="{ row }">
-                <ElTag
-                  v-for="group in row.groups"
-                  :key="group.id"
-                  size="small"
-                  :style="{ color: group.color, borderColor: group.color }"
-                  class="mr-4px"
-                >
-                  {{ group.name }}
-                </ElTag>
-                <span v-if="!row.groups || row.groups.length === 0" class="text-gray-400">-</span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn prop="sshPort" label="SSH端口" width="90" align="center">
-              <template #default="{ row }">
-                <span class="text-gray-600">{{ row.sshPort || 22 }}</span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="状态" width="80" align="center">
-              <template #default="{ row }">
-                <ElTag :type="getStatusTag(row.status).type" size="small">
-                  {{ getStatusTag(row.status).text }}
-                </ElTag>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="凭证" width="80" align="center">
-              <template #default="{ row }">
-                <el-tag
-                  :type="row.credentials?.length ? 'success' : 'warning'"
-                  size="small"
-                  effect="plain"
-                >
-                  {{ row.credentials?.length ? `${row.credentials.length}个` : '未配置' }}
-                </el-tag>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="最近连接" width="150" show-overflow-tooltip>
-              <template #default="{ row }">
-                <span class="text-gray-500 text-xs">
-                  {{ row.lastConnectTime ? new Date(row.lastConnectTime).toLocaleString('zh-CN') : '-' }}
+                <span class="cursor-pointer text-primary hover:underline" @click="handleViewDetail(row)">
+                  {{ row.hostname }}
                 </span>
               </template>
             </ElTableColumn>
-            <ElTableColumn label="使用率" width="160" align="center">
+            <ElTableColumn label="IP地址" min-width="150" show-overflow-tooltip>
               <template #default="{ row }">
-                <template v-if="row.agentStatus === 'offline'">
-                  <el-tag type="warning" size="small">Agent 离线</el-tag>
-                </template>
-                <template v-else-if="row.agentStatus === 'uninstalled' || !row.agentStatus">
-                  <el-tag type="info" size="small">未安装</el-tag>
-                </template>
-                <template v-else-if="row.metricsUpdatedAt">
-                  <div class="text-xs space-y-1px">
-                    <div class="flex items-center gap-4px">
-                      <span class="w-28px text-gray-400">CPU</span>
-                      <el-progress
-                        :percentage="Math.round(row.cpuUsage || 0)"
-                        :color="getUsageColor(row.cpuUsage)"
-                        :stroke-width="4"
-                        style="flex:1"
-                        :show-text="false"
-                      />
-                      <span :style="{ color: getUsageColor(row.cpuUsage), width: '32px', textAlign: 'right' }">{{ Math.round(row.cpuUsage || 0) }}%</span>
-                    </div>
-                    <div class="flex items-center gap-4px">
-                      <span class="w-28px text-gray-400">MEM</span>
-                      <el-progress
-                        :percentage="Math.round(row.memoryUsage || 0)"
-                        :color="getUsageColor(row.memoryUsage)"
-                        :stroke-width="4"
-                        style="flex:1"
-                        :show-text="false"
-                      />
-                      <span :style="{ color: getUsageColor(row.memoryUsage), width: '32px', textAlign: 'right' }">{{ Math.round(row.memoryUsage || 0) }}%</span>
-                    </div>
-                    <div class="flex items-center gap-4px">
-                      <span class="w-28px text-gray-400">DSK</span>
-                      <el-progress
-                        :percentage="Math.round(row.diskUsage || 0)"
-                        :color="getUsageColor(row.diskUsage)"
-                        :stroke-width="4"
-                        style="flex:1"
-                        :show-text="false"
-                      />
-                      <span :style="{ color: getUsageColor(row.diskUsage), width: '32px', textAlign: 'right' }">{{ Math.round(row.diskUsage || 0) }}%</span>
-                    </div>
+                <div class="ip-list">
+                  <div class="ip-row">
+                    <span class="ip-dot ip-dot-primary"></span>
+                    <span class="ip-addr">{{ row.ip }}</span>
                   </div>
-                </template>
-                <template v-else>
-                  <el-tooltip content="Agent 运行中，等待首次采集" placement="top">
-                    <el-tag type="success" size="small">采集中</el-tag>
-                  </el-tooltip>
-                </template>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="Agent" width="130" align="center">
-              <template #default="{ row }">
-                <div class="flex flex-col items-center gap-4px">
-                  <el-tooltip
-                    :content="row.agentStatus === 'running' && row.agentVersion ? `v${row.agentVersion}` : ''"
-                    :disabled="!(row.agentStatus === 'running' && row.agentVersion)"
-                    placement="top"
-                  >
-                    <el-tag
-                      :type="row.agentStatus === 'running' ? 'success' : row.agentStatus === 'offline' ? 'danger' : 'info'"
-                      size="small"
-                    >
-                      {{ row.agentStatus === 'running' ? '运行中' : row.agentStatus === 'offline' ? '离线' : '未安装' }}
-                    </el-tag>
-                  </el-tooltip>
-                  <ElButton
-                    v-if="!row.agentStatus || row.agentStatus === 'uninstalled'"
-                    size="small"
-                    type="primary"
-                    link
-                    @click.stop="handleAgentDeploy(row)"
-                  >部署</ElButton>
-                  <ElButton
-                    v-else-if="row.agentStatus === 'offline'"
-                    size="small"
-                    type="warning"
-                    link
-                    @click.stop="handleAgentRestart(row)"
-                  >重启</ElButton>
+                  <div v-if="row.innerIp" class="ip-row">
+                    <span class="ip-dot ip-dot-secondary"></span>
+                    <span class="ip-addr ip-addr-sub">{{ row.innerIp }}</span>
+                  </div>
                 </div>
               </template>
             </ElTableColumn>
-            <ElTableColumn label="操作" width="260" align="center" fixed="right">
+            <ElTableColumn label="配置" width="110" align="center">
               <template #default="{ row }">
-                <ElButton type="success" plain size="small" @click="handleConnect(row)">连接</ElButton>
-                <ElButton type="primary" plain size="small" @click="handleViewDetail(row)">详情</ElButton>
-                <ElButton type="default" plain size="small" @click="handleEdit(row)">编辑</ElButton>
-                <el-dropdown trigger="click" @command="(cmd: string) => handleMoreAction(cmd, row)">
-                  <ElButton size="small" plain>更多<el-icon class="el-icon--right"><arrow-down /></el-icon></ElButton>
+                <span class="text-12px text-gray-600">{{ row.cpu }}C/{{ row.memory }}G</span>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="环境" width="75" align="center">
+              <template #default="{ row }">
+                <ElTag :type="getEnvDisplayInfo(row.env).type" size="small" effect="plain">
+                  {{ getEnvDisplayInfo(row.env).label }}
+                </ElTag>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="分组" min-width="120" show-overflow-tooltip>
+              <template #default="{ row }">
+                <ElTag
+                  v-if="row.groups && row.groups.length > 0"
+                  :style="{ color: row.groups[0].color, borderColor: row.groups[0].color }"
+                  size="small"
+                >
+                  {{ row.groups[0].name }}
+                  <span v-if="row.groups.length > 1" class="ml-4px">+{{ row.groups.length - 1 }}</span>
+                </ElTag>
+                <span v-else class="text-12px text-gray-400">-</span>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="资源使用率" min-width="200" align="center">
+              <template #default="{ row }">
+                <template v-if="row.agentStatus === 'offline'">
+                  <ElTag type="warning" size="small">Agent离线</ElTag>
+                </template>
+                <template v-else-if="!['running', 'active'].includes(row.agentStatus) || !row.agentStatus">
+                  <ElTag type="info" size="small">未安装</ElTag>
+                </template>
+                <template v-else-if="row.metricsUpdatedAt">
+                  <ElTooltip :content="formatDiskPartitions(row)" placement="top">
+                    <div class="usage-compact">
+                      <span class="usage-item" :style="{ color: getUsageColor(row.cpuUsage) }">
+                        <span class="usage-label">CPU</span>
+                        <span class="usage-value">{{ Math.round(row.cpuUsage || 0) }}%</span>
+                      </span>
+                      <span class="usage-divider">|</span>
+                      <span class="usage-item" :style="{ color: getUsageColor(row.memoryUsage) }">
+                        <span class="usage-label">内存</span>
+                        <span class="usage-value">{{ Math.round(row.memoryUsage || 0) }}%</span>
+                      </span>
+                      <span class="usage-divider">|</span>
+                      <span class="usage-item disk-usage">
+                        <span class="usage-label">磁盘</span>
+                        <span class="usage-value" :style="{ color: getUsageColor(getMaxDiskPartition(row).usage) }">
+                          {{ Math.round(getMaxDiskPartition(row).usage) }}%
+                        </span>
+                        <span class="disk-mount">({{ getMaxDiskPartition(row).mount }})</span>
+                      </span>
+                    </div>
+                  </ElTooltip>
+                </template>
+                <template v-else>
+                  <ElTooltip content="Agent运行中，等待首次采集" placement="top">
+                    <ElTag type="success" size="small">采集中</ElTag>
+                  </ElTooltip>
+                </template>
+              </template>
+            </ElTableColumn>
+            <!-- CPU趋势列 -->
+            <ElTableColumn label="CPU趋势" width="100" align="center">
+              <template #default="{ row }">
+                <MiniTrendChart
+                  v-if="row.cpuTrend && row.cpuTrend.length > 0"
+                  :data="row.cpuTrend"
+                  :height="30"
+                  :color="getUsageColor(row.cpuUsage || 0)"
+                />
+                <span v-else class="text-12px text-gray-400">-</span>
+              </template>
+            </ElTableColumn>
+            <!-- 服务状态列 -->
+            <ElTableColumn label="服务状态" width="100" align="center">
+              <template #default="{ row }">
+                <ServiceStatusIcon
+                  v-if="row.agentStatus === 'running'"
+                  :status="row.serviceStatus || 'unknown'"
+                  :show-text="true"
+                />
+                <ElTag v-else-if="row.agentStatus === 'offline'" type="warning" size="small">离线</ElTag>
+                <ElTag v-else type="info" size="small">未安装</ElTag>
+              </template>
+            </ElTableColumn>
+            <!-- 告警徽章列 -->
+            <ElTableColumn label="告警" width="80" align="center">
+              <template #default="{ row }">
+                <AlertBadge v-if="row.agentStatus === 'running'" :count="row.alertCount || 0" :max-count="99" />
+                <span v-else class="text-12px text-gray-400">-</span>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="操作" width="280" align="center" fixed="right">
+              <template #default="{ row }">
+                <ElButton link type="success" size="small" @click="handleConnect(row)">连接</ElButton>
+                <span class="action-divider">|</span>
+                <ElButton
+                  link
+                  type="primary"
+                  size="small"
+                  :disabled="row.agentStatus !== 'running'"
+                  @click="handleViewMonitoring(row)"
+                >
+                  监控
+                </ElButton>
+                <span class="action-divider">|</span>
+                <ElButton link type="primary" size="small" @click="handleViewDetail(row)">详情</ElButton>
+                <span class="action-divider">|</span>
+                <ElDropdown trigger="click" @command="(cmd: string) => handleMoreAction(cmd, row)">
+                  <ElButton link size="small">...</ElButton>
                   <template #dropdown>
-                    <el-dropdown-menu>
-                      <el-dropdown-item v-if="row.agentStatus === 'running'" command="sync-metrics">刷新指标</el-dropdown-item>
-                      <el-dropdown-item v-if="!row.agentStatus || row.agentStatus === 'uninstalled'" command="agent-deploy">部署 Agent</el-dropdown-item>
-                      <el-dropdown-item v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'" command="agent-restart">重启 Agent</el-dropdown-item>
-                      <el-dropdown-item v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'" command="agent-uninstall">卸载 Agent</el-dropdown-item>
-                      <el-dropdown-item command="delete" style="color: #f56c6c">删除</el-dropdown-item>
-                    </el-dropdown-menu>
+                    <ElDropdownMenu>
+                      <ElDropdownItem v-if="row.agentStatus === 'running' || row.agentStatus === 'failed'" command="sync-metrics">
+                        刷新指标
+                      </ElDropdownItem>
+                      <ElDropdownItem command="edit">编辑</ElDropdownItem>
+                      <!-- 部署按钮：未安装、卸载状态或失败时可部署 -->
+                      <ElDropdownItem
+                        v-if="!row.agentStatus || row.agentStatus === 'uninstalled' || row.agentStatus === 'failed'"
+                        command="agent-deploy"
+                      >
+                        部署 Agent
+                      </ElDropdownItem>
+                      <!-- 重启按钮：运行中或离线时可重启 -->
+                      <ElDropdownItem
+                        v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'"
+                        command="agent-restart"
+                      >
+                        重启 Agent
+                      </ElDropdownItem>
+                      <!-- 卸载按钮：运行中或离线时可卸载 -->
+                      <ElDropdownItem
+                        v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'"
+                        command="agent-uninstall"
+                      >
+                        卸载 Agent
+                      </ElDropdownItem>
+                      <ElDropdownItem command="delete" style="color: #f56c6c">删除主机</ElDropdownItem>
+                    </ElDropdownMenu>
                   </template>
-                </el-dropdown>
+                </ElDropdown>
               </template>
             </ElTableColumn>
           </ElTable>
         </div>
 
         <!-- 分页 -->
-        <div v-if="tableData.length > 0" class="mt-16px flex justify-end">
+        <div v-if="tableData.length > 0" class="mt-12px flex justify-end">
           <ElPagination
             v-model:current-page="pagination.page"
             v-model:page-size="pagination.pageSize"
@@ -1420,151 +2128,188 @@ onUnmounted(() => {
     </div>
 
     <!-- 主机表单对话框 -->
-    <ElDialog v-model="dialogVisible" :title="dialogTitle" width="700px">
-      <ElForm ref="serverFormRef" :model="serverForm" :rules="serverFormRules" label-width="120px">
-        <ElFormItem label="主机类型">
-          <ElRadioGroup v-model="serverType">
-            <ElRadio value="normal">普通主机</ElRadio>
-            <ElRadio value="cloud">云主机</ElRadio>
-          </ElRadioGroup>
-        </ElFormItem>
+    <ElDialog v-model="dialogVisible" :title="dialogTitle" width="600px">
+      <ElForm ref="serverFormRef" :model="serverForm" :rules="serverFormRules" label-width="100px">
+        <!-- ========== 新增模式：只显示必要信息 ========== -->
+        <template v-if="!serverForm.id">
+          <div class="form-section-title">基础信息（必填）</div>
 
-        <ElFormItem label="主机名" prop="hostname" class="hostname-input">
-          <ElInput v-model="serverForm.hostname" placeholder="请输入主机名" />
-          <div v-if="submitError && submitError.includes('主机名')" class="form-error-text" style="color: #f56c6c; font-size: 12px; line-height: 1; padding-top: 4px;">
-            {{ submitError }}
-          </div>
-        </ElFormItem>
+          <ElFormItem label="主机名" prop="hostname" class="hostname-input">
+            <ElInput v-model="serverForm.hostname" placeholder="请输入主机名" />
+            <div
+              v-if="submitError && submitError.includes('主机名')"
+              class="form-error-text"
+              style="color: #f56c6c; font-size: 12px; line-height: 1; padding-top: 4px"
+            >
+              {{ submitError }}
+            </div>
+          </ElFormItem>
 
-        <ElFormItem label="连接IP" prop="ip" class="ip-input">
-          <ElInput v-model="serverForm.ip" placeholder="请输入连接IP" />
-          <div v-if="submitError && submitError.includes('IP地址')" class="form-error-text" style="color: #f56c6c; font-size: 12px; line-height: 1; padding-top: 4px;">
-            {{ submitError }}
-          </div>
-        </ElFormItem>
+          <ElFormItem label="连接IP" prop="ip" class="ip-input">
+            <ElInput v-model="serverForm.ip" placeholder="请输入连接IP" />
+            <div
+              v-if="submitError && submitError.includes('IP地址')"
+              class="form-error-text"
+              style="color: #f56c6c; font-size: 12px; line-height: 1; padding-top: 4px"
+            >
+              {{ submitError }}
+            </div>
+          </ElFormItem>
 
-        <ElFormItem label="内网IP">
-          <ElInput v-model="serverForm.innerIp" placeholder="请输入内网IP（可选）" />
-        </ElFormItem>
+          <ElFormItem label="SSH凭证" prop="credentialIds">
+            <ElSelect
+              v-model="serverForm.credentialIds"
+              placeholder="请选择用户连接凭证（可多选）"
+              style="width: 100%"
+              multiple
+              collapse-tags
+              collapse-tags-tooltip
+            >
+              <ElOption
+                v-for="cred in userCredentials"
+                :key="cred.id"
+                :label="`${cred.name}（${cred.username}）`"
+                :value="cred.id"
+              />
+            </ElSelect>
+            <div class="mt-4px text-12px text-gray-400">用于堡垒机 SSH 连接，受访问策略约束</div>
+          </ElFormItem>
 
-        <template v-if="serverType === 'cloud'">
-          <ElFormItem label="云服务商">
-            <ElSelect v-model="cloudForm.provider" style="width: 100%">
-              <ElOption label="阿里云" value="aliyun" />
-              <ElOption label="腾讯云" value="tencent" />
-              <ElOption label="华为云" value="huawei" />
-              <ElOption label="AWS" value="aws" />
-              <ElOption label="其他" value="other" />
+          <ElFormItem label="系统运维凭证">
+            <ElSelect
+              v-model="serverForm.systemCredentialId"
+              placeholder="请选择系统运维凭证（可选）"
+              style="width: 100%"
+              clearable
+            >
+              <ElOption
+                v-for="cred in systemCredentials"
+                :key="cred.id"
+                :label="`${cred.name}（${cred.username}）`"
+                :value="cred.id"
+              />
+            </ElSelect>
+            <div class="mt-4px text-12px text-gray-400">用于 Agent 部署、重启、指标采集，需 root/sudo 权限</div>
+          </ElFormItem>
+
+          <ElFormItem label="环境">
+            <ElSelect v-model="serverForm.env" placeholder="请选择环境" style="width: 100%">
+              <ElOption
+                v-for="opt in getAttributeOptions('env')"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
+              />
             </ElSelect>
           </ElFormItem>
-          <ElFormItem label="实例名称">
-            <ElInput v-model="cloudForm.instanceName" placeholder="请输入实例名称" />
+
+          <ElFormItem label="所属分组" prop="groupIds">
+            <ElTreeSelect
+              :key="dialogVisible"
+              v-model="serverForm.groupIds"
+              :data="groupTreeForSelect"
+              :props="{ label: 'name', value: 'id', children: 'children' }"
+              node-key="id"
+              value-key="id"
+              multiple
+              show-checkbox
+              check-strictly
+              placeholder="请选择分组（可多选）"
+              style="width: 100%"
+            />
           </ElFormItem>
-          <ElFormItem label="实例规格">
-            <ElInput v-model="cloudForm.instanceType" placeholder="如: ecs.t6-c1m2.large" />
-          </ElFormItem>
-          <ElFormItem label="地域">
-            <ElInput v-model="cloudForm.region" placeholder="如: cn-hangzhou" />
-          </ElFormItem>
-          <ElFormItem label="可用区">
-            <ElInput v-model="cloudForm.zone" placeholder="如: cn-hangzhou-i" />
-          </ElFormItem>
-          <ElFormItem label="计费类型">
-            <ElSelect v-model="cloudForm.chargeType" style="width: 100%">
-              <ElOption label="按量付费" value="postpay" />
-              <ElOption label="包年包月" value="prepay" />
-            </ElSelect>
-          </ElFormItem>
+
+          <ElCollapse v-model="activeCollapse" class="mt-16px">
+            <ElCollapseItem title="更多属性（可选）" name="attributes">
+              <div v-if="loadingAttributes" class="py-12px text-center">
+                <ElIcon class="is-loading"><icon-mdi-loading /></ElIcon>
+                <span class="ml-8px">加载中...</span>
+              </div>
+              <div v-else-if="getUnifiedAttributes().length === 0" class="py-12px text-center text-gray-400">
+                暂无可用属性，请先在"系统管理 → 属性管理"中配置
+              </div>
+              <div v-else class="attributes-container">
+                <div v-for="attr in getUnifiedAttributes()" :key="attr.id" class="attribute-item">
+                  <div class="attribute-label">
+                    <span v-if="attr.required" class="required-mark">*</span>
+                    {{ attr.name }}
+                    <span v-if="attr.description" class="attribute-description">{{ attr.description }}</span>
+                  </div>
+                  <div class="attribute-input">
+                    <!-- 文本输入 -->
+                    <ElInput
+                      v-if="attr.type === 'text'"
+                      :model-value="getAttributeValue(attr.id)"
+                      :placeholder="attr.defaultValue || `请输入${attr.name}`"
+                      style="width: 100%"
+                      @change="val => setAttributeValue(attr.id, val)"
+                    />
+                    <!-- 数字输入 -->
+                    <ElInputNumber
+                      v-else-if="attr.type === 'number'"
+                      :model-value="getAttributeValue(attr.id)"
+                      :placeholder="attr.defaultValue || `请输入${attr.name}`"
+                      style="width: 100%"
+                      @change="val => setAttributeValue(attr.id, val)"
+                    />
+                    <!-- 日期选择 -->
+                    <ElDatePicker
+                      v-else-if="attr.type === 'date'"
+                      :model-value="getAttributeValue(attr.id)"
+                      type="date"
+                      :placeholder="attr.defaultValue || `请选择${attr.name}`"
+                      style="width: 100%"
+                      format="YYYY-MM-DD"
+                      value-format="YYYY-MM-DD"
+                      @change="val => setAttributeValue(attr.id, val)"
+                    />
+                    <!-- 布尔值 -->
+                    <ElSwitch
+                      v-else-if="attr.type === 'boolean'"
+                      :model-value="getAttributeValue(attr.id)"
+                      active-text="是"
+                      inactive-text="否"
+                      @change="val => setAttributeValue(attr.id, val)"
+                    />
+                    <!-- 下拉单选 -->
+                    <ElSelect
+                      v-else-if="attr.type === 'select'"
+                      :model-value="getAttributeValue(attr.id)"
+                      :placeholder="`请选择${attr.name}`"
+                      style="width: 100%"
+                      @change="val => setAttributeValue(attr.id, val)"
+                    >
+                      <ElOption
+                        v-for="opt in parseAttributeOptions(attr.options)"
+                        :key="opt.value"
+                        :label="opt.label"
+                        :value="opt.value"
+                      />
+                    </ElSelect>
+                    <!-- 下拉多选 -->
+                    <ElSelect
+                      v-else-if="attr.type === 'multiselect'"
+                      :model-value="getAttributeMultiValue(attr.id)"
+                      :placeholder="`请选择${attr.name}`"
+                      style="width: 100%"
+                      multiple
+                      collapse-tags
+                      collapse-tags-tooltip
+                      @change="val => setAttributeMultiValue(attr.id, val)"
+                    >
+                      <ElOption
+                        v-for="opt in parseAttributeOptions(attr.options)"
+                        :key="opt.value"
+                        :label="opt.label"
+                        :value="opt.value"
+                      />
+                    </ElSelect>
+                  </div>
+                </div>
+              </div>
+            </ElCollapseItem>
+          </ElCollapse>
         </template>
-
-        <ElFormItem label="用户连接凭证" prop="credentialIds">
-          <ElSelect
-            v-model="serverForm.credentialIds"
-            placeholder="请选择用户连接凭证（可多选）"
-            style="width: 100%"
-            multiple
-            collapse-tags
-            collapse-tags-tooltip
-          >
-            <ElOption
-              v-for="cred in userCredentials"
-              :key="cred.id"
-              :label="`${cred.name}（${cred.username}）`"
-              :value="cred.id"
-            />
-          </ElSelect>
-          <div class="mt-4px text-12px text-gray-400">用于用户堡垒 SSH，受访问策略约束</div>
-        </ElFormItem>
-
-        <ElFormItem label="系统运维凭证">
-          <ElSelect
-            v-model="serverForm.systemCredentialId"
-            placeholder="请选择系统运维凭证（Agent 部署专用）"
-            style="width: 100%"
-            clearable
-          >
-            <ElOption
-              v-for="cred in systemCredentials"
-              :key="cred.id"
-              :label="`${cred.name}（${cred.username}）`"
-              :value="cred.id"
-            />
-          </ElSelect>
-          <div class="mt-4px text-12px text-gray-400">用于 Agent 部署 / 重启 / 卸载，需 root 或 sudo 权限；未配置时无法部署 Agent</div>
-        </ElFormItem>
-
-        <ElFormItem label="SSH端口">
-          <ElInputNumber v-model="serverForm.sshPort" :min="1" :max="65535" style="width: 100%" />
-        </ElFormItem>
-
-        <ElFormItem label="所属分组">
-          <ElTreeSelect
-            v-model="serverForm.groupIds"
-            :data="groupTreeForSelect"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
-            multiple
-            show-checkbox
-            check-strictly
-            placeholder="请选择分组"
-            style="width: 100%"
-          />
-        </ElFormItem>
-
-        <ElFormItem label="环境" prop="env">
-          <ElSelect v-model="serverForm.env" placeholder="请选择环境" style="width: 100%">
-            <ElOption label="生产" value="prod" />
-            <ElOption label="测试" value="test" />
-            <ElOption label="开发" value="dev" />
-          </ElSelect>
-        </ElFormItem>
-
-        <ElFormItem label="业务系统">
-          <ElSelect v-model="serverForm.businessId" placeholder="请选择业务系统" clearable style="width: 100%">
-            <ElOption
-              v-for="unit in businessUnits"
-              :key="unit.id"
-              :label="unit.name"
-              :value="unit.id"
-            />
-          </ElSelect>
-        </ElFormItem>
-
-        <ElFormItem label="硬件配置">
-          <div style="display: flex; gap: 8px; width: 100%">
-            <ElInputNumber v-model="serverForm.cpu" :min="0" :max="1024" placeholder="CPU核" style="flex: 1" />
-            <ElInputNumber v-model="serverForm.memory" :min="0" :max="65536" placeholder="内存GB" style="flex: 1" />
-            <ElInputNumber v-model="serverForm.disk" :min="0" :max="999999" placeholder="磁盘GB" style="flex: 1" />
-          </div>
-          <div style="font-size: 12px; color: #909399; margin-top: 4px">添加后系统将自动通过 SSH 同步硬件信息，也可手动填写</div>
-        </ElFormItem>
-
-        <ElFormItem label="操作系统">
-          <ElInput v-model="serverForm.os" placeholder="如 Ubuntu 22.04 / CentOS 7" style="width: 100%" />
-        </ElFormItem>
-
-        <ElFormItem label="备注">
-          <ElInput v-model="serverForm.remarks" type="textarea" :rows="3" placeholder="请输入备注信息" />
-        </ElFormItem>
       </ElForm>
 
       <template #footer>
@@ -1573,9 +2318,372 @@ onUnmounted(() => {
       </template>
     </ElDialog>
 
+    <!-- 编辑抽屉（铺满屏幕） -->
+    <ElDrawer
+      v-model="editDrawerVisible"
+      :title="`编辑主机 - ${serverForm.hostname}`"
+      direction="rtl"
+      size="80%"
+      destroy-on-close
+    >
+      <ElTabs v-model="editDrawerActiveTab" type="border-card">
+        <!-- 基础信息 Tab -->
+        <ElTabPane label="基础信息" name="basic">
+          <ElForm
+            ref="serverFormRef"
+            :model="serverForm"
+            :rules="serverFormRules"
+            label-width="100px"
+            class="edit-form"
+          >
+            <div class="edit-form-row">
+              <div class="edit-form-col">
+                <div class="subsection-title">主机信息</div>
+                <ElFormItem label="主机名" prop="hostname" class="hostname-input">
+                  <ElInput v-model="serverForm.hostname" placeholder="请输入主机名" />
+                  <div v-if="submitError && submitError.includes('主机名')" class="form-error-text">
+                    {{ submitError }}
+                  </div>
+                </ElFormItem>
+
+                <ElFormItem label="连接IP" prop="ip" class="ip-input">
+                  <ElInput v-model="serverForm.ip" placeholder="请输入连接IP" />
+                  <div v-if="submitError && submitError.includes('IP地址')" class="form-error-text">
+                    {{ submitError }}
+                  </div>
+                </ElFormItem>
+
+                <ElFormItem label="内网IP">
+                  <ElInput v-model="serverForm.innerIp" placeholder="请输入内网IP" />
+                </ElFormItem>
+
+                <ElFormItem label="SSH端口">
+                  <ElInputNumber v-model="serverForm.sshPort" :min="1" :max="65535" style="width: 100%" />
+                </ElFormItem>
+              </div>
+
+              <div class="edit-form-col">
+                <div class="subsection-title">环境与归属</div>
+                <ElFormItem label="环境">
+                  <ElSelect v-model="serverForm.env" placeholder="请选择环境" style="width: 100%">
+                    <ElOption
+                      v-for="opt in getAttributeOptions('env')"
+                      :key="opt.value"
+                      :label="opt.label"
+                      :value="opt.value"
+                    />
+                  </ElSelect>
+                </ElFormItem>
+
+                <ElFormItem label="业务系统">
+                  <ElTreeSelect
+                    v-model="serverForm.businessId"
+                    :data="businessUnits"
+                    :props="{ label: 'name', value: 'id', children: 'children' }"
+                    placeholder="请选择业务系统"
+                    clearable
+                    check-strictly
+                    style="width: 100%"
+                  />
+                </ElFormItem>
+              </div>
+            </div>
+
+            <div class="edit-form-row">
+              <div class="edit-form-col">
+                <div class="subsection-title">凭证配置</div>
+                <ElFormItem label="用户连接凭证" prop="credentialIds">
+                  <ElSelect
+                    v-model="serverForm.credentialIds"
+                    placeholder="请选择用户连接凭证"
+                    style="width: 100%"
+                    multiple
+                    collapse-tags
+                    collapse-tags-tooltip
+                  >
+                    <ElOption
+                      v-for="cred in userCredentials"
+                      :key="cred.id"
+                      :label="`${cred.name}（${cred.username}）`"
+                      :value="cred.id"
+                    />
+                  </ElSelect>
+                </ElFormItem>
+
+                <ElFormItem label="系统运维凭证">
+                  <ElSelect
+                    v-model="serverForm.systemCredentialId"
+                    placeholder="请选择系统运维凭证"
+                    style="width: 100%"
+                    clearable
+                  >
+                    <ElOption
+                      v-for="cred in systemCredentials"
+                      :key="cred.id"
+                      :label="`${cred.name}（${cred.username}）`"
+                      :value="cred.id"
+                    />
+                  </ElSelect>
+                </ElFormItem>
+              </div>
+
+              <div class="edit-form-col">
+                <div class="subsection-title">分组与标签</div>
+                <ElFormItem label="所属分组" prop="groupIds">
+                  <ElTreeSelect
+                    v-model="serverForm.groupIds"
+                    :data="groupTreeForSelect"
+                    :props="{ label: 'name', value: 'id', children: 'children' }"
+                    node-key="id"
+                    value-key="id"
+                    multiple
+                    show-checkbox
+                    check-strictly
+                    placeholder="请选择分组"
+                    style="width: 100%"
+                  />
+                </ElFormItem>
+
+                <ElFormItem label="标签">
+                  <ElSelect
+                    v-model="serverForm.tagIds"
+                    placeholder="请选择标签"
+                    multiple
+                    collapse-tags
+                    collapse-tags-tooltip
+                    style="width: 100%"
+                  >
+                    <ElOption v-for="tag in serverTags" :key="tag.id" :label="tag.name" :value="tag.id">
+                      <span>{{ tag.name }}</span>
+                      <span
+                        :style="{
+                          marginLeft: '8px',
+                          display: 'inline-block',
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '2px',
+                          backgroundColor: tag.color
+                        }"
+                      />
+                    </ElOption>
+                  </ElSelect>
+                </ElFormItem>
+              </div>
+            </div>
+
+            <div class="edit-form-row">
+              <div class="edit-form-col">
+                <div class="subsection-title">位置信息</div>
+                <ElFormItem label="所在机房">
+                  <ElSelect
+                    v-model="serverForm.roomId"
+                    placeholder="请选择机房"
+                    clearable
+                    style="width: 100%"
+                    @change="handleRoomChange"
+                  >
+                    <ElOption
+                      v-for="room in serverRooms"
+                      :key="room.id"
+                      :label="`${room.name} (${room.code})`"
+                      :value="room.id"
+                    />
+                  </ElSelect>
+                </ElFormItem>
+
+                <ElFormItem label="所在机柜">
+                  <ElSelect
+                    v-model="serverForm.cabinetId"
+                    placeholder="请先选择机房"
+                    clearable
+                    :disabled="!serverForm.roomId"
+                    style="width: 100%"
+                  >
+                    <ElOption
+                      v-for="cabinet in cabinets"
+                      :key="cabinet.id"
+                      :label="`${cabinet.name} (${cabinet.code})`"
+                      :value="cabinet.id"
+                    />
+                  </ElSelect>
+                </ElFormItem>
+              </div>
+
+              <div class="edit-form-col">
+                <div class="subsection-title">硬件配置</div>
+                <ElFormItem label="CPU/内存/磁盘">
+                  <div style="display: flex; gap: 8px">
+                    <ElInputNumber v-model="serverForm.cpu" :min="0" :max="1024" placeholder="CPU" style="flex: 1" />
+                    <ElInputNumber
+                      v-model="serverForm.memory"
+                      :min="0"
+                      :max="65536"
+                      placeholder="内存GB"
+                      style="flex: 1"
+                    />
+                    <ElInputNumber
+                      v-model="serverForm.disk"
+                      :min="0"
+                      :max="999999"
+                      placeholder="磁盘GB"
+                      style="flex: 1"
+                    />
+                  </div>
+                </ElFormItem>
+
+                <ElFormItem label="操作系统">
+                  <ElInput v-model="serverForm.os" placeholder="如 Ubuntu 22.04" style="width: 100%" />
+                </ElFormItem>
+
+                <ElFormItem label="备注">
+                  <ElInput v-model="serverForm.remarks" type="textarea" :rows="2" placeholder="请输入备注" />
+                </ElFormItem>
+              </div>
+            </div>
+          </ElForm>
+        </ElTabPane>
+
+        <!-- 属性配置 Tab -->
+        <ElTabPane label="属性配置" name="attributes">
+          <div v-if="loadingAttributes" class="py-40px text-center">
+            <ElIcon class="is-loading text-32px"><icon-mdi-loading /></ElIcon>
+            <div class="mt-16px">加载中...</div>
+          </div>
+          <div v-else-if="getUnifiedAttributes().length === 0" class="py-40px text-center text-gray-400">
+            <icon-mdi-information-outline class="text-48px" />
+            <div class="mt-16px">暂无可用属性</div>
+            <div class="mt-8px text-12px">请先在"系统管理 → 属性管理"中配置属性</div>
+          </div>
+          <div v-else class="attributes-container-drawer">
+            <div v-for="attr in getUnifiedAttributes()" :key="attr.id" class="attribute-form-item-compact">
+              <div class="attribute-label">
+                <span v-if="attr.required" class="required-mark">*</span>
+                {{ attr.name }}
+                <span v-if="attr.description" class="attribute-description">{{ attr.description }}</span>
+              </div>
+              <div class="attribute-input">
+                <!-- 文本输入 -->
+                <ElInput
+                  v-if="attr.type === 'text'"
+                  :model-value="getAttributeValue(attr.id)"
+                  :placeholder="attr.defaultValue || `请输入${attr.name}`"
+                  @change="val => setAttributeValue(attr.id, val)"
+                />
+                <!-- 数字输入 -->
+                <ElInputNumber
+                  v-else-if="attr.type === 'number'"
+                  :model-value="getAttributeValue(attr.id)"
+                  :placeholder="attr.defaultValue || `请输入${attr.name}`"
+                  style="width: 100%"
+                  @change="val => setAttributeValue(attr.id, val)"
+                />
+                <!-- 日期选择 -->
+                <ElDatePicker
+                  v-else-if="attr.type === 'date'"
+                  :model-value="getAttributeValue(attr.id)"
+                  type="date"
+                  :placeholder="attr.defaultValue || `请选择${attr.name}`"
+                  style="width: 100%"
+                  format="YYYY-MM-DD"
+                  value-format="YYYY-MM-DD"
+                  @change="val => setAttributeValue(attr.id, val)"
+                />
+                <!-- 布尔值 -->
+                <ElSwitch
+                  v-else-if="attr.type === 'boolean'"
+                  :model-value="getAttributeValue(attr.id)"
+                  active-text="是"
+                  inactive-text="否"
+                  @change="val => setAttributeValue(attr.id, val)"
+                />
+                <!-- 下拉单选 -->
+                <ElSelect
+                  v-else-if="attr.type === 'select'"
+                  :model-value="getAttributeValue(attr.id)"
+                  :placeholder="`请选择${attr.name}`"
+                  style="width: 100%"
+                  @change="val => setAttributeValue(attr.id, val)"
+                >
+                  <ElOption
+                    v-for="opt in parseAttributeOptions(attr.options)"
+                    :key="opt.value"
+                    :label="opt.label"
+                    :value="opt.value"
+                  />
+                </ElSelect>
+                <!-- 下拉多选 -->
+                <ElSelect
+                  v-else-if="attr.type === 'multiselect'"
+                  :model-value="getAttributeMultiValue(attr.id)"
+                  :placeholder="`请选择${attr.name}`"
+                  style="width: 100%"
+                  multiple
+                  collapse-tags
+                  collapse-tags-tooltip
+                  @change="val => setAttributeMultiValue(attr.id, val)"
+                >
+                  <ElOption
+                    v-for="opt in parseAttributeOptions(attr.options)"
+                    :key="opt.value"
+                    :label="opt.label"
+                    :value="opt.value"
+                  />
+                </ElSelect>
+              </div>
+            </div>
+          </div>
+        </ElTabPane>
+
+        <!-- 云主机配置 Tab -->
+        <ElTabPane label="云主机配置" name="cloud" :disabled="serverType !== 'cloud'">
+          <div v-if="serverType === 'cloud'" class="edit-form">
+            <ElForm label-width="100px">
+              <ElFormItem label="云服务商">
+                <ElSelect v-model="cloudForm.provider" style="width: 100%">
+                  <ElOption label="阿里云" value="aliyun" />
+                  <ElOption label="腾讯云" value="tencent" />
+                  <ElOption label="华为云" value="huawei" />
+                  <ElOption label="AWS" value="aws" />
+                  <ElOption label="其他" value="other" />
+                </ElSelect>
+              </ElFormItem>
+              <ElFormItem label="实例名称">
+                <ElInput v-model="cloudForm.instanceName" placeholder="请输入实例名称" />
+              </ElFormItem>
+              <ElFormItem label="实例规格">
+                <ElInput v-model="cloudForm.instanceType" placeholder="如: ecs.t6-c1m2.large" />
+              </ElFormItem>
+              <ElFormItem label="地域">
+                <ElInput v-model="cloudForm.region" placeholder="如: cn-hangzhou" />
+              </ElFormItem>
+              <ElFormItem label="可用区">
+                <ElInput v-model="cloudForm.zone" placeholder="如: cn-hangzhou-i" />
+              </ElFormItem>
+              <ElFormItem label="计费类型">
+                <ElSelect v-model="cloudForm.chargeType" style="width: 100%">
+                  <ElOption label="按量付费" value="postpay" />
+                  <ElOption label="包年包月" value="prepay" />
+                </ElSelect>
+              </ElFormItem>
+            </ElForm>
+          </div>
+          <div v-else class="py-40px text-center text-gray-400">
+            <icon-mdi-cloud-off-outline class="text-48px" />
+            <div class="mt-16px">当前主机不是云主机，无需配置云服务信息</div>
+          </div>
+        </ElTabPane>
+      </ElTabs>
+
+      <template #footer>
+        <div style="flex: 1"></div>
+        <ElButton size="large" @click="editDrawerVisible = false">取消</ElButton>
+        <ElButton type="primary" size="large" @click="handleSave">保存更改</ElButton>
+      </template>
+    </ElDrawer>
+
     <!-- 右键菜单 -->
-    <teleport to="body">
-      <transition name="fade">
+    <Teleport to="body">
+      <Transition name="fade">
         <div
           v-if="contextMenuVisible"
           class="context-menu"
@@ -1589,6 +2697,10 @@ onUnmounted(() => {
             <icon-mdi-plus class="mr-8px" />
             添加分组
           </div>
+          <div class="context-menu-item primary" @click.stop="handleAddServer">
+            <icon-mdi-server class="mr-8px" />
+            添加主机
+          </div>
           <div class="context-menu-item" @click.stop="handleEditGroup">
             <icon-mdi-pencil class="mr-8px" />
             重命名
@@ -1598,8 +2710,8 @@ onUnmounted(() => {
             删除分组
           </div>
         </div>
-      </transition>
-    </teleport>
+      </Transition>
+    </Teleport>
 
     <!-- 分组创建对话框 -->
     <ElDialog v-model="groupDialogVisible" title="创建分组" width="500px">
@@ -1639,7 +2751,7 @@ onUnmounted(() => {
     <!-- SSH终端已改为路由跳转，保留连接对话框 -->
 
     <!-- 主机详情抽屉 -->
-    <el-drawer
+    <ElDrawer
       v-model="drawerVisible"
       direction="rtl"
       size="820px"
@@ -1647,80 +2759,302 @@ onUnmounted(() => {
       destroy-on-close
     >
       <div v-if="drawerServer">
-        <el-tabs v-model="drawerActiveTab">
+        <ElTabs v-model="drawerActiveTab">
           <!-- 概览 Tab -->
-          <el-tab-pane label="概览" name="overview">
-            <el-descriptions :column="2" border>
-              <el-descriptions-item label="主机名">{{ drawerServer.hostname }}</el-descriptions-item>
-              <el-descriptions-item label="连接IP">{{ drawerServer.ip }}</el-descriptions-item>
-              <el-descriptions-item label="内网IP">{{ drawerServer.innerIp || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="SSH端口">{{ drawerServer.sshPort || 22 }}</el-descriptions-item>
-              <el-descriptions-item label="操作系统">{{ drawerServer.os || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="环境">
-                <el-tag :type="drawerServer.env === 'prod' ? 'danger' : drawerServer.env === 'test' ? 'warning' : 'info'" size="small">
-                  {{ drawerServer.env === 'prod' ? '生产' : drawerServer.env === 'test' ? '测试' : drawerServer.env || '-' }}
-                </el-tag>
-              </el-descriptions-item>
-              <el-descriptions-item label="CPU">{{ drawerServer.cpu ? `${drawerServer.cpu} 核` : '-' }}</el-descriptions-item>
-              <el-descriptions-item label="内存">{{ drawerServer.memory ? `${drawerServer.memory} GB` : '-' }}</el-descriptions-item>
-              <el-descriptions-item label="磁盘">{{ drawerServer.disk ? `${drawerServer.disk} GB` : '-' }}</el-descriptions-item>
-              <el-descriptions-item label="状态">
-                <el-tag :type="drawerServer.status === 1 ? 'success' : 'danger'" size="small">
-                  {{ drawerServer.status === 1 ? '正常' : '停用' }}
-                </el-tag>
-              </el-descriptions-item>
-              <el-descriptions-item label="最近连接">{{ drawerServer.lastConnectTime || '-' }}</el-descriptions-item>
-              <el-descriptions-item label="备注" :span="2">{{ drawerServer.remark || '-' }}</el-descriptions-item>
-            </el-descriptions>
-          </el-tab-pane>
+          <ElTabPane label="概览" name="overview">
+            <!-- 基础信息 -->
+            <div class="overview-section">
+              <div class="section-title">基础信息</div>
+              <ElDescriptions :column="2" border size="small">
+                <ElDescriptionsItem label="主机名">{{ drawerServer.hostname }}</ElDescriptionsItem>
+                <ElDescriptionsItem label="连接IP">{{ drawerServer.ip }}</ElDescriptionsItem>
+                <ElDescriptionsItem label="内网IP">{{ drawerServer.innerIp || '-' }}</ElDescriptionsItem>
+                <ElDescriptionsItem label="SSH端口">{{ drawerServer.sshPort || 22 }}</ElDescriptionsItem>
+                <ElDescriptionsItem label="操作系统">{{ drawerServer.os || '-' }}</ElDescriptionsItem>
+                <ElDescriptionsItem label="系统架构">{{ drawerServer.arch || '-' }}</ElDescriptionsItem>
+                <ElDescriptionsItem label="环境">
+                  <ElTag :type="getEnvDisplayInfo(drawerServer.env).type" size="small">
+                    {{ getEnvDisplayInfo(drawerServer.env).label }}
+                  </ElTag>
+                </ElDescriptionsItem>
+                <ElDescriptionsItem label="主机状态">
+                  <ElTag :type="drawerServer.status === 1 ? 'success' : 'info'" size="small">
+                    {{ drawerServer.status === 1 ? '正常' : '停用' }}
+                  </ElTag>
+                </ElDescriptionsItem>
+              </ElDescriptions>
+            </div>
+
+            <!-- 硬件配置 -->
+            <div class="overview-section">
+              <div class="section-title">硬件配置</div>
+              <ElDescriptions :column="3" border size="small">
+                <ElDescriptionsItem label="CPU">
+                  {{ drawerServer.cpu ? `${drawerServer.cpu} 核` : '-' }}
+                </ElDescriptionsItem>
+                <ElDescriptionsItem label="内存">
+                  {{ drawerServer.memory ? `${drawerServer.memory} GB` : '-' }}
+                </ElDescriptionsItem>
+                <ElDescriptionsItem label="磁盘">
+                  {{ drawerServer.disk ? `${drawerServer.disk} GB` : '-' }}
+                </ElDescriptionsItem>
+              </ElDescriptions>
+            </div>
+
+            <!-- 云主机信息（仅云主机显示） -->
+            <div v-if="drawerServer.serverType === 'cloud' && drawerServer.cloudInfo" class="overview-section">
+              <div class="section-title">云主机信息</div>
+              <ElDescriptions :column="2" border size="small">
+                <ElDescriptionsItem label="服务商">
+                  <ElTag size="small">{{ drawerServer.provider || '-' }}</ElTag>
+                </ElDescriptionsItem>
+                <ElDescriptionsItem label="实例类型">
+                  {{ drawerServer.cloudInfo.instanceType || '-' }}
+                </ElDescriptionsItem>
+                <ElDescriptionsItem label="区域">{{ drawerServer.region || '-' }}</ElDescriptionsItem>
+                <ElDescriptionsItem label="可用区">{{ drawerServer.zone || '-' }}</ElDescriptionsItem>
+                <ElDescriptionsItem label="实例ID" :span="2">
+                  {{ drawerServer.cloudInfo.instanceId || '-' }}
+                </ElDescriptionsItem>
+              </ElDescriptions>
+            </div>
+
+            <!-- 归属信息 -->
+            <div class="overview-section">
+              <div class="section-title">归属信息</div>
+              <ElDescriptions :column="2" border size="small">
+                <ElDescriptionsItem label="业务系统">{{ drawerServer.business?.name || '-' }}</ElDescriptionsItem>
+                <ElDescriptionsItem label="所属分组">
+                  <ElTag v-for="group in drawerServer.groups" :key="group.id" size="small" style="margin-right: 4px">
+                    {{ group.name }}
+                  </ElTag>
+                  <span v-if="!drawerServer.groups?.length" class="text-gray-400">未分组</span>
+                </ElDescriptionsItem>
+                <ElDescriptionsItem label="标签" :span="2">
+                  <ElTag
+                    v-for="tag in drawerServer.tags"
+                    :key="tag.id"
+                    size="small"
+                    :color="tag.color"
+                    style="margin-right: 4px"
+                  >
+                    {{ tag.name }}
+                  </ElTag>
+                  <span v-if="!drawerServer.tags?.length" class="text-gray-400">无标签</span>
+                </ElDescriptionsItem>
+              </ElDescriptions>
+            </div>
+
+            <!-- 状态信息 -->
+            <div class="overview-section">
+              <div class="section-title">状态信息</div>
+              <ElDescriptions :column="2" border size="small">
+                <ElDescriptionsItem label="Agent 状态">
+                  <ElTag v-if="drawerServer.agentStatus === 'running'" type="success" size="small">
+                    运行中 (v{{ drawerServer.agentVersion || '-' }})
+                  </ElTag>
+                  <ElTag v-else-if="drawerServer.agentStatus === 'offline'" type="warning" size="small">离线</ElTag>
+                  <ElTag v-else type="info" size="small">未安装</ElTag>
+                </ElDescriptionsItem>
+                <ElDescriptionsItem label="最近连接">{{ drawerServer.lastConnectTime || '-' }}</ElDescriptionsItem>
+                <ElDescriptionsItem label="最后连通性检查">
+                  {{ drawerServer.lastCheckTime || '-' }}
+                </ElDescriptionsItem>
+                <ElDescriptionsItem label="连通性状态">
+                  <ElTag
+                    :type="
+                      drawerServer.connectivityStatus === 'online'
+                        ? 'success'
+                        : drawerServer.connectivityStatus === 'offline'
+                          ? 'danger'
+                          : 'info'
+                    "
+                    size="small"
+                  >
+                    {{
+                      drawerServer.connectivityStatus === 'online'
+                        ? '在线'
+                        : drawerServer.connectivityStatus === 'offline'
+                          ? '离线'
+                          : '未知'
+                    }}
+                  </ElTag>
+                </ElDescriptionsItem>
+                <ElDescriptionsItem label="创建时间" :span="2">{{ drawerServer.createdAt || '-' }}</ElDescriptionsItem>
+                <ElDescriptionsItem label="备注" :span="2">{{ drawerServer.remarks || '-' }}</ElDescriptionsItem>
+              </ElDescriptions>
+            </div>
+          </ElTabPane>
 
           <!-- 连接 Tab -->
-          <el-tab-pane label="连接信息" name="connect">
-            <el-descriptions :column="1" border>
-              <el-descriptions-item label="SSH端口">{{ drawerServer.sshPort || 22 }}</el-descriptions-item>
-              <el-descriptions-item label="绑定凭证">
-                <el-tag :type="drawerServer.credentials?.length ? 'success' : 'warning'" size="small">
-                  {{ drawerServer.credentials?.length ? `${drawerServer.credentials.length} 个已绑定` : '未配置' }}
-                </el-tag>
-              </el-descriptions-item>
-              <el-descriptions-item label="可用凭证">
+          <ElTabPane label="连接信息" name="connect">
+            <ElDescriptions :column="1" border>
+              <ElDescriptionsItem label="SSH端口">{{ drawerServer.sshPort || 22 }}</ElDescriptionsItem>
+              <ElDescriptionsItem label="绑定凭证">
+                <div v-if="drawerServer.credentials?.length">
+                  <ElTag
+                    v-for="cred in drawerServer.credentials"
+                    :key="cred.id"
+                    type="success"
+                    size="small"
+                    style="margin-right: 4px; margin-bottom: 4px"
+                  >
+                    {{ cred.name }}（{{ cred.username }}）
+                  </ElTag>
+                </div>
+                <ElTag v-else type="warning" size="small">未配置</ElTag>
+              </ElDescriptionsItem>
+              <ElDescriptionsItem label="可用凭证">
                 <div>
-                  <el-tag
+                  <ElTag
                     v-for="cred in drawerPermission.credentials"
                     :key="cred.id"
                     size="small"
                     style="margin-right: 4px; margin-bottom: 4px"
-                  >{{ cred.name }}（{{ cred.username }}）</el-tag>
+                  >
+                    {{ cred.name }}（{{ cred.username }}）
+                  </ElTag>
                   <span v-if="!drawerPermission.credentials?.length" class="text-gray-400">暂无数据</span>
                 </div>
-              </el-descriptions-item>
-            </el-descriptions>
+              </ElDescriptionsItem>
+            </ElDescriptions>
             <div style="margin-top: 16px">
-              <el-button type="success" @click="handleConnect(drawerServer)">连接此主机</el-button>
+              <ElButton type="success" @click="handleConnect(drawerServer)">连接此主机</ElButton>
             </div>
-          </el-tab-pane>
+          </ElTabPane>
 
           <!-- 会话记录 Tab -->
-          <el-tab-pane label="会话记录" name="sessions">
-            <el-table :data="drawerSessions" v-loading="drawerLoading" size="small">
-              <el-table-column prop="username" label="用户" width="100" />
-              <el-table-column prop="loginAccount" label="登录账号" width="100" />
-              <el-table-column prop="protocol" label="协议" width="70">
+          <ElTabPane label="会话记录" name="sessions">
+            <ElTable v-loading="drawerLoading" :data="drawerSessions" size="small">
+              <ElTableColumn prop="username" label="用户" width="100" />
+              <ElTableColumn prop="loginAccount" label="登录账号" width="100" />
+              <ElTableColumn prop="protocol" label="协议" width="70">
                 <template #default="{ row }">
-                  <el-tag size="small">{{ row.protocol?.toUpperCase() }}</el-tag>
+                  <ElTag size="small">{{ row.protocol?.toUpperCase() }}</ElTag>
                 </template>
-              </el-table-column>
-              <el-table-column prop="startedAt" label="开始时间" min-width="150" />
-              <el-table-column prop="status" label="状态" width="80">
+              </ElTableColumn>
+              <ElTableColumn prop="startedAt" label="开始时间" min-width="150" />
+              <ElTableColumn prop="status" label="状态" width="80">
                 <template #default="{ row }">
-                  <el-tag :type="row.status === 'active' ? 'success' : 'info'" size="small">{{ row.status }}</el-tag>
+                  <ElTag :type="row.status === 'active' ? 'success' : 'info'" size="small">{{ row.status }}</ElTag>
                 </template>
-              </el-table-column>
-            </el-table>
-          </el-tab-pane>
-        </el-tabs>
+              </ElTableColumn>
+            </ElTable>
+          </ElTabPane>
+
+          <!-- 监控信息 Tab -->
+          <ElTabPane label="监控信息" name="monitor">
+            <!-- 资源使用率卡片 -->
+            <div class="monitor-section">
+              <div class="section-title">资源使用率</div>
+              <div class="usage-cards">
+                <div class="usage-card">
+                  <div class="card-label">CPU</div>
+                  <div class="card-value" :style="{ color: getUsageColor(drawerServer.cpuUsage || 0) }">
+                    {{ Math.round(drawerServer.cpuUsage || 0) }}%
+                  </div>
+                  <ElProgress
+                    :percentage="Math.round(drawerServer.cpuUsage || 0)"
+                    :color="getUsageColor(drawerServer.cpuUsage || 0)"
+                    :show-text="false"
+                  />
+                  <div class="card-detail">{{ drawerServer.cpu || '-' }} 核</div>
+                </div>
+                <div class="usage-card">
+                  <div class="card-label">内存</div>
+                  <div class="card-value" :style="{ color: getUsageColor(drawerServer.memoryUsage || 0) }">
+                    {{ Math.round(drawerServer.memoryUsage || 0) }}%
+                  </div>
+                  <ElProgress
+                    :percentage="Math.round(drawerServer.memoryUsage || 0)"
+                    :color="getUsageColor(drawerServer.memoryUsage || 0)"
+                    :show-text="false"
+                  />
+                  <div class="card-detail">
+                    {{
+                      drawerServer.memory
+                        ? ((drawerServer.memory * (drawerServer.memoryUsage || 0)) / 100).toFixed(1) +
+                          ' / ' +
+                          drawerServer.memory +
+                          ' GB'
+                        : '-'
+                    }}
+                  </div>
+                </div>
+                <div class="usage-card">
+                  <div class="card-label">磁盘</div>
+                  <div class="card-value" :style="{ color: getUsageColor(drawerServer.diskUsage || 0) }">
+                    {{ Math.round(drawerServer.diskUsage || 0) }}%
+                  </div>
+                  <ElProgress
+                    :percentage="Math.round(drawerServer.diskUsage || 0)"
+                    :color="getUsageColor(drawerServer.diskUsage || 0)"
+                    :show-text="false"
+                  />
+                  <div class="card-detail">{{ drawerServer.disk || '-' }} GB</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 磁盘分区详情 -->
+            <div class="monitor-section">
+              <div class="section-title">磁盘分区详情</div>
+              <ElTable :data="formatDiskPartitionsForDrawer(drawerServer)" size="small" border>
+                <ElTableColumn prop="mount" label="挂载点" width="120" />
+                <ElTableColumn label="使用率" width="150">
+                  <template #default="{ row }">
+                    <ElProgress :percentage="Math.round(row.usage)" :color="getUsageColor(row.usage)" />
+                  </template>
+                </ElTableColumn>
+                <ElTableColumn prop="usage" label="使用率" width="80" align="center">
+                  <template #default="{ row }">
+                    <span :style="{ color: getUsageColor(row.usage) }">{{ Math.round(row.usage) }}%</span>
+                  </template>
+                </ElTableColumn>
+              </ElTable>
+              <div
+                v-if="!drawerServer.diskPartitions || drawerServer.diskPartitions.length === 0"
+                class="py-12px text-center text-gray-400"
+              >
+                {{ drawerServer.agentStatus === 'running' ? '正在采集...' : '暂无数据，请先部署 Agent' }}
+              </div>
+            </div>
+
+            <!-- Agent 状态 -->
+            <div class="monitor-section">
+              <div class="section-title">Agent 状态</div>
+              <ElDescriptions :column="2" border size="small">
+                <ElDescriptionsItem label="状态">
+                  <template #default>
+                    <div v-if="drawerServer.agentStatus === 'running'" class="flex items-center gap-2">
+                      <ElTag type="success" size="small">运行中</ElTag>
+                      <span v-if="drawerServer.agentVersion" class="text-12px text-gray-500">
+                        v{{ drawerServer.agentVersion }}
+                      </span>
+                    </div>
+                    <ElTag v-else-if="drawerServer.agentStatus === 'offline'" type="warning" size="small">离线</ElTag>
+                    <ElTag v-else type="info" size="small">未安装</ElTag>
+                  </template>
+                </ElDescriptionsItem>
+                <ElDescriptionsItem label="监听端口">{{ drawerServer.agentPort || 9100 }}</ElDescriptionsItem>
+                <ElDescriptionsItem label="最后心跳">
+                  <template #default>
+                    <span v-if="drawerServer.lastHeartbeatAt">{{ formatTime(drawerServer.lastHeartbeatAt) }}</span>
+                    <span v-else class="text-gray-400">-</span>
+                  </template>
+                </ElDescriptionsItem>
+                <ElDescriptionsItem label="指标更新">
+                  <template #default>
+                    <span v-if="drawerServer.metricsUpdatedAt">{{ formatTime(drawerServer.metricsUpdatedAt) }}</span>
+                    <span v-else class="text-gray-400">-</span>
+                  </template>
+                </ElDescriptionsItem>
+              </ElDescriptions>
+            </div>
+          </ElTabPane>
+        </ElTabs>
       </div>
-    </el-drawer>
+    </ElDrawer>
   </div>
 </template>
 
@@ -1778,6 +3112,14 @@ onUnmounted(() => {
   }
 }
 
+.search-form-compact {
+  @extend .search-form;
+
+  :deep(.el-form-item) {
+    margin-right: 8px;
+  }
+}
+
 .context-menu {
   position: fixed;
   z-index: 9999;
@@ -1817,5 +3159,358 @@ onUnmounted(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* 动态属性样式 */
+.attributes-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.attribute-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attribute-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.required-mark {
+  color: #f56c6c;
+  font-size: 14px;
+}
+
+.attribute-description {
+  font-size: 12px;
+  color: #909399;
+  font-weight: normal;
+  margin-left: 8px;
+}
+
+.attribute-input {
+  width: 100%;
+}
+
+/* ========== 表单优化样式 ========== */
+.form-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e4e7ed;
+}
+
+.hostname-input,
+.ip-input {
+  margin-bottom: 8px;
+}
+
+.form-error-text {
+  animation: shake 0.5s;
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+.advanced-options {
+  padding: 16px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+}
+
+/* ========== 编辑抽屉样式 ========== */
+.edit-form {
+  padding: 16px;
+}
+
+.edit-form-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.edit-form-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.subsection-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #409eff;
+  margin-bottom: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #dcdfe6;
+}
+
+.form-section {
+  margin-bottom: 32px;
+  padding: 20px;
+  background-color: #fafafa;
+  border-radius: 8px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e4e7ed;
+}
+
+.field-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
+}
+
+.attribute-form-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background-color: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e4e7ed;
+}
+
+.attribute-form-item .attribute-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.attribute-form-item .attribute-input {
+  width: 100%;
+}
+
+/* 属性网格布局 */
+.attributes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 20px;
+  padding: 12px;
+}
+
+/* 属性配置标签页容器 */
+.attributes-container-drawer {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 20px;
+  padding: 20px;
+}
+
+.attributes-container-drawer .attribute-form-item-compact {
+  margin: 0;
+}
+
+.attribute-form-item-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background-color: #fafafa;
+  border-radius: 6px;
+  border: 1px solid #e4e7ed;
+}
+
+.attribute-form-item-compact .attribute-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #303133;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.attribute-form-item-compact .attribute-input {
+  width: 100%;
+}
+
+/* 概览区块样式 */
+.overview-section {
+  margin-bottom: 24px;
+}
+
+.overview-section .section-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+/* 资源使用率紧凑显示 */
+.usage-compact {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.usage-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.usage-label {
+  color: #909399;
+  font-size: 11px;
+}
+
+.usage-value {
+  font-weight: 600;
+  font-size: 12px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.usage-divider {
+  color: #dcdfe6;
+  margin: 0 2px;
+}
+
+.disk-mount {
+  font-size: 10px;
+  color: #909399;
+  margin-left: 2px;
+}
+
+/* 操作列分隔符 */
+.action-divider {
+  color: #dcdfe6;
+  margin: 0 8px;
+  font-size: 12px;
+}
+
+/* IP地址显示样式 - 圆点设计 */
+.ip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ip-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ip-dot-primary {
+  background-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.ip-dot-secondary {
+  background-color: #9ca3af;
+  box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.1);
+}
+
+.ip-addr {
+  font-size: 12px;
+  color: #606266;
+  font-weight: 400;
+}
+
+.ip-addr-sub {
+  font-size: 12px;
+  color: #909399;
+  font-weight: 400;
+}
+
+/* 监控信息包装器 */
+.monitor-info-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.agent-version-tag {
+  font-size: 11px;
+}
+
+/* 监控信息 Tab 样式 */
+.monitor-section {
+  margin-bottom: 24px;
+}
+
+.monitor-section .section-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+.usage-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.usage-card {
+  padding: 16px;
+  background-color: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e4e7ed;
+  text-align: center;
+}
+
+.usage-card .card-label {
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+
+.usage-card .card-value {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.usage-card .card-detail {
+  font-size: 12px;
+  color: #606266;
+  margin-top: 8px;
 }
 </style>

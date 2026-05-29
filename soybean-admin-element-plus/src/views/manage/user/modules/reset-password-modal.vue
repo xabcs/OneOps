@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { useForm, useFormRules } from '@/hooks/common/form';
 import { fetchResetUserPassword } from '@/service/api';
+import { useForm, useFormRules } from '@/hooks/common/form';
 import { $t } from '@/locales';
 
 defineOptions({ name: 'ResetPasswordModal' });
@@ -94,20 +94,10 @@ watch(visible, () => {
         <ElInput :value="username" disabled />
       </ElFormItem>
       <ElFormItem label="新密码" prop="password">
-        <ElInput
-          v-model="model.password"
-          type="password"
-          placeholder="请输入新密码"
-          show-password
-        />
+        <ElInput v-model="model.password" type="password" placeholder="请输入新密码" show-password />
       </ElFormItem>
       <ElFormItem label="确认密码" prop="confirmPassword">
-        <ElInput
-          v-model="model.confirmPassword"
-          type="password"
-          placeholder="请再次输入新密码"
-          show-password
-        />
+        <ElInput v-model="model.confirmPassword" type="password" placeholder="请再次输入新密码" show-password />
       </ElFormItem>
     </ElForm>
     <template #footer>

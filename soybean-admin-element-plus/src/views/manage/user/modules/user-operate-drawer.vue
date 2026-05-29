@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from 'vue';
-import { fetchGetAllRoles, fetchGetMenuTree, fetchCreateUser, fetchUpdateUser } from '@/service/api';
+import { computed, nextTick, ref, watch } from 'vue';
+import { fetchCreateUser, fetchGetAllRoles, fetchGetMenuTree, fetchUpdateUser } from '@/service/api';
 import { useForm, useFormRules } from '@/hooks/common/form';
 import { $t } from '@/locales';
 
@@ -120,9 +120,7 @@ async function getHomePathOptions() {
   const { error, data } = await fetchGetMenuTree();
 
   if (!error && data) {
-    const options: CommonType.Option<string>[] = [
-      { label: '首页（仪表盘）', value: '/' }
-    ];
+    const options: CommonType.Option<string>[] = [{ label: '首页（仪表盘）', value: '/' }];
 
     // 获取当前用户的角色ID列表
     const userRoleIds = model.value.roleIds || [];
@@ -169,7 +167,7 @@ function handleInitModel() {
   console.log('🔧 [handleInitModel] 开始执行', {
     isEdit: isEdit.value,
     operateType: props.operateType,
-    hasRowData: !!props.rowData,
+    hasRowData: Boolean(props.rowData),
     rowData: props.rowData,
     rowDataUsername: props.rowData?.username
   });
@@ -253,7 +251,7 @@ async function handleSubmit() {
 
 watch(
   () => visible.value,
-  async (newVal) => {
+  async newVal => {
     console.log('🔍 [用户操作抽屉] visible变化', {
       visible: visible.value,
       newVal,
@@ -330,7 +328,12 @@ watch(
         <ElInput v-model="model.nickname" :placeholder="$t('page.manage.user.form.nickName')" autocomplete="off" />
       </ElFormItem>
       <ElFormItem :label="$t('page.manage.user.userEmail')" prop="email">
-        <ElInput v-model="model.email" :placeholder="$t('page.manage.user.form.userEmail')" autocomplete="off" name="new-email" />
+        <ElInput
+          v-model="model.email"
+          :placeholder="$t('page.manage.user.form.userEmail')"
+          autocomplete="off"
+          name="new-email"
+        />
       </ElFormItem>
       <ElFormItem :label="$t('page.manage.user.userStatus')" prop="status">
         <ElRadioGroup v-model="model.status">

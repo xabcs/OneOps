@@ -94,7 +94,10 @@ function transformElegantRouteToVueRoute(
   const vueRoute = { name, path, ...rest } as RouteRecordRaw;
 
   try {
-    if (component) {
+    // 检查是否设置了 layout: false，如果设置了则不使用布局
+    const noLayout = route.meta?.layout === false;
+
+    if (component && !noLayout) {
       if (isSingleLevelRoute(route)) {
         const { layout, view } = getSingleLevelRouteComponent(component);
 
@@ -129,6 +132,17 @@ function transformElegantRouteToVueRoute(
         vueRoute.component = views[viewName];
       }
 
+    }
+
+    // 如果设置了 layout: false，直接使用视图组件
+    if (component && noLayout) {
+      if (isView(component)) {
+        const viewName = getViewName(component);
+        vueRoute.component = views[viewName];
+      } else if (isLayout(component)) {
+        const layoutName = getLayoutName(component);
+        vueRoute.component = layouts[layoutName];
+      }
     }
   } catch (error: any) {
     console.error(`Error transforming route "${route.name}": ${error.toString()}`);
@@ -234,6 +248,14 @@ const routeMap: RouteMap = {
   "manage_role": "/manage/role",
   "manage_user": "/manage/user",
   "manage_user-detail": "/manage/user-detail/:id",
+  "monitoring": "/monitoring",
+  "monitoring_alerts": "/monitoring/alerts",
+  "monitoring_overview": "/monitoring/overview",
+  "monitoring_reports": "/monitoring/reports",
+  "monitoring_servers": "/monitoring/servers",
+  "monitoring_servers-detail": "/monitoring/servers-detail",
+  "monitoring_settings": "/monitoring/settings",
+  "monitoring_trends": "/monitoring/trends",
   "multi-menu": "/multi-menu",
   "multi-menu_first": "/multi-menu/first",
   "multi-menu_first_child": "/multi-menu/first/child",
@@ -264,6 +286,8 @@ const routeMap: RouteMap = {
   "plugin_tables_vtable": "/plugin/tables/vtable",
   "plugin_typeit": "/plugin/typeit",
   "plugin_video": "/plugin/video",
+  "system": "/system",
+  "system_attributes": "/system/attributes",
   "user-center": "/user-center"
 };
 

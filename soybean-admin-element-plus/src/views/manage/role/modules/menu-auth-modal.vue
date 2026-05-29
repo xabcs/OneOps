@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, shallowRef, watch, nextTick } from 'vue';
+import { computed, nextTick, shallowRef, watch } from 'vue';
 import { fetchGetMenuTree, fetchUpdateRole } from '@/service/api';
 import { $t } from '@/locales';
 

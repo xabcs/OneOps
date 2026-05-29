@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
-import { fetchGetAssetChanges } from '@/service/api';
 import { ElNotification } from 'element-plus';
+import { fetchGetAssetChanges } from '@/service/api';
 
 defineOptions({ name: 'CmdbChanges' });
 
@@ -117,7 +117,7 @@ onMounted(() => {
         <ElTableColumn prop="remarks" label="备注" min-width="180" show-overflow-tooltip />
       </ElTable>
 
-      <div class="flex justify-end mt-16px">
+      <div class="mt-16px flex justify-end">
         <ElPagination
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.pageSize"

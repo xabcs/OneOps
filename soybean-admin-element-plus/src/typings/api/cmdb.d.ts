@@ -52,6 +52,9 @@ declare namespace CMDB {
     cpuUsage?: number;
     memoryUsage?: number;
     diskUsage?: number;
+    load1?: number;
+    load5?: number;
+    load15?: number;
     metricsUpdatedAt?: string;
     agentStatus?: 'uninstalled' | 'running' | 'offline';
     agentPort?: number;
@@ -66,6 +69,13 @@ declare namespace CMDB {
     tags?: ServerTag[];
     groups?: ServerGroup[];
     cloudInfo?: CloudServer;
+    // 监控增强字段
+    cpuTrend?: number[];
+    memoryTrend?: number[];
+    diskTrend?: number[];
+    serviceStatus?: 'running' | 'active' | 'dead' | 'failed' | 'offline' | 'unknown';
+    alertCount?: number;
+    diskPartitions?: Array<{ mount: string; usage: number }>;
   };
 
   /** 业务系统 */
@@ -202,10 +212,13 @@ declare namespace CMDB {
     hostname: string;
     ip: string;
     innerIp?: string;
-    credentialIds: number[];       // 用户连接凭证（多选，credential_type=user）
-    systemCredentialId?: number;   // 系统运维凭证（单选，credential_type=system）
+    credentialIds: number[]; // 用户连接凭证（多选，credential_type=user）
+    systemCredentialId?: number; // 系统运维凭证（单选，credential_type=system）
     serverType: ServerType;
     groupIds?: number[];
+    tagIds?: number[];
+    roomId?: number;
+    cabinetId?: number;
     sshPort?: number;
     remarks?: string;
     cloudInfo?: CloudServerForm | null;
@@ -216,8 +229,6 @@ declare namespace CMDB {
     os?: string;
     osVersion?: string;
     businessId?: number;
-    cabinetId?: number;
-    tagIds?: number[];
   };
 
   /** 云主机表单 */
@@ -480,3 +491,73 @@ declare namespace Bastion {
     serverIp: string;
   };
 }
+
+  /** ======================================== */
+  /** Agent 版本管理相关类型                */
+  /** ======================================== */
+
+  /** Agent 版本 */
+  type AgentVersion = {
+    id: number;
+    version: string;
+    releaseNotes?: string;
+    changelog?: string;
+    releasedAt: string;
+    amd64BinaryPath?: string;
+    amd64BinaryHash?: string;
+    amd64BinarySize?: number;
+    arm64BinaryPath?: string;
+    arm64BinaryHash?: string;
+    arm64BinarySize?: number;
+    isLatest: boolean;
+    isDeprecated: boolean;
+    features?: string;
+    minCompatibleVersion?: string;
+    maxCompatibleVersion?: string;
+    downloadCount: number;
+    deployCount: number;
+    createdAt: string;
+    updatedAt: string;
+  };
+
+  /** Agent 版本表单 */
+  type AgentVersionForm = {
+    id?: number;
+    version: string;
+    releaseNotes?: string;
+    changelog?: string;
+    amd64BinaryPath?: string;
+    arm64BinaryPath?: string;
+    isLatest?: boolean;
+    isDeprecated?: boolean;
+    features?: Record<string, boolean>;
+    minCompatibleVersion?: string;
+    maxCompatibleVersion?: string;
+  };
+
+  /** Agent 升级任务 */
+  type AgentUpgradeTask = {
+    id: number;
+    taskName?: string;
+    targetVersion: string;
+    targetServerIds?: string;
+    status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+    currentStep: number;
+    totalSteps: number;
+    totalCount: number;
+    successCount: number;
+    failedCount: number;
+    skippedCount: number;
+    startedAt?: string;
+    completedAt?: string;
+    errorMessage?: string;
+    operationLog?: string;
+    createdBy?: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+
+  /** Agent 升级请求 */
+  type AgentUpgradeRequest = {
+    targetVersion: string;
+  };

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
+import { ElMessageBox, ElNotification, type FormInstance, type FormRules } from 'element-plus';
 import {
   fetchCreateBusinessUnit,
   fetchDeleteBusinessUnit,
   fetchGetBusinessUnits,
   fetchUpdateBusinessUnit
 } from '@/service/api';
-import { ElMessageBox, ElNotification, type FormInstance, type FormRules } from 'element-plus';
 
 defineOptions({ name: 'CmdbConfigBusiness' });
 
@@ -138,14 +138,7 @@ onMounted(() => {
         <ElButton type="primary" @click="handleAdd">新增业务</ElButton>
       </div>
 
-      <ElTable
-        v-loading="loading"
-        :data="tableData"
-        row-key="id"
-        border
-        stripe
-        :tree-props="{ children: 'children' }"
-      >
+      <ElTable v-loading="loading" :data="tableData" row-key="id" border stripe :tree-props="{ children: 'children' }">
         <ElTableColumn prop="id" label="ID" width="80" />
         <ElTableColumn prop="name" label="业务名称" min-width="160" show-overflow-tooltip />
         <ElTableColumn prop="code" label="业务代码" width="140" />

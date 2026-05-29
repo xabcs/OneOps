@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
+import { fetchCreateMenu, fetchGetMenuTree, fetchUpdateMenu } from '@/service/api';
 import { useForm, useFormRules } from '@/hooks/common/form';
 import { $t } from '@/locales';
-import { fetchCreateMenu, fetchUpdateMenu, fetchGetMenuTree } from '@/service/api';
 
 defineOptions({ name: 'MenuOperateDrawer' });
 
@@ -71,9 +71,7 @@ async function loadMenuTree() {
       const tree = buildTree(menuTreeData.value);
 
       // 添加根菜单选项
-      menuTree.value = [
-        { id: 0, name: '作为一级菜单', parentId: 0, children: tree }
-      ] as Api.SystemManage.MenuTree[];
+      menuTree.value = [{ id: 0, name: '作为一级菜单', parentId: 0, children: tree }] as Api.SystemManage.MenuTree[];
     }
   } finally {
     loadingMenuTree.value = false;
@@ -132,7 +130,7 @@ function handleInitModel() {
   console.log('🔧 [菜单操作抽屉] handleInitModel', {
     operateType: props.operateType,
     isEdit: isEdit.value,
-    hasRowData: !!props.rowData,
+    hasRowData: Boolean(props.rowData),
     rowData: props.rowData
   });
 
@@ -187,7 +185,7 @@ async function handleSubmit() {
 
 watch(
   () => visible.value,
-  async (newVal) => {
+  async newVal => {
     console.log('🔍 [菜单操作抽屉] visible变化', {
       visible: visible.value,
       newVal,
@@ -209,12 +207,12 @@ watch(
 // 监听 rowData 和 operateType 变化
 watch(
   () => props.rowData,
-  async (newRowData) => {
+  async newRowData => {
     console.log('🔍 [菜单操作抽屉] rowData变化', {
       visible: visible.value,
       operateType: props.operateType,
       isEdit: isEdit.value,
-      hasRowData: !!newRowData,
+      hasRowData: Boolean(newRowData),
       rowData: newRowData
     });
 

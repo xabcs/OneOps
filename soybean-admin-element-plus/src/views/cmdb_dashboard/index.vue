@@ -2,11 +2,11 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {
-  fetchGetServerStats,
-  fetchGetSessionStats,
-  fetchGetSessions,
   fetchGetCommands,
-  fetchGetServers
+  fetchGetServerStats,
+  fetchGetServers,
+  fetchGetSessionStats,
+  fetchGetSessions
 } from '@/service/api/cmdb';
 
 defineOptions({ name: 'CmdbDashboard' });
@@ -102,11 +102,16 @@ function formatTime(time: string): string {
 
 function getStatusType(status: string): 'success' | 'info' | 'warning' | 'danger' {
   switch (status) {
-    case 'active': return 'success';
-    case 'closed': return 'info';
-    case 'error': return 'danger';
-    case 'terminated': return 'warning';
-    default: return 'info';
+    case 'active':
+      return 'success';
+    case 'closed':
+      return 'info';
+    case 'error':
+      return 'danger';
+    case 'terminated':
+      return 'warning';
+    default:
+      return 'info';
   }
 }
 
@@ -132,73 +137,73 @@ onMounted(() => {
 <template>
   <div class="dashboard-page">
     <!-- 顶部统计卡片 -->
-    <el-row :gutter="16" class="stats-row">
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
+    <ElRow :gutter="16" class="stats-row">
+      <ElCol :span="6">
+        <ElCard shadow="hover" class="stat-card">
           <div class="stat-content">
             <div class="stat-icon stat-icon--servers">
               <icon-mdi-server class="icon" />
             </div>
             <div class="stat-info">
-              <div class="stat-value" v-loading="loading.serverStats">
+              <div v-loading="loading.serverStats" class="stat-value">
                 {{ serverStats?.total ?? '-' }}
               </div>
               <div class="stat-label">主机总数</div>
             </div>
           </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
+        </ElCard>
+      </ElCol>
+      <ElCol :span="6">
+        <ElCard shadow="hover" class="stat-card">
           <div class="stat-content">
             <div class="stat-icon stat-icon--online">
               <icon-mdi-server-network class="icon" />
             </div>
             <div class="stat-info">
-              <div class="stat-value" v-loading="loading.serverStats">
+              <div v-loading="loading.serverStats" class="stat-value">
                 {{ serverStats?.online ?? '-' }}
               </div>
               <div class="stat-label">在线主机</div>
             </div>
           </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
+        </ElCard>
+      </ElCol>
+      <ElCol :span="6">
+        <ElCard shadow="hover" class="stat-card">
           <div class="stat-content">
             <div class="stat-icon stat-icon--today">
               <icon-mdi-calendar-today class="icon" />
             </div>
             <div class="stat-info">
-              <div class="stat-value" v-loading="loading.sessionStats">
+              <div v-loading="loading.sessionStats" class="stat-value">
                 {{ sessionStats?.today ?? '-' }}
               </div>
               <div class="stat-label">今日会话</div>
             </div>
           </div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
+        </ElCard>
+      </ElCol>
+      <ElCol :span="6">
+        <ElCard shadow="hover" class="stat-card">
           <div class="stat-content">
             <div class="stat-icon stat-icon--active">
               <icon-mdi-connection class="icon" />
             </div>
             <div class="stat-info">
-              <div class="stat-value" v-loading="loading.sessionStats">
+              <div v-loading="loading.sessionStats" class="stat-value">
                 {{ sessionStats?.active ?? '-' }}
               </div>
               <div class="stat-label">活跃会话</div>
             </div>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </ElCard>
+      </ElCol>
+    </ElRow>
 
     <!-- 中部：环境分布 + 快速入口 -->
-    <el-row :gutter="16" class="middle-row">
-      <el-col :span="12">
-        <el-card shadow="never" header="按环境分布">
+    <ElRow :gutter="16" class="middle-row">
+      <ElCol :span="12">
+        <ElCard shadow="never" header="按环境分布">
           <div v-loading="loading.env" class="env-list">
             <div class="env-item">
               <span class="env-dot env-dot--prod" />
@@ -216,38 +221,26 @@ onMounted(() => {
               <span class="env-count">{{ envCounts.dev }} 台</span>
             </div>
           </div>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card shadow="never" header="快速入口">
+        </ElCard>
+      </ElCol>
+      <ElCol :span="12">
+        <ElCard shadow="never" header="快速入口">
           <div class="quick-links">
-            <el-button type="primary" plain size="large" @click="router.push('/cmdb/servers')">
-              主机资产
-            </el-button>
-            <el-button type="success" plain size="large" @click="router.push('/cmdb/audit/online')">
-              在线会话
-            </el-button>
-            <el-button type="warning" plain size="large" @click="router.push('/cmdb/audit/commands')">
-              命令审计
-            </el-button>
-            <el-button type="info" plain size="large" @click="router.push('/cmdb/access/credentials')">
-              凭证库
-            </el-button>
+            <ElButton type="primary" plain size="large" @click="router.push('/cmdb/servers')">主机资产</ElButton>
+            <ElButton type="success" plain size="large" @click="router.push('/cmdb/audit/online')">在线会话</ElButton>
+            <ElButton type="warning" plain size="large" @click="router.push('/cmdb/audit/commands')">命令审计</ElButton>
+            <ElButton type="info" plain size="large" @click="router.push('/cmdb/access/credentials')">凭证库</ElButton>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </ElCard>
+      </ElCol>
+    </ElRow>
 
     <!-- 底部：最近会话 + 最近命令 -->
-    <el-row :gutter="16" class="bottom-row">
-      <el-col :span="12">
-        <el-card shadow="never" header="最近会话">
+    <ElRow :gutter="16" class="bottom-row">
+      <ElCol :span="12">
+        <ElCard shadow="never" header="最近会话">
           <div v-loading="loading.sessions">
-            <div
-              v-for="item in recentSessions"
-              :key="item.id"
-              class="list-item"
-            >
+            <div v-for="item in recentSessions" :key="item.id" class="list-item">
               <div class="list-item-main">
                 <span class="list-item-user">{{ item.username }}</span>
                 <span class="list-item-sep">→</span>
@@ -255,21 +248,17 @@ onMounted(() => {
               </div>
               <div class="list-item-meta">
                 <span class="list-item-time">{{ formatTime(item.startedAt || '') }}</span>
-                <el-tag :type="getStatusType(item.status)" size="small">{{ getStatusText(item.status) }}</el-tag>
+                <ElTag :type="getStatusType(item.status)" size="small">{{ getStatusText(item.status) }}</ElTag>
               </div>
             </div>
-            <el-empty v-if="!recentSessions.length && !loading.sessions" description="暂无数据" :image-size="60" />
+            <ElEmpty v-if="!recentSessions.length && !loading.sessions" description="暂无数据" :image-size="60" />
           </div>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card shadow="never" header="最近命令">
+        </ElCard>
+      </ElCol>
+      <ElCol :span="12">
+        <ElCard shadow="never" header="最近命令">
           <div v-loading="loading.commands">
-            <div
-              v-for="item in recentCommands"
-              :key="item.id"
-              class="list-item"
-            >
+            <div v-for="item in recentCommands" :key="item.id" class="list-item">
               <div class="list-item-main">
                 <code class="list-item-command">{{ item.command }}</code>
               </div>
@@ -278,11 +267,11 @@ onMounted(() => {
                 <span class="list-item-time">{{ formatTime(item.executedAt || '') }}</span>
               </div>
             </div>
-            <el-empty v-if="!recentCommands.length && !loading.commands" description="暂无数据" :image-size="60" />
+            <ElEmpty v-if="!recentCommands.length && !loading.commands" description="暂无数据" :image-size="60" />
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </ElCard>
+      </ElCol>
+    </ElRow>
   </div>
 </template>
 

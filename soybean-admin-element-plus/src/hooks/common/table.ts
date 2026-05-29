@@ -271,7 +271,7 @@ export function defaultTransform<ApiData>(
     // 检查是否是简单的数组格式（后端返回格式）
     if (Array.isArray(data)) {
       return {
-        data: data,
+        data,
         pageNum: 1,
         pageSize: data.length,
         total: data.length

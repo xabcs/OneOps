@@ -9,34 +9,31 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: '403',
     path: '/403',
-    component: 'layout.blank$view.403',
+    component: 'layout.base$view.403',
     meta: {
       title: '403',
       i18nKey: 'route.403',
-      constant: true,
-      hideInMenu: true
+      constant: true
     }
   },
   {
     name: '404',
     path: '/404',
-    component: 'layout.blank$view.404',
+    component: 'layout.base$view.404',
     meta: {
       title: '404',
       i18nKey: 'route.404',
-      constant: true,
-      hideInMenu: true
+      constant: true
     }
   },
   {
     name: '500',
     path: '/500',
-    component: 'layout.blank$view.500',
+    component: 'layout.base$view.500',
     meta: {
       title: '500',
       i18nKey: 'route.500',
-      constant: true,
-      hideInMenu: true
+      constant: true
     }
   },
   {
@@ -45,9 +42,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     component: 'layout.base$view.about',
     meta: {
       title: 'about',
-      i18nKey: 'route.about',
-      icon: 'fluent:book-information-24-regular',
-      order: 10
+      i18nKey: 'route.about'
     }
   },
   {
@@ -56,9 +51,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     component: 'layout.base',
     meta: {
       title: 'alova',
-      i18nKey: 'route.alova',
-      icon: 'carbon:http',
-      order: 7
+      i18nKey: 'route.alova'
     },
     children: [
       {
@@ -67,8 +60,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.alova_request',
         meta: {
           title: 'alova_request',
-          i18nKey: 'route.alova_request',
-          order: 1
+          i18nKey: 'route.alova_request'
         }
       },
       {
@@ -77,9 +69,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.alova_scenes',
         meta: {
           title: 'alova_scenes',
-          i18nKey: 'route.alova_scenes',
-          icon: 'cbi:scene-dynamic',
-          order: 3
+          i18nKey: 'route.alova_scenes'
         }
       },
       {
@@ -88,9 +78,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.alova_user',
         meta: {
           title: 'alova_user',
-          i18nKey: 'route.alova_user',
-          icon: 'carbon:user-multiple',
-          order: 2
+          i18nKey: 'route.alova_user'
         }
       }
     ]
@@ -169,9 +157,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     component: 'layout.base',
     meta: {
       title: 'cmdb',
-      i18nKey: 'route.cmdb',
-      icon: 'mdi:server-network',
-      order: 3
+      i18nKey: 'route.cmdb'
     },
     children: [
       {
@@ -179,9 +165,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         path: '/cmdb/access',
         meta: {
           title: 'cmdb_access',
-          i18nKey: 'route.cmdb_access',
-          icon: 'mdi:shield-lock',
-          order: 3
+          i18nKey: 'route.cmdb_access'
         },
         children: [
           {
@@ -190,9 +174,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.cmdb_access_credentials',
             meta: {
               title: 'cmdb_access_credentials',
-              i18nKey: 'route.cmdb_access_credentials',
-              icon: 'mdi:key',
-              order: 2
+              i18nKey: 'route.cmdb_access_credentials'
             }
           },
           {
@@ -201,9 +183,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.cmdb_access_policies',
             meta: {
               title: 'cmdb_access_policies',
-              i18nKey: 'route.cmdb_access_policies',
-              icon: 'mdi:file-lock',
-              order: 1
+              i18nKey: 'route.cmdb_access_policies'
             }
           }
         ]
@@ -213,9 +193,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         path: '/cmdb/audit',
         meta: {
           title: 'cmdb_audit',
-          i18nKey: 'route.cmdb_audit',
-          icon: 'mdi:clipboard-text-clock',
-          order: 4
+          i18nKey: 'route.cmdb_audit'
         },
         children: [
           {
@@ -224,9 +202,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.cmdb_audit_commands',
             meta: {
               title: 'cmdb_audit_commands',
-              i18nKey: 'route.cmdb_audit_commands',
-              icon: 'mdi:console',
-              order: 3
+              i18nKey: 'route.cmdb_audit_commands'
             }
           },
           {
@@ -235,9 +211,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.cmdb_audit_online',
             meta: {
               title: 'cmdb_audit_online',
-              i18nKey: 'route.cmdb_audit_online',
-              icon: 'mdi:monitor',
-              order: 1
+              i18nKey: 'route.cmdb_audit_online'
             }
           },
           {
@@ -246,9 +220,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.cmdb_audit_sessions',
             meta: {
               title: 'cmdb_audit_sessions',
-              i18nKey: 'route.cmdb_audit_sessions',
-              icon: 'mdi:history',
-              order: 2
+              i18nKey: 'route.cmdb_audit_sessions'
             }
           }
         ]
@@ -259,8 +231,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.cmdb_business',
         meta: {
           title: 'cmdb_business',
-          i18nKey: 'route.cmdb_business',
-          hideInMenu: true
+          i18nKey: 'route.cmdb_business'
         }
       },
       {
@@ -269,9 +240,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.cmdb_changes',
         meta: {
           title: 'cmdb_changes',
-          i18nKey: 'route.cmdb_changes',
-          icon: 'mdi:clock-edit',
-          order: 6
+          i18nKey: 'route.cmdb_changes'
         }
       },
       {
@@ -280,8 +249,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.cmdb_commands',
         meta: {
           title: 'cmdb_commands',
-          i18nKey: 'route.cmdb_commands',
-          hideInMenu: true
+          i18nKey: 'route.cmdb_commands'
         }
       },
       {
@@ -289,9 +257,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         path: '/cmdb/config',
         meta: {
           title: 'cmdb_config',
-          i18nKey: 'route.cmdb_config',
-          icon: 'mdi:cog',
-          order: 5
+          i18nKey: 'route.cmdb_config'
         },
         children: [
           {
@@ -300,9 +266,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.cmdb_config_agents',
             meta: {
               title: 'cmdb_config_agents',
-              i18nKey: 'route.cmdb_config_agents',
-              icon: 'mdi:robot',
-              order: 4
+              i18nKey: 'route.cmdb_config_agents'
             }
           },
           {
@@ -311,9 +275,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.cmdb_config_business',
             meta: {
               title: 'cmdb_config_business',
-              i18nKey: 'route.cmdb_config_business',
-              icon: 'mdi:domain',
-              order: 1
+              i18nKey: 'route.cmdb_config_business'
             }
           },
           {
@@ -322,9 +284,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.cmdb_config_rooms',
             meta: {
               title: 'cmdb_config_rooms',
-              i18nKey: 'route.cmdb_config_rooms',
-              icon: 'mdi:office-building',
-              order: 2
+              i18nKey: 'route.cmdb_config_rooms'
             }
           },
           {
@@ -333,9 +293,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.cmdb_config_tags',
             meta: {
               title: 'cmdb_config_tags',
-              i18nKey: 'route.cmdb_config_tags',
-              icon: 'mdi:tag',
-              order: 3
+              i18nKey: 'route.cmdb_config_tags'
             }
           }
         ]
@@ -346,9 +304,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.cmdb_dashboard',
         meta: {
           title: 'cmdb_dashboard',
-          i18nKey: 'route.cmdb_dashboard',
-          icon: 'mdi:view-dashboard',
-          order: 1
+          i18nKey: 'route.cmdb_dashboard'
         }
       },
       {
@@ -357,8 +313,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.cmdb_rooms',
         meta: {
           title: 'cmdb_rooms',
-          i18nKey: 'route.cmdb_rooms',
-          hideInMenu: true
+          i18nKey: 'route.cmdb_rooms'
         }
       },
       {
@@ -367,9 +322,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.cmdb_servers',
         meta: {
           title: 'cmdb_servers',
-          i18nKey: 'route.cmdb_servers',
-          icon: 'mdi:server',
-          order: 2
+          i18nKey: 'route.cmdb_servers'
         }
       },
       {
@@ -378,8 +331,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.cmdb_sessions',
         meta: {
           title: 'cmdb_sessions',
-          i18nKey: 'route.cmdb_sessions',
-          hideInMenu: true
+          i18nKey: 'route.cmdb_sessions'
         }
       },
       {
@@ -387,8 +339,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         path: '/cmdb/ssh',
         meta: {
           title: 'cmdb_ssh',
-          i18nKey: 'route.cmdb_ssh',
-          hideInMenu: true
+          i18nKey: 'route.cmdb_ssh'
         },
         children: [
           {
@@ -397,8 +348,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.cmdb_ssh_credentials',
             meta: {
               title: 'cmdb_ssh_credentials',
-              i18nKey: 'route.cmdb_ssh_credentials',
-              hideInMenu: true
+              i18nKey: 'route.cmdb_ssh_credentials'
             }
           }
         ]
@@ -409,8 +359,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.cmdb_tags',
         meta: {
           title: 'cmdb_tags',
-          i18nKey: 'route.cmdb_tags',
-          hideInMenu: true
+          i18nKey: 'route.cmdb_tags'
         }
       },
       {
@@ -419,9 +368,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.cmdb_terminal',
         meta: {
           title: 'cmdb_terminal',
-          i18nKey: 'route.cmdb_terminal',
-          icon: 'mdi:console-line',
-          hideInMenu: true
+          i18nKey: 'route.cmdb_terminal'
         }
       }
     ]
@@ -432,9 +379,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     component: 'layout.base',
     meta: {
       title: 'function',
-      i18nKey: 'route.function',
-      icon: 'icon-park-outline:all-application',
-      order: 6
+      i18nKey: 'route.function'
     },
     children: [
       {
@@ -442,11 +387,8 @@ export const generatedRoutes: GeneratedRoute[] = [
         path: '/function/hide-child',
         meta: {
           title: 'function_hide-child',
-          i18nKey: 'route.function_hide-child',
-          icon: 'material-symbols:filter-list-off',
-          order: 2
+          i18nKey: 'route.function_hide-child'
         },
-        redirect: '/function/hide-child/one',
         children: [
           {
             name: 'function_hide-child_one',
@@ -454,10 +396,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.function_hide-child_one',
             meta: {
               title: 'function_hide-child_one',
-              i18nKey: 'route.function_hide-child_one',
-              icon: 'material-symbols:filter-list-off',
-              hideInMenu: true,
-              activeMenu: 'function_hide-child'
+              i18nKey: 'route.function_hide-child_one'
             }
           },
           {
@@ -466,9 +405,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.function_hide-child_three',
             meta: {
               title: 'function_hide-child_three',
-              i18nKey: 'route.function_hide-child_three',
-              hideInMenu: true,
-              activeMenu: 'function_hide-child'
+              i18nKey: 'route.function_hide-child_three'
             }
           },
           {
@@ -477,9 +414,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.function_hide-child_two',
             meta: {
               title: 'function_hide-child_two',
-              i18nKey: 'route.function_hide-child_two',
-              hideInMenu: true,
-              activeMenu: 'function_hide-child'
+              i18nKey: 'route.function_hide-child_two'
             }
           }
         ]
@@ -490,11 +425,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.function_multi-tab',
         meta: {
           title: 'function_multi-tab',
-          i18nKey: 'route.function_multi-tab',
-          icon: 'ic:round-tab',
-          multiTab: true,
-          hideInMenu: true,
-          activeMenu: 'function_tab'
+          i18nKey: 'route.function_multi-tab'
         }
       },
       {
@@ -503,9 +434,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.function_request',
         meta: {
           title: 'function_request',
-          i18nKey: 'route.function_request',
-          icon: 'carbon:network-overlay',
-          order: 3
+          i18nKey: 'route.function_request'
         }
       },
       {
@@ -514,10 +443,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.function_super-page',
         meta: {
           title: 'function_super-page',
-          i18nKey: 'route.function_super-page',
-          icon: 'ic:round-supervisor-account',
-          order: 5,
-          roles: ['R_SUPER']
+          i18nKey: 'route.function_super-page'
         }
       },
       {
@@ -526,9 +452,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.function_tab',
         meta: {
           title: 'function_tab',
-          i18nKey: 'route.function_tab',
-          icon: 'ic:round-tab',
-          order: 1
+          i18nKey: 'route.function_tab'
         }
       },
       {
@@ -537,9 +461,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.function_toggle-auth',
         meta: {
           title: 'function_toggle-auth',
-          i18nKey: 'route.function_toggle-auth',
-          icon: 'ic:round-construction',
-          order: 4
+          i18nKey: 'route.function_toggle-auth'
         }
       }
     ]
@@ -550,9 +472,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     component: 'layout.base$view.home',
     meta: {
       title: 'home',
-      i18nKey: 'route.home',
-      icon: 'mdi:monitor-dashboard',
-      order: 1
+      i18nKey: 'route.home'
     }
   },
   {
@@ -562,22 +482,19 @@ export const generatedRoutes: GeneratedRoute[] = [
     props: true,
     meta: {
       title: 'iframe-page',
-      i18nKey: 'route.iframe-page',
-      constant: true,
-      hideInMenu: true,
-      keepAlive: true
+      i18nKey: 'route.iframe-page'
     }
   },
   {
     name: 'login',
     path: '/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?',
-    component: 'layout.blank$view.login',
+    component: 'view.login',  // 直接使用登录视图，不使用 BaseLayout
     props: true,
     meta: {
       title: 'login',
       i18nKey: 'route.login',
       constant: true,
-      hideInMenu: true
+      layout: false  // 标记不使用布局
     }
   },
   {
@@ -587,8 +504,6 @@ export const generatedRoutes: GeneratedRoute[] = [
     meta: {
       title: 'manage',
       i18nKey: 'route.manage',
-      icon: 'carbon:cloud-service-management',
-      order: 9,
       roles: ['超级管理员', 'R_ADMIN', 'R_USER']
     },
     children: [
@@ -599,10 +514,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_menu',
           i18nKey: 'route.manage_menu',
-          icon: 'material-symbols:route',
-          order: 3,
-          roles: ['超级管理员', 'R_ADMIN', 'R_USER'],
-          keepAlive: true
+          roles: ['超级管理员', 'R_ADMIN', 'R_USER']
         }
       },
       {
@@ -612,8 +524,6 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_role',
           i18nKey: 'route.manage_role',
-          icon: 'carbon:user-role',
-          order: 2,
           roles: ['超级管理员', 'R_SUPER']
         }
       },
@@ -624,8 +534,6 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_user',
           i18nKey: 'route.manage_user',
-          icon: 'ic:round-manage-accounts',
-          order: 1,
           roles: ['超级管理员', 'R_ADMIN', 'R_USER']
         }
       },
@@ -633,13 +541,83 @@ export const generatedRoutes: GeneratedRoute[] = [
         name: 'manage_user-detail',
         path: '/manage/user-detail/:id',
         component: 'view.manage_user-detail',
-        props: true,
         meta: {
           title: 'manage_user-detail',
-          i18nKey: 'route.manage_user-detail',
-          hideInMenu: true,
-          roles: ['R_ADMIN'],
-          activeMenu: 'manage_user'
+          i18nKey: 'route.manage_user-detail'
+        }
+      }
+    ]
+  },
+  {
+    name: 'monitoring',
+    path: '/monitoring',
+    component: 'layout.base',
+    meta: {
+      title: 'monitoring',
+      i18nKey: 'route.monitoring'
+    },
+    children: [
+      {
+        name: 'monitoring_alerts',
+        path: '/monitoring/alerts',
+        component: 'view.monitoring_alerts',
+        meta: {
+          title: 'monitoring_alerts',
+          i18nKey: 'route.monitoring_alerts'
+        }
+      },
+      {
+        name: 'monitoring_overview',
+        path: '/monitoring/overview',
+        component: 'view.monitoring_overview',
+        meta: {
+          title: 'monitoring_overview',
+          i18nKey: 'route.monitoring_overview'
+        }
+      },
+      {
+        name: 'monitoring_reports',
+        path: '/monitoring/reports',
+        component: 'view.monitoring_reports',
+        meta: {
+          title: 'monitoring_reports',
+          i18nKey: 'route.monitoring_reports'
+        }
+      },
+      {
+        name: 'monitoring_servers',
+        path: '/monitoring/servers',
+        component: 'view.monitoring_servers',
+        meta: {
+          title: 'monitoring_servers',
+          i18nKey: 'route.monitoring_servers'
+        }
+      },
+      {
+        name: 'monitoring_servers-detail',
+        path: '/monitoring/servers-detail',
+        component: 'view.monitoring_servers-detail',
+        meta: {
+          title: 'monitoring_servers-detail',
+          i18nKey: 'route.monitoring_servers-detail'
+        }
+      },
+      {
+        name: 'monitoring_settings',
+        path: '/monitoring/settings',
+        component: 'view.monitoring_settings',
+        meta: {
+          title: 'monitoring_settings',
+          i18nKey: 'route.monitoring_settings'
+        }
+      },
+      {
+        name: 'monitoring_trends',
+        path: '/monitoring/trends',
+        component: 'view.monitoring_trends',
+        meta: {
+          title: 'monitoring_trends',
+          i18nKey: 'route.monitoring_trends'
         }
       }
     ]
@@ -650,8 +628,7 @@ export const generatedRoutes: GeneratedRoute[] = [
     component: 'layout.base',
     meta: {
       title: 'multi-menu',
-      i18nKey: 'route.multi-menu',
-      order: 8
+      i18nKey: 'route.multi-menu'
     },
     children: [
       {
@@ -659,8 +636,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         path: '/multi-menu/first',
         meta: {
           title: 'multi-menu_first',
-          i18nKey: 'route.multi-menu_first',
-          order: 1
+          i18nKey: 'route.multi-menu_first'
         },
         children: [
           {
@@ -679,8 +655,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         path: '/multi-menu/second',
         meta: {
           title: 'multi-menu_second',
-          i18nKey: 'route.multi-menu_second',
-          order: 2
+          i18nKey: 'route.multi-menu_second'
         },
         children: [
           {
@@ -711,10 +686,8 @@ export const generatedRoutes: GeneratedRoute[] = [
     path: '/plugin',
     component: 'layout.base',
     meta: {
-      title: '插件示例',
-      i18nKey: 'route.plugin',
-      order: 7,
-      icon: 'clarity:plugin-line'
+      title: 'plugin',
+      i18nKey: 'route.plugin'
     },
     children: [
       {
@@ -723,8 +696,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.plugin_barcode',
         meta: {
           title: 'plugin_barcode',
-          i18nKey: 'route.plugin_barcode',
-          icon: 'ic:round-barcode'
+          i18nKey: 'route.plugin_barcode'
         }
       },
       {
@@ -732,8 +704,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         path: '/plugin/charts',
         meta: {
           title: 'plugin_charts',
-          i18nKey: 'route.plugin_charts',
-          icon: 'mdi:chart-areaspline'
+          i18nKey: 'route.plugin_charts'
         },
         children: [
           {
@@ -742,8 +713,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.plugin_charts_antv',
             meta: {
               title: 'plugin_charts_antv',
-              i18nKey: 'route.plugin_charts_antv',
-              icon: 'hugeicons:flow-square'
+              i18nKey: 'route.plugin_charts_antv'
             }
           },
           {
@@ -752,8 +722,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.plugin_charts_echarts',
             meta: {
               title: 'plugin_charts_echarts',
-              i18nKey: 'route.plugin_charts_echarts',
-              icon: 'simple-icons:apacheecharts'
+              i18nKey: 'route.plugin_charts_echarts'
             }
           },
           {
@@ -762,8 +731,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.plugin_charts_vchart',
             meta: {
               title: 'plugin_charts_vchart',
-              i18nKey: 'route.plugin_charts_vchart',
-              localIcon: 'visactor'
+              i18nKey: 'route.plugin_charts_vchart'
             }
           }
         ]
@@ -774,8 +742,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.plugin_copy',
         meta: {
           title: 'plugin_copy',
-          i18nKey: 'route.plugin_copy',
-          icon: 'mdi:clipboard-outline'
+          i18nKey: 'route.plugin_copy'
         }
       },
       {
@@ -783,8 +750,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         path: '/plugin/editor',
         meta: {
           title: 'plugin_editor',
-          i18nKey: 'route.plugin_editor',
-          icon: 'icon-park-outline:editor'
+          i18nKey: 'route.plugin_editor'
         },
         children: [
           {
@@ -793,8 +759,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.plugin_editor_markdown',
             meta: {
               title: 'plugin_editor_markdown',
-              i18nKey: 'route.plugin_editor_markdown',
-              icon: 'ri:markdown-line'
+              i18nKey: 'route.plugin_editor_markdown'
             }
           },
           {
@@ -803,8 +768,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.plugin_editor_quill',
             meta: {
               title: 'plugin_editor_quill',
-              i18nKey: 'route.plugin_editor_quill',
-              icon: 'mdi:file-document-edit-outline'
+              i18nKey: 'route.plugin_editor_quill'
             }
           }
         ]
@@ -815,9 +779,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.plugin_excel',
         meta: {
           title: 'plugin_excel',
-          i18nKey: 'route.plugin_excel',
-          icon: 'ri:file-excel-2-line',
-          keepAlive: true
+          i18nKey: 'route.plugin_excel'
         }
       },
       {
@@ -825,8 +787,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         path: '/plugin/gantt',
         meta: {
           title: 'plugin_gantt',
-          i18nKey: 'route.plugin_gantt',
-          icon: 'ant-design:bar-chart-outlined'
+          i18nKey: 'route.plugin_gantt'
         },
         children: [
           {
@@ -835,8 +796,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.plugin_gantt_dhtmlx',
             meta: {
               title: 'plugin_gantt_dhtmlx',
-              i18nKey: 'route.plugin_gantt_dhtmlx',
-              icon: 'gridicons:posts'
+              i18nKey: 'route.plugin_gantt_dhtmlx'
             }
           },
           {
@@ -845,8 +805,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.plugin_gantt_vtable',
             meta: {
               title: 'plugin_gantt_vtable',
-              i18nKey: 'route.plugin_gantt_vtable',
-              localIcon: 'visactor'
+              i18nKey: 'route.plugin_gantt_vtable'
             }
           }
         ]
@@ -857,8 +816,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.plugin_icon',
         meta: {
           title: 'plugin_icon',
-          i18nKey: 'route.plugin_icon',
-          localIcon: 'custom-icon'
+          i18nKey: 'route.plugin_icon'
         }
       },
       {
@@ -867,8 +825,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.plugin_map',
         meta: {
           title: 'plugin_map',
-          i18nKey: 'route.plugin_map',
-          icon: 'mdi:map'
+          i18nKey: 'route.plugin_map'
         }
       },
       {
@@ -877,8 +834,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.plugin_pdf',
         meta: {
           title: 'plugin_pdf',
-          i18nKey: 'route.plugin_pdf',
-          icon: 'uiw:file-pdf'
+          i18nKey: 'route.plugin_pdf'
         }
       },
       {
@@ -887,8 +843,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.plugin_pinyin',
         meta: {
           title: 'plugin_pinyin',
-          i18nKey: 'route.plugin_pinyin',
-          icon: 'entypo-social:google-hangouts'
+          i18nKey: 'route.plugin_pinyin'
         }
       },
       {
@@ -897,8 +852,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.plugin_print',
         meta: {
           title: 'plugin_print',
-          i18nKey: 'route.plugin_print',
-          icon: 'mdi:printer'
+          i18nKey: 'route.plugin_print'
         }
       },
       {
@@ -907,8 +861,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.plugin_swiper',
         meta: {
           title: 'plugin_swiper',
-          i18nKey: 'route.plugin_swiper',
-          icon: 'simple-icons:swiper'
+          i18nKey: 'route.plugin_swiper'
         }
       },
       {
@@ -916,8 +869,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         path: '/plugin/tables',
         meta: {
           title: 'plugin_tables',
-          i18nKey: 'route.plugin_tables',
-          icon: 'icon-park-outline:table'
+          i18nKey: 'route.plugin_tables'
         },
         children: [
           {
@@ -926,8 +878,7 @@ export const generatedRoutes: GeneratedRoute[] = [
             component: 'view.plugin_tables_vtable',
             meta: {
               title: 'plugin_tables_vtable',
-              i18nKey: 'route.plugin_tables_vtable',
-              localIcon: 'visactor'
+              i18nKey: 'route.plugin_tables_vtable'
             }
           }
         ]
@@ -938,8 +889,7 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.plugin_typeit',
         meta: {
           title: 'plugin_typeit',
-          i18nKey: 'route.plugin_typeit',
-          icon: 'mdi:typewriter'
+          i18nKey: 'route.plugin_typeit'
         }
       },
       {
@@ -948,8 +898,31 @@ export const generatedRoutes: GeneratedRoute[] = [
         component: 'view.plugin_video',
         meta: {
           title: 'plugin_video',
-          i18nKey: 'route.plugin_video',
-          icon: 'mdi:video'
+          i18nKey: 'route.plugin_video'
+        }
+      }
+    ]
+  },
+  {
+    name: 'system',
+    path: '/system',
+    component: 'layout.base',
+    meta: {
+      title: 'system',
+      i18nKey: 'route.system',
+      icon: 'mdi:cog',
+      order: 10
+    },
+    children: [
+      {
+        name: 'system_attributes',
+        path: '/system/attributes',
+        component: 'view.system_attributes',
+        meta: {
+          title: 'system_attributes',
+          i18nKey: 'route.system_attributes',
+          icon: 'mdi:format-list-bulleted',
+          order: 1
         }
       }
     ]

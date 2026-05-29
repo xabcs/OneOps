@@ -112,9 +112,6 @@ func (c *CMDBController) CreateServer(ctx *gin.Context) {
 		return
 	}
 
-	// 异步采集硬件配置
-	go services.SyncServerHardwareConfig(server.ID)
-
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("服务器创建成功"))
 }
 
@@ -154,8 +151,6 @@ func (c *CMDBController) UpdateServer(ctx *gin.Context) {
 		return
 	}
 
-	// 异步采集硬件配置
-	go services.SyncServerHardwareConfig(uint(id))
 
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("服务器更新成功"))
 }
@@ -464,7 +459,7 @@ func (c *CMDBController) GetAssetChanges(ctx *gin.Context) {
 	}))
 }
 
-// SyncServerMetrics 手动触发单台主机使用率采集（智能分发：Agent 运行时走 HTTP 拉取，否则 SSH fallback）
+// SyncServerMetrics 手动触发单台主机指标采集（仅通过 Agent HTTP 拉取）
 func (c *CMDBController) SyncServerMetrics(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if err != nil {
@@ -478,14 +473,17 @@ func (c *CMDBController) SyncServerMetrics(ctx *gin.Context) {
 		return
 	}
 
-	if server.AgentStatus == "running" {
-		svc := services.NewAgentService()
-		go svc.PullMetrics(uint(id))
-		ctx.JSON(http.StatusOK, utils.SuccessWithMessage("Agent 指标拉取任务已提交"))
-	} else {
-		go services.SyncServerMetrics(uint(id))
-		ctx.JSON(http.StatusOK, utils.SuccessWithMessage("SSH 采集任务已提交"))
+	// 检查 Agent 是否运行
+	if server.AgentStatus != "running" {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("Agent 未运行，无法采集指标"))
+		return
 	}
+
+	// 异步拉取 Agent 指标
+	svc := services.NewAgentService()
+	go svc.PullMetrics(uint(id))
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("Agent 指标拉取任务已提交"))
 }
 
 // ========== Agent 管理 ==========
@@ -531,7 +529,11 @@ func (c *CMDBController) UninstallAgent(ctx *gin.Context) {
 	}
 
 	svc := services.NewAgentService()
-	go svc.UninstallAgent(uint(id))
+	go func() {
+		if err := svc.UninstallAgent(uint(id)); err != nil {
+			services.MarkAgentFailed(uint(id), err.Error())
+		}
+	}()
 
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("Agent 卸载任务已提交"))
 }
@@ -971,3 +973,202 @@ func (c *CMDBController) DeleteAgentRecord(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("Agent 记录已清除"))
 }
+
+// TestSSHConnection 测试SSH连接
+func (c *CMDBController) TestSSHConnection(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的服务器ID"))
+		return
+	}
+
+	svc := services.NewAgentService()
+	result, err := svc.TestSSHConnection(uint(id))
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+		return
+	}
+
+	if result.Success {
+		ctx.JSON(http.StatusOK, utils.SuccessWithData(result))
+	} else {
+		// 连接失败，返回200状态码但success为false，前端可以显示详细信息
+		ctx.JSON(http.StatusOK, gin.H{
+			"code":    200,
+			"success": false,
+			"message": result.Message,
+			"data":    result,
+		})
+	}
+}
+
+	// ========================================
+	// Agent 版本管理控制器
+	// ========================================
+
+	// GetAgentVersions 获取 Agent 版本列表
+	func (c *CMDBController) GetAgentVersions(ctx *gin.Context) {
+		versions, err := services.GetAllVersions()
+		if err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+			return
+		}
+
+		ctx.JSON(http.StatusOK, utils.SuccessWithData(versions))
+	}
+
+	// GetLatestAgentVersion 获取最新 Agent 版本
+	func (c *CMDBController) GetLatestAgentVersion(ctx *gin.Context) {
+		version, err := services.GetLatestVersion()
+		if err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+			return
+		}
+
+		ctx.JSON(http.StatusOK, utils.SuccessWithData(version))
+	}
+
+	// GetAgentVersionByID 获取指定版本的详细信息
+	func (c *CMDBController) GetAgentVersionByID(ctx *gin.Context) {
+		idStr := ctx.Param("id")
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的版本ID"))
+			return
+		}
+
+		version, err := services.GetVersionByID(uint(id))
+		if err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+			return
+		}
+
+		ctx.JSON(http.StatusOK, utils.SuccessWithData(version))
+	}
+
+	// CreateAgentVersion 创建新的 Agent 版本
+	func (c *CMDBController) CreateAgentVersion(ctx *gin.Context) {
+		var version models.AgentVersion
+		if err := ctx.ShouldBindJSON(&version); err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+			return
+		}
+
+		operator := ctx.GetString("username")
+		if operator == "" {
+			operator = "system"
+		}
+
+		if err := services.CreateVersion(&version, operator); err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+			return
+		}
+
+		ctx.JSON(http.StatusOK, utils.SuccessWithMessage("Agent 版本创建成功"))
+	}
+
+	// UpdateAgentVersion 更新 Agent 版本信息
+	func (c *CMDBController) UpdateAgentVersion(ctx *gin.Context) {
+		idStr := ctx.Param("id")
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的版本ID"))
+			return
+		}
+
+		var updates map[string]interface{}
+		if err := ctx.ShouldBindJSON(&updates); err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+			return
+		}
+
+		if err := services.UpdateVersion(uint(id), updates); err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+			return
+		}
+
+		ctx.JSON(http.StatusOK, utils.SuccessWithMessage("Agent 版本更新成功"))
+	}
+
+	// DeleteAgentVersion 删除 Agent 版本
+	func (c *CMDBController) DeleteAgentVersion(ctx *gin.Context) {
+		idStr := ctx.Param("id")
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的版本ID"))
+			return
+		}
+
+		if err := services.DeleteVersion(uint(id)); err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+			return
+		}
+
+		ctx.JSON(http.StatusOK, utils.SuccessWithMessage("Agent 版本删除成功"))
+	}
+
+	// ========================================
+	// Agent 升级管理控制器
+	// ========================================
+
+	// UpgradeAgent 升级单台主机的 Agent
+	func (c *CMDBController) UpgradeAgent(ctx *gin.Context) {
+		idStr := ctx.Param("id")
+		id, err := strconv.ParseUint(idStr, 10, 64)
+		if err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的服务器ID"))
+			return
+		}
+
+		var req struct {
+			TargetVersion string `json:"targetVersion" binding:"required"`
+		}
+		if err := ctx.ShouldBindJSON(&req); err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+			return
+		}
+
+		svc := services.NewAgentService()
+		if err := svc.UpgradeAgent(uint(id), req.TargetVersion); err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+			return
+		}
+
+		ctx.JSON(http.StatusOK, utils.SuccessWithMessage("Agent 升级任务已提交"))
+	}
+
+	// GetUpgradeTasks 获取升级任务列表
+	func (c *CMDBController) GetUpgradeTasks(ctx *gin.Context) {
+		page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+		pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+		status := ctx.Query("status")
+
+		tasks, total, err := services.GetUpgradeTasks(page, pageSize, status)
+		if err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+			return
+		}
+
+		ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+			"list":  tasks,
+			"total": total,
+		}))
+	}
+
+	// GetUpgradeTaskByID 获取升级任务详情
+	func (c *CMDBController) GetUpgradeTaskByID(ctx *gin.Context) {
+		idStr := ctx.Param("id")
+		id, err := strconv.ParseUint(idStr, 10, 32)
+		if err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的任务ID"))
+			return
+		}
+
+		task, err := services.GetUpgradeTaskByID(uint(id))
+		if err != nil {
+			ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+			return
+		}
+
+		ctx.JSON(http.StatusOK, utils.SuccessWithData(task))
+	}

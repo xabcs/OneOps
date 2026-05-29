@@ -294,3 +294,72 @@ func (ctrl *UserController) DeleteUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("删除成功"))
 }
+
+// ResetPasswordRequest 重置密码请求
+type ResetPasswordRequest struct {
+	Password string `json:"password" binding:"required"`
+}
+
+// ResetPassword 重置用户密码
+func (ctrl *UserController) ResetPassword(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    500,
+			"message": "无效的用户ID",
+			"data":    nil,
+		})
+		return
+	}
+
+	var req ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code":    500,
+			"message": "请求参数错误",
+			"data":    nil,
+		})
+		return
+	}
+
+	db := services.GetDB()
+
+	// 检查用户是否存在
+	var user models.User
+	if err := db.First(&user, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"code":    500,
+			"message": "用户不存在",
+			"data":    nil,
+		})
+		return
+	}
+
+	// 加密新密码
+	hashedPassword, err := utils.HashPassword(req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "密码加密失败",
+			"data":    nil,
+		})
+		return
+	}
+
+	// 更新密码
+	if err := db.Model(&user).Update("password", hashedPassword).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "密码重置失败",
+			"data":    nil,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "密码重置成功",
+		"data":    nil,
+	})
+}

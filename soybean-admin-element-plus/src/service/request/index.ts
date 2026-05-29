@@ -60,12 +60,12 @@ export const request = createFlatRequest(
       }
 
       // 处理业务错误码（4xxxx）- 构造错误并抛出
-      const businessErrorCode = parseInt(responseCode);
+      const businessErrorCode = Number.parseInt(responseCode);
       if (businessErrorCode >= 40000 && businessErrorCode < 50000) {
         // 业务错误，需要让 Promise reject 并传递错误信息
         // 创建一个符合 axios 错误格式的对象
         const businessError = {
-          response: response,
+          response,
           code: 'BACKEND_ERROR_CODE',
           message: response.data.message
         };

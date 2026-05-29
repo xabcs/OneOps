@@ -36,6 +36,30 @@ func (ctrl *MenuController) GetMenus(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(menuTree))
 }
 
+// GetMenuTree 获取菜单树（专用于前端菜单管理）
+func (ctrl *MenuController) GetMenuTree(c *gin.Context) {
+	db := services.GetDB()
+
+	var menus []models.Menu
+	if err := db.Order("sort ASC").Find(&menus).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code":    500,
+			"message": "获取菜单树失败",
+			"data":    nil,
+		})
+		return
+	}
+
+	// 构建菜单树
+	menuTree := ctrl.buildMenuTree(menus, 0)
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "success",
+		"data":    menuTree,
+	})
+}
+
 // buildMenuTree 递归构建菜单树
 func (ctrl *MenuController) buildMenuTree(menus []models.Menu, parentID uint) []*models.Menu {
 	var result []*models.Menu

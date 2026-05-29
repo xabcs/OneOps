@@ -3,18 +3,27 @@ package controllers
 import (
 	"net/http"
 	"oneops/backend/logger"
+	"strconv"
 	"time"
+
+	"oneops/backend/services"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
 // MonitoringController 监控控制器
-type MonitoringController struct{}
+type MonitoringController struct {
+	monitoringService *services.MonitoringService
+	alertRuleService  *services.AlertRuleService
+}
 
 // NewMonitoringController 创建监控控制器
 func NewMonitoringController() *MonitoringController {
-	return &MonitoringController{}
+	return &MonitoringController{
+		monitoringService: services.NewMonitoringService(),
+		alertRuleService:  services.NewAlertRuleService(),
+	}
 }
 
 // HandleAlertRequest 处理/忽略告警请求
@@ -152,6 +161,506 @@ func (c *MonitoringController) GetMonitoringStats(ctx *gin.Context) {
 		"code":    200,
 		"message": "获取成功",
 		"data":    data,
+	})
+}
+
+// ============================================
+// Agent 监控增强 API (P0)
+// ============================================
+
+// GetOverview 获取监控概览
+// GET /api/monitoring/overview
+func (c *MonitoringController) GetOverview(ctx *gin.Context) {
+	overview, err := c.monitoringService.GetOverview()
+	if err != nil {
+		logger.Error("获取监控概览失败", zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": err.Error(),
+		})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "success",
+		"data":    overview,
+	})
+}
+
+// GetServerExtendedMetrics 获取主机扩展指标
+// GET /api/servers/:id/extended-metrics
+func (c *MonitoringController) GetServerExtendedMetrics(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "无效的主机ID",
+		})
+		return
+	}
+
+	metrics, err := c.monitoringService.GetServerExtendedMetrics(uint(id))
+	if err != nil {
+		logger.Error("获取主机扩展指标失败", zap.Uint("serverID", uint(id)), zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "success",
+		"data":    metrics,
+	})
+}
+
+// GetServerMetricsHistory 查询主机历史指标
+// GET /api/servers/:id/metrics/history
+func (c *MonitoringController) GetServerMetricsHistory(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "无效的主机ID",
+		})
+		return
+	}
+
+	metricType := ctx.Query("metricType")
+	startTimeStr := ctx.Query("startTime")
+	endTimeStr := ctx.Query("endTime")
+	interval := ctx.DefaultQuery("interval", "5m")
+
+	if metricType == "" || startTimeStr == "" || endTimeStr == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "缺少必要参数",
+		})
+		return
+	}
+
+	startTime, err := time.Parse(time.RFC3339, startTimeStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "开始时间格式错误",
+		})
+		return
+	}
+
+	endTime, err := time.Parse(time.RFC3339, endTimeStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "结束时间格式错误",
+		})
+		return
+	}
+
+	datapoints, err := c.monitoringService.GetMetricsHistory(uint(id), metricType, startTime, endTime, interval)
+	if err != nil {
+		logger.Error("查询历史指标失败", zap.Uint("serverID", uint(id)), zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "success",
+		"data": gin.H{
+			"metricType": metricType,
+			"interval":   interval,
+			"datapoints": datapoints,
+		},
+	})
+}
+
+// GetServerHardware 获取主机硬件信息
+// GET /api/servers/:id/hardware
+func (c *MonitoringController) GetServerHardware(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "无效的主机ID",
+		})
+		return
+	}
+
+	hardware, err := c.monitoringService.GetServerHardware(uint(id))
+	if err != nil {
+		logger.Error("获取主机硬件信息失败", zap.Uint("serverID", uint(id)), zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "success",
+		"data":    hardware,
+	})
+}
+
+// GetServerProcesses 获取主机进程信息
+// GET /api/servers/:id/processes
+func (c *MonitoringController) GetServerProcesses(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "无效的主机ID",
+		})
+		return
+	}
+
+	processes, err := c.monitoringService.GetServerProcesses(uint(id))
+	if err != nil {
+		logger.Error("获取主机进程信息失败", zap.Uint("serverID", uint(id)), zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "success",
+		"data":    processes,
+	})
+}
+
+// GetServerServices 获取主机服务状态
+// GET /api/servers/:id/services
+func (c *MonitoringController) GetServerServices(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "无效的主机ID",
+		})
+		return
+	}
+
+	services, err := c.monitoringService.GetServerServices(uint(id))
+	if err != nil {
+		logger.Error("获取主机服务状态失败", zap.Uint("serverID", uint(id)), zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "success",
+		"data":    services,
+	})
+}
+
+// GetServerNetwork 获取主机网络配置
+// GET /api/servers/:id/network
+func (c *MonitoringController) GetServerNetwork(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "无效的主机ID",
+		})
+		return
+	}
+
+	network, err := c.monitoringService.GetServerNetwork(uint(id))
+	if err != nil {
+		logger.Error("获取主机网络配置失败", zap.Uint("serverID", uint(id)), zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "success",
+		"data":    network,
+	})
+}
+
+// GetServerSecurity 获取主机安全信息
+// GET /api/servers/:id/security
+func (c *MonitoringController) GetServerSecurity(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "无效的主机ID",
+		})
+		return
+	}
+
+	security, err := c.monitoringService.GetServerSecurity(uint(id))
+	if err != nil {
+		logger.Error("获取主机安全信息失败", zap.Uint("serverID", uint(id)), zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "success",
+		"data":    security,
+	})
+}
+
+// GetAlerts 获取告警列表
+// GET /api/monitoring/alerts
+func (c *MonitoringController) GetAlerts(ctx *gin.Context) {
+	params := services.AlertQueryParams{
+		ServerID:     ctx.Query("serverId"),
+		Level:        ctx.Query("level"),
+		Acknowledged: ctx.Query("acknowledged"),
+	}
+	pageStr := ctx.DefaultQuery("page", "1")
+	pageSizeStr := ctx.DefaultQuery("pageSize", "20")
+	page, _ := strconv.Atoi(pageStr)
+	pageSize, _ := strconv.Atoi(pageSizeStr)
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+	params.Page = page
+	params.PageSize = pageSize
+
+	result, err := c.monitoringService.GetAlerts(params)
+	if err != nil {
+		logger.Error("获取告警列表失败", zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"code": 200, "message": "success", "data": result})
+}
+
+// AcknowledgeAlert 确认告警
+// POST /api/monitoring/alerts/:id/acknowledge
+func (c *MonitoringController) AcknowledgeAlert(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"code": -1, "message": "无效的告警ID"})
+		return
+	}
+
+	var req struct {
+		Comment string `json:"comment"`
+	}
+	_ = ctx.ShouldBindJSON(&req)
+
+	// 从 JWT 中获取当前用户名
+	acknowledgedBy := "admin"
+	if user, exists := ctx.Get("username"); exists {
+		acknowledgedBy = user.(string)
+	}
+
+	if err := c.monitoringService.AcknowledgeAlert(uint64(id), acknowledgedBy, req.Comment); err != nil {
+		logger.Error("确认告警失败", zap.Uint64("id", id), zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"code": 200, "message": "success"})
+}
+
+// GetAlertStats 获取告警统计
+// GET /api/monitoring/alerts/stats
+func (c *MonitoringController) GetAlertStats(ctx *gin.Context) {
+	stats, err := c.monitoringService.GetAlertStats()
+	if err != nil {
+		logger.Error("获取告警统计失败", zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{"code": -1, "message": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"code": 200, "message": "success", "data": stats})
+}
+
+// ============================================
+// 告警规则管理 API (P0 - 动态配置)
+// ============================================
+
+// GetAlertRules 获取告警规则列表
+// GET /api/monitoring/alerts/rules
+func (c *MonitoringController) GetAlertRules(ctx *gin.Context) {
+	rules, err := c.alertRuleService.GetAlertRules()
+	if err != nil {
+		logger.Error("获取告警规则失败", zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "success",
+		"data":    rules,
+	})
+}
+
+// CreateAlertRule 创建告警规则
+// POST /api/monitoring/alerts/rules
+func (c *MonitoringController) CreateAlertRule(ctx *gin.Context) {
+	var rule services.AlertRule
+	if err := ctx.ShouldBindJSON(&rule); err != nil {
+		logger.Error("参数解析失败", zap.Error(err))
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "参数错误: " + err.Error(),
+		})
+		return
+	}
+
+	if err := c.alertRuleService.CreateAlertRule(&rule); err != nil {
+		logger.Error("创建告警规则失败", zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "创建成功",
+		"data":    rule,
+	})
+}
+
+// UpdateAlertRule 更新告警规则
+// PUT /api/monitoring/alerts/rules/:id
+func (c *MonitoringController) UpdateAlertRule(ctx *gin.Context) {
+	id := ctx.Param("id")
+	if id == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "规则ID不能为空",
+		})
+		return
+	}
+
+	var rule services.AlertRule
+	if err := ctx.ShouldBindJSON(&rule); err != nil {
+		logger.Error("参数解析失败", zap.Error(err))
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "参数错误: " + err.Error(),
+		})
+		return
+	}
+
+	if err := c.alertRuleService.UpdateAlertRule(id, &rule); err != nil {
+		logger.Error("更新告警规则失败", zap.String("id", id), zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "更新成功",
+	})
+}
+
+// DeleteAlertRule 删除告警规则
+// DELETE /api/monitoring/alerts/rules/:id
+func (c *MonitoringController) DeleteAlertRule(ctx *gin.Context) {
+	id := ctx.Param("id")
+	if id == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "规则ID不能为空",
+		})
+		return
+	}
+
+	if err := c.alertRuleService.DeleteAlertRule(id); err != nil {
+		logger.Error("删除告警规则失败", zap.String("id", id), zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": "删除成功",
+	})
+}
+
+// UpdateAlertRuleStatus 更新告警规则状态（启用/禁用）
+// PUT /api/monitoring/alerts/rules/:id/status
+func (c *MonitoringController) UpdateAlertRuleStatus(ctx *gin.Context) {
+	id := ctx.Param("id")
+	if id == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "规则ID不能为空",
+		})
+		return
+	}
+
+	var req struct {
+		Enabled bool `json:"enabled"`
+	}
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		logger.Error("参数解析失败", zap.Error(err))
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"code":    -1,
+			"message": "参数错误: " + err.Error(),
+		})
+		return
+	}
+
+	if err := c.alertRuleService.UpdateAlertRuleStatus(id, req.Enabled); err != nil {
+		logger.Error("更新告警规则状态失败", zap.String("id", id), zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"code":    -1,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	status := "禁用"
+	if req.Enabled {
+		status = "启用"
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"code":    200,
+		"message": status + "成功",
 	})
 }
 

@@ -1,57 +1,18 @@
 import { request } from '../request';
 
-/** ================= Role ================= */
-
-/** get role list */
-export function fetchGetRoleList(params?: Api.SystemManage.RoleSearchParams) {
-  return request<Api.SystemManage.RoleList>({
-    url: '/system/roles',
-    method: 'get',
-    params
-  });
-}
-
-/** create role */
-export function fetchCreateRole(data: Omit<Api.SystemManage.Role, 'id' | 'createdAt' | 'updatedAt'>) {
-  return request({
-    url: '/system/roles',
-    method: 'post',
-    data
-  });
-}
-
-/** update role */
-export function fetchUpdateRole(id: number, data: Partial<Api.SystemManage.Role>) {
-  return request({
-    url: `/system/roles/${id}`,
-    method: 'put',
-    data
-  });
-}
-
-/** delete role */
-export function fetchDeleteRole(id: number) {
-  return request({
-    url: `/system/roles/${id}`,
-    method: 'delete'
-  });
-}
-
 /**
- * get all roles
- *
- * these roles are all enabled
+ * 获取所有角色
  */
 export function fetchGetAllRoles() {
-  return request<Api.SystemManage.AllRole[]>({
+  return request<Api.SystemManage.RoleList>({
     url: '/system/roles',
     method: 'get'
   });
 }
 
-/** ================= User ================= */
-
-/** get user list */
+/**
+ * 获取用户列表
+ */
 export function fetchGetUserList(params?: Api.SystemManage.UserSearchParams) {
   return request<Api.SystemManage.UserList>({
     url: '/system/users',
@@ -60,8 +21,20 @@ export function fetchGetUserList(params?: Api.SystemManage.UserSearchParams) {
   });
 }
 
-/** create user */
-export function fetchCreateUser(data: Omit<Api.SystemManage.User, 'id' | 'createdAt' | 'updatedAt'>) {
+/**
+ * 获取用户详情
+ */
+export function fetchGetUserById(id: number) {
+  return request<Api.SystemManage.User>({
+    url: `/system/users/${id}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 创建用户
+ */
+export function fetchCreateUser(data: Api.SystemManage.User) {
   return request({
     url: '/system/users',
     method: 'post',
@@ -69,7 +42,9 @@ export function fetchCreateUser(data: Omit<Api.SystemManage.User, 'id' | 'create
   });
 }
 
-/** update user */
+/**
+ * 更新用户
+ */
 export function fetchUpdateUser(id: number, data: Partial<Api.SystemManage.User>) {
   return request({
     url: `/system/users/${id}`,
@@ -78,7 +53,9 @@ export function fetchUpdateUser(id: number, data: Partial<Api.SystemManage.User>
   });
 }
 
-/** delete user */
+/**
+ * 删除用户
+ */
 export function fetchDeleteUser(id: number) {
   return request({
     url: `/system/users/${id}`,
@@ -86,35 +63,95 @@ export function fetchDeleteUser(id: number) {
   });
 }
 
-/** reset user password */
-export function fetchResetUserPassword(id: number, password: string) {
+/**
+ * 重置用户密码
+ */
+export function fetchResetUserPassword(userId: number, newPassword: string) {
   return request({
-    url: `/system/users/${id}`,
+    url: `/system/users/${userId}/password`,
     method: 'put',
-    data: { password }
+    data: { password: newPassword }
   });
 }
 
-/** ================= Menu ================= */
+/**
+ * 获取角色列表
+ */
+export function fetchGetRoleList(params?: Api.SystemManage.RoleSearchParams) {
+  return request<Api.SystemManage.RoleList>({
+    url: '/system/roles',
+    method: 'get',
+    params
+  });
+}
 
-/** get menu list */
-export function fetchGetMenuList() {
+/**
+ * 获取角色详情
+ */
+export function fetchGetRoleById(id: number) {
+  return request<Api.SystemManage.Role>({
+    url: `/system/roles/${id}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 创建角色
+ */
+export function fetchCreateRole(data: Api.SystemManage.Role) {
+  return request({
+    url: '/system/roles',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 更新角色
+ */
+export function fetchUpdateRole(id: number, data: Partial<Api.SystemManage.Role>) {
+  return request({
+    url: `/system/roles/${id}`,
+    method: 'put',
+    data
+  });
+}
+
+/**
+ * 删除角色
+ */
+export function fetchDeleteRole(id: number) {
+  return request({
+    url: `/system/roles/${id}`,
+    method: 'delete'
+  });
+}
+
+/**
+ * 获取菜单列表
+ */
+export function fetchGetMenuList(params?: { current?: number; size?: number }) {
   return request<Api.SystemManage.MenuList>({
     url: '/system/menus',
-    method: 'get'
+    method: 'get',
+    params
   });
 }
 
-/** get menu tree */
+/**
+ * 获取菜单树
+ */
 export function fetchGetMenuTree() {
   return request<Api.SystemManage.MenuTree[]>({
-    url: '/system/menus',
+    url: '/system/menus/tree',
     method: 'get'
   });
 }
 
-/** create menu */
-export function fetchCreateMenu(data: Omit<Api.SystemManage.Menu, 'id' | 'createdAt' | 'updatedAt' | 'children'>) {
+/**
+ * 创建菜单
+ */
+export function fetchCreateMenu(data: Api.SystemManage.Menu) {
   return request({
     url: '/system/menus',
     method: 'post',
@@ -122,7 +159,9 @@ export function fetchCreateMenu(data: Omit<Api.SystemManage.Menu, 'id' | 'create
   });
 }
 
-/** update menu */
+/**
+ * 更新菜单
+ */
 export function fetchUpdateMenu(id: number, data: Partial<Api.SystemManage.Menu>) {
   return request({
     url: `/system/menus/${id}`,
@@ -131,10 +170,76 @@ export function fetchUpdateMenu(id: number, data: Partial<Api.SystemManage.Menu>
   });
 }
 
-/** delete menu */
+/**
+ * 删除菜单
+ */
 export function fetchDeleteMenu(id: number) {
   return request({
     url: `/system/menus/${id}`,
     method: 'delete'
+  });
+}
+
+/**
+ * 获取属性定义列表
+ */
+export function fetchGetAttributes(params?: { category?: string }) {
+  return request<System.AttributeDefinition[]>({
+    url: '/system/attributes',
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取属性定义详情
+ */
+export function fetchGetAttributeById(id: number) {
+  return request<System.AttributeDefinition>({
+    url: `/system/attributes/${id}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 创建属性定义
+ */
+export function fetchCreateAttribute(data: System.AttributeDefinitionForm) {
+  return request({
+    url: '/system/attributes',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 更新属性定义
+ */
+export function fetchUpdateAttribute(id: number, data: Partial<System.AttributeDefinitionForm>) {
+  return request({
+    url: `/system/attributes/${id}`,
+    method: 'put',
+    data
+  });
+}
+
+/**
+ * 删除属性定义
+ */
+export function fetchDeleteAttribute(id: number) {
+  return request({
+    url: `/system/attributes/${id}`,
+    method: 'delete'
+  });
+}
+
+/**
+ * 验证主机属性值
+ */
+export function fetchValidateServerAttribute(data: { attributeId: number; value: string }) {
+  return request({
+    url: '/system/attributes/validate',
+    method: 'post',
+    data
   });
 }

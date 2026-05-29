@@ -3,3 +3,4 @@ export * from './route';
 export * from './system-manage';
 export * from './audit';
 export * from './cmdb';
+export * from './monitoring';

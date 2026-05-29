@@ -44,6 +44,11 @@ func main() {
 	// 设置 JWT 密钥
 	utils.SetJWTSecret(cfg.JWT.Secret)
 
+	// 初始化 Redis（如果启用）
+	if err := services.InitRedis(&cfg.Redis); err != nil {
+		logger.Warn("Redis 初始化失败，缓存功能将不可用", zap.Error(err))
+	}
+
 	// 初始化数据库表和数据
 	initService := services.NewInitService()
 	if err := initService.InitDatabase(); err != nil {
@@ -54,9 +59,6 @@ func main() {
 
 	// 清理上次运行遗留的孤儿活跃会话（重启时必须执行，避免在线会话列表显示失效数据）
 	services.CleanupOrphanedSessions()
-
-	// 启动使用率定时采集调度器（每 5 分钟采集全部在线主机）
-	go services.StartMetricsScheduler()
 
 	// 启动 Agent 指标采集调度器（每 5 分钟 HTTP 拉取 agent_status=running 主机，每 1 分钟检测心跳超时）
 	go services.StartAgentMetricsScheduler()
@@ -81,4 +83,7 @@ func main() {
 	if err := r.Run(addr); err != nil {
 		logger.Fatal("服务器启动失败", zap.Error(err))
 	}
+
+	// 关闭 Redis 连接
+	defer services.CloseRedis()
 }

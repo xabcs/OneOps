@@ -1,8 +1,8 @@
 <script setup lang="tsx">
-import { ref, computed, onMounted } from 'vue';
-import { useBoolean } from '@sa/hooks';
+import { computed, onMounted, ref } from 'vue';
 import { ElNotification } from 'element-plus';
-import { fetchGetRoleList, fetchUpdateRole, fetchDeleteRole, fetchGetUserList } from '@/service/api';
+import { useBoolean } from '@sa/hooks';
+import { fetchDeleteRole, fetchGetRoleList, fetchGetUserList, fetchUpdateRole } from '@/service/api';
 import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import RoleOperateDrawer from './modules/role-operate-drawer.vue';
@@ -32,11 +32,11 @@ const roleUsersMap = computed(() => {
 function canDeleteRole(role: Api.SystemManage.Role): { canDelete: boolean; reason?: string } {
   // 1. 检查是否是系统内置角色（对应后端的5个内置角色）
   const builtinRoles: Record<string, string> = {
-    'admin': '超级管理员',
-    'ops': '运维工程师',
-    'auditor': '审计员',
-    'user': '普通用户',
-    'test': '测试角色'
+    admin: '超级管理员',
+    ops: '运维工程师',
+    auditor: '审计员',
+    user: '普通用户',
+    test: '测试角色'
   };
 
   if (builtinRoles[role.code]) {
@@ -61,7 +61,7 @@ function canDeleteRole(role: Api.SystemManage.Role): { canDelete: boolean; reaso
 // 获取角色删除禁用提示
 function getRoleDeleteDisabledReason(role: Api.SystemManage.Role): string {
   const { canDelete, reason } = canDeleteRole(role);
-  return canDelete ? '' : (reason || '不可删除');
+  return canDelete ? '' : reason || '不可删除';
 }
 
 // 获取所有用户
@@ -127,7 +127,7 @@ const { columns, columnChecks, data, loading, getData, getDataByPage, mobilePagi
                 {username}
               </ElTag>
             ))}
-            {moreText && <span class="text-gray text-12px">{moreText}</span>}
+            {moreText && <span class="text-12px text-gray">{moreText}</span>}
           </div>
         );
       }
@@ -197,12 +197,7 @@ const { columns, columnChecks, data, loading, getData, getDataByPage, mobilePagi
           <ElButton type="info" plain size="small" onClick={() => handleAuth(row.id)}>
             权限设置
           </ElButton>
-          <ElButton
-            type="danger"
-            plain
-            size="small"
-            onClick={() => handleDelete(row.id)}
-          >
+          <ElButton type="danger" plain size="small" onClick={() => handleDelete(row.id)}>
             {$t('common.delete')}
           </ElButton>
         </div>
@@ -211,16 +206,8 @@ const { columns, columnChecks, data, loading, getData, getDataByPage, mobilePagi
   ]
 });
 
-const {
-  drawerVisible,
-  operateType,
-  editingData,
-  handleAdd,
-  handleEdit,
-  checkedRowKeys,
-  onBatchDeleted,
-  onDeleted
-} = useTableOperate(data, 'id', getData);
+const { drawerVisible, operateType, editingData, handleAdd, handleEdit, checkedRowKeys, onBatchDeleted, onDeleted } =
+  useTableOperate(data, 'id', getData);
 
 // 处理角色操作完成后的数据刷新
 async function handleRoleOperateSubmitted() {
@@ -287,13 +274,11 @@ async function handleBatchDelete() {
 
   // 如果有不可删除的角色，显示通知
   if (cannotDeleteRoles.length > 0) {
-    const message = cannotDeleteRoles
-      .map(r => `• ${r.name}: ${r.reason}`)
-      .join('\n');
+    const message = cannotDeleteRoles.map(r => `• ${r.name}: ${r.reason}`).join('\n');
 
     ElNotification({
       title: `无法删除 ${cannotDeleteRoles.length} 个角色`,
-      message: message,
+      message,
       type: 'warning',
       duration: 5000,
       position: 'top-right'
@@ -472,7 +457,12 @@ function edit(id: number) {
         :row-data="editingData"
         @submitted="handleRoleOperateSubmitted"
       />
-      <MenuAuthModal v-model:visible="authModalVisible" :role-id="currentRoleId" :role-data="currentRoleData" @submitted="handleAuthSubmitted" />
+      <MenuAuthModal
+        v-model:visible="authModalVisible"
+        :role-id="currentRoleId"
+        :role-data="currentRoleData"
+        @submitted="handleAuthSubmitted"
+      />
     </ElCard>
   </div>
 </template>

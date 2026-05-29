@@ -150,5 +150,73 @@ declare namespace Api {
       name: string;
       path: string;
     };
+
+    /** 属性定义 */
+    type AttributeDefinition = {
+      id: number;
+      name: string;
+      key: string;
+      category: AttributeCategory;
+      type: AttributeType;
+      options: string;
+      required: boolean;
+      defaultValue: string;
+      sortOrder: number;
+      status: number;
+      description: string;
+      createdAt: string;
+      updatedAt: string;
+    };
+
+    /** 属性定义表单 */
+    type AttributeDefinitionForm = {
+      id?: number;
+      name: string;
+      key: string;
+      category: AttributeCategory;
+      type: AttributeType;
+      options?: string;
+      required?: boolean;
+      defaultValue?: string;
+      sortOrder?: number;
+      description?: string;
+    };
+
+    /** 属性分类 */
+    type AttributeCategory =
+      | 'system' // 系统分类
+      | 'location' // 地理位置
+      | 'environment' // 环境信息
+      | 'hardware' // 硬件配置
+      | 'custom'; // 自定义
+
+    /** 属性类型 */
+    type AttributeType =
+      | 'text' // 单行文本
+      | 'select' // 下拉单选
+      | 'multiselect' // 下拉多选
+      | 'number' // 数字
+      | 'date' // 日期
+      | 'boolean'; // 布尔值
+
+    /** 属性选项 */
+    type AttributeOption = {
+      value: string;
+      label: string;
+    };
+
+    /** 主机属性值 */
+    type ServerAttribute = {
+      id: number;
+      serverId: number;
+      attributeId: number;
+      attributeKey: string;
+      attributeValue: string;
+      valueType: string;
+      category: string;
+      createdAt: string;
+      updatedAt: string;
+      definition?: AttributeDefinition;
+    };
   }
 }

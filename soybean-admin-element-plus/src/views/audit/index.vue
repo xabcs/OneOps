@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { fetchGetAuditStats } from '@/service/api';
 
@@ -99,14 +99,12 @@ onMounted(() => {
       <template #header>
         <div class="flex items-center justify-between">
           <p>{{ $t('route.audit') }}</p>
-          <ElButton @click="getAuditStats" :loading="loading">
-            刷新
-          </ElButton>
+          <ElButton :loading="loading" @click="getAuditStats">刷新</ElButton>
         </div>
       </template>
 
       <!-- 统计概览 -->
-      <div v-loading="loading" class="grid grid-cols-1 gap-16px sm:grid-cols-2 lg:grid-cols-3">
+      <div v-loading="loading" class="grid grid-cols-1 gap-16px lg:grid-cols-3 sm:grid-cols-2">
         <!-- 登录统计 -->
         <div class="stat-card" @click="navigateToDetail('/audit-login-logs')">
           <div class="stat-header">
@@ -144,7 +142,10 @@ onMounted(() => {
             </div>
             <div class="stat-footer">
               <span>成功率: {{ loginSuccessRate }}%</span>
-              <ElProgress :percentage="parseFloat(loginSuccessRate)" :color="loginSuccessRate > 80 ? 'success' : loginSuccessRate > 50 ? 'warning' : 'danger'" />
+              <ElProgress
+                :percentage="parseFloat(loginSuccessRate)"
+                :color="loginSuccessRate > 80 ? 'success' : loginSuccessRate > 50 ? 'warning' : 'danger'"
+              />
             </div>
             <div class="stat-action">
               <ElButton type="primary" size="small" text>查看详情 →</ElButton>
@@ -175,7 +176,10 @@ onMounted(() => {
             </div>
             <div class="stat-footer">
               <span>成功率: {{ operationSuccessRate }}%</span>
-              <ElProgress :percentage="parseFloat(operationSuccessRate)" :color="operationSuccessRate > 80 ? 'success' : operationSuccessRate > 50 ? 'warning' : 'danger'" />
+              <ElProgress
+                :percentage="parseFloat(operationSuccessRate)"
+                :color="operationSuccessRate > 80 ? 'success' : operationSuccessRate > 50 ? 'warning' : 'danger'"
+              />
             </div>
             <div class="stat-action">
               <ElButton type="primary" size="small" text>查看详情 →</ElButton>
@@ -268,15 +272,27 @@ onMounted(() => {
         font-size: 18px;
         font-weight: 600;
 
-        &.success { color: var(--el-color-success); }
-        &.error { color: var(--el-color-danger); }
-        &.warning { color: var(--el-color-warning); }
-        &.info { color: var(--el-color-info); }
-        &.critical { color: #f56c6c; }
+        &.success {
+          color: var(--el-color-success);
+        }
+        &.error {
+          color: var(--el-color-danger);
+        }
+        &.warning {
+          color: var(--el-color-warning);
+        }
+        &.info {
+          color: var(--el-color-info);
+        }
+        &.critical {
+          color: #f56c6c;
+        }
       }
 
       &.mini {
-        .stat-value { font-size: 14px; }
+        .stat-value {
+          font-size: 14px;
+        }
       }
     }
 

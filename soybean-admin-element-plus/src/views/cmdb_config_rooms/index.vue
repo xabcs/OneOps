@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
-import { fetchGetServerRooms, fetchCreateServerRoom, fetchUpdateServerRoom, fetchDeleteServerRoom } from '@/service/api';
-import { ElNotification, ElMessageBox, FormInstance, FormRules } from 'element-plus';
+import { onMounted, reactive, ref } from 'vue';
+import type { FormInstance, FormRules } from 'element-plus';
+import { ElMessageBox, ElNotification } from 'element-plus';
+import {
+  fetchCreateServerRoom,
+  fetchDeleteServerRoom,
+  fetchGetServerRooms,
+  fetchUpdateServerRoom
+} from '@/service/api';
 
 defineOptions({ name: 'CmdbConfigRooms' });
 
@@ -144,24 +150,22 @@ function handleDelete(row: CMDB.ServerRoom) {
     cancelButtonText: '取消',
     type: 'warning'
   })
-  .then(async () => {
-    try {
-      await fetchDeleteServerRoom(row.id);
-      ElNotification.success('删除成功');
-      getTableData();
-    } catch (error) {
-      console.error('删除失败:', error);
-      ElNotification.error('删除失败');
-    }
-  })
-  .catch(() => {});
+    .then(async () => {
+      try {
+        await fetchDeleteServerRoom(row.id);
+        ElNotification.success('删除成功');
+        getTableData();
+      } catch (error) {
+        console.error('删除失败:', error);
+        ElNotification.error('删除失败');
+      }
+    })
+    .catch(() => {});
 }
 
 // 获取状态标签
 function getStatusTag(status: number) {
-  return status === 1
-    ? ({ text: '启用', type: 'success' } as const)
-    : ({ text: '禁用', type: 'danger' } as const);
+  return status === 1 ? ({ text: '启用', type: 'success' } as const) : ({ text: '禁用', type: 'danger' } as const);
 }
 
 // 初始化
@@ -240,7 +244,12 @@ onMounted(() => {
         </ElFormItem>
         <ElFormItem label="服务商">
           <ElSelect v-model="roomForm.provider" placeholder="请选择服务商" style="width: 100%">
-            <ElOption v-for="option in providerOptions" :key="option.value" :label="option.label" :value="option.value" />
+            <ElOption
+              v-for="option in providerOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
           </ElSelect>
         </ElFormItem>
         <ElFormItem label="联系人">
