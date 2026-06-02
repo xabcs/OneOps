@@ -136,6 +136,17 @@ export function fetchAssignServerToGroup(serverId: number, groupId: number) {
 }
 
 /**
+ * 将服务器分配到多个分组
+ */
+export function fetchAssignServerToGroups(serverId: number, groupIds: number[]) {
+  return request({
+    url: '/cmdb/groups/assign-multi',
+    method: 'post',
+    data: { serverId, groupIds }
+  });
+}
+
+/**
  * 获取指定分组下的服务器列表
  */
 export function fetchGetServersByGroup(
@@ -847,11 +858,7 @@ export function fetchUpgradeAgent(serverId: number, targetVersion: string) {
 /**
  * 获取升级任务列表
  */
-export function fetchGetUpgradeTasks(params?: {
-  page?: number;
-  pageSize?: number;
-  status?: string;
-}) {
+export function fetchGetUpgradeTasks(params?: { page?: number; pageSize?: number; status?: string }) {
   return request<{
     list: CMDB.AgentUpgradeTask[];
     total: number;

@@ -437,12 +437,7 @@ onMounted(() => {
               <span v-if="batchUninstallable.length > 0">（{{ batchUninstallable.length }}）</span>
             </ElButton>
 
-            <ElButton
-              type="success"
-              plain
-              :disabled="batchUpgradeable.length === 0"
-              @click="handleBatchUpgrade"
-            >
+            <ElButton type="success" plain :disabled="batchUpgradeable.length === 0" @click="handleBatchUpgrade">
               <template #icon><icon-mdi-arrow-up-bold class="text-icon" /></template>
               批量升级
               <span v-if="batchUpgradeable.length > 0">（{{ batchUpgradeable.length }}）</span>

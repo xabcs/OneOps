@@ -726,6 +726,26 @@ func (c *CMDBController) AssignServerToGroup(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("服务器分配成功"))
 }
 
+// AssignServerToGroups 将服务器分配到多个分组
+func (c *CMDBController) AssignServerToGroups(ctx *gin.Context) {
+	var req struct {
+		ServerID uint   `json:"serverId" binding:"required"`
+		GroupIDs []uint `json:"groupIds" binding:"required"`
+	}
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		return
+	}
+
+	if err := c.cmdbService.AssignServerToGroups(req.ServerID, req.GroupIDs); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("服务器分配成功"))
+}
+
 // GetServersByGroup 获取指定分组下的服务器列表
 func (c *CMDBController) GetServersByGroup(ctx *gin.Context) {
 	groupIDStr := ctx.Param("groupId")

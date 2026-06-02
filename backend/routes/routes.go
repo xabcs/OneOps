@@ -199,6 +199,7 @@ func SetupRoutes(r *gin.Engine) {
 			cmdb.PUT("/groups/:id", cmdbController.UpdateServerGroup)
 			cmdb.DELETE("/groups/:id", cmdbController.DeleteServerGroup)
 			cmdb.POST("/groups/assign", cmdbController.AssignServerToGroup)
+			cmdb.POST("/groups/assign-multi", cmdbController.AssignServerToGroups)
 			cmdb.GET("/group-servers/:groupId", cmdbController.GetServersByGroup)
 
 			// 业务系统管理

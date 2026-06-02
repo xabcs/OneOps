@@ -39,13 +39,12 @@ function initTerminal() {
 
   terminal = new Terminal({
     cursorBlink: true,
-    cursorStyle: 'bar',
-    cursorWidth: 2,
+    cursorStyle: 'block',
     fontSize: 14,
     fontFamily: 'Menlo, Monaco, "Courier New", monospace',
     theme: {
-      background: '#1e1e1e',
-      foreground: '#d4d4d4',
+      background: '#000000',
+      foreground: '#e8e8e8',
       cursor: '#0dbc79',
       black: '#000000',
       red: '#cd3131',
@@ -96,6 +95,12 @@ function initTerminal() {
 function connect() {
   if (!props.websocketUrl) {
     emit('error', 'WebSocket URL 为空');
+    return;
+  }
+
+  // 如果已有连接且状态正常，不重新连接
+  if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
+    console.log('WebSocket已连接，跳过重复连接');
     return;
   }
 
@@ -196,14 +201,24 @@ function resizeTerminal(rows: number, cols: number) {
 
 // 断开连接
 function disconnect() {
+  console.log('断开WebSocket连接');
   if (ws) {
-    ws.close(1000, '用户主动断开');
+    // 移除所有事件监听器，避免内存泄漏
+    ws.onopen = null;
+    ws.onmessage = null;
+    ws.onerror = null;
+    ws.onclose = null;
+
+    if (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN) {
+      ws.close(1000, '组件卸载或切换会话');
+    }
     ws = null;
   }
   if (reconnectTimer) {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
   }
+  wasConnected = false;
 }
 
 // 清理
@@ -230,17 +245,21 @@ function handleResize() {
   }
 }
 
-// 监听 sessionId 变化
+// 监听组件显示状态（通过v-show切换时重新聚焦）
 watch(
-  () => props.sessionId,
-  newId => {
-    if (newId && newId !== 0) {
-      disconnect();
-      if (terminal) {
-        terminal.reset();
-        terminal.writeln(`\r\n\x1B[1;32m正在连接到新会话...\x1B[0m\r\n`);
-      }
+  () => [props.sessionId, props.websocketUrl],
+  ([sessionId, websocketUrl]) => {
+    // 当组件首次获得sessionId和websocketUrl时才连接
+    if (sessionId && websocketUrl && !ws && terminal) {
+      console.log(`初始化会话 ${sessionId} 的连接`);
       connect();
+    } else if (sessionId && websocketUrl && terminal) {
+      // 当切换回已存在的会话时，重新聚焦终端
+      console.log(`切换回会话 ${sessionId}，重新聚焦`);
+      terminal.focus();
+      if (fitAddon) {
+        fitAddon.fit();
+      }
     }
   }
 );
@@ -256,7 +275,7 @@ watch(
 .ssh-terminal-wrapper {
   width: 100%;
   height: 100%;
-  background: #1e1e1e;
+  background: #000000;
   border-radius: 0;
   overflow: hidden;
 }
@@ -272,20 +291,6 @@ watch(
 }
 
 :deep(.xterm .xterm-viewport) {
-  background-color: #1e1e1e;
-}
-
-/* 增强光标闪烁效果 */
-:deep(.xterm .xterm-cursor-layer .xterm-cursor) {
-  animation: cursorBlink 1s step-end infinite;
-}
-
-@keyframes cursorBlink {
-  0%, 49% {
-    opacity: 1;
-  }
-  50%, 100% {
-    opacity: 0;
-  }
+  background-color: #000000;
 }
 </style>

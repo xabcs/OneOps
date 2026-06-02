@@ -236,6 +236,7 @@ const local: App.I18n.Schema = {
     cmdb_config_tags: '标签管理',
     cmdb_config_agents: 'Agent 管理',
     cmdb_terminal: 'SSH 终端',
+    cmdb_terminal_workbench: '终端工作台',
     plugin_copy: '剪贴板',
     plugin_charts: '图表',
     plugin_charts_echarts: 'ECharts',
@@ -269,7 +270,9 @@ const local: App.I18n.Schema = {
     monitoring_alerts: '告警管理',
     monitoring_trends: '趋势分析',
     monitoring_reports: '巡检报告',
-    monitoring_settings: '监控配置'
+    monitoring_settings: '监控配置',
+    terminal: '终端管理',
+    terminal_workbench: '终端工作台'
   },
   page: {
     audit: {

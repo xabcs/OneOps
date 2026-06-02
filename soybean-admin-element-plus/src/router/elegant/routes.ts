@@ -369,7 +369,19 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'cmdb_terminal',
           i18nKey: 'route.cmdb_terminal'
-        }
+        },
+        children: [
+          {
+            name: 'cmdb_terminal_workbench',
+            path: '/cmdb/terminal/workbench',
+            component: 'view.cmdb_terminal_workbench',
+            meta: {
+              title: 'cmdb_terminal_workbench',
+              i18nKey: 'route.cmdb_terminal_workbench',
+              layout: false
+            }
+          }
+        ]
       }
     ]
   },
@@ -488,13 +500,12 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: 'login',
     path: '/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?',
-    component: 'view.login',  // 直接使用登录视图，不使用 BaseLayout
+    component: 'layout.base$view.login',
     props: true,
     meta: {
       title: 'login',
       i18nKey: 'route.login',
-      constant: true,
-      layout: false  // 标记不使用布局
+      constant: true
     }
   },
   {
@@ -923,6 +934,29 @@ export const generatedRoutes: GeneratedRoute[] = [
           i18nKey: 'route.system_attributes',
           icon: 'mdi:format-list-bulleted',
           order: 1
+        }
+      }
+    ]
+  },
+  {
+    name: 'terminal',
+    path: '/terminal',
+    component: 'layout.base',
+    meta: {
+      title: 'terminal',
+      i18nKey: 'route.terminal',
+      icon: 'mdi:console',
+      order: 4
+    },
+    children: [
+      {
+        name: 'terminal_workbench',
+        path: '/terminal/workbench',
+        component: 'view.terminal_workbench',
+        meta: {
+          title: 'terminal_workbench',
+          i18nKey: 'route.terminal_workbench',
+          layout: false
         }
       }
     ]

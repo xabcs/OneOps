@@ -22,8 +22,19 @@ const NOT_FOUND_ROUTE: CustomRoute = {
   }
 };
 
+/** 终端工作台旧路由重定向：/cmdb/terminal/workbench → /terminal/workbench */
+const TERMINAL_WORKBENCH_REDIRECT: CustomRoute = {
+  name: 'cmdb_terminal_workbench_redirect',
+  path: '/cmdb/terminal/workbench',
+  redirect: '/terminal/workbench',
+  meta: {
+    title: 'cmdb_terminal_workbench_redirect',
+    constant: true
+  }
+};
+
 /** builtin routes, it must be constant and setup in vue-router */
-const builtinRoutes: CustomRoute[] = [ROOT_ROUTE, NOT_FOUND_ROUTE];
+const builtinRoutes: CustomRoute[] = [ROOT_ROUTE, NOT_FOUND_ROUTE, TERMINAL_WORKBENCH_REDIRECT];
 
 /** create builtin vue routes */
 export function createBuiltinVueRoutes() {

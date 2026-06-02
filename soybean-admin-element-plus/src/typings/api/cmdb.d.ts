@@ -492,72 +492,72 @@ declare namespace Bastion {
   };
 }
 
-  /** ======================================== */
-  /** Agent 版本管理相关类型                */
-  /** ======================================== */
+/** ======================================== */
+/** Agent 版本管理相关类型                */
+/** ======================================== */
 
-  /** Agent 版本 */
-  type AgentVersion = {
-    id: number;
-    version: string;
-    releaseNotes?: string;
-    changelog?: string;
-    releasedAt: string;
-    amd64BinaryPath?: string;
-    amd64BinaryHash?: string;
-    amd64BinarySize?: number;
-    arm64BinaryPath?: string;
-    arm64BinaryHash?: string;
-    arm64BinarySize?: number;
-    isLatest: boolean;
-    isDeprecated: boolean;
-    features?: string;
-    minCompatibleVersion?: string;
-    maxCompatibleVersion?: string;
-    downloadCount: number;
-    deployCount: number;
-    createdAt: string;
-    updatedAt: string;
-  };
+/** Agent 版本 */
+type AgentVersion = {
+  id: number;
+  version: string;
+  releaseNotes?: string;
+  changelog?: string;
+  releasedAt: string;
+  amd64BinaryPath?: string;
+  amd64BinaryHash?: string;
+  amd64BinarySize?: number;
+  arm64BinaryPath?: string;
+  arm64BinaryHash?: string;
+  arm64BinarySize?: number;
+  isLatest: boolean;
+  isDeprecated: boolean;
+  features?: string;
+  minCompatibleVersion?: string;
+  maxCompatibleVersion?: string;
+  downloadCount: number;
+  deployCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
 
-  /** Agent 版本表单 */
-  type AgentVersionForm = {
-    id?: number;
-    version: string;
-    releaseNotes?: string;
-    changelog?: string;
-    amd64BinaryPath?: string;
-    arm64BinaryPath?: string;
-    isLatest?: boolean;
-    isDeprecated?: boolean;
-    features?: Record<string, boolean>;
-    minCompatibleVersion?: string;
-    maxCompatibleVersion?: string;
-  };
+/** Agent 版本表单 */
+type AgentVersionForm = {
+  id?: number;
+  version: string;
+  releaseNotes?: string;
+  changelog?: string;
+  amd64BinaryPath?: string;
+  arm64BinaryPath?: string;
+  isLatest?: boolean;
+  isDeprecated?: boolean;
+  features?: Record<string, boolean>;
+  minCompatibleVersion?: string;
+  maxCompatibleVersion?: string;
+};
 
-  /** Agent 升级任务 */
-  type AgentUpgradeTask = {
-    id: number;
-    taskName?: string;
-    targetVersion: string;
-    targetServerIds?: string;
-    status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
-    currentStep: number;
-    totalSteps: number;
-    totalCount: number;
-    successCount: number;
-    failedCount: number;
-    skippedCount: number;
-    startedAt?: string;
-    completedAt?: string;
-    errorMessage?: string;
-    operationLog?: string;
-    createdBy?: string;
-    createdAt: string;
-    updatedAt: string;
-  };
+/** Agent 升级任务 */
+type AgentUpgradeTask = {
+  id: number;
+  taskName?: string;
+  targetVersion: string;
+  targetServerIds?: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  currentStep: number;
+  totalSteps: number;
+  totalCount: number;
+  successCount: number;
+  failedCount: number;
+  skippedCount: number;
+  startedAt?: string;
+  completedAt?: string;
+  errorMessage?: string;
+  operationLog?: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
-  /** Agent 升级请求 */
-  type AgentUpgradeRequest = {
-    targetVersion: string;
-  };
+/** Agent 升级请求 */
+type AgentUpgradeRequest = {
+  targetVersion: string;
+};

@@ -47,6 +47,7 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   cmdb_ssh_credentials: () => import("@/views/cmdb_ssh_credentials/index.vue"),
   cmdb_tags: () => import("@/views/cmdb_tags/index.vue"),
   cmdb_terminal: () => import("@/views/cmdb_terminal/index.vue"),
+  cmdb_terminal_workbench: () => import("@/views/cmdb_terminal_workbench/index.vue"),
   "function_hide-child_one": () => import("@/views/function/hide-child/one/index.vue"),
   "function_hide-child_three": () => import("@/views/function/hide-child/three/index.vue"),
   "function_hide-child_two": () => import("@/views/function/hide-child/two/index.vue"),
@@ -89,5 +90,6 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   plugin_typeit: () => import("@/views/plugin/typeit/index.vue"),
   plugin_video: () => import("@/views/plugin/video/index.vue"),
   system_attributes: () => import("@/views/system_attributes/index.vue"),
+  terminal_workbench: () => import("@/views/terminal_workbench/index.vue"),
   "user-center": () => import("@/views/user-center/index.vue"),
 };

@@ -70,6 +70,7 @@ declare module "@elegant-router/types" {
     "cmdb_ssh_credentials": "/cmdb/ssh/credentials";
     "cmdb_tags": "/cmdb/tags";
     "cmdb_terminal": "/cmdb/terminal";
+    "cmdb_terminal_workbench": "/cmdb/terminal/workbench";
     "function": "/function";
     "function_hide-child": "/function/hide-child";
     "function_hide-child_one": "/function/hide-child/one";
@@ -128,6 +129,8 @@ declare module "@elegant-router/types" {
     "plugin_video": "/plugin/video";
     "system": "/system";
     "system_attributes": "/system/attributes";
+    "terminal": "/terminal";
+    "terminal_workbench": "/terminal/workbench";
     "user-center": "/user-center";
   };
 
@@ -190,6 +193,7 @@ declare module "@elegant-router/types" {
     | "multi-menu"
     | "plugin"
     | "system"
+    | "terminal"
     | "user-center"
   >;
 
@@ -241,6 +245,7 @@ declare module "@elegant-router/types" {
     | "cmdb_ssh_credentials"
     | "cmdb_tags"
     | "cmdb_terminal"
+    | "cmdb_terminal_workbench"
     | "function_hide-child_one"
     | "function_hide-child_three"
     | "function_hide-child_two"
@@ -283,6 +288,7 @@ declare module "@elegant-router/types" {
     | "plugin_typeit"
     | "plugin_video"
     | "system_attributes"
+    | "terminal_workbench"
     | "user-center"
   >;
 

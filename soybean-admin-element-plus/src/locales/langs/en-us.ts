@@ -234,6 +234,7 @@ const local: App.I18n.Schema = {
     cmdb_config_tags: 'Tag Management',
     cmdb_config_agents: 'Agent Management',
     cmdb_terminal: 'SSH Terminal',
+    cmdb_terminal_workbench: 'Terminal Workbench',
     plugin: 'Plugin',
     plugin_copy: 'Copy',
     plugin_charts: 'Charts',
@@ -265,7 +266,9 @@ const local: App.I18n.Schema = {
     monitoring_servers: 'Host Monitor',
     monitoring_servers_detail: 'Host Detail',
     'monitoring_servers-detail': 'Host Detail',
-    monitoring_alerts: 'Alerts'
+    monitoring_alerts: 'Alerts',
+    terminal: 'Terminal',
+    terminal_workbench: 'Terminal Workbench'
   },
   page: {
     login: {

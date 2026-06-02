@@ -82,11 +82,13 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 		return nil, 0, err
 	}
 
-	// 列表页预加载凭证、分组和属性（显示凭证数量、分组名称和属性值）
+	// 列表页预加载凭证、分组、属性和机柜（显示凭证数量、分组名称、属性值和机房信息）
 	err := tx.
 		Preload("Credentials").
 		Preload("Groups").
 		Preload("Attributes").
+		Preload("Cabinet").
+		Preload("Cabinet.Room").
 		Order("id DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
@@ -637,7 +639,7 @@ func (s *CMDBService) DeleteServerGroup(id uint) error {
 	return db.Delete(&models.ServerGroup{}, id).Error
 }
 
-// AssignServerToGroup 将服务器分配到分组
+// AssignServerToGroup 将服务器分配到单个分组（会清除其他分组）
 func (s *CMDBService) AssignServerToGroup(serverID, groupID uint) error {
 	// 先删除该服务器的所有分组关联
 	db.Where("server_id = ?", serverID).Delete(&models.ServerGroupRelation{})
@@ -649,6 +651,27 @@ func (s *CMDBService) AssignServerToGroup(serverID, groupID uint) error {
 	}).Error
 }
 
+// AssignServerToGroups 将服务器分配到多个分组（会清除其他分组）
+func (s *CMDBService) AssignServerToGroups(serverID uint, groupIDs []uint) error {
+	if len(groupIDs) == 0 {
+		// 如果没有分组，删除所有关联
+		return db.Where("server_id = ?", serverID).Delete(&models.ServerGroupRelation{}).Error
+	}
+
+	// 先删除该服务器的所有分组关联
+	db.Where("server_id = ?", serverID).Delete(&models.ServerGroupRelation{})
+
+	// 批量创建新的分组关联
+	relations := make([]models.ServerGroupRelation, len(groupIDs))
+	for i, groupID := range groupIDs {
+		relations[i] = models.ServerGroupRelation{
+			ServerID: serverID,
+			GroupID:  groupID,
+		}
+	}
+	return db.Create(&relations).Error
+}
+
 // RemoveServerFromGroup 将服务器从分组中移除
 func (s *CMDBService) RemoveServerFromGroup(serverID, groupID uint) error {
 	return db.Where("server_id = ? AND group_id = ?", serverID, groupID).Delete(&models.ServerGroupRelation{}).Error
@@ -658,6 +681,7 @@ func (s *CMDBService) RemoveServerFromGroup(serverID, groupID uint) error {
 func (s *CMDBService) GetServersByGroup(groupID uint) ([]models.Server, error) {
 	var servers []models.Server
 	err := db.Joins("JOIN server_group_relations ON servers.id = server_group_relations.server_id").
+		Preload("Credentials").
 		Where("server_group_relations.group_id = ?", groupID).
 		Find(&servers).Error
 	return servers, err

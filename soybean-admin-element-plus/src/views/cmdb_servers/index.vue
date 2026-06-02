@@ -8,6 +8,7 @@ import {
   fetchBatchDeployAgent,
   fetchBatchUninstallAgent,
   fetchCheckConnectPermission,
+  fetchConnectServer,
   fetchCreateServer,
   fetchCreateServerGroup,
   fetchDeleteServer,
@@ -30,7 +31,8 @@ import {
   fetchTestSSHConnection,
   fetchUninstallAgent,
   fetchUpdateServer,
-  fetchUpdateServerGroup
+  fetchUpdateServerGroup,
+  fetchAssignServerToGroups
 } from '@/service/api';
 import { views } from '@/router/elegant/imports';
 import { $t } from '@/locales';
@@ -1108,9 +1110,66 @@ async function loadServerAttributes(serverId: number) {
 }
 
 // 打开连接对话框
-function handleConnect(row: CMDB.Server) {
+async function handleConnect(row: CMDB.Server) {
   selectedServer.value = row;
-  connectDialogVisible.value = true;
+
+  // 检查连接权限和可用凭证
+  try {
+    const { data: permissionData } = await fetchCheckConnectPermission(row.id);
+
+    if (!permissionData?.hasPermission) {
+      window.$message?.error('您没有连接此服务器的权限');
+      return;
+    }
+
+    const credentials = permissionData.credentials || [];
+
+    if (credentials.length === 0) {
+      window.$message?.error('服务器未绑定任何凭证，请先在主机编辑页面绑定 SSH 凭证');
+      return;
+    }
+
+    // 无论有几个凭证，都显示对话框
+    connectDialogVisible.value = true;
+  } catch (error: any) {
+    window.$message?.error(`检查连接权限失败: ${error?.message || '未知错误'}`);
+  }
+}
+
+// 执行连接
+async function performConnect(serverId: number, credentialId: number) {
+  try {
+    const { data, error } = await fetchConnectServer(serverId, {
+      protocol: 'ssh',
+      credentialId
+    });
+
+    if (error) {
+      window.$message?.error(`连接失败: ${error.message || '未知错误'}`);
+      return;
+    }
+
+    if (data) {
+      // 连接成功，打开工作台
+      const credential = selectedServer.value?.credentials?.find((c: any) => c.id === credentialId);
+      const loginAccount = credential?.username || 'root';
+
+      const params = new URLSearchParams({
+        sessionId: data.sessionId.toString(),
+        websocketUrl: data.websocketUrl || '',
+        serverName: selectedServer.value?.hostname || '',
+        serverIp: selectedServer.value?.ip || '',
+        loginAccount
+      });
+
+      // 打开工作台
+      window.open(`/terminal/workbench?${params.toString()}`, 'oneops-workbench');
+
+      window.$message?.success('连接成功，正在打开工作台...');
+    }
+  } catch (error: any) {
+    window.$message?.error(`连接失败: ${error?.message || '未知错误'}`);
+  }
 }
 
 // 查看监控详情
@@ -1121,18 +1180,22 @@ function handleViewMonitoring(row: CMDB.Server) {
   });
 }
 
-// 连接成功处理
+// 连接成功处理（对话框方式）
 function handleConnected(sessionId: number, websocketUrl: string, loginAccount?: string) {
   connectDialogVisible.value = false;
 
   const params = new URLSearchParams({
+    sessionId: sessionId.toString(),
     websocketUrl,
     serverName: selectedServer.value?.hostname || '',
     serverIp: selectedServer.value?.ip || '',
     loginAccount: loginAccount || currentLoginAccount.value || 'root'
   });
 
-  window.open(`/cmdb/terminal/${sessionId}?${params.toString()}`, '_blank');
+  // 打开工作台，使用命名窗口避免重复打开
+  window.open(`/cmdb/terminal/workbench?${params.toString()}`, 'oneops-workbench');
+
+  window.$message?.success('连接成功，正在打开工作台...');
 }
 
 function throwIfRequestFailed(result: { error: unknown }) {
@@ -1205,6 +1268,9 @@ async function handleSave() {
   try {
     await serverFormRef.value.validate();
 
+    // 保存分组ID列表（在删除前保存）
+    const groupIds = (serverForm.groupIds || []).map((id: any) => Number(id));
+
     const formData: CMDB.ServerForm = {
       ...serverForm,
       serverType: serverType.value === 'cloud' ? 'vm' : serverForm.serverType || 'vm',
@@ -1220,13 +1286,16 @@ async function handleSave() {
     };
 
     // 移除不需要发送到后端的字段（这些是前端辅助字段，不是数据库字段）
-    delete (formData as any).tagIds;   // Tags 通过 many2many 关联表处理
+    delete (formData as any).tagIds; // Tags 通过 many2many 关联表处理
     delete (formData as any).groupIds; // Groups 通过 many2many 关联表处理
-    delete (formData as any).roomId;   // 机房ID，不是服务器字段
+    delete (formData as any).roomId; // 机房ID，不是服务器字段
+
+    let savedServerId: number;
 
     if (serverForm.id) {
       const result = await fetchUpdateServer(serverForm.id, formData);
       throwIfRequestFailed(result);
+      savedServerId = serverForm.id;
       // 保存主机属性
       await saveServerAttributes(serverForm.id);
       ElNotification.success('更新成功');
@@ -1235,10 +1304,16 @@ async function handleSave() {
       throwIfRequestFailed(result);
       // 保存主机属性（新创建的主机）
       const newServerId = (result as any).data?.id;
+      savedServerId = newServerId;
       if (newServerId) {
         await saveServerAttributes(newServerId);
       }
       ElNotification.success('创建成功');
+    }
+
+    // 保存主机分组关联
+    if (groupIds.length > 0) {
+      await fetchAssignServerToGroups(savedServerId, groupIds);
     }
 
     // 关闭对话框和抽屉
@@ -2078,7 +2153,10 @@ onUnmounted(() => {
                   <ElButton link size="small">...</ElButton>
                   <template #dropdown>
                     <ElDropdownMenu>
-                      <ElDropdownItem v-if="row.agentStatus === 'running' || row.agentStatus === 'failed'" command="sync-metrics">
+                      <ElDropdownItem
+                        v-if="row.agentStatus === 'running' || row.agentStatus === 'failed'"
+                        command="sync-metrics"
+                      >
                         刷新指标
                       </ElDropdownItem>
                       <ElDropdownItem command="edit">编辑</ElDropdownItem>

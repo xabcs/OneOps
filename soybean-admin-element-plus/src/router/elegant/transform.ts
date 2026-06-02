@@ -94,10 +94,7 @@ function transformElegantRouteToVueRoute(
   const vueRoute = { name, path, ...rest } as RouteRecordRaw;
 
   try {
-    // 检查是否设置了 layout: false，如果设置了则不使用布局
-    const noLayout = route.meta?.layout === false;
-
-    if (component && !noLayout) {
+    if (component) {
       if (isSingleLevelRoute(route)) {
         const { layout, view } = getSingleLevelRouteComponent(component);
 
@@ -132,17 +129,6 @@ function transformElegantRouteToVueRoute(
         vueRoute.component = views[viewName];
       }
 
-    }
-
-    // 如果设置了 layout: false，直接使用视图组件
-    if (component && noLayout) {
-      if (isView(component)) {
-        const viewName = getViewName(component);
-        vueRoute.component = views[viewName];
-      } else if (isLayout(component)) {
-        const layoutName = getLayoutName(component);
-        vueRoute.component = layouts[layoutName];
-      }
     }
   } catch (error: any) {
     console.error(`Error transforming route "${route.name}": ${error.toString()}`);
@@ -230,6 +216,7 @@ const routeMap: RouteMap = {
   "cmdb_ssh_credentials": "/cmdb/ssh/credentials",
   "cmdb_tags": "/cmdb/tags",
   "cmdb_terminal": "/cmdb/terminal",
+  "cmdb_terminal_workbench": "/cmdb/terminal/workbench",
   "function": "/function",
   "function_hide-child": "/function/hide-child",
   "function_hide-child_one": "/function/hide-child/one",
@@ -288,6 +275,8 @@ const routeMap: RouteMap = {
   "plugin_video": "/plugin/video",
   "system": "/system",
   "system_attributes": "/system/attributes",
+  "terminal": "/terminal",
+  "terminal_workbench": "/terminal/workbench",
   "user-center": "/user-center"
 };
 
