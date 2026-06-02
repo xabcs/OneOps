@@ -5,6 +5,7 @@ import type { FormInstance, FormRules } from 'element-plus';
 import { ElMessageBox, ElNotification } from 'element-plus';
 import { ArrowDown, Delete, Document, Edit, Link, More, Plus, Refresh, RefreshRight } from '@element-plus/icons-vue';
 import {
+  fetchAssignServerToGroups,
   fetchBatchDeployAgent,
   fetchBatchUninstallAgent,
   fetchCheckConnectPermission,
@@ -31,8 +32,7 @@ import {
   fetchTestSSHConnection,
   fetchUninstallAgent,
   fetchUpdateServer,
-  fetchUpdateServerGroup,
-  fetchAssignServerToGroups
+  fetchUpdateServerGroup
 } from '@/service/api';
 import { views } from '@/router/elegant/imports';
 import { $t } from '@/locales';
@@ -84,7 +84,12 @@ const groupFormData = reactive({
 const groupFormRules: FormRules = {
   name: [
     { required: true, message: '请输入分组名称', trigger: 'blur' },
-    { min: 2, max: 50, message: '分组名称长度在 2 到 50 个字符', trigger: 'blur' }
+    {
+      min: 2,
+      max: 50,
+      message: '分组名称长度在 2 到 50 个字符',
+      trigger: 'blur'
+    }
   ],
   parentId: [{ required: true, message: '请选择父分组', trigger: 'change' }]
 };
@@ -177,7 +182,12 @@ const loadingAttributes = ref(false);
 
 // 主机表单
 const serverForm = reactive<
-  CMDB.ServerForm & { groupIds?: number[]; tagIds?: number[]; roomId?: number; cabinetId?: number }
+  CMDB.ServerForm & {
+    groupIds?: number[];
+    tagIds?: number[];
+    roomId?: number;
+    cabinetId?: number;
+  }
 >({
   hostname: '',
   ip: '',
@@ -213,14 +223,35 @@ const cloudForm = reactive<CMDB.CloudServerForm>({
 const serverFormRules: FormRules = {
   hostname: [
     { required: true, message: '请输入主机名', trigger: 'blur' },
-    { min: 2, max: 100, message: '主机名长度在 2 到 100 个字符', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9.-]+$/, message: '主机名只能包含字母、数字、点和连字符', trigger: 'blur' }
+    {
+      min: 2,
+      max: 100,
+      message: '主机名长度在 2 到 100 个字符',
+      trigger: 'blur'
+    },
+    {
+      pattern: /^[a-zA-Z0-9.-]+$/,
+      message: '主机名只能包含字母、数字、点和连字符',
+      trigger: 'blur'
+    }
   ],
   ip: [
     { required: true, message: '请输入连接IP', trigger: 'blur' },
-    { pattern: /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/, message: '请输入有效的IP地址', trigger: 'blur' }
+    {
+      pattern: /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/,
+      message: '请输入有效的IP地址',
+      trigger: 'blur'
+    }
   ],
-  credentialIds: [{ required: true, type: 'array', min: 1, message: '请至少选择一个SSH凭证', trigger: 'change' }]
+  credentialIds: [
+    {
+      required: true,
+      type: 'array',
+      min: 1,
+      message: '请至少选择一个SSH凭证',
+      trigger: 'change'
+    }
+  ]
 };
 
 // ========== 辅助函数 ==========
@@ -854,7 +885,12 @@ async function handleBatchTestConnection() {
   const results = {
     success: 0,
     failed: 0,
-    details: [] as Array<{ id: number; hostname: string; success: boolean; message: string }>
+    details: [] as Array<{
+      id: number;
+      hostname: string;
+      success: boolean;
+      message: string;
+    }>
   };
 
   ElNotification.info(`正在测试 ${selectedIds.value.length} 台主机的SSH连接...`);
@@ -891,8 +927,8 @@ async function handleBatchTestConnection() {
 
   // 显示结果汇总
   const summary = `SSH连接测试完成：
-成功: ${results.success} 台
-失败: ${results.failed} 台`;
+        成功: ${results.success} 台
+        失败: ${results.failed} 台`;
 
   if (results.failed > 0) {
     const failedServers = results.details
@@ -934,7 +970,11 @@ async function handleBatchDeploy() {
     await ElMessageBox.confirm(
       `确定要为选中的 ${selectedIds.value.length} 台主机部署 Agent 吗？部署过程可能需要几分钟，请耐心等待。`,
       '批量部署确认',
-      { type: 'info', confirmButtonText: '确认部署', cancelButtonText: '取消' }
+      {
+        type: 'info',
+        confirmButtonText: '确认部署',
+        cancelButtonText: '取消'
+      }
     );
 
     await fetchBatchDeployAgent(selectedIds.value);
@@ -993,7 +1033,11 @@ async function handleBatchUninstall() {
     await ElMessageBox.confirm(
       `确定要从选中的 ${selectedIds.value.length} 台主机卸载 Agent 吗？卸载后主机将不再上报监控数据。`,
       '批量卸载确认',
-      { type: 'warning', confirmButtonText: '确认卸载', cancelButtonText: '取消' }
+      {
+        type: 'warning',
+        confirmButtonText: '确认卸载',
+        cancelButtonText: '取消'
+      }
     );
 
     await fetchBatchUninstallAgent(selectedIds.value);
@@ -1092,7 +1136,7 @@ function handleEdit(row: CMDB.Server) {
       (row.sshCredentialId ? [row.sshCredentialId] : []),
     systemCredentialId: row.systemCredentialId || row.systemCredential?.id || undefined,
     serverType: row.serverType,
-    groupIds: groupIds,
+    groupIds,
     tagIds: row.tags?.map(t => t.id) || [],
     roomId: row.cabinet?.roomId,
     cabinetId: row.cabinetId,
@@ -1161,9 +1205,12 @@ async function loadServerAttributes(serverId: number) {
   }
 }
 
-// 打开连接对话框
-async function handleConnect(row: CMDB.Server) {
-  // 直接打开终端工作台，传递服务器ID
+// 打开终端工作台（在新标签页中）
+function handleConnect(row: CMDB.Server) {
+  // 获取用户凭证ID列表
+  const userCredentialIds = row.credentials?.filter(c => c.credentialType === 'user').map(c => c.id) || [];
+  const defaultCredentialId = userCredentialIds[0] || row.sshCredentialId;
+
   const params = new URLSearchParams({
     serverId: row.id.toString(),
     serverName: row.hostname,
@@ -1171,10 +1218,14 @@ async function handleConnect(row: CMDB.Server) {
     serverEnv: row.env || 'unknown'
   });
 
-  // 使用命名窗口打开终端工作台
-  window.open(`/terminal?${params.toString()}`, 'oneops-workbench');
-}
+  // 如果有默认凭证，传递凭证ID
+  if (defaultCredentialId) {
+    params.append('credentialId', defaultCredentialId.toString());
+  }
 
+  // 在新标签页打开终端工作台
+  window.open(`/terminal/workbench?${params.toString()}`, '_blank');
+}
 
 function throwIfRequestFailed(result: { error: unknown }) {
   if (result.error) {
@@ -1745,7 +1796,9 @@ const drawerVisible = ref(false);
 const drawerServer = ref<CMDB.Server | null>(null);
 const drawerActiveTab = ref('overview');
 const drawerSessions = ref<any[]>([]);
-const drawerPermission = ref<{ credentials: CMDB.SSHCredential[] }>({ credentials: [] });
+const drawerPermission = ref<{ credentials: CMDB.SSHCredential[] }>({
+  credentials: []
+});
 const drawerLoading = ref(false);
 
 async function handleViewDetail(row: CMDB.Server) {
@@ -1815,8 +1868,8 @@ onUnmounted(() => {
 <template>
   <div class="h-full flex gap-12px overflow-hidden">
     <!-- 左侧分组树 -->
-    <div class="w-220px flex flex-col flex-shrink-0 group-container">
-      <ElCard class="flex flex-col flex-1 group-tree-card" shadow="never" body-style="padding: 12px; border-radius: 0;">
+    <div class="group-container w-220px flex flex-col flex-shrink-0">
+      <ElCard class="group-tree-card flex flex-col flex-1" shadow="never" body-style="padding: 12px; border-radius: 0;">
         <!-- 树头部 -->
         <div class="mb-8px flex items-center justify-between">
           <span class="text-14px text-gray-700 font-bold">资产分组</span>
@@ -1897,11 +1950,14 @@ onUnmounted(() => {
     <!-- 右侧主机列表 -->
     <div class="min-w-0 flex flex-col flex-1">
       <!-- 头部：搜索和操作按钮（同一行）-->
-      <div class="flex items-center justify-between gap-12px mb-8px">
+      <div class="mb-8px flex items-center justify-between gap-12px">
         <!-- 左侧：主操作按钮 -->
         <div class="flex items-center gap-8px">
           <ElDropdown trigger="click" @command="handleCreateCommand">
-            <ElButton type="success" :style="{ backgroundColor: '#00A67D', borderColor: '#00A67D', color: '#fff', borderRadius: '0' }">
+            <ElButton
+              type="success"
+              :style="{ backgroundColor: '#00A67D', borderColor: '#00A67D', color: '#fff', borderRadius: '0' }"
+            >
               <template #icon>
                 <icon-ic-round-plus class="text-icon" />
               </template>
@@ -1915,7 +1971,7 @@ onUnmounted(() => {
               </ElDropdownMenu>
             </template>
           </ElDropdown>
-          <ElDropdown trigger="click" @command="handleBatchCommand" :disabled="selectedIds.length === 0">
+          <ElDropdown trigger="click" :disabled="selectedIds.length === 0" @command="handleBatchCommand">
             <ElButton plain :style="{ borderRadius: '0' }">
               更多操作
               <icon-ic-round-keyboard-arrow-down class="ml-4px text-icon" />
@@ -1940,7 +1996,7 @@ onUnmounted(() => {
         </div>
 
         <!-- 右侧：搜索栏和刷新按钮 -->
-        <div class="flex items-center gap-8px search-inputs">
+        <div class="search-inputs flex items-center gap-8px">
           <ElSelect v-model="searchType" placeholder="筛选条件">
             <ElOption label="主机名" value="hostname" />
             <ElOption label="IP地址" value="ip" />
@@ -1954,7 +2010,7 @@ onUnmounted(() => {
             @keyup.enter="handleSearch"
           >
             <template #suffix>
-              <icon-ic-round-search class="text-icon cursor-pointer" @click="handleSearch" />
+              <icon-ic-round-search class="cursor-pointer text-icon" @click="handleSearch" />
             </template>
           </ElInput>
           <ElButton text @click="getServers">
@@ -1964,19 +2020,18 @@ onUnmounted(() => {
       </div>
 
       <!-- 主机列表容器 -->
-      <div class="flex-1 flex flex-col bg-white overflow-hidden">
+      <div class="flex flex-col flex-1 overflow-hidden bg-white">
         <!-- 列表内容 -->
         <div class="flex-1 overflow-auto">
           <ElTable
             v-loading="loading"
             height="100%"
-            border
             :data="tableData"
             size="small"
             class="server-list-table"
             :row-style="{ height: '48px' }"
-            :cell-style="{ padding: '0' }"
-            :header-cell-style="{ backgroundColor: '#f5f7fa' }"
+            :cell-style="{ padding: '0', borderRight: 'none' }"
+            :header-cell-style="{ backgroundColor: '#f5f7fa', borderRight: 'none' }"
             stripe
             table-layout="fixed"
             @selection-change="handleSelectionChange"
@@ -2006,7 +2061,7 @@ onUnmounted(() => {
             </ElTableColumn>
             <ElTableColumn label="配置" width="110" align="center">
               <template #default="{ row }">
-                <span class="text-12px text-gray-600">{{ row.cpu }}C/{{ row.memory }}G</span>
+                <span class="text-12px" style="color: #606266">{{ row.cpu }}C/{{ row.memory }}G</span>
               </template>
             </ElTableColumn>
             <ElTableColumn label="环境" width="75" align="center">
@@ -2098,80 +2153,89 @@ onUnmounted(() => {
                 <span v-else class="text-12px text-gray-400">-</span>
               </template>
             </ElTableColumn>
-            <ElTableColumn label="操作" width="200" align="center" fixed="right">
+            <ElTableColumn label="操作" width="100" align="center" fixed="right">
               <template #default="{ row }">
-                <ElButton
-                  type="success"
-                  size="small"
-                  :style="{ backgroundColor: '#00A67D', borderColor: '#00A67D', color: '#fff' }"
-                  @click="handleConnect(row)"
-                >
-                  <icon-mdi-console-line class="text-14px mr-4px" />
-                  连接
-                </ElButton>
-                <ElDropdown trigger="click" @command="(cmd: string) => handleMoreAction(cmd, row)">
-                  <ElButton size="small" class="ml-8px">
-                    <icon-ic-round-more-horiz class="text-icon" />
-                  </ElButton>
-                  <template #dropdown>
-                    <ElDropdownMenu>
-                      <ElDropdownItem
-                        v-if="row.agentStatus === 'running' || row.agentStatus === 'failed'"
-                        command="sync-metrics"
-                      >
-                        <icon-mdi-refresh class="mr-8px" />
-                        刷新指标
-                      </ElDropdownItem>
-                      <ElDropdownItem
-                        v-if="row.agentStatus === 'running'"
-                        command="monitoring"
-                      >
-                        <icon-mdi-chart-line class="mr-8px" />
-                        监控详情
-                      </ElDropdownItem>
-                      <ElDropdownItem command="detail">
-                        <icon-ic-round-info class="mr-8px" />
-                        主机详情
-                      </ElDropdownItem>
-                      <ElDropdownItem command="edit">
-                        <icon-ic-round-edit class="mr-8px" />
-                        编辑
-                      </ElDropdownItem>
-                      <ElDropdownItem
-                        v-if="!row.agentStatus || row.agentStatus === 'uninstalled' || row.agentStatus === 'failed'"
-                        command="agent-deploy"
-                      >
-                        <icon-mdi-download class="mr-8px" />
-                        部署 Agent
-                      </ElDropdownItem>
-                      <ElDropdownItem
-                        v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'"
-                        command="agent-restart"
-                      >
-                        <icon-mdi-restart class="mr-8px" />
-                        重启 Agent
-                      </ElDropdownItem>
-                      <ElDropdownItem
-                        v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'"
-                        command="agent-uninstall"
-                      >
-                        <icon-mdi-delete-forever class="mr-8px" />
-                        卸载 Agent
-                      </ElDropdownItem>
-                      <ElDropdownItem divided command="delete" style="color: #f56c6c">
-                        <icon-ic-round-delete class="mr-8px" />
-                        删除主机
-                      </ElDropdownItem>
-                    </ElDropdownMenu>
-                  </template>
-                </ElDropdown>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 12px">
+                  <!-- 连接按钮 -->
+                  <a title="连接终端" style="cursor: pointer" @click="handleConnect(row)">
+                    <icon-mdi-console-line class="text-14px" style="color: #909399" />
+                  </a>
+
+                  <!-- 更多菜单 -->
+                  <ElDropdown trigger="click" @command="(cmd: string) => handleMoreAction(cmd, row)">
+                    <span
+                      style="
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 24px;
+                        height: 24px;
+                        cursor: pointer;
+                        font-size: 16px;
+                        color: #909399;
+                        font-style: normal;
+                        letter-spacing: 1px;
+                      "
+                    >
+                      ⋮
+                    </span>
+                    <template #dropdown>
+                      <ElDropdownMenu>
+                        <ElDropdownItem
+                          v-if="row.agentStatus === 'running' || row.agentStatus === 'failed'"
+                          command="sync-metrics"
+                        >
+                          <icon-mdi-refresh class="mr-8px" />
+                          刷新指标
+                        </ElDropdownItem>
+                        <ElDropdownItem v-if="row.agentStatus === 'running'" command="monitoring">
+                          <icon-mdi-chart-line class="mr-8px" />
+                          监控详情
+                        </ElDropdownItem>
+                        <ElDropdownItem command="detail">
+                          <icon-ic-round-info class="mr-8px" />
+                          主机详情
+                        </ElDropdownItem>
+                        <ElDropdownItem command="edit">
+                          <icon-ic-round-edit class="mr-8px" />
+                          编辑
+                        </ElDropdownItem>
+                        <ElDropdownItem
+                          v-if="!row.agentStatus || row.agentStatus === 'uninstalled' || row.agentStatus === 'failed'"
+                          command="agent-deploy"
+                        >
+                          <icon-mdi-download class="mr-8px" />
+                          部署 Agent
+                        </ElDropdownItem>
+                        <ElDropdownItem
+                          v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'"
+                          command="agent-restart"
+                        >
+                          <icon-mdi-restart class="mr-8px" />
+                          重启 Agent
+                        </ElDropdownItem>
+                        <ElDropdownItem
+                          v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'"
+                          command="agent-uninstall"
+                        >
+                          <icon-mdi-delete-forever class="mr-8px" />
+                          卸载 Agent
+                        </ElDropdownItem>
+                        <ElDropdownItem divided command="delete" style="color: #f56c6c">
+                          <icon-ic-round-delete class="mr-8px" />
+                          删除主机
+                        </ElDropdownItem>
+                      </ElDropdownMenu>
+                    </template>
+                  </ElDropdown>
+                </div>
               </template>
             </ElTableColumn>
           </ElTable>
         </div>
 
         <!-- 分页 -->
-        <div v-if="tableData.length > 0" class="p-12px border-t border-gray-200 flex justify-end bg-white">
+        <div v-if="tableData.length > 0" class="flex justify-end border-t border-gray-200 bg-white p-12px">
           <ElPagination
             v-model:current-page="pagination.page"
             v-model:page-size="pagination.pageSize"
@@ -2794,7 +2858,6 @@ onUnmounted(() => {
         <ElButton type="primary" @click="handleSaveGroup">确定</ElButton>
       </template>
     </ElDialog>
-
 
     <!-- SSH终端已改为路由跳转，保留连接对话框 -->
 
@@ -3517,14 +3580,15 @@ onUnmounted(() => {
 
 .ip-row {
   font-size: 12px;
-  color: #303133;
-  font-family: ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Code', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+  color: #606266;
+  font-family:
+    ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Code', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
   font-weight: 400;
   line-height: 1.3;
 }
 
 .ip-row-inner {
-  color: #303133;
+  color: #606266;
 }
 
 .ip-tag-outer,
@@ -3607,5 +3671,62 @@ onUnmounted(() => {
   font-size: 12px;
   color: #606266;
   margin-top: 8px;
+}
+
+/* 操作列样式 */
+.actions-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #409eff;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  text-decoration: none;
+
+  &:hover {
+    background-color: #ecf5ff;
+    color: #66b1ff;
+  }
+}
+
+.connect-link {
+  color: #909399;
+
+  &:hover {
+    background-color: #f5f7fa;
+    color: #606266;
+  }
+}
+
+.more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #f5f7fa;
+  }
+}
+
+.more-icon {
+  font-size: 16px;
+  color: #909399;
+  font-style: normal;
+  letter-spacing: 1px;
 }
 </style>

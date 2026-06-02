@@ -12,3 +12,23 @@ body,
 html {
   overflow-x: hidden;
 }
+
+/* 腾讯云风格：数据专用字体 */
+:root {
+  --font-data: 'TCloudNumber', 'Monaco', 'Consolas', 'Monaco', 'Courier New', monospace;
+  --color-primary: rgb(0, 82, 217);
+  --color-success: rgb(38, 187, 23);
+  --color-warning: rgb(255, 168, 0);
+  --color-error: rgb(245, 34, 46);
+}
+
+/* 数据展示类 - 使用 TCloudNumber 字体 */
+.font-data {
+  font-family: var(--font-data);
+}
+
+/* 数字强调类 */
+.number-emphasis {
+  font-family: var(--font-data);
+  font-weight: 500;
+}

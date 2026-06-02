@@ -60,12 +60,12 @@ func agentBinaryDir() string {
 
 // agentMetricsResponse Agent /metrics 接口响应
 type agentMetricsResponse struct {
-	CPUUsage       float64             `json:"cpuUsage"`
-	MemoryUsage    float64             `json:"memoryUsage"`
-	DiskUsage      float64             `json:"diskUsage"`
+	CPUUsage       float64               `json:"cpuUsage"`
+	MemoryUsage    float64               `json:"memoryUsage"`
+	DiskUsage      float64               `json:"diskUsage"`
 	DiskPartitions models.DiskPartitions `json:"diskPartitions,omitempty"`
-	Load5          float64             `json:"load5"`
-	ProcessNum     int                 `json:"processNum"`
+	Load5          float64               `json:"load5"`
+	ProcessNum     int                   `json:"processNum"`
 }
 
 // AgentHeartbeatData Agent 心跳上报数据
@@ -157,8 +157,9 @@ WantedBy=multi-user.target
 	}
 
 	db.Model(&models.Server{}).Where("id = ?", serverID).Updates(map[string]interface{}{
-		"agent_status": "running",
-		"agent_port":   agentPort,
+		"agent_status":  "running",
+		"agent_port":    agentPort,
+		"agent_version": "1.0.0", // Agent 默认版本号
 	})
 
 	logger.Info("Agent 部署成功", zap.Uint("serverID", serverID), zap.String("arch", binaryArch))
@@ -182,7 +183,11 @@ func (s *AgentService) RestartAgent(serverID uint) error {
 		return fmt.Errorf("重启 Agent 失败: %w", err)
 	}
 
-	db.Model(&models.Server{}).Where("id = ?", serverID).Update("agent_status", "running")
+	updates := map[string]interface{}{"agent_status": "running"}
+	if server.AgentVersion == "" {
+		updates["agent_version"] = "1.0.0" // 如果版本为空，设置默认版本
+	}
+	db.Model(&models.Server{}).Where("id = ?", serverID).Updates(updates)
 	logger.Info("Agent 重启成功", zap.Uint("serverID", serverID))
 	return nil
 }
@@ -311,8 +316,10 @@ func (s *AgentService) ReceiveHeartbeat(data AgentHeartbeatData) error {
 		"agent_status":      "running",
 		"last_heartbeat_at": now,
 	}
-	if data.Version != "" {
+	if data.Version != "" && (server.AgentVersion == "" || data.Version != server.AgentVersion) {
 		updates["agent_version"] = data.Version
+	} else if server.AgentVersion == "" && data.Version == "" {
+		updates["agent_version"] = "1.0.0"
 	}
 	if data.Port > 0 {
 		updates["agent_port"] = data.Port
@@ -587,15 +594,15 @@ func MarkAgentFailed(serverID uint, reason string) {
 		zap.String("reason", reason))
 	db.Model(&models.Server{}).Where("id = ?", serverID).Updates(map[string]interface{}{
 		"agent_status":       "failed",
-		"agent_version":       "",
+		"agent_version":      "",
 		"last_heartbeat_at":  nil,
 		"metrics_updated_at": nil,
-		"cpu_usage":           0,
+		"cpu_usage":          0,
 		"memory_usage":       0,
-		"disk_usage":          0,
-		"load1":               0,
-		"load5":               0,
-		"load15":              0,
+		"disk_usage":         0,
+		"load1":              0,
+		"load5":              0,
+		"load15":             0,
 	})
 }
 
@@ -940,131 +947,164 @@ func CheckVersionCompatibility(currentVersion, targetVersion string) (bool, stri
 
 // UpgradeAgent 升级单台主机的 Agent
 func (s *AgentService) UpgradeAgent(serverID uint, targetVersion string) error {
-	
 	server, err := s.loadServerForAgent(serverID)
 	if err != nil {
 		return err
 	}
-	
-	// 检查当前版本
+
 	if server.AgentVersion == targetVersion {
 		return fmt.Errorf("主机当前版本已是目标版本 %s", targetVersion)
 	}
-	
-	// 检查版本兼容性
+
 	compatible, reason := CheckVersionCompatibility(server.AgentVersion, targetVersion)
 	if !compatible {
 		return fmt.Errorf("版本不兼容: %s", reason)
 	}
-	
+
+	taskName := fmt.Sprintf("升级 %s 到 v%s", server.Hostname, targetVersion)
+	serverIDsJSON, _ := json.Marshal([]uint{serverID})
+	now := time.Now()
+	task := models.AgentUpgradeTask{
+		TaskName:        taskName,
+		TargetVersion:   targetVersion,
+		TargetServerIDs: string(serverIDsJSON),
+		Status:          "running",
+		TotalCount:      1,
+		SuccessCount:    0,
+		FailedCount:     0,
+		StartedAt:       &now,
+	}
+	if err := db.Create(&task).Error; err != nil {
+		logger.Error("创建升级任务记录失败", zap.Error(err))
+	}
+
 	sshClient, err := dialSSH(server)
 	if err != nil {
+		markTaskFailed(task.ID, fmt.Sprintf("SSH 连接失败: %v", err))
 		return fmt.Errorf("SSH 连接失败: %w", err)
 	}
 	defer sshClient.Close()
-	
-	// 获取目标版本信息
+
 	targetVersionInfo, err := GetVersionByNumber(targetVersion)
 	if err != nil {
+		markTaskFailed(task.ID, fmt.Sprintf("获取目标版本信息失败: %v", err))
 		return fmt.Errorf("获取目标版本信息失败: %w", err)
 	}
-	
-	// 检测目标主机架构
+
 	arch, _ := runSSHCommand(sshClient, "uname -m")
 	binaryArch := "amd64"
 	if arch == "aarch64" || arch == "arm64" {
 		binaryArch = "arm64"
 	}
-	
-	// 获取对应架构的二进制文件路径
+
 	var binaryPath string
 	if binaryArch == "amd64" {
 		binaryPath = targetVersionInfo.AMD64BinaryPath
-			if binaryPath == "" {
-				binaryPath = fmt.Sprintf("%s/oneops-agent-linux-amd64", agentBinaryDir())
-			}
+		if binaryPath == "" {
+			binaryPath = fmt.Sprintf("%s/oneops-agent-linux-amd64", agentBinaryDir())
+		}
 	} else {
 		binaryPath = targetVersionInfo.ARM64BinaryPath
-			if binaryPath == "" {
-				binaryPath = fmt.Sprintf("%s/oneops-agent-linux-arm64", agentBinaryDir())
-			}
+		if binaryPath == "" {
+			binaryPath = fmt.Sprintf("%s/oneops-agent-linux-arm64", agentBinaryDir())
+		}
 	}
-	
+
 	if binaryPath == "" {
+		markTaskFailed(task.ID, fmt.Sprintf("目标版本不支持 %s 架构", binaryArch))
 		return fmt.Errorf("目标版本不支持 %s 架构", binaryArch)
 	}
-	
-	// 停止当前 Agent
+
 	if err := runSSHCommand2(sshClient, fmt.Sprintf("systemctl stop %s", agentServiceName)); err != nil {
+		markTaskFailed(task.ID, fmt.Sprintf("停止 Agent 失败: %v", err))
 		return fmt.Errorf("停止 Agent 失败: %w", err)
 	}
-	
-	// 上传新版本二进制
+
 	remoteBinary := fmt.Sprintf("%s/%s", agentInstallDir, agentBinaryName)
 	if err := scpFile(sshClient, binaryPath, remoteBinary); err != nil {
-		// 如果上传失败，尝试重新启动旧版本
 		runSSHCommand2(sshClient, fmt.Sprintf("systemctl start %s", agentServiceName))
+		markTaskFailed(task.ID, fmt.Sprintf("上传新版本失败: %v", err))
 		return fmt.Errorf("上传新版本失败: %w", err)
 	}
-	
+
 	if err := runSSHCommand2(sshClient, fmt.Sprintf("chmod +x %s", remoteBinary)); err != nil {
+		markTaskFailed(task.ID, fmt.Sprintf("设置执行权限失败: %v", err))
 		return fmt.Errorf("设置执行权限失败: %w", err)
 	}
-	
-	// 启动新版本
+
 	if err := runSSHCommand2(sshClient, fmt.Sprintf("systemctl start %s", agentServiceName)); err != nil {
+		markTaskFailed(task.ID, fmt.Sprintf("启动新版本失败: %v", err))
 		return fmt.Errorf("启动新版本失败: %w", err)
 	}
-	
-	// 等待心跳确认
+
 	go func() {
 		for i := 0; i < 20; i++ {
 			time.Sleep(3 * time.Second)
-			var server models.Server
-			if err := db.First(&server, serverID).Error; err != nil {
+			var svr models.Server
+			if err := db.First(&svr, serverID).Error; err != nil {
 				continue
 			}
-			if server.AgentVersion == targetVersion && server.AgentStatus == "running" {
-				// 升级成功，更新统计
+			if svr.AgentVersion == targetVersion && svr.AgentStatus == "running" {
 				db.Model(&models.AgentVersion{}).Where("version = ?", targetVersion).
 					UpdateColumn("deploy_count", gorm.Expr("deploy_count + ?", 1))
+				markTaskSuccess(task.ID)
 				logger.Info("Agent 升级成功",
 					zap.Uint("serverID", serverID),
 					zap.String("version", targetVersion))
 				return
 			}
 		}
-		// 超时未收到心跳，标记为失败
+		markTaskFailed(task.ID, "升级超时，未收到新版本心跳")
 		logger.Error("Agent 升级超时",
 			zap.Uint("serverID", serverID),
 			zap.String("targetVersion", targetVersion))
 	}()
-	
+
 	logger.Info("Agent 升级任务已提交",
 		zap.Uint("serverID", serverID),
-		zap.String("version", targetVersion))
+		zap.String("version", targetVersion),
+		zap.Uint("taskID", task.ID))
 	return nil
+}
+
+func markTaskSuccess(taskID uint) {
+	now := time.Now()
+	db.Model(&models.AgentUpgradeTask{}).Where("id = ?", taskID).Updates(map[string]interface{}{
+		"status":       "completed",
+		"success_count": 1,
+		"completed_at": &now,
+	})
+}
+
+func markTaskFailed(taskID uint, errMsg string) {
+	now := time.Now()
+	db.Model(&models.AgentUpgradeTask{}).Where("id = ?", taskID).Updates(map[string]interface{}{
+		"status":        "failed",
+		"failed_count":  1,
+		"error_message": errMsg,
+		"completed_at":  &now,
+	})
 }
 
 // GetUpgradeTasks 获取升级任务列表
 func GetUpgradeTasks(page, pageSize int, status string) ([]models.AgentUpgradeTask, int64, error) {
 	var tasks []models.AgentUpgradeTask
 	var total int64
-	
+
 	query := db.Model(&models.AgentUpgradeTask{})
 	if status != "" {
 		query = query.Where("status = ?", status)
 	}
-	
+
 	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("查询任务总数失败: %w", err)
 	}
-	
+
 	offset := (page - 1) * pageSize
 	if err := query.Order("created_at DESC").Limit(pageSize).Offset(offset).Find(&tasks).Error; err != nil {
 		return nil, 0, fmt.Errorf("查询任务列表失败: %w", err)
 	}
-	
+
 	return tasks, total, nil
 }
 

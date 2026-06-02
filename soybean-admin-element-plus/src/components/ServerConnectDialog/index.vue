@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { fetchCheckConnectPermission, fetchConnectServer, fetchGetSessions } from '@/service/api/cmdb';
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
   serverName: string;
   serverIp: string;
   serverEnv?: string;
+  credentialId?: number;
 }
 
 const props = defineProps<Props>();
@@ -67,9 +68,22 @@ async function checkPermission() {
       permissionError.value = '服务器未绑定任何凭证，请先在主机编辑页面绑定 SSH 凭证';
       hasPermission.value = false;
     } else {
-      // 默认选中第一个凭证
-      selectedCredentialId.value = availableCredentials.value[0].id;
-      console.log('[ServerConnectDialog] 选中的凭证ID:', selectedCredentialId.value);
+      // 如果传入了凭证ID，优先选中该凭证，否则选中第一个凭证
+      if (props.credentialId) {
+        const targetCredential = availableCredentials.value.find(c => c.id === props.credentialId);
+        if (targetCredential) {
+          selectedCredentialId.value = targetCredential.id;
+          console.log('[ServerConnectDialog] 选中传入的凭证ID:', selectedCredentialId.value);
+        } else {
+          // 传入的凭证ID不在可用列表中，使用第一个凭证
+          selectedCredentialId.value = availableCredentials.value[0].id;
+          console.log('[ServerConnectDialog] 传入的凭证不可用，使用第一个凭证:', selectedCredentialId.value);
+        }
+      } else {
+        // 默认选中第一个凭证
+        selectedCredentialId.value = availableCredentials.value[0].id;
+        console.log('[ServerConnectDialog] 选中的凭证ID:', selectedCredentialId.value);
+      }
     }
   } catch (err: any) {
     hasPermission.value = false;
@@ -125,17 +139,29 @@ function handleClose() {
   emit('update:visible', false);
 }
 
+// 组件挂载时检查权限
+onMounted(() => {
+  console.log('[ServerConnectDialog] onMounted, visible:', props.visible, 'serverId:', props.serverId);
+  if (props.visible) {
+    checkPermission();
+    loadRecentSession();
+  }
+});
+
 // 监听 visible 变化
 watch(
   () => props.visible,
   visible => {
+    console.log('[ServerConnectDialog] visible changed:', visible);
     if (visible) {
       connectReason.value = '';
       selectedProtocol.value = 'ssh';
+      console.log('[ServerConnectDialog] serverId:', props.serverId);
       checkPermission();
       loadRecentSession();
     }
-  }
+  },
+  { immediate: true } // 添加 immediate 选项，确保组件初始化时也会检查
 );
 </script>
 

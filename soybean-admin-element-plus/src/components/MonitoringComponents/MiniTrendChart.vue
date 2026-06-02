@@ -11,7 +11,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   data: () => [],
   height: 30,
-  color: '#1890ff'
+  color: 'rgb(0, 82, 217)' // 腾讯云蓝
 });
 
 const chartRef = ref<HTMLElement>();

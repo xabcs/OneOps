@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { Teleport } from 'vue';
+import { Teleport, computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElInput, ElTag, ElTooltip, ElTree } from 'element-plus';
 import { fetchGetServerGroups, fetchGetServersByGroup } from '@/service/api';
 
@@ -371,7 +370,9 @@ onUnmounted(() => {
             <div class="node-content">
               <component :is="`icon-${data.icon.replace(':', '-')}`" class="node-icon" :style="{ color: data.color }" />
               <span class="node-label">{{ node.label }}</span>
-              <span v-if="data.serverCount !== undefined && !data.isLeaf" class="server-count">({{ data.serverCount }})</span>
+              <span v-if="data.serverCount !== undefined && !data.isLeaf" class="server-count">
+                ({{ data.serverCount }})
+              </span>
               <ElTag
                 v-if="data.isLeaf && data.server && currentSessions.includes(Number(data.server.id))"
                 size="small"
@@ -405,12 +406,7 @@ onUnmounted(() => {
         :style="{ left: contextMenuPosition.x + 'px', top: contextMenuPosition.y + 'px' }"
         @click.self="handleClickOutside"
       >
-        <div
-          v-for="item in contextMenuItems"
-          :key="item.label"
-          class="context-menu-item"
-          @click.stop="item.action()"
-        >
+        <div v-for="item in contextMenuItems" :key="item.label" class="context-menu-item" @click.stop="item.action()">
           <component :is="`icon-${item.icon.replace(':', '-')}`" class="menu-icon" />
           <span>{{ item.label }}</span>
         </div>

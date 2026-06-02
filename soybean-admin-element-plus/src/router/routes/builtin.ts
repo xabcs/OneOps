@@ -1,7 +1,7 @@
+import type { RouteRecordRaw } from 'vue-router';
 import type { CustomRoute } from '@elegant-router/types';
 import { layouts, views } from '../elegant/imports';
 import { getRoutePath, transformElegantRoutesToVueRoutes } from '../elegant/transform';
-import type { RouteRecordRaw } from 'vue-router';
 
 export const ROOT_ROUTE: CustomRoute = {
   name: 'root',

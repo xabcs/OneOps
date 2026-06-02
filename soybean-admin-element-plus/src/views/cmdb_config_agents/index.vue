@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessageBox, ElNotification } from 'element-plus';
+import { ElDropdown, ElDropdownItem, ElDropdownMenu, ElIcon, ElMessageBox, ElNotification } from 'element-plus';
 import {
-  fetchBatchDeployAgent,
   fetchBatchUninstallAgent,
   fetchDeleteAgentRecord,
   fetchDeployAgent,
@@ -24,7 +23,6 @@ const selectedRows = ref<CMDB.Server[]>([]);
 
 // 版本相关状态
 const latestVersion = ref<CMDB.AgentVersion | null>(null);
-const upgradeVersions = ref<CMDB.AgentVersion[]>([]);
 
 // 分页
 const pagination = reactive({
@@ -54,7 +52,10 @@ function formatRelativeTime(time?: string) {
   return `${Math.floor(hours / 24)}天前`;
 }
 
-function getAgentStatusTag(status?: string): { text: string; type: 'success' | 'danger' | 'info' } {
+function getAgentStatusTag(status?: string): {
+  text: string;
+  type: 'success' | 'danger' | 'info';
+} {
   if (status === 'running') return { text: '运行中', type: 'success' };
   if (status === 'offline') return { text: '离线', type: 'danger' };
   return { text: '未安装', type: 'info' };
@@ -72,7 +73,10 @@ function isLatestVersion(currentVersion?: string): boolean {
 /**
  * 获取版本状态标签
  */
-function getVersionStatus(currentVersion?: string): { text: string; type: 'success' | 'warning' | 'info' } {
+function getVersionStatus(currentVersion?: string): {
+  text: string;
+  type: 'success' | 'warning' | 'info';
+} {
   if (!currentVersion) return { text: '未安装', type: 'info' };
   if (isLatestVersion(currentVersion)) return { text: '最新版', type: 'success' };
   return { text: '可升级', type: 'warning' };
@@ -86,7 +90,7 @@ async function getLatestVersion() {
     const { data } = await fetchGetLatestAgentVersion();
     latestVersion.value = data;
   } catch (err) {
-    console.error('获取最新版本失败', err);
+    ElNotification.error('获取最新版本失败');
   }
 }
 
@@ -116,8 +120,10 @@ async function getAgentList() {
 function pollAgentStatus(serverId: number, expectedStatus: string, maxTimes = 20) {
   let count = 0;
   const timer = setInterval(async () => {
-    count++;
-    const { data } = await fetchGetAgentStatus(serverId).catch(() => ({ data: null }));
+    count += 1;
+    const { data } = await fetchGetAgentStatus(serverId).catch(() => ({
+      data: null
+    }));
     if (data) {
       const idx = tableData.value.findIndex(r => r.id === serverId);
       if (idx !== -1) {
@@ -213,7 +219,9 @@ async function handleUpgrade(row: CMDB.Server) {
 
   try {
     await ElMessageBox.confirm(
-      `确认将主机 "${row.hostname}" 的 Agent 从 v${row.agentVersion || '未知'} 升级到 v${latestVersion.value.version}？`,
+      `确认将主机 "${row.hostname}" 的 Agent 从 v${
+        row.agentVersion || '未知'
+      } 升级到 v${latestVersion.value.version}？`,
       '升级确认',
       {
         confirmButtonText: '确定',
@@ -515,33 +523,52 @@ onMounted(() => {
           </template>
         </ElTableColumn>
 
-        <ElTableColumn label="操作" width="280" align="center" fixed="right">
+        <ElTableColumn label="操作" width="120" align="center" fixed="right">
           <template #default="{ row }">
-            <!-- 未安装：只显示部署 -->
+            <!-- 未安装：直接显示部署按钮 -->
             <template v-if="!row.agentStatus || row.agentStatus === 'uninstalled'">
               <ElButton type="primary" size="small" @click="handleDeploy(row)">部署</ElButton>
             </template>
 
-            <!-- 运行中：升级 + 重启 + 卸载 + 删除记录 -->
-            <template v-else-if="row.agentStatus === 'running'">
-              <ElButton
-                v-if="!isLatestVersion(row.agentVersion)"
-                type="success"
-                size="small"
-                @click="handleUpgrade(row)"
-              >
-                升级
-              </ElButton>
-              <ElButton type="warning" size="small" @click="handleRestart(row)">重启</ElButton>
-              <ElButton type="danger" size="small" plain @click="handleUninstall(row)">卸载</ElButton>
-              <ElButton type="info" size="small" plain @click="handleDeleteRecord(row)">删除记录</ElButton>
-            </template>
+            <!-- 运行中或离线：显示升级按钮和更多菜单 -->
+            <template v-else>
+              <span class="actions-wrapper">
+                <!-- 运行中且非最新版本：显示升级按钮 -->
+                <a
+                  v-if="row.agentStatus === 'running' && !isLatestVersion(row.agentVersion)"
+                  class="action-link upgrade-link"
+                  @click="handleUpgrade(row)"
+                >
+                  <icon-mdi-arrow-up-bold />
+                  <span>升级</span>
+                </a>
 
-            <!-- 离线：重启 + 卸载 + 删除记录 -->
-            <template v-else-if="row.agentStatus === 'offline'">
-              <ElButton type="warning" size="small" @click="handleRestart(row)">重启</ElButton>
-              <ElButton type="danger" size="small" plain @click="handleUninstall(row)">卸载</ElButton>
-              <ElButton type="info" size="small" plain @click="handleDeleteRecord(row)">删除记录</ElButton>
+                <!-- 更多菜单 -->
+                <ElDropdown trigger="click">
+                  <span class="more-btn">
+                    <i class="more-icon">⋮</i>
+                  </span>
+                  <template #dropdown>
+                    <ElDropdownMenu>
+                      <!-- 重启 -->
+                      <ElDropdownItem @click="handleRestart(row)">
+                        <ElIcon class="el-icon--left"><icon-mdi-refresh /></ElIcon>
+                        重启
+                      </ElDropdownItem>
+                      <!-- 卸载 -->
+                      <ElDropdownItem @click="handleUninstall(row)">
+                        <ElIcon class="el-icon--left"><icon-mdi-delete /></ElIcon>
+                        卸载
+                      </ElDropdownItem>
+                      <!-- 删除记录 -->
+                      <ElDropdownItem @click="handleDeleteRecord(row)">
+                        <ElIcon class="el-icon--left"><icon-mdi-trash-can /></ElIcon>
+                        删除记录
+                      </ElDropdownItem>
+                    </ElDropdownMenu>
+                  </template>
+                </ElDropdown>
+              </span>
             </template>
           </template>
         </ElTableColumn>
@@ -618,5 +645,61 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.actions-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #409eff;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+  text-decoration: none;
+
+  &:hover {
+    background-color: #ecf5ff;
+    color: #66b1ff;
+  }
+}
+
+.upgrade-link {
+  color: #67c23a;
+
+  &:hover {
+    background-color: #f0f9eb;
+    color: #85ce61;
+  }
+}
+
+.more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s;
+
+  &:hover {
+    background-color: #f5f7fa;
+  }
+}
+
+.more-icon {
+  font-size: 16px;
+  color: #909399;
+  font-style: normal;
+  letter-spacing: 1px;
 }
 </style>

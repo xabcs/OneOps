@@ -73,10 +73,7 @@ function getTabTitle(session: Session): string {
       <!-- 左侧工具栏 -->
       <div class="toolbar-left">
         <ElTooltip :content="showAssetTree ? '隐藏资产' : '显示资产'" placement="bottom">
-          <ElButton
-            size="small"
-            @click="$emit('toggleAssetTree')"
-          >
+          <ElButton size="small" @click="$emit('toggleAssetTree')">
             <icon-mdi-chevron-left v-if="showAssetTree" class="toolbar-icon" />
             <icon-mdi-chevron-right v-else class="toolbar-icon" />
           </ElButton>

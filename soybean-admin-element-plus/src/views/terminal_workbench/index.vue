@@ -3,10 +3,10 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { onKeyStroke } from '@vueuse/core';
 import { fetchGetServerById } from '@/service/api';
+import ServerConnectDialog from '@/components/ServerConnectDialog/index.vue';
 import SessionTabs from './components/SessionTabs.vue';
 import TerminalArea from './components/TerminalArea.vue';
 import AssetTree from './components/AssetTree.vue';
-import ServerConnectDialog from '@/components/ServerConnectDialog/index.vue';
 import { useSessions } from './composables/useSessions';
 import { useBroadcast } from './composables/useBroadcast';
 
@@ -86,14 +86,45 @@ onMessage(message => {
   }
 });
 
-onMounted(() => {
+onMounted(async () => {
   broadcast('workbench-opened', { workbenchId: 'oneops-workbench' });
 
-  // 从 URL 参数加载初始会话
-  const sessionId = route.query.sessionId as string;
-  const websocketUrl = route.query.websocketUrl as string;
+  // 从 URL 参数加载服务器信息并显示连接对话框
+  const serverId = route.query.serverId as string;
   const serverName = route.query.serverName as string;
   const serverIp = route.query.serverIp as string;
+  const serverEnv = route.query.serverEnv as string;
+  const credentialId = route.query.credentialId as string;
+
+  if (serverId) {
+    try {
+      // 获取服务器详情
+      const serverRes = await fetchGetServerById(Number(serverId));
+      const serverDetail = serverRes.data;
+
+      console.log('[TerminalWorkbench] serverDetail:', serverDetail);
+      console.log('[TerminalWorkbench] credentialId from URL:', credentialId);
+
+      if (serverDetail) {
+        // 显示连接对话框，传递凭证ID
+        connectingServer.value = serverDetail;
+        // 如果有凭证ID，存储起来供连接对话框使用
+        if (credentialId) {
+          (connectingServer.value as any).credentialId = Number(credentialId);
+          console.log('[TerminalWorkbench] 设置 credentialId:', (connectingServer.value as any).credentialId);
+        }
+        console.log('[TerminalWorkbench] 准备显示连接对话框, showConnectDialog.value = true');
+        showConnectDialog.value = true;
+      }
+    } catch (error) {
+      console.error('获取服务器详情失败:', error);
+      window.$message?.error('获取服务器详情失败');
+    }
+  }
+
+  // 从 URL 参数加载初始会话（用于已经建立的连接）
+  const sessionId = route.query.sessionId as string;
+  const websocketUrl = route.query.websocketUrl as string;
   const loginAccount = route.query.loginAccount as string;
 
   if (sessionId && websocketUrl) {
@@ -233,18 +264,11 @@ function toggleFullscreen() {
     <div class="main-content">
       <!-- 左侧资产树 -->
       <div v-if="showAssetTree && !isFullscreen" class="asset-sidebar" :style="{ width: sidebarWidth + 'px' }">
-        <AssetTree
-          :current-sessions="currentSessionIds"
-          @connect="handleConnect"
-        />
+        <AssetTree :current-sessions="currentSessionIds" @connect="handleConnect" />
       </div>
 
       <!-- 拖动分隔条 -->
-      <div
-        v-if="showAssetTree && !isFullscreen"
-        class="resize-handle"
-        @mousedown="startResize"
-      />
+      <div v-if="showAssetTree && !isFullscreen" class="resize-handle" @mousedown="startResize" />
 
       <!-- 右侧终端区域 -->
       <div class="terminal-area-wrapper">
@@ -276,6 +300,7 @@ function toggleFullscreen() {
       :server-name="connectingServer.hostname"
       :server-ip="connectingServer.ip"
       :server-env="connectingServer.env"
+      :credential-id="(connectingServer as any).credentialId"
       @connected="handleConnected"
     />
   </div>

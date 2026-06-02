@@ -121,6 +121,9 @@ func (c *RouteController) GetUserRoutes(ctx *gin.Context) {
 	// 将菜单转换为前端路由格式
 	routes := c.convertMenusToRoutes(menuTree, isSuper)
 
+		// 添加隐藏路由到对应的父路由下
+		routes = c.appendHiddenRoutesToMenuTree(routes)
+
 	// 返回路由和首页
 	result := map[string]interface{}{
 		"routes": routes,
@@ -163,14 +166,12 @@ func (c *RouteController) convertMenusToRoutes(menus []*models.Menu, isSuper boo
 		routes = append(routes, route)
 	}
 
-	// 添加隐藏路由到对应的父路由下
-	c.appendHiddenRoutesToMenuTree(routes)
 
 	return routes
 }
 
 // appendHiddenRoutesToMenuTree 将隐藏路由添加到菜单树中
-func (c *RouteController) appendHiddenRoutesToMenuTree(routes []map[string]interface{}) {
+func (c *RouteController) appendHiddenRoutesToMenuTree(routes []map[string]interface{}) []map[string]interface{} {
 	for _, route := range routes {
 		// 为 monitoring 路由添加 servers-detail 子路由
 		if route["name"] == "monitoring" {
@@ -228,6 +229,21 @@ func (c *RouteController) appendHiddenRoutesToMenuTree(routes []map[string]inter
 			route["children"] = children
 		}
 	}
+
+	// 添加独立的 terminal_workbench 隐藏路由（用于独立窗口打开）
+	routes = append(routes, map[string]interface{}{
+		"id":        "terminal_workbench",
+		"name":      "terminal_workbench",
+		"path":      "/terminal/workbench",
+		"component": "view.terminal_workbench",
+		"meta": map[string]interface{}{
+			"title":      "terminal_workbench",
+			"i18nKey":    "route.terminal_workbench",
+			"hideInMenu": true,
+		},
+	})
+
+	return routes
 }
 
 // buildRouteFromMenu 根据菜单构建路由
@@ -262,6 +278,12 @@ func (c *RouteController) buildRouteFromMenu(menu *models.Menu, hasChildren bool
 	// 添加权限标识（如果有）
 	if menu.Permission != "" {
 		route["meta"].(map[string]interface{})["permission"] = menu.Permission
+	}
+
+	// 特殊处理：Web终端 在新窗口打开
+	if menu.ID == 47 {
+		route["meta"].(map[string]interface{})["href"] = menu.Path
+		route["meta"].(map[string]interface{})["hideInMenu"] = false
 	}
 
 	return route

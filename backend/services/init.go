@@ -5,6 +5,7 @@ import (
 	"oneops/backend/logger"
 	"oneops/backend/models"
 	"oneops/backend/utils"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -39,6 +40,9 @@ func (s *InitService) InitDatabase() error {
 		&models.BusinessUnit{},
 		&models.SSHCredential{},
 		&models.AttributeDefinition{},
+		// Agent 版本管理表
+		&models.AgentVersion{},
+		&models.AgentUpgradeTask{},
 		// 有外键依赖的表（按依赖顺序）
 		&models.ServerRoom{},
 		&models.Cabinet{},
@@ -193,6 +197,15 @@ func (s *InitService) initData() error {
 		}
 	}
 
+	// 检查 Agent 版本表是否为空，初始化默认版本
+	var versionCount int64
+	db.Model(&models.AgentVersion{}).Count(&versionCount)
+	if versionCount == 0 {
+		if err := s.initAgentVersions(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -273,15 +286,13 @@ func (s *InitService) syncMenus() error {
 		// 监控中心二级菜单
 		{ID: 41, Name: "监控概览", Icon: "mdi:gauge", Path: "/monitoring/overview", Permission: "monitoring:overview:view", MenuType: "menu", Sort: 1, Status: 1, ParentID: 40},
 		{ID: 42, Name: "主机监控", Icon: "mdi:server", Path: "/monitoring/servers", Permission: "monitoring:servers:view", MenuType: "menu", Sort: 2, Status: 1, ParentID: 40},
-			{ID: 43, Name: "趋势分析", Icon: "mdi:chart-areaspline", Path: "/monitoring/trends", Permission: "monitoring:trends:view", MenuType: "menu", Sort: 3, Status: 1, ParentID: 40},
-			{ID: 44, Name: "告警管理", Icon: "mdi:bell-alert", Path: "/monitoring/alerts", Permission: "monitoring:alerts:view", MenuType: "menu", Sort: 4, Status: 1, ParentID: 40},
-			{ID: 45, Name: "监控设置", Icon: "mdi:cog", Path: "/monitoring/settings", Permission: "monitoring:settings:view", MenuType: "menu", Sort: 5, Status: 1, ParentID: 40},
-			{ID: 46, Name: "巡检报告", Icon: "mdi:file-document", Path: "/monitoring/reports", Permission: "monitoring:reports:view", MenuType: "menu", Sort: 6, Status: 1, ParentID: 40},
-			// 终端管理一级目录
-			{ID: 47, Name: "终端管理", Icon: "mdi:console", Path: "/terminal", Permission: "", MenuType: "directory", Sort: 5, Status: 1, ParentID: 0},
-			// 终端管理二级菜单
-			{ID: 48, Name: "终端工作台", Icon: "mdi:monitor-dashboard", Path: "/terminal", Permission: "terminal:workbench:view", MenuType: "menu", Sort: 1, Status: 1, ParentID: 47},
-		}
+		{ID: 43, Name: "趋势分析", Icon: "mdi:chart-areaspline", Path: "/monitoring/trends", Permission: "monitoring:trends:view", MenuType: "menu", Sort: 3, Status: 1, ParentID: 40},
+		{ID: 44, Name: "告警管理", Icon: "mdi:bell-alert", Path: "/monitoring/alerts", Permission: "monitoring:alerts:view", MenuType: "menu", Sort: 4, Status: 1, ParentID: 40},
+		{ID: 45, Name: "监控设置", Icon: "mdi:cog", Path: "/monitoring/settings", Permission: "monitoring:settings:view", MenuType: "menu", Sort: 5, Status: 1, ParentID: 40},
+		{ID: 46, Name: "巡检报告", Icon: "mdi:file-document", Path: "/monitoring/reports", Permission: "monitoring:reports:view", MenuType: "menu", Sort: 6, Status: 1, ParentID: 40},
+			// Web终端（资产管理子菜单）
+			{ID: 47, Name: "Web终端", Icon: "mdi:console", Path: "/cmdb/terminal/workbench", Permission: "cmdb:terminal:view", MenuType: "menu", Sort: 7, Status: 1, ParentID: 20},
+	}
 
 	addedCount := 0
 	updatedCount := 0
@@ -347,9 +358,9 @@ func (s *InitService) syncRoleMenus() error {
 	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心
 	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46} // 超级管理员：所有权限
 	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46}               // 运维工程师：含监控权限
-	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44}                                                    // 审计员：含监控查看权限
-	userMenuIDs := []uint{1}                                                                                                            // 普通用户：仅首页
-	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44, 45, 46}                                                       // 测试角色：含监控权限
+	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44}                                                           // 审计员：含监控查看权限
+	userMenuIDs := []uint{1}                                                                                                                      // 普通用户：仅首页
+	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44, 45, 46}                                                      // 测试角色：含监控权限
 
 	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
 	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)
@@ -421,9 +432,9 @@ func (s *InitService) initRoles() error {
 	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心
 	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46} // 超级管理员：所有权限
 	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46}               // 运维工程师：含监控权限
-	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44}                                                    // 审计员：含监控查看权限
-	userMenuIDs := []uint{1}                                                                                                            // 普通用户：仅首页
-	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44, 45, 46}                                                       // 测试角色：含监控权限
+	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44}                                                           // 审计员：含监控查看权限
+	userMenuIDs := []uint{1}                                                                                                                      // 普通用户：仅首页
+	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44, 45, 46}                                                      // 测试角色：含监控权限
 
 	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
 	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)
@@ -487,32 +498,32 @@ func (s *InitService) initAttributes() error {
 
 	attributes := []models.AttributeDefinition{
 		{
-			Name:     "业务系统",
-			Key:      "business_system",
-			Category: "system",
-			Type:     "select",
-			Options:  `[{"value":"ecommerce","label":"电商系统"},{"value":"crm","label":"CRM系统"},{"value":"erp","label":"ERP系统"},{"value":"monitor","label":"监控系统"}]`,
-			SortOrder: 1,
-			Status:    1,
+			Name:        "业务系统",
+			Key:         "business_system",
+			Category:    "system",
+			Type:        "select",
+			Options:     `[{"value":"ecommerce","label":"电商系统"},{"value":"crm","label":"CRM系统"},{"value":"erp","label":"ERP系统"},{"value":"monitor","label":"监控系统"}]`,
+			SortOrder:   1,
+			Status:      1,
 			Description: "主机所属的业务系统",
 		},
 		{
-			Name:     "机房",
-			Key:      "room",
-			Category: "location",
-			Type:     "select",
-			Options:  `[{"value":"hz","label":"杭州机房"},{"value":"bj","label":"北京机房"},{"value":"sh","label":"上海机房"},{"value":"sz","label":"深圳机房"}]`,
-			SortOrder: 2,
-			Status:    1,
+			Name:        "机房",
+			Key:         "room",
+			Category:    "location",
+			Type:        "select",
+			Options:     `[{"value":"hz","label":"杭州机房"},{"value":"bj","label":"北京机房"},{"value":"sh","label":"上海机房"},{"value":"sz","label":"深圳机房"}]`,
+			SortOrder:   2,
+			Status:      1,
 			Description: "主机所在的机房",
 		},
 		{
-			Name:     "机柜",
-			Key:      "cabinet",
-			Category: "location",
-			Type:     "text",
-			SortOrder: 3,
-			Status:    1,
+			Name:        "机柜",
+			Key:         "cabinet",
+			Category:    "location",
+			Type:        "text",
+			SortOrder:   3,
+			Status:      1,
 			Description: "主机所在的机柜",
 		},
 		{
@@ -528,67 +539,67 @@ func (s *InitService) initAttributes() error {
 			Description:  "主机运行环境",
 		},
 		{
-			Name:     "标签",
-			Key:      "tags",
-			Category: "system",
-			Type:     "multiselect",
-			Options:  `[{"value":"important","label":"重要"},{"value":"backup","label":"备份节点"},{"value":"monitor","label":"监控节点"},{"value":"web","label":"Web服务器"},{"value":"db","label":"数据库服务器"}]`,
-			SortOrder: 5,
-			Status:    1,
+			Name:        "标签",
+			Key:         "tags",
+			Category:    "system",
+			Type:        "multiselect",
+			Options:     `[{"value":"important","label":"重要"},{"value":"backup","label":"备份节点"},{"value":"monitor","label":"监控节点"},{"value":"web","label":"Web服务器"},{"value":"db","label":"数据库服务器"}]`,
+			SortOrder:   5,
+			Status:      1,
 			Description: "主机的标签分类",
 		},
 		{
-			Name:     "所属项目",
-			Key:      "project",
-			Category: "system",
-			Type:     "text",
-			SortOrder: 6,
-			Status:    1,
+			Name:        "所属项目",
+			Key:         "project",
+			Category:    "system",
+			Type:        "text",
+			SortOrder:   6,
+			Status:      1,
 			Description: "主机所属的项目",
 		},
 		{
-			Name:     "购买日期",
-			Key:      "purchase_date",
-			Category: "hardware",
-			Type:     "date",
-			SortOrder: 7,
-			Status:    1,
+			Name:        "购买日期",
+			Key:         "purchase_date",
+			Category:    "hardware",
+			Type:        "date",
+			SortOrder:   7,
+			Status:      1,
 			Description: "主机购买日期",
 		},
 		{
-			Name:     "过保日期",
-			Key:      "warranty_date",
-			Category: "hardware",
-			Type:     "date",
-			SortOrder: 8,
-			Status:    1,
+			Name:        "过保日期",
+			Key:         "warranty_date",
+			Category:    "hardware",
+			Type:        "date",
+			SortOrder:   8,
+			Status:      1,
 			Description: "主机过保日期",
 		},
 		{
-			Name:     "责任人",
-			Key:      "owner",
-			Category: "system",
-			Type:     "text",
-			SortOrder: 9,
-			Status:    1,
+			Name:        "责任人",
+			Key:         "owner",
+			Category:    "system",
+			Type:        "text",
+			SortOrder:   9,
+			Status:      1,
 			Description: "主机责任人",
 		},
 		{
-			Name:     "联系方式",
-			Key:      "contact",
-			Category: "system",
-			Type:     "text",
-			SortOrder: 10,
-			Status:    1,
+			Name:        "联系方式",
+			Key:         "contact",
+			Category:    "system",
+			Type:        "text",
+			SortOrder:   10,
+			Status:      1,
 			Description: "责任人联系方式",
 		},
 		{
-			Name:     "备注",
-			Key:      "remark",
-			Category: "custom",
-			Type:     "text",
-			SortOrder: 11,
-			Status:    1,
+			Name:        "备注",
+			Key:         "remark",
+			Category:    "custom",
+			Type:        "text",
+			SortOrder:   11,
+			Status:      1,
 			Description: "主机备注信息",
 		},
 	}
@@ -610,6 +621,7 @@ func (s *InitService) initAttributes() error {
 	logger.Info("属性定义初始化完成", zap.Int("total", len(attributes)))
 	return nil
 }
+
 // syncAttributes 同步属性定义（增量更新）
 func (s *InitService) syncAttributes() error {
 	logger.Info("开始同步属性定义数据...")
@@ -650,15 +662,15 @@ func (s *InitService) syncAttributes() error {
 		if err == nil {
 			// 属性已存在，更新数据（保持数据同步）
 			db.Model(&existingAttr).Updates(map[string]interface{}{
-				"name":         builtinAttr.name,
-				"category":     builtinAttr.category,
-				"type":         builtinAttr.attrType,
-				"options":      builtinAttr.options,
+				"name":          builtinAttr.name,
+				"category":      builtinAttr.category,
+				"type":          builtinAttr.attrType,
+				"options":       builtinAttr.options,
 				"default_value": builtinAttr.defaultVal,
-				"required":     builtinAttr.required,
-				"sort_order":   builtinAttr.sortOrder,
-				"status":       1,
-				"description":  builtinAttr.description,
+				"required":      builtinAttr.required,
+				"sort_order":    builtinAttr.sortOrder,
+				"status":        1,
+				"description":   builtinAttr.description,
 			})
 			updatedCount++
 			logger.Debug("更新属性定义",
@@ -697,5 +709,33 @@ func (s *InitService) syncAttributes() error {
 		zap.Int("added", addedCount),
 		zap.Int("updated", updatedCount),
 		zap.Int("total", len(builtinAttributes)))
+	return nil
+}
+
+// initAgentVersions 初始化 Agent 版本数据
+func (s *InitService) initAgentVersions() error {
+	logger.Info("开始初始化 Agent 版本数据...")
+
+	defaultVersion := models.AgentVersion{
+		Version:       "1.0.0",
+		ReleaseNotes:  "Agent 初始版本，支持基础监控指标采集",
+		Changelog:     "- 支持基础监控指标采集\n- 支持心跳上报\n- 支持 /metrics 端点",
+		ReleasedAt:    time.Now(),
+		IsLatest:      true,
+		IsDeprecated:  false,
+		Features:      `{"extended_metrics":false,"custom_configs":false}`,
+		DownloadCount: 0,
+		DeployCount:   0,
+	}
+
+	if err := db.Create(&defaultVersion).Error; err != nil {
+		logger.Error("创建默认 Agent 版本失败", zap.Error(err))
+		return err
+	}
+
+	logger.Info("创建默认 Agent 版本",
+		zap.String("version", defaultVersion.Version),
+		zap.Uint("id", defaultVersion.ID))
+
 	return nil
 }

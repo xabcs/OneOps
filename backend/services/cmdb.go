@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"oneops/backend/models"
 	"strconv"
-
-	"gorm.io/gorm"
 )
 
 // CMDBService CMDB服务

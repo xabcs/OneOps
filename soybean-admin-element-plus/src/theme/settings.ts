@@ -1,15 +1,15 @@
-/** Default theme settings */
+/** Default theme settings - 腾讯云风格 */
 export const themeSettings: App.Theme.ThemeSetting = {
   themeScheme: 'light',
   grayscale: false,
   colourWeakness: false,
   recommendColor: false,
-  themeColor: '#646cff',
+  themeColor: 'rgb(0, 82, 217)', // 腾讯云蓝 #0052D9
   otherColor: {
-    info: '#2080f0',
-    success: '#52c41a',
-    warning: '#faad14',
-    error: '#f5222d'
+    info: 'rgb(0, 82, 217)', // 与主色保持一致
+    success: 'rgb(38, 187, 23)', // 腾讯云绿
+    warning: 'rgb(255, 168, 0)', // 腾讯云橙
+    error: 'rgb(245, 34, 46)' // 保持红色
   },
   isInfoFollowPrimary: true,
   layout: {
@@ -69,9 +69,9 @@ export const themeSettings: App.Theme.ThemeSetting = {
         'base-text': 'rgb(31, 31, 31)'
       },
       boxShadow: {
-        header: '0 1px 2px rgb(0, 21, 41, 0.08)',
-        sider: '2px 0 8px 0 rgb(29, 35, 41, 0.05)',
-        tab: '0 1px 2px rgb(0, 21, 41, 0.08)'
+        header: '0 1px 3px rgb(0 0 0 / 6%), 0 1px 2px rgb(0 0 0 / 4%)', // 腾讯云风格：更轻的阴影
+        sider: '2px 0 6px 0 rgb(0 0 0 / 4%), 1px 0 2px 0 rgb(0 0 0 / 2%)', // 腾讯云风格：更柔和的侧边栏阴影
+        tab: '0 1px 2px rgb(0 0 0 / 6%)' // 腾讯云风格：标签页阴影
       }
     },
     dark: {

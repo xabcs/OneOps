@@ -126,7 +126,7 @@ onUnmounted(() => {
             <ElCol :xs="24" :sm="12" :md="6">
               <ElCard shadow="hover" class="stat-card">
                 <div class="stat-content">
-                  <div class="stat-value" style="color: #1890ff">{{ overview.summary?.totalServers || 0 }}</div>
+                  <div class="stat-value" style="color: rgb(0, 82, 217)">{{ overview.summary?.totalServers || 0 }}</div>
                   <div class="stat-label">总主机数</div>
                 </div>
               </ElCard>
@@ -134,7 +134,9 @@ onUnmounted(() => {
             <ElCol :xs="24" :sm="12" :md="6">
               <ElCard shadow="hover" class="stat-card">
                 <div class="stat-content">
-                  <div class="stat-value" style="color: #52c41a">{{ overview.summary?.onlineServers || 0 }}</div>
+                  <div class="stat-value" style="color: rgb(38, 187, 23)">
+                    {{ overview.summary?.onlineServers || 0 }}
+                  </div>
                   <div class="stat-label">在线主机</div>
                 </div>
               </ElCard>
@@ -142,7 +144,9 @@ onUnmounted(() => {
             <ElCol :xs="24" :sm="12" :md="6">
               <ElCard shadow="hover" class="stat-card">
                 <div class="stat-content">
-                  <div class="stat-value" style="color: #ff4d4f">{{ overview.summary?.offlineServers || 0 }}</div>
+                  <div class="stat-value" style="color: rgb(245, 34, 46)">
+                    {{ overview.summary?.offlineServers || 0 }}
+                  </div>
                   <div class="stat-label">离线主机</div>
                 </div>
               </ElCard>
@@ -150,7 +154,9 @@ onUnmounted(() => {
             <ElCol :xs="24" :sm="12" :md="6">
               <ElCard shadow="hover" class="stat-card">
                 <div class="stat-content">
-                  <div class="stat-value" style="color: #faad14">{{ overview.summary?.alertServers || 0 }}</div>
+                  <div class="stat-value" style="color: rgb(255, 168, 0)">
+                    {{ overview.summary?.alertServers || 0 }}
+                  </div>
                   <div class="stat-label">告警主机</div>
                 </div>
               </ElCard>
