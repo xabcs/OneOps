@@ -82,8 +82,8 @@ function initTerminal() {
     }
   });
 
-  // 欢迎信息
-  terminal.writeln(`\x1B[1;32m正在连接到 ${props.serverName} (${props.serverIp})...\x1B[0m\r\n`);
+  // 欢迎信息（简化为单行符号）
+  terminal.writeln(`\x1B[90m⟳ 连接中...\x1B[0m`);
 
   // 监听终端尺寸变化
   terminal.onResize(({ rows, cols }) => {
@@ -137,7 +137,9 @@ function connect() {
   ws.onopen = () => {
     wasConnected = true;
     if (terminal) {
-      terminal.writeln(`\x1B[1;32m连接成功！\x1B[0m\r\n`);
+      // 清除"连接中"消息并显示单行成功符号
+      terminal.clear();
+      terminal.writeln(`\x1B[92m✓ 已连接\x1B[0m\r\n`);
       terminal.focus();
       emit('connected');
     }
@@ -155,15 +157,16 @@ function connect() {
 
   ws.onerror = () => {
     if (terminal && !wasConnected) {
-      terminal.writeln(`\x1B[1;31m无法建立连接，请检查：SSH 凭证是否已绑定、服务器是否可达\x1B[0m\r\n`);
+      terminal.clear();
+      terminal.writeln(`\x1B[91m✗ 连接失败：检查凭证和服务器可达性\x1B[0m\r\n`);
     }
   };
 
   ws.onclose = event => {
     if (terminal) {
-      terminal.writeln(`\r\n\x1B[1;33m连接已断开 (code: ${event.code})\x1B[0m\r\n`);
+      terminal.writeln(`\r\n\x1B[93m⚠ 连接断开 (${event.code})\x1B[0m\r\n`);
       if (event.reason) {
-        terminal.writeln(`\x1B[1;31m原因: ${event.reason}\x1B[0m\r\n`);
+        terminal.writeln(`\x1B[91m${event.reason}\x1B[0m\r\n`);
       }
     }
     emit('disconnected', `连接断开: ${event.code}`);
@@ -173,7 +176,7 @@ function connect() {
     const isSessionDead = !wasConnected;
     const noRetry = event.code === 1000 || event.code === 1011 || isSessionDead;
     if (!noRetry && reconnectTimer === null) {
-      terminal?.writeln(`\x1B[1;33m3秒后尝试重连...\x1B[0m\r\n`);
+      terminal?.writeln(`\x1B[93m⟳ 3秒后重连...\x1B[0m`);
       reconnectTimer = setTimeout(() => {
         reconnectTimer = null;
         connect();

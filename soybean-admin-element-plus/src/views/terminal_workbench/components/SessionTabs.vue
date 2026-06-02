@@ -25,6 +25,7 @@ interface Emits {
   (e: 'remove', sessionId: number): void;
   (e: 'connect', server: CMDB.Server & { loginAccount?: string }): void;
   (e: 'toggleAssetTree'): void;
+  (e: 'toggleFullscreen'): void;
 }
 
 const props = defineProps<Props>();
@@ -58,11 +59,15 @@ const sessionDurations = computed<Record<number, string>>(() => {
   return result;
 });
 
-// 获取标签页标题
+// 获取标签页标题（优化：显示完整信息，格式：hostname (user@ip)）
 function getTabTitle(session: Session): string {
-  const maxLength = 15;
-  const title = `${session.serverName}`;
-  return title.length > maxLength ? `${title.substring(0, maxLength)}...` : title;
+  // 为了方便截断，分开处理
+  return session.serverName;
+}
+
+// 获取标签副标题（user@ip）
+function getTabSubtitle(session: Session): string {
+  return `${session.loginAccount}@${session.serverIp}`;
 }
 </script>
 
@@ -96,16 +101,25 @@ function getTabTitle(session: Session): string {
             @click="$emit('select', session.id)"
           >
             <span class="status" :class="{ online: session.connected }"></span>
-            <span class="tab-title">{{ getTabTitle(session) }}</span>
-            <ElTooltip :content="`${session.serverName} (${session.serverIp})`" placement="top">
-              <span class="tab-info">{{ session.loginAccount }}@{{ session.serverIp }}</span>
-            </ElTooltip>
+            <div class="tab-content">
+              <span class="tab-title">{{ getTabTitle(session) }}</span>
+              <span class="tab-subtitle">{{ getTabSubtitle(session) }}</span>
+            </div>
             <span class="tab-duration">{{ sessionDurations[session.id] || '0s' }}</span>
             <ElButton size="small" type="danger" link class="close-btn" @click.stop="$emit('remove', session.id)">
               <icon-mdi-close />
             </ElButton>
           </div>
         </div>
+      </div>
+
+      <!-- 右侧工具栏 -->
+      <div class="toolbar-right">
+        <ElTooltip content="全屏" placement="bottom">
+          <ElButton size="small" @click="$emit('toggleFullscreen')">
+            <icon-mdi-arrow-expand-all class="toolbar-icon" />
+          </ElButton>
+        </ElTooltip>
       </div>
     </div>
   </div>
@@ -114,7 +128,7 @@ function getTabTitle(session: Session): string {
 <style scoped>
 .session-tabs-container {
   display: flex;
-  min-height: 28px;
+  min-height: 30px;
   background: #121212;
   flex-shrink: 0;
 }
@@ -134,7 +148,7 @@ function getTabTitle(session: Session): string {
 }
 
 .toolbar-left .el-button {
-  padding: 0 8px;
+  padding: 0 6px;
   height: 28px;
   background: transparent;
   border: none;
@@ -142,6 +156,25 @@ function getTabTitle(session: Session): string {
 }
 
 .toolbar-left .el-button:hover {
+  color: #ccc;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.toolbar-right .el-button {
+  padding: 0 6px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  color: #999;
+}
+
+.toolbar-right .el-button:hover {
   color: #ccc;
 }
 
@@ -185,23 +218,25 @@ function getTabTitle(session: Session): string {
 .tab-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   height: 28px;
-  padding: 0 10px;
+  padding: 0 8px;
   background: #1a1a1a;
   border-right: 1px solid #333333;
   cursor: pointer;
   white-space: nowrap;
   min-width: 0;
-  max-width: 200px;
+  max-width: 240px;
+  transition: all 0.15s;
 }
 
 .tab-item:hover {
-  background: #222222;
+  background: #252525;
 }
 
 .tab-item.active {
-  background: #0a0a0a;
+  background: #2a2a2a;
+  border-bottom: 2px solid #0dbc79;
 }
 
 .status {
@@ -216,19 +251,30 @@ function getTabTitle(session: Session): string {
   background: #bbb;
 }
 
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
 .tab-title {
   font-size: 11px;
   color: #f0f0f0;
-  flex-shrink: 0;
-}
-
-.tab-info {
-  font-size: 10px;
-  color: #c0c0c0;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex-shrink: 1;
-  min-width: 0;
+  white-space: nowrap;
+}
+
+.tab-subtitle {
+  font-size: 9px;
+  color: #999;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tab-duration {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onActivated, onMounted, ref, watch } from 'vue';
 import { fetchCheckConnectPermission, fetchConnectServer, fetchGetSessions } from '@/service/api/cmdb';
 
 interface Props {
@@ -148,7 +148,16 @@ onMounted(() => {
   }
 });
 
-// 监听 visible 变化
+// 组件从 keep-alive 激活时刷新数据
+onActivated(() => {
+  console.log('[ServerConnectDialog] onActivated, visible:', props.visible, 'serverId:', props.serverId);
+  if (props.visible) {
+    // 从缓存恢复时刷新权限检查
+    checkPermission();
+  }
+});
+
+// 监听 visible 变化（优化：延迟加载非必要数据）
 watch(
   () => props.visible,
   visible => {
@@ -158,10 +167,11 @@ watch(
       selectedProtocol.value = 'ssh';
       console.log('[ServerConnectDialog] serverId:', props.serverId);
       checkPermission();
-      loadRecentSession();
+      // 延迟加载最近会话，不阻塞主流程
+      nextTick(() => loadRecentSession());
     }
   },
-  { immediate: true } // 添加 immediate 选项，确保组件初始化时也会检查
+  { immediate: true }
 );
 </script>
 

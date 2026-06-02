@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>RequestScope Performance Report</title>
+  <style>
+    :root {
+      --primary: #3b82f6; --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+      --text-main: #1e293b; --text-sub: #64748b; --bg: #f8fafc; --card-bg: #ffffff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: var(--text-main); background: var(--bg); padding: 2rem 1rem; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .header { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; padding: 2.5rem; border-radius: 1rem; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+    .nav-header { display: none; align-items: center; gap: 1rem; margin-bottom: 1.5rem; padding: 0.5rem; background: #fff; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .back-btn { background: #f1f5f9; border: none; padding: 0.5rem 1rem; border-radius: 0.4rem; cursor: pointer; font-weight: 500; color: #475569; transition: all 0.2s; }
+    .back-btn:hover { background: #e2e8f0; color: #1e293b; }
+    .view-hidden { display: none !important; }
+    h1 { font-size: 1.875rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 1.125rem; opacity: 0.9; }
+    .grade-badge { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; color: white; box-shadow: 0 0 0 4px rgba(255,255,255,0.2); }
+    .section { background: var(--card-bg); border-radius: 1rem; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); }
+    h2 { font-size: 1.25rem; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1.5rem; }
+    .stat-card { padding: 1.25rem; border-radius: 0.75rem; background: #f8fafc; border: 1px solid #f1f5f9; text-align: center; }
+    .stat-value { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .stat-value.success { color: var(--success); }
+    .stat-value.warning { color: var(--warning); }
+    .stat-value.danger { color: var(--danger); }
+    .stat-label { font-size: 0.875rem; color: var(--text-sub); font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th { text-align: left; padding: 1rem; background: #f8fafc; color: var(--text-sub); font-size: 0.875rem; font-weight: 600; border-bottom: 2px solid #f1f5f9; }
+    td { padding: 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.9375rem; }
+    tr.interactive:hover { background-color: #f1f5f9; cursor: pointer; }
+    .method-badge { font-size: 0.65rem; font-weight: 700; padding: 0.25rem 0.5rem; border-radius: 0.375rem; text-transform: uppercase; color: white; display: inline-block; min-width: 48px; text-align: center; }
+    .method-get { background: #10b981; } .method-post { background: #3b82f6; } .method-put { background: #f59e0b; } .method-delete { background: #ef4444; } .method-patch { background: #8b5cf6; }
+    .time-bar { height: 4px; background: #e2e8f0; border-radius: 2px; margin-top: 0.5rem; overflow: hidden; width: 60px; }
+    .time-bar-fill { height: 100%; border-radius: 2px; }
+    .time-bar-fill.fast { background: var(--success); } .time-bar-fill.medium { background: var(--warning); } .time-bar-fill.slow { background: var(--danger); }
+    .navigator-title { font-size: 1.25rem; font-weight: 600; margin: 2rem 0 0.5rem 0; }
+    .navigator-subtitle { font-size: 0.9rem; color: var(--text-sub); margin-bottom: 1.5rem; }
+    .domain-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-bottom: 2rem; }
+    .domain-card { background: white; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1.25rem; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+    .domain-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .domain-card-header { display: flex; justify-content: space-between; align-items: center; }
+    .domain-card-left { display: flex; align-items: center; gap: 1rem; }
+    .domain-grade { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 1.1rem; }
+    .domain-card-name { font-weight: 600; color: #1e293b; font-size: 1.05rem; }
+    .domain-card-meta { font-size: 0.85rem; color: #64748b; margin-top: 0.1rem; }
+    .domain-card-stats { display: flex; align-items: center; gap: 2rem; }
+    .domain-stat { display: flex; flex-direction: column; align-items: flex-end; }
+    .domain-stat-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.025em; margin-top: 0.1rem; }
+    .domain-card-arrow { color: #94a3b8; font-size: 1.25rem; margin-left: 0.5rem; }
+    .drawer { position: fixed; top: 0; right: -500px; width: 500px; height: 100vh; background: white; box-shadow: -4px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease; z-index: 1000; display: flex; flex-direction: column; }
+    .drawer.open { right: 0; }
+    .drawer-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 999; }
+    .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+    .drawer-header { padding: 1.5rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: flex-start; }
+    .drawer-title h2 { margin-bottom: 0.25rem; font-size: 1.1rem; }
+    .drawer-subtitle { font-size: 0.85rem; color: var(--text-sub); word-break: break-all; }
+    .drawer-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-sub); }
+    .drawer-content { flex: 1; overflow-y: auto; padding: 1.5rem; }
+    .occurrence-item { border: 1px solid #f1f5f9; border-radius: 0.5rem; margin-bottom: 1rem; overflow: hidden; }
+    .occurrence-header { padding: 1rem; background: #f8fafc; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .occ-time { font-size: 0.85rem; font-weight: 600; color: #475569; }
+    .occ-status { font-weight: 700; font-size: 0.9rem; }
+    .occ-duration-bar { height: 3px; background: #e2e8f0; width: 60px; border-radius: 2px; }
+    .occ-duration-fill { height: 100%; border-radius: 2px; }
+    .occurrence-details { padding: 1rem; display: none; background: white; border-top: 1px solid #f1f5f9; }
+    .occurrence-active .occurrence-details { display: block; }
+    .occurrence-active .occ-toggle { transform: rotate(180deg); }
+    .detail-block { margin-bottom: 1.25rem; }
+    .detail-label { font-size: 0.75rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; margin-bottom: 0.5rem; letter-spacing: 0.05em; }
+    .json-view { background: #f8fafc; padding: 1rem; border-radius: 0.5rem; border: 1px solid #f1f5f9; font-family: monospace; font-size: 0.8rem; overflow-x: auto; white-space: pre-wrap; color: #334155; }
+    
+    /* Waterfall Styles in Report */
+    .waterfall-container { margin: 12px 0 20px 0; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+    .waterfall-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 11px; font-weight: 600; color: #64748b; }
+    .waterfall-bar { height: 12px; display: flex; width: 100%; background: #f1f5f9; border-radius: 6px; overflow: hidden; margin-bottom: 12px; border: 1px solid #e2e8f0; }
+    .wf-segment { height: 100%; transition: width 0.3s ease; }
+    .wf-stalled { background: #94a3b8; }
+    .wf-wait { background: #f59e0b; }
+    .wf-receive { background: #3b82f6; }
+    .waterfall-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #94a3b8; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+    .legend-item .time-value { margin-left: auto; font-family: monospace; color: #475569; font-weight: 600; }
+    
+    /* Console Log Styles in Report */
+    .console-logs-container { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 4px; }
+    .console-log-entry { font-family: monospace; font-size: 11px; padding: 6px 10px; border-radius: 4px; background: #f8fafc; border-left: 3px solid #94a3b8; line-height: 1.4; word-break: break-all; white-space: pre-wrap; }
+    .console-log-error { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.05); color: #ef4444; }
+    .console-log-warn { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.05); color: #d97706; }
+    .console-log-info { border-left-color: #3b82f6; }
+    .console-log-time { font-size: 10px; color: #64748b; margin-bottom: 2px; display: block; }
+    
+    .footer { text-align: center; color: var(--text-sub); font-size: 0.875rem; padding: 2rem 0; margin-top: 2rem; border-top: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+  <div class="container" id="mainContainer">
+    <div id="navHeader" class="nav-header">
+      <button class="back-btn" onclick="showOverview()">← Back to Sites</button>
+      <div id="navContext" style="font-weight: 600; color: #334155;"></div>
+    </div>
+
+    <div id="archiveHeader" class="header">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <h1>🔍 RequestScope Performance Report</h1>
+          <p class="subtitle">Session Analysis</p>
+        </div>
+        <div class="grade-badge" style="background: #10b981;">
+          A
+        </div>
+      </div>
+      <div class="meta" style="margin-top: 1.5rem; display: flex; gap: 1.5rem; opacity: 0.8; font-size: 0.9rem;">
+        <span>📅 2026/6/2 17:21:16</span>
+        <span>⏱️ Duration: 41.66s</span>
+        <span>📊 21 Requests</span>
+      </div>
+    </div>
+
+    <div id="overviewContent" class="view-content">
+      <div class="section">
+        <h2>📈 Archive Summary</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">21</div>
+            <div class="stat-label">Total Requests</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value success">95.2%</div>
+            <div class="stat-label">Success Rate</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value success">234ms</div>
+            <div class="stat-label">Avg Response</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value danger">1</div>
+            <div class="stat-label">Failed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">22.31 KB</div>
+            <div class="stat-label">Data</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <h2>🗂 Request Type Breakdown</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 5px;">
+          
+        <div class="bar-container">
+          <span class="bar-label" style="min-width: 80px; font-size: 0.85rem; color: #64748b;">Fetch/XHR</span>
+          <div class="bar-track" style="height: 8px; background: #e2e8f0; border-radius: 4px; flex: 1;">
+            <div class="bar-fill" style="height: 8px; border-radius: 4px; width: 90%; background: #6366f1;"></div>
+          </div>
+          <span style="font-size: 0.85rem; color: #64748b; min-width: 25px; text-align: right;">19</span>
+        </div>
+      
+        <div class="bar-container">
+          <span class="bar-label" style="min-width: 80px; font-size: 0.85rem; color: #64748b;">Other</span>
+          <div class="bar-track" style="height: 8px; background: #e2e8f0; border-radius: 4px; flex: 1;">
+            <div class="bar-fill" style="height: 8px; border-radius: 4px; width: 10%; background: #94a3b8;"></div>
+          </div>
+          <span style="font-size: 0.85rem; color: #64748b; min-width: 25px; text-align: right;">2</span>
+        </div>
+      
+        </div>
+      </div>
+    
+      
+    </div>
+
+    <div id="siteView" class="view-hidden"></div>
+
+    <div id="archiveSections">
+      <div class="section">
+        <h2>🐢 Top 10 Slowest Endpoints</h2>
+        <table>
+          <thead><tr><th>Endpoint</th><th>Calls</th><th>Max Time</th><th>Avg Time</th></tr></thead>
+          <tbody>
+            
+              <tr class="interactive" data-endpoint="/api/v1/users/profile/permissions/" data-method="GET">
+                <td><span class="method-badge method-get">GET</span> <span style="margin-left:0.5rem;word-break:break-all;">/api/v1/users/profile/permissions/</span></td>
+                <td>1</td>
+                <td>1.77s<div class="time-bar"><div class="time-bar-fill medium" style="width:35.378642578125%"></div></div></td>
+                <td>1.77s</td>
+              </tr>
+              <tr class="interactive" data-endpoint="/api/v1/perms/users/self/assets/tree/" data-method="GET">
+                <td><span class="method-badge method-get">GET</span> <span style="margin-left:0.5rem;word-break:break-all;">/api/v1/perms/users/self/assets/tree/</span></td>
+                <td>1</td>
+                <td>303ms<div class="time-bar"><div class="time-bar-fill fast" style="width:6.064560546875001%"></div></div></td>
+                <td>303ms</td>
+              </tr>
+              <tr class="interactive" data-endpoint="/api/v1/authentication/user-session/" data-method="GET">
+                <td><span class="method-badge method-get">GET</span> <span style="margin-left:0.5rem;word-break:break-all;">/api/v1/authentication/user-session/</span></td>
+                <td>1</td>
+                <td>300ms<div class="time-bar"><div class="time-bar-fill fast" style="width:5.997060546875%"></div></div></td>
+                <td>300ms</td>
+              </tr>
+              <tr class="interactive" data-endpoint="/ws/notifications/site-msg/" data-method="GET">
+                <td><span class="method-badge method-get">GET</span> <span style="margin-left:0.5rem;word-break:break-all;">/ws/notifications/site-msg/</span></td>
+                <td>1</td>
+                <td>289ms<div class="time-bar"><div class="time-bar-fill fast" style="width:5.7813037109375%"></div></div></td>
+                <td>289ms</td>
+              </tr>
+              <tr class="interactive" data-endpoint="/api/v1/users/profile/" data-method="GET">
+                <td><span class="method-badge method-get">GET</span> <span style="margin-left:0.5rem;word-break:break-all;">/api/v1/users/profile/</span></td>
+                <td>3</td>
+                <td>272ms<div class="time-bar"><div class="time-bar-fill fast" style="width:5.445219726562501%"></div></div></td>
+                <td>144ms</td>
+              </tr>
+              <tr class="interactive" data-endpoint="/api/v1/terminal/components/connect-methods/" data-method="GET">
+                <td><span class="method-badge method-get">GET</span> <span style="margin-left:0.5rem;word-break:break-all;">/api/v1/terminal/components/connect-methods/</span></td>
+                <td>1</td>
+                <td>271ms<div class="time-bar"><div class="time-bar-fill fast" style="width:5.429838867187501%"></div></div></td>
+                <td>271ms</td>
+              </tr>
+              <tr class="interactive" data-endpoint="/api/v1/perms/users/self/nodes/all-with-assets/tree/" data-method="GET">
+                <td><span class="method-badge method-get">GET</span> <span style="margin-left:0.5rem;word-break:break-all;">/api/v1/perms/users/self/nodes/all-with-assets/tree/</span></td>
+                <td>2</td>
+                <td>241ms<div class="time-bar"><div class="time-bar-fill fast" style="width:4.824658203125%"></div></div></td>
+                <td>169ms</td>
+              </tr>
+              <tr class="interactive" data-endpoint="/api/v1/users/preference/" data-method="GET">
+                <td><span class="method-badge method-get">GET</span> <span style="margin-left:0.5rem;word-break:break-all;">/api/v1/users/preference/</span></td>
+                <td>1</td>
+                <td>216ms<div class="time-bar"><div class="time-bar-fill fast" style="width:4.31587890625%"></div></div></td>
+                <td>216ms</td>
+              </tr>
+              <tr class="interactive" data-endpoint="/api/v1/perms/users/self/assets/e9c63d38-ed69-4804-810d-465916d95f34/" data-method="GET">
+                <td><span class="method-badge method-get">GET</span> <span style="margin-left:0.5rem;word-break:break-all;">/api/v1/perms/users/self/assets/e9c63d38-ed69-4804-810d-465916d95f34/</span></td>
+                <td>1</td>
+                <td>214ms<div class="time-bar"><div class="time-bar-fill fast" style="width:4.2736767578125%"></div></div></td>
+                <td>214ms</td>
+              </tr>
+              <tr class="interactive" data-endpoint="/api/v1/ops/adhocs/" data-method="GET">
+                <td><span class="method-badge method-get">GET</span> <span style="margin-left:0.5rem;word-break:break-all;">/api/v1/ops/adhocs/</span></td>
+                <td>1</td>
+                <td>212ms<div class="time-bar"><div class="time-bar-fill fast" style="width:4.231396484375001%"></div></div></td>
+                <td>212ms</td>
+              </tr>
+          </tbody>
+        </table>
+      </div>
+
+      
+      <div class="section">
+        <h2>❌ Recent Failed Requests</h2>
+        <table>
+          <thead><tr><th>Endpoint</th><th>Status</th><th>Calls</th><th>Avg Time</th></tr></thead>
+          <tbody>
+            
+              <tr class="interactive" data-endpoint="/api/v1/authentication/user-session/" data-method="DELETE" data-status="net::ERR_ABORTED">
+                <td><span class="method-badge method-delete">DELETE</span> <span style="margin-left:0.5rem;word-break:break-all;">/api/v1/authentication/user-session/</span></td>
+                <td><span class="stat-value danger" style="font-size:0.9rem;">net::ERR_ABORTED</span></td>
+                <td>1</td>
+                <td>19ms</td>
+              </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>📊 Global Distribution</h2>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-value success">19</div><div class="stat-label">2xx Success</div></div>
+          <div class="stat-card"><div class="stat-value" style="color:#3b82f6;">0</div><div class="stat-label">3xx Redirect</div></div>
+          <div class="stat-card"><div class="stat-value warning">0</div><div class="stat-label">4xx Client Err</div></div>
+          <div class="stat-card"><div class="stat-value danger">0</div><div class="stat-label">5xx Server Err</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Generated by RequestScope • 2026/6/2</p>
+    </div>
+  </div>
+
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+  <div class="drawer" id="sideDrawer">
+    <div class="drawer-header">
+      <div class="drawer-title">
+        <h2 id="drawerTitle">Endpoint Details</h2>
+        <p id="drawerSubtitle"></p>
+      </div>
+      <button class="drawer-close" onclick="closeDrawer()">&times;</button>
+    </div>
+    <div class="drawer-content" id="drawerList"></div>
+  </div>
+
+  <script>
+    const reportData = {"requests":[{"id":"384843","method":"GET","url":"http://192.168.4.13/api/v1/perms/users/self/nodes/all-with-assets/tree/?offset=50","status":200,"type":"xmlhttprequest","time":96.39892578125,"timestamp":1780392042579,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-JMS-ORG","value":"00000000-0000-0000-0000-000000000002"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:20:10 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Content-Length","value":"2"},{"name":"Connection","value":"keep-alive"},{"name":"X-JMS-TREE-OFFSET","value":"50"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"[]","error":null,"pageTitle":"pve2-7cm-test-middle - JumpServer 开源堡垒机","timing":{"stalled":1.56982421875,"wait":92.461181640625,"receive":2.367919921875,"total":96.39892578125},"correlatedLogs":[]},{"id":"384841","method":"GET","url":"http://192.168.4.13/api/v1/perms/users/self/assets/e9c63d38-ed69-4804-810d-465916d95f34/","status":200,"type":"xmlhttprequest","time":213.683837890625,"timestamp":1780392042097,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-JMS-ORG","value":"00000000-0000-0000-0000-000000000002"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:20:10 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Transfer-Encoding","value":"chunked"},{"name":"Connection","value":"keep-alive"},{"name":"Vary","value":"Accept-Encoding"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"},{"name":"Content-Encoding","value":"gzip"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"{\n  \"id\": \"e9c63d38-ed69-4804-810d-465916d95f34\",\n  \"name\": \"pve2-7cm-test-middle\",\n  \"address\": \"192.168.4.80\",\n  \"zone\": null,\n  \"platform\": {\n    \"id\": 1,\n    \"name\": \"Linux\"\n  },\n  \"org_id\": \"00000000-0000-0000-0000-000000000002\",\n  \"connectivity\": {\n    \"value\": \"-\",\n    \"label\": \"未知\"\n  },\n  \"nodes\": [\n    {\n      \"id\": \"e7ad1194-d959-48f3-8426-5e3a4b1d6739\",\n      \"name\": \"7cm测试环境\"\n    }\n  ],\n  \"labels\": [],\n  \"category\": {\n    \"value\": \"host\",\n    \"label\": \"主机\"\n  },\n  \"type\": {\n    \"value\": \"linux\",\n    \"label\": \"Linux\"\n  },\n  \"org_name\": \"DEFAULT\",\n  \"spec_info\": {},\n  \"permed_protocols\": [\n    {\n      \"name\": \"sftp\",\n      \"port\": 22,\n      \"public\": true,\n      \"setting\": {\n        \"sftp_home\": \"/tmp\"\n      }\n    },\n    {\n      \"name\": \"ssh\",\n      \"port\": 22,\n      \"public\": true,\n      \"setting\": {\n        \"sftp_home\": \"/tmp\",\n        \"sftp_enabled\": true\n      }\n    }\n  ],\n  \"permed_accounts\": [\n    {\n      \"id\": \"5f181170-78ab-4c85-a0ce-c515544455e5\",\n      \"alias\": \"5f181170-78ab-4c85-a0ce-c515544455e5\",\n      \"name\": \"root\",\n      \"username\": \"root\",\n      \"has_username\": true,\n      \"has_secret\": true,\n      \"secret_type\": \"password\",\n      \"actions\": [\n        {\n          \"value\": \"connect\",\n          \"label\": \"连接 (所有协议)\"\n        },\n        {\n          \"value\": \"upload\",\n          \"label\": \"上传 (RDP, SFTP)\"\n        },\n        {\n          \"value\": \"download\",\n          \"label\": \"下载 (RDP, SFTP)\"\n        },\n        {\n          \"value\": \"copy\",\n          \"label\": \"复制 (RDP, VNC)\"\n        },\n        {\n          \"value\": \"paste\",\n          \"label\": \"粘贴 (RDP, VNC)\"\n        },\n        {\n          \"value\": \"delete\",\n          \"label\": \"删除 (SFTP)\"\n        },\n        {\n          \"value\": \"share\",\n          \"label\": \"分享 (Web SSH, Web RDP, Web VNC)\"\n        }\n      ],\n      \"date_expired\": \"2095/12/27 12:20:59 +0800\"\n    }\n  ],\n  \"is_active\": true,\n  \"date_verified\": null,\n  \"date_created\": \"2026/01/13 14:20:46 +0800\",\n  \"comment\": \"七厘米测试环境中间件主机,nacos，jenkins\",\n  \"created_by\": \"Administrator\"\n}","error":null,"pageTitle":"pve2-7cm-test-middle - JumpServer 开源堡垒机","timing":{"stalled":14.06982421875,"wait":196.81103515625,"receive":2.802978515625,"total":213.683837890625},"correlatedLogs":[]},{"id":"384837","method":"GET","url":"http://192.168.4.13/api/v1/perms/users/self/nodes/all-with-assets/tree/","status":200,"type":"xmlhttprequest","time":241.23291015625,"timestamp":1780392042058,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-JMS-ORG","value":"00000000-0000-0000-0000-000000000002"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:20:10 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Transfer-Encoding","value":"chunked"},{"name":"Connection","value":"keep-alive"},{"name":"Vary","value":"Accept-Encoding"},{"name":"X-JMS-TREE-OFFSET","value":"50"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"},{"name":"Content-Encoding","value":"gzip"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"[\n  {\n    \"id\": \"favorite\",\n    \"name\": \"收藏夹 (0)\",\n    \"title\": \"收藏夹 (0)\",\n    \"pId\": \"\",\n    \"isParent\": true,\n    \"open\": true,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"favorite\",\n        \"key\": \"favorite\",\n        \"value\": \"收藏夹\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1\",\n    \"name\": \"DEFAULT (50)\",\n    \"title\": \"DEFAULT (50)\",\n    \"pId\": \"\",\n    \"isParent\": true,\n    \"open\": true,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"0ba365fd-711e-4363-a4c4-095681c6f630\",\n        \"key\": \"1\",\n        \"value\": \"DEFAULT\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:12\",\n    \"name\": \"开发环境中间件 (2)\",\n    \"title\": \"开发环境中间件 (2)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"8cca224a-c677-4089-ad21-01d8f427743c\",\n        \"key\": \"1:12\",\n        \"value\": \"开发环境中间件\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:8\",\n    \"name\": \"工厂家纺测试环境 (1)\",\n    \"title\": \"工厂家纺测试环境 (1)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"e4dc24cb-5bef-43ff-ae23-6bfc02924511\",\n        \"key\": \"1:8\",\n        \"value\": \"工厂家纺测试环境\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:5\",\n    \"name\": \"云e宝开发环境 (4)\",\n    \"title\": \"云e宝开发环境 (4)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"56338370-42c9-4b29-a3ba-75e4b621df36\",\n        \"key\": \"1:5\",\n        \"value\": \"云e宝开发环境\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:6\",\n    \"name\": \"云e宝测试环境 (6)\",\n    \"title\": \"云e宝测试环境 (6)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"e473f3c7-06cd-4547-9ca2-60b1b2553562\",\n        \"key\": \"1:6\",\n        \"value\": \"云e宝测试环境\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:19\",\n    \"name\": \"新节点 2 (0)\",\n    \"title\": \"新节点 2 (0)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"937821ec-5219-4206-950a-7916b7e399c8\",\n        \"key\": \"1:19\",\n        \"value\": \"新节点 2\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:0\",\n    \"name\": \"ops (17)\",\n    \"title\": \"ops (17)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"124cd7ba-7179-4660-a39a-422a66b4d88f\",\n        \"key\": \"1:0\",\n        \"value\": \"ops\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:17\",\n    \"name\": \"7cm测试环境 (3)\",\n    \"title\": \"7cm测试环境 (3)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"e7ad1194-d959-48f3-8426-5e3a4b1d6739\",\n        \"key\": \"1:17\",\n        \"value\": \"7cm测试环境\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:16\",\n    \"name\": \"测试环境2中间件 (2)\",\n    \"title\": \"测试环境2中间件 (2)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"4fcf226c-20b4-4707-8996-7db75e211b9a\",\n        \"key\": \"1:16\",\n        \"value\": \"测试环境2中间件\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:7\",\n    \"name\": \"工厂家纺开发环境 (1)\",\n    \"title\": \"工厂家纺开发环境 (1)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"4e858142-0409-4714-9dc7-8e1238e65c4c\",\n        \"key\": \"1:7\",\n        \"value\": \"工厂家纺开发环境\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:9\",\n    \"name\": \"工厂开发环境 (1)\",\n    \"title\": \"工厂开发环境 (1)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"e144a7fe-8cdf-41dd-8482-3b7ca576828a\",\n        \"key\": \"1:9\",\n        \"value\": \"工厂开发环境\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:10\",\n    \"name\": \"工厂测试环境 (3)\",\n    \"title\": \"工厂测试环境 (3)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"06dd0383-0031-4d49-a6ba-54a631aed35d\",\n        \"key\": \"1:10\",\n        \"value\": \"工厂测试环境\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:13\",\n    \"name\": \"测试组 (0)\",\n    \"title\": \"测试组 (0)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"a3392a2e-e897-416a-b198-dd2a9c8da2ba\",\n        \"key\": \"1:13\",\n        \"value\": \"测试组\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:11\",\n    \"name\": \"测试环境中间件 (6)\",\n    \"title\": \"测试环境中间件 (6)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"c4efed41-206c-4451-b667-b48b0f03f7eb\",\n        \"key\": \"1:11\",\n        \"value\": \"测试环境中间件\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:15\",\n    \"name\": \"测试环境2 (4)\",\n    \"title\": \"测试环境2 (4)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"fe436de7-8b5c-4045-b1ed-aa8b5e618908\",\n        \"key\": \"1:15\",\n        \"value\": \"测试环境2\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"1:18\",\n    \"name\": \"新节点 1 (0)\",\n    \"title\": \"新节点 1 (0)\",\n    \"pId\": \"1\",\n    \"isParent\": true,\n    \"open\": false,\n    \"meta\": {\n      \"data\": {\n        \"id\": \"66eff238-87a3-40a2-89ad-6d54e67d6b72\",\n        \"key\": \"1:18\",\n        \"value\": \"新节点 1\"\n      },\n      \"type\": \"node\"\n    }\n  },\n  {\n    \"id\": \"458c0101-73ca-4a3a-8ae4-cdfb0a3401ff\",\n    \"name\": \"pve5-saas-test-es01\",\n    \"title\": \"192.168.4.17\\n测试环境es01\",\n    \"pId\": \"1:11\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve5-saas-test-es01\",\n        \"address\": \"192.168.4.17\"\n      }\n    }\n  },\n  {\n    \"id\": \"595bc51c-3770-4ab8-804d-a0e5d8e4087e\",\n    \"name\": \"pve2-saas-test-node3\",\n    \"title\": \"192.168.4.173\\n测试环境redis\\n测试环境zk节点 \\n测试环境kafka节点\",\n    \"pId\": \"1:6\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve2-saas-test-node3\",\n        \"address\": \"192.168.4.173\"\n      }\n    }\n  },\n  {\n    \"id\": \"98bdfdbb-bb8f-4975-b409-29725ea20498\",\n    \"name\": \"pve4-yunwei-jumpserver\",\n    \"title\": \"192.168.4.13\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve4-yunwei-jumpserver\",\n        \"address\": \"192.168.4.13\"\n      }\n    }\n  },\n  {\n    \"id\": \"e9c63d38-ed69-4804-810d-465916d95f34\",\n    \"name\": \"pve2-7cm-test-middle\",\n    \"title\": \"192.168.4.80\\n七厘米测试环境中间件主机,nacos，jenkins\",\n    \"pId\": \"1:17\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve2-7cm-test-middle\",\n        \"address\": \"192.168.4.80\"\n      }\n    }\n  },\n  {\n    \"id\": \"d76e02cd-e32a-41ad-a978-11949d5714fd\",\n    \"name\": \"pve2-test2-middle-node1\",\n    \"title\": \"192.168.4.25\\nes\",\n    \"pId\": \"1:16\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve2-test2-middle-node1\",\n        \"address\": \"192.168.4.25\"\n      }\n    }\n  },\n  {\n    \"id\": \"be067268-3f5c-4e8b-b94e-873dcc94e931\",\n    \"name\": \"pve2-7cm-test-node1\",\n    \"title\": \"192.168.4.79\\n7cm 应用主机\",\n    \"pId\": \"1:17\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve2-7cm-test-node1\",\n        \"address\": \"192.168.4.79\"\n      }\n    }\n  },\n  {\n    \"id\": \"fb4bf79a-ea61-4395-80cc-25f1a24f1ec8\",\n    \"name\": \"pve3-dev-middle-node1\",\n    \"title\": \"192.168.4.67\\n开发环境rocketmq seata\",\n    \"pId\": \"1:12\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve3-dev-middle-node1\",\n        \"address\": \"192.168.4.67\"\n      }\n    }\n  },\n  {\n    \"id\": \"87be8e82-8555-491a-bfe1-ef9acaa80f8e\",\n    \"name\": \"pve6-yunwei-node4\",\n    \"title\": \"192.168.4.8\\n鲁班运维平台\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve6-yunwei-node4\",\n        \"address\": \"192.168.4.8\"\n      }\n    }\n  },\n  {\n    \"id\": \"aa584974-5d61-4cc6-90ab-1e5e34dacd6e\",\n    \"name\": \"pve6-yunwei-node3\",\n    \"title\": \"192.168.4.21\\nopenldap mysql\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve6-yunwei-node3\",\n        \"address\": \"192.168.4.21\"\n      }\n    }\n  },\n  {\n    \"id\": \"edbe136e-29a0-4389-bb32-f5d672db0e3a\",\n    \"name\": \"pve3-yunwei-db04\",\n    \"title\": \"192.168.4.27\\n测试mysql\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve3-yunwei-db04\",\n        \"address\": \"192.168.4.27\"\n      }\n    }\n  },\n  {\n    \"id\": \"eaee55cd-2f83-443c-8924-9b8a347bfcf6\",\n    \"name\": \"pve6-test2-node1\",\n    \"title\": \"192.168.4.199\\nseata\",\n    \"pId\": \"1:15\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve6-test2-node1\",\n        \"address\": \"192.168.4.199\"\n      }\n    }\n  },\n  {\n    \"id\": \"e37c83ac-5fd9-4674-bfae-7795d21cbf6b\",\n    \"name\": \"pve5-factory-dev-node1\",\n    \"title\": \"192.168.4.20\\n工厂开发redis\",\n    \"pId\": \"1:9\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve5-factory-dev-node1\",\n        \"address\": \"192.168.4.20\"\n      }\n    }\n  },\n  {\n    \"id\": \"e13d6c74-6292-4a23-b0db-d1df02104752\",\n    \"name\": \"pve6-yunwei-db03\",\n    \"title\": \"192.168.4.12\\n线下msyql和jenkins数据备份主机,nacos使用的mysql库\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve6-yunwei-db03\",\n        \"address\": \"192.168.4.12\"\n      }\n    }\n  },\n  {\n    \"id\": \"15fd0559-6980-4378-a198-14aede529e25\",\n    \"name\": \"pve2-yxd-test-node1\",\n    \"title\": \"192.168.4.178\\nyxd 应用\\n云小丁mongo(docker启动）\\n云小丁redis(docker启动)\",\n    \"pId\": \"1:6\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve2-yxd-test-node1\",\n        \"address\": \"192.168.4.178\"\n      }\n    }\n  },\n  {\n    \"id\": \"8f21f6bf-1c7b-49df-aaca-271816a06f0a\",\n    \"name\": \"pve3-saas-dev-node2\",\n    \"title\": \"192.168.4.164\\n开发环境zookeeper\\nnginx\\ngateway\\ncanal\",\n    \"pId\": \"1:5\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve3-saas-dev-node2\",\n        \"address\": \"192.168.4.164\"\n      }\n    }\n  },\n  {\n    \"id\": \"ddb51eac-832a-4558-bcdf-5cc7e68395f9\",\n    \"name\": \"pve5-saas-test-node5\",\n    \"title\": \"192.168.4.55\",\n    \"pId\": \"1:6\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve5-saas-test-node5\",\n        \"address\": \"192.168.4.55\"\n      }\n    }\n  },\n  {\n    \"id\": \"8da49059-e2ee-4bb8-ae74-08d838d2ff33\",\n    \"name\": \"pve2-factory-test-node5\",\n    \"title\": \"192.168.4.128\\n开发测试环境共用rocketmq,7cm kibana和elasticsearch\",\n    \"pId\": \"1:10\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve2-factory-test-node5\",\n        \"address\": \"192.168.4.128\"\n      }\n    }\n  },\n  {\n    \"id\": \"4be47656-6731-4465-9e2f-47cce29937f3\",\n    \"name\": \"pve2-7cm-test-node2\",\n    \"title\": \"192.168.4.14\\n7cm 应用主机\",\n    \"pId\": \"1:17\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve2-7cm-test-node2\",\n        \"address\": \"192.168.4.14\"\n      }\n    }\n  },\n  {\n    \"id\": \"eb55b851-ee8a-46a7-9d21-41fcd19fe1c8\",\n    \"name\": \"pve4-yunwei-node4\",\n    \"title\": \"192.168.4.30\\nskywalking yapi 开发环境mysql\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve4-yunwei-node4\",\n        \"address\": \"192.168.4.30\"\n      }\n    }\n  },\n  {\n    \"id\": \"0459372c-f9d0-4ebd-935b-fa376eaf42aa\",\n    \"name\": \"pve6-yunwei-node7\",\n    \"title\": \"192.168.4.11\\nprometheus监控\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve6-yunwei-node7\",\n        \"address\": \"192.168.4.11\"\n      }\n    }\n  },\n  {\n    \"id\": \"7357c643-f49c-4940-b7d7-000c9d4ca3e3\",\n    \"name\": \"pve4-factory-test-node4\",\n    \"title\": \"192.168.4.127\\n开发测试环境共用rocketmq，测试环境rocketmq-admin\",\n    \"pId\": \"1:10\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve4-factory-test-node4\",\n        \"address\": \"192.168.4.127\"\n      }\n    }\n  },\n  {\n    \"id\": \"7cb939fa-a6df-4749-8229-8d5e14d6e6ff\",\n    \"name\": \"pve6-test2-node2\",\n    \"title\": \"192.168.4.15\",\n    \"pId\": \"1:15\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve6-test2-node2\",\n        \"address\": \"192.168.4.15\"\n      }\n    }\n  },\n  {\n    \"id\": \"45c908a1-54ee-46cd-9cab-094e1fdde223\",\n    \"name\": \"pve6-factory-test-node6\",\n    \"title\": \"192.168.4.74\",\n    \"pId\": \"1:10\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve6-factory-test-node6\",\n        \"address\": \"192.168.4.74\"\n      }\n    }\n  },\n  {\n    \"id\": \"c25065e5-d7a5-4043-8060-195f55450b5c\",\n    \"name\": \"pve6-test2-node4\",\n    \"title\": \"192.168.4.24\\nnginx gateway\",\n    \"pId\": \"1:15\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve6-test2-node4\",\n        \"address\": \"192.168.4.24\"\n      }\n    }\n  },\n  {\n    \"id\": \"fc26cdc6-b1ae-452c-a0fd-00ca4f5a7e8e\",\n    \"name\": \"pve5-dev-middle-node2\",\n    \"title\": \"192.168.4.84\\n开发rocketmq 开发rocketmq-admin\",\n    \"pId\": \"1:12\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve5-dev-middle-node2\",\n        \"address\": \"192.168.4.84\"\n      }\n    }\n  },\n  {\n    \"id\": \"49eff10b-c053-43f4-ba4a-834708975ea5\",\n    \"name\": \"pve6-yunwei-node14\",\n    \"title\": \"192.168.4.23\\nconfluence文档库,大模型容器主机,,产品文档导航\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve6-yunwei-node14\",\n        \"address\": \"192.168.4.23\"\n      }\n    }\n  },\n  {\n    \"id\": \"7f2c125f-8419-4848-b255-9e669e3ca5bf\",\n    \"name\": \"pve5-yunwei-node1\",\n    \"title\": \"192.168.4.85\\njenkins\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve5-yunwei-node1\",\n        \"address\": \"192.168.4.85\"\n      }\n    }\n  },\n  {\n    \"id\": \"c62c49ec-f23b-4afc-95fc-0acd89906690\",\n    \"name\": \"pve6-yunwei-node1\",\n    \"title\": \"192.168.4.89\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve6-yunwei-node1\",\n        \"address\": \"192.168.4.89\"\n      }\n    }\n  },\n  {\n    \"id\": \"306afb4b-bd5f-4125-8f34-b2dfad172912\",\n    \"name\": \"pve5-saas-test-es03\",\n    \"title\": \"192.168.4.19\\n测试环境es03\",\n    \"pId\": \"1:11\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve5-saas-test-es03\",\n        \"address\": \"192.168.4.19\"\n      }\n    }\n  },\n  {\n    \"id\": \"a7fa76b9-53d5-449d-ac0f-118b263a9a79\",\n    \"name\": \"pve5-htf-dev-node1\",\n    \"title\": \"192.168.4.40\\n家纺\",\n    \"pId\": \"1:7\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve5-htf-dev-node1\",\n        \"address\": \"192.168.4.40\"\n      }\n    }\n  },\n  {\n    \"id\": \"ea214b18-2db4-4ca1-b042-865a1affc7c5\",\n    \"name\": \"pve3-saas-dev-node5\",\n    \"title\": \"192.168.4.166\",\n    \"pId\": \"1:5\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve3-saas-dev-node5\",\n        \"address\": \"192.168.4.166\"\n      }\n    }\n  },\n  {\n    \"id\": \"da301ca3-86bb-45c9-b663-eccda34d1ce8\",\n    \"name\": \"pve2-saas-test-node2\",\n    \"title\": \"192.168.4.172\\n测试环境zk节点\",\n    \"pId\": \"1:6\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve2-saas-test-node2\",\n        \"address\": \"192.168.4.172\"\n      }\n    }\n  },\n  {\n    \"id\": \"7519abcb-89df-489a-8021-cd7e907acfc9\",\n    \"name\": \"pve3-yunwei-jumpserver\",\n    \"title\": \"192.168.4.64\\n跳板机\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve3-yunwei-jumpserver\",\n        \"address\": \"192.168.4.64\"\n      }\n    }\n  },\n  {\n    \"id\": \"becfffce-2200-4ddc-aa6c-46338ee5804e\",\n    \"name\": \"pve6-test-middle-node2\",\n    \"title\": \"192.168.4.76\\nseata\",\n    \"pId\": \"1:11\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve6-test-middle-node2\",\n        \"address\": \"192.168.4.76\"\n      }\n    }\n  },\n  {\n    \"id\": \"0e8816b9-5fa6-4f18-84ee-81493358ec4f\",\n    \"name\": \"pve3-htf-test-node1\",\n    \"title\": \"192.168.4.41\\n家纺\",\n    \"pId\": \"1:8\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve3-htf-test-node1\",\n        \"address\": \"192.168.4.41\"\n      }\n    }\n  },\n  {\n    \"id\": \"98275025-7c03-4472-bbfb-6cd47dee076b\",\n    \"name\": \"pve3-yunwei-node9\",\n    \"title\": \"192.168.4.29\\n公网 60.191.116.75 nat\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve3-yunwei-node9\",\n        \"address\": \"192.168.4.29\"\n      }\n    }\n  },\n  {\n    \"id\": \"9a54b8a9-ce82-4141-92ee-2c2712cc2f14\",\n    \"name\": \"pve2-saas-test-node1\",\n    \"title\": \"192.168.4.171\\n测试环境zk节点\\n测试环境kafka节点\",\n    \"pId\": \"1:6\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve2-saas-test-node1\",\n        \"address\": \"192.168.4.171\"\n      }\n    }\n  },\n  {\n    \"id\": \"f86805c7-fa91-4d06-8fa3-f787db2d9cb8\",\n    \"name\": \"pve5-yunwei-node10\",\n    \"title\": \"192.168.4.87\\npinpoint 60.191.116.76(停用) openvpn\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve5-yunwei-node10\",\n        \"address\": \"192.168.4.87\"\n      }\n    }\n  },\n  {\n    \"id\": \"94f81771-025e-4f31-81a2-cf5e648328d7\",\n    \"name\": \"pve3-saas-dev-node3\",\n    \"title\": \"192.168.4.22\\n开发环境zookeeper canal\",\n    \"pId\": \"1:5\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve3-saas-dev-node3\",\n        \"address\": \"192.168.4.22\"\n      }\n    }\n  },\n  {\n    \"id\": \"ac578c05-cf70-487f-b937-cc867f73c2c7\",\n    \"name\": \"pve3-yunwei-db05\",\n    \"title\": \"192.168.4.28\\n测试2mysql 测试2rockermq-admin 测试2redis\",\n    \"pId\": \"1:16\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve3-yunwei-db05\",\n        \"address\": \"192.168.4.28\"\n      }\n    }\n  },\n  {\n    \"id\": \"b4f499d1-9c04-46ce-9c73-41bd55d2e918\",\n    \"name\": \"pve4-yunwei-node5\",\n    \"title\": \"192.168.4.169\\n(原型库)Axure托管平台\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve4-yunwei-node5\",\n        \"address\": \"192.168.4.169\"\n      }\n    }\n  },\n  {\n    \"id\": \"b20defce-0a90-41f4-b0fd-1283340ecbac\",\n    \"name\": \"pve2-test-middle-node1\",\n    \"title\": \"192.168.4.174\\nseata canal-admin\",\n    \"pId\": \"1:11\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve2-test-middle-node1\",\n        \"address\": \"192.168.4.174\"\n      }\n    }\n  },\n  {\n    \"id\": \"814d42cd-9542-4d36-a33b-813b06d51aa0\",\n    \"name\": \"pve6-test-clickhouse\",\n    \"title\": \"192.168.4.26\\nclickhouse\",\n    \"pId\": \"1:11\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve6-test-clickhouse\",\n        \"address\": \"192.168.4.26\"\n      }\n    }\n  },\n  {\n    \"id\": \"a7b34de1-6732-486d-998a-6d843020b7e4\",\n    \"name\": \"pve3-saas-dev-node1\",\n    \"title\": \"192.168.4.163\\n开发环境zookeeper\\n开发环境canal\\n云e宝线下xxl-job\\n云e宝开发redis\",\n    \"pId\": \"1:5\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve3-saas-dev-node1\",\n        \"address\": \"192.168.4.163\"\n      }\n    }\n  },\n  {\n    \"id\": \"4cc111e6-b7d1-4294-9951-3295ea4d3ad0\",\n    \"name\": \"pve6-yunwei-kubersphere\",\n    \"title\": \"192.168.4.65\\nkubesphere  linux主机外网代理\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve6-yunwei-kubersphere\",\n        \"address\": \"192.168.4.65\"\n      }\n    }\n  },\n  {\n    \"id\": \"fb1f1493-ac59-42a7-a50e-120ca7c72dbc\",\n    \"name\": \"pve4-yunwei-db02\",\n    \"title\": \"192.168.4.168\\ngo-ldap-admin,7cm项目测试环境mysql, xxl-job使用的数据库， 工厂测试环境redis\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve4-yunwei-db02\",\n        \"address\": \"192.168.4.168\"\n      }\n    }\n  },\n  {\n    \"id\": \"e41b4c3a-476e-4bd4-923f-ee6b0704c328\",\n    \"name\": \"pve2-yunwei-node2\",\n    \"title\": \"192.168.4.63\\nverdaccio  导航页 nacos2.2.0\",\n    \"pId\": \"1:0\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve2-yunwei-node2\",\n        \"address\": \"192.168.4.63\"\n      }\n    }\n  },\n  {\n    \"id\": \"bdfe84a7-f296-44ec-badd-c8be028774f3\",\n    \"name\": \"pve5-saas-test-es02\",\n    \"title\": \"192.168.4.18\\n测试环境es02\",\n    \"pId\": \"1:11\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve5-saas-test-es02\",\n        \"address\": \"192.168.4.18\"\n      }\n    }\n  },\n  {\n    \"id\": \"9c92ae65-82ed-48d2-b79e-5ecdf6078b67\",\n    \"name\": \"pve6-test2-node3\",\n    \"title\": \"192.168.4.200\",\n    \"pId\": \"1:15\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve6-test2-node3\",\n        \"address\": \"192.168.4.200\"\n      }\n    }\n  },\n  {\n    \"id\": \"20b3edf1-65bb-4f52-a2da-450557eac939\",\n    \"name\": \"pve4-saas-test-node7\",\n    \"title\": \"192.168.4.175\\ngateway\",\n    \"pId\": \"1:6\",\n    \"isParent\": false,\n    \"open\": false,\n    \"iconSkin\": \"linux\",\n    \"chkDisabled\": false,\n    \"meta\": {\n      \"type\": \"asset\",\n      \"data\": {\n        \"platform_type\": \"linux\",\n        \"org_name\": \"DEFAULT\",\n        \"sftp\": true,\n        \"name\": \"pve4-saas-test-node7\",\n        \"address\": \"192.168.4.175\"\n      }\n    }\n  }\n]","error":null,"pageTitle":"Web终端 - JumpServer 开源堡垒机","timing":{"stalled":4.060791015625,"wait":230.05517578125,"receive":7.116943359375,"total":241.23291015625},"correlatedLogs":[]},{"id":"384836","method":"GET","url":"http://192.168.4.13/api/v1/assets/favorite-assets/","status":200,"type":"xmlhttprequest","time":159.883056640625,"timestamp":1780392042058,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-JMS-ORG","value":"00000000-0000-0000-0000-000000000002"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:20:09 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Content-Length","value":"2"},{"name":"Connection","value":"keep-alive"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"[]","error":null,"pageTitle":"192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","timing":{"stalled":7.14111328125,"wait":150.828857421875,"receive":1.9130859375,"total":159.883056640625},"correlatedLogs":[]},{"id":"384832","method":"GET","url":"http://192.168.4.13/api/v1/settings/public/","status":200,"type":"xmlhttprequest","time":101.18017578125,"timestamp":1780392041811,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-JMS-ORG","value":"00000000-0000-0000-0000-000000000002"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:20:09 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Transfer-Encoding","value":"chunked"},{"name":"Connection","value":"keep-alive"},{"name":"Vary","value":"Accept-Encoding"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"},{"name":"Content-Encoding","value":"gzip"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"JSON response (content captured by interceptor when available)","error":null,"pageTitle":"192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","timing":{"stalled":1.609130859375,"wait":96.802978515625,"receive":2.76806640625,"total":101.18017578125},"correlatedLogs":[]},{"id":"384830","method":"GET","url":"http://192.168.4.13/luna/assets/outline/caret-right.svg","status":200,"type":"xmlhttprequest","time":48.17919921875,"timestamp":1780392041642,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Mon, 25 May 2026 09:44:59 GMT"},{"name":"Last-Modified","value":"Thu, 18 Dec 2025 09:43:51 GMT"},{"name":"Content-Type","value":"image/svg+xml"},{"name":"Content-Length","value":"182"},{"name":"ETag","value":"\"6943ccd7-b6\""},{"name":"Accept-Ranges","value":"bytes"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"HTTP 200 OK","error":null,"pageTitle":"192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","timing":{"stalled":13.343017578125,"wait":16.39306640625,"receive":18.443115234375,"total":48.17919921875},"correlatedLogs":[]},{"id":"384829","method":"GET","url":"http://192.168.4.13/luna/assets/outline/read.svg","status":200,"type":"xmlhttprequest","time":48.10205078125,"timestamp":1780392041642,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Mon, 25 May 2026 09:44:59 GMT"},{"name":"Last-Modified","value":"Thu, 18 Dec 2025 09:43:51 GMT"},{"name":"Content-Type","value":"image/svg+xml"},{"name":"Content-Length","value":"1049"},{"name":"ETag","value":"\"6943ccd7-419\""},{"name":"Accept-Ranges","value":"bytes"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"HTTP 200 OK","error":null,"pageTitle":"192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","timing":{"stalled":4.01611328125,"wait":25.666015625,"receive":18.419921875,"total":48.10205078125},"correlatedLogs":[]},{"id":"384828","method":"GET","url":"http://192.168.4.13/api/v1/perms/users/self/assets/tree/?id=e9c63d38-ed69-4804-810d-465916d95f34","status":200,"type":"xmlhttprequest","time":303.22802734375,"timestamp":1780392041642,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-JMS-ORG","value":"00000000-0000-0000-0000-000000000002"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:20:09 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Content-Length","value":"381"},{"name":"Connection","value":"keep-alive"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"JSON response (content captured by interceptor when available)","error":null,"pageTitle":"192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","timing":{"stalled":3.68603515625,"wait":298.491943359375,"receive":1.050048828125,"total":303.22802734375},"correlatedLogs":[]},{"id":"384827","method":"GET","url":"http://192.168.4.13/api/v1/ops/adhocs/?only_mine=true","status":200,"type":"xmlhttprequest","time":211.56982421875,"timestamp":1780392041642,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-JMS-ORG","value":"00000000-0000-0000-0000-000000000002"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:20:09 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Content-Length","value":"2"},{"name":"Connection","value":"keep-alive"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"JSON response (content captured by interceptor when available)","error":null,"pageTitle":"192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","timing":{"stalled":2.394775390625,"wait":206.39013671875,"receive":2.784912109375,"total":211.56982421875},"correlatedLogs":[]},{"id":"384826","method":"GET","url":"http://192.168.4.13/api/v1/authentication/user-session/","status":200,"type":"xmlhttprequest","time":299.85302734375,"timestamp":1780392041605,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-JMS-ORG","value":"00000000-0000-0000-0000-000000000002"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:20:09 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Content-Length","value":"11"},{"name":"Connection","value":"keep-alive"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, DELETE, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"JSON response (content captured by interceptor when available)","error":null,"pageTitle":"192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","timing":{"stalled":30.906005859375,"wait":267.447998046875,"receive":1.4990234375,"total":299.85302734375},"correlatedLogs":[]},{"id":"384825","method":"GET","url":"ws://192.168.4.13/ws/notifications/site-msg/","status":101,"type":"websocket","time":289.065185546875,"timestamp":1780392041605,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Upgrade","value":"websocket"},{"name":"Connection","value":"Upgrade"},{"name":"Sec-WebSocket-Version","value":"13"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:20:09 GMT"},{"name":"Connection","value":"upgrade"},{"name":"Upgrade","value":"websocket"},{"name":"Sec-WebSocket-Accept","value":"NITtUp5O5zjriAJYN4rIOW/GjMA="},{"name":"Sec-WebSocket-Extensions","value":"permessage-deflate"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"HTTP 101 OK","error":null,"pageTitle":"192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","timing":{"stalled":30.094970703125,"wait":252.923095703125,"receive":6.047119140625,"total":289.065185546875},"correlatedLogs":[]},{"id":"384824","method":"GET","url":"http://192.168.4.13/api/v1/terminal/components/connect-methods/","status":200,"type":"xmlhttprequest","time":271.491943359375,"timestamp":1780392041595,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-JMS-ORG","value":"00000000-0000-0000-0000-000000000002"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:20:09 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Transfer-Encoding","value":"chunked"},{"name":"Connection","value":"keep-alive"},{"name":"Vary","value":"Accept-Encoding"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"},{"name":"Content-Encoding","value":"gzip"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"JSON response (content captured by interceptor when available)","error":null,"pageTitle":"192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","timing":{"stalled":2.621826171875,"wait":257.530029296875,"receive":11.340087890625,"total":271.491943359375},"correlatedLogs":[]},{"id":"384823","method":"GET","url":"http://192.168.4.13/api/v1/users/profile/permissions/","status":200,"type":"xmlhttprequest","time":1768.93212890625,"timestamp":1780392041594,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-JMS-ORG","value":"00000000-0000-0000-0000-000000000002"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:20:11 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Transfer-Encoding","value":"chunked"},{"name":"Connection","value":"keep-alive"},{"name":"Vary","value":"Accept-Encoding"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"},{"name":"Content-Encoding","value":"gzip"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"JSON response (content captured by interceptor when available)","error":null,"pageTitle":"192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","timing":{"stalled":3.093017578125,"wait":1765.069091796875,"receive":0.77001953125,"total":1768.93212890625},"correlatedLogs":[]},{"id":"384822","method":"GET","url":"http://192.168.4.13/api/v1/users/profile/","status":200,"type":"xmlhttprequest","time":272.260986328125,"timestamp":1780392041593,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-JMS-ORG","value":"00000000-0000-0000-0000-000000000002"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:20:09 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Transfer-Encoding","value":"chunked"},{"name":"Connection","value":"keep-alive"},{"name":"Vary","value":"Accept-Encoding"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, PUT, PATCH, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"},{"name":"Content-Encoding","value":"gzip"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"JSON response (content captured by interceptor when available)","error":null,"pageTitle":"192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","timing":{"stalled":2.005126953125,"wait":258.994873046875,"receive":11.260986328125,"total":272.260986328125},"correlatedLogs":[]},{"id":"384821","method":"GET","url":"http://192.168.4.13/api/v1/users/preference/?category=luna","status":200,"type":"xmlhttprequest","time":215.7939453125,"timestamp":1780392041573,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-JMS-ORG","value":"00000000-0000-0000-0000-000000000002"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:20:09 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Content-Length","value":"476"},{"name":"Connection","value":"keep-alive"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, PUT, PATCH, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"JSON response (content captured by interceptor when available)","error":null,"pageTitle":"192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","timing":{"stalled":10.56298828125,"wait":202.922119140625,"receive":2.308837890625,"total":215.7939453125},"correlatedLogs":[]},{"id":"384820","method":"GET","url":"http://192.168.4.13/luna/assets/i18n/zh-hans.json","status":200,"type":"xmlhttprequest","time":30.189208984375,"timestamp":1780392041572,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Mon, 25 May 2026 09:44:59 GMT"},{"name":"Last-Modified","value":"Thu, 18 Dec 2025 09:43:51 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Content-Length","value":"5"},{"name":"ETag","value":"\"6943ccd7-5\""},{"name":"Accept-Ranges","value":"bytes"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"JSON response (content captured by interceptor when available)","error":null,"pageTitle":"192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","timing":{"stalled":10.508056640625,"wait":16.419921875,"receive":3.26123046875,"total":30.189208984375},"correlatedLogs":[]},{"id":"384819","method":"GET","url":"http://192.168.4.13/api/v1/settings/i18n/luna/?lang=zh-hans&v=v4.10.14","status":200,"type":"xmlhttprequest","time":165.238037109375,"timestamp":1780392041572,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:20:09 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Transfer-Encoding","value":"chunked"},{"name":"Connection","value":"keep-alive"},{"name":"Vary","value":"Accept-Encoding"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"},{"name":"Content-Encoding","value":"gzip"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"JSON response (content captured by interceptor when available)","error":null,"pageTitle":"192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","timing":{"stalled":6.463134765625,"wait":146.60888671875,"receive":12.166015625,"total":165.238037109375},"correlatedLogs":[]},{"id":"384809","method":"GET","url":"http://192.168.4.13/luna/?login_to=e9c63d38-ed69-4804-810d-465916d95f34&oid=00000000-0000-0000-0000-000000000002","status":200,"type":"main_frame","time":8.20703125,"timestamp":1780392040050,"reqHeaders":[{"name":"Upgrade-Insecure-Requests","value":"1"},{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Thu, 21 May 2026 03:16:47 GMT"},{"name":"Content-Type","value":"text/html"},{"name":"Last-Modified","value":"Thu, 18 Dec 2025 09:43:51 GMT"},{"name":"Vary","value":"Accept-Encoding"},{"name":"ETag","value":"W/\"6943ccd7-a3d\""},{"name":"Content-Encoding","value":"gzip"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"HTTP 200 OK","error":null,"pageTitle":"Web终端 - JumpServer 开源堡垒机","timing":{"stalled":2.02197265625,"wait":3.18798828125,"receive":2.9970703125,"total":8.20703125},"correlatedLogs":[]},{"id":"384808","method":"DELETE","url":"http://192.168.4.13/api/v1/authentication/user-session/","status":null,"type":"xmlhttprequest","time":19.0048828125,"timestamp":1780392040044,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-CSRFToken","value":"iRamKFUoQOt3tO1PMszDhhYjtoNIx4wk"}],"resHeaders":[],"reqBody":"No request payload available - webRequest API limitation","resBody":null,"error":"net::ERR_ABORTED","pageTitle":"Web终端 - JumpServer 开源堡垒机","timing":{"stalled":0,"wait":0,"receive":0,"total":0},"correlatedLogs":[]},{"id":"384796","method":"GET","url":"http://192.168.4.13/api/v1/users/profile/?fields_size=mini","status":200,"type":"xmlhttprequest","time":79.47705078125,"timestamp":1780392000921,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-JMS-ORG","value":"00000000-0000-0000-0000-000000000002"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:19:28 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Content-Length","value":"115"},{"name":"Connection","value":"keep-alive"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, PUT, PATCH, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"JSON response (content captured by interceptor when available)","error":null,"pageTitle":"Web终端 - JumpServer 开源堡垒机","timing":{"stalled":7.069091796875,"wait":71.094970703125,"receive":1.31298828125,"total":79.47705078125},"correlatedLogs":[]},{"id":"384796","method":"GET","url":"http://192.168.4.13/api/v1/users/profile/?fields_size=mini","status":200,"type":"xmlhttprequest","time":79.47705078125,"timestamp":1780392000921,"reqHeaders":[{"name":"User-Agent","value":"Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36"},{"name":"Accept","value":"application/json, text/plain, */*"},{"name":"X-JMS-ORG","value":"00000000-0000-0000-0000-000000000002"}],"resHeaders":[{"name":"Server","value":"nginx"},{"name":"Date","value":"Tue, 02 Jun 2026 09:19:28 GMT"},{"name":"Content-Type","value":"application/json"},{"name":"Content-Length","value":"115"},{"name":"Connection","value":"keep-alive"},{"name":"Vary","value":"Accept, origin, Accept-Language, Cookie"},{"name":"Allow","value":"GET, PUT, PATCH, HEAD, OPTIONS"},{"name":"X-Frame-Options","value":"SAMEORIGIN"},{"name":"Content-Language","value":"zh-hans"},{"name":"X-Content-Type-Options","value":"nosniff"},{"name":"Referrer-Policy","value":"same-origin"},{"name":"Cross-Origin-Opener-Policy","value":"same-origin"}],"reqBody":"GET/HEAD requests typically don't have a request body","resBody":"JSON response (content captured by interceptor when available)","error":null,"pageTitle":"Web终端 - JumpServer 开源堡垒机","timing":{"stalled":7.069091796875,"wait":71.094970703125,"receive":1.31298828125,"total":79.47705078125},"correlatedLogs":[]}],"domainBreakdown":null};
+    const gradeColors = {"A":"#10b981","B":"#3b82f6","C":"#f59e0b","D":"#f97316","F":"#ef4444"};
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    function formatTime(ms) {
+      if (!ms) return '0ms';
+      return ms < 1000 ? Math.round(ms) + 'ms' : (ms / 1000).toFixed(2) + 's';
+    }
+    
+    function buildTypeBreakdownHTML(distribution, totalRequests) {
+      if (!distribution || distribution.length === 0 || totalRequests === 0) return '';
+      const colors = { 'Fetch/XHR': '#6366f1', 'JavaScript': '#3b82f6', 'Image': '#10b981', 'CSS': '#f59e0b', 'Font': '#a78bfa', 'Other': '#94a3b8' };
+      const barsHtml = distribution.map(item => {
+        const pct = Math.round((item.count / totalRequests) * 100);
+        const color = colors[item.type] || '#94a3b8';
+        return '<div class="bar-container"><span class="bar-label" style="min-width: 80px; font-size: 0.85rem; color: #64748b;">' + item.type + '</span><div class="bar-track" style="height: 8px; background: #e2e8f0; border-radius: 4px; flex: 1;"><div class="bar-fill" style="height: 8px; border-radius: 4px; width: ' + pct + '%; background: ' + color + ';"></div></div><span style="font-size: 0.85rem; color: #64748b; min-width: 25px; text-align: right;">' + item.count + '</span></div>';
+      }).join('');
+      return '<div class="section"><h2>🗂 Request Type Breakdown</h2><div style="display: flex; flex-direction: column; gap: 12px; margin-top: 5px;">' + barsHtml + '</div></div>';
+    }
+
+    function renderWaterfall(timing) {
+      const stalled = timing.stalled || 0;
+      const wait = timing.wait || 0;
+      const receive = timing.receive || 0;
+      const total = Math.max(stalled + wait + receive, 1);
+
+      const stalledPct = (stalled / total) * 100;
+      const waitPct = (wait / total) * 100;
+      const receivePct = (receive / total) * 100;
+
+      let html = '<div class="waterfall-container">';
+      html += '<div class="waterfall-header"><span>Timeline Breakdown</span><span> ' + formatTime(total) + '</span></div>';
+      html += '<div class="waterfall-bar">';
+      if (stalledPct > 0) html += '<div class="wf-segment wf-stalled" style="width: ' + stalledPct + '%"></div>';
+      if (waitPct > 0) html += '<div class="wf-segment wf-wait" style="width: ' + waitPct + '%"></div>';
+      if (receivePct > 0) html += '<div class="wf-segment wf-receive" style="width: ' + receivePct + '%"></div>';
+      html += '</div>';
+      html += '<div class="waterfall-legend">';
+      html += '<div class="legend-item"><div class="legend-dot wf-stalled"></div><span>Stalled</span><span class="time-value">' + formatTime(stalled) + '</span></div>';
+      html += '<div class="legend-item"><div class="legend-dot wf-wait"></div><span>TTFB</span><span class="time-value">' + formatTime(wait) + '</span></div>';
+      html += '<div class="legend-item"><div class="legend-dot wf-receive"></div><span>Download</span><span class="time-value">' + formatTime(receive) + '</span></div>';
+      html += '</div></div>';
+      return html;
+    }
+
+    function closeDrawer() {
+      document.getElementById('sideDrawer').classList.remove('open');
+      document.getElementById('drawerOverlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    function toggleOccurrence(el) { el.closest('.occurrence-item').classList.toggle('occurrence-active'); }
+
+    document.addEventListener('DOMContentLoaded', () => setupInteractiveRows());
+
+    function setupInteractiveRows() {
+      document.querySelectorAll('tr.interactive').forEach(row => {
+        const newRow = row.cloneNode(true);
+        row.parentNode.replaceChild(newRow, row);
+        newRow.addEventListener('click', () => {
+          openEndpointDrawer(newRow.dataset.endpoint, newRow.dataset.method, newRow.dataset.status);
+        });
+      });
+    }
+
+    function navigateToSite(idx) {
+      const site = reportData.domainBreakdown[idx];
+      if (!site) return;
+      document.getElementById('navContext').textContent = `Report for ${site.domain}`;
+      document.getElementById('navHeader').style.display = 'flex';
+      ['archiveHeader', 'overviewContent', 'archiveSections'].forEach(id => document.getElementById(id).classList.add('view-hidden'));
+      const siteView = document.getElementById('siteView');
+      siteView.innerHTML = buildSiteReportHTML(site);
+      siteView.classList.remove('view-hidden');
+      window.scrollTo(0, 0);
+      setupInteractiveRows();
+    }
+
+    function showOverview() {
+      document.getElementById('navHeader').style.display = 'none';
+      ['archiveHeader', 'overviewContent', 'archiveSections'].forEach(id => document.getElementById(id).classList.remove('view-hidden'));
+      document.getElementById('siteView').classList.add('view-hidden');
+      window.scrollTo(0, 0);
+      setupInteractiveRows();
+    }
+
+    function buildSiteReportHTML(site) {
+      const s = site.summary, hG = s.sessionHealth || 'A', hC = gradeColors[hG] || '#10b981';
+      const rC = s.successRate >= 95 ? 'success' : s.successRate >= 85 ? 'warning' : 'danger';
+      const tC = s.avgResponseTime < 1000 ? 'success' : s.avgResponseTime < 3000 ? 'warning' : 'danger';
+
+      return `
+        <div class="header" style="background: linear-gradient(135deg, #334155 0%, #475569 100%); margin-bottom: 2rem;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div><h1 style="font-size: 1.5rem;">${site.domain} Performance</h1><p class="subtitle">Complete site-level analysis</p></div>
+            <div class="grade-badge" style="background: ${hC}; width: 42px; height: 42px; font-size: 1.25rem;">${hG}</div>
+          </div>
+        </div>
+        <div class="section">
+          <h2>📈 Performance Summary</h2>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-value">${s.totalRequests}</div><div class="stat-label">Total Requests</div></div>
+            <div class="stat-card"><div class="stat-value ${rC}">${s.successRate}%</div><div class="stat-label">Success Rate</div></div>
+            <div class="stat-card"><div class="stat-value ${tC}">${formatTime(s.avgResponseTime)}</div><div class="stat-label">Avg Response</div></div>
+            <div class="stat-card"><div class="stat-value danger">${s.failedRequests}</div><div class="stat-label">Failed</div></div>
+            <div class="stat-card"><div class="stat-value">${formatBytes(s.totalDataTransferred)}</div><div class="stat-label">Data</div></div>
+          </div>
+        </div>
+        ${buildTypeBreakdownHTML(site.typeDistribution, s.totalRequests)}
+        <div class="section">
+          <h2>🐢 Top Slowest Endpoints</h2>
+          <table>
+            <thead><tr><th>Endpoint</th><th>Calls</th><th>Max Time</th><th>Avg Time</th></tr></thead>
+            <tbody>
+              ${site.topSlowestEndpoints.map(ep => {
+    const pct = Math.min((ep.maxTime / 5000) * 100, 100);
+    const tc = ep.maxTime < 1000 ? 'fast' : ep.maxTime < 3000 ? 'medium' : 'slow';
+    return `<tr class="interactive" data-endpoint="${ep.endpoint}" data-method="${ep.method}">
+                  <td><span class="method-badge method-${ep.method.toLowerCase()}">${ep.method}</span> <span style="margin-left:0.5rem;word-break:break-all;">${ep.endpoint.replace(ep.method + ' ', '')}</span></td>
+                  <td>${ep.count}</td>
+                  <td>${formatTime(ep.maxTime)}<div class="time-bar"><div class="time-bar-fill ${tc}" style="width:${pct}%"></div></div></td>
+                  <td>${formatTime(ep.avgTime)}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+        ${site.failedRequests.length > 0 ? `
+        <div class="section">
+          <h2>❌ Failed Requests</h2>
+          <table>
+            <thead><tr><th>Endpoint</th><th>Status</th><th>Count</th></tr></thead>
+            <tbody>
+              ${site.failedRequests.map(fr => `<tr class="interactive" data-endpoint="${fr.endpoint}" data-method="${fr.method}" data-status="${fr.statusCode}">
+                <td><span class="method-badge method-${fr.method.toLowerCase()}">${fr.method}</span> <span style="margin-left:0.5rem;word-break:break-all;">${fr.endpoint}</span></td>
+                <td><span class="stat-value danger" style="font-size:0.9rem;">${fr.statusCode}</span></td>
+                <td>${fr.count}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>` : ''}
+        <div class="section">
+          <h2>📊 Distribution</h2>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-value success">${site.statusCodeDistribution['2xx'] || 0}</div><div class="stat-label">Success (2xx)</div></div>
+            <div class="stat-card"><div class="stat-value" style="color:#3b82f6;">${site.statusCodeDistribution['3xx'] || 0}</div><div class="stat-label">Redirect (3xx)</div></div>
+            <div class="stat-card"><div class="stat-value warning">${site.statusCodeDistribution['4xx'] || 0}</div><div class="stat-label">Client Err (4xx)</div></div>
+            <div class="stat-card"><div class="stat-value danger">${site.statusCodeDistribution['5xx'] || 0}</div><div class="stat-label">Server Err (5xx)</div></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function openEndpointDrawer(endpointStr, method, statusCodeFilter) {
+      if (!endpointStr || !method) return;
+      let urlPath = endpointStr;
+      if (urlPath.startsWith(method + ' ')) urlPath = urlPath.substring(method.length + 1);
+      
+      const occurrences = reportData.requests.filter(req => {
+        if (req.method !== method) return false;
+        let match = false;
+        try { match = new URL(req.url).pathname === new URL(urlPath, 'http://d.com').pathname; }
+        catch { match = req.url.includes(urlPath); }
+        if (!match) return false;
+        if (statusCodeFilter && statusCodeFilter !== 'undefined') {
+          return String(req.status || req.error || 'ERR') === String(statusCodeFilter);
+        }
+        return true;
+      }).sort((a, b) => b.timestamp - a.timestamp);
+
+      showDrawer(method, urlPath, occurrences);
+    }
+
+    function showDrawer(method, url, occurrences) {
+      document.getElementById('drawerTitle').textContent = method;
+      document.getElementById('drawerSubtitle').textContent = url;
+      const maxTime = Math.max(...occurrences.map(r => r.time || 0), 100);
+
+      document.getElementById('drawerList').innerHTML = occurrences.map(req => {
+        const date = new Date(req.timestamp).toLocaleTimeString();
+        const sC = req.status >= 400 || !req.status ? '#ef4444' : '#10b981';
+        const tP = Math.min((req.time / maxTime) * 100, 100);
+        const tC = req.time < 1000 ? '#10b981' : req.time < 3000 ? '#f59e0b' : '#ef4444';
+        
+        return `
+        <div class="occurrence-item">
+          <div class="occurrence-header" onclick="toggleOccurrence(this)">
+            <div class="occ-time">${date}</div>
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              <span style="font-size:0.8rem; color:#475569;">${formatTime(req.time)}</span>
+              <div class="occ-duration-bar"><div class="occ-duration-fill" style="width:${tP}%; background-color:${tC}"></div></div>
+            </div>
+            <div class="occ-status" style="color:${sC}">${req.status || 'ERR'}</div>
+            <div class="occ-toggle">▼</div>
+          </div>
+          <div class="occurrence-details">
+            <div class="detail-block">
+              <div class="detail-label" style="display:flex; justify-content:space-between; align-items:center;">
+                General
+                <button onclick="copyReqCurl('${req.id}')" style="background:none; border:1px solid #cbd5e1; border-radius:4px; font-size:0.7rem; padding:2px 6px; cursor:pointer; color:#475569;">Copy as cURL</button>
+              </div>
+              <div class="json-view">URL: ${req.url}\nMethod: ${req.method}\nSource: ${req.pageTitle || 'Unknown'}</div>
+            </div>
+            <div class="detail-block">
+              <div class="detail-label">Timing Breakdown</div>
+              ${renderWaterfall(req.timing || {})}
+            </div>
+            ${req.reqBody ? `<div class="detail-block"><div class="detail-label">Request Body</div><div class="json-view">${safeStringify(req.reqBody)}</div></div>` : ''}
+            ${req.resBody ? `<div class="detail-block"><div class="detail-label">Response Body</div><div class="json-view">${safeStringify(req.resBody)}</div></div>` : ''}
+            ${req.correlatedLogs && req.correlatedLogs.length > 0 ? `
+            <div class="detail-block">
+              <div class="detail-label">Correlated Console Logs</div>
+              <div class="console-logs-container">
+                ${req.correlatedLogs.map(log => `
+                  <div class="console-log-entry console-log-${log.type}">
+                    <span class="console-log-time">${log.relativeTime > 0 ? '+' : ''}${Math.round(log.relativeTime)}ms from request start</span>
+                    <span>${log.content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
+                  </div>`).join('')}
+              </div>
+            </div>` : ''}
+            <div class="detail-block">
+              <div class="detail-label">Headers</div>
+              <div class="json-view">Request:\n${JSON.stringify(req.reqHeaders, null, 2).replace(/\n/g, '\\n')}\n\nResponse:\n${JSON.stringify(req.resHeaders, null, 2).replace(/\n/g, '\\n')}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+      
+      document.getElementById('sideDrawer').classList.add('open');
+      document.getElementById('drawerOverlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function safeStringify(data) {
+      if (!data) return '';
+      try {
+        const parsed = (typeof data === 'string') ? JSON.parse(data) : data;
+        return JSON.stringify(parsed, null, 2);
+      } catch { return String(data); }
+    }
+
+    function copyReqCurl(id) {
+      const req = reportData.requests.find(r => r.id === id);
+      if (!req) return;
+      
+      let curlCmd = `curl '${req.url}'`;
+      
+      if (req.method !== 'GET') {
+        curlCmd += ` -X ${req.method}`;
+      }
+      
+      if (req.reqHeaders && req.reqHeaders.length > 0) {
+        req.reqHeaders.forEach(h => {
+          curlCmd += ` -H '${h.name}: ${h.value.replace(/'/g, "\\'")}'`;
+        });
+      }
+      
+      if (req.reqBody && req.method !== 'GET') {
+        const bodyStr = typeof req.reqBody === 'string' ? req.reqBody : JSON.stringify(req.reqBody);
+        curlCmd += ` --data-raw '${bodyStr.replace(/'/g, "\\'")}'`;
+      }
+      
+      navigator.clipboard.writeText(curlCmd).then(() => {
+        const btn = document.activeElement;
+        if(btn && btn.tagName === 'BUTTON') {
+            const oldText = btn.textContent;
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = oldText, 2000);
+        } else alert('cURL copied!');
+      }).catch(err => console.error('Failed to copy', err));
+    }
+  </script>
+</body>
+</html>

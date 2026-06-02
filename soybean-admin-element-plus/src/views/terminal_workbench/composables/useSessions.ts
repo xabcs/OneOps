@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue';
+import { fetchTerminateSession } from '@/service/api/cmdb';
 
 export interface WorkbenchSession {
   id: number;
@@ -41,15 +42,39 @@ export function useSessions() {
     saveToStorage();
   }
 
-  function removeSession(sessionId: number): void {
+  async function removeSession(sessionId: number): Promise<void> {
     const index = sessions.value.findIndex(s => s.id === sessionId);
     if (index !== -1) {
+      // 先调用后端 API 终止会话
+      try {
+        await fetchTerminateSession(sessionId);
+      } catch (error) {
+        console.error('终止会话失败:', error);
+        // 即使 API 调用失败，也删除前端记录
+      }
+
+      // 删除前端记录
       sessions.value.splice(index, 1);
       if (activeSessionId.value === sessionId) {
         activeSessionId.value = sessions.value.length > 0 ? sessions.value[0].id : null;
       }
       saveToStorage();
     }
+  }
+
+  // 批量终止所有会话（用于页面关闭前）
+  async function terminateAllSessions(): Promise<void> {
+    const sessionIds = sessions.value.map(s => s.id);
+    await Promise.allSettled(
+      sessionIds.map(id => fetchTerminateSession(id))
+    );
+  }
+
+  // 清理所有会话（不调用 API，只清理前端）
+  function clearAllSessions(): void {
+    sessions.value = [];
+    activeSessionId.value = null;
+    saveToStorage();
   }
 
   function switchSession(sessionId: number): void {
@@ -110,6 +135,8 @@ export function useSessions() {
     addSession,
     removeSession,
     switchSession,
-    updateSession
+    updateSession,
+    terminateAllSessions,
+    clearAllSessions
   };
 }

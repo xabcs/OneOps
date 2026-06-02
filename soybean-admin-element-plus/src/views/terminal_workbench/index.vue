@@ -1,19 +1,24 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { computed, defineAsyncComponent, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { onKeyStroke } from '@vueuse/core';
 import { fetchGetServerById } from '@/service/api';
-import ServerConnectDialog from '@/components/ServerConnectDialog/index.vue';
+import { localStg } from '@/utils/storage';
 import SessionTabs from './components/SessionTabs.vue';
 import TerminalArea from './components/TerminalArea.vue';
 import AssetTree from './components/AssetTree.vue';
 import { useSessions } from './composables/useSessions';
 import { useBroadcast } from './composables/useBroadcast';
 
+// 懒加载连接对话框组件
+const ServerConnectDialog = defineAsyncComponent(() =>
+  import('@/components/ServerConnectDialog/index.vue')
+);
+
 defineOptions({ name: 'TerminalWorkbench' });
 
 const route = useRoute();
-const { sessions, activeSession, addSession, removeSession, switchSession, updateSession } = useSessions();
+const { sessions, activeSession, addSession, removeSession, switchSession, updateSession, terminateAllSessions } = useSessions();
 const { broadcast, onMessage, dispose } = useBroadcast('oneops-workbench');
 
 const showAssetTree = ref(true);
@@ -66,6 +71,8 @@ onUnmounted(() => {
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
   }
+  // 移除页面关闭监听
+  window.removeEventListener('beforeunload', handleBeforeUnload);
 });
 
 // 监听其他标签页的消息
@@ -102,18 +109,12 @@ onMounted(async () => {
       const serverRes = await fetchGetServerById(Number(serverId));
       const serverDetail = serverRes.data;
 
-      console.log('[TerminalWorkbench] serverDetail:', serverDetail);
-      console.log('[TerminalWorkbench] credentialId from URL:', credentialId);
-
       if (serverDetail) {
-        // 显示连接对话框，传递凭证ID
-        connectingServer.value = serverDetail;
-        // 如果有凭证ID，存储起来供连接对话框使用
+        // 设置凭证ID
         if (credentialId) {
-          (connectingServer.value as any).credentialId = Number(credentialId);
-          console.log('[TerminalWorkbench] 设置 credentialId:', (connectingServer.value as any).credentialId);
+          (serverDetail as any).credentialId = Number(credentialId);
         }
-        console.log('[TerminalWorkbench] 准备显示连接对话框, showConnectDialog.value = true');
+        connectingServer.value = serverDetail;
         showConnectDialog.value = true;
       }
     } catch (error) {
@@ -144,8 +145,81 @@ onMounted(async () => {
   }
 });
 
-onUnmounted(() => {
-  dispose();
+// 页面关闭前终止所有会话
+function handleBeforeUnload() {
+  if (sessions.value.length > 0) {
+    const token = localStg.get('token') || '';
+
+    // 使用 fetch + keepalive 替代 sendBeacon，支持 Authorization header
+    sessions.value.forEach(session => {
+      fetch(`/api/cmdb/sessions/${session.id}/terminate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        keepalive: true  // 允许页面关闭后继续发送
+      }).catch(err => {
+        // 静默处理错误，页面关闭时无法显示错误
+        console.error('终止会话失败:', err);
+      });
+    });
+  }
+}
+
+onMounted(async () => {
+  broadcast('workbench-opened', { workbenchId: 'oneops-workbench' });
+
+  // 添加页面关闭监听
+  window.addEventListener('beforeunload', handleBeforeUnload);
+
+  // 从 URL 参数加载服务器信息并显示连接对话框
+  const serverId = route.query.serverId as string;
+  const serverName = route.query.serverName as string;
+  const serverIp = route.query.serverIp as string;
+  const serverEnv = route.query.serverEnv as string;
+  const credentialId = route.query.credentialId as string;
+
+  if (serverId) {
+    try {
+      // 获取服务器详情
+      const serverRes = await fetchGetServerById(Number(serverId));
+      const serverDetail = serverRes.data;
+
+      if (serverDetail) {
+        // 设置凭证ID
+        if (credentialId) {
+          (serverDetail as any).credentialId = Number(credentialId);
+        }
+        connectingServer.value = serverDetail;
+        showConnectDialog.value = true;
+      }
+    } catch (error) {
+      console.error('获取服务器详情失败:', error);
+      window.$message?.error('获取服务器详情失败');
+    }
+  }
+
+  // 从 URL 参数加载初始会话（用于已经建立的连接）
+  const sessionId = route.query.sessionId as string;
+  const websocketUrl = route.query.websocketUrl as string;
+  const loginAccount = route.query.loginAccount as string;
+
+  if (sessionId && websocketUrl) {
+    addSession({
+      id: Number(sessionId),
+      serverId: 0,
+      serverName: serverName || '未知主机',
+      serverIp: serverIp || '',
+      loginAccount: loginAccount || '',
+      protocol: 'ssh',
+      status: 'connected',
+      connected: true,
+      duration: 0,
+      startedAt: new Date().toISOString(),
+      websocketUrl
+    });
+  }
 });
 
 // 会话事件处理
@@ -175,29 +249,12 @@ function handleSessionDisconnected(sessionId: number, reason: string) {
 // 当前会话的 serverId 列表
 const currentSessionIds = computed(() => sessions.value.map(s => s.serverId));
 
-// 处理主机连接
-async function handleConnect(server: CMDB.Server & { loginAccount?: string }) {
+// 处理主机连接（优化：直接使用传入的 server 对象，避免重复请求）
+function handleConnect(server: CMDB.Server & { loginAccount?: string }) {
   console.log('[index.vue] handleConnect 被调用:', server);
-  try {
-    // 获取服务器详情
-    const serverRes = await fetchGetServerById(server.id);
-    const serverDetail = serverRes.data;
-
-    if (!serverDetail) {
-      console.error('获取服务器详情失败');
-      window.$message?.error('获取服务器详情失败');
-      return;
-    }
-
-    console.log('[index.vue] 服务器详情:', serverDetail);
-    // 显示连接对话框
-    connectingServer.value = serverDetail;
-    showConnectDialog.value = true;
-    console.log('[index.vue] 显示对话框');
-  } catch (error: any) {
-    console.error('连接失败:', error);
-    window.$message?.error(`连接失败: ${error?.message || '未知错误'}`);
-  }
+  // 直接使用传入的 server 对象，不再重复请求服务器详情
+  connectingServer.value = server;
+  showConnectDialog.value = true;
 }
 
 // 连接成功回调
@@ -281,6 +338,7 @@ function toggleFullscreen() {
           @remove="removeSession"
           @connect="handleConnect"
           @toggle-asset-tree="toggleAssetTree"
+          @toggle-fullscreen="toggleFullscreen"
         />
         <TerminalArea
           :active-session="activeSession"
@@ -292,17 +350,37 @@ function toggleFullscreen() {
       </div>
     </div>
 
-    <!-- 连接对话框 -->
-    <ServerConnectDialog
-      v-if="connectingServer"
-      v-model:visible="showConnectDialog"
-      :server-id="connectingServer.id"
-      :server-name="connectingServer.hostname"
-      :server-ip="connectingServer.ip"
-      :server-env="connectingServer.env"
-      :credential-id="(connectingServer as any).credentialId"
-      @connected="handleConnected"
-    />
+    <!-- 连接对话框（懒加载 + 预加载 + 缓存） -->
+    <Suspense>
+      <template #default>
+        <KeepAlive>
+          <ServerConnectDialog
+            v-if="connectingServer"
+            v-model:visible="showConnectDialog"
+            :server-id="connectingServer.id"
+            :server-name="connectingServer.hostname"
+            :server-ip="connectingServer.ip"
+            :server-env="connectingServer.env"
+            :credential-id="(connectingServer as any).credentialId"
+            @connected="handleConnected"
+          />
+        </KeepAlive>
+      </template>
+      <template #fallback>
+        <!-- 加载状态 -->
+        <ElDialog
+          :model-value="showConnectDialog"
+          title="连接主机"
+          width="600px"
+          :close-on-click-modal="false"
+        >
+          <div class="dialog-loading">
+            <icon-mdi-loading class="loading-icon" />
+            <span>加载中...</span>
+          </div>
+        </ElDialog>
+      </template>
+    </Suspense>
   </div>
 </template>
 
@@ -364,5 +442,30 @@ function toggleFullscreen() {
   flex-direction: column;
   overflow: hidden;
   background: #050505;
+}
+
+/* 对话框加载状态 */
+.dialog-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 12px;
+  color: #888;
+}
+
+.dialog-loading .loading-icon {
+  font-size: 24px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

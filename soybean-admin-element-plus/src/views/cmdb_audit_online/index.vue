@@ -52,8 +52,68 @@ async function handleTerminate(session: Bastion.BastionSession) {
     window.$message?.success('会话已断开');
     refresh();
   } catch (error: any) {
-    window.$message?.error(error.message || '断开会话失败');
+    // 处理 401/404 等错误，说明会话已不存在
+    if (error?.response?.status === 401 || error?.response?.status === 404) {
+      window.$message?.warning('会话已断开或不存在，已从列表移除');
+      // 从列表中移除该会话
+      sessions.value = sessions.value.filter(s => s.id !== session.id);
+      refresh(); // 刷新统计
+    } else {
+      window.$message?.error(error.message || '断开会话失败');
+    }
   }
+}
+
+// 批量清理无效会话
+async function handleCleanupInvalidSessions() {
+  try {
+    await ElMessageBox.confirm(
+      '这将尝试断开所有显示的在线会话，已断开的会话将自动从列表移除。是否继续？',
+      '清理无效会话',
+      {
+        confirmButtonText: '开始清理',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    );
+  } catch {
+    return;
+  }
+
+  loading.value = true;
+  let successCount = 0;
+  let invalidCount = 0;
+
+  // 并发尝试断开所有会话
+  const promises = sessions.value.map(async session => {
+    try {
+      await fetchTerminateSession(session.id);
+      successCount++;
+      return { id: session.id, valid: true };
+    } catch (error: any) {
+      // 401/404 表示会话已不存在（无效）
+      if (error?.response?.status === 401 || error?.response?.status === 404) {
+        invalidCount++;
+        return { id: session.id, valid: false };
+      }
+      throw error;
+    }
+  });
+
+  const results = await Promise.allSettled(promises);
+
+  // 从列表中移除无效会话
+  sessions.value = sessions.value.filter(session => {
+    const result = results.find((r, i) => i === sessions.value.indexOf(session));
+    return result?.status === 'fulfilled' && (result.value as any).value.valid;
+  });
+
+  loading.value = false;
+  refresh(); // 刷新统计
+
+  window.$message?.success(
+    `清理完成！成功断开 ${successCount} 个会话，移除 ${invalidCount} 个无效会话`
+  );
 }
 
 function refresh() {
@@ -92,9 +152,23 @@ onUnmounted(() => {
       <template #header>
         <div class="card-header">
           <span class="title">在线会话</span>
-          <ElButton type="primary" @click="refresh">刷新</ElButton>
+          <div class="header-actions">
+            <ElButton type="warning" @click="handleCleanupInvalidSessions">清理无效会话</ElButton>
+            <ElButton type="primary" @click="refresh">刷新</ElButton>
+          </div>
         </div>
       </template>
+
+      <ElAlert
+        type="info"
+        :closable="false"
+        style="margin-bottom: 16px"
+      >
+        <template #default>
+          在线会话列表可能包含已失效的会话（服务器重启、网络中断等原因）。
+          使用「清理无效会话」功能可自动移除已断开的会话。
+        </template>
+      </ElAlert>
 
       <div class="stats-cards">
         <div class="stat-card stat-active">
@@ -158,6 +232,11 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .title {

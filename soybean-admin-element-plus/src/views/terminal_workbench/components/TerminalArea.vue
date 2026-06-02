@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue';
+import { onUnmounted, ref, watch } from 'vue';
 import SSHTerminal from '@/components/SSHTerminal/index.vue';
 
 // 扩展 Window 接口
@@ -27,7 +27,6 @@ interface Props {
 interface Emits {
   (e: 'connected', sessionId: number): void;
   (e: 'disconnected', sessionId: number, reason: string): void;
-  (e: 'toggleFullscreen'): void;
 }
 
 const props = defineProps<Props>();
@@ -81,13 +80,6 @@ onUnmounted(() => {
   }
 });
 
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-}
-
 function handleConnected(sessionId: number) {
   emit('connected', sessionId);
 }
@@ -95,15 +87,6 @@ function handleConnected(sessionId: number) {
 function handleDisconnected(sessionId: number, reason: string) {
   emit('disconnected', sessionId, reason);
 }
-
-function toggleFullscreen() {
-  emit('toggleFullscreen');
-}
-
-// 获取当前显示的时长
-const currentDuration = computed(() => {
-  return props.activeSession ? sessionDurations.value[props.activeSession.id] || 0 : 0;
-});
 </script>
 
 <template>
@@ -115,21 +98,6 @@ const currentDuration = computed(() => {
     </div>
 
     <template v-else>
-      <!-- 终端头部 -->
-      <div class="terminal-header">
-        <div class="header-left">
-          <span class="status" :class="{ online: activeSession.connected }"></span>
-          <span class="name">{{ activeSession.serverName }}</span>
-          <span class="ip">{{ activeSession.loginAccount }}@{{ activeSession.serverIp }}</span>
-        </div>
-        <div class="header-right">
-          <span class="time">{{ formatDuration(currentDuration) }}</span>
-          <ElButton size="small" link class="fullscreen-btn" @click="toggleFullscreen">
-            <icon-mdi-arrow-expand-all />
-          </ElButton>
-        </div>
-      </div>
-
       <!-- 终端内容 - 为所有会话创建SSHTerminal实例，但只显示活跃会话 -->
       <div class="terminal-content">
         <template v-for="session in sessions" :key="session.id">
@@ -189,73 +157,6 @@ const currentDuration = computed(() => {
 .empty p {
   margin: 0;
   font-size: 11px;
-}
-
-.terminal-header {
-  height: 24px;
-  padding: 0 10px;
-  background: #1a1a1a;
-  border-bottom: 1px solid #333333;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.status {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #666;
-  flex-shrink: 0;
-}
-
-.status.online {
-  background: #bbb;
-}
-
-.name {
-  font-size: 11px;
-  font-weight: 500;
-  color: #e8e8e8;
-}
-
-.ip {
-  font-size: 10px;
-  color: #999;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.time {
-  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-  font-size: 10px;
-  color: #bbb;
-}
-
-.fullscreen-btn {
-  padding: 2px;
-  color: #999;
-  font-size: 14px;
-}
-
-.fullscreen-btn:hover {
-  color: #ccc;
 }
 
 .terminal-content {
