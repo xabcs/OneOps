@@ -235,6 +235,7 @@ const local: App.I18n.Schema = {
     cmdb_config_agents: 'Agent Management',
     cmdb_terminal: 'SSH Terminal',
     cmdb_terminal_workbench: 'Terminal Workbench',
+    terminal: 'Terminal Workbench',
     plugin: 'Plugin',
     plugin_copy: 'Copy',
     plugin_charts: 'Charts',

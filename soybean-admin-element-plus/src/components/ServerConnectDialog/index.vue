@@ -32,6 +32,7 @@ const selectedCredential = computed(() => availableCredentials.value.find(c => c
 
 // 检查连接权限，获取可用凭证列表
 async function checkPermission() {
+  console.log('[ServerConnectDialog] checkPermission 开始，serverId:', props.serverId);
   loading.value = true;
   hasPermission.value = true;
   permissionError.value = '';
@@ -40,6 +41,8 @@ async function checkPermission() {
 
   try {
     const { data, error } = await fetchCheckConnectPermission(props.serverId);
+
+    console.log('[ServerConnectDialog] fetchCheckConnectPermission 响应:', { data, error });
 
     if (error) {
       hasPermission.value = false;
@@ -50,6 +53,8 @@ async function checkPermission() {
     if (data) {
       hasPermission.value = data.hasPermission;
       availableCredentials.value = data.credentials || [];
+      console.log('[ServerConnectDialog] hasPermission:', hasPermission.value);
+      console.log('[ServerConnectDialog] credentials:', availableCredentials.value);
     } else {
       hasPermission.value = false;
       permissionError.value = '响应格式错误';
@@ -64,10 +69,12 @@ async function checkPermission() {
     } else {
       // 默认选中第一个凭证
       selectedCredentialId.value = availableCredentials.value[0].id;
+      console.log('[ServerConnectDialog] 选中的凭证ID:', selectedCredentialId.value);
     }
   } catch (err: any) {
     hasPermission.value = false;
     permissionError.value = err?.message || '检查权限失败';
+    console.error('[ServerConnectDialog] checkPermission 异常:', err);
   } finally {
     loading.value = false;
   }

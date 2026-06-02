@@ -8,7 +8,9 @@
     "dev:backend": "cd backend && air",
     "dev:frontend": "cd frontend && npm run dev",
     "build": "cd frontend && npm run build",
-    "preview": "cd frontend && npm run preview"
+    "preview": "cd frontend && npm run preview",
+    "typecheck": "cd soybean-admin-element-plus && pnpm typecheck",
+    "lint": "cd soybean-admin-element-plus && pnpm lint"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

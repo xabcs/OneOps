@@ -130,6 +130,7 @@ declare module "@elegant-router/types" {
     "system": "/system";
     "system_attributes": "/system/attributes";
     "terminal": "/terminal";
+    "terminal_home": "/terminal/home";
     "terminal_workbench": "/terminal/workbench";
     "user-center": "/user-center";
   };
@@ -288,6 +289,7 @@ declare module "@elegant-router/types" {
     | "plugin_typeit"
     | "plugin_video"
     | "system_attributes"
+    | "terminal_home"
     | "terminal_workbench"
     | "user-center"
   >;

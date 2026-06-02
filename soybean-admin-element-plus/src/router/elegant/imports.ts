@@ -90,6 +90,7 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   plugin_typeit: () => import("@/views/plugin/typeit/index.vue"),
   plugin_video: () => import("@/views/plugin/video/index.vue"),
   system_attributes: () => import("@/views/system_attributes/index.vue"),
+  terminal: () => import("@/views/terminal/index.vue"),
   terminal_workbench: () => import("@/views/terminal_workbench/index.vue"),
   "user-center": () => import("@/views/user-center/index.vue"),
 };

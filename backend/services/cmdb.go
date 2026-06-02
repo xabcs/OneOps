@@ -593,12 +593,31 @@ func (s *CMDBService) GetServerConfig(hostname, ip, sshUser string, sshPort int)
 // GetServerGroups 获取主机分组列表（树形结构）
 func (s *CMDBService) GetServerGroups() ([]models.ServerGroup, error) {
 	var groups []models.ServerGroup
-	// 仅加载 ID，避免把所有 Server 字段全部拉出来（列表页只需要计数）
-	err := db.Preload("Servers", func(db *gorm.DB) *gorm.DB {
-		return db.Select("servers.id")
-	}).Order("sort_order ASC, id ASC").Find(&groups).Error
+	// 加载所有分组
+	err := db.Order("sort_order ASC, id ASC").Find(&groups).Error
 	if err != nil {
 		return nil, err
+	}
+
+	// 为每个分组加载直接关联的主机ID（用于计数）
+	groupServerMap := make(map[uint][]uint)
+	var relations []models.ServerGroupRelation
+	db.Find(&relations)
+
+	for _, relation := range relations {
+		groupServerMap[relation.GroupID] = append(groupServerMap[relation.GroupID], relation.ServerID)
+	}
+
+	// 为每个分组设置 Servers 字段（仅包含ID用于计数）
+	for i := range groups {
+		serverIDs := groupServerMap[groups[i].ID]
+		var servers []models.Server
+		if len(serverIDs) > 0 {
+			for _, sid := range serverIDs {
+				servers = append(servers, models.Server{ID: sid})
+			}
+		}
+		groups[i].Servers = servers
 	}
 
 	// 构建树形结构
@@ -610,6 +629,7 @@ func (s *CMDBService) buildGroupTree(groups []models.ServerGroup, parentID uint)
 	var result []models.ServerGroup
 	for _, group := range groups {
 		if group.ParentID == parentID {
+			// 递归构建子树
 			group.Children = s.buildGroupTree(groups, group.ID)
 			result = append(result, group)
 		}

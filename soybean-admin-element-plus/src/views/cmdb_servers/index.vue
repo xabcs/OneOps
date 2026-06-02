@@ -36,7 +36,6 @@ import {
 } from '@/service/api';
 import { views } from '@/router/elegant/imports';
 import { $t } from '@/locales';
-import ServerConnectDialog from '@/components/ServerConnectDialog/index.vue';
 import { AlertBadge, MiniTrendChart, ServiceStatusIcon } from '@/components/MonitoringComponents';
 
 defineOptions({ name: 'CmdbServers' });
@@ -134,6 +133,10 @@ const searchForm = reactive({
   ip: ''
 });
 
+// 新搜索方式（Proxmox风格）
+const searchType = ref('hostname'); // hostname | ip | group
+const searchKeyword = ref('');
+
 // ========== SSH凭证相关 ==========
 const userCredentials = ref<CMDB.SSHCredential[]>([]); // credential_type=user
 const systemCredentials = ref<CMDB.SSHCredential[]>([]); // credential_type=system
@@ -147,10 +150,6 @@ const cabinets = ref<CMDB.Cabinet[]>([]);
 
 // ========== 标签相关 ==========
 const serverTags = ref<CMDB.ServerTag[]>([]);
-
-// ========== 连接相关 ==========
-const connectDialogVisible = ref(false);
-const selectedServer = ref<CMDB.Server | null>(null);
 
 // SSH终端相关
 const sshTerminalVisible = ref(false);
@@ -332,12 +331,27 @@ async function getServers() {
       params.groupId = selectedGroupId.value;
     }
 
-    // 添加搜索条件
+    // 旧的搜索方式（保持兼容）
     if (searchForm.hostname) {
       params.hostname = searchForm.hostname;
     }
     if (searchForm.ip) {
       params.ip = searchForm.ip;
+    }
+
+    // 新的搜索方式（Proxmox风格）
+    if (searchKeyword.value) {
+      switch (searchType.value) {
+        case 'hostname':
+          params.hostname = searchKeyword.value;
+          break;
+        case 'ip':
+          params.ip = searchKeyword.value;
+          break;
+        case 'group':
+          // 分组搜索暂不支持关键字，仅依赖树选择
+          break;
+      }
     }
 
     const { data } = await fetchGetServers(params);
@@ -452,6 +466,36 @@ function handleReset() {
   searchForm.ip = '';
   pagination.page = 1;
   getServers();
+}
+
+// 创建下拉菜单处理
+function handleCreateCommand(command: string) {
+  switch (command) {
+    case 'add':
+      handleAdd();
+      break;
+    case 'import':
+      ElNotification.info('批量导入功能开发中...');
+      break;
+  }
+}
+
+// 批量操作下拉菜单处理
+function handleBatchCommand(command: string) {
+  switch (command) {
+    case 'test-connection':
+      handleBatchTestConnection();
+      break;
+    case 'batch-deploy':
+      handleBatchDeploy();
+      break;
+    case 'batch-uninstall':
+      handleBatchUninstall();
+      break;
+    case 'batch-delete':
+      handleBatchDelete();
+      break;
+  }
 }
 
 // 刷新分组树
@@ -1026,10 +1070,18 @@ function handleAdd() {
 
 // 打开编辑抽屉
 function handleEdit(row: CMDB.Server) {
+  console.log('[handleEdit] row 数据:', row);
+  console.log('[handleEdit] row.groups:', row.groups);
+  console.log('[handleEdit] groupTreeForSelect:', groupTreeForSelect.value);
+
   dialogTitle.value = '编辑主机';
   serverType.value = row.cloudInfo ? 'cloud' : 'normal';
   submitError.value = ''; // 清除错误信息
   editDrawerActiveTab.value = 'basic'; // 默认显示基础信息tab
+
+  const groupIds = row.groups?.map(g => g.id) || [];
+  console.log('[handleEdit] 计算出的 groupIds:', groupIds);
+
   Object.assign(serverForm, {
     id: row.id,
     hostname: row.hostname,
@@ -1040,7 +1092,7 @@ function handleEdit(row: CMDB.Server) {
       (row.sshCredentialId ? [row.sshCredentialId] : []),
     systemCredentialId: row.systemCredentialId || row.systemCredential?.id || undefined,
     serverType: row.serverType,
-    groupIds: row.groups?.map(g => g.id) || [],
+    groupIds: groupIds,
     tagIds: row.tags?.map(t => t.id) || [],
     roomId: row.cabinet?.roomId,
     cabinetId: row.cabinetId,
@@ -1111,92 +1163,18 @@ async function loadServerAttributes(serverId: number) {
 
 // 打开连接对话框
 async function handleConnect(row: CMDB.Server) {
-  selectedServer.value = row;
-
-  // 检查连接权限和可用凭证
-  try {
-    const { data: permissionData } = await fetchCheckConnectPermission(row.id);
-
-    if (!permissionData?.hasPermission) {
-      window.$message?.error('您没有连接此服务器的权限');
-      return;
-    }
-
-    const credentials = permissionData.credentials || [];
-
-    if (credentials.length === 0) {
-      window.$message?.error('服务器未绑定任何凭证，请先在主机编辑页面绑定 SSH 凭证');
-      return;
-    }
-
-    // 无论有几个凭证，都显示对话框
-    connectDialogVisible.value = true;
-  } catch (error: any) {
-    window.$message?.error(`检查连接权限失败: ${error?.message || '未知错误'}`);
-  }
-}
-
-// 执行连接
-async function performConnect(serverId: number, credentialId: number) {
-  try {
-    const { data, error } = await fetchConnectServer(serverId, {
-      protocol: 'ssh',
-      credentialId
-    });
-
-    if (error) {
-      window.$message?.error(`连接失败: ${error.message || '未知错误'}`);
-      return;
-    }
-
-    if (data) {
-      // 连接成功，打开工作台
-      const credential = selectedServer.value?.credentials?.find((c: any) => c.id === credentialId);
-      const loginAccount = credential?.username || 'root';
-
-      const params = new URLSearchParams({
-        sessionId: data.sessionId.toString(),
-        websocketUrl: data.websocketUrl || '',
-        serverName: selectedServer.value?.hostname || '',
-        serverIp: selectedServer.value?.ip || '',
-        loginAccount
-      });
-
-      // 打开工作台
-      window.open(`/terminal/workbench?${params.toString()}`, 'oneops-workbench');
-
-      window.$message?.success('连接成功，正在打开工作台...');
-    }
-  } catch (error: any) {
-    window.$message?.error(`连接失败: ${error?.message || '未知错误'}`);
-  }
-}
-
-// 查看监控详情
-function handleViewMonitoring(row: CMDB.Server) {
-  router.push({
-    name: 'monitoring_servers-detail',
-    query: { id: String(row.id) }
-  });
-}
-
-// 连接成功处理（对话框方式）
-function handleConnected(sessionId: number, websocketUrl: string, loginAccount?: string) {
-  connectDialogVisible.value = false;
-
+  // 直接打开终端工作台，传递服务器ID
   const params = new URLSearchParams({
-    sessionId: sessionId.toString(),
-    websocketUrl,
-    serverName: selectedServer.value?.hostname || '',
-    serverIp: selectedServer.value?.ip || '',
-    loginAccount: loginAccount || currentLoginAccount.value || 'root'
+    serverId: row.id.toString(),
+    serverName: row.hostname,
+    serverIp: row.ip,
+    serverEnv: row.env || 'unknown'
   });
 
-  // 打开工作台，使用命名窗口避免重复打开
-  window.open(`/cmdb/terminal/workbench?${params.toString()}`, 'oneops-workbench');
-
-  window.$message?.success('连接成功，正在打开工作台...');
+  // 使用命名窗口打开终端工作台
+  window.open(`/terminal?${params.toString()}`, 'oneops-workbench');
 }
+
 
 function throwIfRequestFailed(result: { error: unknown }) {
   if (result.error) {
@@ -1459,6 +1437,8 @@ function handleMoreAction(cmd: string, row: CMDB.Server) {
   if (cmd === 'delete') handleDelete(row);
   if (cmd === 'edit') handleEdit(row);
   if (cmd === 'sync-metrics') handleSyncMetrics(row);
+  if (cmd === 'monitoring') handleViewMonitoring(row);
+  if (cmd === 'detail') handleViewDetail(row);
   if (cmd === 'agent-deploy') handleAgentDeploy(row);
   if (cmd === 'agent-restart') handleAgentRestart(row);
   if (cmd === 'agent-uninstall') handleAgentUninstall(row);
@@ -1835,8 +1815,8 @@ onUnmounted(() => {
 <template>
   <div class="h-full flex gap-12px overflow-hidden">
     <!-- 左侧分组树 -->
-    <div class="w-220px flex flex-col flex-shrink-0">
-      <ElCard class="flex flex-col flex-1" shadow="never" body-style="padding: 12px;">
+    <div class="w-220px flex flex-col flex-shrink-0 group-container">
+      <ElCard class="flex flex-col flex-1 group-tree-card" shadow="never" body-style="padding: 12px; border-radius: 0;">
         <!-- 树头部 -->
         <div class="mb-8px flex items-center justify-between">
           <span class="text-14px text-gray-700 font-bold">资产分组</span>
@@ -1916,101 +1896,86 @@ onUnmounted(() => {
 
     <!-- 右侧主机列表 -->
     <div class="min-w-0 flex flex-col flex-1">
-      <!-- 主机列表卡片 -->
-      <ElCard class="flex-1" shadow="never" body-style="padding: 12px;">
-        <template #header>
-          <div class="w-full flex items-center justify-between">
-            <div class="flex-1">
-              <!-- 搜索表单 -->
-              <ElForm :model="searchForm" inline class="search-form-compact">
-                <ElFormItem label="主机名">
-                  <ElInput
-                    v-model="searchForm.hostname"
-                    placeholder="请输入主机名"
-                    clearable
-                    style="width: 160px"
-                    @keyup.enter="handleSearch"
-                  />
-                </ElFormItem>
-                <ElFormItem label="IP地址">
-                  <ElInput
-                    v-model="searchForm.ip"
-                    placeholder="请输入IP地址"
-                    clearable
-                    style="width: 160px"
-                    @keyup.enter="handleSearch"
-                  />
-                </ElFormItem>
-                <ElFormItem>
-                  <ElButton type="primary" plain @click="handleSearch">
-                    <template #icon>
-                      <icon-ic-round-search class="text-icon" />
-                    </template>
-                    搜索
-                  </ElButton>
-                  <ElButton @click="handleReset">
-                    <template #icon>
-                      <icon-ic-round-refresh class="text-icon" />
-                    </template>
-                    重置
-                  </ElButton>
-                </ElFormItem>
-              </ElForm>
-            </div>
-            <ElSpace direction="horizontal" wrap justify="end">
-              <!-- 批量操作按钮组 -->
-              <template v-if="selectedIds.length > 0">
-                <ElButton type="success" plain @click="handleBatchTestConnection">
-                  <template #icon>
-                    <icon-mdi-wifi class="text-icon" />
-                  </template>
-                  测试连接 ({{ selectedIds.length }})
-                </ElButton>
-                <ElButton type="primary" plain @click="handleBatchDeploy">
-                  <template #icon>
-                    <icon-mdi-download class="text-icon" />
-                  </template>
-                  批量部署 ({{ selectedIds.length }})
-                </ElButton>
-                <ElButton type="warning" plain @click="handleBatchUninstall">
-                  <template #icon>
-                    <icon-mdi-delete-forever class="text-icon" />
-                  </template>
-                  批量卸载 ({{ selectedIds.length }})
-                </ElButton>
-                <ElButton type="danger" plain @click="handleBatchDelete">
-                  <template #icon>
-                    <icon-ic-round-delete class="text-icon" />
-                  </template>
-                  批量删除 ({{ selectedIds.length }})
-                </ElButton>
+      <!-- 头部：搜索和操作按钮（同一行）-->
+      <div class="flex items-center justify-between gap-12px mb-8px">
+        <!-- 左侧：主操作按钮 -->
+        <div class="flex items-center gap-8px">
+          <ElDropdown trigger="click" @command="handleCreateCommand">
+            <ElButton type="success" :style="{ backgroundColor: '#00A67D', borderColor: '#00A67D', color: '#fff', borderRadius: '0' }">
+              <template #icon>
+                <icon-ic-round-plus class="text-icon" />
               </template>
-              <ElButton type="primary" plain @click="handleAdd">
-                <template #icon>
-                  <icon-ic-round-plus class="text-icon" />
-                </template>
-                新增
-              </ElButton>
-              <ElButton @click="getServers">
-                <template #icon>
-                  <icon-mdi-refresh class="text-icon" :class="{ 'animate-spin': loading }" />
-                </template>
-                刷新
-              </ElButton>
-            </ElSpace>
-          </div>
-        </template>
+              创建
+              <icon-ic-round-keyboard-arrow-down class="ml-4px text-icon" />
+            </ElButton>
+            <template #dropdown>
+              <ElDropdownMenu>
+                <ElDropdownItem command="add">新增主机</ElDropdownItem>
+                <ElDropdownItem command="import">批量导入</ElDropdownItem>
+              </ElDropdownMenu>
+            </template>
+          </ElDropdown>
+          <ElDropdown trigger="click" @command="handleBatchCommand" :disabled="selectedIds.length === 0">
+            <ElButton plain :style="{ borderRadius: '0' }">
+              更多操作
+              <icon-ic-round-keyboard-arrow-down class="ml-4px text-icon" />
+            </ElButton>
+            <template #dropdown>
+              <ElDropdownMenu>
+                <ElDropdownItem command="test-connection" :disabled="selectedIds.length === 0">
+                  测试连接 ({{ selectedIds.length }})
+                </ElDropdownItem>
+                <ElDropdownItem command="batch-deploy" :disabled="selectedIds.length === 0">
+                  批量部署 ({{ selectedIds.length }})
+                </ElDropdownItem>
+                <ElDropdownItem command="batch-uninstall" :disabled="selectedIds.length === 0">
+                  批量卸载 ({{ selectedIds.length }})
+                </ElDropdownItem>
+                <ElDropdownItem command="batch-delete" :disabled="selectedIds.length === 0" style="color: #f56c6c">
+                  批量删除 ({{ selectedIds.length }})
+                </ElDropdownItem>
+              </ElDropdownMenu>
+            </template>
+          </ElDropdown>
+        </div>
 
+        <!-- 右侧：搜索栏和刷新按钮 -->
+        <div class="flex items-center gap-8px search-inputs">
+          <ElSelect v-model="searchType" placeholder="筛选条件">
+            <ElOption label="主机名" value="hostname" />
+            <ElOption label="IP地址" value="ip" />
+            <ElOption label="分组" value="group" />
+          </ElSelect>
+          <ElInput
+            v-model="searchKeyword"
+            placeholder="搜索"
+            clearable
+            style="width: 200px"
+            @keyup.enter="handleSearch"
+          >
+            <template #suffix>
+              <icon-ic-round-search class="text-icon cursor-pointer" @click="handleSearch" />
+            </template>
+          </ElInput>
+          <ElButton text @click="getServers">
+            <icon-mdi-refresh class="text-18px" :class="{ 'animate-spin': loading }" />
+          </ElButton>
+        </div>
+      </div>
+
+      <!-- 主机列表容器 -->
+      <div class="flex-1 flex flex-col bg-white overflow-hidden">
         <!-- 列表内容 -->
-        <div class="h-[calc(100%-44px)] overflow-auto">
+        <div class="flex-1 overflow-auto">
           <ElTable
             v-loading="loading"
             height="100%"
             border
             :data="tableData"
             size="small"
+            class="server-list-table"
             :row-style="{ height: '48px' }"
-            :cell-style="{ padding: '8px 0' }"
+            :cell-style="{ padding: '0' }"
             :header-cell-style="{ backgroundColor: '#f5f7fa' }"
             stripe
             table-layout="fixed"
@@ -2029,12 +1994,12 @@ onUnmounted(() => {
               <template #default="{ row }">
                 <div class="ip-list">
                   <div class="ip-row">
-                    <span class="ip-dot ip-dot-primary"></span>
-                    <span class="ip-addr">{{ row.ip }}</span>
+                    {{ row.ip }}
+                    <span class="ip-tag-outer">外</span>
                   </div>
-                  <div v-if="row.innerIp" class="ip-row">
-                    <span class="ip-dot ip-dot-secondary"></span>
-                    <span class="ip-addr ip-addr-sub">{{ row.innerIp }}</span>
+                  <div v-if="row.innerIp" class="ip-row ip-row-inner">
+                    {{ row.innerIp }}
+                    <span class="ip-tag-inner">内</span>
                   </div>
                 </div>
               </template>
@@ -2133,55 +2098,70 @@ onUnmounted(() => {
                 <span v-else class="text-12px text-gray-400">-</span>
               </template>
             </ElTableColumn>
-            <ElTableColumn label="操作" width="280" align="center" fixed="right">
+            <ElTableColumn label="操作" width="200" align="center" fixed="right">
               <template #default="{ row }">
-                <ElButton link type="success" size="small" @click="handleConnect(row)">连接</ElButton>
-                <span class="action-divider">|</span>
                 <ElButton
-                  link
-                  type="primary"
+                  type="success"
                   size="small"
-                  :disabled="row.agentStatus !== 'running'"
-                  @click="handleViewMonitoring(row)"
+                  :style="{ backgroundColor: '#00A67D', borderColor: '#00A67D', color: '#fff' }"
+                  @click="handleConnect(row)"
                 >
-                  监控
+                  <icon-mdi-console-line class="text-14px mr-4px" />
+                  连接
                 </ElButton>
-                <span class="action-divider">|</span>
-                <ElButton link type="primary" size="small" @click="handleViewDetail(row)">详情</ElButton>
-                <span class="action-divider">|</span>
                 <ElDropdown trigger="click" @command="(cmd: string) => handleMoreAction(cmd, row)">
-                  <ElButton link size="small">...</ElButton>
+                  <ElButton size="small" class="ml-8px">
+                    <icon-ic-round-more-horiz class="text-icon" />
+                  </ElButton>
                   <template #dropdown>
                     <ElDropdownMenu>
                       <ElDropdownItem
                         v-if="row.agentStatus === 'running' || row.agentStatus === 'failed'"
                         command="sync-metrics"
                       >
+                        <icon-mdi-refresh class="mr-8px" />
                         刷新指标
                       </ElDropdownItem>
-                      <ElDropdownItem command="edit">编辑</ElDropdownItem>
-                      <!-- 部署按钮：未安装、卸载状态或失败时可部署 -->
+                      <ElDropdownItem
+                        v-if="row.agentStatus === 'running'"
+                        command="monitoring"
+                      >
+                        <icon-mdi-chart-line class="mr-8px" />
+                        监控详情
+                      </ElDropdownItem>
+                      <ElDropdownItem command="detail">
+                        <icon-ic-round-info class="mr-8px" />
+                        主机详情
+                      </ElDropdownItem>
+                      <ElDropdownItem command="edit">
+                        <icon-ic-round-edit class="mr-8px" />
+                        编辑
+                      </ElDropdownItem>
                       <ElDropdownItem
                         v-if="!row.agentStatus || row.agentStatus === 'uninstalled' || row.agentStatus === 'failed'"
                         command="agent-deploy"
                       >
+                        <icon-mdi-download class="mr-8px" />
                         部署 Agent
                       </ElDropdownItem>
-                      <!-- 重启按钮：运行中或离线时可重启 -->
                       <ElDropdownItem
                         v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'"
                         command="agent-restart"
                       >
+                        <icon-mdi-restart class="mr-8px" />
                         重启 Agent
                       </ElDropdownItem>
-                      <!-- 卸载按钮：运行中或离线时可卸载 -->
                       <ElDropdownItem
                         v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'"
                         command="agent-uninstall"
                       >
+                        <icon-mdi-delete-forever class="mr-8px" />
                         卸载 Agent
                       </ElDropdownItem>
-                      <ElDropdownItem command="delete" style="color: #f56c6c">删除主机</ElDropdownItem>
+                      <ElDropdownItem divided command="delete" style="color: #f56c6c">
+                        <icon-ic-round-delete class="mr-8px" />
+                        删除主机
+                      </ElDropdownItem>
                     </ElDropdownMenu>
                   </template>
                 </ElDropdown>
@@ -2191,7 +2171,7 @@ onUnmounted(() => {
         </div>
 
         <!-- 分页 -->
-        <div v-if="tableData.length > 0" class="mt-12px flex justify-end">
+        <div v-if="tableData.length > 0" class="p-12px border-t border-gray-200 flex justify-end bg-white">
           <ElPagination
             v-model:current-page="pagination.page"
             v-model:page-size="pagination.pageSize"
@@ -2202,7 +2182,7 @@ onUnmounted(() => {
             @size-change="handlePageSizeChange"
           />
         </div>
-      </ElCard>
+      </div>
     </div>
 
     <!-- 主机表单对话框 -->
@@ -2283,7 +2263,6 @@ onUnmounted(() => {
 
           <ElFormItem label="所属分组" prop="groupIds">
             <ElTreeSelect
-              :key="dialogVisible"
               v-model="serverForm.groupIds"
               :data="groupTreeForSelect"
               :props="{ label: 'name', value: 'id', children: 'children' }"
@@ -2816,15 +2795,6 @@ onUnmounted(() => {
       </template>
     </ElDialog>
 
-    <!-- 连接对话框 -->
-    <ServerConnectDialog
-      v-model:visible="connectDialogVisible"
-      :server-id="selectedServer?.id || 0"
-      :server-name="selectedServer?.hostname || ''"
-      :server-ip="selectedServer?.ip || ''"
-      :server-env="selectedServer?.env"
-      @connected="handleConnected"
-    />
 
     <!-- SSH终端已改为路由跳转，保留连接对话框 -->
 
@@ -2997,7 +2967,10 @@ onUnmounted(() => {
               </ElDescriptionsItem>
             </ElDescriptions>
             <div style="margin-top: 16px">
-              <ElButton type="success" @click="handleConnect(drawerServer)">连接此主机</ElButton>
+              <ElButton type="success" @click="handleConnect(drawerServer)">
+                <icon-mdi-console-line style="margin-right: 4px" />
+                连接此主机
+              </ElButton>
             </div>
           </ElTabPane>
 
@@ -3137,6 +3110,50 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
+/* 去掉资产分组容器的圆角 */
+.group-container {
+  border-radius: 0 !important;
+
+  * {
+    border-radius: 0 !important;
+  }
+}
+
+/* 去掉资产分组Card的所有圆角 */
+.group-tree-card {
+  :deep(.el-card) {
+    border-radius: 0 !important;
+  }
+
+  :deep(.el-card__header) {
+    border-radius: 0 !important;
+  }
+
+  :deep(.el-card__body) {
+    border-radius: 0 !important;
+  }
+
+  :deep(.el-tree) {
+    border-radius: 0 !important;
+  }
+
+  /* 强制去掉所有子元素的圆角 */
+  * {
+    border-radius: 0 !important;
+  }
+}
+
+/* 去掉搜索框和下拉框的圆角 */
+.search-inputs {
+  :deep(.el-select__wrapper) {
+    border-radius: 0 !important;
+  }
+
+  :deep(.el-input__wrapper) {
+    border-radius: 0 !important;
+  }
+}
+
 .custom-tree-node {
   .group-node {
     &:hover {
@@ -3491,47 +3508,47 @@ onUnmounted(() => {
   font-size: 12px;
 }
 
-/* IP地址显示样式 - 圆点设计 */
+/* IP地址显示样式 - 简洁云平台风格 */
 .ip-list {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .ip-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.ip-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.ip-dot-primary {
-  background-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-
-.ip-dot-secondary {
-  background-color: #9ca3af;
-  box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.1);
-}
-
-.ip-addr {
   font-size: 12px;
-  color: #606266;
+  color: #303133;
+  font-family: ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Code', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
   font-weight: 400;
+  line-height: 1.3;
 }
 
-.ip-addr-sub {
-  font-size: 12px;
+.ip-row-inner {
+  color: #303133;
+}
+
+.ip-tag-outer,
+.ip-tag-inner {
+  font-size: 10px;
   color: #909399;
-  font-weight: 400;
+  margin-left: 6px;
+  opacity: 0.6;
+  font-weight: normal;
+  letter-spacing: 0.5px;
+}
+
+/* 统一表格字体大小 */
+.server-list-table {
+  :deep(.el-table__cell) {
+    font-size: 12px;
+  }
+  :deep(.el-table__header .cell) {
+    font-size: 12px;
+    font-weight: 500;
+  }
+  :deep(.el-tag) {
+    font-size: 12px;
+  }
 }
 
 /* 监控信息包装器 */

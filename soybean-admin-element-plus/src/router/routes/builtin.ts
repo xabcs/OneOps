@@ -1,6 +1,7 @@
 import type { CustomRoute } from '@elegant-router/types';
 import { layouts, views } from '../elegant/imports';
 import { getRoutePath, transformElegantRoutesToVueRoutes } from '../elegant/transform';
+import type { RouteRecordRaw } from 'vue-router';
 
 export const ROOT_ROUTE: CustomRoute = {
   name: 'root',
@@ -22,11 +23,11 @@ const NOT_FOUND_ROUTE: CustomRoute = {
   }
 };
 
-/** 终端工作台旧路由重定向：/cmdb/terminal/workbench → /terminal/workbench */
+/** 终端工作台旧路由重定向：/cmdb/terminal/workbench → /terminal */
 const TERMINAL_WORKBENCH_REDIRECT: CustomRoute = {
   name: 'cmdb_terminal_workbench_redirect',
   path: '/cmdb/terminal/workbench',
-  redirect: '/terminal/workbench',
+  redirect: '/terminal',
   meta: {
     title: 'cmdb_terminal_workbench_redirect',
     constant: true
@@ -38,5 +39,25 @@ const builtinRoutes: CustomRoute[] = [ROOT_ROUTE, NOT_FOUND_ROUTE, TERMINAL_WORK
 
 /** create builtin vue routes */
 export function createBuiltinVueRoutes() {
-  return transformElegantRoutesToVueRoutes(builtinRoutes, layouts, views);
+  const elegantRoutes = transformElegantRoutesToVueRoutes(builtinRoutes, layouts, views);
+
+  // 手动添加终端工作台路由
+  const terminalRoute: RouteRecordRaw = {
+    name: 'terminal',
+    path: '/terminal',
+    component: layouts.blank as any,
+    children: [
+      {
+        name: 'terminal_home',
+        path: '',
+        component: views.terminal as any,
+        meta: {
+          title: 'terminal',
+          i18nKey: 'route.terminal'
+        }
+      }
+    ]
+  };
+
+  return [...elegantRoutes, terminalRoute];
 }

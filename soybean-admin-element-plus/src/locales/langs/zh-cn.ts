@@ -237,6 +237,7 @@ const local: App.I18n.Schema = {
     cmdb_config_agents: 'Agent 管理',
     cmdb_terminal: 'SSH 终端',
     cmdb_terminal_workbench: '终端工作台',
+    terminal: '终端工作台',
     plugin_copy: '剪贴板',
     plugin_charts: '图表',
     plugin_charts_echarts: 'ECharts',

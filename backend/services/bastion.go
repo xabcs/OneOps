@@ -40,7 +40,7 @@ func (s *BastionService) CheckConnectPermission(userID uint, serverID uint) (boo
 
 	// 3. 服务器未绑定任何用户凭证
 	if len(server.Credentials) == 0 {
-		return false, nil, fmt.Errorf("服务器未绑定用户连接凭证，请先在主机编辑页面绑定 credential_type=user 的 SSH 凭证")
+		return false, nil, fmt.Errorf("服务器未绑定用户凭证，请先在主机编辑页面绑定 credential_type=user 的 SSH 凭证")
 	}
 
 	// 4. 获取用户角色

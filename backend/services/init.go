@@ -280,7 +280,7 @@ func (s *InitService) syncMenus() error {
 			// 终端管理一级目录
 			{ID: 47, Name: "终端管理", Icon: "mdi:console", Path: "/terminal", Permission: "", MenuType: "directory", Sort: 5, Status: 1, ParentID: 0},
 			// 终端管理二级菜单
-			{ID: 48, Name: "终端工作台", Icon: "mdi:monitor-dashboard", Path: "/terminal/workbench", Permission: "terminal:workbench:view", MenuType: "menu", Sort: 1, Status: 1, ParentID: 47},
+			{ID: 48, Name: "终端工作台", Icon: "mdi:monitor-dashboard", Path: "/terminal", Permission: "terminal:workbench:view", MenuType: "menu", Sort: 1, Status: 1, ParentID: 47},
 		}
 
 	addedCount := 0
