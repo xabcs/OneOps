@@ -59,6 +59,7 @@ watch(() => props.activeSession, (newVal) => {
       </div>
       <div v-else class="wb-terminal-session">
         <XTermTerminal
+          :key="activeSession.id"
           :session-id="activeSession.id"
           :server-id="activeSession.serverId"
           :server-name="activeSession.serverName"
