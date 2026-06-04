@@ -1,190 +1,202 @@
 <script setup lang="ts">
-import { onUnmounted, ref, watch } from 'vue';
-import SSHTerminal from '@/components/SSHTerminal/index.vue';
-
-// 扩展 Window 接口
-declare global {
-  interface Window {
-    sessionDurationTimers?: Record<number, any>;
-  }
-}
-
-interface Session {
-  id: number;
-  serverName: string;
-  serverIp: string;
-  loginAccount: string;
-  connected: boolean;
-  duration: number;
-  websocketUrl?: string;
-}
+import { Icon } from '@iconify/vue';
+import XTermTerminal from './XTermTerminal.vue';
+import { watch } from 'vue';
 
 interface Props {
-  activeSession: Session | null;
-  sessions: Session[]; // 接收所有会话列表
+  activeSession: any;
+  sessions: any[];
 }
 
 interface Emits {
-  (e: 'connected', sessionId: number): void;
-  (e: 'disconnected', sessionId: number, reason: string): void;
+  (e: 'toggleFullscreen'): void;
 }
 
 const props = defineProps<Props>();
-const emit = defineEmits<Emits>();
+defineEmits<Emits>();
 
-// 为每个会话维护独立的时长计时器
-const sessionDurations = ref<Record<number, number>>({});
-
-// 初始化所有会话的时长
-watch(
-  () => props.sessions,
-  sessions => {
-    sessions.forEach(session => {
-      if (!(session.id in sessionDurations.value)) {
-        sessionDurations.value[session.id] = session.duration || 0;
-      }
-    });
-  },
-  { immediate: true, deep: true }
-);
-
-// 监听活跃会话的时长更新
-watch(
-  () => props.activeSession,
-  (newSession, oldSession) => {
-    // 清理旧会话的计时器
-    if (oldSession?.id && window.sessionDurationTimers?.[oldSession.id]) {
-      clearInterval(window.sessionDurationTimers[oldSession.id]);
-      delete window.sessionDurationTimers[oldSession.id];
-    }
-
-    if (newSession?.connected) {
-      // 更新当前活跃会话的时长
-      const duration = sessionDurations.value[newSession.id] || 0;
-      if (!window.sessionDurationTimers) {
-        window.sessionDurationTimers = {};
-      }
-      window.sessionDurationTimers[newSession.id] = window.setInterval(() => {
-        sessionDurations.value[newSession.id] = (sessionDurations.value[newSession.id] || 0) + 1;
-      }, 1000);
-    }
-  },
-  { immediate: true }
-);
-
-// 清理所有计时器
-onUnmounted(() => {
-  if (window.sessionDurationTimers) {
-    Object.values(window.sessionDurationTimers).forEach(timer => clearInterval(timer));
-    window.sessionDurationTimers = {};
-  }
-});
-
-function handleConnected(sessionId: number) {
-  emit('connected', sessionId);
-}
-
-function handleDisconnected(sessionId: number, reason: string) {
-  emit('disconnected', sessionId, reason);
-}
+// 调试：监听活动会话变化
+watch(() => props.activeSession, (newVal) => {
+  console.log('=== TerminalArea 活动会话变化 ===');
+  console.log('活动会话:', newVal);
+  console.log('所有会话:', props.sessions);
+}, { deep: true });
 </script>
 
 <template>
-  <div class="terminal-area">
-    <div v-if="!activeSession" class="empty">
-      <icon-mdi-monitor-off class="empty-icon" />
-      <h3>未选择会话</h3>
-      <p>请选择一个会话或连接新主机</p>
+  <div class="wb-terminal-area">
+    <!-- 终端工具栏 -->
+    <div class="wb-terminal-toolbar">
+      <div class="wb-toolbar-section">
+        <button type="button" class="wb-toolbar-btn" title="监控">
+          <Icon icon="lucide:line-chart" class="wb-btn-icon" />
+        </button>
+      </div>
+      <div class="wb-toolbar-section">
+        <div class="wb-terminal-mode">
+          <button type="button" class="wb-mode-btn">Shell</button>
+          <button type="button" class="wb-mode-btn wb-mode-active">Agent</button>
+        </div>
+        <button type="button" class="wb-toolbar-btn" title="帮助">
+          <Icon icon="lucide:circle-help" class="wb-btn-icon" />
+        </button>
+      </div>
+      <div class="wb-toolbar-section">
+        <button type="button" class="wb-toolbar-btn" title="安全连接">
+          <Icon icon="lucide:shield-check" class="wb-btn-icon" />
+        </button>
+      </div>
     </div>
 
-    <template v-else>
-      <!-- 终端内容 - 为所有会话创建SSHTerminal实例，但只显示活跃会话 -->
-      <div class="terminal-content">
-        <template v-for="session in sessions" :key="session.id">
-          <SSHTerminal
-            v-show="activeSession.id === session.id && session.websocketUrl"
-            :session-id="session.id"
-            :websocket-url="session.websocketUrl || ''"
-            :server-name="session.serverName"
-            :server-ip="session.serverIp"
-            class="terminal-instance"
-            @connected="() => handleConnected(session.id)"
-            @disconnected="reason => handleDisconnected(session.id, reason)"
-          />
-        </template>
-
-        <div v-if="!activeSession.websocketUrl" class="disconnected">
-          <icon-mdi-connection class="disconnected-icon" />
-          <p>会话已断开</p>
-        </div>
+    <!-- 终端内容 -->
+    <div class="wb-terminal-content">
+      <div v-if="!activeSession" class="wb-terminal-placeholder">
+        <Icon icon="lucide:terminal" class="wb-placeholder-icon" />
+        <p class="wb-placeholder-title">终端工作台</p>
+        <p class="wb-placeholder-desc">请从左侧主机资产中选择主机进行连接</p>
+        <p v-if="sessions.length === 0" class="wb-placeholder-hint">当前会话数: 0</p>
+        <p v-else class="wb-placeholder-hint">当前会话数: {{ sessions.length }}</p>
       </div>
-    </template>
+      <div v-else class="wb-terminal-session">
+        <XTermTerminal
+          :session-id="activeSession.id"
+          :server-id="activeSession.serverId"
+          :server-name="activeSession.serverName"
+          :server-ip="activeSession.serverIp"
+          :login-account="activeSession.loginAccount"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
-<style scoped>
-.terminal-area {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  background: #050505;
-  overflow: hidden;
-}
-
-.empty {
+<style lang="scss">
+.wb-terminal-area {
   flex: 1;
   display: flex;
   flex-direction: column;
+  background: #1e1e1e;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.wb-terminal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  height: 32px;
+  background: #252526;
+  border-bottom: 1px solid #000000;
+  flex-shrink: 0;
+}
+
+.wb-toolbar-section {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wb-toolbar-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  color: #888;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background 0.1s;
 }
 
-.empty-icon {
-  font-size: 40px;
-  margin-bottom: 10px;
-  opacity: 0.5;
+.wb-toolbar-btn:hover {
+  background: rgba(0, 0, 0, 0.2) !important;
 }
 
-.empty h3 {
-  margin: 0 0 4px 0;
-  font-size: 13px;
-  color: #bbb;
-  font-weight: 500;
+.wb-toolbar-btn:hover .iconify,
+.wb-toolbar-btn:hover .wb-btn-icon {
+  color: #aaaaaa !important;
 }
 
-.empty p {
-  margin: 0;
+.wb-btn-icon {
+  width: 14px;
+  height: 14px;
+  color: #858585;
+}
+
+.wb-terminal-mode {
+  display: flex;
+  background: #1e1e1e;
+  border-radius: 2px;
+  padding: 1px;
+}
+
+.wb-mode-btn {
+  padding: 2px 8px;
   font-size: 11px;
+  background: transparent;
+  border: none;
+  color: #858585;
+  cursor: pointer;
+  border-radius: 1px;
+  transition: all 0.1s;
 }
 
-.terminal-content {
+.wb-mode-btn:hover {
+  color: #cccccc;
+}
+
+.wb-mode-active {
+  background: #007acc;
+  color: #ffffff;
+}
+
+.wb-terminal-content {
   flex: 1;
   overflow: hidden;
-  position: relative;
+  min-height: 0;
 }
 
-.terminal-instance {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.disconnected {
+.wb-terminal-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #888;
+  color: #858585;
+  gap: 8px;
 }
 
-.disconnected-icon {
-  font-size: 32px;
-  margin-bottom: 6px;
-  opacity: 0.5;
+.wb-placeholder-icon {
+  width: 48px;
+  height: 48px;
+  opacity: 0.3;
+}
+
+.wb-placeholder-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #cccccc;
+  margin: 0;
+}
+
+.wb-placeholder-desc {
+  font-size: 12px;
+  color: #6e6e6e;
+  margin: 0;
+}
+
+.wb-placeholder-hint {
+  font-size: 11px;
+  color: #4a4a4a;
+  margin: 0;
+}
+
+.wb-terminal-session {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 </style>

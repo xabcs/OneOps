@@ -927,8 +927,8 @@ async function handleBatchTestConnection() {
 
   // 显示结果汇总
   const summary = `SSH连接测试完成：
-        成功: ${results.success} 台
-        失败: ${results.failed} 台`;
+            成功: ${results.success} 台
+            失败: ${results.failed} 台`;
 
   if (results.failed > 0) {
     const failedServers = results.details
@@ -1206,25 +1206,79 @@ async function loadServerAttributes(serverId: number) {
 }
 
 // 打开终端工作台（在新标签页中）
-function handleConnect(row: CMDB.Server) {
-  // 获取用户凭证ID列表
-  const userCredentialIds = row.credentials?.filter(c => c.credentialType === 'user').map(c => c.id) || [];
-  const defaultCredentialId = userCredentialIds[0] || row.sshCredentialId;
+// 连接对话框
+const connectDialogVisible = ref(false);
+const connectingServer = ref<CMDB.Server | null>(null);
 
+// 打开终端工作台（在新标签页中）
+function handleConnect(row: CMDB.Server) {
+  // 在新标签页中打开终端工作台，并传递服务器信息
   const params = new URLSearchParams({
     serverId: row.id.toString(),
-    serverName: row.hostname,
-    serverIp: row.ip,
-    serverEnv: row.env || 'unknown'
+    hostname: row.hostname,
+    ip: row.ip,
+    sshUser: row.sshUser || 'root',
+    env: row.env || 'unknown',
+    agentStatus: row.agentStatus || 'unknown'
   });
 
-  // 如果有默认凭证，传递凭证ID
-  if (defaultCredentialId) {
-    params.append('credentialId', defaultCredentialId.toString());
-  }
-
-  // 在新标签页打开终端工作台
   window.open(`/terminal/workbench?${params.toString()}`, '_blank');
+}
+
+function showConnectDialog(server: CMDB.Server) {
+  connectingServer.value = server;
+  connectDialogVisible.value = true;
+}
+
+// 确认连接
+async function confirmConnect() {
+  if (!connectingServer.value) return;
+
+  try {
+    // 获取用户凭证ID列表
+    const userCredentialIds = connectingServer.value.credentials?.filter(c => c.credentialType === 'user').map(c => c.id) || [];
+    const defaultCredentialId = userCredentialIds[0] || connectingServer.value.sshCredentialId;
+
+    const params = new URLSearchParams({
+      serverId: connectingServer.value.id.toString(),
+      serverName: connectingServer.value.hostname,
+      serverIp: connectingServer.value.ip,
+      serverEnv: connectingServer.value.env || 'unknown'
+    });
+
+    // 如果有默认凭证，传递凭证ID
+    if (defaultCredentialId) {
+      params.append('credentialId', defaultCredentialId.toString());
+    }
+
+    // 在新标签页打开终端工作台
+    window.open(`/terminal/workbench?${params.toString()}`, '_blank');
+
+    // 关闭对话框
+    connectDialogVisible.value = false;
+    connectingServer.value = null;
+
+    ElNotification({
+      title: '连接成功',
+      message: `正在连接到 ${connectingServer.value.hostname}...`,
+      type: 'success',
+      duration: 2000
+    });
+  } catch (error) {
+    console.error('连接失败:', error);
+    ElNotification({
+      title: '连接失败',
+      message: '连接过程中发生错误',
+      type: 'error',
+      duration: 3000
+    });
+  }
+}
+
+// 取消连接
+function cancelConnect() {
+  connectDialogVisible.value = false;
+  connectingServer.value = null;
 }
 
 function throwIfRequestFailed(result: { error: unknown }) {
@@ -1801,25 +1855,8 @@ const drawerPermission = ref<{ credentials: CMDB.SSHCredential[] }>({
 });
 const drawerLoading = ref(false);
 
-async function handleViewDetail(row: CMDB.Server) {
-  drawerServer.value = row;
-  drawerVisible.value = true;
-  drawerActiveTab.value = 'overview';
-  drawerLoading.value = true;
-  try {
-    const [sessionsRes, permRes] = await Promise.allSettled([
-      fetchGetSessions({ serverId: row.id, pageSize: 10, page: 1 }),
-      fetchCheckConnectPermission(row.id)
-    ]);
-    if (sessionsRes.status === 'fulfilled') {
-      drawerSessions.value = sessionsRes.value.data?.list || [];
-    }
-    if (permRes.status === 'fulfilled') {
-      drawerPermission.value = permRes.value.data || { credentials: [] };
-    }
-  } finally {
-    drawerLoading.value = false;
-  }
+function handleViewDetail(row: CMDB.Server) {
+  router.push({ path: '/cmdb/server/detail', query: { id: row.id.toString() } });
 }
 
 // 获取节点类名
@@ -1866,7 +1903,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="h-full flex gap-12px overflow-hidden">
+  <div class="cmdb-servers-page h-full flex gap-12px overflow-hidden">
     <!-- 左侧分组树 -->
     <div class="group-container w-220px flex flex-col flex-shrink-0">
       <ElCard class="group-tree-card flex flex-col flex-1" shadow="never" body-style="padding: 12px; border-radius: 0;">
@@ -1955,8 +1992,15 @@ onUnmounted(() => {
         <div class="flex items-center gap-8px">
           <ElDropdown trigger="click" @command="handleCreateCommand">
             <ElButton
-              type="success"
-              :style="{ backgroundColor: '#00A67D', borderColor: '#00A67D', color: '#fff', borderRadius: '0' }"
+              type="primary"
+              :style="{
+                backgroundColor: '#0052D9',
+                borderColor: '#0052D9',
+                color: '#fff',
+                borderRadius: '0',
+                fontSize: '12px',
+                height: '30px'
+              }"
             >
               <template #icon>
                 <icon-ic-round-plus class="text-icon" />
@@ -1972,7 +2016,7 @@ onUnmounted(() => {
             </template>
           </ElDropdown>
           <ElDropdown trigger="click" :disabled="selectedIds.length === 0" @command="handleBatchCommand">
-            <ElButton plain :style="{ borderRadius: '0' }">
+            <ElButton plain :style="{ borderRadius: '0', fontSize: '12px', height: '30px' }">
               更多操作
               <icon-ic-round-keyboard-arrow-down class="ml-4px text-icon" />
             </ElButton>
@@ -2028,11 +2072,10 @@ onUnmounted(() => {
             height="100%"
             :data="tableData"
             size="small"
-            class="server-list-table"
+            class="server-list-table compact-table"
             :row-style="{ height: '48px' }"
             :cell-style="{ padding: '0', borderRight: 'none' }"
             :header-cell-style="{ backgroundColor: '#f5f7fa', borderRight: 'none' }"
-            stripe
             table-layout="fixed"
             @selection-change="handleSelectionChange"
             @select-all="handleSelectAll"
@@ -3169,10 +3212,51 @@ onUnmounted(() => {
         </ElTabs>
       </div>
     </ElDrawer>
+
+    <!-- 连接确认对话框 -->
+    <ElDialog
+      v-model="connectDialogVisible"
+      title="连接主机"
+      width="480px"
+      :close-on-click-modal="true"
+      @close="cancelConnect"
+    >
+      <div v-if="connectingServer" class="connect-dialog-content">
+        <ElDescriptions :column="1" border>
+          <ElDescriptionsItem label="主机名">
+            {{ connectingServer.hostname }}
+          </ElDescriptionsItem>
+          <ElDescriptionsItem label="IP地址">
+            {{ connectingServer.ip }}
+          </ElDescriptionsItem>
+          <ElDescriptionsItem label="环境">
+            {{ connectingServer.env || 'unknown' }}
+          </ElDescriptionsItem>
+          <ElDescriptionsItem label="Agent状态">
+            <ElTag v-if="connectingServer.agentStatus === 'running'" type="success">在线</ElTag>
+            <ElTag v-else-if="connectingServer.agentStatus === 'offline'" type="warning">离线</ElTag>
+            <ElTag v-else type="info">未安装</ElTag>
+          </ElDescriptionsItem>
+        </ElDescriptions>
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <ElButton @click="cancelConnect">取消</ElButton>
+          <ElButton type="primary" @click="confirmConnect">连接</ElButton>
+        </span>
+      </template>
+    </ElDialog>
   </div>
 </template>
 
 <style scoped lang="scss">
+@import '@/styles/scss/compact-theme.scss';
+
+/* 使用紧凑型主题 */
+.cmdb-servers-page {
+  @extend .compact-form;
+}
+
 /* 去掉资产分组容器的圆角 */
 .group-container {
   border-radius: 0 !important;
@@ -3601,20 +3685,6 @@ onUnmounted(() => {
   letter-spacing: 0.5px;
 }
 
-/* 统一表格字体大小 */
-.server-list-table {
-  :deep(.el-table__cell) {
-    font-size: 12px;
-  }
-  :deep(.el-table__header .cell) {
-    font-size: 12px;
-    font-weight: 500;
-  }
-  :deep(.el-tag) {
-    font-size: 12px;
-  }
-}
-
 /* 监控信息包装器 */
 .monitor-info-wrapper {
   display: flex;
@@ -3728,5 +3798,16 @@ onUnmounted(() => {
   color: #909399;
   font-style: normal;
   letter-spacing: 1px;
+}
+
+/* 连接对话框样式 */
+.connect-dialog-content {
+  padding: 16px 0;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 </style>

@@ -218,6 +218,7 @@ const local: App.I18n.Schema = {
     cmdb_ssh: 'SSH Credentials',
     cmdb_ssh_credentials: 'SSH Credentials',
     cmdb_servers: 'Host Assets',
+    cmdb_server_detail: 'Host Detail',
     cmdb_sessions: 'Session Audit',
     cmdb_commands: 'Command Audit',
     cmdb_business: 'Business Management',

@@ -64,6 +64,8 @@ declare module "@elegant-router/types" {
     "cmdb_config_tags": "/cmdb/config/tags";
     "cmdb_dashboard": "/cmdb/dashboard";
     "cmdb_rooms": "/cmdb/rooms";
+    "cmdb_server": "/cmdb/server";
+    "cmdb_server_detail": "/cmdb/server/detail";
     "cmdb_servers": "/cmdb/servers";
     "cmdb_sessions": "/cmdb/sessions";
     "cmdb_ssh": "/cmdb/ssh";
@@ -240,6 +242,7 @@ declare module "@elegant-router/types" {
     | "cmdb_config_tags"
     | "cmdb_dashboard"
     | "cmdb_rooms"
+    | "cmdb_server_detail"
     | "cmdb_servers"
     | "cmdb_sessions"
     | "cmdb_ssh_credentials"

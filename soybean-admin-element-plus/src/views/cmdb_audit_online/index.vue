@@ -111,9 +111,7 @@ async function handleCleanupInvalidSessions() {
   loading.value = false;
   refresh(); // 刷新统计
 
-  window.$message?.success(
-    `清理完成！成功断开 ${successCount} 个会话，移除 ${invalidCount} 个无效会话`
-  );
+  window.$message?.success(`清理完成！成功断开 ${successCount} 个会话，移除 ${invalidCount} 个无效会话`);
 }
 
 function refresh() {
@@ -159,11 +157,7 @@ onUnmounted(() => {
         </div>
       </template>
 
-      <ElAlert
-        type="info"
-        :closable="false"
-        style="margin-bottom: 16px"
-      >
+      <ElAlert type="info" :closable="false" style="margin-bottom: 16px">
         <template #default>
           在线会话列表可能包含已失效的会话（服务器重启、网络中断等原因）。
           使用「清理无效会话」功能可自动移除已断开的会话。

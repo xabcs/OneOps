@@ -201,7 +201,7 @@ func (c *RouteController) appendHiddenRoutesToMenuTree(routes []map[string]inter
 			route["children"] = children
 		}
 
-		// 为 cmdb 路由添加 terminal 子路由
+		// 为 cmdb 路由添加子路由
 		if route["name"] == "cmdb" {
 			var children []map[string]interface{}
 			if existingChildren, ok := route["children"].([]map[string]interface{}); ok {
@@ -224,6 +224,31 @@ func (c *RouteController) appendHiddenRoutesToMenuTree(routes []map[string]inter
 					"title":      "cmdb_terminal",
 					"i18nKey":    "route.cmdb_terminal",
 					"hideInMenu": true,
+				},
+			})
+			// 添加 server 子路由（包含详情页）
+			children = append(children, map[string]interface{}{
+				"id":   "cmdb_server",
+				"name": "cmdb_server",
+				"path": "/cmdb/server",
+				"meta": map[string]interface{}{
+					"title":      "cmdb_server",
+					"i18nKey":    "route.cmdb_server",
+					"hideInMenu": true,
+				},
+				"children": []map[string]interface{}{
+					{
+						"id":        "cmdb_server_detail",
+						"name":      "cmdb_server_detail",
+						"path":      "/cmdb/server/detail",
+						"component": "view.cmdb_server_detail",
+						"meta": map[string]interface{}{
+							"title":       "cmdb_server_detail",
+							"i18nKey":     "route.cmdb_server_detail",
+							"hideInMenu":  true,
+							"activeMenu":  "cmdb_servers",
+						},
+					},
 				},
 			})
 			route["children"] = children

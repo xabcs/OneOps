@@ -43,11 +43,11 @@ export const themeSettings: App.Theme.ThemeSetting = {
   fixedHeaderAndTab: true,
   sider: {
     inverted: false,
-    width: 180,
+    width: 200,
     collapsedWidth: 56,
     mixWidth: 80,
     mixCollapsedWidth: 56,
-    mixChildMenuWidth: 180
+    mixChildMenuWidth: 200
   },
   footer: {
     visible: true,

@@ -42,6 +42,7 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   cmdb_config_tags: () => import("@/views/cmdb_config_tags/index.vue"),
   cmdb_dashboard: () => import("@/views/cmdb_dashboard/index.vue"),
   cmdb_rooms: () => import("@/views/cmdb_rooms/index.vue"),
+  cmdb_server_detail: () => import("@/views/cmdb_server_detail/index.vue"),
   cmdb_servers: () => import("@/views/cmdb_servers/index.vue"),
   cmdb_sessions: () => import("@/views/cmdb_sessions/index.vue"),
   cmdb_ssh_credentials: () => import("@/views/cmdb_ssh_credentials/index.vue"),

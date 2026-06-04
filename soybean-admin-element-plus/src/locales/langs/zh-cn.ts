@@ -220,6 +220,7 @@ const local: App.I18n.Schema = {
     cmdb_ssh: 'SSH凭证',
     cmdb_ssh_credentials: 'SSH凭证',
     cmdb_servers: '主机资产',
+    cmdb_server_detail: '主机详情',
     cmdb_sessions: '会话审计',
     cmdb_commands: '命令审计',
     cmdb_business: '业务管理',

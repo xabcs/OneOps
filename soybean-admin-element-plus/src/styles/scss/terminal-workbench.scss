@@ -1,0 +1,572 @@
+/**
+ * 阿里云终端风格样式
+ * 基于阿里云Web Terminal设计规范
+ */
+
+/* ==================== 主工作台 ==================== */
+.terminal-workbench {
+  width: 100%;
+  height: 100vh;
+  background: #1e1e1e;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  color: #cccccc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 12px;
+}
+
+/* ==================== 活动栏 (Activity Bar) ==================== */
+.terminal-workbench .wb-activity-bar {
+  width: 48px;
+  background: #2d2d2d;
+  border-right: 1px solid #000000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 0;
+  flex-shrink: 0;
+}
+
+.terminal-workbench .wb-activity-item {
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  margin: 0;
+}
+
+.terminal-workbench .wb-activity-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  background: transparent;
+}
+
+.terminal-workbench .wb-activity-item.active::before {
+  background: #007acc;
+}
+
+.terminal-workbench .wb-activity-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: transparent;
+}
+
+.terminal-workbench .wb-activity-item:hover::after {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.terminal-workbench .wb-activity-item.active::after {
+  background: rgba(0, 122, 204, 0.15);
+}
+
+.terminal-workbench .wb-activity-icon {
+  font-size: 24px;
+  color: #858585;
+  position: relative;
+  z-index: 1;
+}
+
+.terminal-workbench .wb-activity-item:hover .wb-activity-icon {
+  color: #aaaaaa;
+}
+
+.terminal-workbench .wb-activity-item.active .wb-activity-icon {
+  color: #ffffff;
+}
+
+/* ==================== 主内容区 ==================== */
+.terminal-workbench .wb-main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ==================== 侧边栏 ==================== */
+.terminal-workbench .wb-sidebar {
+  background: #252526;
+  border-right: 1px solid #000000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.terminal-workbench .wb-sidebar-header {
+  min-height: 35px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #1e1e1e;
+  flex-shrink: 0;
+}
+
+.terminal-workbench .wb-sidebar-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #cccccc;
+}
+
+.terminal-workbench .wb-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.terminal-workbench .wb-sidebar-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.terminal-workbench .wb-sidebar-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.terminal-workbench .wb-sidebar-content::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 2px;
+}
+
+.terminal-workbench .wb-sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: #4f4f4f;
+}
+
+/* ==================== 分割线 ==================== */
+.terminal-workbench .wb-sash {
+  width: 1px;
+  background: #000000;
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.terminal-workbench .wb-sash::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -3px;
+  right: -3px;
+  bottom: 0;
+}
+
+.terminal-workbench .wb-sash:hover {
+  background: #007acc;
+}
+
+/* ==================== 内容区 ==================== */
+.terminal-workbench .wb-content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ==================== 标签栏 ==================== */
+.terminal-workbench .wb-tab-bar {
+  min-height: 35px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #000000;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+
+.terminal-workbench .wb-tab-list {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow-x: auto;
+  min-height: 35px;
+}
+
+.terminal-workbench .wb-tab-list::-webkit-scrollbar {
+  height: 0;
+}
+
+.terminal-workbench .wb-tab-item {
+  height: 35px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border-right: 1px solid #1e1e1e;
+  cursor: pointer;
+  position: relative;
+  min-width: 0;
+  max-width: 200px;
+}
+
+.terminal-workbench .wb-tab-item:hover {
+  background: #37373d;
+}
+
+.terminal-workbench .wb-tab-item.active {
+  background: #1e1e1e;
+  border-top: 1px solid #007acc;
+}
+
+.terminal-workbench .wb-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.terminal-workbench .wb-status-dot.online {
+  background: #4ec9b0;
+}
+
+.terminal-workbench .wb-tab-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  color: #cccccc;
+}
+
+.terminal-workbench .wb-tab-label {
+  font-size: 12px;
+  color: #cccccc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.terminal-workbench .wb-tab-subtitle {
+  font-size: 10px;
+  color: #6e6e6e;
+}
+
+.terminal-workbench .wb-tab-duration {
+  font-size: 11px;
+  color: #858585;
+  font-family: 'Menlo', 'Monaco', monospace;
+  flex-shrink: 0;
+}
+
+.terminal-workbench .wb-tab-close {
+  font-size: 12px;
+  color: #858585;
+  cursor: pointer;
+  opacity: 0;
+  flex-shrink: 0;
+}
+
+.terminal-workbench .wb-tab-item:hover .wb-tab-close {
+  opacity: 1;
+}
+
+/* ==================== 工具栏 ==================== */
+.terminal-workbench .wb-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.terminal-workbench .wb-toolbar-item {
+  height: 28px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #cccccc;
+  cursor: pointer;
+  border-radius: 2px;
+  font-size: 14px;
+}
+
+.terminal-workbench .wb-toolbar-item:hover {
+  background: #2a2d2e;
+  color: #aaaaaa;
+}
+
+.terminal-workbench .wb-icon {
+  font-size: 14px;
+}
+
+/* 强制覆盖 Element Plus 按钮悬停样式 */
+.terminal-workbench .el-button {
+  background: transparent !important;
+  color: #858585 !important;
+}
+
+.terminal-workbench .el-button .iconify {
+  color: #858585 !important;
+}
+
+.terminal-workbench .el-button:hover {
+  background: rgba(0, 0, 0, 0.2) !important;
+  color: #aaaaaa !important;
+}
+
+.terminal-workbench .el-button:hover .iconify {
+  color: #aaaaaa !important;
+}
+
+.terminal-workbench .wb-activity-item:hover .iconify {
+  color: #aaaaaa !important;
+}
+
+/* 覆盖 Element Plus link 按钮的默认悬停样式 */
+.terminal-workbench .el-button.is-link:hover {
+  background-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+.terminal-workbench .wb-toolbar-divider {
+  width: 1px;
+  height: 16px;
+  background: #3c3c3c;
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+
+/* ==================== 终端区域 ==================== */
+.terminal-workbench .wb-terminal-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+/* ==================== 过渡动画 ==================== */
+.wb-transition-width {
+  transition: width 0.2s ease;
+}
+
+/* ==================== 补充样式 ==================== */
+.terminal-workbench .wb-tab-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  color: #6e6e6e;
+  font-size: 12px;
+  padding: 0 16px;
+}
+
+.terminal-workbench .wb-empty-icon {
+  font-size: 14px;
+  opacity: 0.5;
+}
+
+.terminal-workbench .wb-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.terminal-workbench .wb-tab-subtitle {
+  font-size: 10px;
+  color: #6e6e6e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.terminal-workbench .wb-tab-duration {
+  font-size: 11px;
+  color: #858585;
+  font-family: 'Menlo', 'Monaco', monospace;
+  flex-shrink: 0;
+}
+
+/* ==================== 侧边栏补充样式 ==================== */
+.terminal-workbench .wb-sidebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.terminal-workbench .wb-button-icon-only {
+  width: 24px;
+  padding: 0;
+}
+
+.terminal-workbench .wb-spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.terminal-workbench .wb-sidebar-search {
+  padding: 8px 12px;
+  border-bottom: 1px solid #3c3c3c;
+}
+
+.terminal-workbench .wb-search-box {
+  position: relative;
+}
+
+.terminal-workbench .wb-search-input {
+  width: 100%;
+  padding: 4px 8px 4px 24px;
+  height: 24px;
+  background: #3c3c3c;
+  border: 1px solid #3c3c3c;
+  border-radius: 2px;
+  color: #cccccc;
+  font-size: 12px;
+  outline: none;
+}
+
+.terminal-workbench .wb-search-input:focus {
+  border-color: #007acc;
+}
+
+.terminal-workbench .wb-search-input::placeholder {
+  color: #6e6e6e;
+}
+
+.terminal-workbench .wb-search-icon {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #6e6e6e;
+  pointer-events: none;
+}
+
+/* ==================== 树形控件补充 ==================== */
+.terminal-workbench .wb-tree {
+  background: transparent;
+  font-size: 12px;
+}
+
+.terminal-workbench .wb-tree :deep(.el-tree-node__content) {
+  height: 22px;
+  background: transparent;
+  border-radius: 2px;
+  margin: 1px 0;
+}
+
+.terminal-workbench .wb-tree :deep(.el-tree-node__content:hover) {
+  background: rgba(0, 0, 0, 0.2) !important;
+}
+
+.terminal-workbench .wb-tree :deep(.el-tree-node__expand-icon) {
+  color: #6e6e6e;
+  font-size: 10px;
+  width: 16px;
+}
+
+.terminal-workbench .wb-tree-node-count {
+  margin-left: 4px;
+  font-size: 10px;
+  color: #6e6e6e;
+}
+
+.terminal-workbench .is-connected {
+  background: rgba(78, 201, 176, 0.1);
+}
+
+.terminal-workbench .is-offline {
+  opacity: 0.5;
+}
+
+/* ==================== 加载和空状态 ==================== */
+.terminal-workbench .wb-loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  color: #858585;
+  font-size: 12px;
+  gap: 8px;
+}
+
+.terminal-workbench .wb-loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+.terminal-workbench .wb-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 12px;
+  color: #858585;
+  gap: 8px;
+}
+
+.terminal-workbench .wb-empty-icon {
+  font-size: 24px;
+  opacity: 0.5;
+}
+
+.terminal-workbench .wb-empty-state p {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* ==================== 下拉菜单 ==================== */
+.terminal-workbench .wb-dropdown-menu {
+  position: fixed;
+  z-index: 999;
+  min-width: 140px;
+  padding: 4px 0;
+  background: #252526;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.terminal-workbench .wb-dropdown-item {
+  padding: 6px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #cccccc;
+  font-size: 12px;
+}
+
+.terminal-workbench .wb-dropdown-item:hover {
+  background: #2a2d2e;
+}
+
+.terminal-workbench .wb-dropdown-item-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* ==================== 标签样式 ==================== */
+.terminal-workbench .wb-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  height: 18px;
+  font-size: 11px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.terminal-workbench .wb-tag-success {
+  background: #1a3a2a;
+  color: #4ec9b0;
+}

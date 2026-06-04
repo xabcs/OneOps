@@ -1,31 +1,24 @@
 <script setup lang="ts">
-import { Teleport, computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElInput, ElTag, ElTooltip, ElTree } from 'element-plus';
+import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
+import { ElButton, ElMessage, ElTooltip, ElTree, ElInput } from 'element-plus';
+import { Icon } from '@iconify/vue';
 import { fetchGetServerGroups, fetchGetServersByGroup } from '@/service/api';
 
 interface TreeNode {
-  id: number;
+  id: number | string;
   name: string;
-  code: string;
-  parentId: number;
-  level: number;
-  description?: string;
-  color: string;
-  icon: string;
-  sortOrder: number;
-  status: number;
   children?: TreeNode[];
   serverCount?: number;
-  isLeaf?: boolean; // 标记是否为叶子节点（实际是服务器）
-  server?: CMDB.Server; // 服务器数据
+  isLeaf?: boolean;
+  server?: any;
 }
 
 interface Props {
-  currentSessions: number[]; // 当前已连接的主机ID列表
+  currentSessions: number[];
 }
 
 interface Emits {
-  (e: 'connect', server: CMDB.Server): void;
+  (e: 'connect', server: any): void;
 }
 
 const props = defineProps<Props>();
@@ -36,22 +29,17 @@ const loading = ref(false);
 const searchKeyword = ref('');
 const searchExpanded = ref(false);
 const treeRef = ref<InstanceType<typeof ElTree> | null>(null);
+const searchInputRef = ref<InstanceType<typeof ElInput> | null>(null);
 
 // 右键菜单
 const contextMenuVisible = ref(false);
 const contextMenuPosition = ref({ x: 0, y: 0 });
-const contextMenuServer = ref<CMDB.Server | null>(null);
+const contextMenuServer = ref<any>(null);
 
 // 右键菜单项
-interface ContextMenuItem {
-  icon: string;
-  label: string;
-  action: () => void;
-}
-
-const contextMenuItems = computed<ContextMenuItem[]>(() => [
+const contextMenuItems = [
   {
-    icon: 'mdi:console-line',
+    icon: 'vscode-icons:default-terminal',
     label: '连接',
     action: () => {
       if (contextMenuServer.value) {
@@ -60,41 +48,24 @@ const contextMenuItems = computed<ContextMenuItem[]>(() => [
     }
   },
   {
-    icon: 'mdi:window-maximize',
+    icon: 'lucide:external-link',
     label: '新窗口打开',
     action: () => {
       if (contextMenuServer.value) {
-        const server = contextMenuServer.value;
-        const params = new URLSearchParams({
-          sessionId: `temp-${server.id}`,
-          serverName: server.hostname,
-          serverIp: server.ip,
-          websocketUrl: '' // 需要建立连接后获取
-        });
-        window.open(`/cmdb/terminal/${server.id}?${params.toString()}`, '_blank');
-        hideContextMenu();
+        window.open(`/cmdb/terminal/${contextMenuServer.value.id}`, '_blank');
       }
     }
   },
   {
-    icon: 'mdi:view-split-vertical',
-    label: '分屏连接',
-    action: () => {
-      window.$message?.info('分屏连接功能开发中');
-      hideContextMenu();
-    }
-  },
-  {
-    icon: 'mdi:star',
+    icon: 'lucide:star',
     label: '收藏',
     action: () => {
       if (contextMenuServer.value) {
-        window.$message?.info(`已收藏 ${contextMenuServer.value.hostname}`);
+        ElMessage.info(`已收藏 ${contextMenuServer.value.hostname}`);
       }
-      hideContextMenu();
     }
   }
-]);
+];
 
 // 过滤后的树数据
 const filteredTreeData = computed(() => {
@@ -107,7 +78,6 @@ function filterTree(nodes: TreeNode[], keyword: string): TreeNode[] {
   const result: TreeNode[] = [];
   for (const node of nodes) {
     if (node.isLeaf && node.server) {
-      // 服务器节点
       if (
         node.name.toLowerCase().includes(keyword) ||
         (node.server.ip && node.server.ip.toLowerCase().includes(keyword))
@@ -115,7 +85,6 @@ function filterTree(nodes: TreeNode[], keyword: string): TreeNode[] {
         result.push(node);
       }
     } else if (node.children) {
-      // 分组节点
       const filteredChildren = filterTree(node.children, keyword);
       if (filteredChildren.length > 0 || node.name.toLowerCase().includes(keyword)) {
         result.push({
@@ -130,29 +99,26 @@ function filterTree(nodes: TreeNode[], keyword: string): TreeNode[] {
   return result;
 }
 
-// 构建完整的树（包含所有服务器）
+// 构建完整的树
 async function loadTreeData() {
   loading.value = true;
   try {
-    // 获取分组数据
     const { data: groups } = await fetchGetServerGroups();
 
-    // 构建树结构
-    async function buildTree(groups: CMDB.ServerGroup[]): Promise<TreeNode[]> {
-      // 为每个分组加载服务器列表
-      const groupServerMap = new Map<number, CMDB.Server[]>();
+    const buildTree = async (groups: any[]): Promise<TreeNode[]> => {
+      const groupServerMap = new Map<number, any[]>();
 
-      // 收集所有分组ID（包括子分组）
-      function collectGroupIds(groupList: CMDB.ServerGroup[]): number[] {
+      // 收集所有分组ID
+      const collectGroupIds = (groupList: any[]): number[] => {
         const ids: number[] = [];
-        groupList.forEach(g => {
+        groupList.forEach((g: any) => {
           ids.push(g.id);
           if (g.children && g.children.length > 0) {
             ids.push(...collectGroupIds(g.children));
           }
         });
         return ids;
-      }
+      };
 
       const allGroupIds = collectGroupIds(groups);
 
@@ -170,94 +136,75 @@ async function loadTreeData() {
       );
 
       // 构建树节点
-      function buildNode(group: CMDB.ServerGroup): TreeNode {
+      const buildNode = (group: any): TreeNode => {
         const childGroups = (group.children || []).map(child => buildNode(child));
         const groupServers = groupServerMap.get(group.id) || [];
 
         const node: TreeNode = {
           ...group,
           children: [],
-          serverCount: groupServers.length + childGroups.reduce((sum, child) => sum + (child.serverCount || 0), 0)
+          serverCount:
+            groupServers.length + childGroups.reduce((sum: number, child: any) => sum + (child.serverCount || 0), 0)
         };
 
-        // 添加子分组节点
-        childGroups.forEach(child => {
+        childGroups.forEach((child: TreeNode) => {
           node.children!.push(child);
         });
 
-        // 添加该分组下的服务器节点
-        groupServers.forEach(server => {
-          node.children!.push(createServerNode(server));
+        groupServers.forEach((server: any) => {
+          node.children!.push({
+            id: `server-${server.id}` as unknown as number,
+            name: `${server.hostname} (${server.ip})`,
+            children: undefined,
+            serverCount: undefined,
+            isLeaf: true,
+            server
+          });
         });
 
         return node;
-      }
+      };
 
-      // 构建根节点
-      const rootGroups = groups.filter(g => g.parentId === 0);
-      return rootGroups.map(g => buildNode(g));
-    }
+      const rootGroups = groups.filter((g: any) => g.parentId === 0);
+      return rootGroups.map((g: any) => buildNode(g));
+    };
 
     treeData.value = await buildTree(groups || []);
   } catch (error) {
     console.error('加载资产树失败:', error);
+    ElMessage.error('加载资产树失败');
   } finally {
     loading.value = false;
   }
 }
 
-// 创建服务器节点
-function createServerNode(server: CMDB.Server): TreeNode {
-  return {
-    id: `server-${server.id}` as unknown as number,
-    name: `${server.hostname} (${server.ip})`,
-    code: server.hostname,
-    parentId: server.groups?.[0]?.id || 0,
-    level: 2,
-    color: '#757575',
-    icon: 'mdi:server',
-    sortOrder: 0,
-    status: 1,
-    isLeaf: true,
-    server
-  };
-}
-
 // 节点点击
 function handleNodeClick(node: TreeNode) {
-  // 可以在这里实现点击分组显示服务器列表的功能
+  console.log('节点点击:', node);
 }
 
 // 双击节点
 function handleNodeDblClick(node: any) {
-  console.log('[AssetTree] 双击节点:', node);
-  // 处理两种调用方式：直接传递 data 对象，或传递完整的 node 对象
   const data = (node.data || node) as TreeNode;
-  console.log('[AssetTree] 节点数据:', data);
   if (data.isLeaf && data.server) {
-    console.log('[AssetTree] 触发连接:', data.server);
     handleConnect(data.server);
   }
 }
 
 // 连接服务器
-async function handleConnect(server: CMDB.Server) {
-  console.log('[AssetTree] handleConnect 被调用:', server);
+function handleConnect(server: any) {
   hideContextMenu();
-  // 直接触发连接，权限检查在对话框中进行
   emit('connect', server);
 }
 
 // 处理右键菜单
 function handleContextMenu(data: TreeNode, event: MouseEvent) {
-  console.log('[AssetTree] 右键菜单触发:', data);
   if (data.isLeaf && data.server) {
     event.preventDefault();
     event.stopPropagation();
     contextMenuServer.value = data.server;
     contextMenuPosition.value = { x: event.clientX, y: event.clientY };
     contextMenuVisible.value = true;
-    console.log('[AssetTree] 右键菜单显示');
   }
 }
 
@@ -267,9 +214,16 @@ function hideContextMenu() {
   contextMenuServer.value = null;
 }
 
-// 点击其他地方关闭右键菜单
-function handleClickOutside() {
+// 点击其他地方关闭右键菜单和搜索框
+function handleClickOutside(event: MouseEvent) {
   hideContextMenu();
+  // 检查点击是否在搜索区域外
+  const target = event.target as HTMLElement;
+  const searchArea = document.querySelector('.wb-search-container');
+  if (searchArea && !searchArea.contains(target) && searchExpanded.value) {
+    searchExpanded.value = false;
+    searchKeyword.value = '';
+  }
 }
 
 // 刷新
@@ -278,30 +232,46 @@ function handleRefresh() {
 }
 
 // 切换搜索框展开状态
-function toggleSearch() {
+function toggleSearch(event?: MouseEvent) {
+  if (event) {
+    event.stopPropagation();
+  }
+  console.log('toggleSearch called, current searchExpanded:', searchExpanded.value);
   searchExpanded.value = !searchExpanded.value;
+  console.log('searchExpanded after toggle:', searchExpanded.value);
+
   if (searchExpanded.value) {
-    // 展开时自动聚焦
+    // 自动聚焦搜索框
     nextTick(() => {
-      const input = document.querySelector('.search-input-box input') as HTMLInputElement;
-      if (input) input.focus();
+      const input = document.querySelector('.wb-search-input-inner input') as HTMLInputElement;
+      console.log('Input element:', input);
+      input?.focus();
+
+      // 调试：检查输入框样式
+      nextTick(() => {
+        const wrapper = document.querySelector('.wb-search-input-inner .el-input__wrapper');
+        console.log('Input wrapper:', wrapper);
+        if (wrapper) {
+          const styles = getComputedStyle(wrapper);
+          console.log('Wrapper border-radius:', styles.borderRadius);
+          console.log('Wrapper height:', styles.height);
+          console.log('Wrapper background-color:', styles.backgroundColor);
+        }
+      });
     });
+  } else {
+    searchKeyword.value = '';
   }
 }
 
-// 处理搜索框失焦
-function handleSearchBlur() {
-  // 延迟关闭，避免点击清除按钮时立即关闭
-  setTimeout(() => {
-    if (!searchKeyword.value) {
-      searchExpanded.value = false;
-    }
-  }, 150);
+// 搜索框点击时阻止冒泡
+function handleSearchClick(event: MouseEvent) {
+  event.stopPropagation();
 }
 
 // 获取节点CSS类
 function getNodeClass(node: TreeNode): string {
-  const classes = [];
+  const classes: string[] = [];
   if (node.isLeaf && node.server) {
     if (props.currentSessions.includes(Number(node.server.id))) {
       classes.push('is-connected');
@@ -313,42 +283,72 @@ function getNodeClass(node: TreeNode): string {
   return classes.join(' ');
 }
 
-// 监听搜索关键词变化
-watch(searchKeyword, () => {
-  // 搜索逻辑由 computed 处理
+// 获取节点图标
+function getNodeIcon(node: TreeNode): string {
+  if (node.isLeaf) {
+    return 'lucide:server';
+  }
+  return 'lucide:folder';
+}
+
+// 监听搜索关键词变化，自动展开
+watch(searchKeyword, (newVal) => {
+  if (newVal && !searchExpanded.value) {
+    searchExpanded.value = true;
+  }
 });
 
 onMounted(() => {
   loadTreeData();
-  // 添加全局点击事件监听，用于关闭右键菜单
+  // 添加全局点击监听
   document.addEventListener('click', handleClickOutside);
 });
 
+// 清理监听
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
 });
 </script>
 
 <template>
-  <div class="asset-tree">
-    <!-- 搜索和操作栏 -->
-    <div class="toolbar">
-      <span class="title">主机资产</span>
-      <div v-if="searchExpanded" class="search-box search-input-box">
-        <icon-mdi-magnify class="search-icon" />
-        <ElInput v-model="searchKeyword" placeholder="搜索..." size="small" clearable @blur="handleSearchBlur" />
+  <div class="wb-sidebar" @click="handleClickOutside">
+    <!-- 侧边栏头部 -->
+    <div class="wb-sidebar-header">
+      <div class="wb-header-left">
+        <transition name="wb-search-expand">
+          <span v-if="!searchExpanded" key="title" class="wb-sidebar-title">主机资产</span>
+          <div v-else key="search" class="wb-search-container">
+            <div class="wb-search-input-wrapper">
+              <Icon icon="lucide:search" class="wb-search-icon-inline" />
+              <ElInput
+                ref="searchInputRef"
+                v-model="searchKeyword"
+                placeholder="搜索..."
+                size="small"
+                clearable
+                class="wb-search-input-inner"
+                @click="handleSearchClick"
+              />
+            </div>
+          </div>
+        </transition>
       </div>
-      <ElButton v-else size="small" link class="search-toggle-btn" @click="toggleSearch">
-        <icon-mdi-magnify />
-      </ElButton>
-      <ElButton size="small" link class="refresh-btn" @click="handleRefresh">
-        <icon-mdi-refresh :class="{ spinning: loading }" />
-      </ElButton>
+      <div class="wb-sidebar-actions">
+        <ElTooltip v-if="!searchExpanded" content="搜索" placement="bottom">
+          <ElButton size="small" link @click="toggleSearch">
+            <Icon icon="lucide:search" class="wb-icon" />
+          </ElButton>
+        </ElTooltip>
+        <ElTooltip content="刷新" placement="bottom">
+          <ElButton size="small" link @click="handleRefresh">
+            <Icon :icon="loading ? 'lucide:loader-2' : 'lucide:refresh-cw'" :class="{ 'wb-spinning': loading }" class="wb-icon" />
+          </ElButton>
+        </ElTooltip>
+      </div>
     </div>
 
-    <!-- 树组件容器 -->
-    <div class="tree-container">
-      <!-- 树组件 -->
+    <!-- 树内容区 -->
+    <div class="wb-sidebar-content">
       <ElTree
         ref="treeRef"
         :data="filteredTreeData"
@@ -356,44 +356,44 @@ onUnmounted(() => {
         :expand-on-click-node="false"
         node-key="id"
         :default-expand-all="false"
-        class="server-tree"
+        class="wb-tree"
         @node-click="handleNodeClick"
         @node-dblclick="handleNodeDblClick"
       >
         <template #default="{ node, data }">
           <div
-            class="custom-node"
-            :class="getNodeClass(data)"
+            class="wb-tree-node"
+            :class="[getNodeClass(data), { selected: node.selected }]"
             @dblclick="handleNodeDblClick({ data })"
             @contextmenu.prevent="handleContextMenu(data, $event)"
           >
-            <div class="node-content">
-              <component :is="`icon-${data.icon.replace(':', '-')}`" class="node-icon" :style="{ color: data.color }" />
-              <span class="node-label">{{ node.label }}</span>
-              <span v-if="data.serverCount !== undefined && !data.isLeaf" class="server-count">
-                ({{ data.serverCount }})
-              </span>
-              <ElTag
-                v-if="data.isLeaf && data.server && currentSessions.includes(Number(data.server.id))"
-                size="small"
-                type="success"
-              >
-                已连接
-              </ElTag>
-            </div>
+            <Icon :icon="getNodeIcon(data)" class="wb-tree-node-icon" />
+            <span class="wb-tree-node-label">{{ node.label }}</span>
+            <span
+              v-if="data.serverCount !== undefined && !data.isLeaf"
+              class="wb-tree-node-count"
+            >
+              ({{ data.serverCount }})
+            </span>
+            <span
+              v-if="data.isLeaf && data.server && currentSessions.includes(Number(data.server.id))"
+              class="wb-tag wb-tag-success"
+            >
+              已连接
+            </span>
           </div>
         </template>
       </ElTree>
 
       <!-- 加载状态 -->
-      <div v-if="loading" class="loading-state">
-        <icon-mdi-loading class="loading-icon" />
+      <div v-if="loading" class="wb-loading-state">
+        <Icon icon="lucide:loader-2" class="wb-loading-icon wb-spinning" />
         <span>加载中...</span>
       </div>
 
       <!-- 空状态 -->
-      <div v-else-if="treeData.length === 0" class="empty-state">
-        <icon-mdi-server-off class="empty-icon" />
+      <div v-else-if="treeData.length === 0" class="wb-empty-state">
+        <Icon icon="lucide:folder-open" class="wb-empty-icon" />
         <p>{{ searchKeyword ? '没有找到匹配的主机' : '暂无主机' }}</p>
       </div>
     </div>
@@ -402,12 +402,20 @@ onUnmounted(() => {
     <Teleport to="body">
       <div
         v-if="contextMenuVisible"
-        class="context-menu"
-        :style="{ left: contextMenuPosition.x + 'px', top: contextMenuPosition.y + 'px' }"
-        @click.self="handleClickOutside"
+        class="wb-dropdown-menu"
+        :style="{
+          left: contextMenuPosition.x + 'px',
+          top: contextMenuPosition.y + 'px'
+        }"
+        @click="handleClickOutside"
       >
-        <div v-for="item in contextMenuItems" :key="item.label" class="context-menu-item" @click.stop="item.action()">
-          <component :is="`icon-${item.icon.replace(':', '-')}`" class="menu-icon" />
+        <div
+          v-for="item in contextMenuItems"
+          :key="item.label"
+          class="wb-dropdown-item"
+          @click.stop="item.action()"
+        >
+          <Icon :icon="item.icon" class="wb-dropdown-item-icon" />
           <span>{{ item.label }}</span>
         </div>
       </div>
@@ -415,202 +423,181 @@ onUnmounted(() => {
   </div>
 </template>
 
-<style scoped>
-.asset-tree {
+<style lang="scss">
+.wb-sidebar {
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden;
+  background: #252526;
 }
 
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 6px;
-  border-bottom: 1px solid #333333;
-  flex-shrink: 0;
-  min-height: 26px;
-}
-
-.toolbar .title {
-  font-size: 11px;
-  font-weight: 500;
-  color: #e0e0e0;
-  flex-shrink: 0;
-}
-
-.search-box {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-}
-
-.search-icon {
-  position: absolute;
-  left: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 11px;
-  color: #666;
-  pointer-events: none;
-}
-
-.search-box :deep(.el-input__wrapper) {
-  padding-left: 22px;
-  height: 22px;
-  box-shadow: none;
-  background: #1a1a1a;
-  border: 1px solid #333333;
-  border-radius: 11px;
-}
-
-.search-box :deep(.el-input__wrapper:hover),
-.search-box :deep(.el-input__wrapper.is-focus) {
-  border-color: #4a4a4a;
-}
-
-.search-box :deep(.el-input__inner) {
-  color: #e8e8e8;
-  font-size: 11px;
-}
-
-.search-box :deep(.el-input__inner::placeholder) {
-  color: #777;
-}
-
-.search-toggle-btn {
-  flex-shrink: 0;
-  padding: 2px;
-  color: #888;
-  font-size: 14px;
-}
-
-.search-toggle-btn:hover {
-  color: #bbb;
-}
-
-.refresh-btn {
-  flex-shrink: 0;
-  padding: 2px;
-  color: #888;
-}
-
-.refresh-btn:hover {
-  color: #bbb;
-}
-
-.tree-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: 2px;
-}
-
-.tree-container::-webkit-scrollbar {
-  width: 4px;
-}
-
-.tree-container::-webkit-scrollbar-track {
-  background: #0a0a0a;
-}
-
-.tree-container::-webkit-scrollbar-thumb {
-  background: #333333;
-}
-
-.tree-container::-webkit-scrollbar-thumb:hover {
-  background: #4a4a4a;
-}
-
-.server-tree {
-  background: transparent;
-}
-
-.server-tree :deep(.el-tree-node__content) {
-  padding: 1px 0;
-  min-height: 24px;
-  background: transparent;
-}
-
-.server-tree :deep(.el-tree-node__content:hover) {
-  background: #1a1a1a;
-}
-
-.server-tree :deep(.el-tree-node__expand-icon) {
-  color: #666;
-  font-size: 9px;
-  width: 9px;
-}
-
-.custom-node {
-  flex: 1;
+.wb-sidebar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 4px;
-  cursor: pointer;
+  padding: 0 12px;
+  height: 35px;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.wb-header-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow: visible;
   position: relative;
 }
 
-.node-content {
+.wb-sidebar-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: #cccccc;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 搜索框容器 */
+.wb-search-container {
+  flex: 1;
+  max-width: 180px;
   display: flex;
   align-items: center;
-  gap: 4px;
+}
+
+.wb-search-input-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 24px;
+  background: #3c3c3c;
+  border-radius: 12px;
+  padding: 0 8px;
+  gap: 6px;
+}
+
+.wb-search-icon-inline {
+  width: 16px;
+  height: 16px;
+  color: #858585;
+  flex-shrink: 0;
+}
+
+.wb-search-input-inner {
   flex: 1;
   min-width: 0;
 }
 
-.node-icon {
+/* 强制覆盖 Element Plus 输入框样式 */
+.wb-search-input-inner {
+  --el-input-bg-color: transparent !important;
+  --el-input-border-color: transparent !important;
+  --el-input-hover-border-color: transparent !important;
+  --el-input-focus-border-color: transparent !important;
+  --el-input-clear-bg-color: transparent !important;
+}
+
+.wb-search-input-inner :deep(.el-input__wrapper) {
+  height: 24px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.wb-search-input-inner :deep(.el-input__inner) {
+  height: 24px !important;
+  line-height: 24px !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 4px !important;
+  color: #cccccc;
   font-size: 12px;
-  flex-shrink: 0;
-  color: #888;
 }
 
-.node-label {
-  font-size: 11px;
-  color: #e8e8e8;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.wb-search-input-inner :deep(.el-input__wrapper::before),
+.wb-search-input-inner :deep(.el-input__wrapper::after),
+.wb-search-input-inner :deep(.el-input__wrapper:hover),
+.wb-search-input-inner :deep(.el-input__wrapper.is-focus) {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
-.server-count {
-  margin-left: 2px;
-  font-size: 10px;
-  color: #777;
-  flex-shrink: 0;
+.wb-search-input-inner :deep(.el-input__prefix),
+.wb-search-input-inner :deep(.el-input__suffix) {
+  display: none !important;
 }
 
-.is-connected {
-  background: #1a3a2a;
+.wb-search-input-inner :deep(.el-input__clear) {
+  background: transparent !important;
+  color: #858585 !important;
 }
 
-.is-offline {
-  opacity: 0.5;
+.wb-search-input-inner :deep(.el-input__clear:hover) {
+  color: #cccccc !important;
 }
 
-.dropdown-trigger {
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  z-index: 10;
-  pointer-events: auto;
+/* 搜索框展开动画 */
+.wb-search-expand-enter-active,
+.wb-search-expand-leave-active {
+  transition: all 0.2s ease;
 }
 
-.loading-state {
+.wb-search-expand-enter-from {
+  opacity: 0;
+  width: 0;
+}
+
+.wb-search-expand-leave-to {
+  opacity: 0;
+  width: 0;
+}
+
+.wb-search-expand-enter-to,
+.wb-search-expand-leave-from {
+  opacity: 1;
+  width: 180px;
+}
+
+.wb-sidebar-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 12px;
-  color: #888;
-  font-size: 11px;
-  gap: 6px;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
-.loading-icon {
+.wb-sidebar-actions :deep(.el-button) {
+  background: transparent !important;
+  border: none !important;
+}
+
+.wb-sidebar-actions :deep(.el-button:hover) {
+  background: rgba(0, 0, 0, 0.2) !important;
+}
+
+.wb-sidebar-actions :deep(.el-button:hover .iconify) {
+  color: #aaaaaa !important;
+}
+
+.wb-sidebar-actions :deep(.el-button.is-link:hover) {
+  background-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+.wb-icon {
+  width: 16px;
+  height: 16px;
+  color: #858585;
+  transition: color 0.15s;
+}
+
+.wb-sidebar-actions :deep(.el-button:hover) .wb-icon {
+  color: #aaaaaa;
+}
+
+.wb-spinning {
   animation: spin 1s linear infinite;
 }
 
@@ -623,55 +610,150 @@ onUnmounted(() => {
   }
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px 12px;
-  color: #888;
+.wb-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
-.empty-icon {
-  font-size: 24px;
-  margin-bottom: 6px;
+.wb-tree {
+  background: transparent;
+}
+
+.wb-tree :deep(.el-tree-node__content) {
+  height: 24px;
+  background: transparent;
+  border-radius: 2px;
+  margin: 1px 4px;
+}
+
+.wb-tree :deep(.el-tree-node__content:hover) {
+  background: rgba(0, 0, 0, 0.2) !important;
+}
+
+.wb-tree :deep(.el-tree-node__expand-icon) {
+  color: #6e6e6e;
+  font-size: 12px;
+  width: 16px;
+}
+
+.wb-tree-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.wb-tree-node-icon {
+  width: 14px;
+  height: 14px;
+  color: #858585;
+  flex-shrink: 0;
+}
+
+.wb-tree-node-label {
+  font-size: 12px;
+  color: #cccccc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.wb-tree-node-count {
+  margin-left: 4px;
+  font-size: 10px;
+  color: #6e6e6e;
+  flex-shrink: 0;
+}
+
+.is-connected {
+  background: rgba(78, 201, 176, 0.1);
+}
+
+.is-connected .wb-tree-node-icon {
+  color: #4ec9b0;
+}
+
+.is-offline {
   opacity: 0.5;
 }
 
-.empty-state p {
-  margin: 0;
-  font-size: 11px;
+.wb-loading-state,
+.wb-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 12px;
+  color: #858585;
+  font-size: 12px;
+  gap: 8px;
 }
 
-/* 右键菜单样式 */
-.context-menu {
+.wb-loading-icon,
+.wb-empty-icon {
+  width: 24px;
+  height: 24px;
+  opacity: 0.5;
+}
+
+.wb-empty-state p {
+  margin: 0;
+}
+
+/* 右键菜单 */
+.wb-dropdown-menu {
   position: fixed;
   z-index: 9999;
-  background: #1a1a1a;
-  border: 1px solid #444;
-  border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   min-width: 140px;
   padding: 4px 0;
+  background: #252526;
+  border: 1px solid #454545;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
-.context-menu-item {
+.wb-dropdown-item {
+  padding: 6px 12px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 8px;
   cursor: pointer;
-  color: #f0f0f0;
+  color: #cccccc;
   font-size: 12px;
-  transition: background 0.15s;
+  transition: background 0.1s;
 }
 
-.context-menu-item:hover {
-  background: #2a2a2a;
-  color: #fff;
+.wb-dropdown-item:hover {
+  background: #2a2d2e;
 }
 
-.menu-icon {
-  font-size: 16px;
+.wb-dropdown-item-icon {
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
+  color: #858585;
+}
+
+.wb-dropdown-item:hover .wb-dropdown-item-icon {
+  color: #cccccc;
+}
+
+.wb-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  height: 18px;
+  font-size: 11px;
+  border-radius: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.wb-tag-success {
+  background: #1a3a2a;
+  color: #4ec9b0;
 }
 </style>

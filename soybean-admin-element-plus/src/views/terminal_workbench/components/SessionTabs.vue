@@ -1,304 +1,233 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { ElButton, ElTooltip } from 'element-plus';
-
-interface Session {
-  id: number;
-  serverId: number;
-  serverName: string;
-  serverIp: string;
-  loginAccount: string;
-  connected: boolean;
-  duration: number;
-  startedAt?: string;
-}
+import { Icon } from '@iconify/vue';
 
 interface Props {
-  sessions: Session[];
+  sessions: any[];
   activeId: number | null;
   currentSessionIds: number[];
-  showAssetTree?: boolean;
+  showSidebar?: boolean;
 }
 
 interface Emits {
   (e: 'select', sessionId: number): void;
   (e: 'remove', sessionId: number): void;
-  (e: 'connect', server: CMDB.Server & { loginAccount?: string }): void;
-  (e: 'toggleAssetTree'): void;
+  (e: 'connect', server: any): void;
+  (e: 'toggleSidebar'): void;
   (e: 'toggleFullscreen'): void;
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-// 格式化时长
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) {
-    const mins = Math.floor(seconds / 60);
-    return `${mins}m`;
-  }
-  const hours = Math.floor(seconds / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
-  return `${hours}h ${mins}m`;
-}
-
-// 计算会话时长（实时）
-const sessionDurations = computed<Record<number, string>>(() => {
-  const result: Record<number, string> = {};
-  props.sessions.forEach(session => {
-    if (session.startedAt) {
-      const started = new Date(session.startedAt).getTime();
-      const now = Date.now();
-      const seconds = Math.floor((now - started) / 1000);
-      result[session.id] = formatDuration(seconds);
-    } else {
-      result[session.id] = formatDuration(session.duration || 0);
-    }
-  });
-  return result;
-});
-
-// 获取标签页标题（优化：显示完整信息，格式：hostname (user@ip)）
-function getTabTitle(session: Session): string {
-  // 为了方便截断，分开处理
-  return session.serverName;
-}
-
-// 获取标签副标题（user@ip）
-function getTabSubtitle(session: Session): string {
-  return `${session.loginAccount}@${session.serverIp}`;
+function handleClose(session: any) {
+  emit('remove', session.id);
 }
 </script>
 
 <template>
-  <div class="session-tabs-container">
-    <!-- 标签页栏 -->
-    <div class="tabs-header">
-      <!-- 左侧工具栏 -->
-      <div class="toolbar-left">
-        <ElTooltip :content="showAssetTree ? '隐藏资产' : '显示资产'" placement="bottom">
-          <ElButton size="small" @click="$emit('toggleAssetTree')">
-            <icon-mdi-chevron-left v-if="showAssetTree" class="toolbar-icon" />
-            <icon-mdi-chevron-right v-else class="toolbar-icon" />
-          </ElButton>
-        </ElTooltip>
-      </div>
+  <div class="wb-tab-bar">
+    <!-- 左侧工具栏 -->
+    <div class="wb-toolbar-group">
+      <button type="button" class="wb-toolbar-item" @click="$emit('toggleSidebar')">
+        <Icon icon="lucide:panel-left" class="wb-icon" />
+      </button>
+    </div>
 
-      <!-- 会话标签 -->
-      <div class="tabs-wrapper">
-        <div v-if="sessions.length === 0" class="empty-tabs">
-          <icon-mdi-clipboard-off class="empty-icon" />
-          <span>暂无会话</span>
-        </div>
-
-        <div v-else class="tabs-list">
-          <div
-            v-for="session in sessions"
-            :key="session.id"
-            class="tab-item"
-            :class="{ active: session.id === activeId }"
-            @click="$emit('select', session.id)"
-          >
-            <span class="status" :class="{ online: session.connected }"></span>
-            <div class="tab-content">
-              <span class="tab-title">{{ getTabTitle(session) }}</span>
-              <span class="tab-subtitle">{{ getTabSubtitle(session) }}</span>
-            </div>
-            <span class="tab-duration">{{ sessionDurations[session.id] || '0s' }}</span>
-            <ElButton size="small" type="danger" link class="close-btn" @click.stop="$emit('remove', session.id)">
-              <icon-mdi-close />
-            </ElButton>
-          </div>
-        </div>
+    <!-- 标签列表 -->
+    <div class="wb-tab-list">
+      <div v-if="sessions.length === 0" class="wb-tab-empty">
+        <Icon icon="lucide:terminal" class="wb-empty-icon" />
+        <span>暂无会话，请从左侧选择主机连接</span>
       </div>
-
-      <!-- 右侧工具栏 -->
-      <div class="toolbar-right">
-        <ElTooltip content="全屏" placement="bottom">
-          <ElButton size="small" @click="$emit('toggleFullscreen')">
-            <icon-mdi-arrow-expand-all class="toolbar-icon" />
-          </ElButton>
-        </ElTooltip>
+      <div
+        v-for="session in sessions"
+        :key="session.id"
+        class="wb-tab-item"
+        :class="{ active: session.id === activeId }"
+        @click="$emit('select', session.id)"
+      >
+        <Icon icon="lucide:terminal" class="wb-tab-icon" />
+        <span class="wb-tab-label">{{ session.serverName }}</span>
+        <button type="button" class="wb-tab-close" @click.stop="handleClose(session)">
+          <Icon icon="lucide:x" class="wb-close-icon" />
+        </button>
       </div>
+    </div>
+
+    <!-- 右侧工具栏 -->
+    <div class="wb-toolbar-group">
+      <button type="button" class="wb-toolbar-item" @click="$emit('toggleFullscreen')">
+        <Icon icon="lucide:expand" class="wb-icon" />
+      </button>
     </div>
   </div>
 </template>
 
-<style scoped>
-.session-tabs-container {
+<style lang="scss">
+.wb-tab-bar {
   display: flex;
-  min-height: 30px;
-  background: #121212;
+  align-items: center;
+  height: 35px;
+  background: #252526;
+  border-bottom: 1px solid #000000;
   flex-shrink: 0;
 }
 
-.tabs-header {
+.wb-toolbar-group {
   display: flex;
   align-items: center;
-  min-height: 28px;
+  gap: 0;
+  flex-shrink: 0;
+  height: 100%;
+}
+
+.wb-toolbar-item {
+  width: 35px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.1s;
+}
+
+.wb-toolbar-item:hover {
+  background: rgba(0, 0, 0, 0.2) !important;
+}
+
+.wb-toolbar-item:hover .iconify,
+.wb-toolbar-item:hover .wb-icon {
+  color: #aaaaaa !important;
+}
+
+.wb-icon {
+  width: 16px;
+  height: 16px;
+  color: #858585;
+  transition: color 0.15s;
+}
+
+.wb-tab-list {
   flex: 1;
-}
-
-.toolbar-left {
   display: flex;
   align-items: center;
-  height: 28px;
-  flex-shrink: 0;
-}
-
-.toolbar-left .el-button {
-  padding: 0 6px;
-  height: 28px;
-  background: transparent;
-  border: none;
-  color: #999;
-}
-
-.toolbar-left .el-button:hover {
-  color: #ccc;
-}
-
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  height: 28px;
-  flex-shrink: 0;
-}
-
-.toolbar-right .el-button {
-  padding: 0 6px;
-  height: 28px;
-  background: transparent;
-  border: none;
-  color: #999;
-}
-
-.toolbar-right .el-button:hover {
-  color: #ccc;
-}
-
-.toolbar-icon {
-  font-size: 14px;
-}
-
-.tabs-wrapper {
-  flex: 1;
   overflow-x: auto;
   overflow-y: hidden;
   min-width: 0;
-  min-height: 28px;
+  height: 100%;
 }
 
-.tabs-wrapper::-webkit-scrollbar {
-  height: 0;
+.wb-tab-list::-webkit-scrollbar {
+  height: 3px;
 }
 
-.empty-tabs {
+.wb-tab-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.wb-tab-list::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 2px;
+}
+
+.wb-tab-list::-webkit-scrollbar-thumb:hover {
+  background: #4f4f4f;
+}
+
+.wb-tab-empty {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 28px;
-  color: #888;
-  font-size: 11px;
+  width: 100%;
+  height: 100%;
+  color: #6e6e6e;
+  font-size: 12px;
+  padding: 0 16px;
 }
 
-.empty-icon {
-  font-size: 12px;
+.wb-empty-icon {
+  width: 14px;
+  height: 14px;
   opacity: 0.5;
 }
 
-.tabs-list {
+.wb-tab-item {
   display: flex;
   align-items: center;
-  min-height: 28px;
-}
-
-.tab-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  height: 28px;
+  gap: 6px;
   padding: 0 8px;
-  background: #1a1a1a;
-  border-right: 1px solid #333333;
+  height: 100%;
+  background: #2d2d2d;
+  border-right: 1px solid #000000;
   cursor: pointer;
   white-space: nowrap;
   min-width: 0;
-  max-width: 240px;
-  transition: all 0.15s;
+  transition: background 0.1s;
 }
 
-.tab-item:hover {
-  background: #252525;
+.wb-tab-item:hover {
+  background: #2a2d2e;
 }
 
-.tab-item.active {
-  background: #2a2a2a;
-  border-bottom: 2px solid #0dbc79;
+.wb-tab-item.active {
+  background: #1e1e1e;
 }
 
-.status {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #666;
+.wb-tab-icon {
+  width: 14px;
+  height: 14px;
+  color: #858585;
   flex-shrink: 0;
 }
 
-.status.online {
-  background: #bbb;
+.wb-tab-item.active .wb-tab-icon {
+  color: #cccccc;
 }
 
-.tab-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+.wb-tab-label {
+  font-size: 12px;
+  color: #cccccc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   flex: 1;
   min-width: 0;
-  overflow: hidden;
 }
 
-.tab-title {
-  font-size: 11px;
-  color: #f0f0f0;
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tab-subtitle {
-  font-size: 9px;
-  color: #999;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tab-duration {
-  font-size: 10px;
-  color: #c0c0c0;
-  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+.wb-tab-close {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 2px;
   flex-shrink: 0;
-}
-
-.close-btn {
-  flex-shrink: 0;
-  padding: 2px;
-  margin-left: 2px;
   opacity: 0;
-  transition: opacity 0.1s;
-  color: #999;
-  font-size: 12px;
+  transition: all 0.1s;
 }
 
-.tab-item:hover .close-btn {
+.wb-tab-item:hover .wb-tab-close {
   opacity: 1;
 }
 
-.close-btn:hover {
-  color: #ccc;
+.wb-tab-close:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.wb-close-icon {
+  width: 12px;
+  height: 12px;
+  color: #858585;
+}
+
+.wb-tab-close:hover .wb-close-icon {
+  color: #aaaaaa;
 }
 </style>

@@ -65,9 +65,7 @@ export function useSessions() {
   // 批量终止所有会话（用于页面关闭前）
   async function terminateAllSessions(): Promise<void> {
     const sessionIds = sessions.value.map(s => s.id);
-    await Promise.allSettled(
-      sessionIds.map(id => fetchTerminateSession(id))
-    );
+    await Promise.allSettled(sessionIds.map(id => fetchTerminateSession(id)));
   }
 
   // 清理所有会话（不调用 API，只清理前端）

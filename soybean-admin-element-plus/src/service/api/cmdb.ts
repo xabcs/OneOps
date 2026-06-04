@@ -447,9 +447,12 @@ export function fetchGetServerSessions(
   }
 ) {
   return request<CMDB.PageResponse<Bastion.BastionSession>>({
-    url: `/cmdb/servers/${serverId}/sessions`,
+    url: `/cmdb/sessions`,
     method: 'get',
-    params
+    params: {
+      ...params,
+      serverId // 使用 serverId 参数过滤
+    }
   });
 }
 
