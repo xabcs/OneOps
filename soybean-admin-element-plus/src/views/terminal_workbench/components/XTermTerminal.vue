@@ -1,330 +1,303 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue';
-import { Terminal } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
-import { WebLinksAddon } from 'xterm-addon-web-links';
-import { localStg } from '@/utils/storage';
-import 'xterm/css/xterm.css';
+    import { onMounted, onUnmounted, ref, nextTick } from "vue";
+    import { Terminal } from "xterm";
+    import { FitAddon } from "xterm-addon-fit";
+    import { WebLinksAddon } from "xterm-addon-web-links";
+    import "xterm/css/xterm.css";
 
-interface Props {
-  sessionId: number;
-  serverId: number;
-  serverName: string;
-  serverIp: string;
-  loginAccount: string;
-}
-
-const props = defineProps<Props>();
-
-let terminal: Terminal | null = null;
-let fitAddon: FitAddon | null = null;
-let ws: WebSocket | null = null;
-const terminalRef = ref<HTMLDivElement>();
-
-// 防止重复初始化
-let isInitializing = false;
-let currentSessionId: number | null = null;
-
-// 初始化终端
-function initTerminal() {
-  console.log('=== initTerminal 开始 ===');
-  console.log('isInitializing:', isInitializing);
-  console.log('currentSessionId:', currentSessionId);
-  console.log('props.sessionId:', props.sessionId);
-  console.log('serverId:', props.serverId);
-  console.log('serverName:', props.serverName);
-  console.log('terminal exists:', !!terminal);
-  console.log('ws exists:', !!ws);
-
-  // 防止重复初始化同一个会话
-  if (isInitializing && currentSessionId === props.sessionId) {
-    console.warn('=== 防止重复初始化，跳过 ===');
-    return;
-  }
-
-  // 如果终端实例已存在，先清理
-  if (terminal) {
-    console.log('=== 清理已存在的终端实例 ===');
-    if (ws) {
-      ws.close();
-      ws = null;
+    interface Props {
+        sessionId: number;
+        serverId: number;
+        serverName: string;
+        serverIp: string;
+        loginAccount: string;
+        websocketUrl?: string;
     }
-    terminal.dispose();
-    terminal = null;
-    fitAddon = null;
-  }
 
-  isInitializing = true;
-  currentSessionId = props.sessionId;
+    const props = defineProps<Props>();
 
-  console.log('terminalRef.value:', terminalRef.value);
+    let terminal: Terminal | null = null;
+    let fitAddon: FitAddon | null = null;
+    let ws: WebSocket | null = null;
+    const terminalRef = ref<HTMLDivElement>();
 
-  if (!terminalRef.value) {
-    console.error('terminalRef.value 不存在！');
-    return;
-  }
+    // 防抖定时器
+    let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
+    let pendingFit = false;
 
-  console.log('开始创建 Terminal 实例...');
+    // 获取 token
+    function getToken(): string {
+        let token =
+            localStorage.getItem("SOY_token") ||
+            localStorage.getItem("token") ||
+            "";
 
-  // 创建终端实例
-  terminal = new Terminal({
-    cursorBlink: true,
-    fontSize: 14,
-    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-    theme: {
-      background: '#1e1e1e',
-      foreground: '#cccccc',
-      cursor: '#cccccc',
-      selection: 'rgba(255, 255, 255, 0.3)',
-      black: '#000000',
-      red: '#cd3131',
-      green: '#0dbc79',
-      yellow: '#e5e510',
-      blue: '#2472c8',
-      magenta: '#bc3fbc',
-      cyan: '#11a8cd',
-      white: '#e5e5e5',
-      brightBlack: '#666666',
-      brightRed: '#f14c4c',
-      brightGreen: '#23d18b',
-      brightYellow: '#f5f543',
-      brightBlue: '#3b8eea',
-      brightMagenta: '#d670d6',
-      brightCyan: '#29b8db',
-      brightWhite: '#ffffff'
+        // 移除可能存在的引号（存储时可能被包裹）
+        token = token.replace(/^["']|["']$/g, "");
+
+        return token;
     }
-  });
 
-  console.log('Terminal 实例创建完成:', terminal);
+    // 初始化终端
+    async function initTerminal() {
+        if (!terminalRef.value) {
+            console.error("terminalRef.value 不存在！");
+            return;
+        }
 
-  // 添加插件
-  fitAddon = new FitAddon();
-  terminal.loadAddon(fitAddon);
-  terminal.loadAddon(new WebLinksAddon());
+        // 创建终端实例
+        terminal = new Terminal({
+            cursorBlink: true,
+            fontSize: 14,
+            fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+            theme: {
+                background: "#1e1e1e",
+                foreground: "#cccccc",
+                cursor: "#cccccc",
+                selection: "rgba(255, 255, 255, 0.3)",
+                black: "#000000",
+                red: "#cd3131",
+                green: "#0dbc79",
+                yellow: "#e5e510",
+                blue: "#2472c8",
+                magenta: "#bc3fbc",
+                cyan: "#11a8cd",
+                white: "#e5e5e5",
+                brightBlack: "#666666",
+                brightRed: "#f14c4c",
+                brightGreen: "#23d18b",
+                brightYellow: "#f5f543",
+                brightBlue: "#3b8eea",
+                brightMagenta: "#d670d6",
+                brightCyan: "#29b8db",
+                brightWhite: "#ffffff",
+            },
+            scrollback: 10000,
+            tabStopWidth: 8,
+        });
 
-  console.log('插件加载完成');
+        // 添加插件
+        fitAddon = new FitAddon();
+        terminal.loadAddon(fitAddon);
+        terminal.loadAddon(new WebLinksAddon());
 
-  // 挂载终端
-  terminal.open(terminalRef.value);
-  console.log('终端已挂载到 DOM');
+        // 挂载终端
+        terminal.open(terminalRef.value);
 
-  fitAddon.fit();
-  console.log('终端已调整大小');
+        // 等待 DOM 渲染完成后再执行 fit
+        await nextTick();
+        requestAnimationFrame(() => {
+            fitAddon?.fit();
+        });
 
-  // 欢迎信息
-  terminal.writeln(`\x1b[1;32m欢迎使用 OneOps 终端\x1b[0m`);
-  terminal.writeln(`\x1b[1;36m连接到: ${props.serverName} (${props.serverIp})\x1b[0m`);
-  terminal.writeln(`\x1b[1;33m登录用户: ${props.loginAccount}\x1b[0m`);
-  terminal.writeln(``);
-  terminal.writeln(`正在连接到服务器...`);
-  terminal.writeln(``);
+        // 欢迎信息
+        terminal.writeln(
+            `\x1b[1;36m${props.serverName}\x1b[0m (${props.serverIp})`
+        );
+        terminal.writeln(`\x1b[1;34m登录用户: ${props.loginAccount}\x1b[0m`);
+        terminal.writeln("");
 
-  console.log('欢迎信息已输出');
+        // 监听用户输入
+        terminal.onData((data) => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(
+                    JSON.stringify({
+                        type: "input",
+                        data: data,
+                    })
+                );
+            }
+        });
 
-  // 监听用户输入
-  terminal.onData(data => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        type: 'input',
-        data: data
-      }));
+        // 建立 WebSocket 连接
+        connectWebSocket();
     }
-  });
 
-  // 建立WebSocket连接
-  connectWebSocket();
-
-  // 标记初始化完成
-  setTimeout(() => {
-    isInitializing = false;
-    console.log('=== initTerminal 完成 ===');
-  }, 100);
-}
-
-// 连接WebSocket
-function connectWebSocket() {
-  // 获取 token - 添加详细调试
-  console.log('=== 开始获取 token ===');
-  console.log('localStg:', localStg);
-  console.log('localStg.get:', typeof localStg.get);
-
-  // 尝试多种方式获取 token
-  const token1 = localStorage.getItem('SOY_token');
-  const token2 = localStg.get('token');
-  const token3 = localStorage.getItem('token');
-
-  console.log('localStorage.getItem("SOY_token"):', token1 ? `${token1.substring(0, 20)}...` : 'null');
-  console.log('localStg.get("token"):', token2 ? `${token2.substring(0, 20)}...` : 'null/empty');
-  console.log('localStorage.getItem("token"):', token3 ? `${token3.substring(0, 20)}...` : 'null');
-
-  const token = token2 || token1 || '';
-  console.log('最终使用的 token:', token ? `${token.substring(0, 20)}...` : 'empty');
-
-  // 构建 WebSocket URL - 使用后端服务器端口 8082
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  // 使用 Vite 代理配置中的后端地址，或者直接使用 localhost:8082
-  const wsUrl = `ws://localhost:8082/api/cmdb/sessions/${props.sessionId}/ws?token=${token}`;
-
-  console.log('连接 WebSocket:', wsUrl);
-
-  try {
-    console.log('=== 开始创建 WebSocket 连接 ===');
-    console.log('当前时间:', new Date().toISOString());
-    console.log('wsUrl:', wsUrl);
-
-    ws = new WebSocket(wsUrl);
-
-    ws.onopen = () => {
-      console.log('=== WebSocket onopen 触发 ===');
-      console.log('当前时间:', new Date().toISOString());
-      console.log('readyState:', ws?.readyState);
-      if (terminal) {
-        terminal.writeln(`\x1b[1;32m✓ 连接成功！\x1b[0m`);
-        terminal.writeln(``);
-      }
-    };
-
-    ws.onmessage = (event) => {
-      console.log('=== WebSocket onmessage ===');
-      console.log('数据长度:', event.data.length);
-      console.log('数据内容:', event.data.substring(0, 100));
-      if (terminal) {
-        // 后端直接发送原始数据，不需要 JSON 解析
-        terminal.write(event.data);
-      }
-    };
-
-    ws.onerror = (error) => {
-      console.error('=== WebSocket onerror ===');
-      console.error('错误:', error);
-      console.error('readyState:', ws?.readyState);
-      if (terminal) {
-        terminal.writeln(`\x1b[1;31m✗ 连接错误\x1b[0m`);
-      }
-    };
-
-    ws.onclose = (event) => {
-      console.error('=== WebSocket onclose ===');
-      console.error('关闭码:', event.code);
-      console.error('原因:', event.reason);
-      console.error('wasClean:', event.wasClean);
-      console.error('当前时间:', new Date().toISOString());
-      console.error('readyState:', ws?.readyState);
-      if (terminal) {
-        terminal.writeln(`\r\n\x1b[1;31m✗ 连接已关闭 (code: ${event.code})\x1b[0m`);
-      }
-    };
-  } catch (error) {
-    console.error('=== WebSocket 创建失败 ===');
-    console.error('错误:', error);
-    if (terminal) {
-      terminal.writeln(`\x1b[1;31m✗ 无法建立连接\x1b[0m`);
+    // 获取后端服务地址
+    function getBackendHost(): string {
+        // 从环境变量获取后端服务地址
+        const baseUrl =
+            import.meta.env.VITE_SERVICE_BASE_URL || "http://localhost:8082/api";
+        const url = new URL(baseUrl);
+        return url.host;
     }
-  }
-}
 
-// 调整终端大小
-function fitTerminal() {
-  if (fitAddon) {
-    fitAddon.fit();
-  }
-}
+    // 连接 WebSocket
+    function connectWebSocket() {
+        const token = getToken();
+        const backendHost = getBackendHost();
 
-// 监听窗口大小变化
-let resizeObserver: ResizeObserver | null = null;
+        let fullWsUrl: string;
 
-onMounted(() => {
-  console.log('=== XTermTerminal 挂载 ===');
-  console.log('terminalRef:', terminalRef.value);
-  console.log('props:', props);
+        // 如果提供了后端返回的 websocketUrl，使用它
+        if (props.websocketUrl) {
+            // 后端返回的是相对路径，需要添加协议和后端主机
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            fullWsUrl = `${protocol}//${backendHost}${props.websocketUrl}?token=${token}`;
+        } else {
+            // 否则使用默认方式构建 URL
+            const wsUrl = `/api/cmdb/sessions/${props.sessionId}/ws?token=${token}`;
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            fullWsUrl = `${protocol}//${backendHost}${wsUrl}`;
+        }
 
-  initTerminal();
+        console.log("WebSocket 连接:", fullWsUrl);
 
-  // 监听容器大小变化
-  if (terminalRef.value) {
-    resizeObserver = new ResizeObserver(() => {
-      fitTerminal();
+        ws = new WebSocket(fullWsUrl);
+
+        ws.onopen = () => {
+            console.log("WebSocket 连接成功");
+        };
+
+        ws.onmessage = (event) => {
+            if (terminal) {
+                terminal.write(event.data);
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error("WebSocket 错误:", error);
+            if (terminal) {
+                terminal.writeln(`\x1b[1;31m✗ 连接错误\x1b[0m`);
+            }
+        };
+
+        ws.onclose = (event) => {
+            console.log("WebSocket 关闭:", event.code, event.reason);
+            if (terminal) {
+                terminal.writeln(
+                    `\r\n\x1b[1;31m✗ 连接已关闭 (code: ${event.code})\x1b[0m`
+                );
+            }
+        };
+    }
+
+    // 延迟执行 fit，避免频繁调用
+    function scheduleFit() {
+        if (pendingFit) return;
+        pendingFit = true;
+
+        // 使用较长的延迟，确保容器尺寸稳定后再执行
+        if (resizeTimeout) {
+            clearTimeout(resizeTimeout);
+        }
+
+        resizeTimeout = setTimeout(() => {
+            if (fitAddon && terminal) {
+                try {
+                    fitAddon.fit();
+                } catch (error) {
+                    console.warn("fit error:", error);
+                }
+            }
+            pendingFit = false;
+        }, 300);
+    }
+
+    // 窗口 resize 处理
+    function handleResize() {
+        scheduleFit();
+    }
+
+    // 处理可见性变化（切换标签时）
+    function handleVisibilityChange() {
+        if (terminalRef.value) {
+            const style = window.getComputedStyle(terminalRef.value);
+            if (style.display !== "none" && fitAddon) {
+                // 当元素变为可见时，重新 fit 终端
+                scheduleFit();
+            }
+        }
+    }
+
+    onMounted(() => {
+        initTerminal();
+
+        // 添加窗口 resize 监听
+        window.addEventListener("resize", handleResize);
+
+        // 使用 MutationObserver 监听容器 display 属性变化
+        const observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+                if (
+                    mutation.type === "attributes" &&
+                    mutation.attributeName === "style"
+                ) {
+                    handleVisibilityChange();
+                }
+            }
+        });
+
+        if (terminalRef.value) {
+            observer.observe(terminalRef.value, {
+                attributes: true,
+                attributeFilter: ["style"],
+            });
+        }
     });
-    resizeObserver.observe(terminalRef.value);
-  }
-});
 
-onUnmounted(() => {
-  // 关闭WebSocket
-  if (ws) {
-    ws.close();
-  }
+    onUnmounted(() => {
+        // 清理定时器
+        if (resizeTimeout) {
+            clearTimeout(resizeTimeout);
+        }
 
-  // 销毁终端
-  if (terminal) {
-    terminal.dispose();
-  }
+        // 移除事件监听
+        window.removeEventListener("resize", handleResize);
 
-  // 停止观察
-  if (resizeObserver && terminalRef.value) {
-    resizeObserver.unobserve(terminalRef.value);
-    resizeObserver.disconnect();
-  }
-});
+        // 关闭 WebSocket
+        if (ws) {
+            ws.close();
+            ws = null;
+        }
 
-// 监听会话变化
-watch(() => props.sessionId, (newSessionId, oldSessionId) => {
-  console.log('=== XTermTerminal 会话变化 watch ===');
-  console.log('oldSessionId:', oldSessionId);
-  console.log('newSessionId:', newSessionId);
-  console.log('currentSessionId:', currentSessionId);
-  console.log('isInitializing:', isInitializing);
-  console.log('ws exists:', !!ws);
-  console.log('ws readyState:', ws?.readyState);
-
-  // 如果新旧会话ID相同，跳过
-  if (newSessionId === oldSessionId) {
-    console.warn('=== sessionId 未变化，跳过 ===');
-    return;
-  }
-
-  // 完全清理旧连接和终端实例
-  console.log('=== 开始完全清理旧连接 ===');
-  if (ws) {
-    console.log('关闭旧 WebSocket');
-    ws.close();
-    ws = null;
-  }
-  if (terminal) {
-    console.log('销毁旧终端实例');
-    terminal.dispose();
-    terminal = null;
-  }
-  if (fitAddon) {
-    fitAddon = null;
-  }
-
-  // 重置状态
-  isInitializing = false;
-  currentSessionId = null;
-
-  // 重新初始化
-  console.log('=== 开始重新初始化 ===');
-  initTerminal();
-});
+        // 销毁终端
+        if (terminal) {
+            terminal.dispose();
+            terminal = null;
+        }
+    });
 </script>
 
 <template>
-  <div ref="terminalRef" class="xterm-terminal"></div>
+    <div ref="terminalRef" class="xterm-terminal"></div>
 </template>
 
 <style lang="scss">
-.xterm-terminal {
-  width: 100%;
-  height: 100%;
-  padding: 8px;
-}
+    .xterm-terminal {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
 
-.xterm-terminal :deep(.xterm) {
-  padding: 0;
-}
+        :deep(.xterm) {
+            width: 100%;
+            height: 100%;
+            background-color: #1e1e1e;
+        }
 
-.xterm-terminal :deep(.xterm .xterm-viewport) {
-  background-color: #1e1e1e;
-}
+        :deep(.xterm-viewport) {
+            background-color: #1e1e1e;
+            scrollbar-width: thin;
+            scrollbar-color: #444 #1e1e1e;
+        }
+
+        :deep(.xterm-viewport::-webkit-scrollbar) {
+            width: 8px;
+            height: 8px;
+        }
+
+        :deep(.xterm-viewport::-webkit-scrollbar-track) {
+            background: #1e1e1e;
+        }
+
+        :deep(.xterm-viewport::-webkit-scrollbar-thumb) {
+            background: #444;
+            border-radius: 4px;
+
+            &:hover {
+                background: #555;
+            }
+        }
+    }
 </style>

@@ -290,8 +290,8 @@ func (s *InitService) syncMenus() error {
 		{ID: 44, Name: "告警管理", Icon: "mdi:bell-alert", Path: "/monitoring/alerts", Permission: "monitoring:alerts:view", MenuType: "menu", Sort: 4, Status: 1, ParentID: 40},
 		{ID: 45, Name: "监控设置", Icon: "mdi:cog", Path: "/monitoring/settings", Permission: "monitoring:settings:view", MenuType: "menu", Sort: 5, Status: 1, ParentID: 40},
 		{ID: 46, Name: "巡检报告", Icon: "mdi:file-document", Path: "/monitoring/reports", Permission: "monitoring:reports:view", MenuType: "menu", Sort: 6, Status: 1, ParentID: 40},
-			// Web终端（资产管理子菜单）
-			{ID: 47, Name: "Web终端", Icon: "mdi:console", Path: "/cmdb/terminal/workbench", Permission: "cmdb:terminal:view", MenuType: "menu", Sort: 7, Status: 1, ParentID: 20},
+		// Web终端（资产管理子菜单）
+		{ID: 47, Name: "Web终端", Icon: "mdi:console", Path: "/cmdb/terminal/workbench", Permission: "cmdb:terminal:view", MenuType: "menu", Sort: 7, Status: 1, ParentID: 20},
 	}
 
 	addedCount := 0

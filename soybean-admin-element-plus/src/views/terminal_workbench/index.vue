@@ -30,7 +30,7 @@ const activeActivityItem = ref('assets');
 // 连接对话框
 const showConnectDialog = ref(false);
 const connectingServer = ref<any>(null);
-const selectedCredentialId = ref<number>(0);
+const selectedCredentialId = ref<number | null>(null);
 
 // 监听 ESC 键退出全屏
 onKeyStroke('Escape', () => {
@@ -112,21 +112,26 @@ async function handleConnected() {
     console.log('credentials:', connectingServer.value.credentials);
 
     // 使用选择的凭证ID
-    const credentialIdToUse = selectedCredentialId.value || connectingServer.value.sshCredentialId || 0;
-    console.log('实际使用的凭证ID:', credentialIdToUse);
-
-    if (!credentialIdToUse) {
+    // 确保有选择凭证
+    if (!selectedCredentialId.value) {
       ElNotification.error({
         title: '连接失败',
-        message: '未找到可用的连接凭证'
+        message: '请先选择连接凭证'
       });
       return;
     }
 
+    // 查找选择的凭证信息，获取实际的用户名
+    const selectedCredential = connectingServer.value.credentials.find((c: any) => c.id === selectedCredentialId.value);
+    const loginAccount = selectedCredential?.username || 'root';
+
+    console.log('实际使用的凭证ID:', selectedCredentialId.value);
+    console.log('登录账号:', loginAccount);
+
     // 调用后端接口创建 SSH 会话
     const response = await fetchConnectServer(connectingServer.value.id, {
       protocol: 'ssh',
-      credentialId: credentialIdToUse
+      credentialId: selectedCredentialId.value
     });
 
     console.log('连接 API 响应:', response);
@@ -135,13 +140,13 @@ async function handleConnected() {
       const sessionId = response.data.sessionId;
       const websocketUrl = response.data.websocketUrl;
 
-      // 创建会话对象 - 使用服务器对象中的信息（而不是后端返回的空值）
+      // 创建会话对象 - loginAccount 从选择的凭证中获取
       const newSession = {
         id: sessionId,
         serverId: connectingServer.value.id,
         serverName: connectingServer.value.hostname || 'Unknown',
         serverIp: connectingServer.value.ip || 'Unknown',
-        loginAccount: connectingServer.value.sshUser || 'root',
+        loginAccount: loginAccount,
         protocol: 'ssh',
         status: 'connected',
         connected: true,
@@ -216,20 +221,14 @@ async function handleConnect(server: any) {
     if (response.data) {
       connectingServer.value = response.data;
       console.log('获取服务器信息成功:', connectingServer.value);
-      console.log('sshCredentialId:', connectingServer.value.sshCredentialId);
       console.log('credentials:', connectingServer.value.credentials);
 
-      // 设置默认凭证ID
-      selectedCredentialId.value = connectingServer.value.sshCredentialId || 0;
-      if (!selectedCredentialId.value && connectingServer.value.credentials && connectingServer.value.credentials.length > 0) {
-        const userCredential = connectingServer.value.credentials.find((c: any) => c.credentialType === 'user');
-        if (userCredential) {
-          selectedCredentialId.value = userCredential.id;
-          console.log('找到用户凭证:', userCredential);
-        }
+      // 默认选中第一个凭证（如果有）
+      if (connectingServer.value.credentials && connectingServer.value.credentials.length > 0) {
+        selectedCredentialId.value = connectingServer.value.credentials[0].id;
+      } else {
+        selectedCredentialId.value = null;
       }
-      console.log('最终选择的凭证ID:', selectedCredentialId.value);
-
       showConnectDialog.value = true;
     } else {
       console.error('响应中没有 data 字段');
@@ -383,10 +382,6 @@ onMounted(async () => {
           <div class="connect-section-title">安全上下文</div>
           <div class="connect-info-grid">
             <div class="connect-info-item">
-              <span class="connect-info-label">登录账号</span>
-              <span class="connect-info-value">{{ connectingServer.sshUser || 'root' }}</span>
-            </div>
-            <div class="connect-info-item">
               <span class="connect-info-label">认证方式</span>
               <span class="connect-info-value">
                 <Icon icon="lucide:shield-check" style="width: 14px; height: 14px; margin-right: 4px; color: #4ec9b0;" />
@@ -410,24 +405,38 @@ onMounted(async () => {
         </div>
 
         <!-- 凭证选择 -->
-        <div v-if="connectingServer.credentials && connectingServer.credentials.length > 1" class="connect-section">
+        <div class="connect-section">
           <div class="connect-section-title">选择连接凭证</div>
-          <div class="credential-selector">
-            <ElSelect v-model="selectedCredentialId" placeholder="请选择凭证" style="width: 100%;">
+          <div v-if="connectingServer.credentials && connectingServer.credentials.length > 0" class="credential-selector">
+            <ElSelect v-model="selectedCredentialId" placeholder="请选择凭证" popper-class="terminal-select-dropdown" style="width: 100%;">
               <ElOption
                 v-for="cred in connectingServer.credentials"
                 :key="cred.id"
-                :label="`${cred.name} (${cred.username})`"
+                :label="`${cred.name} - ${cred.username}`"
                 :value="cred.id"
-              />
+              >
+                <span style="display: flex; align-items: center; gap: 8px;">
+                  <Icon icon="lucide:key" style="width: 14px; height: 14px; color: #858585;" />
+                  <span>{{ cred.name }}</span>
+                  <ElTag size="small" effect="plain" style="margin-left: auto;">{{ cred.username }}</ElTag>
+                </span>
+              </ElOption>
             </ElSelect>
+            <div class="credential-hint">
+              <Icon icon="lucide:info" style="width: 14px; height: 14px; margin-right: 4px; color: #858585;" />
+              <span>选择的凭证将决定登录账号</span>
+            </div>
+          </div>
+          <div v-else class="credential-empty">
+            <Icon icon="lucide:alert-circle" style="width: 16px; height: 16px; color: #f14c4c;" />
+            <span>该服务器没有可用的连接凭证</span>
           </div>
         </div>
 
         <!-- 操作按钮 -->
         <div class="connect-actions">
           <ElButton @click="cancelConnect">取消</ElButton>
-          <ElButton type="primary" :disabled="!selectedCredentialId && !connectingServer.sshCredentialId" @click="handleConnected()">
+          <ElButton type="primary" :disabled="!selectedCredentialId" @click="handleConnected()">
             <Icon icon="lucide:terminal" style="margin-right: 6px; width: 14px; height: 14px;" />
             连接
           </ElButton>
@@ -710,11 +719,180 @@ onMounted(async () => {
   padding: 0 4px;
 }
 
-.el-dialog.terminal-connect-dialog .el-select {
-  width: 100%;
+.credential-hint {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: #858585;
+  background: rgba(136, 85, 85, 0.1);
+  border-radius: 2px;
 }
 
-/* 连接对话框 - 终端暗色主题（无圆角） */
+.credential-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  color: #f14c4c;
+  font-size: 12px;
+  background: rgba(241, 76, 76, 0.1);
+  border: 1px dashed #f14c4c;
+  border-radius: 2px;
+}
+
+/* ==================== Select 下拉弹出层样式（使用 popper-class） ==================== */
+
+/* 下拉框主容器 */
+.terminal-select-dropdown {
+  background: #252526 !important;
+  border: 1px solid #454545 !important;
+  border-radius: 0 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* 下拉框内部包装器 */
+.terminal-select-dropdown .el-select-dropdown__wrap {
+  background: #252526 !important;
+}
+
+/* 下拉框列表 */
+.terminal-select-dropdown .el-select-dropdown__list {
+  background: #252526 !important;
+  padding: 4px 0 !important;
+}
+
+/* 下拉选项 */
+.terminal-select-dropdown .el-select-dropdown__item {
+  background: transparent !important;
+  color: #cccccc !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  border-radius: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  min-height: 36px !important;
+}
+
+/* 下拉选项悬停/选中状态 */
+.terminal-select-dropdown .el-select-dropdown__item.hover,
+.terminal-select-dropdown .el-select-dropdown__item:hover {
+  background: rgba(0, 0, 0, 0.3) !important;
+  color: #e0e0e0 !important;
+}
+
+.terminal-select-dropdown .el-select-dropdown__item.is-selected {
+  background: rgba(78, 201, 176, 0.15) !important;
+  color: #4ec9b0 !important;
+}
+
+.terminal-select-dropdown .el-select-dropdown__item.is-selected:hover {
+  background: rgba(78, 201, 176, 0.25) !important;
+}
+
+/* 下拉选项中的 Icon 样式 */
+.terminal-select-dropdown .el-select-dropdown__item .iconify {
+  color: #858585 !important;
+}
+
+.terminal-select-dropdown .el-select-dropdown__item:hover .iconify {
+  color: #aaaaaa !important;
+}
+
+/* 下拉选项中的 Tag 样式 */
+.terminal-select-dropdown .el-tag {
+  background: rgba(78, 201, 176, 0.12) !important;
+  border-color: rgba(78, 201, 176, 0.3) !important;
+  color: #4ec9b0 !important;
+  border-radius: 0 !important;
+}
+
+/* Popper 箭头样式 */
+.terminal-select-dropdown .el-popper__arrow::before {
+  background: #252526 !important;
+  border-color: #454545 !important;
+}
+
+/* 下拉滚动条样式 */
+.terminal-select-dropdown .el-select-dropdown__listbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-select-dropdown .el-select-dropdown__listbar::-webkit-scrollbar-track {
+  background: #1e1e1e !important;
+}
+
+.terminal-select-dropdown .el-select-dropdown__listbar::-webkit-scrollbar-thumb {
+  background: #555 !important;
+  border-radius: 0 !important;
+}
+
+.terminal-select-dropdown .el-select-dropdown__listbar::-webkit-scrollbar-thumb:hover {
+  background: #666 !important;
+}
+
+/* Select 输入框箭头颜色 */
+.el-dialog.terminal-connect-dialog .el-select .el-select__caret {
+  color: #858585 !important;
+}
+
+.el-dialog.terminal-connect-dialog .el-select:hover .el-select__caret {
+  color: #cccccc !important;
+}
+
+/* ==================== Select 选择框样式 - 输入框本身 ==================== */
+
+/* Select 输入框包装器 - 针对 .el-select__wrapper */
+.el-dialog.terminal-connect-dialog .el-select .el-select__wrapper,
+.terminal-connect-dialog .el-select .el-select__wrapper {
+  background: #1e1e1e !important;
+  border: 1px solid #454545 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Select 输入框悬停状态 */
+.el-dialog.terminal-connect-dialog .el-select:hover .el-select__wrapper,
+.terminal-connect-dialog .el-select:hover .el-select__wrapper {
+  border-color: #555 !important;
+}
+
+/* Select 输入框聚焦状态 */
+.el-dialog.terminal-connect-dialog .el-select.is-focused .el-select__wrapper,
+.terminal-connect-dialog .el-select.is-focused .el-select__wrapper {
+  border-color: #007acc !important;
+  box-shadow: none !important;
+}
+
+/* Select 内部输入元素 */
+.el-dialog.terminal-connect-dialog .el-select .el-input__inner,
+.terminal-connect-dialog .el-select .el-input__inner {
+  background: #1e1e1e !important;
+  color: #cccccc !important;
+  border: none !important;
+}
+
+/* Select placeholder 样式 */
+.el-dialog.terminal-connect-dialog .el-select .el-input__inner::placeholder,
+.terminal-connect-dialog .el-select .el-input__inner::placeholder,
+.el-dialog.terminal-connect-dialog .el-select__placeholder,
+.terminal-connect-dialog .el-select__placeholder {
+  color: #6e6e6e !important;
+}
+
+/* Select 箭头图标颜色 */
+.el-dialog.terminal-connect-dialog .el-select .el-select__caret,
+.terminal-connect-dialog .el-select .el-select__caret {
+  color: #858585 !important;
+}
+
+.el-dialog.terminal-connect-dialog .el-select:hover .el-select__caret,
+.terminal-connect-dialog .el-select:hover .el-select__caret {
+  color: #cccccc !important;
+}
+
+/* ==================== 连接对话框 - 终端暗色主题（无圆角） ==================== */
 /* 遮罩层 */
 .el-overlay {
   background-color: rgba(0, 0, 0, 0.7) !important;
