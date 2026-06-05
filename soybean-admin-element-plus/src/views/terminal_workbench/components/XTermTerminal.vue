@@ -20,10 +20,10 @@
     let fitAddon: FitAddon | null = null;
     let ws: WebSocket | null = null;
     const terminalRef = ref<HTMLDivElement>();
+    const isReady = ref(false);
 
     // 防抖定时器
     let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
-    let pendingFit = false;
 
     // 获取 token
     function getToken(): string {
@@ -31,19 +31,18 @@
             localStorage.getItem("SOY_token") ||
             localStorage.getItem("token") ||
             "";
-
-        // 移除可能存在的引号（存储时可能被包裹）
         token = token.replace(/^["']|["']$/g, "");
-
         return token;
     }
 
     // 初始化终端
     async function initTerminal() {
         if (!terminalRef.value) {
-            console.error("terminalRef.value 不存在！");
+            console.error("终端容器不存在");
             return;
         }
+
+        console.log("开始初始化终端...");
 
         // 创建终端实例
         terminal = new Terminal({
@@ -84,28 +83,24 @@
         // 挂载终端
         terminal.open(terminalRef.value);
 
-        // 等待 DOM 渲染完成后再执行 fit
+        // 等待 DOM 渲染
         await nextTick();
-        requestAnimationFrame(() => {
-            fitAddon?.fit();
-        });
 
-        // 欢迎信息
-        terminal.writeln(
-            `\x1b[1;36m${props.serverName}\x1b[0m (${props.serverIp})`
-        );
+        // 显示欢迎信息
+        terminal.writeln(`\x1b[1;36m${props.serverName}\x1b[0m (${props.serverIp})`);
         terminal.writeln(`\x1b[1;34m登录用户: ${props.loginAccount}\x1b[0m`);
         terminal.writeln("");
+
+        // 标记准备就绪
+        isReady.value = true;
+
+        // 首次调整尺寸
+        scheduleFit();
 
         // 监听用户输入
         terminal.onData((data) => {
             if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(
-                    JSON.stringify({
-                        type: "input",
-                        data: data,
-                    })
-                );
+                ws.send(data);
             }
         });
 
@@ -115,7 +110,6 @@
 
     // 获取后端服务地址
     function getBackendHost(): string {
-        // 从环境变量获取后端服务地址
         const baseUrl =
             import.meta.env.VITE_SERVICE_BASE_URL || "http://localhost:8082/api";
         const url = new URL(baseUrl);
@@ -129,13 +123,10 @@
 
         let fullWsUrl: string;
 
-        // 如果提供了后端返回的 websocketUrl，使用它
         if (props.websocketUrl) {
-            // 后端返回的是相对路径，需要添加协议和后端主机
             const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
             fullWsUrl = `${protocol}//${backendHost}${props.websocketUrl}?token=${token}`;
         } else {
-            // 否则使用默认方式构建 URL
             const wsUrl = `/api/cmdb/sessions/${props.sessionId}/ws?token=${token}`;
             const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
             fullWsUrl = `${protocol}//${backendHost}${wsUrl}`;
@@ -158,7 +149,8 @@
         ws.onerror = (error) => {
             console.error("WebSocket 错误:", error);
             if (terminal) {
-                terminal.writeln(`\x1b[1;31m✗ 连接错误\x1b[0m`);
+                terminal.writeln(`\r\n\x1b[1;31m✗ 连接错误，会话可能已关闭\x1b[0m`);
+                terminal.writeln(`\x1b[1;33m请重新连接主机\x1b[0m`);
             }
         };
 
@@ -172,26 +164,31 @@
         };
     }
 
-    // 延迟执行 fit，避免频繁调用
-    function scheduleFit() {
-        if (pendingFit) return;
-        pendingFit = true;
+    // 调整终端尺寸
+    function fitTerminal() {
+        if (!fitAddon || !terminal || !terminalRef.value) return;
 
-        // 使用较长的延迟，确保容器尺寸稳定后再执行
+        try {
+            const rect = terminalRef.value.getBoundingClientRect();
+            console.log("调整终端尺寸:", rect.width, "x", rect.height);
+
+            if (rect.width > 0 && rect.height > 0) {
+                fitAddon.fit();
+            }
+        } catch (error) {
+            console.warn("调整终端尺寸失败:", error);
+        }
+    }
+
+    // 延迟执行 fit
+    function scheduleFit() {
         if (resizeTimeout) {
             clearTimeout(resizeTimeout);
         }
 
         resizeTimeout = setTimeout(() => {
-            if (fitAddon && terminal) {
-                try {
-                    fitAddon.fit();
-                } catch (error) {
-                    console.warn("fit error:", error);
-                }
-            }
-            pendingFit = false;
-        }, 300);
+            fitTerminal();
+        }, 100);
     }
 
     // 窗口 resize 处理
@@ -199,105 +196,92 @@
         scheduleFit();
     }
 
-    // 处理可见性变化（切换标签时）
+    // 处理可见性变化
     function handleVisibilityChange() {
-        if (terminalRef.value) {
-            const style = window.getComputedStyle(terminalRef.value);
-            if (style.display !== "none" && fitAddon) {
-                // 当元素变为可见时，重新 fit 终端
-                scheduleFit();
-            }
+        if (isReady.value && document.visibilityState === "visible") {
+            scheduleFit();
         }
     }
 
     onMounted(() => {
         initTerminal();
-
-        // 添加窗口 resize 监听
         window.addEventListener("resize", handleResize);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
 
-        // 使用 MutationObserver 监听容器 display 属性变化
-        const observer = new MutationObserver((mutations) => {
-            for (const mutation of mutations) {
-                if (
-                    mutation.type === "attributes" &&
-                    mutation.attributeName === "style"
-                ) {
-                    handleVisibilityChange();
-                }
-            }
-        });
-
-        if (terminalRef.value) {
-            observer.observe(terminalRef.value, {
-                attributes: true,
-                attributeFilter: ["style"],
-            });
-        }
+        // 初始调整
+        setTimeout(() => {
+            fitTerminal();
+        }, 200);
     });
 
     onUnmounted(() => {
-        // 清理定时器
         if (resizeTimeout) {
             clearTimeout(resizeTimeout);
         }
 
-        // 移除事件监听
         window.removeEventListener("resize", handleResize);
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
 
-        // 关闭 WebSocket
         if (ws) {
             ws.close();
             ws = null;
         }
 
-        // 销毁终端
         if (terminal) {
             terminal.dispose();
             terminal = null;
+        }
+
+        if (fitAddon) {
+            fitAddon = null;
         }
     });
 </script>
 
 <template>
-    <div ref="terminalRef" class="xterm-terminal"></div>
+    <div ref="terminalRef" class="xterm-terminal-container"></div>
 </template>
 
 <style lang="scss">
-    .xterm-terminal {
+.xterm-terminal-container {
+    width: 100%;
+    height: 100%;
+    background-color: #1e1e1e;
+    overflow: hidden;
+
+    :deep(.xterm) {
         width: 100%;
         height: 100%;
-        display: flex;
-        flex-direction: column;
+        background-color: #1e1e1e;
+        padding: 4px;
+    }
 
-        :deep(.xterm) {
-            width: 100%;
-            height: 100%;
-            background-color: #1e1e1e;
-        }
+    :deep(.xterm-viewport) {
+        background-color: #1e1e1e !important;
+        scrollbar-width: thin;
+        scrollbar-color: #444 #1e1e1e;
+    }
 
-        :deep(.xterm-viewport) {
-            background-color: #1e1e1e;
-            scrollbar-width: thin;
-            scrollbar-color: #444 #1e1e1e;
-        }
+    :deep(.xterm-viewport::-webkit-scrollbar) {
+        width: 8px;
+        height: 8px;
+    }
 
-        :deep(.xterm-viewport::-webkit-scrollbar) {
-            width: 8px;
-            height: 8px;
-        }
+    :deep(.xterm-viewport::-webkit-scrollbar-track) {
+        background: #1e1e1e;
+    }
 
-        :deep(.xterm-viewport::-webkit-scrollbar-track) {
-            background: #1e1e1e;
-        }
+    :deep(.xterm-viewport::-webkit-scrollbar-thumb) {
+        background: #444;
+        border-radius: 4px;
 
-        :deep(.xterm-viewport::-webkit-scrollbar-thumb) {
-            background: #444;
-            border-radius: 4px;
-
-            &:hover {
-                background: #555;
-            }
+        &:hover {
+            background: #555;
         }
     }
+
+    :deep(.xterm-screen) {
+        background-color: #1e1e1e !important;
+    }
+}
 </style>

@@ -205,7 +205,7 @@ func (c *BastionController) TerminateSession(ctx *gin.Context) {
 	}
 
 	// 获取操作人ID
-	operatorID := ctx.GetUint("userId")
+	operatorID := ctx.GetUint("user_id")
 	if operatorID == 0 {
 		ctx.JSON(http.StatusOK, utils.ErrorUnauthorized("未认证"))
 		return

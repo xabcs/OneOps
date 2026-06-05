@@ -3,6 +3,9 @@
  * 基于阿里云Web Terminal设计规范
  */
 
+/* 导入 VSCode Codicons 图标集 */
+@import "@vscode/codicons/dist/codicon.css";
+
 /* ==================== 主工作台 ==================== */
 .terminal-workbench {
   width: 100%;
@@ -20,12 +23,12 @@
 .terminal-workbench .wb-activity-bar {
   width: 48px;
   background: #2d2d2d;
-  border-right: 1px solid #000000;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 4px 0;
   flex-shrink: 0;
+  position: relative; /* 添加相对定位，用于下拉菜单 */
 }
 
 .terminal-workbench .wb-activity-item {
@@ -69,18 +72,28 @@
 }
 
 .terminal-workbench .wb-activity-icon {
-  font-size: 24px;
-  color: #858585;
+  font-size: 20px;
+  color: #c5c5c5;
   position: relative;
   z-index: 1;
 }
 
 .terminal-workbench .wb-activity-item:hover .wb-activity-icon {
-  color: #aaaaaa;
+  color: #ffffff;
 }
 
 .terminal-workbench .wb-activity-item.active .wb-activity-icon {
   color: #ffffff;
+}
+
+/* Codicon 图标样式 */
+.terminal-workbench .codicon {
+  line-height: 1;
+  display: inline-block;
+}
+
+.terminal-workbench .wb-logo-icon.codicon {
+  color: #007acc;
 }
 
 /* ==================== 主内容区 ==================== */
@@ -93,7 +106,6 @@
 /* ==================== 侧边栏 ==================== */
 .terminal-workbench .wb-sidebar {
   background: #252526;
-  border-right: 1px solid #000000;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -140,8 +152,8 @@
 
 /* ==================== 分割线 ==================== */
 .terminal-workbench .wb-sash {
-  width: 1px;
-  background: #000000;
+  width: 0;
+  background: transparent;
   cursor: col-resize;
   flex-shrink: 0;
   position: relative;
@@ -151,13 +163,13 @@
   content: '';
   position: absolute;
   top: 0;
-  left: -3px;
-  right: -3px;
+  left: -4px;
+  right: -4px;
   bottom: 0;
 }
 
-.terminal-workbench .wb-sash:hover {
-  background: #007acc;
+.terminal-workbench .wb-sash:hover::before {
+  background: rgba(0, 122, 204, 0.2);
 }
 
 /* ==================== 内容区 ==================== */
@@ -176,16 +188,17 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  padding: 0 4px;
+  padding: 0 0 0 8px;
 }
 
 .terminal-workbench .wb-tab-list {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 8px;
   overflow-x: auto;
   min-height: 35px;
+  padding-left: 16px;
 }
 
 .terminal-workbench .wb-tab-list::-webkit-scrollbar {
@@ -335,12 +348,14 @@
 }
 
 /* ==================== 终端区域 ==================== */
-.terminal-workbench .wb-terminal-area {
+.terminal-workbench .terminal-area {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #1e1e1e;
+  background: #171717;
+  min-width: 0;
+  min-height: 0;
 }
 
 /* ==================== 过渡动画 ==================== */

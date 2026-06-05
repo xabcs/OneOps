@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -19,11 +20,13 @@ import (
 
 var (
 	upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
+		ReadBufferSize:   1024,
+		WriteBufferSize:  1024,
 		CheckOrigin: func(r *http.Request) bool {
 			return true // 允许跨域，生产环境应该限制
 		},
+		// 设置握手超时
+		HandshakeTimeout: 10 * time.Second,
 	}
 
 	// 全局 SessionManager 单例
@@ -206,8 +209,28 @@ func (h *SSHWebSocketHandler) HandleWebSocket(ctx *gin.Context) {
 	}
 
 	// 注册会话到管理器
+	log.Printf("[DEBUG] 注册会话到管理器，会话ID: %d", session.ID)
 	h.sessionManager.Add(session.ID, conn, sshSession)
-	defer h.sessionManager.Remove(session.ID)
+	log.Printf("[DEBUG] 设置 defer Remove，会话ID: %d", session.ID)
+	defer func() {
+		log.Printf("[DEBUG] defer Remove 开始执行，会话ID: %d", session.ID)
+		h.sessionManager.Remove(session.ID)
+		log.Printf("[DEBUG] defer Remove 执行完成，会话ID: %d", session.ID)
+	}()
+
+	// 创建可取消的 context，用于控制会话生命周期
+	sshCtx, cancel := context.WithCancel(context.Background())
+	defer func() {
+		log.Printf("[DEBUG] 取消 context，会话ID: %d", session.ID)
+		cancel()  // 确保在函数退出时取消 context
+	}()
+
+	// 设置 Pong 超时处理（如果60秒没有收到 Pong 响应，认为连接断开）
+	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+	conn.SetPongHandler(func(string) error {
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		return nil
+	})
 
 	// 启动心跳检测
 	stopHeartbeat := make(chan struct{})
@@ -221,23 +244,39 @@ func (h *SSHWebSocketHandler) HandleWebSocket(ctx *gin.Context) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
+	log.Printf("[DEBUG] 即将启动双向转发 goroutines，会话ID: %d", session.ID)
 	// WebSocket -> SSH
 	go func() {
+		log.Printf("[DEBUG] WebSocket->SSH goroutine 启动，会话ID: %d", session.ID)
 		defer wg.Done()
-		h.forwardWebSocketToSSH(conn, stdinPipe, session)
+		h.forwardWebSocketToSSH(conn, stdinPipe, session, sshCtx)
+		log.Printf("[DEBUG] WebSocket->SSH goroutine 退出，会话ID: %d", session.ID)
+
+		// WebSocket->SSH 退出后：
+		// 1. 立即关闭 SSH 会话
+		// 2. 取消 context 通知另一个 goroutine
+		log.Printf("[DEBUG] 关闭 SSH 会话，会话ID: %d", session.ID)
+		if sshSession != nil {
+			sshSession.Close()
+		}
+		log.Printf("[DEBUG] 取消 context，会话ID: %d", session.ID)
+		cancel()
 	}()
 
 	// SSH -> WebSocket
 	go func() {
+		log.Printf("[DEBUG] SSH->WebSocket goroutine 启动，会话ID: %d", session.ID)
 		defer wg.Done()
-		h.forwardSSHToWebSocket(stdoutPipe, conn, session)
+		h.forwardSSHToWebSocket(stdoutPipe, conn, session, sshCtx)
+		log.Printf("[DEBUG] SSH->WebSocket goroutine 退出，会话ID: %d", session.ID)
 	}()
 
 	// 等待转发结束
+	log.Printf("[DEBUG] 等待转发结束，会话ID: %d", session.ID)
 	wg.Wait()
+	log.Printf("[DEBUG] 转发已结束，会话ID: %d", session.ID)
 
-	// 关闭会话
-	h.bastionService.CloseSession(session.ID, "用户断开连接")
+	// 记录会话关闭（defer sessionManager.Remove 会处理数据库更新）
 	log.Printf("SSH 会话 %d 已关闭", session.ID)
 }
 
@@ -290,10 +329,15 @@ func (h *SSHWebSocketHandler) connectToServer(session *models.BastionSession) (*
 }
 
 // forwardWebSocketToSSH 从 WebSocket 转发数据到 SSH
-func (h *SSHWebSocketHandler) forwardWebSocketToSSH(conn *websocket.Conn, stdinPipe io.WriteCloser, session *models.BastionSession) {
+func (h *SSHWebSocketHandler) forwardWebSocketToSSH(conn *websocket.Conn, stdinPipe io.WriteCloser, session *models.BastionSession, ctx context.Context) {
+	log.Printf("[DEBUG] forwardWebSocketToSSH 开始执行，会话ID: %d", session.ID)
 	// 关键：函数退出时关闭 stdinPipe，向远端 shell 发送 EOF
 	// 这样 SSH 会话会结束，forwardSSHToWebSocket 的 Read 会返回 error，wg.Wait() 才能解除阻塞
-	defer stdinPipe.Close()
+	defer func() {
+		log.Printf("[DEBUG] forwardWebSocketToSSH 即将关闭 stdinPipe，会话ID: %d", session.ID)
+		stdinPipe.Close()
+		log.Printf("[DEBUG] forwardWebSocketToSSH 已关闭 stdinPipe，会话ID: %d", session.ID)
+	}()
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -305,12 +349,25 @@ func (h *SSHWebSocketHandler) forwardWebSocketToSSH(conn *websocket.Conn, stdinP
 	var commandBuffer []byte
 
 	for {
+		log.Printf("[DEBUG] forwardWebSocketToSSH 等待读取 WebSocket 消息，会话ID: %d", session.ID)
+
+		// 检查 context 是否已取消
+		select {
+		case <-ctx.Done():
+			log.Printf("[DEBUG] forwardWebSocketToSSH context 已取消，退出，会话ID: %d", session.ID)
+			return
+		default:
+			// 继续执行
+		}
+
 		// 读取 WebSocket 消息
 		_, message, err := conn.ReadMessage()
 		if err != nil {
+			log.Printf("[DEBUG] forwardWebSocketToSSH WebSocket 读取错误，会话ID: %d，错误: %v", session.ID, err)
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("WebSocket 读取错误: %v", err)
 			}
+			log.Printf("[DEBUG] forwardWebSocketToSSH 即将 return，会话ID: %d", session.ID)
 			return
 		}
 
@@ -335,8 +392,10 @@ func (h *SSHWebSocketHandler) forwardWebSocketToSSH(conn *websocket.Conn, stdinP
 }
 
 // forwardSSHToWebSocket 从 SSH 转发数据到 WebSocket
-func (h *SSHWebSocketHandler) forwardSSHToWebSocket(stdoutPipe io.Reader, conn *websocket.Conn, session *models.BastionSession) {
+func (h *SSHWebSocketHandler) forwardSSHToWebSocket(stdoutPipe io.Reader, conn *websocket.Conn, session *models.BastionSession, ctx context.Context) {
+	log.Printf("[DEBUG] forwardSSHToWebSocket 开始执行，会话ID: %d", session.ID)
 	defer func() {
+		log.Printf("[DEBUG] forwardSSHToWebSocket 即将退出，会话ID: %d", session.ID)
 		if r := recover(); r != nil {
 			log.Printf("SSH -> WebSocket 转发异常: %v", r)
 		}
@@ -344,17 +403,42 @@ func (h *SSHWebSocketHandler) forwardSSHToWebSocket(stdoutPipe io.Reader, conn *
 
 	// 读取 SSH 输出并转发到 WebSocket
 	output := make([]byte, 32*1024)
+
+	// 使用 goroutine + channel 模式，同时监听 context 和数据
+	type readResult struct {
+		n   int
+		err error
+	}
+
 	for {
-		n, err := stdoutPipe.Read(output)
-		if n > 0 {
-			if werr := conn.WriteMessage(websocket.TextMessage, output[:n]); werr != nil {
-				log.Printf("WebSocket 写入错误: %v", werr)
+		log.Printf("[DEBUG] forwardSSHToWebSocket 等待读取 SSH 输出，会话ID: %d", session.ID)
+
+		resultChan := make(chan readResult, 1)
+		go func() {
+			n, err := stdoutPipe.Read(output)
+			resultChan <- readResult{n: n, err: err}
+		}()
+
+		select {
+		case <-ctx.Done():
+			log.Printf("[DEBUG] forwardSSHToWebSocket context 已取消，停止读取，会话ID: %d", session.ID)
+			// context 取消，立即返回（SSH 会话已被另一个 goroutine 关闭）
+			return
+		case result := <-resultChan:
+			// 读取完成，处理数据
+			n := result.n
+			err := result.err
+			log.Printf("[DEBUG] forwardSSHToWebSocket 读取到 %d 字节，错误: %v，会话ID: %d", n, err, session.ID)
+			if n > 0 {
+				if werr := conn.WriteMessage(websocket.TextMessage, output[:n]); werr != nil {
+					log.Printf("WebSocket 写入错误: %v", werr)
+					return
+				}
+			}
+			if err != nil {
+				log.Printf("SSH 读取结束: %v", err)
 				return
 			}
-		}
-		if err != nil {
-			log.Printf("SSH 读取结束: %v", err)
-			return
 		}
 	}
 }
@@ -513,6 +597,7 @@ func (m *SessionManager) Remove(sessionID uint) {
 	_, exists := m.sessions[sessionID]
 	if exists {
 		delete(m.sessions, sessionID)
+		log.Printf("会话 %d 从内存中移除", sessionID)
 	}
 	m.mu.Unlock()
 
@@ -520,7 +605,14 @@ func (m *SessionManager) Remove(sessionID uint) {
 	// CloseSession 是幂等的，多次调用安全
 	// 这确保即使因错误提前退出，数据库状态也会被更新
 	if exists {
-		m.bastionService.CloseSession(sessionID, "会话已结束")
+		log.Printf("会话 %d 正在更新数据库状态", sessionID)
+		if err := m.bastionService.CloseSession(sessionID, "用户断开连接"); err != nil {
+			log.Printf("会话 %d 更新数据库失败: %v", sessionID, err)
+		} else {
+			log.Printf("会话 %d 数据库状态已更新为 closed", sessionID)
+		}
+	} else {
+		log.Printf("会话 %d 不在内存中（可能已被移除）", sessionID)
 	}
 }
 

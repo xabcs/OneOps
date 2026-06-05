@@ -46,8 +46,8 @@ function handleClose(session: any) {
         :class="{ active: session.id === activeId }"
         @click="$emit('select', session.id)"
       >
-        <Icon icon="lucide:terminal" class="wb-tab-icon" />
-        <span class="wb-tab-label">{{ session.serverName }}</span>
+        <Icon :icon="session.isSessionListView ? 'lucide:list-tree' : 'lucide:terminal'" class="wb-tab-icon" />
+        <span class="wb-tab-label">{{ session.title || session.serverName }}</span>
         <button type="button" class="wb-tab-close" @click.stop="handleClose(session)">
           <Icon icon="lucide:x" class="wb-close-icon" />
         </button>
@@ -118,6 +118,8 @@ function handleClose(session: any) {
   overflow-y: hidden;
   min-width: 0;
   height: 100%;
+  padding-left: 16px;
+  gap: 8px;
 }
 
 .wb-tab-list::-webkit-scrollbar {

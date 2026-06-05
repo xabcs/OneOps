@@ -169,7 +169,8 @@ func (s *BastionService) CreateSSHSession(userID uint, serverID uint, credential
 }
 
 // CloseSession 关闭会话（幂等：多次调用同一会话不会报错）
-func (s *BastionService) CloseSession(sessionID uint, reason string) error {
+// status 参数可选，默认为 "closed"，传入 "terminated" 表示强制断开
+func (s *BastionService) CloseSession(sessionID uint, reason string, status ...string) error {
 	var session models.BastionSession
 	if err := s.db.First(&session, sessionID).Error; err != nil {
 		return fmt.Errorf("会话不存在: %w", err)
@@ -183,8 +184,14 @@ func (s *BastionService) CloseSession(sessionID uint, reason string) error {
 	now := time.Now()
 	duration := int(now.Sub(*session.StartedAt).Seconds())
 
+	// 确定目标状态，默认为 "closed"
+	targetStatus := "closed"
+	if len(status) > 0 && status[0] != "" {
+		targetStatus = status[0]
+	}
+
 	updates := map[string]interface{}{
-		"status":       "closed",
+		"status":       targetStatus,
 		"ended_at":     now,
 		"duration":     duration,
 		"close_reason": reason,
@@ -222,12 +229,25 @@ func (s *BastionService) GetActiveSessions() ([]models.BastionSession, error) {
 		Where("status = ?", "active").
 		Order("started_at DESC").
 		Find(&sessions).Error
-	return sessions, err
+
+	if err != nil {
+		return nil, err
+	}
+
+	// 实时计算所有在线会话的持续时长
+	now := time.Now()
+	for i := range sessions {
+		if sessions[i].StartedAt != nil {
+			sessions[i].Duration = int(now.Sub(*sessions[i].StartedAt).Seconds())
+		}
+	}
+
+	return sessions, nil
 }
 
 // TerminateSession 强制断开会话
 func (s *BastionService) TerminateSession(sessionID uint, operatorID uint) error {
-	return s.CloseSession(sessionID, fmt.Sprintf("被用户 %d 强制断开", operatorID))
+	return s.CloseSession(sessionID, fmt.Sprintf("被用户 %d 强制断开", operatorID), "terminated")
 }
 
 // GetSessions 获取会话列表（分页）
@@ -277,7 +297,19 @@ func (s *BastionService) GetSessions(filter models.SessionFilter, page int, page
 		Limit(pageSize).
 		Find(&sessions).Error
 
-	return sessions, total, err
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 对于在线会话，实时计算持续时长
+	now := time.Now()
+	for i := range sessions {
+		if sessions[i].Status == "active" && sessions[i].StartedAt != nil {
+			sessions[i].Duration = int(now.Sub(*sessions[i].StartedAt).Seconds())
+		}
+	}
+
+	return sessions, total, nil
 }
 
 // GetSessionByID 获取会话详情
