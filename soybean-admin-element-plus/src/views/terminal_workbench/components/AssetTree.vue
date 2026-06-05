@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
 import { ElButton, ElMessage, ElTooltip, ElTree, ElInput } from 'element-plus';
 import { Icon } from '@iconify/vue';
-import { fetchGetServerGroups, fetchGetServersByGroup, fetchGetServers } from '@/service/api';
+import { fetchGetAssetTree } from '@/service/api';
 
 interface TreeNode {
   id: number | string;
@@ -99,116 +99,66 @@ function filterTree(nodes: TreeNode[], keyword: string): TreeNode[] {
   return result;
 }
 
-// 构建完整的树
+// 构建完整的树（使用优化后的API）
 async function loadTreeData() {
   loading.value = true;
   try {
-    const { data: groups } = await fetchGetServerGroups();
+    // 一次性获取所有数据：分组树 + 每个分组的服务器 + 无分组服务器
+    const { data } = await fetchGetAssetTree();
 
-    const buildTree = async (groups: any[]): Promise<TreeNode[]> => {
-      const groupServerMap = new Map<number, any[]>();
+    const groups = data.groups || [];
+    const ungroupedServers = data.ungroupedServers || [];
 
-      // 收集所有分组ID
-      const collectGroupIds = (groupList: any[]): number[] => {
-        const ids: number[] = [];
-        groupList.forEach((g: any) => {
-          ids.push(g.id);
-          if (g.children && g.children.length > 0) {
-            ids.push(...collectGroupIds(g.children));
-          }
-        });
-        return ids;
+    // 构建树节点
+    const buildNode = (group: any): TreeNode => {
+      const childGroups = (group.children || []).map((child: any) => buildNode(child));
+      const groupServers = (group.servers || []).map((server: any) => ({
+        id: `server-${server.id}` as unknown as number,
+        name: `${server.hostname} (${server.ip})`,
+        children: undefined,
+        serverCount: undefined,
+        isLeaf: true,
+        server
+      }));
+
+      const node: TreeNode = {
+        ...group,
+        children: []
       };
 
-      const allGroupIds = collectGroupIds(groups);
-
-      // 并行获取所有分组的服务器
-      await Promise.all(
-        allGroupIds.map(async groupId => {
-          try {
-            const { data } = await fetchGetServersByGroup(groupId, { page: 1, pageSize: 10000 });
-            groupServerMap.set(groupId, data?.list || []);
-          } catch (error) {
-            console.error(`获取分组 ${groupId} 的服务器失败:`, error);
-            groupServerMap.set(groupId, []);
-          }
-        })
-      );
-
-      // 获取所有服务器，用于找出无分组的服务器
-      let allServers: any[] = [];
-      try {
-        const { data: allServersData } = await fetchGetServers({ page: 1, pageSize: 10000 });
-        allServers = allServersData?.list || [];
-      } catch (error) {
-        console.error('获取所有服务器失败:', error);
-      }
-
-      // 找出有分组的服务器ID
-      const groupedServerIds = new Set<number>();
-      groupServerMap.forEach((servers) => {
-        servers.forEach((server: any) => {
-          groupedServerIds.add(server.id);
-        });
+      // 先添加子分组
+      childGroups.forEach((child: TreeNode) => {
+        node.children!.push(child);
       });
 
-      // 筛选出无分组的服务器
-      const ungroupedServers = allServers.filter((server: any) => !groupedServerIds.has(server.id));
+      // 再添加该分组的服务器
+      groupServers.forEach((serverNode: TreeNode) => {
+        node.children!.push(serverNode);
+      });
 
-      // 构建树节点
-      const buildNode = (group: any): TreeNode => {
-        const childGroups = (group.children || []).map(child => buildNode(child));
-        const groupServers = groupServerMap.get(group.id) || [];
-
-        const node: TreeNode = {
-          ...group,
-          children: [],
-          serverCount:
-            groupServers.length + childGroups.reduce((sum: number, child: any) => sum + (child.serverCount || 0), 0)
-        };
-
-        childGroups.forEach((child: TreeNode) => {
-          node.children!.push(child);
-        });
-
-        groupServers.forEach((server: any) => {
-          node.children!.push({
-            id: `server-${server.id}` as unknown as number,
-            name: `${server.hostname} (${server.ip})`,
-            children: undefined,
-            serverCount: undefined,
-            isLeaf: true,
-            server
-          });
-        });
-
-        return node;
-      };
-
-      const rootGroups = groups.filter((g: any) => g.parentId === 0);
-      const result = rootGroups.map((g: any) => buildNode(g));
-
-      // 添加"无分组"节点（如果有未分组的服务器）
-      if (ungroupedServers.length > 0) {
-        result.unshift({
-          id: 'ungrouped' as unknown as number,
-          name: 'Default',
-          children: ungroupedServers.map((server: any) => ({
-            id: `server-${server.id}` as unknown as number,
-            name: `${server.hostname} (${server.ip})`,
-            children: undefined,
-            serverCount: undefined,
-            isLeaf: true,
-            server
-          })),
-          serverCount: ungroupedServers.length
-        });
-      }
-
-      return result;
+      return node;
     };
 
-    treeData.value = await buildTree(groups || []);
+    const result = groups.map((g: any) => buildNode(g));
+
+    // 添加"Default"节点（如果有未分组的服务器）
+    if (ungroupedServers.length > 0) {
+      result.unshift({
+        id: 'ungrouped' as unknown as number,
+        name: 'Default',
+        children: ungroupedServers.map((server: any) => ({
+          id: `server-${server.id}` as unknown as number,
+          name: `${server.hostname} (${server.ip})`,
+          children: undefined,
+          serverCount: undefined,
+          isLeaf: true,
+          server
+        })),
+        serverCount: ungroupedServers.length
+      });
+    }
+
+    treeData.value = result;
   } catch (error) {
     console.error('加载资产树失败:', error);
     ElMessage.error('加载资产树失败');

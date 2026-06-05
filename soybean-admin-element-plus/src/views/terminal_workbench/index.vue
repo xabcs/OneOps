@@ -14,7 +14,7 @@
         ElSelect,
         ElOption,
     } from "element-plus";
-    import { fetchConnectServer, fetchGetServerById } from "@/service/api";
+    import { fetchConnectServer, fetchGetServerForConnect } from "@/service/api";
     import { localStg } from "@/utils/storage";
     import SessionTabs from "./components/SessionTabs.vue";
     import TerminalArea from "./components/TerminalArea.vue";
@@ -298,17 +298,17 @@
         console.log("=== handleConnect 被调用 ===");
         console.log("传入的服务器对象:", server);
         console.log("服务器ID:", server.id);
-        console.log("是否包含凭证列表:", server?.credentials?.length);
 
-        // 无论从哪个入口进入，都先获取完整的服务器信息
+        // 获取完整的服务器信息（包含 credentials）
         try {
-            ElMessage.info({
-                message: "正在获取服务器信息...",
-                duration: 2000,
-            });
+            // 显示加载提示（可选，体验更好）
+            // ElMessage.info({
+            //     message: "正在连接...",
+            //     duration: 500,
+            // });
 
-            const response = await fetchGetServerById(server.id);
-            console.log("fetchGetServerById 响应:", response);
+            const response = await fetchGetServerForConnect(server.id);
+            console.log("fetchGetServerForConnect 响应:", response);
 
             if (response.data) {
                 connectingServer.value = response.data;

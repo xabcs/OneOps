@@ -22,6 +22,16 @@ export function fetchGetServerById(id: number) {
 }
 
 /**
+ * 获取连接所需的服务器信息（轻量级，只包含基本信息和凭证）
+ */
+export function fetchGetServerForConnect(id: number) {
+  return request<CMDB.Server>({
+    url: `/cmdb/servers/${id}/connect`,
+    method: 'get'
+  });
+}
+
+/**
  * 创建服务器
  */
 export function fetchCreateServer(data: CMDB.ServerForm) {
@@ -88,6 +98,19 @@ export function fetchGetServerConfig(data: { hostname: string; ip: string; sshUs
 export function fetchGetServerGroups() {
   return request<CMDB.ServerGroup[]>({
     url: '/cmdb/groups',
+    method: 'get'
+  });
+}
+
+/**
+ * 获取完整的资产树（分组+服务器），一次性返回所有数据
+ */
+export function fetchGetAssetTree() {
+  return request<{
+    groups: any[];
+    ungroupedServers: CMDB.Server[];
+  }>({
+    url: '/cmdb/asset-tree',
     method: 'get'
   });
 }

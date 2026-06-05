@@ -109,6 +109,14 @@ func (s *CMDBService) GetServerByID(id uint) (*models.Server, error) {
 	return &server, err
 }
 
+// GetServerForConnect 获取连接所需的服务器信息（轻量级）
+func (s *CMDBService) GetServerForConnect(id uint) (*models.Server, error) {
+	var server models.Server
+	// 只 Preload Credentials，其他不需要的数据不加载
+	err := db.Preload("Credentials").First(&server, id).Error
+	return &server, err
+}
+
 // CreateServer 创建服务器
 func (s *CMDBService) CreateServer(server *models.Server, operator string) error {
 	// 记录变更
@@ -633,6 +641,118 @@ func (s *CMDBService) buildGroupTree(groups []models.ServerGroup, parentID uint)
 		}
 	}
 	return result
+}
+
+// GetAssetTree 获取资产树（轻量级数据，不包含敏感信息和监控数据）
+func (s *CMDBService) GetAssetTree() (map[string]interface{}, error) {
+	// 1. 查询所有分组
+	var groups []models.ServerGroup
+	err := db.Order("sort_order ASC, id ASC").Find(&groups).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. 查询所有分组关联关系
+	var relations []models.ServerGroupRelation
+	err = db.Find(&relations).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. 查询所有服务器（只查询必要字段，不包含 credentials 和 metrics）
+	type ServerBasicInfo struct {
+		ID           uint    `json:"id"`
+		Hostname     string  `json:"hostname"`
+		IP           string  `json:"ip"`
+		AgentStatus  string  `json:"agentStatus"`
+		Env          string  `json:"env"`
+	}
+
+	var allServers []ServerBasicInfo
+	err = db.Model(&models.Server{}).
+		Select("id, hostname, ip, agent_status, env").
+		Order("hostname ASC").
+		Find(&allServers).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// 4. 构建分组ID到服务器的映射
+	groupServerMap := make(map[uint][]ServerBasicInfo)
+	groupedServerIDs := make(map[uint]bool)
+
+	for _, relation := range relations {
+		groupedServerIDs[relation.ServerID] = true
+	}
+
+	for _, server := range allServers {
+		// 找到这个服务器所属的所有分组
+		for _, relation := range relations {
+			if relation.ServerID == server.ID {
+				groupServerMap[relation.GroupID] = append(groupServerMap[relation.GroupID], server)
+				break
+			}
+		}
+	}
+
+	// 5. 构建带服务器的分组树
+	type GroupWithServers struct {
+		ID          uint                     `json:"id"`
+		ParentID    uint                     `json:"parentId"`
+		Name        string                   `json:"name"`
+		SortOrder   int                      `json:"sortOrder"`
+		Children    []GroupWithServers      `json:"children"`
+		Servers     []ServerBasicInfo        `json:"servers"`
+		ServerCount int                      `json:"serverCount"`
+	}
+
+	// sumServerCounts 递归计算服务器的总数
+	sumServerCounts := func(groups []GroupWithServers) int {
+		count := 0
+		for _, group := range groups {
+			count += group.ServerCount
+		}
+		return count
+	}
+
+	// 递归构建树
+	var buildTree func(parentID uint) []GroupWithServers
+	buildTree = func(parentID uint) []GroupWithServers {
+		var result []GroupWithServers
+		for _, group := range groups {
+			if group.ParentID == parentID {
+				servers := groupServerMap[group.ID]
+				children := buildTree(group.ID)
+				serverCount := len(servers) + sumServerCounts(children)
+
+				result = append(result, GroupWithServers{
+					ID:          group.ID,
+					ParentID:    group.ParentID,
+					Name:        group.Name,
+					SortOrder:   group.SortOrder,
+					Children:    children,
+					Servers:     servers,
+					ServerCount: serverCount,
+				})
+			}
+		}
+		return result
+	}
+
+	tree := buildTree(0)
+
+	// 6. 筛选无分组的服务器
+	var ungroupedServers []ServerBasicInfo
+	for _, server := range allServers {
+		if !groupedServerIDs[server.ID] {
+			ungroupedServers = append(ungroupedServers, server)
+		}
+	}
+
+	return map[string]interface{}{
+		"groups":           tree,
+		"ungroupedServers": ungroupedServers,
+	}, nil
 }
 
 // GetServerGroupByID 根据ID获取主机分组

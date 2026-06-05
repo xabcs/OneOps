@@ -116,7 +116,7 @@
     justify-content: space-between;
     padding: 0 12px;
     height: 26px;
-    background: #171717;
+    background: #1e1e1e;
     flex-shrink: 0;
 }
 
@@ -181,7 +181,7 @@
     flex: 1;
     overflow: hidden;
     min-height: 0;
-    background: #171717;
+    background: #0d0d0d;
     border: none;
     margin: 0;
     padding: 0;

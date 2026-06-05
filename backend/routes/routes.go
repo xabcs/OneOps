@@ -166,6 +166,7 @@ func SetupRoutes(r *gin.Engine) {
 			cmdb.GET("/servers/stats", cmdbController.GetServerStats)
 			cmdb.POST("/servers/config", cmdbController.GetServerConfig)
 			cmdb.GET("/servers/:id", cmdbController.GetServerByID)
+			cmdb.GET("/servers/:id/connect", cmdbController.GetServerForConnect) // 新增：轻量级连接接口
 			cmdb.POST("/servers/:id/connect", bastionController.ConnectServer)
 			cmdb.GET("/servers/:id/permission", bastionController.CheckConnectPermission)
 			cmdb.POST("/servers/:id/sync-metrics", cmdbController.SyncServerMetrics)
@@ -195,6 +196,7 @@ func SetupRoutes(r *gin.Engine) {
 			// 主机分组管理
 			cmdb.GET("/groups", cmdbController.GetServerGroups)
 			cmdb.GET("/groups/:id", cmdbController.GetServerGroupByID)
+			cmdb.GET("/asset-tree", cmdbController.GetAssetTree)
 			cmdb.POST("/groups", cmdbController.CreateServerGroup)
 			cmdb.PUT("/groups/:id", cmdbController.UpdateServerGroup)
 			cmdb.DELETE("/groups/:id", cmdbController.DeleteServerGroup)

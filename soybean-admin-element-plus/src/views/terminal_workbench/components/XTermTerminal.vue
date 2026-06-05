@@ -47,10 +47,10 @@
         // 创建终端实例
         terminal = new Terminal({
             cursorBlink: true,
-            fontSize: 14,
+            fontSize: 13,
             fontFamily: 'Menlo, Monaco, "Courier New", monospace',
             theme: {
-                background: "#1e1e1e",
+                background: "#0d0d0d",
                 foreground: "#cccccc",
                 cursor: "#2472c8",
                 selection: "rgba(255, 255, 255, 0.3)",
@@ -246,7 +246,7 @@
 .xterm-terminal-container {
     width: 100%;
     height: 100%;
-    background-color: #1e1e1e;
+    background-color: #0d0d0d;
     overflow: hidden;
     border: none;
 }
@@ -254,16 +254,16 @@
 .xterm-terminal-container :deep(.xterm) {
     width: 100%;
     height: 100%;
-    background-color: #1e1e1e;
+    background-color: #171717;
     padding: 16px;
     border: none !important;
 }
 
 .xterm-terminal-container :deep(.xterm-viewport) {
-    background-color: #1e1e1e !important;
+    background-color: #171717 !important;
     border: none !important;
     scrollbar-width: thin;
-    scrollbar-color: #444 #1e1e1e;
+    scrollbar-color: #444 #171717;
 }
 
 .xterm-terminal-container :deep(.xterm-viewport::-webkit-scrollbar) {
@@ -272,7 +272,7 @@
 }
 
 .xterm-terminal-container :deep(.xterm-viewport::-webkit-scrollbar-track) {
-    background: #1e1e1e;
+    background: #171717;
 }
 
 .xterm-terminal-container :deep(.xterm-viewport::-webkit-scrollbar-thumb) {
@@ -285,7 +285,7 @@
 }
 
 .xterm-terminal-container :deep(.xterm-screen) {
-    background-color: #1e1e1e !important;
+    background-color: #171717 !important;
     border: none !important;
 }
 </style>

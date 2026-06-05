@@ -83,6 +83,24 @@ func (c *CMDBController) GetServerByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(server))
 }
 
+// GetServerForConnect 获取连接所需的服务器信息（轻量级）
+func (c *CMDBController) GetServerForConnect(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的ID"))
+		return
+	}
+
+	server, err := c.cmdbService.GetServerForConnect(uint(id))
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("服务器不存在"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(server))
+}
+
 // CreateServer 创建服务器
 func (c *CMDBController) CreateServer(ctx *gin.Context) {
 	var server models.Server
@@ -630,6 +648,17 @@ func (c *CMDBController) GetServerGroups(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(groups))
+}
+
+// GetAssetTree 获取完整的资产树（分组+服务器），一次性返回所有数据
+func (c *CMDBController) GetAssetTree(ctx *gin.Context) {
+	data, err := c.cmdbService.GetAssetTree()
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(data))
 }
 
 // GetServerGroupByID 获取主机分组详情
