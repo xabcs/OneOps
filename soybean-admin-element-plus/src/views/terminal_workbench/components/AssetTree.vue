@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
 import { ElButton, ElMessage, ElTooltip, ElTree, ElInput } from 'element-plus';
 import { Icon } from '@iconify/vue';
-import { fetchGetServerGroups, fetchGetServersByGroup } from '@/service/api';
+import { fetchGetServerGroups, fetchGetServersByGroup, fetchGetServers } from '@/service/api';
 
 interface TreeNode {
   id: number | string;
@@ -135,6 +135,26 @@ async function loadTreeData() {
         })
       );
 
+      // 获取所有服务器，用于找出无分组的服务器
+      let allServers: any[] = [];
+      try {
+        const { data: allServersData } = await fetchGetServers({ page: 1, pageSize: 10000 });
+        allServers = allServersData?.list || [];
+      } catch (error) {
+        console.error('获取所有服务器失败:', error);
+      }
+
+      // 找出有分组的服务器ID
+      const groupedServerIds = new Set<number>();
+      groupServerMap.forEach((servers) => {
+        servers.forEach((server: any) => {
+          groupedServerIds.add(server.id);
+        });
+      });
+
+      // 筛选出无分组的服务器
+      const ungroupedServers = allServers.filter((server: any) => !groupedServerIds.has(server.id));
+
       // 构建树节点
       const buildNode = (group: any): TreeNode => {
         const childGroups = (group.children || []).map(child => buildNode(child));
@@ -166,7 +186,26 @@ async function loadTreeData() {
       };
 
       const rootGroups = groups.filter((g: any) => g.parentId === 0);
-      return rootGroups.map((g: any) => buildNode(g));
+      const result = rootGroups.map((g: any) => buildNode(g));
+
+      // 添加"无分组"节点（如果有未分组的服务器）
+      if (ungroupedServers.length > 0) {
+        result.unshift({
+          id: 'ungrouped' as unknown as number,
+          name: 'Default',
+          children: ungroupedServers.map((server: any) => ({
+            id: `server-${server.id}` as unknown as number,
+            name: `${server.hostname} (${server.ip})`,
+            children: undefined,
+            serverCount: undefined,
+            isLeaf: true,
+            server
+          })),
+          serverCount: ungroupedServers.length
+        });
+      }
+
+      return result;
     };
 
     treeData.value = await buildTree(groups || []);
@@ -373,7 +412,7 @@ onUnmounted(() => {
               v-if="data.serverCount !== undefined && !data.isLeaf"
               class="wb-tree-node-count"
             >
-              ({{ data.serverCount }})
+              {{ data.serverCount }}
             </span>
             <span
               v-if="data.isLeaf && data.server && currentSessions.includes(Number(data.server.id))"
@@ -640,7 +679,6 @@ onUnmounted(() => {
 .wb-tree-node {
   display: flex;
   align-items: center;
-  gap: 6px;
   cursor: pointer;
   width: 100%;
 }
@@ -650,6 +688,7 @@ onUnmounted(() => {
   height: 14px;
   color: #858585;
   flex-shrink: 0;
+  margin-right: 6px;
 }
 
 .wb-tree-node-label {
@@ -658,14 +697,14 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1;
+  flex: 0 1 auto;
 }
 
 .wb-tree-node-count {
-  margin-left: 4px;
   font-size: 10px;
   color: #6e6e6e;
   flex-shrink: 0;
+  margin-left: 0;
 }
 
 .is-connected {

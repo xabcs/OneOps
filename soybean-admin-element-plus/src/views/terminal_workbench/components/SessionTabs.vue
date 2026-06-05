@@ -69,7 +69,6 @@ function handleClose(session: any) {
   align-items: center;
   height: 35px;
   background: #252526;
-  border-bottom: 1px solid #000000;
   flex-shrink: 0;
 }
 
@@ -164,7 +163,6 @@ function handleClose(session: any) {
   padding: 0 8px;
   height: 100%;
   background: #2d2d2d;
-  border-right: 1px solid #000000;
   cursor: pointer;
   white-space: nowrap;
   min-width: 0;

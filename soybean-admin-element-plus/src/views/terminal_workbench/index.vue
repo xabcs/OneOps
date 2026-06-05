@@ -34,7 +34,7 @@
     const showActivityBar = ref(true);
     const showSidebar = ref(true);
     const isFullscreen = ref(false);
-    const sidebarWidth = ref(240);
+    const sidebarWidth = ref(300);
     const isResizing = ref(false);
     const activeActivityItem = ref("assets");
 

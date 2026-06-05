@@ -52,7 +52,7 @@
             theme: {
                 background: "#1e1e1e",
                 foreground: "#cccccc",
-                cursor: "#cccccc",
+                cursor: "#2472c8",
                 selection: "rgba(255, 255, 255, 0.3)",
                 black: "#000000",
                 red: "#cd3131",
@@ -242,46 +242,50 @@
     <div ref="terminalRef" class="xterm-terminal-container"></div>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .xterm-terminal-container {
     width: 100%;
     height: 100%;
     background-color: #1e1e1e;
     overflow: hidden;
+    border: none;
+}
 
-    :deep(.xterm) {
-        width: 100%;
-        height: 100%;
-        background-color: #1e1e1e;
-        padding: 4px;
-    }
+.xterm-terminal-container :deep(.xterm) {
+    width: 100%;
+    height: 100%;
+    background-color: #1e1e1e;
+    padding: 16px;
+    border: none !important;
+}
 
-    :deep(.xterm-viewport) {
-        background-color: #1e1e1e !important;
-        scrollbar-width: thin;
-        scrollbar-color: #444 #1e1e1e;
-    }
+.xterm-terminal-container :deep(.xterm-viewport) {
+    background-color: #1e1e1e !important;
+    border: none !important;
+    scrollbar-width: thin;
+    scrollbar-color: #444 #1e1e1e;
+}
 
-    :deep(.xterm-viewport::-webkit-scrollbar) {
-        width: 8px;
-        height: 8px;
-    }
+.xterm-terminal-container :deep(.xterm-viewport::-webkit-scrollbar) {
+    width: 8px;
+    height: 8px;
+}
 
-    :deep(.xterm-viewport::-webkit-scrollbar-track) {
-        background: #1e1e1e;
-    }
+.xterm-terminal-container :deep(.xterm-viewport::-webkit-scrollbar-track) {
+    background: #1e1e1e;
+}
 
-    :deep(.xterm-viewport::-webkit-scrollbar-thumb) {
-        background: #444;
-        border-radius: 4px;
+.xterm-terminal-container :deep(.xterm-viewport::-webkit-scrollbar-thumb) {
+    background: #444;
+    border-radius: 4px;
+}
 
-        &:hover {
-            background: #555;
-        }
-    }
+.xterm-terminal-container :deep(.xterm-viewport::-webkit-scrollbar-thumb:hover) {
+    background: #555;
+}
 
-    :deep(.xterm-screen) {
-        background-color: #1e1e1e !important;
-    }
+.xterm-terminal-container :deep(.xterm-screen) {
+    background-color: #1e1e1e !important;
+    border: none !important;
 }
 </style>

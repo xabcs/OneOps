@@ -184,7 +184,6 @@
 .terminal-workbench .wb-tab-bar {
   min-height: 35px;
   background: #2d2d2d;
-  border-bottom: 1px solid #000000;
   display: flex;
   align-items: center;
   flex-shrink: 0;
@@ -212,7 +211,6 @@
   align-items: center;
   gap: 6px;
   background: transparent;
-  border-right: 1px solid #1e1e1e;
   cursor: pointer;
   position: relative;
   min-width: 0;
@@ -225,7 +223,6 @@
 
 .terminal-workbench .wb-tab-item.active {
   background: #1e1e1e;
-  border-top: 1px solid #007acc;
 }
 
 .terminal-workbench .wb-status-dot {

@@ -115,9 +115,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 12px;
-    height: 36px;
-    background: #252526;
-    border-bottom: 1px solid #000;
+    height: 26px;
+    background: #171717;
     flex-shrink: 0;
 }
 
@@ -154,7 +153,7 @@
 
 .terminal-mode {
     display: flex;
-    background: #1e1e1e;
+    background: #252526;
     border-radius: 2px;
     padding: 1px;
 }
@@ -182,6 +181,10 @@
     flex: 1;
     overflow: hidden;
     min-height: 0;
+    background: #171717;
+    border: none;
+    margin: 0;
+    padding: 0;
 }
 
 .terminal-placeholder {
@@ -223,6 +226,9 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
+    border: none;
+    margin: 0;
+    padding: 0;
 }
 
 .terminal-session {
