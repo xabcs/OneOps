@@ -22,6 +22,11 @@ func NewBastionService() *BastionService {
 	}
 }
 
+// GetDB 获取数据库连接（供 Controller 层直接查询使用）
+func (s *BastionService) GetDB() *gorm.DB {
+	return s.db
+}
+
 // ========== 连接权限检查 ==========
 
 // CheckConnectPermission 检查用户是否有连接指定服务器的权限，返回允许使用的凭证列表
@@ -250,7 +255,147 @@ func (s *BastionService) TerminateSession(sessionID uint, operatorID uint) error
 	return s.CloseSession(sessionID, fmt.Sprintf("被用户 %d 强制断开", operatorID), "terminated")
 }
 
-// GetSessions 获取会话列表（分页）
+// SessionListItem 会话列表项（轻量级，只包含列表展示需要的字段）
+type SessionListItem struct {
+	ID           uint   `json:"id"`
+	ServerID     uint   `json:"serverId"`
+	Server       ServerBasicInfo `json:"server"`
+	UserID       uint   `json:"userId"`
+	User         UserBasicInfo   `json:"user"`
+	LoginAccount string `json:"loginAccount"`
+	Protocol     string `json:"protocol"`
+	ClientIP     string `json:"clientIp"`
+	Status       string `json:"status"`
+	StartedAt    time.Time `json:"startedAt"`
+	EndedAt      *time.Time `json:"endedAt"`
+	Duration     int    `json:"duration"`
+	CloseReason  string `json:"closeReason"`
+}
+
+// ServerBasicInfo 服务器基本信息
+type ServerBasicInfo struct {
+	ID       uint   `json:"id"`
+	Hostname string `json:"hostname"`
+	IP       string `json:"ip"`
+}
+
+// UserBasicInfo 用户基本信息
+type UserBasicInfo struct {
+	ID       uint   `json:"id"`
+	Username string `json:"username"`
+}
+
+// GetSessionsList 获取会话列表（轻量级，用于列表展示，不加载敏感和冗余数据）
+func (s *BastionService) GetSessionsList(filter models.SessionFilter, page int, pageSize int) ([]SessionListItem, int64, error) {
+	var sessions []SessionListItem
+	var total int64
+
+	// 构建基础查询
+	tx := s.db.Table("bastion_sessions").
+		Select(`
+			bastion_sessions.id,
+			bastion_sessions.server_id,
+			bastion_sessions.user_id,
+			bastion_sessions.login_account,
+			bastion_sessions.protocol,
+			bastion_sessions.client_ip,
+			bastion_sessions.status,
+			bastion_sessions.started_at,
+			bastion_sessions.ended_at,
+			bastion_sessions.duration,
+			bastion_sessions.close_reason,
+			servers.id as server_id,
+			servers.hostname,
+			servers.ip,
+			users.id as user_id,
+			users.username
+		`).
+		Joins("LEFT JOIN servers ON bastion_sessions.server_id = servers.id").
+		Joins("LEFT JOIN users ON bastion_sessions.user_id = users.id")
+
+	// 应用筛选条件
+	if filter.ServerID != nil {
+		tx = tx.Where("bastion_sessions.server_id = ?", *filter.ServerID)
+	}
+	if filter.UserID != nil {
+		tx = tx.Where("bastion_sessions.user_id = ?", *filter.UserID)
+	}
+	if filter.Status != nil {
+		tx = tx.Where("bastion_sessions.status = ?", *filter.Status)
+	}
+	if filter.Protocol != nil {
+		tx = tx.Where("bastion_sessions.protocol = ?", *filter.Protocol)
+	}
+	if filter.ClientIP != nil {
+		tx = tx.Where("bastion_sessions.client_ip LIKE ?", "%"+*filter.ClientIP+"%")
+	}
+	if filter.LoginAccount != nil {
+		tx = tx.Where("bastion_sessions.login_account = ?", *filter.LoginAccount)
+	}
+	if filter.StartDate != nil {
+		tx = tx.Where("bastion_sessions.started_at >= ?", *filter.StartDate)
+	}
+	if filter.EndDate != nil {
+		tx = tx.Where("bastion_sessions.started_at <= ?", *filter.EndDate)
+	}
+
+	// 获取总数
+	countTx := s.db.Model(&models.BastionSession{})
+	if filter.ServerID != nil {
+		countTx = countTx.Where("server_id = ?", *filter.ServerID)
+	}
+	if filter.UserID != nil {
+		countTx = countTx.Where("user_id = ?", *filter.UserID)
+	}
+	if filter.Status != nil {
+		countTx = countTx.Where("status = ?", *filter.Status)
+	}
+	if filter.Protocol != nil {
+		countTx = countTx.Where("protocol = ?", *filter.Protocol)
+	}
+	if filter.ClientIP != nil {
+		countTx = countTx.Where("client_ip LIKE ?", "%"+*filter.ClientIP+"%")
+	}
+	if filter.LoginAccount != nil {
+		countTx = countTx.Where("login_account = ?", *filter.LoginAccount)
+	}
+	if filter.StartDate != nil {
+		countTx = countTx.Where("started_at >= ?", *filter.StartDate)
+	}
+	if filter.EndDate != nil {
+		countTx = countTx.Where("started_at <= ?", *filter.EndDate)
+	}
+
+	if err := countTx.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 查询数据（使用结构体映射）
+	err := tx.
+		Order("bastion_sessions.started_at DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Scan(&sessions).Error
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 实时计算持续时长（对于在线会话）
+	now := time.Now()
+	for i := range sessions {
+		if sessions[i].Status == "active" && sessions[i].StartedAt.After(time.Time{}) {
+			sessions[i].Duration = int(now.Sub(sessions[i].StartedAt).Seconds())
+		} else if sessions[i].Duration == 0 && sessions[i].EndedAt != nil {
+			// 如果数据库中没有存 duration，从 ended_at 计算
+			sessions[i].Duration = int(sessions[i].EndedAt.Sub(sessions[i].StartedAt).Seconds())
+		}
+	}
+
+	return sessions, total, nil
+}
+
+// GetSessions 获取会话列表（分页，包含完整信息，用于详情查看）
 func (s *BastionService) GetSessions(filter models.SessionFilter, page int, pageSize int) ([]models.BastionSession, int64, error) {
 	var sessions []models.BastionSession
 	var total int64

@@ -190,7 +190,7 @@ function handleClose(session: any) {
 
 .wb-tab-label {
   font-size: 12px;
-  color: #cccccc;
+  color: #ffffff;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

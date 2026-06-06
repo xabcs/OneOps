@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { fetchGetSessions, fetchTerminateSession } from "@/service/api/cmdb";
+import { fetchGetSessions, fetchTerminateSession, fetchGetActiveSessionsFromMemory, fetchGetSessionsList } from "@/service/api/cmdb";
 import { useAppStore } from "@/store/modules/app";
 import { useAuthStore } from "@/store/modules/auth";
 
@@ -83,6 +83,7 @@ function handleTabChange(tab: TabType) {
   activeTab.value = tab;
   selectedSessionIds.value = [];
   pagination.value.current = 1;
+  // 不清空 dataSource，保留旧数据直到新数据加载完成，避免空状态闪烁
   loadSessions();
 }
 
@@ -97,7 +98,17 @@ async function loadSessions() {
 
     // 根据标签页设置状态筛选
     if (activeTab.value === "active") {
-      params.status = "active";
+      // 在线会话：从内存获取真正活跃的会话（更准确）
+      console.log('=== 开始加载在线会话 ===');
+      const response = await fetchGetActiveSessionsFromMemory();
+      console.log('API 响应:', response);
+      console.log('会话数量:', response.data?.length || 0);
+      console.table(response.data || []);
+      dataSource.value = response.data || [];
+      console.log('赋值后 dataSource.length:', dataSource.value.length);
+      pagination.value.total = dataSource.value.length;
+      console.log('=== 在线会话加载完成 ===');
+      return; // ✅ 直接返回，不要继续执行下面的通用查询
     } else if (activeTab.value === "terminated") {
       params.status = "terminated";
     }
@@ -109,9 +120,15 @@ async function loadSessions() {
       // 后端需要支持模糊查询，这里暂时只传参数
     }
 
-    const response = await fetchGetSessions(params);
+    // 使用轻量级接口（已终止会话、会话历史）
+    console.log(`=== 加载 ${activeTab.value} 会话 ===`);
+    console.log('请求参数:', params);
+    const response = await fetchGetSessionsList(params);
+    console.log('API 响应:', response);
+    console.log('返回数据量:', response.data?.list?.length || 0);
     dataSource.value = response.data?.list || [];
     pagination.value.total = response.data?.total || 0;
+    console.log('赋值后 dataSource.length:', dataSource.value.length);
   } catch (error) {
     console.error("加载会话列表失败:", error);
     dataSource.value = [];
@@ -308,6 +325,19 @@ onMounted(() => {
     <!-- 数据表格 -->
     <div class="wb-table-container" @click="handleTableAction">
       <table class="wb-table">
+        <colgroup>
+          <col class="wb-checkbox-column" style="width: 40px;">
+          <col class="wb-index-column" style="width: 50px;">
+          <col style="width: 140px;">
+          <col style="width: 180px;">
+          <col style="width: 80px;">
+          <col style="width: 70px;">
+          <col style="width: 80px;">
+          <col style="width: 90px;">
+          <col style="width: 80px;">
+          <col style="width: 110px;">
+          <col style="width: 60px;">
+        </colgroup>
         <thead>
           <tr>
             <th class="wb-checkbox-column">
@@ -477,7 +507,7 @@ onMounted(() => {
 .wb-page-title {
   font-size: 14px;
   font-weight: 500;
-  color: #cccccc;
+  color: #ffffff;
   margin: 0;
 }
 
@@ -491,7 +521,7 @@ onMounted(() => {
   background: transparent;
   border: 1px solid #3c3c3c;
   border-radius: 2px;
-  color: #cccccc;
+  color: #ffffff;
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
@@ -510,12 +540,11 @@ onMounted(() => {
 .wb-button-primary {
   background: transparent;
   border: 1px solid #3c3c3c;
-  color: #cccccc;
+  color: #ffffff;
 
   &:hover {
     background: #252526;
     border-color: #404040;
-    color: #ffffff;
   }
 
   &:active {
@@ -558,17 +587,32 @@ onMounted(() => {
 .wb-tab {
   padding: 8px 16px 8px 0; /* 左侧去掉padding，由父容器统一控制 */
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  color: #858585;
+  color: #ffffff;
   transition: all 0.2s;
+  position: relative; /* 为伪元素定位 */
+  display: inline-flex; /* flex 布局 */
+  align-items: center;
+
+  /* 使用伪元素作为下划线，宽度只覆盖文本内容 */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 16px; /* 排除右边的 padding */
+    bottom: 0;
+    height: 2px;
+    background: transparent;
+  }
 
   &:hover {
-    color: #cccccc;
+    color: #ffffff;
   }
 
   &.active {
-    border-bottom-color: #007acc;
-    color: #ffffff;
+    /* 激活状态下，伪元素显示为蓝色下划线 */
+    &::before {
+      background: #007acc;
+    }
   }
 }
 
@@ -664,6 +708,7 @@ onMounted(() => {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
+  table-layout: fixed; // 固定列宽，避免内容变化导致列宽跳动
 
   thead {
     position: sticky;
@@ -686,6 +731,9 @@ onMounted(() => {
     padding: 10px 12px;
     border-bottom: 1px solid #333333;
     vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   tbody tr {

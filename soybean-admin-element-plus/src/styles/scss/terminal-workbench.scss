@@ -3,9 +3,6 @@
  * 基于阿里云Web Terminal设计规范
  */
 
-/* 导入 VSCode Codicons 图标集 */
-@import "@vscode/codicons/dist/codicon.css";
-
 /* ==================== 主工作台 ==================== */
 .terminal-workbench {
   width: 100%;
@@ -84,16 +81,6 @@
 
 .terminal-workbench .wb-activity-item.active .wb-activity-icon {
   color: #ffffff;
-}
-
-/* Codicon 图标样式 */
-.terminal-workbench .codicon {
-  line-height: 1;
-  display: inline-block;
-}
-
-.terminal-workbench .wb-logo-icon.codicon {
-  color: #007acc;
 }
 
 /* ==================== 主内容区 ==================== */
@@ -245,7 +232,7 @@
 
 .terminal-workbench .wb-tab-label {
   font-size: 12px;
-  color: #cccccc;
+  color: #ffffff;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

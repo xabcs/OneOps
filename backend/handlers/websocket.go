@@ -371,6 +371,9 @@ func (h *SSHWebSocketHandler) forwardWebSocketToSSH(conn *websocket.Conn, stdinP
 			return
 		}
 
+		// 更新最后活动时间（每次收到用户输入）
+		h.sessionManager.UpdateLastActiveAt(session.ID)
+
 		// 转发到 SSH stdin
 		if _, err := stdinPipe.Write(message); err != nil {
 			log.Printf("SSH 写入错误: %v", err)
@@ -558,7 +561,7 @@ func (h *SSHWebSocketHandler) ResizePTY(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("终端大小已调整"))
 }
 
-// SessionManager 会话管理器
+// SessionManager 会话管理器（导出类型，供其他包使用）
 type SessionManager struct {
 	mu             sync.RWMutex
 	sessions       map[uint]*SessionState
@@ -567,9 +570,10 @@ type SessionManager struct {
 
 // SessionState 会话状态
 type SessionState struct {
-	Conn       *websocket.Conn
-	SSHSession *ssh.Session
-	CreatedAt  time.Time
+	Conn         *websocket.Conn
+	SSHSession   *ssh.Session
+	CreatedAt    time.Time
+	LastActiveAt time.Time // 最后活动时间（用于审计和展示）
 }
 
 // NewSessionManager 创建会话管理器
@@ -584,10 +588,12 @@ func NewSessionManager(bastionService *services.BastionService) *SessionManager 
 func (m *SessionManager) Add(sessionID uint, conn *websocket.Conn, sshSession *ssh.Session) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	now := time.Now()
 	m.sessions[sessionID] = &SessionState{
-		Conn:       conn,
-		SSHSession: sshSession,
-		CreatedAt:  time.Now(),
+		Conn:         conn,
+		SSHSession:   sshSession,
+		CreatedAt:    now,
+		LastActiveAt: now,
 	}
 }
 
@@ -638,6 +644,28 @@ func (m *SessionManager) GetActiveSessionCount() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return len(m.sessions)
+}
+
+// GetAllActiveSessions 获取所有活跃会话的 ID 列表
+func (m *SessionManager) GetAllActiveSessions() []uint {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	sessionIDs := make([]uint, 0, len(m.sessions))
+	for sessionID := range m.sessions {
+		sessionIDs = append(sessionIDs, sessionID)
+	}
+	return sessionIDs
+}
+
+// UpdateLastActiveAt 更新会话的最后活动时间
+func (m *SessionManager) UpdateLastActiveAt(sessionID uint) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if session, ok := m.sessions[sessionID]; ok {
+		session.LastActiveAt = time.Now()
+	}
 }
 
 // TerminateSession 终止会话

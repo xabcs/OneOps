@@ -240,7 +240,9 @@ func SetupRoutes(r *gin.Engine) {
 
 			// 会话管理
 			cmdb.GET("/sessions", bastionController.GetSessions)
+			cmdb.GET("/sessions/list", bastionController.GetSessionsList) // 轻量级列表接口，只返回展示字段
 			cmdb.GET("/sessions/active", bastionController.GetActiveSessions)
+			cmdb.GET("/sessions/active-memory", bastionController.GetActiveSessionsFromMemory) // 从内存获取真正活跃的会话
 			cmdb.GET("/sessions/stats", bastionController.GetSessionStats)
 			cmdb.GET("/sessions/:id", bastionController.GetSessionByID)
 			cmdb.POST("/sessions/:id/terminate", bastionController.TerminateSession)

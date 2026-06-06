@@ -413,12 +413,12 @@
         <div v-if="showActivityBar && !isFullscreen" class="wb-activity-bar">
             <!-- Logo -->
             <div class="wb-activity-logo">
-                <i class="codicon codicon-terminal wb-logo-icon"></i>
+                <Icon icon="lucide:terminal" class="wb-logo-icon" />
             </div>
 
             <!-- 菜单按钮 -->
             <div class="wb-activity-item" :class="{ active: mainMenuExpanded }" title="菜单" @click="toggleMainMenu">
-                <i class="codicon codicon-menu wb-activity-icon"></i>
+                <Icon icon="lucide:menu" class="wb-activity-icon" />
                 <!-- 折叠指示器 -->
                 <div v-if="mainMenuExpanded" class="wb-menu-indicator"></div>
             </div>
@@ -427,37 +427,32 @@
             <Transition name="wb-menu-dropdown">
                 <div v-if="mainMenuExpanded" class="wb-main-menu-dropdown" :style="{ top: mainMenuPosition.top + 'px' }">
                     <div class="wb-menu-item" @click="switchActivityItem('recent')">
-                        <i class="codicon codicon-history wb-menu-item-icon"></i>
+                        <Icon icon="lucide:history" class="wb-menu-item-icon" />
                         <span>最近访问</span>
                     </div>
                     <div class="wb-menu-item" @click="switchActivityItem('sessions')">
-                        <i class="codicon codicon-list-tree wb-menu-item-icon"></i>
+                        <Icon icon="lucide:list-tree" class="wb-menu-item-icon" />
                         <span>会话列表</span>
                     </div>
                     <div class="wb-menu-item" @click="switchActivityItem('command-audit')">
-                        <i class="codicon codicon-terminal wb-menu-item-icon"></i>
+                        <Icon icon="lucide:terminal" class="wb-menu-item-icon" />
                         <span>命令行审计</span>
                     </div>
                     <div class="wb-menu-item" @click="switchActivityItem('audit-list')">
-                        <i class="codicon codicon-file-text wb-menu-item-icon"></i>
+                        <Icon icon="lucide:file-text" class="wb-menu-item-icon" />
                         <span>审计列表</span>
                     </div>
                     <div class="wb-menu-divider"></div>
                     <div class="wb-menu-item" @click="switchActivityItem('settings')">
-                        <i class="codicon codicon-settings-gear wb-menu-item-icon"></i>
+                        <Icon icon="lucide:settings" class="wb-menu-item-icon" />
                         <span>设置</span>
                     </div>
                 </div>
             </Transition>
 
-            <!-- 活动项 -->
-            <div class="wb-activity-item" :class="{ active: activeActivityItem === 'assets' }" title="主机资产" @click="switchActivityItem('assets')">
-                <i class="codicon codicon-server wb-activity-icon"></i>
-            </div>
-
             <!-- 新增：服务器管理菜单 -->
             <div class="wb-activity-item" :class="{ active: activeActivityItem === 'servers' }" title="服务器管理" @click="toggleServerMenu">
-                <i class="codicon codicon-server-environment wb-activity-icon"></i>
+                <Icon icon="lucide:server" class="wb-activity-icon" />
                 <!-- 折叠指示器 -->
                 <div v-if="serverMenuExpanded" class="wb-menu-indicator"></div>
             </div>
@@ -466,15 +461,15 @@
             <Transition name="wb-menu-dropdown">
                 <div v-if="serverMenuExpanded" class="wb-server-menu-dropdown" :style="{ top: serverMenuPosition.top + 'px' }">
                     <div class="wb-menu-item" @click="switchActivityItem('servers')">
-                        <i class="codicon codicon-list-tree wb-menu-item-icon"></i>
+                        <Icon icon="lucide:list-tree" class="wb-menu-item-icon" />
                         <span>服务器列表</span>
                     </div>
                     <div class="wb-menu-item" @click="switchActivityItem('monitoring')">
-                        <i class="codicon codicon-pulse wb-menu-item-icon"></i>
+                        <Icon icon="lucide:activity" class="wb-menu-item-icon" />
                         <span>监控面板</span>
                     </div>
                     <div class="wb-menu-item" @click="switchActivityItem('alerts')">
-                        <i class="codicon codicon-bell wb-menu-item-icon"></i>
+                        <Icon icon="lucide:bell" class="wb-menu-item-icon" />
                         <span>告警管理</span>
                     </div>
                 </div>
@@ -482,12 +477,12 @@
 
             <!-- 资产树折叠/展开按钮 -->
             <div class="wb-activity-item" :class="{ active: showSidebar }" :title="showSidebar ? '折叠资产树' : '展开资产树'" @click="toggleSidebar">
-                <i v-if="showSidebar" class="codicon codicon-layout-sidebar-left wb-activity-icon"></i>
-                <i v-else class="codicon codicon-layout-sidebar-right wb-activity-icon"></i>
+                <Icon v-if="showSidebar" icon="lucide:panel-left" class="wb-activity-icon" />
+                <Icon v-else icon="lucide:panel-left-open" class="wb-activity-icon" />
             </div>
 
             <div class="wb-activity-item" :class="{ active: activeActivityItem === 'sessions' }" title="会话管理" @click="switchActivityItem('sessions')">
-                <i class="codicon codicon-history wb-activity-icon"></i>
+                <Icon icon="lucide:history" class="wb-activity-icon" />
             </div>
 
         </div>
@@ -693,6 +688,12 @@
         color: #007acc;
     }
 
+    /* Activity Bar 图标样式 - Icon 组件 */
+    .wb-activity-item svg {
+        width: 20px;
+        height: 20px;
+    }
+
     /* 强制覆盖所有按钮和图标的悬停颜色 */
     .terminal-workbench :deep(.el-button) {
         color: #858585 !important;
@@ -748,27 +749,6 @@
 
     .wb-activity-item.active .wb-activity-icon {
         color: #ffffff !important;
-    }
-
-    /* Codicon 图标样式 - 参考阿里云设计 */
-    .codicon {
-        font-size: 20px;
-        line-height: 1;
-        display: inline-block;
-    }
-
-    .wb-logo-icon.codicon {
-        font-size: 20px;
-        color: #007acc;
-    }
-
-    .wb-menu-item-icon.codicon {
-        font-size: 12px;
-        color: #858585;
-    }
-
-    .wb-menu-item:hover .wb-menu-item-icon.codicon {
-        color: #cccccc;
     }
 
     /* 服务器菜单下拉面板 */

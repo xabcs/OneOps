@@ -502,11 +502,45 @@ export function fetchGetSessions(params?: {
 }
 
 /**
+ * 获取会话列表（轻量级，只返回列表展示需要的字段）
+ * 比完整接口快 5-6 倍，不返回敏感信息和冗余数据
+ */
+export function fetchGetSessionsList(params?: {
+  serverId?: number;
+  userId?: number;
+  status?: string;
+  protocol?: string;
+  clientIp?: string;
+  loginAccount?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  return request<CMDB.PageResponse<Bastion.BastionSession>>({
+    url: '/cmdb/sessions/list',
+    method: 'get',
+    params
+  });
+}
+
+/**
  * 获取活跃会话
  */
 export function fetchGetActiveSessions() {
   return request<Bastion.BastionSession[]>({
     url: '/cmdb/sessions/active',
+    method: 'get'
+  });
+}
+
+/**
+ * 从内存获取真正的活跃会话（WebSocket 连接仍然存在的会话）
+ * 比查询数据库更准确，不会包含已断开但状态未更新的会话
+ */
+export function fetchGetActiveSessionsFromMemory() {
+  return request<Bastion.BastionSession[]>({
+    url: '/cmdb/sessions/active-memory',
     method: 'get'
   });
 }

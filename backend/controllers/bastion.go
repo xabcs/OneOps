@@ -16,12 +16,14 @@ import (
 // BastionController 堡垒机控制器
 type BastionController struct {
 	bastionService *services.BastionService
+	sessionManager *handlers.SessionManager
 }
 
 // NewBastionController 创建堡垒机控制器
 func NewBastionController() *BastionController {
 	return &BastionController{
 		bastionService: services.NewBastionService(),
+		sessionManager: handlers.GetSessionManager(),
 	}
 }
 
@@ -177,6 +179,65 @@ func (c *BastionController) GetSessions(ctx *gin.Context) {
 	}))
 }
 
+// GetSessionsList 获取会话列表（轻量级，只返回列表展示需要的字段）
+// 优化性能，避免加载敏感信息和冗余数据
+func (c *BastionController) GetSessionsList(ctx *gin.Context) {
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+
+	// 构建筛选条件
+	filter := models.SessionFilter{}
+
+	if serverID := ctx.Query("serverId"); serverID != "" {
+		if id, err := strconv.ParseUint(serverID, 10, 32); err == nil {
+			uid := uint(id)
+			filter.ServerID = &uid
+		}
+	}
+
+	if userID := ctx.Query("userId"); userID != "" {
+		if id, err := strconv.ParseUint(userID, 10, 32); err == nil {
+			uid := uint(id)
+			filter.UserID = &uid
+		}
+	}
+
+	if status := ctx.Query("status"); status != "" {
+		filter.Status = &status
+	}
+
+	if protocol := ctx.Query("protocol"); protocol != "" {
+		filter.Protocol = &protocol
+	}
+
+	if clientIP := ctx.Query("clientIp"); clientIP != "" {
+		filter.ClientIP = &clientIP
+	}
+
+	if loginAccount := ctx.Query("loginAccount"); loginAccount != "" {
+		filter.LoginAccount = &loginAccount
+	}
+
+	if startDate := ctx.Query("startDate"); startDate != "" {
+		filter.StartDate = &startDate
+	}
+
+	if endDate := ctx.Query("endDate"); endDate != "" {
+		filter.EndDate = &endDate
+	}
+
+	sessions, total, err := c.bastionService.GetSessionsList(filter, page, pageSize)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"list":  sessions,
+		"total": total,
+	}))
+}
+
 // GetSessionByID 获取会话详情
 func (c *BastionController) GetSessionByID(ctx *gin.Context) {
 	sessionIDStr := ctx.Param("id")
@@ -229,6 +290,38 @@ func (c *BastionController) GetActiveSessions(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(sessions))
+}
+
+// GetActiveSessionsFromMemory 从内存中获取真正的活跃会话
+// 返回当前 WebSocket 连接仍然存在的会话列表（比查询数据库更准确）
+func (c *BastionController) GetActiveSessionsFromMemory(ctx *gin.Context) {
+	// 1. 从 SessionManager 获取所有活跃会话的 ID
+	activeSessionIDs := c.sessionManager.GetAllActiveSessions()
+
+	// 2. 从数据库获取这些会话的完整信息
+	var sessions []models.BastionSession
+	err := c.bastionService.GetDB().
+		Preload("Server").
+		Preload("User").
+		Preload("SSHCredential").
+		Where("id IN ?", activeSessionIDs).
+		Order("started_at DESC").
+		Find(&sessions).Error
+
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+		return
+	}
+
+	// 3. 实时计算会话持续时长
+	now := time.Now()
+	for i := range sessions {
+		if sessions[i].StartedAt != nil {
+			sessions[i].Duration = int(now.Sub(*sessions[i].StartedAt).Seconds())
+		}
 	}
 
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(sessions))
