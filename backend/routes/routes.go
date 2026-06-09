@@ -294,6 +294,7 @@ func SetupRoutes(r *gin.Engine) {
 		{
 			routeGroup.GET("/getUserRoutes", routeController.GetUserRoutes)
 			routeGroup.GET("/isRouteExist", routeController.IsRouteExist)
+			routeGroup.POST("/invalidateCache", routeController.InvalidateCache)
 		}
 	}
 }

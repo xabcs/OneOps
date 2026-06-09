@@ -132,6 +132,9 @@ func (ctrl *MenuController) CreateMenu(c *gin.Context) {
 		return
 	}
 
+	// 清除所有用户的 RBAC 缓存（菜单变更后）
+	services.InvalidateRBACCache(0)
+
 	c.JSON(http.StatusOK, utils.SuccessWithData(menu))
 }
 
@@ -218,6 +221,9 @@ func (ctrl *MenuController) UpdateMenu(c *gin.Context) {
 		return
 	}
 
+	// 清除所有用户的 RBAC 缓存（菜单变更后）
+	services.InvalidateRBACCache(0)
+
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("更新成功"))
 }
 
@@ -244,6 +250,9 @@ func (ctrl *MenuController) DeleteMenu(c *gin.Context) {
 		c.JSON(http.StatusOK, utils.ErrorInternal("删除菜单失败"))
 		return
 	}
+
+	// 清除所有用户的 RBAC 缓存（菜单变更后）
+	services.InvalidateRBACCache(0)
 
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("删除成功"))
 }

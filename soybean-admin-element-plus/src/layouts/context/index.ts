@@ -92,6 +92,15 @@ export function useMenu() {
   function handleSelect(key: RouteKey) {
     selectedKeyDummy.value = key;
 
+    // web终端在新标签页打开
+    if (key === 'webterminal') {
+      window.open('/webterminal', '_blank');
+      nextTick(() => {
+        selectedKeyDummy.value = selectedKey.value;
+      });
+      return;
+    }
+
     routerPushByKeyWithMetaQuery(key);
 
     if (key.endsWith('-link')) {

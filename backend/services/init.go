@@ -242,56 +242,66 @@ func (s *InitService) initMenus() error {
 func (s *InitService) syncMenus() error {
 	logger.Info("开始同步菜单数据...")
 
-	// 清除旧菜单（ID 20-50），重新写入新层级结构（包含监控中心）
-	if err := db.Where("id >= 20 AND id <= 50").Delete(&models.Menu{}).Error; err != nil {
-		logger.Error("清除旧菜单失败", zap.Error(err))
-		return err
-	}
-
 	// 定义动态路由菜单（用于 SoybeanAdmin 动态路由模式）
+	// V4 - 匹配新的前端模块化目录结构
 	menus := []models.Menu{
-		// 一级菜单
+		// ========== 一级菜单 ==========
 		{ID: 1, Name: "首页", Icon: "mdi:monitor-dashboard", Path: "/home", Permission: "", MenuType: "menu", Sort: 1, Status: 1, ParentID: 0},
-		{ID: 2, Name: "系统管理", Icon: "carbon:cloud-service-management", Path: "/manage", Permission: "", MenuType: "directory", Sort: 2, Status: 1, ParentID: 0},
-		{ID: 3, Name: "用户管理", Icon: "ic:round-manage-accounts", Path: "/manage/user", Permission: "system:user:query", Sort: 1, Status: 1, ParentID: 2, MenuType: "menu"},
-		{ID: 4, Name: "角色管理", Icon: "carbon:user-role", Path: "/manage/role", Permission: "system:role:query", Sort: 2, Status: 1, ParentID: 2, MenuType: "menu"},
-		{ID: 5, Name: "菜单管理", Icon: "material-symbols:route", Path: "/manage/menu", Permission: "system:menu:query", Sort: 3, Status: 1, ParentID: 2, MenuType: "menu"},
-		{ID: 13, Name: "关于", Icon: "fluent:book-information-24-regular", Path: "/about", Permission: "", MenuType: "menu", Sort: 5, Status: 1, ParentID: 0},
-		{ID: 14, Name: "用户中心", Icon: "mdi:user-circle-outline", Path: "/user-center", Permission: "", MenuType: "menu", Sort: 6, Status: 1, ParentID: 0},
-		// 资产管理一级目录
-		{ID: 20, Name: "资产管理", Icon: "mdi:server-network", Path: "/cmdb", Permission: "", MenuType: "directory", Sort: 3, Status: 1, ParentID: 0},
-		// 资产管理二级菜单
-		{ID: 21, Name: "资产总览", Icon: "mdi:view-dashboard", Path: "/cmdb/dashboard", Permission: "cmdb:server:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 20},
-		{ID: 22, Name: "主机资产", Icon: "mdi:server", Path: "/cmdb/servers", Permission: "cmdb:server:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 20},
-		// 访问控制目录
-		{ID: 23, Name: "访问控制", Icon: "mdi:shield-lock", Path: "/cmdb/access", Permission: "", MenuType: "directory", Sort: 3, Status: 1, ParentID: 20},
-		{ID: 24, Name: "访问策略", Icon: "mdi:file-lock", Path: "/cmdb/access/policies", Permission: "cmdb:access-policy:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 23},
-		{ID: 25, Name: "凭证库", Icon: "mdi:key", Path: "/cmdb/access/credentials", Permission: "cmdb:credential:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 23},
-		// 会话审计目录
-		{ID: 26, Name: "会话审计", Icon: "mdi:clipboard-text-clock", Path: "/cmdb/audit", Permission: "", MenuType: "directory", Sort: 4, Status: 1, ParentID: 20},
-		{ID: 27, Name: "在线会话", Icon: "mdi:monitor", Path: "/cmdb/audit/online", Permission: "cmdb:session:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 26},
-		{ID: 28, Name: "历史会话", Icon: "mdi:history", Path: "/cmdb/audit/sessions", Permission: "cmdb:session:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 26},
-		{ID: 29, Name: "命令审计", Icon: "mdi:console", Path: "/cmdb/audit/commands", Permission: "cmdb:command:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 26},
-		// 资产配置目录
-		{ID: 30, Name: "资产配置", Icon: "mdi:cog", Path: "/cmdb/config", Permission: "", MenuType: "directory", Sort: 5, Status: 1, ParentID: 20},
-		{ID: 31, Name: "业务系统", Icon: "mdi:domain", Path: "/cmdb/config/business", Permission: "cmdb:business:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 30},
-		{ID: 32, Name: "机房机柜", Icon: "mdi:office-building", Path: "/cmdb/config/rooms", Permission: "cmdb:room:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 30},
-		{ID: 33, Name: "标签管理", Icon: "mdi:tag", Path: "/cmdb/config/tags", Permission: "cmdb:tag:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 30},
-		{ID: 35, Name: "Agent 管理", Icon: "mdi:robot", Path: "/cmdb/config/agents", Permission: "cmdb:agent:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 30},
-		{ID: 36, Name: "属性管理", Icon: "mdi:format-list-bulleted", Path: "/system/attributes", Permission: "system:attribute:query", MenuType: "menu", Sort: 5, Status: 1, ParentID: 30},
-		// 资产变更
-		{ID: 34, Name: "资产变更", Icon: "mdi:clock-edit", Path: "/cmdb/changes", Permission: "cmdb:change:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 20},
-		// 监控中心一级目录
-		{ID: 40, Name: "监控中心", Icon: "mdi:chart-line", Path: "/monitoring", Permission: "", MenuType: "directory", Sort: 4, Status: 1, ParentID: 0},
-		// 监控中心二级菜单
-		{ID: 41, Name: "监控概览", Icon: "mdi:gauge", Path: "/monitoring/overview", Permission: "monitoring:overview:view", MenuType: "menu", Sort: 1, Status: 1, ParentID: 40},
-		{ID: 42, Name: "主机监控", Icon: "mdi:server", Path: "/monitoring/servers", Permission: "monitoring:servers:view", MenuType: "menu", Sort: 2, Status: 1, ParentID: 40},
-		{ID: 43, Name: "趋势分析", Icon: "mdi:chart-areaspline", Path: "/monitoring/trends", Permission: "monitoring:trends:view", MenuType: "menu", Sort: 3, Status: 1, ParentID: 40},
-		{ID: 44, Name: "告警管理", Icon: "mdi:bell-alert", Path: "/monitoring/alerts", Permission: "monitoring:alerts:view", MenuType: "menu", Sort: 4, Status: 1, ParentID: 40},
-		{ID: 45, Name: "监控设置", Icon: "mdi:cog", Path: "/monitoring/settings", Permission: "monitoring:settings:view", MenuType: "menu", Sort: 5, Status: 1, ParentID: 40},
-		{ID: 46, Name: "巡检报告", Icon: "mdi:file-document", Path: "/monitoring/reports", Permission: "monitoring:reports:view", MenuType: "menu", Sort: 6, Status: 1, ParentID: 40},
-		// Web终端（资产管理子菜单）
-		{ID: 47, Name: "Web终端", Icon: "mdi:console", Path: "/cmdb/terminal/workbench", Permission: "cmdb:terminal:view", MenuType: "menu", Sort: 7, Status: 1, ParentID: 20},
+
+		{ID: 2, Name: "资产管理", Icon: "mdi:server-network", Path: "/cmdb", Permission: "", MenuType: "directory", Sort: 2, Status: 1, ParentID: 0},
+		{ID: 3, Name: "监控中心", Icon: "mdi:chart-line", Path: "/monitoring", Permission: "", MenuType: "directory", Sort: 3, Status: 1, ParentID: 0},
+		{ID: 4, Name: "审计中心", Icon: "mdi:file-document", Path: "/audit", Permission: "", MenuType: "directory", Sort: 4, Status: 1, ParentID: 0},
+		// web终端作为独立的一级路由（无导航栏），使用 Sort=5
+		{ID: 60, Name: "web终端", Icon: "mdi:console", Path: "/webterminal", Permission: "", MenuType: "menu", Sort: 5, Status: 1, ParentID: 0},
+		{ID: 6, Name: "系统管理", Icon: "mdi:cog", Path: "/manage", Permission: "", MenuType: "directory", Sort: 6, Status: 1, ParentID: 0},
+
+		// ========== CMDB 二级菜单 (ID: 20-39) ==========
+		{ID: 20, Name: "服务器管理", Icon: "mdi:server", Path: "/cmdb/servers", Permission: "cmdb:server:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 2},
+		{ID: 21, Name: "业务管理", Icon: "mdi:sitemap", Path: "/cmdb/business", Permission: "cmdb:business:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 2},
+		// 凭证管理目录
+		{ID: 22, Name: "凭证管理", Icon: "mdi:key", Path: "/cmdb/credentials", Permission: "", MenuType: "directory", Sort: 3, Status: 1, ParentID: 2},
+		{ID: 23, Name: "访问凭证", Icon: "mdi:key-variant", Path: "/cmdb/credentials/access", Permission: "cmdb:credentials:access", MenuType: "menu", Sort: 1, Status: 1, ParentID: 22},
+		{ID: 24, Name: "SSH密钥", Icon: "mdi:ssh", Path: "/cmdb/credentials/ssh", Permission: "cmdb:credentials:ssh", MenuType: "menu", Sort: 2, Status: 1, ParentID: 22},
+		// 访问策略
+		{ID: 25, Name: "访问策略", Icon: "mdi:shield-lock", Path: "/cmdb/policies", Permission: "cmdb:policies:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 2},
+		// 配置管理目录
+		{ID: 26, Name: "配置管理", Icon: "mdi:cog", Path: "/cmdb/config", Permission: "", MenuType: "directory", Sort: 5, Status: 1, ParentID: 2},
+		{ID: 27, Name: "业务配置", Icon: "mdi:sitemap", Path: "/cmdb/config/business", Permission: "cmdb:config:business", MenuType: "menu", Sort: 1, Status: 1, ParentID: 26},
+		{ID: 28, Name: "机房管理", Icon: "mdi:server", Path: "/cmdb/config/rooms", Permission: "cmdb:rooms:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 26},
+		{ID: 29, Name: "标签管理", Icon: "mdi:tag-multiple", Path: "/cmdb/config/tags", Permission: "cmdb:tags:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 26},
+		{ID: 30, Name: "代理配置", Icon: "mdi:robot", Path: "/cmdb/config/agents", Permission: "cmdb:agents:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 26},
+		// 资产总览
+		{ID: 31, Name: "资产总览", Icon: "mdi:chart-pie", Path: "/cmdb/dashboard", Permission: "cmdb:dashboard:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 2},
+		// 审计记录目录
+		{ID: 32, Name: "审计记录", Icon: "mdi:history", Path: "/cmdb/audit", Permission: "", MenuType: "directory", Sort: 7, Status: 1, ParentID: 2},
+		{ID: 33, Name: "变更记录", Icon: "mdi:file-document", Path: "/cmdb/audit/changes", Permission: "cmdb:audit:changes", MenuType: "menu", Sort: 1, Status: 1, ParentID: 32},
+		// 命令审计目录
+		{ID: 34, Name: "命令审计", Icon: "mdi:terminal", Path: "/cmdb/audit/command", Permission: "", MenuType: "directory", Sort: 2, Status: 1, ParentID: 32},
+		{ID: 35, Name: "命令历史", Icon: "mdi:history", Path: "/cmdb/audit/command/history", Permission: "cmdb:audit:command:history", MenuType: "menu", Sort: 1, Status: 1, ParentID: 34},
+		{ID: 36, Name: "在线会话", Icon: "mdi:laptop", Path: "/cmdb/audit/online", Permission: "cmdb:audit:online", MenuType: "menu", Sort: 3, Status: 1, ParentID: 32},
+		{ID: 37, Name: "历史会话", Icon: "mdi:history", Path: "/cmdb/audit/sessions", Permission: "cmdb:audit:sessions", MenuType: "menu", Sort: 4, Status: 1, ParentID: 32},
+		{ID: 38, Name: "命令记录", Icon: "mdi:code-tags", Path: "/cmdb/audit/commands", Permission: "cmdb:audit:commands", MenuType: "menu", Sort: 5, Status: 1, ParentID: 32},
+
+		// ========== 监控中心二级菜单 (ID: 40-49) ==========
+		{ID: 40, Name: "监控概览", Icon: "mdi:chart-line", Path: "/monitoring/overview", Permission: "monitoring:overview:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 3},
+		{ID: 41, Name: "主机监控", Icon: "mdi:server-network", Path: "/monitoring/servers", Permission: "monitoring:servers:query", MenuType: "directory", Sort: 2, Status: 1, ParentID: 3},
+		{ID: 42, Name: "告警管理", Icon: "mdi:alert-circle", Path: "/monitoring/alerts", Permission: "monitoring:alerts:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 3},
+		{ID: 43, Name: "趋势分析", Icon: "mdi:chart-areaspline", Path: "/monitoring/trends", Permission: "monitoring:trends:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 3},
+		{ID: 44, Name: "巡检报告", Icon: "mdi:file-document", Path: "/monitoring/reports", Permission: "monitoring:reports:query", MenuType: "menu", Sort: 5, Status: 1, ParentID: 3},
+		{ID: 45, Name: "监控设置", Icon: "mdi:cog", Path: "/monitoring/settings", Permission: "monitoring:settings:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 3},
+
+		// ========== 审计中心二级菜单 (ID: 50-59) ==========
+		{ID: 50, Name: "登录审计", Icon: "mdi:login", Path: "/audit/login", Permission: "audit:login:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 4},
+		{ID: 51, Name: "操作审计", Icon: "mdi:account-edit", Path: "/audit/operation", Permission: "audit:operation:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 4},
+		{ID: 52, Name: "系统事件", Icon: "mdi:information", Path: "/audit/system", Permission: "audit:system:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 4},
+
+		// ========== 终端管理二级菜单 (ID: 60-69) ==========
+		// （web终端 已移为一级菜单，见上方 ParentID: 0 的定义）
+
+		// ========== 系统管理二级菜单 (ID: 70-79) ==========
+		{ID: 70, Name: "用户管理", Icon: "mdi:account-multiple", Path: "/manage/user", Permission: "system:user:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 6},
+		{ID: 71, Name: "角色管理", Icon: "mdi:shield-account", Path: "/manage/role", Permission: "system:role:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 6},
+		{ID: 72, Name: "菜单管理", Icon: "mdi:menu", Path: "/manage/menu", Permission: "system:menu:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 6},
 	}
 
 	addedCount := 0
@@ -303,13 +313,14 @@ func (s *InitService) syncMenus() error {
 
 		if err == nil {
 			// 菜单已存在，更新数据（保持数据同步）
+			// 注意：不更新 sort 字段，保留用户在菜单管理中修改的排序
 			db.Model(&existingMenu).Updates(map[string]interface{}{
 				"name":       menu.Name,
 				"icon":       menu.Icon,
 				"path":       menu.Path,
 				"permission": menu.Permission,
 				"parent_id":  menu.ParentID,
-				"sort":       menu.Sort,
+				// "sort":       menu.Sort, // 不覆盖用户修改的排序
 				"status":     menu.Status,
 				"menu_type":  menu.MenuType,
 			})

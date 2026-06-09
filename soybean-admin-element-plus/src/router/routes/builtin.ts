@@ -1,7 +1,7 @@
-import type { RouteRecordRaw } from 'vue-router';
 import type { CustomRoute } from '@elegant-router/types';
+import { getRoutePath } from '../elegant/transform';
 import { layouts, views } from '../elegant/imports';
-import { getRoutePath, transformElegantRoutesToVueRoutes } from '../elegant/transform';
+import { transformElegantRoutesToVueRoutes } from '../elegant/transform';
 
 export const ROOT_ROUTE: CustomRoute = {
   name: 'root',
@@ -23,41 +23,22 @@ const NOT_FOUND_ROUTE: CustomRoute = {
   }
 };
 
-/** 终端工作台旧路由重定向：/cmdb/terminal/workbench → /terminal */
-const TERMINAL_WORKBENCH_REDIRECT: CustomRoute = {
-  name: 'cmdb_terminal_workbench_redirect',
-  path: '/cmdb/terminal/workbench',
-  redirect: '/terminal',
+/** web终端旧路由重定向：/terminal/workbench → /webterminal */
+const WEBTERMINAL_REDIRECT: CustomRoute = {
+  name: 'webterminal_redirect',
+  path: '/terminal/workbench',
+  redirect: '/webterminal',
   meta: {
-    title: 'cmdb_terminal_workbench_redirect',
+    title: 'webterminal_redirect',
     constant: true
   }
 };
 
 /** builtin routes, it must be constant and setup in vue-router */
-const builtinRoutes: CustomRoute[] = [ROOT_ROUTE, NOT_FOUND_ROUTE, TERMINAL_WORKBENCH_REDIRECT];
+export const builtinRoutes: CustomRoute[] = [ROOT_ROUTE, NOT_FOUND_ROUTE, WEBTERMINAL_REDIRECT];
 
 /** create builtin vue routes */
 export function createBuiltinVueRoutes() {
-  const elegantRoutes = transformElegantRoutesToVueRoutes(builtinRoutes, layouts, views);
-
-  // 手动添加终端工作台路由
-  const terminalRoute: RouteRecordRaw = {
-    name: 'terminal',
-    path: '/terminal',
-    component: layouts.blank as any,
-    children: [
-      {
-        name: 'terminal_home',
-        path: '',
-        component: views.terminal as any,
-        meta: {
-          title: 'terminal',
-          i18nKey: 'route.terminal'
-        }
-      }
-    ]
-  };
-
-  return [...elegantRoutes, terminalRoute];
+  return transformElegantRoutesToVueRoutes(builtinRoutes, layouts, views);
 }
+

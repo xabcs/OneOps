@@ -145,6 +145,12 @@ func (c *RouteController) IsRouteExist(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(true))
 }
 
+// InvalidateCache 清除RBAC缓存
+func (c *RouteController) InvalidateCache(ctx *gin.Context) {
+	services.InvalidateRBACCache(0)
+	ctx.JSON(http.StatusOK, utils.SuccessWithData("缓存已清除"))
+}
+
 // convertMenusToRoutes 将数据库菜单转换为前端路由格式
 func (c *RouteController) convertMenusToRoutes(menus []*models.Menu, isSuper bool) []map[string]interface{} {
 	routes := make([]map[string]interface{}, 0)
@@ -173,7 +179,7 @@ func (c *RouteController) convertMenusToRoutes(menus []*models.Menu, isSuper boo
 // appendHiddenRoutesToMenuTree 将隐藏路由添加到菜单树中
 func (c *RouteController) appendHiddenRoutesToMenuTree(routes []map[string]interface{}) []map[string]interface{} {
 	for _, route := range routes {
-		// 为 monitoring 路由添加 servers-detail 子路由
+		// 为 monitoring 路由添加 servers_detail 子路由（详情页）
 		if route["name"] == "monitoring" {
 			var children []map[string]interface{}
 			if existingChildren, ok := route["children"].([]map[string]interface{}); ok {
@@ -185,88 +191,24 @@ func (c *RouteController) appendHiddenRoutesToMenuTree(routes []map[string]inter
 					}
 				}
 			}
-			// 添加 servers-detail 子路由
+			// 添加 servers detail 子路由（详情页）
 			children = append(children, map[string]interface{}{
-				"id":        "monitoring_servers-detail",
-				"name":      "monitoring_servers-detail",
-				"path":      "/monitoring/servers-detail",
-				"component": "view.monitoring_servers-detail",
+				"id":        "monitoring_servers_detail",
+				"name":      "monitoring_servers_detail",
+				"path":      "/monitoring/servers/detail",
+				"component": "view.monitoring_servers_detail",
 				"meta": map[string]interface{}{
-					"title":      "monitoring_servers-detail",
-					"i18nKey":    "route.monitoring_servers-detail",
+					"title":      "monitoring_servers_detail",
+					"i18nKey":    "route.monitoring_servers_detail",
 					"hideInMenu": true,
 					"activeMenu": "monitoring_servers",
 				},
 			})
 			route["children"] = children
 		}
-
-		// 为 cmdb 路由添加子路由
-		if route["name"] == "cmdb" {
-			var children []map[string]interface{}
-			if existingChildren, ok := route["children"].([]map[string]interface{}); ok {
-				children = existingChildren
-			} else if existingChildren, ok := route["children"].([]interface{}); ok {
-				for _, child := range existingChildren {
-					if childMap, ok := child.(map[string]interface{}); ok {
-						children = append(children, childMap)
-					}
-				}
-			}
-			// 添加 terminal 子路由
-			children = append(children, map[string]interface{}{
-				"id":        "cmdb_terminal",
-				"name":      "cmdb_terminal",
-				"path":      "/cmdb/terminal/:id",
-				"props":     true,
-				"component": "view.cmdb_terminal",
-				"meta": map[string]interface{}{
-					"title":      "cmdb_terminal",
-					"i18nKey":    "route.cmdb_terminal",
-					"hideInMenu": true,
-				},
-			})
-			// 添加 server 子路由（包含详情页）
-			children = append(children, map[string]interface{}{
-				"id":   "cmdb_server",
-				"name": "cmdb_server",
-				"path": "/cmdb/server",
-				"meta": map[string]interface{}{
-					"title":      "cmdb_server",
-					"i18nKey":    "route.cmdb_server",
-					"hideInMenu": true,
-				},
-				"children": []map[string]interface{}{
-					{
-						"id":        "cmdb_server_detail",
-						"name":      "cmdb_server_detail",
-						"path":      "/cmdb/server/detail",
-						"component": "view.cmdb_server_detail",
-						"meta": map[string]interface{}{
-							"title":       "cmdb_server_detail",
-							"i18nKey":     "route.cmdb_server_detail",
-							"hideInMenu":  true,
-							"activeMenu":  "cmdb_servers",
-						},
-					},
-				},
-			})
-			route["children"] = children
-		}
 	}
 
-	// 添加独立的 terminal_workbench 隐藏路由（用于独立窗口打开）
-	routes = append(routes, map[string]interface{}{
-		"id":        "terminal_workbench",
-		"name":      "terminal_workbench",
-		"path":      "/terminal/workbench",
-		"component": "view.terminal_workbench",
-		"meta": map[string]interface{}{
-			"title":      "terminal_workbench",
-			"i18nKey":    "route.terminal_workbench",
-			"hideInMenu": true,
-		},
-	})
+	// 注意：terminal_workbench 现在是"终端管理"一级菜单的子菜单，已由数据库菜单提供，无需额外添加
 
 	return routes
 }
@@ -335,6 +277,11 @@ func (c *RouteController) generateRouteName(path string) string {
 // generateComponent 根据路径生成组件名称
 func (c *RouteController) generateComponent(path string, parentID uint, hasChildren bool) string {
 	routeName := c.generateRouteName(path)
+
+	// 特殊处理：web终端使用独立布局（无导航栏）
+	if path == "/webterminal" {
+		return "layout.terminal-layout$view." + routeName
+	}
 
 	// 如果是一级菜单（父级为0）
 	if parentID == 0 {

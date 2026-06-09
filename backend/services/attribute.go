@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"oneops/backend/models"
@@ -168,13 +169,76 @@ func (s *AttributeService) ValidateAttributeValue(attrID uint, value string) err
 
 // GetServerAttributes 获取主机的所有属性
 func (s *AttributeService) GetServerAttributes(serverID uint) ([]models.ServerAttribute, error) {
+	// 性能优化：使用JOIN代替Preload，避免N+1查询
+	// 先查询属性和定义信息
+	rows, err := db.Table("server_attributes").
+		Select(`
+			server_attributes.id,
+			server_attributes.server_id,
+			server_attributes.attribute_id,
+			server_attributes.attribute_key,
+			server_attributes.attribute_value,
+			server_attributes.value_type,
+			server_attributes.category,
+			server_attributes.created_at,
+			server_attributes.updated_at,
+			attribute_definitions.id as def_id,
+			attribute_definitions.name as def_name,
+			attribute_definitions.type as def_type,
+			attribute_definitions.category as def_category,
+			attribute_definitions.description as def_description
+		`).
+		Joins("LEFT JOIN attribute_definitions ON attribute_definitions.id = server_attributes.attribute_id").
+		Where("server_attributes.server_id = ?", serverID).
+		Order("server_attributes.attribute_id ASC").
+		Rows()
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
 	var attributes []models.ServerAttribute
-	err := db.
-		Preload("Definition").
-		Where("server_id = ?", serverID).
-		Order("attribute_id ASC").
-		Find(&attributes).Error
-	return attributes, err
+	for rows.Next() {
+		var attr models.ServerAttribute
+		var defID uint
+		var defName, defType, defCategory, defDescription sql.NullString
+
+		err := rows.Scan(
+			&attr.ID,
+			&attr.ServerID,
+			&attr.AttributeID,
+			&attr.AttributeKey,
+			&attr.AttributeValue,
+			&attr.ValueType,
+			&attr.Category,
+			&attr.CreatedAt,
+			&attr.UpdatedAt,
+			&defID,
+			&defName,
+			&defType,
+			&defCategory,
+			&defDescription,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		// 手动构建Definition对象
+		if defID > 0 {
+			attr.Definition = &models.AttributeDefinition{
+				ID:          defID,
+				Name:        defName.String,
+				Type:        defType.String,
+				Category:    defCategory.String,
+				Description: defDescription.String,
+			}
+		}
+
+		attributes = append(attributes, attr)
+	}
+
+	return attributes, rows.Err()
 }
 
 // SaveServerAttributes 保存主机属性

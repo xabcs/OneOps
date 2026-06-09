@@ -95,59 +95,29 @@ export const generatedRoutes: GeneratedRoute[] = [
       {
         name: 'audit_login',
         path: '/audit/login',
+        component: 'view.audit_login',
         meta: {
           title: 'audit_login',
           i18nKey: 'route.audit_login'
-        },
-        children: [
-          {
-            name: 'audit_login_logs',
-            path: '/audit/login/logs',
-            component: 'view.audit_login_logs',
-            meta: {
-              title: 'audit_login_logs',
-              i18nKey: 'route.audit_login_logs'
-            }
-          }
-        ]
+        }
       },
       {
         name: 'audit_operation',
         path: '/audit/operation',
+        component: 'view.audit_operation',
         meta: {
           title: 'audit_operation',
           i18nKey: 'route.audit_operation'
-        },
-        children: [
-          {
-            name: 'audit_operation_logs',
-            path: '/audit/operation/logs',
-            component: 'view.audit_operation_logs',
-            meta: {
-              title: 'audit_operation_logs',
-              i18nKey: 'route.audit_operation_logs'
-            }
-          }
-        ]
+        }
       },
       {
         name: 'audit_system',
         path: '/audit/system',
+        component: 'view.audit_system',
         meta: {
           title: 'audit_system',
           i18nKey: 'route.audit_system'
-        },
-        children: [
-          {
-            name: 'audit_system_events',
-            path: '/audit/system/events',
-            component: 'view.audit_system_events',
-            meta: {
-              title: 'audit_system_events',
-              i18nKey: 'route.audit_system_events'
-            }
-          }
-        ]
+        }
       }
     ]
   },
@@ -161,34 +131,6 @@ export const generatedRoutes: GeneratedRoute[] = [
     },
     children: [
       {
-        name: 'cmdb_access',
-        path: '/cmdb/access',
-        meta: {
-          title: 'cmdb_access',
-          i18nKey: 'route.cmdb_access'
-        },
-        children: [
-          {
-            name: 'cmdb_access_credentials',
-            path: '/cmdb/access/credentials',
-            component: 'view.cmdb_access_credentials',
-            meta: {
-              title: 'cmdb_access_credentials',
-              i18nKey: 'route.cmdb_access_credentials'
-            }
-          },
-          {
-            name: 'cmdb_access_policies',
-            path: '/cmdb/access/policies',
-            component: 'view.cmdb_access_policies',
-            meta: {
-              title: 'cmdb_access_policies',
-              i18nKey: 'route.cmdb_access_policies'
-            }
-          }
-        ]
-      },
-      {
         name: 'cmdb_audit',
         path: '/cmdb/audit',
         meta: {
@@ -196,6 +138,34 @@ export const generatedRoutes: GeneratedRoute[] = [
           i18nKey: 'route.cmdb_audit'
         },
         children: [
+          {
+            name: 'cmdb_audit_changes',
+            path: '/cmdb/audit/changes',
+            component: 'view.cmdb_audit_changes',
+            meta: {
+              title: 'cmdb_audit_changes',
+              i18nKey: 'route.cmdb_audit_changes'
+            }
+          },
+          {
+            name: 'cmdb_audit_command',
+            path: '/cmdb/audit/command',
+            meta: {
+              title: 'cmdb_audit_command',
+              i18nKey: 'route.cmdb_audit_command'
+            },
+            children: [
+              {
+                name: 'cmdb_audit_command_history',
+                path: '/cmdb/audit/command/history',
+                component: 'view.cmdb_audit_command_history',
+                meta: {
+                  title: 'cmdb_audit_command_history',
+                  i18nKey: 'route.cmdb_audit_command_history'
+                }
+              }
+            ]
+          },
           {
             name: 'cmdb_audit_commands',
             path: '/cmdb/audit/commands',
@@ -232,24 +202,6 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'cmdb_business',
           i18nKey: 'route.cmdb_business'
-        }
-      },
-      {
-        name: 'cmdb_changes',
-        path: '/cmdb/changes',
-        component: 'view.cmdb_changes',
-        meta: {
-          title: 'cmdb_changes',
-          i18nKey: 'route.cmdb_changes'
-        }
-      },
-      {
-        name: 'cmdb_commands',
-        path: '/cmdb/commands',
-        component: 'view.cmdb_commands',
-        meta: {
-          title: 'cmdb_commands',
-          i18nKey: 'route.cmdb_commands'
         }
       },
       {
@@ -299,12 +251,49 @@ export const generatedRoutes: GeneratedRoute[] = [
         ]
       },
       {
+        name: 'cmdb_credentials',
+        path: '/cmdb/credentials',
+        meta: {
+          title: 'cmdb_credentials',
+          i18nKey: 'route.cmdb_credentials'
+        },
+        children: [
+          {
+            name: 'cmdb_credentials_access',
+            path: '/cmdb/credentials/access',
+            component: 'view.cmdb_credentials_access',
+            meta: {
+              title: 'cmdb_credentials_access',
+              i18nKey: 'route.cmdb_credentials_access'
+            }
+          },
+          {
+            name: 'cmdb_credentials_ssh',
+            path: '/cmdb/credentials/ssh',
+            component: 'view.cmdb_credentials_ssh',
+            meta: {
+              title: 'cmdb_credentials_ssh',
+              i18nKey: 'route.cmdb_credentials_ssh'
+            }
+          }
+        ]
+      },
+      {
         name: 'cmdb_dashboard',
         path: '/cmdb/dashboard',
         component: 'view.cmdb_dashboard',
         meta: {
           title: 'cmdb_dashboard',
           i18nKey: 'route.cmdb_dashboard'
+        }
+      },
+      {
+        name: 'cmdb_policies',
+        path: '/cmdb/policies',
+        component: 'view.cmdb_policies',
+        meta: {
+          title: 'cmdb_policies',
+          i18nKey: 'route.cmdb_policies'
         }
       },
       {
@@ -317,25 +306,6 @@ export const generatedRoutes: GeneratedRoute[] = [
         }
       },
       {
-        name: 'cmdb_server',
-        path: '/cmdb/server',
-        meta: {
-          title: 'cmdb_server',
-          i18nKey: 'route.cmdb_server'
-        },
-        children: [
-          {
-            name: 'cmdb_server_detail',
-            path: '/cmdb/server/detail',
-            component: 'view.cmdb_server_detail',
-            meta: {
-              title: 'cmdb_server_detail',
-              i18nKey: 'route.cmdb_server_detail'
-            }
-          }
-        ]
-      },
-      {
         name: 'cmdb_servers',
         path: '/cmdb/servers',
         component: 'view.cmdb_servers',
@@ -345,34 +315,6 @@ export const generatedRoutes: GeneratedRoute[] = [
         }
       },
       {
-        name: 'cmdb_sessions',
-        path: '/cmdb/sessions',
-        component: 'view.cmdb_sessions',
-        meta: {
-          title: 'cmdb_sessions',
-          i18nKey: 'route.cmdb_sessions'
-        }
-      },
-      {
-        name: 'cmdb_ssh',
-        path: '/cmdb/ssh',
-        meta: {
-          title: 'cmdb_ssh',
-          i18nKey: 'route.cmdb_ssh'
-        },
-        children: [
-          {
-            name: 'cmdb_ssh_credentials',
-            path: '/cmdb/ssh/credentials',
-            component: 'view.cmdb_ssh_credentials',
-            meta: {
-              title: 'cmdb_ssh_credentials',
-              i18nKey: 'route.cmdb_ssh_credentials'
-            }
-          }
-        ]
-      },
-      {
         name: 'cmdb_tags',
         path: '/cmdb/tags',
         component: 'view.cmdb_tags',
@@ -380,27 +322,6 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'cmdb_tags',
           i18nKey: 'route.cmdb_tags'
         }
-      },
-      {
-        name: 'cmdb_terminal',
-        path: '/cmdb/terminal',
-        component: 'view.cmdb_terminal',
-        meta: {
-          title: 'cmdb_terminal',
-          i18nKey: 'route.cmdb_terminal'
-        },
-        children: [
-          {
-            name: 'cmdb_terminal_workbench',
-            path: '/cmdb/terminal/workbench',
-            component: 'view.cmdb_terminal_workbench',
-            meta: {
-              title: 'cmdb_terminal_workbench',
-              i18nKey: 'route.cmdb_terminal_workbench',
-              layout: false
-            }
-          }
-        ]
       }
     ]
   },
@@ -617,20 +538,21 @@ export const generatedRoutes: GeneratedRoute[] = [
       {
         name: 'monitoring_servers',
         path: '/monitoring/servers',
-        component: 'view.monitoring_servers',
         meta: {
           title: 'monitoring_servers',
           i18nKey: 'route.monitoring_servers'
-        }
-      },
-      {
-        name: 'monitoring_servers-detail',
-        path: '/monitoring/servers-detail',
-        component: 'view.monitoring_servers-detail',
-        meta: {
-          title: 'monitoring_servers-detail',
-          i18nKey: 'route.monitoring_servers-detail'
-        }
+        },
+        children: [
+          {
+            name: 'monitoring_servers_detail',
+            path: '/monitoring/servers/detail',
+            component: 'view.monitoring_servers_detail',
+            meta: {
+              title: 'monitoring_servers_detail',
+              i18nKey: 'route.monitoring_servers_detail'
+            }
+          }
+        ]
       },
       {
         name: 'monitoring_settings',
@@ -958,35 +880,21 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
-    name: 'terminal',
-    path: '/terminal',
-    component: 'layout.base',
-    meta: {
-      title: 'terminal',
-      i18nKey: 'route.terminal',
-      icon: 'mdi:console',
-      order: 4
-    },
-    children: [
-      {
-        name: 'terminal_workbench',
-        path: '/terminal/workbench',
-        component: 'view.terminal_workbench',
-        meta: {
-          title: 'terminal_workbench',
-          i18nKey: 'route.terminal_workbench',
-          layout: false
-        }
-      }
-    ]
-  },
-  {
     name: 'user-center',
     path: '/user-center',
     component: 'layout.base$view.user-center',
     meta: {
       title: 'user-center',
       i18nKey: 'route.user-center'
+    }
+  },
+  {
+    name: 'webterminal',
+    path: '/webterminal',
+    component: 'layout.base$view.webterminal',
+    meta: {
+      title: 'webterminal',
+      i18nKey: 'route.webterminal'
     }
   }
 ];

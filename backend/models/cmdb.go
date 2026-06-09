@@ -185,6 +185,9 @@ type Server struct {
 	AgentVersion       string     `json:"agentVersion" gorm:"size:50"`
 	LastHeartbeatAt    *time.Time `json:"lastHeartbeatAt"`
 	SystemCredentialID uint       `json:"systemCredentialId" gorm:"index"` // 系统运维凭证（Agent部署/采集专用）
+	// 冗余字段：优化列表查询性能（避免关联查询）
+	GroupNames        string     `json:"groupNames" gorm:"type:varchar(500);default:'[]'"`         // 分组名称JSON数组
+	CredentialNames   string     `json:"credentialNames" gorm:"type:varchar(500);default:'[]'"`   // 凭证名称JSON数组
 	CreatedAt          time.Time  `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt          time.Time  `json:"updatedAt" gorm:"autoUpdateTime"`
 

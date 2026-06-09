@@ -52,6 +52,7 @@
     "@antv/g2": "5.4.8",
     "@antv/g6": "5.1.0",
     "@better-scroll/core": "2.5.1",
+    "@iconify-json/lucide": "^1.2.111",
     "@iconify/vue": "5.0.0",
     "@sa/alova": "workspace:*",
     "@sa/axios": "workspace:*",

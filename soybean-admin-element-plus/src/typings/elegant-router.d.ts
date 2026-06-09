@@ -31,6 +31,7 @@ declare module "@elegant-router/types" {
     "document_antd": "/document/antd";
     "document_element-plus": "/document/element-plus";
     "document_alova": "/document/alova";
+    "webterminal": "/webterminal";
     "403": "/403";
     "404": "/404";
     "500": "/500";
@@ -41,38 +42,30 @@ declare module "@elegant-router/types" {
     "alova_user": "/alova/user";
     "audit": "/audit";
     "audit_login": "/audit/login";
-    "audit_login_logs": "/audit/login/logs";
     "audit_operation": "/audit/operation";
-    "audit_operation_logs": "/audit/operation/logs";
     "audit_system": "/audit/system";
-    "audit_system_events": "/audit/system/events";
     "cmdb": "/cmdb";
-    "cmdb_access": "/cmdb/access";
-    "cmdb_access_credentials": "/cmdb/access/credentials";
-    "cmdb_access_policies": "/cmdb/access/policies";
     "cmdb_audit": "/cmdb/audit";
+    "cmdb_audit_changes": "/cmdb/audit/changes";
+    "cmdb_audit_command": "/cmdb/audit/command";
+    "cmdb_audit_command_history": "/cmdb/audit/command/history";
     "cmdb_audit_commands": "/cmdb/audit/commands";
     "cmdb_audit_online": "/cmdb/audit/online";
     "cmdb_audit_sessions": "/cmdb/audit/sessions";
     "cmdb_business": "/cmdb/business";
-    "cmdb_changes": "/cmdb/changes";
-    "cmdb_commands": "/cmdb/commands";
     "cmdb_config": "/cmdb/config";
     "cmdb_config_agents": "/cmdb/config/agents";
     "cmdb_config_business": "/cmdb/config/business";
     "cmdb_config_rooms": "/cmdb/config/rooms";
     "cmdb_config_tags": "/cmdb/config/tags";
+    "cmdb_credentials": "/cmdb/credentials";
+    "cmdb_credentials_access": "/cmdb/credentials/access";
+    "cmdb_credentials_ssh": "/cmdb/credentials/ssh";
     "cmdb_dashboard": "/cmdb/dashboard";
+    "cmdb_policies": "/cmdb/policies";
     "cmdb_rooms": "/cmdb/rooms";
-    "cmdb_server": "/cmdb/server";
-    "cmdb_server_detail": "/cmdb/server/detail";
     "cmdb_servers": "/cmdb/servers";
-    "cmdb_sessions": "/cmdb/sessions";
-    "cmdb_ssh": "/cmdb/ssh";
-    "cmdb_ssh_credentials": "/cmdb/ssh/credentials";
     "cmdb_tags": "/cmdb/tags";
-    "cmdb_terminal": "/cmdb/terminal";
-    "cmdb_terminal_workbench": "/cmdb/terminal/workbench";
     "function": "/function";
     "function_hide-child": "/function/hide-child";
     "function_hide-child_one": "/function/hide-child/one";
@@ -96,7 +89,7 @@ declare module "@elegant-router/types" {
     "monitoring_overview": "/monitoring/overview";
     "monitoring_reports": "/monitoring/reports";
     "monitoring_servers": "/monitoring/servers";
-    "monitoring_servers-detail": "/monitoring/servers-detail";
+    "monitoring_servers_detail": "/monitoring/servers/detail";
     "monitoring_settings": "/monitoring/settings";
     "monitoring_trends": "/monitoring/trends";
     "multi-menu": "/multi-menu";
@@ -131,9 +124,8 @@ declare module "@elegant-router/types" {
     "plugin_video": "/plugin/video";
     "system": "/system";
     "system_attributes": "/system/attributes";
-    "terminal": "/terminal";
-    "terminal_workbench": "/terminal/workbench";
     "user-center": "/user-center";
+    "webterminal": "/webterminal";
   };
 
   /**
@@ -195,8 +187,8 @@ declare module "@elegant-router/types" {
     | "multi-menu"
     | "plugin"
     | "system"
-    | "terminal"
     | "user-center"
+    | "webterminal"
   >;
 
   /**
@@ -224,31 +216,26 @@ declare module "@elegant-router/types" {
     | "alova_request"
     | "alova_scenes"
     | "alova_user"
-    | "audit"
-    | "audit_login_logs"
-    | "audit_operation_logs"
-    | "audit_system_events"
-    | "cmdb_access_credentials"
-    | "cmdb_access_policies"
+    | "audit_login"
+    | "audit_operation"
+    | "audit_system"
+    | "cmdb_audit_changes"
+    | "cmdb_audit_command_history"
     | "cmdb_audit_commands"
     | "cmdb_audit_online"
     | "cmdb_audit_sessions"
     | "cmdb_business"
-    | "cmdb_changes"
-    | "cmdb_commands"
     | "cmdb_config_agents"
     | "cmdb_config_business"
     | "cmdb_config_rooms"
     | "cmdb_config_tags"
+    | "cmdb_credentials_access"
+    | "cmdb_credentials_ssh"
     | "cmdb_dashboard"
+    | "cmdb_policies"
     | "cmdb_rooms"
-    | "cmdb_server_detail"
     | "cmdb_servers"
-    | "cmdb_sessions"
-    | "cmdb_ssh_credentials"
     | "cmdb_tags"
-    | "cmdb_terminal"
-    | "cmdb_terminal_workbench"
     | "function_hide-child_one"
     | "function_hide-child_three"
     | "function_hide-child_two"
@@ -265,7 +252,7 @@ declare module "@elegant-router/types" {
     | "monitoring_alerts"
     | "monitoring_overview"
     | "monitoring_reports"
-    | "monitoring_servers-detail"
+    | "monitoring_servers_detail"
     | "monitoring_servers"
     | "monitoring_settings"
     | "monitoring_trends"
@@ -291,9 +278,8 @@ declare module "@elegant-router/types" {
     | "plugin_typeit"
     | "plugin_video"
     | "system_attributes"
-    | "terminal"
-    | "terminal_workbench"
     | "user-center"
+    | "webterminal"
   >;
 
   /**

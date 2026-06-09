@@ -1,4 +1,5 @@
 import type { CustomRoute, ElegantConstRoute, ElegantRoute } from '@elegant-router/types';
+import type { RouteRecordRaw } from 'vue-router';
 import { generatedRoutes } from '../elegant/routes';
 import { layouts, views } from '../elegant/imports';
 import { transformElegantRoutesToVueRoutes } from '../elegant/transform';
@@ -195,7 +196,6 @@ const customRoutes: CustomRoute[] = [
 /** create routes when the auth route mode is static */
 export function createStaticRoutes() {
   const constantRoutes: ElegantRoute[] = [];
-
   const authRoutes: ElegantRoute[] = [];
 
   [...customRoutes, ...generatedRoutes].forEach(item => {

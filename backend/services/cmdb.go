@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
 	"oneops/backend/models"
 	"strconv"
@@ -16,7 +17,76 @@ func NewCMDBService() *CMDBService {
 
 // ========== 服务器管理 ==========
 
-// GetServers 获取服务器列表
+// GetServersLight 获取服务器列表（轻量级，仅返回显示字段）
+func (s *CMDBService) GetServersLight(query map[string]interface{}, page, pageSize int) ([]map[string]interface{}, int64, error) {
+	var servers []map[string]interface{}
+	var total int64
+
+	tx := db.Model(&models.Server{}).Select("id, hostname, ip, inner_ip, env, status, provider, agent_status, cpu, memory, os, arch, ssh_port")
+
+	// 应用相同的过滤条件（复用逻辑）
+	if hostname, ok := query["hostname"].(string); ok && hostname != "" {
+		tx = tx.Where("hostname LIKE ?", "%"+hostname+"%")
+	}
+	if ip, ok := query["ip"].(string); ok && ip != "" {
+		tx = tx.Where("ip LIKE ?", "%"+ip+"%")
+	}
+	if env, ok := query["env"].(string); ok && env != "" {
+		tx = tx.Where("env = ?", env)
+	}
+	if status, ok := query["status"].(string); ok && status != "" {
+		tx = tx.Where("status = ?", status)
+	}
+	if provider, ok := query["provider"].(string); ok && provider != "" {
+		tx = tx.Where("provider = ?", provider)
+	}
+	if agentStatus, ok := query["agentStatus"].(string); ok && agentStatus != "" {
+		tx = tx.Where("agent_status = ?", agentStatus)
+	}
+
+	var groupIDUint uint
+	if groupID, ok := query["groupId"]; ok && groupID != nil {
+		switch v := groupID.(type) {
+		case uint:
+			groupIDUint = v
+		case uint64:
+			groupIDUint = uint(v)
+		case int:
+			groupIDUint = uint(v)
+		case int64:
+			groupIDUint = uint(v)
+		case float64:
+			groupIDUint = uint(v)
+		case float32:
+			groupIDUint = uint(v)
+		default:
+			if strVal, ok := groupID.(string); ok {
+				if parsedVal, err := strconv.ParseUint(strVal, 10, 32); err == nil {
+					groupIDUint = uint(parsedVal)
+				}
+			}
+		}
+		if groupIDUint > 0 {
+			tx = tx.Where("id IN (SELECT server_id FROM server_group_relations WHERE group_id = ?)", groupIDUint)
+		}
+	}
+
+	// 获取总数
+	if err := tx.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 单次查询获取列表数据（不含关联）
+	err := tx.
+		Order("id DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&servers).Error
+
+	return servers, total, err
+}
+
+// GetServers 获取服务器列表（完整数据，含关联）
 func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize int) ([]models.Server, int64, error) {
 	var servers []models.Server
 	var total int64
@@ -80,17 +150,61 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 		return nil, 0, err
 	}
 
-	// 列表页预加载凭证、分组、属性和机柜（显示凭证数量、分组名称、属性值和机房信息）
+	// 列表页查询（性能优化：使用冗余字段，避免关联查询）
 	err := tx.
-		Preload("Credentials").
-		Preload("Groups").
-		Preload("Attributes").
-		Preload("Cabinet").
-		Preload("Cabinet.Room").
-		Order("id DESC").
+		Select(`
+			servers.id, servers.hostname, servers.ip, servers.inner_ip, servers.ssh_port, servers.env, servers.status,
+			servers.provider, servers.agent_status, servers.agent_version, servers.cpu,
+			servers.memory, servers.os, servers.arch, servers.created_at, servers.updated_at,
+			servers.group_names, servers.credential_names, servers.system_credential_id
+		`).
+		Order("servers.id DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&servers).Error
+
+	// 使用冗余字段填充关联数据（包含ID和名称，便于编辑回显）
+	for i := range servers {
+		// 从冗余字段解析分组ID和名称
+		if servers[i].GroupNames != "[]" && servers[i].GroupNames != "" && servers[i].GroupNames != "null" {
+			var groupData []map[string]interface{}
+			json.Unmarshal([]byte(servers[i].GroupNames), &groupData)
+			for _, item := range groupData {
+				servers[i].Groups = append(servers[i].Groups, models.ServerGroup{
+					ID:   uint(item["id"].(float64)),
+					Name: item["name"].(string),
+				})
+			}
+		}
+
+		// 从冗余字段解析凭证ID、名称和类型
+		if servers[i].CredentialNames != "[]" && servers[i].CredentialNames != "" && servers[i].CredentialNames != "null" {
+			var credData []map[string]interface{}
+			json.Unmarshal([]byte(servers[i].CredentialNames), &credData)
+			for _, item := range credData {
+				cred := models.SSHCredential{
+					ID:   uint(item["id"].(float64)),
+					Name: item["name"].(string),
+				}
+				// 填充凭证类型（如果存在）
+				if credentialType, ok := item["credential_type"]; ok {
+					cred.CredentialType = models.CredentialType(credentialType.(string))
+				} else {
+					// 默认为用户凭证（向后兼容）
+					cred.CredentialType = models.CredentialTypeUser
+				}
+				servers[i].Credentials = append(servers[i].Credentials, cred)
+			}
+		}
+
+			// 处理系统运维凭证（单个凭证，通过ID查询）
+			if servers[i].SystemCredentialID > 0 {
+			var systemCred models.SSHCredential
+			if err := db.Select("id, name, credential_type").First(&systemCred, servers[i].SystemCredentialID).Error; err == nil {
+			servers[i].SystemCredential = &systemCred
+			}
+			}
+	}
 
 	return servers, total, err
 }
@@ -171,7 +285,43 @@ func (s *CMDBService) CreateServer(server *models.Server, operator string) error
 	}
 
 	// 提交事务
-	return tx.Commit().Error
+	if err := tx.Commit().Error; err != nil {
+		return err
+	}
+
+	// 维护冗余字段：group_names 和 credential_names
+	return s.updateServerRedundantFields(server.ID)
+}
+
+// updateServerRedundantFields 更新服务器的冗余字段
+func (s *CMDBService) updateServerRedundantFields(serverID uint) error {
+	// 查询分组ID和名称
+	var groupData []map[string]interface{}
+	db.Table("server_group_relations").
+		Select("g.id, g.name").
+		Joins("JOIN server_groups g ON g.id = server_group_relations.group_id").
+		Where("server_group_relations.server_id = ?", serverID).
+		Scan(&groupData)
+
+	// 查询凭证ID、名称和类型
+	var credData []map[string]interface{}
+	db.Table("server_credentials").
+		Select("c.id, c.name, c.credential_type").
+		Joins("JOIN ssh_credentials c ON c.id = server_credentials.credential_id").
+		Where("server_credentials.server_id = ?", serverID).
+		Scan(&credData)
+
+	// 构建JSON数组（包含ID和名称）
+	groupJSON, _ := json.Marshal(groupData)
+	credJSON, _ := json.Marshal(credData)
+
+	// 更新冗余字段
+	return db.Model(&models.Server{}).
+		Where("id = ?", serverID).
+		Updates(map[string]interface{}{
+			"group_names":       string(groupJSON),
+			"credential_names":  string(credJSON),
+		}).Error
 }
 
 // UpdateServer 更新服务器
@@ -252,7 +402,20 @@ func (s *CMDBService) UpdateServer(id uint, updates map[string]interface{}, oper
 	}
 
 	// 提交事务
-	return tx.Commit().Error
+	if err := tx.Commit().Error; err != nil {
+		return err
+	}
+
+	// 如果更新了分组或凭证关联，维护冗余字段
+	_, hasGroupUpdate := updates["groupIds"]
+	_, hasCredUpdate := updates["credentialIds"]
+	if hasGroupUpdate || hasCredUpdate {
+		if err := s.updateServerRedundantFields(id); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // filterServerColumns 过滤掉非数据库列字段（关联对象、虚拟字段），只保留可直接更新的列
@@ -324,11 +487,48 @@ func (s *CMDBService) GetBusinessUnits() ([]models.BusinessUnit, error) {
 		return nil, err
 	}
 
-	// 构建树形结构
-	return s.buildBusinessTree(units, 0), nil
+	// 性能优化：使用O(n)算法构建树形结构（原算法为O(n²)）
+	return s.buildBusinessTreeOptimized(units), nil
 }
 
-// buildBusinessTree 构建业务树
+// buildBusinessTreeOptimized 构建业务树（O(n)时间复杂度）
+func (s *CMDBService) buildBusinessTreeOptimized(units []models.BusinessUnit) []models.BusinessUnit {
+	// 创建parent_id -> nodes的映射，用于O(1)查找
+	parentMap := make(map[uint][]*models.BusinessUnit)
+	idMap := make(map[uint]*models.BusinessUnit)
+
+	// 第一遍：建立映射关系
+	for i := range units {
+		idMap[units[i].ID] = &units[i]
+		parentMap[units[i].ParentID] = append(parentMap[units[i].ParentID], &units[i])
+	}
+
+	// 第二遍：构建树形结构
+	var roots []models.BusinessUnit
+	for _, unit := range parentMap[0] {
+		*unit = s.buildTreeNode(unit, parentMap)
+		roots = append(roots, *unit)
+	}
+
+	return roots
+}
+
+// buildTreeNode 递归构建树节点（使用parentMap避免重复扫描）
+func (s *CMDBService) buildTreeNode(node *models.BusinessUnit, parentMap map[uint][]*models.BusinessUnit) models.BusinessUnit {
+	children := parentMap[node.ID]
+	if len(children) == 0 {
+		return *node
+	}
+
+	node.Children = make([]models.BusinessUnit, len(children))
+	for i, child := range children {
+		node.Children[i] = s.buildTreeNode(child, parentMap)
+	}
+
+	return *node
+}
+
+// buildBusinessTree 构建业务树（旧版本，保留用于兼容）
 func (s *CMDBService) buildBusinessTree(units []models.BusinessUnit, parentID uint) []models.BusinessUnit {
 	var tree []models.BusinessUnit
 	for _, unit := range units {
@@ -783,17 +983,25 @@ func (s *CMDBService) AssignServerToGroup(serverID, groupID uint) error {
 	db.Where("server_id = ?", serverID).Delete(&models.ServerGroupRelation{})
 
 	// 创建新的分组关联
-	return db.Create(&models.ServerGroupRelation{
+	if err := db.Create(&models.ServerGroupRelation{
 		ServerID: serverID,
 		GroupID:   groupID,
-	}).Error
+	}).Error; err != nil {
+		return err
+	}
+
+	// 维护冗余字段
+	return s.updateServerRedundantFields(serverID)
 }
 
 // AssignServerToGroups 将服务器分配到多个分组（会清除其他分组）
 func (s *CMDBService) AssignServerToGroups(serverID uint, groupIDs []uint) error {
 	if len(groupIDs) == 0 {
 		// 如果没有分组，删除所有关联
-		return db.Where("server_id = ?", serverID).Delete(&models.ServerGroupRelation{}).Error
+		if err := db.Where("server_id = ?", serverID).Delete(&models.ServerGroupRelation{}).Error; err != nil {
+			return err
+		}
+		return s.updateServerRedundantFields(serverID)
 	}
 
 	// 先删除该服务器的所有分组关联
@@ -807,12 +1015,21 @@ func (s *CMDBService) AssignServerToGroups(serverID uint, groupIDs []uint) error
 			GroupID:  groupID,
 		}
 	}
-	return db.Create(&relations).Error
+	if err := db.Create(&relations).Error; err != nil {
+		return err
+	}
+
+	// 维护冗余字段
+	return s.updateServerRedundantFields(serverID)
 }
 
 // RemoveServerFromGroup 将服务器从分组中移除
 func (s *CMDBService) RemoveServerFromGroup(serverID, groupID uint) error {
-	return db.Where("server_id = ? AND group_id = ?", serverID, groupID).Delete(&models.ServerGroupRelation{}).Error
+	if err := db.Where("server_id = ? AND group_id = ?", serverID, groupID).Delete(&models.ServerGroupRelation{}).Error; err != nil {
+		return err
+	}
+	// 维护冗余字段
+	return s.updateServerRedundantFields(serverID)
 }
 
 // GetServersByGroup 获取指定分组下的服务器列表
