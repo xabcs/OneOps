@@ -315,6 +315,15 @@ export const generatedRoutes: GeneratedRoute[] = [
         }
       },
       {
+        name: 'cmdb_server_detail',
+        path: '/cmdb/server/detail',
+        component: 'view.cmdb_server_detail',
+        meta: {
+          title: 'cmdb_server_detail',
+          i18nKey: 'route.cmdb_server_detail'
+        }
+      },
+      {
         name: 'cmdb_tags',
         path: '/cmdb/tags',
         component: 'view.cmdb_tags',

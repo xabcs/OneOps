@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"oneops/backend/config"
+	"oneops/backend/container"
+	"oneops/backend/dto"
 	"oneops/backend/handlers"
 	"oneops/backend/logger"
 	"oneops/backend/routes"
@@ -33,6 +35,11 @@ func main() {
 		zap.String("mode", cfg.Server.Mode),
 	)
 
+	// 初始化参数验证器
+	if err := dto.InitValidator(); err != nil {
+		log.Fatalf("验证器初始化失败: %v", err)
+	}
+
 	// 设置 Gin 模式
 	gin.SetMode(cfg.Server.Mode)
 
@@ -41,6 +48,29 @@ func main() {
 		logger.Fatal("数据库连接失败", zap.Error(err))
 	}
 	logger.Info("数据库连接成功")
+
+	// 初始化加密模块（敏感数据加密）
+	// 优先使用配置文件中的密钥，如果没有则使用环境变量
+	encryptionKey := cfg.Encryption.Key
+	if encryptionKey != "" {
+		// 从配置文件读取
+		if err := utils.InitEncryptionWithKey(encryptionKey); err != nil {
+			logger.Warn("加密模块初始化失败，SSH凭证将以明文存储", zap.Error(err))
+		} else {
+			logger.Info("加密模块初始化成功（使用配置文件密钥）")
+		}
+	} else {
+		// 尝试从环境变量读取
+		if err := utils.InitEncryption(); err != nil {
+			logger.Warn("加密模块初始化失败，SSH凭证将以明文存储", zap.Error(err))
+		} else {
+			logger.Info("加密模块初始化成功（使用环境变量）")
+		}
+	}
+
+	// 初始化服务容器（依赖数据库连接）
+	container.Initialize(services.GetDB())
+	logger.Info("服务容器初始化成功")
 
 	// 设置 JWT 密钥
 	utils.SetJWTSecret(cfg.JWT.Secret)

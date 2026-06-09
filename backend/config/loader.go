@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"gopkg.in/yaml.v3"
+	"oneops/backend/utils"
 )
 
 // LoadConfig 从配置文件加载配置
@@ -195,8 +195,10 @@ func validate(cfg *Config) error {
 	if cfg.JWT.Secret == "" || cfg.JWT.Secret == "${JWT_SECRET}" {
 		return fmt.Errorf("JWT密钥不能为空，请设置JWT_SECRET环境变量")
 	}
-	if strings.Contains(cfg.JWT.Secret, "change-in-production") {
-		return fmt.Errorf("JWT密钥使用了默认值，生产环境请修改")
+
+	// 验证JWT密钥强度
+	if valid, msg := utils.ValidateJWTSecret(cfg.JWT.Secret); !valid {
+		return fmt.Errorf("JWT密钥强度不足: %s", msg)
 	}
 
 	// 验证日志配置

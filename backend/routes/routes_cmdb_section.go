@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"oneops/backend/container"
 	"oneops/backend/controllers"
 	"oneops/backend/middlewares"
 
@@ -9,7 +10,8 @@ import (
 
 // SetupCMDBRoutes 设置CMDB路由
 func SetupCMDBRoutes(r *gin.Engine) {
-	cmdbController := controllers.NewCMDBController()
+	cnt := container.GetContainer()
+	cmdbController := controllers.NewCMDBController(cnt)
 
 	// API 路由组
 	api := r.Group("/api")

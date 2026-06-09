@@ -65,6 +65,7 @@ declare module "@elegant-router/types" {
     "cmdb_policies": "/cmdb/policies";
     "cmdb_rooms": "/cmdb/rooms";
     "cmdb_servers": "/cmdb/servers";
+    "cmdb_server_detail": "/cmdb/server/detail";
     "cmdb_tags": "/cmdb/tags";
     "function": "/function";
     "function_hide-child": "/function/hide-child";
@@ -235,6 +236,7 @@ declare module "@elegant-router/types" {
     | "cmdb_policies"
     | "cmdb_rooms"
     | "cmdb_servers"
+    | "cmdb_server_detail"
     | "cmdb_tags"
     | "function_hide-child_one"
     | "function_hide-child_three"

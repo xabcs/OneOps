@@ -2,24 +2,28 @@ package controllers
 
 import (
 	"net/http"
-	"oneops/backend/models"
-	"oneops/backend/services"
-	"oneops/backend/utils"
 	"strconv"
 	"strings"
+
+	"oneops/backend/container"
+	"oneops/backend/dto"
+	"oneops/backend/models"
+	"oneops/backend/middlewares"
+	"oneops/backend/services"
+	"oneops/backend/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
 // CMDBController CMDB控制器
 type CMDBController struct {
-	cmdbService *services.CMDBService
+	container *container.ServiceContainer
 }
 
 // NewCMDBController 创建CMDB控制器
-func NewCMDBController() *CMDBController {
+func NewCMDBController(cnt *container.ServiceContainer) *CMDBController {
 	return &CMDBController{
-		cmdbService: services.NewCMDBService(),
+		container: cnt,
 	}
 }
 
@@ -27,35 +31,48 @@ func NewCMDBController() *CMDBController {
 
 // GetServers 获取服务器列表
 func (c *CMDBController) GetServers(ctx *gin.Context) {
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+	var params dto.ServerQueryParams
+	if err := ctx.ShouldBindQuery(&params); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		return
+	}
 
-	// 构建查询条件
+	// 转换为 Service 层使用的查询参数
 	query := make(map[string]interface{})
-	if hostname := ctx.Query("hostname"); hostname != "" {
-		query["hostname"] = hostname
+	if params.Hostname != "" {
+		query["hostname"] = params.Hostname
 	}
-	if ip := ctx.Query("ip"); ip != "" {
-		query["ip"] = ip
+	if params.IP != "" {
+		query["ip"] = params.IP
 	}
-	if env := ctx.Query("env"); env != "" {
-		query["env"] = env
+	if params.InnerIP != "" {
+		query["innerIp"] = params.InnerIP
 	}
-	if status := ctx.Query("status"); status != "" {
-		query["status"] = status
+	if params.Env != "" {
+		query["env"] = params.Env
 	}
-	if provider := ctx.Query("provider"); provider != "" {
-		query["provider"] = provider
+	if params.Status != "" {
+		query["status"] = params.Status
 	}
-	if groupID := ctx.Query("groupId"); groupID != "" {
-		if id, err := strconv.ParseUint(groupID, 10, 32); err == nil {
-			query["groupId"] = uint(id)
-		}
+	if params.Provider != "" {
+		query["provider"] = params.Provider
+	}
+	if params.AgentStatus != "" {
+		query["agentStatus"] = params.AgentStatus
+	}
+	if params.GroupID != nil {
+		query["groupId"] = *params.GroupID
+	}
+	if params.BusinessUnitID != nil {
+		query["businessUnitId"] = *params.BusinessUnitID
+	}
+	if params.Tags != "" {
+		query["tags"] = params.Tags
 	}
 
-	servers, total, err := c.cmdbService.GetServers(query, page, pageSize)
+	servers, total, err := c.container.CMDBService().GetServers(query, params.Page, params.PageSize)
 	if err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+		middlewares.HandleControllerError(ctx, err)
 		return
 	}
 
@@ -74,7 +91,7 @@ func (c *CMDBController) GetServerByID(ctx *gin.Context) {
 		return
 	}
 
-	server, err := c.cmdbService.GetServerByID(uint(id))
+	server, err := c.container.CMDBService().GetServerByID(uint(id))
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal("服务器不存在"))
 		return
@@ -92,7 +109,7 @@ func (c *CMDBController) GetServerForConnect(ctx *gin.Context) {
 		return
 	}
 
-	server, err := c.cmdbService.GetServerForConnect(uint(id))
+	server, err := c.container.CMDBService().GetServerForConnect(uint(id))
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal("服务器不存在"))
 		return
@@ -115,7 +132,7 @@ func (c *CMDBController) CreateServer(ctx *gin.Context) {
 		operator = "system"
 	}
 
-	if err := c.cmdbService.CreateServer(&server, operator); err != nil {
+	if err := c.container.CMDBService().CreateServer(&server, operator); err != nil {
 		// 检查是否是重复键错误
 		errMsg := err.Error()
 		if strings.Contains(errMsg, "Duplicate entry") && strings.Contains(errMsg, "hostname") {
@@ -154,7 +171,7 @@ func (c *CMDBController) UpdateServer(ctx *gin.Context) {
 		operator = "system"
 	}
 
-	if err := c.cmdbService.UpdateServer(uint(id), updates, operator); err != nil {
+	if err := c.container.CMDBService().UpdateServer(uint(id), updates, operator); err != nil {
 		// 检查是否是重复键错误
 		errMsg := err.Error()
 		if strings.Contains(errMsg, "Duplicate entry") && strings.Contains(errMsg, "hostname") {
@@ -188,7 +205,7 @@ func (c *CMDBController) DeleteServer(ctx *gin.Context) {
 		operator = "system"
 	}
 
-	if err := c.cmdbService.DeleteServer(uint(id), operator); err != nil {
+	if err := c.container.CMDBService().DeleteServer(uint(id), operator); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -200,7 +217,7 @@ func (c *CMDBController) DeleteServer(ctx *gin.Context) {
 
 // GetBusinessUnits 获取业务系统列表（树形结构）
 func (c *CMDBController) GetBusinessUnits(ctx *gin.Context) {
-	units, err := c.cmdbService.GetBusinessUnits()
+	units, err := c.container.CMDBService().GetBusinessUnits()
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -223,7 +240,7 @@ func (c *CMDBController) CreateBusinessUnit(ctx *gin.Context) {
 		operator = "system"
 	}
 
-	if err := c.cmdbService.CreateBusinessUnit(&unit, operator); err != nil {
+	if err := c.container.CMDBService().CreateBusinessUnit(&unit, operator); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -246,7 +263,7 @@ func (c *CMDBController) UpdateBusinessUnit(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.UpdateBusinessUnit(uint(id), updates); err != nil {
+	if err := c.container.CMDBService().UpdateBusinessUnit(uint(id), updates); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -263,7 +280,7 @@ func (c *CMDBController) DeleteBusinessUnit(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.DeleteBusinessUnit(uint(id)); err != nil {
+	if err := c.container.CMDBService().DeleteBusinessUnit(uint(id)); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -275,7 +292,7 @@ func (c *CMDBController) DeleteBusinessUnit(ctx *gin.Context) {
 
 // GetServerRooms 获取机房列表
 func (c *CMDBController) GetServerRooms(ctx *gin.Context) {
-	rooms, err := c.cmdbService.GetServerRooms()
+	rooms, err := c.container.CMDBService().GetServerRooms()
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -292,7 +309,7 @@ func (c *CMDBController) CreateServerRoom(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.CreateServerRoom(&room); err != nil {
+	if err := c.container.CMDBService().CreateServerRoom(&room); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -315,7 +332,7 @@ func (c *CMDBController) UpdateServerRoom(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.UpdateServerRoom(uint(id), updates); err != nil {
+	if err := c.container.CMDBService().UpdateServerRoom(uint(id), updates); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -332,7 +349,7 @@ func (c *CMDBController) DeleteServerRoom(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.DeleteServerRoom(uint(id)); err != nil {
+	if err := c.container.CMDBService().DeleteServerRoom(uint(id)); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -344,7 +361,7 @@ func (c *CMDBController) DeleteServerRoom(ctx *gin.Context) {
 func (c *CMDBController) GetCabinets(ctx *gin.Context) {
 	roomID, _ := strconv.ParseUint(ctx.Query("roomId"), 10, 32)
 
-	cabinets, err := c.cmdbService.GetCabinets(uint(roomID))
+	cabinets, err := c.container.CMDBService().GetCabinets(uint(roomID))
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -357,7 +374,7 @@ func (c *CMDBController) GetCabinets(ctx *gin.Context) {
 
 // GetServerTags 获取服务器标签列表
 func (c *CMDBController) GetServerTags(ctx *gin.Context) {
-	tags, err := c.cmdbService.GetServerTags()
+	tags, err := c.container.CMDBService().GetServerTags()
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -374,7 +391,7 @@ func (c *CMDBController) CreateServerTag(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.CreateServerTag(&tag); err != nil {
+	if err := c.container.CMDBService().CreateServerTag(&tag); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -397,7 +414,7 @@ func (c *CMDBController) UpdateServerTag(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.UpdateServerTag(uint(id), updates); err != nil {
+	if err := c.container.CMDBService().UpdateServerTag(uint(id), updates); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -414,7 +431,7 @@ func (c *CMDBController) DeleteServerTag(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.DeleteServerTag(uint(id)); err != nil {
+	if err := c.container.CMDBService().DeleteServerTag(uint(id)); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -434,7 +451,7 @@ func (c *CMDBController) AssignServerTag(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.AssignServerTag(req.ServerID, req.TagID); err != nil {
+	if err := c.container.CMDBService().AssignServerTag(req.ServerID, req.TagID); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -447,7 +464,7 @@ func (c *CMDBController) RemoveServerTag(ctx *gin.Context) {
 	tagID, _ := strconv.ParseUint(ctx.Param("tagId"), 10, 32)
 	serverID, _ := strconv.ParseUint(ctx.Param("serverId"), 10, 32)
 
-	if err := c.cmdbService.RemoveServerTag(uint(serverID), uint(tagID)); err != nil {
+	if err := c.container.CMDBService().RemoveServerTag(uint(serverID), uint(tagID)); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -465,7 +482,7 @@ func (c *CMDBController) GetAssetChanges(ctx *gin.Context) {
 	assetType := ctx.Query("assetType")
 	assetID, _ := strconv.ParseUint(ctx.Query("assetId"), 10, 32)
 
-	changes, total, err := c.cmdbService.GetAssetChanges(assetType, uint(assetID), page, pageSize)
+	changes, total, err := c.container.CMDBService().GetAssetChanges(assetType, uint(assetID), page, pageSize)
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -485,7 +502,7 @@ func (c *CMDBController) SyncServerMetrics(ctx *gin.Context) {
 		return
 	}
 
-	server, err := c.cmdbService.GetServerByID(uint(id))
+	server, err := c.container.CMDBService().GetServerByID(uint(id))
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal("服务器不存在"))
 		return
@@ -564,7 +581,7 @@ func (c *CMDBController) GetAgentStatus(ctx *gin.Context) {
 		return
 	}
 
-	server, err := c.cmdbService.GetServerByID(uint(id))
+	server, err := c.container.CMDBService().GetServerByID(uint(id))
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal("服务器不存在"))
 		return
@@ -597,7 +614,7 @@ func (c *CMDBController) ReceiveAgentHeartbeat(ctx *gin.Context) {
 
 // GetServerStats 获取服务器统计信息
 func (c *CMDBController) GetServerStats(ctx *gin.Context) {
-	stats, err := c.cmdbService.GetServerStats()
+	stats, err := c.container.CMDBService().GetServerStats()
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -628,7 +645,7 @@ func (c *CMDBController) GetServerConfig(ctx *gin.Context) {
 		req.SSHPort = 22
 	}
 
-	config, err := c.cmdbService.GetServerConfig(req.Hostname, req.IP, req.SSHUser, req.SSHPort)
+	config, err := c.container.CMDBService().GetServerConfig(req.Hostname, req.IP, req.SSHUser, req.SSHPort)
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal("获取服务器配置失败: "+err.Error()))
 		return
@@ -641,7 +658,7 @@ func (c *CMDBController) GetServerConfig(ctx *gin.Context) {
 
 // GetServerGroups 获取主机分组列表（树形结构）
 func (c *CMDBController) GetServerGroups(ctx *gin.Context) {
-	groups, err := c.cmdbService.GetServerGroups()
+	groups, err := c.container.CMDBService().GetServerGroups()
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -652,7 +669,7 @@ func (c *CMDBController) GetServerGroups(ctx *gin.Context) {
 
 // GetAssetTree 获取完整的资产树（分组+服务器），一次性返回所有数据
 func (c *CMDBController) GetAssetTree(ctx *gin.Context) {
-	data, err := c.cmdbService.GetAssetTree()
+	data, err := c.container.CMDBService().GetAssetTree()
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -670,7 +687,7 @@ func (c *CMDBController) GetServerGroupByID(ctx *gin.Context) {
 		return
 	}
 
-	group, err := c.cmdbService.GetServerGroupByID(uint(id))
+	group, err := c.container.CMDBService().GetServerGroupByID(uint(id))
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal("分组不存在"))
 		return
@@ -687,7 +704,7 @@ func (c *CMDBController) CreateServerGroup(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.CreateServerGroup(&group); err != nil {
+	if err := c.container.CMDBService().CreateServerGroup(&group); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -710,7 +727,7 @@ func (c *CMDBController) UpdateServerGroup(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.UpdateServerGroup(uint(id), updates); err != nil {
+	if err := c.container.CMDBService().UpdateServerGroup(uint(id), updates); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -727,7 +744,7 @@ func (c *CMDBController) DeleteServerGroup(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.DeleteServerGroup(uint(id)); err != nil {
+	if err := c.container.CMDBService().DeleteServerGroup(uint(id)); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -747,7 +764,7 @@ func (c *CMDBController) AssignServerToGroup(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.AssignServerToGroup(req.ServerID, req.GroupID); err != nil {
+	if err := c.container.CMDBService().AssignServerToGroup(req.ServerID, req.GroupID); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -767,7 +784,7 @@ func (c *CMDBController) AssignServerToGroups(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.AssignServerToGroups(req.ServerID, req.GroupIDs); err != nil {
+	if err := c.container.CMDBService().AssignServerToGroups(req.ServerID, req.GroupIDs); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -787,7 +804,7 @@ func (c *CMDBController) GetServersByGroup(ctx *gin.Context) {
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
 
-	servers, err := c.cmdbService.GetServersByGroup(uint(groupID))
+	servers, err := c.container.CMDBService().GetServersByGroup(uint(groupID))
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -817,7 +834,7 @@ func (c *CMDBController) GetServersByGroup(ctx *gin.Context) {
 // GetSSHCredentials 获取SSH凭证列表，支持 ?type=user|system 筛选
 func (c *CMDBController) GetSSHCredentials(ctx *gin.Context) {
 	credentialType := ctx.Query("type") // "" | "user" | "system"
-	credentials, err := c.cmdbService.GetSSHCredentials(credentialType)
+	credentials, err := c.container.CMDBService().GetSSHCredentials(credentialType)
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -835,7 +852,7 @@ func (c *CMDBController) GetSSHCredentialByID(ctx *gin.Context) {
 		return
 	}
 
-	credential, err := c.cmdbService.GetSSHCredentialByID(uint(id))
+	credential, err := c.container.CMDBService().GetSSHCredentialByID(uint(id))
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal("凭证不存在"))
 		return
@@ -852,7 +869,7 @@ func (c *CMDBController) CreateSSHCredential(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.CreateSSHCredential(&credential); err != nil {
+	if err := c.container.CMDBService().CreateSSHCredential(&credential); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -875,7 +892,7 @@ func (c *CMDBController) UpdateSSHCredential(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.UpdateSSHCredential(uint(id), updates); err != nil {
+	if err := c.container.CMDBService().UpdateSSHCredential(uint(id), updates); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -892,7 +909,7 @@ func (c *CMDBController) DeleteSSHCredential(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.DeleteSSHCredential(uint(id)); err != nil {
+	if err := c.container.CMDBService().DeleteSSHCredential(uint(id)); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -918,7 +935,7 @@ func (c *CMDBController) TestSSHCredential(ctx *gin.Context) {
 		return
 	}
 
-	result, err := c.cmdbService.TestSSHCredential(uint(id), req.TestIP, req.TestPort)
+	result, err := c.container.CMDBService().TestSSHCredential(uint(id), req.TestIP, req.TestPort)
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -945,7 +962,7 @@ func (c *CMDBController) GetAgentList(ctx *gin.Context) {
 		query["agentStatus"] = status
 	}
 
-	servers, total, err := c.cmdbService.GetServers(query, page, pageSize)
+	servers, total, err := c.container.CMDBService().GetServers(query, page, pageSize)
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -1015,7 +1032,7 @@ func (c *CMDBController) DeleteAgentRecord(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.cmdbService.ClearAgentRecord(uint(id)); err != nil {
+	if err := c.container.CMDBService().ClearAgentRecord(uint(id)); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}

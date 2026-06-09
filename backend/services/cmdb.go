@@ -3,8 +3,12 @@ package services
 import (
 	"encoding/json"
 	"fmt"
+	"oneops/backend/logger"
 	"oneops/backend/models"
+	"oneops/backend/utils"
 	"strconv"
+
+	"go.uber.org/zap"
 )
 
 // CMDBService CMDB服务
@@ -89,79 +93,70 @@ func (s *CMDBService) GetServersLight(query map[string]interface{}, page, pageSi
 // GetServers 获取服务器列表（完整数据，含关联）
 func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize int) ([]models.Server, int64, error) {
 	var servers []models.Server
-	var total int64
 
-	tx := db.Model(&models.Server{})
+	// 使用查询构建器
+	qb := NewQueryBuilder(db.Model(&models.Server{}))
 
-	// 构建查询条件
+	// 应用查询条件
 	if hostname, ok := query["hostname"].(string); ok && hostname != "" {
-		tx = tx.Where("hostname LIKE ?", "%"+hostname+"%")
+		qb.WhereLike("hostname", hostname)
 	}
 	if ip, ok := query["ip"].(string); ok && ip != "" {
-		tx = tx.Where("ip LIKE ?", "%"+ip+"%")
+		qb.WhereLike("ip", ip)
+	}
+	if innerIp, ok := query["innerIp"].(string); ok && innerIp != "" {
+		qb.WhereLike("inner_ip", innerIp)
 	}
 	if env, ok := query["env"].(string); ok && env != "" {
-		tx = tx.Where("env = ?", env)
+		qb.WhereEqual("env", env)
 	}
 	if status, ok := query["status"].(string); ok && status != "" {
-		tx = tx.Where("status = ?", status)
+		qb.WhereEqual("status", status)
 	}
 	if provider, ok := query["provider"].(string); ok && provider != "" {
-		tx = tx.Where("provider = ?", provider)
+		qb.WhereEqual("provider", provider)
 	}
 	if agentStatus, ok := query["agentStatus"].(string); ok && agentStatus != "" {
-		tx = tx.Where("agent_status = ?", agentStatus)
+		qb.WhereEqual("agent_status", agentStatus)
 	}
 
-	// 标记是否需要过滤分组
-	var groupIDUint uint
+	// 处理分组过滤
 	if groupID, ok := query["groupId"]; ok && groupID != nil {
-		// 处理多种数字类型
-		switch v := groupID.(type) {
-		case uint:
-			groupIDUint = v
-		case uint64:
-			groupIDUint = uint(v)
-		case int:
-			groupIDUint = uint(v)
-		case int64:
-			groupIDUint = uint(v)
-		case float64:
-			groupIDUint = uint(v)
-		case float32:
-			groupIDUint = uint(v)
-		default:
-			// 尝试转换字符串
-			if strVal, ok := groupID.(string); ok {
-				if parsedVal, err := strconv.ParseUint(strVal, 10, 32); err == nil {
-					groupIDUint = uint(parsedVal)
-				}
-			}
-		}
-
-		// 使用子查询过滤分组
+		groupIDUint := parseUint(groupID)
 		if groupIDUint > 0 {
-			tx = tx.Where("id IN (SELECT server_id FROM server_group_relations WHERE group_id = ?)", groupIDUint)
+			qb.Where("id IN (SELECT server_id FROM server_group_relations WHERE group_id = ?)", groupIDUint)
 		}
 	}
 
-	// 获取总数
-	if err := tx.Count(&total).Error; err != nil {
+	// 处理业务系统过滤
+	if businessUnitID, ok := query["businessUnitId"]; ok && businessUnitID != nil {
+		businessUnitIDUint := parseUint(businessUnitID)
+		if businessUnitIDUint > 0 {
+			qb.WhereEqual("business_unit_id", businessUnitIDUint)
+		}
+	}
+
+	// 处理标签过滤
+	if tags, ok := query["tags"].(string); ok && tags != "" {
+		qb.Where("JSON_CONTAINS(tags, ?)", fmt.Sprintf("\"%s\"", tags))
+	}
+
+	// 设置排序和分页
+	qb.OrderByDesc("id").Paginate(page, pageSize)
+
+	// 设置查询字段（性能优化）
+	qb.Select(`
+		servers.id, servers.hostname, servers.ip, servers.inner_ip, servers.ssh_port, servers.env, servers.status,
+		servers.provider, servers.agent_status, servers.agent_version, servers.cpu,
+		servers.memory, servers.os, servers.arch, servers.created_at, servers.updated_at,
+		servers.group_names, servers.credential_names, servers.system_credential_id
+	`)
+
+	// 执行查询并获取总数
+	total, err := qb.FindWithCount(&servers)
+	if err != nil {
 		return nil, 0, err
 	}
-
-	// 列表页查询（性能优化：使用冗余字段，避免关联查询）
-	err := tx.
-		Select(`
-			servers.id, servers.hostname, servers.ip, servers.inner_ip, servers.ssh_port, servers.env, servers.status,
-			servers.provider, servers.agent_status, servers.agent_version, servers.cpu,
-			servers.memory, servers.os, servers.arch, servers.created_at, servers.updated_at,
-			servers.group_names, servers.credential_names, servers.system_credential_id
-		`).
-		Order("servers.id DESC").
-		Offset((page - 1) * pageSize).
-		Limit(pageSize).
-		Find(&servers).Error
 
 	// 使用冗余字段填充关联数据（包含ID和名称，便于编辑回显）
 	for i := range servers {
@@ -1059,32 +1054,108 @@ func (s *CMDBService) GetSSHCredentials(credentialType string) ([]models.SSHCred
 func (s *CMDBService) GetSSHCredentialByID(id uint) (*models.SSHCredential, error) {
 	var credential models.SSHCredential
 	err := db.First(&credential, id).Error
-	return &credential, err
+	if err != nil {
+		return nil, err
+	}
+
+	// 解密敏感字段
+	if credential.Password != "" {
+		decrypted, err := utils.DecryptString(credential.Password)
+		if err != nil {
+			// 如果解密失败，可能是旧数据（未加密），保持原样
+			// 日志记录但不阻止使用
+			logger.Warn("SSH凭证密码解密失败", zap.Uint("credential_id", id), zap.Error(err))
+		} else {
+			credential.Password = decrypted
+		}
+	}
+
+	if credential.PrivateKey != "" {
+		decrypted, err := utils.DecryptString(credential.PrivateKey)
+		if err != nil {
+			logger.Warn("SSH凭证私钥解密失败", zap.Uint("credential_id", id), zap.Error(err))
+		} else {
+			credential.PrivateKey = decrypted
+		}
+	}
+
+	if credential.Passphrase != "" {
+		decrypted, err := utils.DecryptString(credential.Passphrase)
+		if err != nil {
+			logger.Warn("SSH凭证passphrase解密失败", zap.Uint("credential_id", id), zap.Error(err))
+		} else {
+			credential.Passphrase = decrypted
+		}
+	}
+
+	return &credential, nil
 }
 
 // CreateSSHCredential 创建SSH凭证
 func (s *CMDBService) CreateSSHCredential(credential *models.SSHCredential) error {
-	// 加密密码和私钥
+	// 加密敏感字段
 	if credential.Password != "" {
-		// TODO: 实际应该使用加密算法加密
-		credential.Password = credential.Password
+		encrypted, err := utils.EncryptString(credential.Password)
+		if err != nil {
+			return fmt.Errorf("加密密码失败: %w", err)
+		}
+		credential.Password = encrypted
 	}
+
 	if credential.PrivateKey != "" {
-		// TODO: 实际应该使用加密算法加密
-		credential.PrivateKey = credential.PrivateKey
+		encrypted, err := utils.EncryptString(credential.PrivateKey)
+		if err != nil {
+			return fmt.Errorf("加密私钥失败: %w", err)
+		}
+		credential.PrivateKey = encrypted
 	}
+
+	if credential.Passphrase != "" {
+		encrypted, err := utils.EncryptString(credential.Passphrase)
+		if err != nil {
+			return fmt.Errorf("加密passphrase失败: %w", err)
+		}
+		credential.Passphrase = encrypted
+	}
+
 	return db.Create(credential).Error
 }
 
 // UpdateSSHCredential 更新SSH凭证
 func (s *CMDBService) UpdateSSHCredential(id uint, updates map[string]interface{}) error {
-	// 如果有密码或私钥更新，需要加密
-	if _, ok := updates["password"]; ok {
-		// TODO: 加密处理
+	// 如果有密码更新，需要加密
+	if password, ok := updates["password"]; ok && password != "" {
+		if passwordStr, ok := password.(string); ok {
+			encrypted, err := utils.EncryptString(passwordStr)
+			if err != nil {
+				return fmt.Errorf("加密密码失败: %w", err)
+			}
+			updates["password"] = encrypted
+		}
 	}
-	if _, ok := updates["private_key"]; ok {
-		// TODO: 加密处理
+
+	// 如果有私钥更新，需要加密
+	if privateKey, ok := updates["private_key"]; ok && privateKey != "" {
+		if privateKeyStr, ok := privateKey.(string); ok {
+			encrypted, err := utils.EncryptString(privateKeyStr)
+			if err != nil {
+				return fmt.Errorf("加密私钥失败: %w", err)
+			}
+			updates["private_key"] = encrypted
+		}
 	}
+
+	// 如果有passphrase更新，需要加密
+	if passphrase, ok := updates["passphrase"]; ok && passphrase != "" {
+		if passphraseStr, ok := passphrase.(string); ok {
+			encrypted, err := utils.EncryptString(passphraseStr)
+			if err != nil {
+				return fmt.Errorf("加密passphrase失败: %w", err)
+			}
+			updates["passphrase"] = encrypted
+		}
+	}
+
 	return db.Model(&models.SSHCredential{}).Where("id = ?", id).Updates(updates).Error
 }
 
@@ -1123,4 +1194,27 @@ func (s *CMDBService) ClearAgentRecord(id uint) error {
 		"disk_usage":         0,
 		"metrics_updated_at": nil,
 	}).Error
+}
+
+// parseUint 辅助函数：将interface{}解析为uint
+func parseUint(value interface{}) uint {
+	switch v := value.(type) {
+	case uint:
+		return v
+	case uint64:
+		return uint(v)
+	case int:
+		return uint(v)
+	case int64:
+		return uint(v)
+	case float64:
+		return uint(v)
+	case float32:
+		return uint(v)
+	case string:
+		if parsedVal, err := strconv.ParseUint(v, 10, 32); err == nil {
+			return uint(parsedVal)
+		}
+	}
+	return 0
 }

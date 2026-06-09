@@ -8,13 +8,14 @@ import (
 
 // Config 应用配置结构
 type Config struct {
-	Server   ServerConfig   `yaml:"server"`
-	Database DatabaseConfig `yaml:"database"`
-	Redis    RedisConfig    `yaml:"redis"`
-	JWT      JWTConfig      `yaml:"jwt"`
-	Log      LogConfig      `yaml:"log"`
-	CORS     CORSConfig     `yaml:"cors"`
-	App      AppConfig      `yaml:"app"`
+	Server     ServerConfig     `yaml:"server"`
+	Database   DatabaseConfig   `yaml:"database"`
+	Redis      RedisConfig      `yaml:"redis"`
+	JWT        JWTConfig        `yaml:"jwt"`
+	Encryption EncryptionConfig `yaml:"encryption"`
+	Log        LogConfig        `yaml:"log"`
+	CORS       CORSConfig       `yaml:"cors"`
+	App        AppConfig        `yaml:"app"`
 }
 
 // ServerConfig 服务器配置
@@ -87,6 +88,11 @@ type JWTConfig struct {
 	Secret     string `yaml:"secret"`      // JWT密钥
 	ExpireTime int    `yaml:"expire_time"` // 过期时间(小时)
 	Issuer     string `yaml:"issuer"`      // 签发者
+}
+
+// EncryptionConfig 数据加密配置
+type EncryptionConfig struct {
+	Key string `yaml:"key"` // 数据加密密钥（Base64编码的32字节密钥）
 }
 
 // LogConfig 日志配置

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"oneops/backend/controllers"
+	"oneops/backend/container"
 	"oneops/backend/handlers"
 	"oneops/backend/middlewares"
 
@@ -14,6 +15,7 @@ func SetupRoutes(r *gin.Engine) {
 	// 应用中间件
 	r.Use(gin.Recovery())
 	r.Use(middlewares.Response())
+	r.Use(middlewares.ErrorHandler())  // 统一错误处理
 	r.Use(cors.New(middlewares.CORS()))
 
 	// 创建审计中间件
@@ -21,8 +23,11 @@ func SetupRoutes(r *gin.Engine) {
 	// 应用操作日志审计中间件
 	r.Use(auditMiddleware.OperationLog())
 
-	// 创建控制器
-	authController := controllers.NewAuthController()
+	// 获取服务容器
+	cnt := container.GetContainer()
+
+	// 创建控制器（使用服务容器）
+	authController := controllers.NewAuthController(cnt)
 	menuController := controllers.NewMenuController()
 	roleController := controllers.NewRoleController()
 	userController := controllers.NewUserController()
@@ -30,7 +35,7 @@ func SetupRoutes(r *gin.Engine) {
 	monitoringController := controllers.NewMonitoringController()
 	wsMonitoringController := controllers.NewMonitoringWebSocketController()
 	routeController := controllers.NewRouteController()
-	cmdbController := controllers.NewCMDBController()
+	cmdbController := controllers.NewCMDBController(cnt)
 	bastionController := controllers.NewBastionController()
 	attributeController := controllers.NewAttributeController()
 	sshHandler := handlers.NewSSHWebSocketHandler()

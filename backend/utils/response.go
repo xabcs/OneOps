@@ -1,12 +1,34 @@
 package utils
 
-// 业务错误码定义
+import (
+	"oneops/backend/errors"
+)
+
+// 业务错误码定义（保留向后兼容）
 const (
 	ErrCodeDuplicateHostname = 40001 // 主机名重复
 	ErrCodeDuplicateIP       = 40002 // IP地址重复
 	ErrCodeServerNotFound    = 40003 // 服务器不存在
 	ErrCodeInvalidCredential = 40004 // 无效的SSH凭证
 )
+
+// ErrorResponseFromAppError 从 AppError 生成响应
+func ErrorResponseFromAppError(err *errors.AppError) Response {
+	return Response{
+		Code:    err.Code,
+		Success: false,
+		Message: err.Message,
+	}
+}
+
+// HandleError 统一错误处理
+func HandleError(err error) Response {
+	if appErr, ok := err.(*errors.AppError); ok {
+		return ErrorResponseFromAppError(appErr)
+	}
+	// 未知错误，返回内部错误
+	return ErrorInternal("服务器内部错误")
+}
 
 // Response 统一响应结构
 type Response struct {

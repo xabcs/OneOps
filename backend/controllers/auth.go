@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"oneops/backend/container"
 	"oneops/backend/services"
 	"oneops/backend/utils"
 
@@ -11,14 +12,15 @@ import (
 )
 
 // AuthController 认证控制器
-type AuthController struct{}
-
-// 创建审计服务实例
-var auditService = services.NewAuditService()
+type AuthController struct {
+	container *container.ServiceContainer
+}
 
 // NewAuthController 创建认证控制器
-func NewAuthController() *AuthController {
-	return &AuthController{}
+func NewAuthController(cnt *container.ServiceContainer) *AuthController {
+	return &AuthController{
+		container: cnt,
+	}
 }
 
 // LoginRequest 登录请求
@@ -35,7 +37,9 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 		return
 	}
 
-	authService := services.NewAuthService()
+	authService := ctrl.container.AuthService()
+	auditService := ctrl.container.AuditService()
+
 	token, user, err := authService.Login(req.Username, req.Password)
 	if err != nil {
 		// 记录登录失败日志
@@ -101,7 +105,7 @@ func (ctrl *AuthController) GetUserInfo(c *gin.Context) {
 		return
 	}
 
-	authService := services.NewAuthService()
+	authService := ctrl.container.AuthService()
 	userInfo, err := authService.GetUserInfo(userID.(uint))
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户信息失败"))
@@ -121,6 +125,7 @@ func (ctrl *AuthController) Logout(c *gin.Context) {
 	}
 
 	// 记录登出日志
+	auditService := ctrl.container.AuditService()
 	auditService.LogLogout(userID.(uint))
 
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("登出成功"))

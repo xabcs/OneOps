@@ -28,8 +28,8 @@ const visible = defineModel<boolean>('visible', {
 const { formRef, validate, restoreValidation } = useForm();
 const { defaultRequiredRule } = useFormRules();
 
-// 菜单树数据
-const menuTreeData = ref<Api.SystemManage.Menu[]>([]);
+// 菜单树数据（树形结构）
+const menuTreeData = ref<Api.SystemManage.MenuTree[]>([]);
 const menuTree = ref<Api.SystemManage.MenuTree[]>([]);
 const loadingMenuTree = ref(false);
 
@@ -38,37 +38,47 @@ async function loadMenuTree() {
   try {
     const { error, data } = await fetchGetMenuTree();
     if (!error && data && Array.isArray(data)) {
-      menuTreeData.value = data as Api.SystemManage.Menu[];
+      // 直接存储树形结构数据
+      menuTreeData.value = data as Api.SystemManage.MenuTree[];
 
       // 获取当前编辑菜单的子孙节点ID（编辑模式下）
       const excludedIds = new Set<number>();
       if (isEdit.value && props.rowData) {
-        const collectChildren = (menuId: number) => {
-          excludedIds.add(menuId);
-          const children = menuTreeData.value.filter(m => m.parentId === menuId);
-          children.forEach(child => collectChildren(child.id));
+        const collectChildren = (node: Api.SystemManage.MenuTree) => {
+          excludedIds.add(node.id);
+          if (node.children && node.children.length > 0) {
+            node.children.forEach(child => collectChildren(child));
+          }
         };
-        collectChildren(props.rowData.id);
+
+        // 在树中找到当前编辑节点并递归收集子孙节点
+        const findAndCollect = (nodes: Api.SystemManage.MenuTree[]): boolean => {
+          for (const node of nodes) {
+            if (node.id === props.rowData!.id) {
+              collectChildren(node);
+              return true;
+            }
+            if (node.children && node.children.length > 0) {
+              if (findAndCollect(node.children)) return true;
+            }
+          }
+          return false;
+        };
+
+        findAndCollect(menuTreeData.value);
       }
 
-      // 构建树形结构，排除当前编辑节点及其子孙
-      const buildTree = (menus: Api.SystemManage.Menu[], parentId = 0): Api.SystemManage.MenuTree[] => {
-        return menus
-          .filter(menu => menu.parentId === parentId && !excludedIds.has(menu.id))
-          .map(menu => ({
-            id: menu.id,
-            name: menu.name,
-            path: menu.path,
-            icon: menu.icon,
-            permission: menu.permission,
-            parentId: menu.parentId,
-            sort: menu.sort,
-            status: menu.status,
-            children: buildTree(menus, menu.id)
+      // 构建用于父级菜单选择的树形结构（排除当前编辑节点及其子孙）
+      const buildTreeForSelect = (nodes: Api.SystemManage.MenuTree[]): Api.SystemManage.MenuTree[] => {
+        return nodes
+          .filter(node => !excludedIds.has(node.id))
+          .map(node => ({
+            ...node,
+            children: node.children ? buildTreeForSelect(node.children) : []
           }));
       };
 
-      const tree = buildTree(menuTreeData.value);
+      const tree = buildTreeForSelect(menuTreeData.value);
 
       // 添加根菜单选项
       menuTree.value = [{ id: 0, name: '作为一级菜单', parentId: 0, children: tree }] as Api.SystemManage.MenuTree[];
@@ -149,18 +159,96 @@ function handleInitModel() {
     console.log('✏️ [菜单操作抽屉] 编辑模式数据', model.value);
   } else {
     // 新增模式：使用空表单
+    const nextSort = props.isAddingChild ? getNextSort() : 1;
+    // 添加子菜单时，父ID来自 rowData.parentId；添加一级菜单时父ID为0
+    const parent_Id = props.isAddingChild ? (props.rowData?.parentId ?? 0) : 0;
+
     model.value = {
       name: '',
       icon: '',
       path: '',
       permission: '',
       menuType: props.isAddingChild ? 'menu' : 'directory',
-      parentId: props.isAddingChild ? (props.rowData?.id ?? 0) : 0,
-      sort: props.isAddingChild ? getNextSort() : 1,
+      parentId: parent_Id,
+      sort: nextSort,
       status: 1
     };
-    console.log('➕ [菜单操作抽屉] 新增模式数据', model.value);
+    console.log('➕ [菜单操作抽屉] 新增模式数据', {
+      ...model.value,
+      _debug: {
+        isAddingChild: props.isAddingChild,
+        rowDataId: props.rowData?.id,
+        rowDataParentId: props.rowData?.parentId,
+        calculatedParentId: parent_Id,
+        calculatedSort: nextSort
+      }
+    });
   }
+}
+
+// 计算下一个排序值
+function getNextSort(): number {
+  // 添加子菜单时，从 parentId 字段获取父菜单ID；否则从 id 字段获取（编辑模式）
+  const parentId = props.isAddingChild ? props.rowData?.parentId : props.rowData?.id;
+
+  console.log('🔢 [计算排序] getNextSort', {
+    isAddingChild: props.isAddingChild,
+    parentId,
+    parentIdType: typeof parentId,
+    menuTreeDataLength: menuTreeData.value.length
+  });
+
+  if (!parentId) return 1;
+
+  // 如果菜单数据还没加载完成，返回默认值
+  if (!menuTreeData.value || menuTreeData.value.length === 0) {
+    console.warn('⚠️ [计算排序] 菜单数据未加载');
+    return 1;
+  }
+
+  // 递归遍历树形结构，查找指定父菜单下的所有子菜单
+  const findSiblings = (nodes: Api.SystemManage.MenuTree[], targetParentId: number): Api.SystemManage.MenuTree[] => {
+    const siblings: Api.SystemManage.MenuTree[] = [];
+
+    const traverse = (nodes: Api.SystemManage.MenuTree[]) => {
+      for (const node of nodes) {
+        // 找到目标父菜单的子菜单
+        if (node.id == targetParentId && node.children && node.children.length > 0) {
+          siblings.push(...node.children);
+        }
+        // 递归遍历子节点
+        if (node.children && node.children.length > 0) {
+          traverse(node.children);
+        }
+      }
+    };
+
+    traverse(nodes);
+    return siblings;
+  };
+
+  const siblings = findSiblings(menuTreeData.value as Api.SystemManage.MenuTree[], parentId);
+
+  console.log('🔢 [计算排序] 筛选结果', {
+    parentId,
+    siblingsCount: siblings.length,
+    siblings: siblings.map(m => ({
+      id: m.id,
+      name: m.name,
+      parentId: m.parentId,
+      sort: m.sort
+    }))
+  });
+
+  if (siblings.length === 0) return 1;
+
+  // 找到最大排序值并加1
+  const maxSort = Math.max(...siblings.map(m => m.sort || 0));
+  const nextSort = maxSort + 1;
+
+  console.log('✅ [计算排序] 结果', { maxSort, nextSort });
+
+  return nextSort;
 }
 
 function closeDrawer() {
@@ -218,6 +306,7 @@ watch(
 
     if (visible.value && newRowData) {
       await nextTick();
+      await loadMenuTree(); // 确保菜单数据已加载
       handleInitModel();
       restoreValidation();
     }

@@ -69,17 +69,6 @@ type WeChatResponse struct {
 	ErrMsg  string `json:"errmsg"`
 }
 
-// AlertNotification 告警通知内容
-type AlertNotification struct {
-	Level     string `json:"level"`     // 告警级别
-	Hostname  string `json:"hostname"`  // 主机名
-	IP        string `json:"ip"`        // IP 地址
-	Message   string `json:"message"`   // 告警消息
-	Value     float64 `json:"value"`    // 当前值
-	Threshold float64 `json:"threshold"` // 阈值
-	Timestamp string `json:"timestamp"` // 时间戳
-}
-
 // SendAlert 发送告警通知（使用 Markdown 格式）
 func (s *WeChatService) SendAlert(alert *AlertNotification) error {
 	// 构建 Markdown 消息
