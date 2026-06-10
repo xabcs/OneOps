@@ -8,12 +8,12 @@ import type { LastLevelRouteKey, RouteLayout } from "@elegant-router/types";
 
 import BaseLayout from "@/layouts/base-layout/index.vue";
 import BlankLayout from "@/layouts/blank-layout/index.vue";
-import TerminalLayout from "@/layouts/terminal-layout/index.vue";
+import TerminalLayoutLayout from "@/layouts/terminal-layout/index.vue";
 
 export const layouts: Record<RouteLayout, RouteComponent | (() => Promise<RouteComponent>)> = {
   base: BaseLayout,
   blank: BlankLayout,
-  "terminal-layout": TerminalLayout,
+  terminalLayout: TerminalLayoutLayout,
 };
 
 export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<RouteComponent>)> = {
@@ -44,8 +44,9 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   cmdb_dashboard: () => import("@/views/cmdb/dashboard/index.vue"),
   cmdb_policies: () => import("@/views/cmdb/policies/index.vue"),
   cmdb_rooms: () => import("@/views/cmdb/rooms/index.vue"),
+  cmdb_server: () => import("@/views/cmdb/server/index.vue"),
   cmdb_servers: () => import("@/views/cmdb/servers/index.vue"),
-  cmdb_server_detail: () => import("@/views/cmdb/server/detail.vue"),
+	  cmdb_server_detail: () => import("@/views/cmdb/server/detail.vue"),
   cmdb_tags: () => import("@/views/cmdb/tags/index.vue"),
   "function_hide-child_one": () => import("@/views/function/hide-child/one/index.vue"),
   "function_hide-child_three": () => import("@/views/function/hide-child/three/index.vue"),

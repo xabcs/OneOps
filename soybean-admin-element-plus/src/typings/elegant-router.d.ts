@@ -9,7 +9,7 @@ declare module "@elegant-router/types" {
   /**
    * route layout
    */
-  export type RouteLayout = "base" | "blank";
+  export type RouteLayout = "base" | "blank" | "terminalLayout";
 
   /**
    * route map
@@ -31,7 +31,9 @@ declare module "@elegant-router/types" {
     "document_antd": "/document/antd";
     "document_element-plus": "/document/element-plus";
     "document_alova": "/document/alova";
-    "webterminal": "/webterminal";
+    "terminal": "/terminal";
+    "terminal_workbench": "/terminal/workbench";
+    "cmdb_server_detail": "/cmdb/server/detail";
     "403": "/403";
     "404": "/404";
     "500": "/500";
@@ -64,8 +66,8 @@ declare module "@elegant-router/types" {
     "cmdb_dashboard": "/cmdb/dashboard";
     "cmdb_policies": "/cmdb/policies";
     "cmdb_rooms": "/cmdb/rooms";
+    "cmdb_server": "/cmdb/server";
     "cmdb_servers": "/cmdb/servers";
-    "cmdb_server_detail": "/cmdb/server/detail";
     "cmdb_tags": "/cmdb/tags";
     "function": "/function";
     "function_hide-child": "/function/hide-child";
@@ -160,6 +162,9 @@ declare module "@elegant-router/types" {
     | "document_antd"
     | "document_element-plus"
     | "document_alova"
+    | "terminal"
+    | "terminal_workbench"
+    | "cmdb_server_detail"
   >;
 
   /**
@@ -201,6 +206,7 @@ declare module "@elegant-router/types" {
     | "not-found"
     | "exception"
     | "document"
+    | "terminal"
   >;
 
   /**
@@ -235,8 +241,8 @@ declare module "@elegant-router/types" {
     | "cmdb_dashboard"
     | "cmdb_policies"
     | "cmdb_rooms"
+    | "cmdb_server"
     | "cmdb_servers"
-    | "cmdb_server_detail"
     | "cmdb_tags"
     | "function_hide-child_one"
     | "function_hide-child_three"
@@ -303,6 +309,8 @@ declare module "@elegant-router/types" {
     | "document_antd"
     | "document_element-plus"
     | "document_alova"
+    | "terminal_workbench"
+    | "cmdb_server_detail"
   >;
 
   /**

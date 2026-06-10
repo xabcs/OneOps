@@ -8,6 +8,7 @@ import {
 } from 'vue-router';
 import { createBuiltinVueRoutes } from './routes/builtin';
 import { createRouterGuard } from './guard';
+import { addCustomRoutes } from './custom-routes';
 
 const { VITE_ROUTER_HISTORY_MODE = 'history', VITE_BASE_URL } = import.meta.env;
 
@@ -25,6 +26,10 @@ export const router = createRouter({
 /** Setup Vue Router */
 export async function setupRouter(app: App) {
   app.use(router);
+
+  // 添加自定义路由（不会被Elegant Router覆盖）
+  addCustomRoutes(router);
+
   createRouterGuard(router);
   await router.isReady();
 }

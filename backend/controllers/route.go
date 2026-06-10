@@ -179,32 +179,55 @@ func (c *RouteController) convertMenusToRoutes(menus []*models.Menu, isSuper boo
 // appendHiddenRoutesToMenuTree 将隐藏路由添加到菜单树中
 func (c *RouteController) appendHiddenRoutesToMenuTree(routes []map[string]interface{}) []map[string]interface{} {
 	for _, route := range routes {
-		// 为 monitoring 路由添加 servers_detail 子路由（详情页）
+		// 将 monitoring_servers_detail 作为一级路由，使用单级路由格式（包含完整布局）
 		if route["name"] == "monitoring" {
-			var children []map[string]interface{}
-			if existingChildren, ok := route["children"].([]map[string]interface{}); ok {
-				children = existingChildren
-			} else if existingChildren, ok := route["children"].([]interface{}); ok {
-				for _, child := range existingChildren {
-					if childMap, ok := child.(map[string]interface{}); ok {
-						children = append(children, childMap)
-					}
-				}
-			}
-			// 添加 servers detail 子路由（详情页）
-			children = append(children, map[string]interface{}{
+			singleLevelRoute := map[string]interface{}{
 				"id":        "monitoring_servers_detail",
 				"name":      "monitoring_servers_detail",
 				"path":      "/monitoring/servers/detail",
-				"component": "view.monitoring_servers_detail",
+				"component": "layout.base$view.monitoring_servers_detail",
 				"meta": map[string]interface{}{
 					"title":      "monitoring_servers_detail",
 					"i18nKey":    "route.monitoring_servers_detail",
 					"hideInMenu": true,
 					"activeMenu": "monitoring_servers",
 				},
-			})
-			route["children"] = children
+			}
+			// 将单级路由添加到路由列表的顶层
+			routes = append(routes, singleLevelRoute)
+		}
+
+		// 为 cmdb 路由的 servers 子路由添加 server_detail 子路由（详情页）
+		if route["name"] == "cmdb" {
+			// 查找 cmdb_servers 子路由
+			var cmdbChildren []map[string]interface{}
+			if existingChildren, ok := route["children"].([]map[string]interface{}); ok {
+				cmdbChildren = existingChildren
+			} else if existingChildren, ok := route["children"].([]interface{}); ok {
+				for _, child := range existingChildren {
+					if childMap, ok := child.(map[string]interface{}); ok {
+						cmdbChildren = append(cmdbChildren, childMap)
+					}
+				}
+			}
+
+			// 将 server detail 作为一级路由，使用单级路由格式（包含完整布局）
+			// 这样可以确保详情页有自己的完整布局（包括左侧菜单）
+			// 使用 activeMenu 和 hideInMenu 来保持菜单的正确状态
+			singleLevelRoute := map[string]interface{}{
+				"id":        "cmdb_server_detail",
+				"name":      "cmdb_server_detail",
+				"path":      "/cmdb/server/detail",
+				"component": "layout.base$view.cmdb_server_detail",
+				"meta": map[string]interface{}{
+					"title":      "cmdb_server_detail",
+					"i18nKey":    "route.cmdb_server_detail",
+					"hideInMenu": true,
+					"activeMenu": "cmdb_servers",
+				},
+			}
+			// 将单级路由添加到路由列表的顶层，而不是作为 cmdb 的子路由
+			routes = append(routes, singleLevelRoute)
 		}
 	}
 
@@ -280,7 +303,7 @@ func (c *RouteController) generateComponent(path string, parentID uint, hasChild
 
 	// 特殊处理：web终端使用独立布局（无导航栏）
 	if path == "/webterminal" {
-		return "layout.terminal-layout$view." + routeName
+		return "layout.terminalLayout$view." + routeName
 	}
 
 	// 如果是一级菜单（父级为0）
@@ -296,6 +319,6 @@ func (c *RouteController) generateComponent(path string, parentID uint, hasChild
 	if hasChildren {
 		return ""
 	}
-	// 叶子菜单使用 view 前缀
+	// 叶子菜单使用 view 前缀（继承父路由布局）
 	return "view." + routeName
 }

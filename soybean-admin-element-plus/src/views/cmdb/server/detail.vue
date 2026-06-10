@@ -1,422 +1,660 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElMessage, ElNotification } from 'element-plus';
-import { ArrowLeft, Refresh } from '@element-plus/icons-vue';
 import {
-  fetchGetServerById,
-  fetchConnectServer,
   fetchCheckConnectPermission,
-  fetchGetServerAttributes
+  fetchConnectServer,
+  fetchGetServerById,
+  fetchGetServerSessions
 } from '@/service/api';
-import { $t } from '@/locales';
 
-defineOptions({ name: 'CmdbServerDetail' });
+defineOptions({ name: 'CMDBServerDetail' });
 
 const route = useRoute();
 const router = useRouter();
 
-const serverId = computed(() => parseInt(route.query.id as string));
-const loading = ref(false);
 const server = ref<CMDB.Server | null>(null);
-const attributes = ref<Record<string, string>>({});
+const loading = ref(true);
+const activeTab = ref('basic');
+const sessions = ref<Bastion.BastionSession[]>([]);
+const sessionsLoading = ref(false);
+const hasPermission = ref(false);
+const availableCredentials = ref<CMDB.SSHCredential[]>([]);
 
-// 环境显示信息
-const envDisplayMap: Record<string, { text: string; type: '' | 'success' | 'warning' | 'info' | 'danger' }> = {
-  prod: { text: '生产', type: 'danger' },
-  test: { text: '测试', type: 'warning' },
-  dev: { text: '开发', type: 'info' }
-};
+const serverStatusText = computed(() => {
+  if (!server.value) return '-';
+  const statusMap: Record<string, string> = {
+    online: '在线',
+    offline: '离线',
+    unknown: '未知'
+  };
+  return statusMap[server.value.status] || '未知';
+});
 
-function getEnvDisplayInfo(env: string) {
-  return envDisplayMap[env] || { text: env, type: 'info' };
-}
-
-// 状态显示信息
-const statusDisplayMap: Record<string, { text: string; type: '' | 'success' | 'warning' | 'info' | 'danger' }> = {
-  online: { text: '在线', type: 'success' },
-  offline: { text: '离线', type: 'danger' },
-  unknown: { text: '未知', type: 'info' }
-};
-
-function getStatusDisplayInfo(status: string) {
-  return statusDisplayMap[status] || { text: status, type: 'info' };
-}
-
-// 加载服务器详情
 async function loadServerDetail() {
-  if (!serverId.value) {
-    ElMessage.error('缺少服务器ID');
+  const serverId = (route.query.id as string) || (route.params.id as string);
+  if (!serverId) {
+    router.push('/cmdb/servers');
     return;
   }
 
-  loading.value = true;
   try {
-    const { data, error } = await fetchGetServerById(serverId.value);
-    if (error || !data) {
-      ElNotification({
-        title: '错误',
-        message: '加载服务器详情失败',
-        type: 'error',
-        duration: 3000
-      });
-      return;
-    }
-    server.value = data;
-  } catch (err) {
-    console.error('加载服务器详情失败:', err);
-    ElNotification({
-      title: '错误',
-      message: '加载服务器详情失败',
-      type: 'error',
-      duration: 3000
-    });
+    const res = await fetchGetServerById(Number(serverId));
+    server.value = res.data;
+    await checkConnectPermission(Number(serverId));
+  } catch (error) {
+    console.error('获取服务器详情失败:', error);
+    window.$message?.error('获取服务器详情失败');
   } finally {
     loading.value = false;
   }
 }
 
-// 加载服务器属性
-async function loadServerAttributes() {
-  if (!serverId.value) return;
-
+async function checkConnectPermission(serverId: number) {
   try {
-    const { data } = await fetchGetServerAttributes(serverId.value);
-    if (data && typeof data === 'object') {
-      attributes.value = data;
-    }
-  } catch (err) {
-    console.error('加载服务器属性失败:', err);
+    const res = await fetchCheckConnectPermission(serverId);
+    hasPermission.value = res.data.hasPermission;
+    availableCredentials.value = res.data.credentials || [];
+  } catch (error) {
+    console.error('检查连接权限失败:', error);
   }
 }
 
-// 连接服务器
-async function handleConnect() {
+async function loadSessions() {
   if (!server.value) return;
-
-  // 检查连接权限
-  const { data: permissionData } = await fetchCheckConnectPermission(server.value.id);
-  if (!permissionData?.allowed) {
-    ElNotification({
-      title: '权限不足',
-      message: permissionData?.reason || '您没有连接此服务器的权限',
-      type: 'warning',
-      duration: 3000
-    });
-    return;
-  }
-
-  // 检查SSH凭证
-  if (!server.value.sshCredentialId) {
-    ElNotification({
-      title: '凭证缺失',
-      message: '服务器未配置SSH凭证，无法连接',
-      type: 'warning',
-      duration: 3000
-    });
-    return;
-  }
-
+  sessionsLoading.value = true;
   try {
-    const { data, error } = await fetchConnectServer(server.value.id);
-    if (error || !data?.sessionId) {
-      ElNotification({
-        title: '连接失败',
-        message: '无法建立SSH连接',
-        type: 'error',
-        duration: 3000
-      });
-      return;
-    }
+    const res = await fetchGetServerSessions(server.value.id, { page: 1, pageSize: 10 });
+    sessions.value = res.data.list || [];
+  } catch (error) {
+    console.error('获取会话列表失败:', error);
+  } finally {
+    sessionsLoading.value = false;
+  }
+}
 
-    // 跳转到Web终端页面
+function handleTabChange(tab: string) {
+  activeTab.value = tab;
+  if (tab === 'session' && server.value && sessions.value.length === 0) {
+    loadSessions();
+  }
+}
+
+async function handleConnect() {
+  if (!server.value || availableCredentials.value.length === 0) {
+    window.$message?.warning('没有可用的SSH凭证');
+    return;
+  }
+
+  const credentialId = availableCredentials.value[0].id;
+  try {
+    const res = await fetchConnectServer(server.value.id, {
+      protocol: 'ssh',
+      credentialId
+    });
+
+    const { sessionId } = res.data;
     router.push({
       path: '/webterminal',
-      query: { sessionId: data.sessionId }
+      query: { sessionId: String(sessionId) }
     });
-  } catch (err) {
-    console.error('连接服务器失败:', err);
-    ElNotification({
-      title: '连接失败',
-      message: '连接服务器时发生错误',
-      type: 'error',
-      duration: 3000
-    });
+  } catch (error: any) {
+    console.error('连接失败:', error);
+    window.$message?.error(error.message || '连接失败');
   }
-}
-
-// 返回列表
-function handleBack() {
-  router.back();
-}
-
-// 刷新数据
-function handleRefresh() {
-  loadServerDetail();
-  loadServerAttributes();
 }
 
 onMounted(() => {
   loadServerDetail();
-  loadServerAttributes();
 });
 </script>
 
 <template>
-  <div class="server-detail p-4">
-    <!-- 头部操作栏 -->
-    <div class="header-actions mb-4 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <ElButton :icon="ArrowLeft" @click="handleBack">返回</ElButton>
-        <h2 class="text-xl font-bold">{{ server?.hostname || '服务器详情' }}</h2>
+  <div v-loading="loading" class="detail-page">
+    <div class="instance-bar">
+      <div class="instance-left">
+        <span class="back-arrow" @click="router.push('/cmdb/servers')">←</span>
+        <span class="instance-name">{{ server?.hostname || '-' }}</span>
+        <span class="instance-meta">ID: {{ server?.id || '-' }}</span>
+        <span class="instance-meta">{{ server?.ip || '-' }}</span>
+        <ElTag v-if="server" :type="server.status === 'online' ? 'success' : 'info'" size="small">
+          {{ serverStatusText }}
+        </ElTag>
       </div>
-      <ElButton :icon="Refresh" :loading="loading" @click="handleRefresh">刷新</ElButton>
-    </div>
-
-    <!-- 加载状态 -->
-    <ElSkeleton v-if="loading" :rows="10" animated />
-
-    <!-- 详情内容 -->
-    <div v-else-if="server" class="detail-content">
-      <ElRow :gutter="20">
-        <!-- 基本信息卡片 -->
-        <ElCol :span="12">
-          <ElCard header="基本信息" shadow="hover">
-            <div class="info-grid">
-              <div class="info-item">
-                <span class="label">主机名:</span>
-                <span class="value">{{ server.hostname }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">IP地址:</span>
-                <span class="value">{{ server.ip }}</span>
-              </div>
-              <div class="info-item" v-if="server.innerIp">
-                <span class="label">内网IP:</span>
-                <span class="value">{{ server.innerIp }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">SSH端口:</span>
-                <span class="value">{{ server.sshPort }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">SSH用户:</span>
-                <span class="value">{{ server.sshUser }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">环境:</span>
-                <ElTag :type="getEnvDisplayInfo(server.env).type" size="small">
-                  {{ getEnvDisplayInfo(server.env).text }}
-                </ElTag>
-              </div>
-              <div class="info-item">
-                <span class="label">状态:</span>
-                <ElTag :type="getStatusDisplayInfo(server.status).type" size="small">
-                  {{ getStatusDisplayInfo(server.status).text }}
-                </ElTag>
-              </div>
-              <div class="info-item">
-                <span class="label">提供商:</span>
-                <span class="value">{{ server.provider }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">服务器类型:</span>
-                <span class="value">{{ server.serverType }}</span>
-              </div>
-            </div>
-          </ElCard>
-        </ElCol>
-
-        <!-- 硬件信息卡片 -->
-        <ElCol :span="12">
-          <ElCard header="硬件配置" shadow="hover">
-            <div class="info-grid">
-              <div class="info-item">
-                <span class="label">CPU:</span>
-                <span class="value">{{ server.cpu }} 核</span>
-              </div>
-              <div class="info-item">
-                <span class="label">内存:</span>
-                <span class="value">{{ server.memory }} GB</span>
-              </div>
-              <div class="info-item">
-                <span class="label">磁盘:</span>
-                <span class="value">{{ server.disk }} GB</span>
-              </div>
-              <div class="info-item" v-if="server.os">
-                <span class="label">操作系统:</span>
-                <span class="value">{{ server.os }}</span>
-              </div>
-              <div class="info-item" v-if="server.osVersion">
-                <span class="label">系统版本:</span>
-                <span class="value">{{ server.osVersion }}</span>
-              </div>
-              <div class="info-item" v-if="server.arch">
-                <span class="label">架构:</span>
-                <span class="value">{{ server.arch }}</span>
-              </div>
-              <div class="info-item" v-if="server.manufacturer">
-                <span class="label">制造商:</span>
-                <span class="value">{{ server.manufacturer }}</span>
-              </div>
-              <div class="info-item" v-if="server.model">
-                <span class="label">型号:</span>
-                <span class="value">{{ server.model }}</span>
-              </div>
-            </div>
-          </ElCard>
-        </ElCol>
-
-        <!-- 资产信息卡片 -->
-        <ElCol :span="12" v-if="server.sn || server.assetNumber || server.purchaseDate">
-          <ElCard header="资产信息" shadow="hover">
-            <div class="info-grid">
-              <div class="info-item" v-if="server.sn">
-                <span class="label">序列号:</span>
-                <span class="value">{{ server.sn }}</span>
-              </div>
-              <div class="info-item" v-if="server.assetNumber">
-                <span class="label">资产编号:</span>
-                <span class="value">{{ server.assetNumber }}</span>
-              </div>
-              <div class="info-item" v-if="server.purchaseDate">
-                <span class="label">采购日期:</span>
-                <span class="value">{{ server.purchaseDate }}</span>
-              </div>
-              <div class="info-item" v-if="server.expireWarranty">
-                <span class="label">保修到期:</span>
-                <span class="value">{{ server.expireWarranty }}</span>
-              </div>
-            </div>
-          </ElCard>
-        </ElCol>
-
-        <!-- 运行状态卡片 -->
-        <ElCol :span="12">
-          <ElCard header="运行状态" shadow="hover">
-            <div class="info-grid">
-              <div class="info-item" v-if="server.cpuUsage !== undefined">
-                <span class="label">CPU使用率:</span>
-                <span class="value">{{ server.cpuUsage?.toFixed(1) }}%</span>
-              </div>
-              <div class="info-item" v-if="server.memoryUsage !== undefined">
-                <span class="label">内存使用率:</span>
-                <span class="value">{{ server.memoryUsage?.toFixed(1) }}%</span>
-              </div>
-              <div class="info-item" v-if="server.diskUsage !== undefined">
-                <span class="label">磁盘使用率:</span>
-                <span class="value">{{ server.diskUsage?.toFixed(1) }}%</span>
-              </div>
-              <div class="info-item" v-if="server.lastCheckTime">
-                <span class="label">最后检查:</span>
-                <span class="value">{{ server.lastCheckTime }}</span>
-              </div>
-              <div class="info-item" v-if="server.lastConnectTime">
-                <span class="label">最后连接:</span>
-                <span class="value">{{ server.lastConnectTime }}</span>
-              </div>
-            </div>
-          </ElCard>
-        </ElCol>
-
-        <!-- 机房信息卡片 -->
-        <ElCol :span="12" v-if="server.cabinetId || server.uPosition">
-          <ElCard header="机房信息" shadow="hover">
-            <div class="info-grid">
-              <div class="info-item" v-if="server.cabinetId">
-                <span class="label">机柜ID:</span>
-                <span class="value">{{ server.cabinetId }}</span>
-              </div>
-              <div class="info-item" v-if="server.uPosition">
-                <span class="label">U位:</span>
-                <span class="value">U{{ server.uPosition }}</span>
-              </div>
-            </div>
-          </ElCard>
-        </ElCol>
-
-        <!-- 业务信息卡片 -->
-        <ElCol :span="12" v-if="server.business">
-          <ElCard header="业务信息" shadow="hover">
-            <div class="info-grid">
-              <div class="info-item">
-                <span class="label">业务单元:</span>
-                <span class="value">{{ server.business.name }}</span>
-              </div>
-              <div class="info-item" v-if="server.business.code">
-                <span class="label">业务代码:</span>
-                <span class="value">{{ server.business.code }}</span>
-              </div>
-            </div>
-          </ElCard>
-        </ElCol>
-
-        <!-- 自定义属性卡片 -->
-        <ElCol :span="12" v-if="Object.keys(attributes).length > 0">
-          <ElCard header="自定义属性" shadow="hover">
-            <div class="info-grid">
-              <div class="info-item" v-for="(value, key) in attributes" :key="key">
-                <span class="label">{{ key }}:</span>
-                <span class="value">{{ value }}</span>
-              </div>
-            </div>
-          </ElCard>
-        </ElCol>
-
-        <!-- 备注信息卡片 -->
-        <ElCol :span="24" v-if="server.remarks">
-          <ElCard header="备注" shadow="hover">
-            <p class="whitespace-pre-wrap">{{ server.remarks }}</p>
-          </ElCard>
-        </ElCol>
-      </ElRow>
-
-      <!-- 操作按钮区 -->
-      <div class="mt-4 flex gap-2">
-        <ElButton type="primary" @click="handleConnect">连接服务器</ElButton>
-        <ElButton @click="router.push({ path: '/cmdb/servers' })">返回列表</ElButton>
+      <div class="instance-actions">
+        <ElButton type="primary" :disabled="!hasPermission || availableCredentials.length === 0" @click="handleConnect">
+          远程连接
+        </ElButton>
+        <ElButton @click="router.push('/cmdb/servers')">返回列表</ElButton>
       </div>
     </div>
 
-    <!-- 无数据提示 -->
-    <ElEmpty v-else description="未找到服务器信息" />
+    <div class="tab-nav">
+      <div class="tab-item" :class="{ active: activeTab === 'basic' }" @click="handleTabChange('basic')">基本信息</div>
+      <div class="tab-item" :class="{ active: activeTab === 'config' }" @click="handleTabChange('config')">
+        配置信息
+      </div>
+      <div class="tab-item" :class="{ active: activeTab === 'network' }" @click="handleTabChange('network')">
+        网络信息
+      </div>
+      <div class="tab-item" :class="{ active: activeTab === 'security' }" @click="handleTabChange('security')">
+        安全信息
+      </div>
+      <div class="tab-item" :class="{ active: activeTab === 'session' }" @click="handleTabChange('session')">
+        会话记录
+      </div>
+    </div>
+
+    <div v-show="activeTab === 'basic'">
+      <div class="info-card">
+        <div class="card-head"><span class="card-title">基本信息</span></div>
+        <div class="card-body">
+          <div class="desc-grid">
+            <div class="desc-row">
+              <div class="desc-item">
+                <div class="item-label">实例 ID</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.id || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">主机名</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.hostname || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">实例状态</div>
+                <div class="item-content">
+                  <div v-if="server" class="status-indicator" :class="`status-${server.status}`">
+                    <span class="status-dot"></span>
+                    <span>{{ serverStatusText }}</span>
+                  </div>
+                  <span v-else>-</span>
+                </div>
+              </div>
+            </div>
+            <div class="desc-row">
+              <div class="desc-item">
+                <div class="item-label">IP 地址</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.ip || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">内网 IP</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.innerIp || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">环境</div>
+                <div class="item-content">
+                  <span v-if="server" class="env-tag">{{ server.env }}</span>
+                  <span v-else>-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="card-head"><span class="card-title">硬件配置</span></div>
+        <div class="card-body">
+          <div class="desc-grid">
+            <div class="desc-row">
+              <div class="desc-item">
+                <div class="item-label">CPU</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.cpu ? `${server.cpu} 核` : '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">内存</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.memory ? `${server.memory} GB` : '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">磁盘</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.disk ? `${server.disk} GB` : '-' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="desc-row">
+              <div class="desc-item desc-item-full">
+                <div class="item-label">架构</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.arch || '-' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="card-head"><span class="card-title">系统信息</span></div>
+        <div class="card-body">
+          <div class="desc-grid">
+            <div class="desc-row">
+              <div class="desc-item">
+                <div class="item-label">操作系统</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.os || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">系统版本</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.osVersion || '-' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-show="activeTab === 'config'">
+      <div class="info-card">
+        <div class="card-head"><span class="card-title">SSH 配置</span></div>
+        <div class="card-body">
+          <div class="desc-grid">
+            <div class="desc-row">
+              <div class="desc-item">
+                <div class="item-label">SSH 端口</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.sshPort || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">SSH 用户</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.sshUser || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">用户凭证</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.credential?.name || '-' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="card-head"><span class="card-title">资产分组</span></div>
+        <div class="card-body">
+          <div class="desc-grid">
+            <div class="desc-row">
+              <div class="desc-item">
+                <div class="item-label">业务单元</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.business?.name || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">业务代码</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.business?.code || '-' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card" v-if="server?.provider || server?.serverType">
+        <div class="card-head"><span class="card-title">云平台信息</span></div>
+        <div class="card-body">
+          <div class="desc-grid">
+            <div class="desc-row">
+              <div class="desc-item">
+                <div class="item-label">云平台</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.provider || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">实例类型</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.serverType || '-' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-show="activeTab === 'network'">
+      <div class="info-card">
+        <div class="card-head"><span class="card-title">网络配置</span></div>
+        <div class="card-body">
+          <div class="desc-grid">
+            <div class="desc-row">
+              <div class="desc-item">
+                <div class="item-label">外网 IP</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.ip || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">内网 IP</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.innerIp || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">SSH 端口</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.sshPort || '-' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-show="activeTab === 'security'">
+      <div class="info-card">
+        <div class="card-head"><span class="card-title">资产信息</span></div>
+        <div class="card-body">
+          <div class="desc-grid">
+            <div class="desc-row">
+              <div class="desc-item">
+                <div class="item-label">序列号</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.sn || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">资产编号</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.assetNumber || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">制造商</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.manufacturer || '-' }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="desc-row">
+              <div class="desc-item desc-item-full">
+                <div class="item-label">型号</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.model || '-' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card" v-if="server?.cabinet || server?.uPosition">
+        <div class="card-head"><span class="card-title">机柜信息</span></div>
+        <div class="card-body">
+          <div class="desc-grid">
+            <div class="desc-row">
+              <div class="desc-item">
+                <div class="item-label">所属机柜</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.cabinet?.name || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">U 位置</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.uPosition ? `U${server.uPosition}` : '-' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card" v-if="server?.purchaseDate || server?.expireWarranty">
+        <div class="card-head"><span class="card-title">时间信息</span></div>
+        <div class="card-body">
+          <div class="desc-grid">
+            <div class="desc-row">
+              <div class="desc-item">
+                <div class="item-label">采购日期</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.purchaseDate || '-' }}</span>
+                </div>
+              </div>
+              <div class="desc-item">
+                <div class="item-label">保修到期</div>
+                <div class="item-content">
+                  <span class="value-text">{{ server?.expireWarranty || '-' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-show="activeTab === 'session'">
+      <div class="info-card">
+        <div class="card-head"><span class="card-title">会话记录</span></div>
+        <div class="card-body">
+          <div v-if="sessionsLoading" class="loading-state">加载中...</div>
+          <div v-else-if="sessions.length === 0" class="empty-state">暂无会话记录</div>
+          <ElTable v-else :data="sessions" stripe>
+            <ElTableColumn prop="id" label="会话 ID" width="80" />
+            <ElTableColumn prop="username" label="用户" width="120" />
+            <ElTableColumn label="状态" width="100">
+              <template #default="{ row }">
+                <ElTag :type="row.status === 'active' ? 'success' : 'info'" size="small">
+                  {{ row.status === 'active' ? '活跃' : '已关闭' }}
+                </ElTag>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="时长" width="100">
+              <template #default="{ row }">{{ Math.floor(row.duration / 60) }}分钟</template>
+            </ElTableColumn>
+            <ElTableColumn prop="startedAt" label="开始时间" width="160" />
+            <ElTableColumn label="操作" width="80">
+              <template #default="{ row }">
+                <ElButton type="primary" link size="small" @click="router.push(`/cmdb/sessions/${row.id}`)">
+                  详情
+                </ElButton>
+              </template>
+            </ElTableColumn>
+          </ElTable>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.server-detail {
-  max-width: 1400px;
-  margin: 0 auto;
+.detail-page {
+  min-height: 100vh;
+  background: #f5f7fa;
+  padding: 16px 24px 24px;
 }
 
-.header-actions {
-  padding: 16px 0;
+.instance-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.info-item {
+.instance-left {
   display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+.back-arrow {
+  font-size: 20px;
+  color: #0052d9;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.back-arrow:hover {
+  opacity: 0.7;
+}
+
+.instance-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1d1d1f;
+}
+
+.instance-meta {
+  font-size: 12px;
+  color: #858e99;
+}
+
+.tab-nav {
+  display: flex;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 2px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.tab-item {
+  padding: 6px 16px;
+  font-size: 14px;
+  color: #606266;
+  border-top: 2px solid transparent;
+  border-bottom: 1px solid #e8e8e8;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.tab-item:hover {
+  color: #0052d9;
+}
+
+.tab-item.active {
+  color: #0052d9;
+  border-top-color: #0052d9;
+  border-bottom-color: transparent;
+  margin-bottom: -1px;
+}
+
+.info-card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 2px;
+  margin-bottom: 16px;
+}
+
+.info-card:last-child {
+  margin-bottom: 0;
+}
+
+.card-head {
+  padding: 16px 16px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.card-body {
+  padding: 16px;
+}
+
+.desc-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.desc-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.desc-item {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
-.info-item .label {
-  font-weight: 500;
-  color: var(--el-text-color-secondary);
-  min-width: 80px;
+.desc-item-full {
+  grid-column: 1 / -1;
 }
 
-.info-item .value {
-  color: var(--el-text-color-primary);
+.item-label {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
 }
 
-.whitespace-pre-wrap {
-  white-space: pre-wrap;
-  word-break: break-word;
+.item-content {
+  font-size: 14px;
+  color: #303133;
+  line-height: 1.5;
+}
+
+.value-text {
+  color: #303133;
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-online .status-dot {
+  background-color: #52c41a;
+}
+
+.status-offline .status-dot {
+  background-color: #d9d9d9;
+}
+
+.status-unknown .status-dot {
+  background-color: #faad14;
+}
+
+.env-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: #f0f0f0;
+  border-radius: 2px;
+  font-size: 12px;
+  color: #606266;
+}
+
+.loading-state,
+.empty-state {
+  padding: 40px 0;
+  text-align: center;
+  color: #909399;
 }
 </style>
