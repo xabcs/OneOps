@@ -468,6 +468,29 @@ func collectFastMetrics(monitoringService *MonitoringService) {
 					zap.Float64("memory", metrics.Performance.Memory.UsedPercent))
 				// 触发 WebSocket 广播
 				broadcastMetricsUpdate(sid, metrics)
+
+				// 存储监控数据到数据库
+				now := time.Now()
+				updates := map[string]interface{}{
+					"cpu_usage":        metrics.Performance.CPU.UsagePercent,
+					"memory_usage":     metrics.Performance.Memory.UsedPercent,
+					"disk_usage":       metrics.Performance.Disk.UsedPercent,
+					"load1":            metrics.Performance.Load.Load1,
+					"load5":            metrics.Performance.Load.Load5,
+					"load15":           metrics.Performance.Load.Load15,
+					"disk_partitions":  nil,
+					"metrics_updated_at": &now,
+				}
+
+				if len(metrics.Performance.Disk.Partitions) > 0 {
+					partitionsJSON, _ := json.Marshal(metrics.Performance.Disk.Partitions)
+					updates["disk_partitions"] = string(partitionsJSON)
+				}
+
+				if err := db.Model(&models.Server{}).Where("id = ?", sid).Updates(updates).Error; err != nil {
+					logger.Warn("存储监控数据失败", zap.Uint("serverID", sid), zap.Error(err))
+				}
+
 			}
 		}(id)
 	}

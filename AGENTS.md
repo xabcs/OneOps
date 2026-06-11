@@ -593,13 +593,13 @@ const apiUrl = import.meta.env.VITE_SERVICE_BASE_URL;
 <claude-mem-context>
 # Memory Context
 
-# [OneOps] recent context, 2026-06-06 12:30pm GMT+8
+# [OneOps] recent context, 2026-06-11 3:55pm GMT+8
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 37 obs (7,308t read) | 190,353t work | 96% savings
+Stats: 41 obs (7,735t read) | 190,353t work | 96% savings
 
 ### May 20, 2026
 128 2:47p 🔴 前端未正确处理后端返回的主机名重复错误
@@ -640,6 +640,11 @@ Stats: 37 obs (7,308t read) | 190,353t work | 96% savings
 162 9:05a 🔵 OneOps 堡垒机访问策略完整架构
 163 " 🔵 授权对象填 ID 来源分析与资产树 API 可复用性
 164 " 🔵 审批功能去除影响面分析
+### Jun 11, 2026
+202 3:47p 🔵 主机详情页缺少左侧导航栏问题分析
+203 " 🔵 服务器详情页缺少布局组件包装
+204 3:48p 🔵 服务器详情页完全独立，缺少布局组件包装
+205 3:51p 🔵 调查主机详情页缺失左侧导航栏问题
 
 Access 190k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

@@ -215,6 +215,8 @@ const local: App.I18n.Schema = {
     cmdb: '资产管理',
     cmdb_dashboard: '资产总览',
     cmdb_servers: '主机资产',
+    'cmdb_server-detail': '主机详情',
+    cmdb_server_detail: '主机详情',
     cmdb_business: '业务管理',
     cmdb_credentials: '凭证管理',
     cmdb_credentials_access: '访问凭证',

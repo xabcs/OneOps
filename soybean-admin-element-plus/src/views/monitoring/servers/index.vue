@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Refresh, RefreshRight, Search } from '@element-plus/icons-vue';
 import { fetchGetServers } from '@/service/api/cmdb';
+import { useWebSocket } from '@/service/websocket';
 
 defineOptions({
   name: 'MonitoringServers'
@@ -98,8 +99,41 @@ function getProgressColor(value: number): string {
   return '#52c41a';
 }
 
+function getLoadColor(load: number): string {
+  // 系统负载颜色逻辑（考虑 CPU 核心数会有影响，这里简化处理）
+  if (load > 5) return '#ff4d4f';
+  if (load > 3) return '#faad14';
+  return '#52c41a';
+}
+
+// WebSocket 客户端
+const { subscribe, unsubscribe } = useWebSocket();
+
+// 处理指标更新
+function handleMetricsUpdate(data: any) {
+  console.log('主机监控列表收到指标更新:', data);
+
+  // 查找对应的服务器并更新数据
+  const server = servers.value.find(s => s.id === data.server_id);
+  if (server) {
+    server.cpuUsage = data.cpu;
+    server.memoryUsage = data.memory;
+    server.diskUsage = data.disk;
+    server.load5 = data.load5;
+    server.metricsUpdatedAt = new Date();
+  }
+}
+
 onMounted(() => {
   getServerList();
+
+  // 订阅 WebSocket 指标更新
+  subscribe('metrics_update', handleMetricsUpdate);
+});
+
+onUnmounted(() => {
+  // 取消订阅
+  unsubscribe('metrics_update', handleMetricsUpdate);
 });
 </script>
 
@@ -161,8 +195,8 @@ onMounted(() => {
             <ElProgress
               :percentage="Math.round(row.cpuUsage || 0)"
               :color="getProgressColor(row.cpuUsage || 0)"
-              :stroke-width="8"
-              :format="() => (row.cpuUsage ? row.cpuUsage.toFixed(1) + '%' : '0%')"
+              :stroke-width="4"
+              :format="(percentage: number) => (row.cpuUsage ? row.cpuUsage.toFixed(1) + '%' : '0%')"
             />
           </template>
         </ElTableColumn>
@@ -171,8 +205,8 @@ onMounted(() => {
             <ElProgress
               :percentage="Math.round(row.memoryUsage || 0)"
               :color="getProgressColor(row.memoryUsage || 0)"
-              :stroke-width="8"
-              :format="() => (row.memoryUsage ? row.memoryUsage.toFixed(1) + '%' : '0%')"
+              :stroke-width="4"
+              :format="(percentage: number) => (row.memoryUsage ? row.memoryUsage.toFixed(1) + '%' : '0%')"
             />
           </template>
         </ElTableColumn>
@@ -181,14 +215,16 @@ onMounted(() => {
             <ElProgress
               :percentage="Math.round(row.diskUsage || 0)"
               :color="getProgressColor(row.diskUsage || 0)"
-              :stroke-width="8"
-              :format="() => (row.diskUsage ? row.diskUsage.toFixed(1) + '%' : '0%')"
+              :stroke-width="4"
+              :format="(percentage: number) => (row.diskUsage ? row.diskUsage.toFixed(1) + '%' : '0%')"
             />
           </template>
         </ElTableColumn>
         <ElTableColumn label="系统负载" width="100" align="center">
           <template #default="{ row }">
-            {{ row.load5 ? row.load5.toFixed(2) : '-' }}
+            <span :style="{ color: getLoadColor(row.load5 || 0), fontSize: '12px', fontWeight: '500' }">
+              {{ row.load5 ? row.load5.toFixed(2) : '-' }}
+            </span>
           </template>
         </ElTableColumn>
         <ElTableColumn label="最后更新" width="170">

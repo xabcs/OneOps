@@ -33,7 +33,6 @@ declare module "@elegant-router/types" {
     "document_alova": "/document/alova";
     "terminal": "/terminal";
     "terminal_workbench": "/terminal/workbench";
-    "cmdb_server_detail": "/cmdb/server/detail";
     "403": "/403";
     "404": "/404";
     "500": "/500";
@@ -164,7 +163,6 @@ declare module "@elegant-router/types" {
     | "document_alova"
     | "terminal"
     | "terminal_workbench"
-    | "cmdb_server_detail"
   >;
 
   /**
@@ -310,7 +308,6 @@ declare module "@elegant-router/types" {
     | "document_element-plus"
     | "document_alova"
     | "terminal_workbench"
-    | "cmdb_server_detail"
   >;
 
   /**

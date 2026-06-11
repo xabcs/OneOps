@@ -32,21 +32,16 @@ INSERT INTO menus (name, icon, path, permission, menu_type, parent_id, sort, sta
 VALUES ('审计中心', 'mdi:file-document', '/audit', '', 'directory', 0, 4, 1, NOW(), NOW());
 SET @audit_id = LAST_INSERT_ID();
 
--- 5. 终端管理
-INSERT INTO menus (name, icon, path, permission, menu_type, parent_id, sort, status, created_at, updated_at)
-VALUES ('终端管理', 'mdi:console', '/terminal', '', 'directory', 0, 5, 1, NOW(), NOW());
-SET @terminal_id = LAST_INSERT_ID();
-
--- 6. 系统管理
+-- 5. 系统管理
 INSERT INTO menus (name, icon, path, permission, menu_type, parent_id, sort, status, created_at, updated_at)
 VALUES ('系统管理', 'mdi:cog', '/manage', '', 'directory', 0, 6, 1, NOW(), NOW());
 SET @manage_id = LAST_INSERT_ID();
 
 -- ========== CMDB 二级菜单 ==========
 
--- 2.1 服务器管理
+-- 2.1 主机管理
 INSERT INTO menus (name, icon, path, permission, menu_type, parent_id, sort, status, created_at, updated_at)
-VALUES ('服务器管理', 'mdi:server', '/cmdb/servers', 'cmdb:server:query', 'menu', @cmdb_id, 1, 1, NOW(), NOW());
+VALUES ('主机管理', 'mdi:server', '/cmdb/servers', 'cmdb:server:query', 'menu', @cmdb_id, 1, 1, NOW(), NOW());
 
 -- 2.2 业务管理
 INSERT INTO menus (name, icon, path, permission, menu_type, parent_id, sort, status, created_at, updated_at)
@@ -164,12 +159,6 @@ VALUES ('操作审计', 'mdi:account-edit', '/audit/operation', 'audit:operation
 INSERT INTO menus (name, icon, path, permission, menu_type, parent_id, sort, status, created_at, updated_at)
 VALUES ('系统事件', 'mdi:information', '/audit/system', 'audit:system:query', 'menu', @audit_id, 3, 1, NOW(), NOW());
 
--- ========== 终端管理 二级菜单 ==========
-
--- 5.1 终端工作台
-INSERT INTO menus (name, icon, path, permission, menu_type, parent_id, sort, status, created_at, updated_at)
-VALUES ('终端工作台', 'mdi:console', '/terminal/workbench', 'terminal:workbench:query', 'menu', @terminal_id, 1, 1, NOW(), NOW());
-
 -- ========== 系统管理 二级菜单 ==========
 
 -- 6.1 用户管理
@@ -228,12 +217,6 @@ SELECT '=== 审计中心子菜单 ===' AS '';
 SELECT id, name, path, icon, sort
 FROM menus
 WHERE parent_id = @audit_id AND status = 1
-ORDER BY sort;
-
-SELECT '=== 终端管理子菜单 ===' AS '';
-SELECT id, name, path, icon, sort
-FROM menus
-WHERE parent_id = @terminal_id AND status = 1
 ORDER BY sort;
 
 SELECT '=== 系统管理子菜单 ===' AS '';

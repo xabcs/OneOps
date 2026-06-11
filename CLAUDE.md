@@ -267,16 +267,112 @@ logger.Info("用户登录",
 
 ## SoybeanAdmin 核心知识
 
-### 项目特性
-- **前沿技术栈**: Vue 3 + Vite 5 + TypeScript + Pinia + UnoCSS
-- **Monorepo 架构**: 使用 pnpm workspace 管理多包项目
-- **代码规范**: ESLint + Prettier + simple-git-hooks
-- **路由系统**: Elegant Router 自动生成路由
-- **权限路由**: 支持前端静态路由和后端动态路由
-- **国际化**: 内置 i18n 支持
-- **主题系统**: 丰富的主题配置，与 UnoCSS 完美结合
-- **移动端适配**: 响应式布局
-- **命令行工具**: `sa` 命令用于 git 提交、删除文件、发布等
+> **来源说明**: 以下内容整理自 SoybeanAdmin 官方文档 (https://github.com/soybeanjs/soybean-admin)
+
+### 项目简介
+
+SoybeanAdmin 是一个清新优雅、高颜值且功能强大的后台管理模板，基于最新的前端技术栈，包括 Vue3, Vite8, TypeScript, Pinia 和 UnoCSS。它内置了丰富的主题配置和组件，代码规范严谨，实现了自动化的文件路由系统。
+
+### 核心特性
+
+- **前沿技术应用**: 采用 Vue3, Vite8, TypeScript, Pinia 和 UnoCSS 等最新流行的技术栈
+- **清晰的项目架构**: 采用 pnpm monorepo 架构，结构清晰，优雅易懂
+- **严格的代码规范**: 遵循 SoybeanJS 规范，集成了 eslint, prettier 和 simple-git-hooks，保证代码的规范性
+- **TypeScript**: 支持严格的类型检查，提高代码的可维护性
+- **丰富的主题配置**: 内置多样的主题配置，与 UnoCSS 完美结合
+- **内置国际化方案**: 轻松实现多语言支持
+- **自动化文件路由系统**: 自动生成路由导入、声明和类型（基于 Elegant Router）
+- **灵活的权限路由**: 同时支持前端静态路由和后端动态路由
+- **丰富的页面组件**: 内置多样页面和组件，包括403、404、500页面，以及布局组件、标签组件、主题配置组件等
+- **命令行工具**: 内置高效的命令行工具，git提交、删除文件、发布等
+- **移动端适配**: 完美支持移动端，实现自适应布局
+- **多框架支持**: 同时支持 Vue3 和 React，允许灵活选择前端技术栈
+- **多组件库集成**: 适配 Element Plus、Naive UI、Ant Design、Ant Design Vue 等多种组件库
+
+### 版本系列
+
+SoybeanAdmin 提供多个版本以适应不同需求：
+
+| 版本 | 组件库 | 特点 |
+|------|--------|------|
+| **NaiveUI 版本** | Naive UI | 基于 Vue3 + NaiveUI |
+| **AntDesignVue 版本** | Ant Design Vue | 基于 Vue3 + Ant Design Vue |
+| **ElementPlus 版本** | Element Plus | 基于 Vue3 + Element Plus（本项目使用）|
+| **旧版** | Naive UI | 早期版本，仅供参考 |
+
+### 环境要求
+
+**必需环境**：
+- **Git**: 用于克隆和管理项目版本
+- **Node.js**: >= 20.19.0（推荐 20.19.0 或更高）
+- **pnpm**: >= 10.5.0（推荐 10.5.0 或更高）
+
+> ⚠️ **重要**: 由于本项目采用 pnpm monorepo 管理方式，请勿使用 npm 或 yarn 安装依赖
+
+### 浏览器支持
+
+- **开发推荐**: 最新版 Chrome 浏览器，获得更好的体验
+- **生产支持**:
+  - Edge: 最新 2 个版本
+  - Firefox: 最新 2 个版本
+  - Chrome: 最新 2 个版本
+  - Safari: 最新 2 个版本
+- **不支持**: IE 浏览器
+
+### 基础使用
+
+**克隆项目**：
+```bash
+# GitHub
+git clone https://github.com/soybeanjs/soybean-admin.git
+
+# Gitee
+git clone https://gitee.com/honghuangdc/soybean-admin.git
+
+# Gitcode
+git clone https://gitcode.com/soybeanjs/soybean-admin.git
+```
+
+**安装依赖**（必须使用 pnpm）：
+```bash
+pnpm install
+```
+
+**启动项目**：
+```bash
+pnpm dev
+```
+
+**构建项目**：
+```bash
+pnpm build
+```
+
+### 周边生态
+
+SoybeanAdmin 拥有丰富的周边生态项目：
+
+- **skyroc-admin**: SoybeanAdmin 的 React 版本实现
+- **electron-mock-admin**: Mock Api 管理系统，帮助前端快速实现接口 mock
+- **T-Shell**: 可配置命令提示的终端模拟器和 SSH 客户端
+- **pea**: 采用 SpringBoot3.2 + JDK21、MyBatis-Plus、SpringSecurity，适配 soybean-admin 的权限系统
+- **MalusAdmin**: 基于 Vue3/TypeScript/NaiveUI 和 NET7 & Sqlsugar 开发的后台管理框架
+- **PanisAdmin**: 采用 SpringBoot3、SaToken、MySQL，二次修改 soybean-admin，适配动态菜单/按钮级别鉴权
+- **soybean-admin-go**: 基于 gin+gorm 框架开发的 Go 语言后端服务，适配动态路由、接口鉴权
+
+### 贡献指南
+
+- 欢迎通过提交 pull requests 或创建 GitHub issue 来分享想法和建议
+- Git 提交需使用 `pnpm commit` 生成符合 Conventional Commits 规范的提交信息
+- 项目基于 MIT 协议开源
+
+### 交流与合作
+
+- **飞书群**: 提供官方飞书群供用户交流
+- **商务合作**: 提供定制化管理后台开发、企业外包服务
+- **联系方式**: soybeanjs@outlook.com
+
+---
 
 ### 技术栈要求
 
@@ -289,7 +385,7 @@ logger.Info("用户登录",
 - Pinia 状态管理
 - UnoCSS 原子化 CSS
 - VueUse 组合式工具库
-- Element Plus 组件库
+- Element Plus 组件库（本项目使用）
 
 ### 浏览器支持
 - **开发推荐**: Chrome 100+
@@ -421,6 +517,169 @@ import { RouteKey } from '@elegant-router/types';
 const router = useRouter();
 router.push(RouteKey.home);
 ```
+
+> **来源说明**: 以下内容整理自 ElegantRouter 官方文档 (https://github.com/soybeanjs/elegant-router)
+
+**ElegantRouter CLI 工具**：
+
+ElegantRouter 提供了强大的命令行工具来管理路由：
+
+| 命令 | 说明 | 用法 |
+|------|------|------|
+| `er generate` | 生成路由文件 | 自动扫描 views 目录并生成路由配置 |
+| `er add` | 添加新路由 | 交互式创建新的页面文件和路由 |
+| `er delete` | 删除路由 | 删除指定的页面文件及相关路由配置 |
+| `er recovery` | 恢复路由 | 从备份恢复路由文件 |
+| `er update` | 更新路由 | 重新生成路由（通常自动执行） |
+| `er backup` | 备份路由 | 备份当前路由配置 |
+
+**路由文件命名约定**：
+
+文件系统约定决定了路由的生成方式：
+
+| 约定 | 说明 | 示例 | 生成的路由路径 |
+|------|------|------|----------------|
+| 基础命名 | 普通页面文件 | `index.vue` | `/` |
+| 嵌套目录 | 多级目录结构 | `user/profile.vue` | `/user/profile` |
+| 必填参数 | 使用 `[param]` 语法 | `user/[id].vue` | `/user/:id` |
+| 可选参数 | 使用 `[[param]]` 语法 | `user/[[id]].vue` | `/user/:id?` |
+| 多参数 | 多个动态参数 | `user/[id]/post/[postId].vue` | `/user/:id/post/:postId` |
+| 捕获所有 | 使用 `[...param]` 语法 | `[...path].vue` | `/:path(.*)*` |
+| 路由分组 | 使用 `()` 包裹目录 | `(auth)/login.vue` | `/login`（无 `/auth` 前缀） |
+| 路由复用 | 在 `()` 中添加 `@` 前缀 | `(auth@user)/login.vue` | 路由键为 `auth-login`，路径为 `/login` |
+
+**路由元数据定义**：
+
+页面组件中通过 `<route-meta>` 块定义路由元信息：
+
+```vue
+<template>
+  <div>用户管理页面</div>
+</template>
+
+<script setup lang="ts">
+import { RouteMeta } from '@elegant-router/vue';
+
+defineProps<{
+  // 组件属性
+}>();
+</script>
+
+<route-meta>
+{
+  "title": "用户管理",
+  "i18nKey": "route.userManagement",
+  "roles": ["admin"],
+  "keepAlive": true,
+  "icon": "mdi:account-group",
+  "order": 1
+}
+</route-meta>
+```
+
+**文件监听机制**：
+
+ElegantRouter 在开发模式下会自动监听文件变化：
+
+- **监听目录**: `src/views/` 目录下的 `.vue` 文件
+- **自动触发**: 文件增删改时自动重新生成路由配置
+- **热更新**: 配合 Vite HMR 实现路由热更新
+- **无需重启**: 大部分情况下无需手动重启开发服务器
+
+**路由生成流程**：
+
+```
+1. 扫描 src/views/ 目录
+   ↓
+2. 解析文件结构和命名约定
+   ↓
+3. 生成路由配置（routes.ts）
+   ↓
+4. 生成路由导入（imports.ts）
+   ↓
+5. 生成路由转换逻辑（transform.ts）
+   ↓
+6. 生成 TypeScript 类型定义（elegant-router.d.ts）
+```
+
+**布局管理**：
+
+ElegantRouter 支持基于文件系统的布局管理：
+
+```
+src/views/
+├── layouts/
+│   ├── blank.vue         # 空白布局
+│   └── default.vue       # 默认布局
+├── home/
+│   └── index.vue         # 使用默认布局
+└── (auth)/               # 路由分组（不生成路径）
+    └── login.vue         # 使用空白布局
+```
+
+布局文件通过 `<route-meta>` 指定：
+
+```vue
+<route-meta>
+{
+  "layout": "blank"
+}
+</route-meta>
+```
+
+**最佳实践**：
+
+1. **路由组织**
+   - 相关页面组织在同一目录下
+   - 使用路由分组来组织功能模块
+   - 避免过深的嵌套层级（建议不超过 3 层）
+
+2. **参数命名**
+   - 使用描述性的参数名称（如 `[userId]` 而非 `[id]`）
+   - 保持参数命名的一致性
+   - 避免使用特殊字符
+
+3. **性能优化**
+   - 合理使用 `keepAlive` 缓存常用页面
+   - 按需加载路由组件（默认支持）
+   - 避免在页面组件中进行重度计算
+
+4. **类型安全**
+   - 优先使用 `RouteKey` 进行路由跳转
+   - 利用 TypeScript 类型检查
+   - 避免硬编码路由路径字符串
+
+5. **权限控制**
+   - 在 `<route-meta>` 中明确声明所需角色
+   - 敏感页面必须进行权限校验
+   - 使用 `constant` 标记公开页面
+
+**迁移指南**：
+
+从旧版 ElegantRouter 迁移到新版本（2.x）时需要注意：
+
+1. **路由键变化**
+   - 旧版: `_` 连接符（如 `user_management`）
+   - 新版: `-` 连接符（如 `user-management`）
+
+2. **类型导入**
+   - 旧版: `import { RouteKey } from 'elegant-router'`
+   - 新版: `import { RouteKey } from '@elegant-router/vue'`
+
+3. **配置文件**
+   - 检查 `vite.config.ts` 中的 ElegantRouter 插件配置
+   - 确认版本兼容性
+
+4. **手动迁移**
+   ```bash
+   # 备份现有路由
+   er backup
+   
+   # 重新生成路由
+   er generate
+   ```
+
+---
 
 ### Pinia 状态管理
 

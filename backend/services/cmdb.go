@@ -149,7 +149,9 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 		servers.id, servers.hostname, servers.ip, servers.inner_ip, servers.ssh_port, servers.env, servers.status,
 		servers.provider, servers.agent_status, servers.agent_version, servers.cpu,
 		servers.memory, servers.os, servers.arch, servers.created_at, servers.updated_at,
-		servers.group_names, servers.credential_names, servers.system_credential_id
+		servers.group_names, servers.credential_names, servers.system_credential_id,
+		servers.cpu_usage, servers.memory_usage, servers.disk_usage,
+		servers.load1, servers.load5, servers.load15, servers.metrics_updated_at
 	`)
 
 	// 执行查询并获取总数

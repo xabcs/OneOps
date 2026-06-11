@@ -19,7 +19,8 @@ class MonitoringWebSocketClient {
   private url: string = '';
 
   constructor() {
-    this.connect();
+    // 延迟初始化，等待首次调用时确保 token 已加载
+    // 不在构造函数中直接连接，而是在首次使用时连接
   }
 
   private connect() {
@@ -135,6 +136,11 @@ class MonitoringWebSocketClient {
 
   // 订阅数据更新
   subscribe(type: string, handler: MessageHandler) {
+    // 确保已连接（首次订阅时建立连接）
+    if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
+      this.connect();
+    }
+
     this.subscriptions.add(type);
 
     if (!this.messageHandlers.has(type)) {

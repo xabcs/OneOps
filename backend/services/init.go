@@ -221,7 +221,7 @@ func (s *InitService) initMenus() error {
 		{ID: 13, Name: "关于", Icon: "fluent:book-information-24-regular", Path: "/about", Permission: "", Sort: 5, Status: 1, ParentID: 0},
 		{ID: 14, Name: "用户中心", Icon: "mdi:user-circle-outline", Path: "/user-center", Permission: "", Sort: 6, Status: 1, ParentID: 0},
 		{ID: 20, Name: "资产管理", Icon: "mdi:server-network", Path: "/cmdb", Permission: "", Sort: 3, Status: 1, ParentID: 0},
-		{ID: 21, Name: "服务器管理", Icon: "mdi:server", Path: "/cmdb/servers", Permission: "cmdb:server:query", Sort: 1, Status: 1, ParentID: 20},
+		{ID: 21, Name: "主机管理", Icon: "mdi:server", Path: "/cmdb/servers", Permission: "cmdb:server:query", Sort: 1, Status: 1, ParentID: 20},
 		{ID: 22, Name: "业务管理", Icon: "mdi:sitemap", Path: "/cmdb/business", Permission: "cmdb:business:query", Sort: 2, Status: 1, ParentID: 20},
 		{ID: 23, Name: "机房管理", Icon: "mdi:office-building-marker", Path: "/cmdb/rooms", Permission: "cmdb:room:query", Sort: 3, Status: 1, ParentID: 20},
 		{ID: 24, Name: "标签管理", Icon: "mdi:tag-multiple", Path: "/cmdb/tags", Permission: "cmdb:tag:query", Sort: 4, Status: 1, ParentID: 20},
@@ -256,7 +256,7 @@ func (s *InitService) syncMenus() error {
 		{ID: 6, Name: "系统管理", Icon: "mdi:cog", Path: "/manage", Permission: "", MenuType: "directory", Sort: 6, Status: 1, ParentID: 0},
 
 		// ========== CMDB 二级菜单 (ID: 20-39) ==========
-		{ID: 20, Name: "服务器管理", Icon: "mdi:server", Path: "/cmdb/servers", Permission: "cmdb:server:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 2},
+		{ID: 20, Name: "主机管理", Icon: "mdi:server", Path: "/cmdb/servers", Permission: "cmdb:server:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 2},
 		{ID: 21, Name: "业务管理", Icon: "mdi:sitemap", Path: "/cmdb/business", Permission: "cmdb:business:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 2},
 		// 凭证管理目录
 		{ID: 22, Name: "凭证管理", Icon: "mdi:key", Path: "/cmdb/credentials", Permission: "", MenuType: "directory", Sort: 3, Status: 1, ParentID: 2},
@@ -295,7 +295,6 @@ func (s *InitService) syncMenus() error {
 		{ID: 51, Name: "操作审计", Icon: "mdi:account-edit", Path: "/audit/operation", Permission: "audit:operation:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 4},
 		{ID: 52, Name: "系统事件", Icon: "mdi:information", Path: "/audit/system", Permission: "audit:system:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 4},
 
-		// ========== 终端管理二级菜单 (ID: 60-69) ==========
 		// （web终端 已移为一级菜单，见上方 ParentID: 0 的定义）
 
 		// ========== 系统管理二级菜单 (ID: 70-79) ==========
@@ -351,6 +350,16 @@ func (s *InitService) syncMenus() error {
 	}
 	if deletedResult.RowsAffected > 0 {
 		logger.Info("已删除废弃主机分组菜单", zap.Int64("count", deletedResult.RowsAffected))
+	}
+
+	// 删除废弃的 terminal 菜单（已改名为 webterminal）
+	deletedTerminalResult := db.Where("path IN ?", []string{"/terminal", "/terminal/workbench"}).Delete(&models.Menu{})
+	if deletedTerminalResult.Error != nil {
+		logger.Error("删除废弃终端菜单失败", zap.Error(deletedTerminalResult.Error))
+		return deletedTerminalResult.Error
+	}
+	if deletedTerminalResult.RowsAffected > 0 {
+		logger.Info("已删除废弃终端菜单", zap.Int64("count", deletedTerminalResult.RowsAffected))
 	}
 
 	logger.Info("菜单同步完成",

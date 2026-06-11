@@ -66,10 +66,6 @@ function transformElegantRouteToVueRoute(
   }
 
   function isFirstLevelRoute(item: ElegantConstRoute) {
-    // 特殊处理：包含 _detail 的路由也视为一级路由（用于详情页等）
-    if (item.name.includes('_detail')) {
-      return true;
-    }
     return !item.name.includes(ROUTE_DEGREE_SPLITTER);
   }
 
@@ -183,7 +179,6 @@ const routeMap: RouteMap = {
   "document_alova": "/document/alova",
   "terminal": "/terminal",
   "terminal_workbench": "/terminal/workbench",
-  "cmdb_server_detail": "/cmdb/server/detail",
   "403": "/403",
   "404": "/404",
   "500": "/500",

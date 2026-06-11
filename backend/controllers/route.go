@@ -177,62 +177,11 @@ func (c *RouteController) convertMenusToRoutes(menus []*models.Menu, isSuper boo
 }
 
 // appendHiddenRoutesToMenuTree 将隐藏路由添加到菜单树中
+// 注意：详情页路由由前端 Elegant Router 自动生成，不需要后端硬编码
+// 前端文件 src/views/cmdb/server/detail.vue 会自动生成 cmdb_server-detail 路由
 func (c *RouteController) appendHiddenRoutesToMenuTree(routes []map[string]interface{}) []map[string]interface{} {
-	for _, route := range routes {
-		// 将 monitoring_servers_detail 作为一级路由，使用单级路由格式（包含完整布局）
-		if route["name"] == "monitoring" {
-			singleLevelRoute := map[string]interface{}{
-				"id":        "monitoring_servers_detail",
-				"name":      "monitoring_servers_detail",
-				"path":      "/monitoring/servers/detail",
-				"component": "layout.base$view.monitoring_servers_detail",
-				"meta": map[string]interface{}{
-					"title":      "monitoring_servers_detail",
-					"i18nKey":    "route.monitoring_servers_detail",
-					"hideInMenu": true,
-					"activeMenu": "monitoring_servers",
-				},
-			}
-			// 将单级路由添加到路由列表的顶层
-			routes = append(routes, singleLevelRoute)
-		}
 
-		// 为 cmdb 路由的 servers 子路由添加 server_detail 子路由（详情页）
-		if route["name"] == "cmdb" {
-			// 查找 cmdb_servers 子路由
-			var cmdbChildren []map[string]interface{}
-			if existingChildren, ok := route["children"].([]map[string]interface{}); ok {
-				cmdbChildren = existingChildren
-			} else if existingChildren, ok := route["children"].([]interface{}); ok {
-				for _, child := range existingChildren {
-					if childMap, ok := child.(map[string]interface{}); ok {
-						cmdbChildren = append(cmdbChildren, childMap)
-					}
-				}
-			}
-
-			// 将 server detail 作为一级路由，使用单级路由格式（包含完整布局）
-			// 这样可以确保详情页有自己的完整布局（包括左侧菜单）
-			// 使用 activeMenu 和 hideInMenu 来保持菜单的正确状态
-			singleLevelRoute := map[string]interface{}{
-				"id":        "cmdb_server_detail",
-				"name":      "cmdb_server_detail",
-				"path":      "/cmdb/server/detail",
-				"component": "layout.base$view.cmdb_server_detail",
-				"meta": map[string]interface{}{
-					"title":      "cmdb_server_detail",
-					"i18nKey":    "route.cmdb_server_detail",
-					"hideInMenu": true,
-					"activeMenu": "cmdb_servers",
-				},
-			}
-			// 将单级路由添加到路由列表的顶层，而不是作为 cmdb 的子路由
-			routes = append(routes, singleLevelRoute)
-		}
-	}
-
-	// 注意：terminal_workbench 现在是"终端管理"一级菜单的子菜单，已由数据库菜单提供，无需额外添加
-
+	// 不需要添加任何硬编码路由，前端 Elegant Router 会根据文件系统自动生成所有路由
 	return routes
 }
 

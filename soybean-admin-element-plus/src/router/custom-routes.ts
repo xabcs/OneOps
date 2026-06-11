@@ -4,6 +4,8 @@
  */
 import type { RouteRecordRaw } from 'vue-router';
 
+import BaseLayout from '@/layouts/base-layout/index.vue';
+
 // 自定义视图组件导入
 const CMDBServerDetail = () => import('@/views/cmdb/server/detail.vue');
 
@@ -15,13 +17,20 @@ export const customRoutes: RouteRecordRaw[] = [
   {
     name: 'cmdb_server_detail',
     path: '/cmdb/server/detail',
-    component: CMDBServerDetail,
+    component: BaseLayout,
     meta: {
       title: 'cmdb_server_detail',
       i18nKey: 'route.cmdb_server_detail',
       hideInMenu: true,
       activeMenu: 'cmdb_servers'
-    }
+    },
+    children: [
+      {
+        name: 'cmdb_server_detail_view',
+        path: '',
+        component: CMDBServerDetail
+      }
+    ]
   }
 ];
 
