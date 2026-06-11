@@ -68,7 +68,7 @@ function handlePageSizeChange(pageSize: number) {
 
 function handleViewMonitoring(serverId: number) {
   router.push({
-    name: 'monitoring_servers-detail',
+    path: '/monitoring/servers/detail',
     query: { id: serverId }
   });
 }

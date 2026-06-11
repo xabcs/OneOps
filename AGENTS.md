@@ -593,24 +593,15 @@ const apiUrl = import.meta.env.VITE_SERVICE_BASE_URL;
 <claude-mem-context>
 # Memory Context
 
-# [OneOps] recent context, 2026-06-11 3:55pm GMT+8
+# [OneOps] recent context, 2026-06-11 4:12pm GMT+8
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 41 obs (7,735t read) | 190,353t work | 96% savings
+Stats: 50 obs (8,838t read) | 216,678t work | 96% savings
 
 ### May 20, 2026
-128 2:47p 🔴 前端未正确处理后端返回的主机名重复错误
-129 " 🔵 使用debug技能进行结构化调试
-130 2:48p 🔵 搜索主机创建相关代码定位问题
-131 " 🔵 多维度搜索定位后端响应处理逻辑
-132 2:49p 🔵 CMDB groups 表已废弃
-133 2:50p 🔵 CMDB 服务器错误处理机制
-134 2:51p 🔵 Axios 请求处理机制详解
-135 " 🔵 Token 刷新和错误消息处理机制
-136 2:52p 🔵 CMDB 模块架构：servers 模块已集成 groups 功能
 137 2:53p 🔴 修复服务器创建/更新错误处理逻辑
 138 2:54p 🔵 TypeScript 类型检查发现大量预存错误
 139 " 🔵 cmdb_servers 模块代码质量问题
@@ -645,6 +636,24 @@ Stats: 41 obs (7,735t read) | 190,353t work | 96% savings
 203 " 🔵 服务器详情页缺少布局组件包装
 204 3:48p 🔵 服务器详情页完全独立，缺少布局组件包装
 205 3:51p 🔵 调查主机详情页缺失左侧导航栏问题
+206 3:57p 🔵 主机详情页缺少左侧导航栏
+207 3:58p 🔵 主机详情页路由配置结构分析
+208 3:59p 🔵 CMDB路由使用layout.base布局
+209 4:00p 🔵 发现自定义主机详情路由配置
+210 " 🔵 列表页跳转到/cmdb/server/detail路径
+211 " 🔵 项目布局组件目录结构
+212 4:01p 🔵 Elegant Router自动生成布局和视图导入配置
+213 4:02p 🔴 修复cmdb_server_detail路由布局继承问题
+214 4:03p 🔴 成功应用cmdb_server_detail路由布局修复
+215 " 🔴 创建修复后的custom-routes.ts模板文件
+216 " 🔴 完成custom-routes.ts文件修复部署
+217 4:07p 🔵 主机监控详情页面显示问题修复任务启动
+218 4:08p 🔵 监控服务器详情页面路由结构分析
+219 4:09p 🔵 监控服务器列表页面路由跳转方式
+220 4:10p 🔵 监控服务器路由配置结构对比分析
+221 " 🔵 监控服务器模块文件结构发现
+222 4:11p 🔴 监控服务器详情页面自定义路由配置实现
+223 4:12p 🔴 路由命名修正确保与自定义路由配置一致
 
-Access 190k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 217k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
