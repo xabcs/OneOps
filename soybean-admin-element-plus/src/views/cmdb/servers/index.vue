@@ -1236,7 +1236,8 @@ async function confirmConnect() {
 
   try {
     // 获取用户凭证ID列表
-    const userCredentialIds = connectingServer.value.credentials?.filter(c => c.credentialType === 'user').map(c => c.id) || [];
+    const userCredentialIds =
+      connectingServer.value.credentials?.filter(c => c.credentialType === 'user').map(c => c.id) || [];
     const defaultCredentialId = userCredentialIds[0] || connectingServer.value.sshCredentialId;
 
     const params = new URLSearchParams({

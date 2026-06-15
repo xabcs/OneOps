@@ -14,15 +14,19 @@ type ServiceContainer struct {
 	db *gorm.DB
 
 	// 服务实例（懒加载）
-	authService       *services.AuthService
-	cmdbService       *services.CMDBService
-	auditService      *services.AuditService
-	rbacService       *services.RBACService
-	bastionService    *services.BastionService
-	attributeService  *services.AttributeService
-	monitoringService *services.MonitoringService
-	agentService      *services.AgentService
-	alertRuleService  *services.AlertRuleService
+	authService        *services.AuthService
+	cmdbService        *services.CMDBService
+	auditService       *services.AuditService
+	rbacService        *services.RBACService
+	bastionService     *services.BastionService
+	attributeService   *services.AttributeService
+	monitoringService  *services.MonitoringService
+	agentService       *services.AgentService
+	alertRuleService   *services.AlertRuleService
+	k8sClientPool      *services.K8sClientPool
+	k8sIdentityService *services.K8sIdentityService
+	k8sClusterService  *services.K8sClusterService
+	k8sResourceService *services.K8sResourceService
 
 	// 互斥锁，确保线程安全
 	mu sync.RWMutex
@@ -225,6 +229,90 @@ func (c *ServiceContainer) AlertRuleService() *services.AlertRuleService {
 	return c.alertRuleService
 }
 
+// K8sClientPool 获取K8s客户端池
+func (c *ServiceContainer) K8sClientPool() *services.K8sClientPool {
+	c.mu.RLock()
+	if c.k8sClientPool != nil {
+		c.mu.RUnlock()
+		return c.k8sClientPool
+	}
+	c.mu.RUnlock()
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.k8sClientPool != nil {
+		return c.k8sClientPool
+	}
+
+	c.k8sClientPool = services.NewK8sClientPool()
+	return c.k8sClientPool
+}
+
+// K8sIdentityService 获取K8s用户身份映射服务
+func (c *ServiceContainer) K8sIdentityService() *services.K8sIdentityService {
+	c.mu.RLock()
+	if c.k8sIdentityService != nil {
+		c.mu.RUnlock()
+		return c.k8sIdentityService
+	}
+	c.mu.RUnlock()
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.k8sIdentityService != nil {
+		return c.k8sIdentityService
+	}
+
+	c.k8sIdentityService = services.NewK8sIdentityService(c.K8sClientPool())
+	return c.k8sIdentityService
+}
+
+// K8sClusterService 获取K8s集群管理服务
+func (c *ServiceContainer) K8sClusterService() *services.K8sClusterService {
+	c.mu.RLock()
+	if c.k8sClusterService != nil {
+		c.mu.RUnlock()
+		return c.k8sClusterService
+	}
+	c.mu.RUnlock()
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.k8sClusterService != nil {
+		return c.k8sClusterService
+	}
+
+	// 确保依赖服务已初始化（直接访问字段，避免死锁）
+	if c.k8sClientPool == nil {
+		c.k8sClientPool = services.NewK8sClientPool()
+	}
+	if c.k8sIdentityService == nil {
+		c.k8sIdentityService = services.NewK8sIdentityService(c.k8sClientPool)
+	}
+
+	c.k8sClusterService = services.NewK8sClusterService(c.k8sClientPool, c.k8sIdentityService)
+	return c.k8sClusterService
+}
+
+	// K8sResourceService 获取K8s资源管理服务
+	func (c *ServiceContainer) K8sResourceService() *services.K8sResourceService {
+		c.mu.RLock()
+		if c.k8sResourceService != nil {
+			c.mu.RUnlock()
+			return c.k8sResourceService
+		}
+		c.mu.RUnlock()
+
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		if c.k8sResourceService != nil {
+			return c.k8sResourceService
+		}
+
+		c.k8sResourceService = services.NewK8sResourceService(c.K8sClientPool())
+		return c.k8sResourceService
+	}
+
 // GetDB 获取数据库连接
 func (c *ServiceContainer) GetDB() *gorm.DB {
 	return c.db
@@ -244,4 +332,8 @@ func (c *ServiceContainer) Reset() {
 	c.monitoringService = nil
 	c.agentService = nil
 	c.alertRuleService = nil
+	c.k8sClientPool = nil
+	c.k8sIdentityService = nil
+	c.k8sClusterService = nil
+	c.k8sResourceService = nil
 }

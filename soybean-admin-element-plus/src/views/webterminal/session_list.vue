@@ -1,24 +1,29 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from "vue";
-import { fetchGetSessions, fetchTerminateSession, fetchGetActiveSessionsFromMemory, fetchGetSessionsList } from "@/service/api/cmdb";
-import { useAppStore } from "@/store/modules/app";
-import { useAuthStore } from "@/store/modules/auth";
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import {
+  fetchGetActiveSessionsFromMemory,
+  fetchGetSessions,
+  fetchGetSessionsList,
+  fetchTerminateSession
+} from '@/service/api/cmdb';
+import { useAppStore } from '@/store/modules/app';
+import { useAuthStore } from '@/store/modules/auth';
 
 defineOptions({
-  name: "webterminal_session_list"
+  name: 'WebterminalSessionList'
 });
 
 const appStore = useAppStore();
 const authStore = useAuthStore();
 
 /** 标签页类型 */
-type TabType = "active" | "terminated" | "history";
+type TabType = 'active' | 'terminated' | 'history';
 
 /** 当前标签页 */
-const activeTab = ref<TabType>("active");
+const activeTab = ref<TabType>('active');
 
 /** 搜索关键词 */
-const searchKeyword = ref("");
+const searchKeyword = ref('');
 
 /** 选中的会话ID列表 */
 const selectedSessionIds = ref<number[]>([]);
@@ -52,14 +57,14 @@ function formatDuration(seconds: number): string {
 
 /** 格式化时间 */
 function formatTime(timeStr?: string): string {
-  if (!timeStr) return "-";
+  if (!timeStr) return '-';
   const date = new Date(timeStr);
   const now = new Date();
   const diff = now.getTime() - date.getTime();
 
   // 小于1分钟
   if (diff < 60000) {
-    return "刚刚";
+    return '刚刚';
   }
   // 小于1小时
   if (diff < 3600000) {
@@ -70,11 +75,11 @@ function formatTime(timeStr?: string): string {
     return `${Math.floor(diff / 3600000)}小时前`;
   }
   // 大于24小时，显示具体日期
-  return date.toLocaleString("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
   });
 }
 
@@ -97,7 +102,7 @@ async function loadSessions() {
     };
 
     // 根据标签页设置状态筛选
-    if (activeTab.value === "active") {
+    if (activeTab.value === 'active') {
       // 在线会话：从内存获取真正活跃的会话（更准确）
       console.log('=== 开始加载在线会话 ===');
       const response = await fetchGetActiveSessionsFromMemory();
@@ -109,8 +114,8 @@ async function loadSessions() {
       pagination.value.total = dataSource.value.length;
       console.log('=== 在线会话加载完成 ===');
       return; // ✅ 直接返回，不要继续执行下面的通用查询
-    } else if (activeTab.value === "terminated") {
-      params.status = "terminated";
+    } else if (activeTab.value === 'terminated') {
+      params.status = 'terminated';
     }
     // history 不过滤状态，显示所有
 
@@ -130,7 +135,7 @@ async function loadSessions() {
     pagination.value.total = response.data?.total || 0;
     console.log('赋值后 dataSource.length:', dataSource.value.length);
   } catch (error) {
-    console.error("加载会话列表失败:", error);
+    console.error('加载会话列表失败:', error);
     dataSource.value = [];
     pagination.value.total = 0;
   } finally {
@@ -146,7 +151,7 @@ function handleSearch() {
 
 /** 清空搜索 */
 function handleClearSearch() {
-  searchKeyword.value = "";
+  searchKeyword.value = '';
   pagination.value.current = 1;
   loadSessions();
 }
@@ -186,10 +191,10 @@ async function handleTerminateSession(sessionId: number) {
   try {
     loading.value = true;
     await fetchTerminateSession(sessionId);
-    window.$message?.success("会话已终止");
+    window.$message?.success('会话已终止');
     loadSessions();
   } catch (error) {
-    window.$message?.error("终止会话失败");
+    window.$message?.error('终止会话失败');
   } finally {
     loading.value = false;
   }
@@ -198,7 +203,7 @@ async function handleTerminateSession(sessionId: number) {
 /** 批量终止会话 */
 async function handleBatchTerminate() {
   if (selectedSessionIds.value.length === 0) {
-    window.$message?.warning("请先选择要终止的会话");
+    window.$message?.warning('请先选择要终止的会话');
     return;
   }
 
@@ -217,7 +222,7 @@ async function handleBatchTerminate() {
     selectedSessionIds.value = [];
     loadSessions();
   } catch (error) {
-    window.$message?.error("批量终止会话失败");
+    window.$message?.error('批量终止会话失败');
   } finally {
     loading.value = false;
   }
@@ -247,7 +252,7 @@ function handleTableAction(event: Event) {
   const action = target.dataset.action;
   const sessionId = target.dataset.sessionId;
 
-  if (action === "terminate" && sessionId) {
+  if (action === 'terminate' && sessionId) {
     handleTerminateSession(Number(sessionId));
   }
 }
@@ -277,25 +282,11 @@ onMounted(() => {
 
     <!-- 标签页 -->
     <div class="wb-tabs">
-      <div
-        class="wb-tab"
-        :class="{ active: activeTab === 'active' }"
-        @click="handleTabChange('active')"
-      >
-        在线会话
-      </div>
-      <div
-        class="wb-tab"
-        :class="{ active: activeTab === 'terminated' }"
-        @click="handleTabChange('terminated')"
-      >
+      <div class="wb-tab" :class="{ active: activeTab === 'active' }" @click="handleTabChange('active')">在线会话</div>
+      <div class="wb-tab" :class="{ active: activeTab === 'terminated' }" @click="handleTabChange('terminated')">
         已终止会话
       </div>
-      <div
-        class="wb-tab"
-        :class="{ active: activeTab === 'history' }"
-        @click="handleTabChange('history')"
-      >
+      <div class="wb-tab" :class="{ active: activeTab === 'history' }" @click="handleTabChange('history')">
         会话历史
       </div>
     </div>
@@ -309,34 +300,32 @@ onMounted(() => {
           type="text"
           class="wb-search-input"
           placeholder="搜索主机名、IP、用户名..."
-          @keyup.enter="handleSearch"
           autocomplete="off"
-          style="border: none !important; outline: none !important; box-shadow: none !important;"
+          style="border: none !important; outline: none !important; box-shadow: none !important"
+          @keyup.enter="handleSearch"
         />
         <button v-if="searchKeyword" class="wb-search-clear" @click="handleClearSearch">
           <i class="codicon codicon-close"></i>
         </button>
       </div>
-      <button class="wb-button wb-button-primary" @click="handleSearch">
-        搜索
-      </button>
+      <button class="wb-button wb-button-primary" @click="handleSearch">搜索</button>
     </div>
 
     <!-- 数据表格 -->
     <div class="wb-table-container" @click="handleTableAction">
       <table class="wb-table">
         <colgroup>
-          <col class="wb-checkbox-column" style="width: 40px;">
-          <col class="wb-index-column" style="width: 50px;">
-          <col style="width: 140px;">
-          <col style="width: 180px;">
-          <col style="width: 80px;">
-          <col style="width: 70px;">
-          <col style="width: 80px;">
-          <col style="width: 90px;">
-          <col style="width: 80px;">
-          <col style="width: 110px;">
-          <col style="width: 60px;">
+          <col class="wb-checkbox-column" style="width: 40px" />
+          <col class="wb-index-column" style="width: 50px" />
+          <col style="width: 140px" />
+          <col style="width: 180px" />
+          <col style="width: 80px" />
+          <col style="width: 70px" />
+          <col style="width: 80px" />
+          <col style="width: 90px" />
+          <col style="width: 80px" />
+          <col style="width: 110px" />
+          <col style="width: 60px" />
         </colgroup>
         <thead>
           <tr>
@@ -344,10 +333,12 @@ onMounted(() => {
               <input
                 type="checkbox"
                 :checked="selectedSessionIds.length > 0 && selectedSessionIds.length === dataSource.length"
-                @change="(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  handleSelectAll(target.checked);
-                }"
+                @change="
+                  (e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    handleSelectAll(target.checked);
+                  }
+                "
               />
             </th>
             <th class="wb-index-column">序号</th>
@@ -372,21 +363,19 @@ onMounted(() => {
               <input
                 type="checkbox"
                 :checked="selectedSessionIds.includes(session.id)"
-                @change="(e: Event) => {
-                  const target = e.target as HTMLInputElement;
-                  handleSelectRow(session.id, target.checked);
-                }"
+                @change="
+                  (e: Event) => {
+                    const target = e.target as HTMLInputElement;
+                    handleSelectRow(session.id, target.checked);
+                  }
+                "
               />
             </td>
             <td class="wb-index-column">{{ (pagination.current - 1) * pagination.pageSize + index + 1 }}</td>
             <td>{{ formatTime(session.startedAt || session.createdAt) }}</td>
             <td>
-              <template v-if="session.server">
-                {{ session.server.hostname }} ({{ session.server.ip }})
-              </template>
-              <template v-else>
-                服务器ID: {{ session.serverId }}
-              </template>
+              <template v-if="session.server">{{ session.server.hostname }} ({{ session.server.ip }})</template>
+              <template v-else>服务器ID: {{ session.serverId }}</template>
             </td>
             <td>{{ session.protocol.toUpperCase() }}</td>
             <td>
@@ -396,7 +385,15 @@ onMounted(() => {
                   'wb-status-offline': session.status !== 'active'
                 }"
               >
-                {{ session.status === 'active' ? '在线' : session.status === 'terminated' ? '已终止' : session.status === 'closed' ? '已关闭' : '异常' }}
+                {{
+                  session.status === 'active'
+                    ? '在线'
+                    : session.status === 'terminated'
+                      ? '已终止'
+                      : session.status === 'closed'
+                        ? '已关闭'
+                        : '异常'
+                }}
               </span>
             </td>
             <td>{{ formatDuration(session.duration) }}</td>
@@ -437,9 +434,7 @@ onMounted(() => {
 
     <!-- 分页器 -->
     <div v-if="pagination.total > 0" class="wb-pagination">
-      <div class="wb-pagination-info">
-        共 {{ pagination.total }} 条记录
-      </div>
+      <div class="wb-pagination-info">共 {{ pagination.total }} 条记录</div>
       <div class="wb-pagination-controls">
         <button
           class="wb-pagination-btn"
@@ -778,7 +773,7 @@ onMounted(() => {
 }
 
 /* 选择框样式 */
-.wb-checkbox-column input[type="checkbox"] {
+.wb-checkbox-column input[type='checkbox'] {
   width: 14px;
   height: 14px;
   cursor: pointer;
@@ -826,7 +821,7 @@ thead th.wb-checkbox-column {
   text-align: center !important; /* 确保checkbox居中 */
   border-bottom: 1px solid #333333;
   font-weight: 500;
-  color: #FFFFFF;
+  color: #ffffff;
 }
 
 /* 序号列样式 */
@@ -834,11 +829,11 @@ thead th.wb-checkbox-column {
   width: 80px;
   text-align: left;
   padding: 10px 12px 10px 16px !important;
-  color: #FFFFFF;
+  color: #ffffff;
   font-size: 14px;
   font-weight: 400;
   border-right: 1px solid #333333;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   letter-spacing: 0.5px;
   vertical-align: middle;
 }
@@ -846,7 +841,7 @@ thead th.wb-checkbox-column {
 /* 表头序号列特殊样式 */
 thead th.wb-index-column {
   padding: 10px 12px 10px 16px !important;
-  color: #FFFFFF;
+  color: #ffffff;
   font-weight: 500;
   border-bottom: 1px solid #333333;
 }

@@ -80,6 +80,8 @@ declare module "@elegant-router/types" {
     "function_toggle-auth": "/function/toggle-auth";
     "home": "/home";
     "iframe-page": "/iframe-page/:url";
+    "k8s": "/k8s";
+    "k8s_clusters": "/k8s/clusters";
     "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?";
     "manage": "/manage";
     "manage_menu": "/manage/menu";
@@ -185,6 +187,7 @@ declare module "@elegant-router/types" {
     | "function"
     | "home"
     | "iframe-page"
+    | "k8s"
     | "login"
     | "manage"
     | "monitoring"
@@ -251,6 +254,7 @@ declare module "@elegant-router/types" {
     | "function_tab"
     | "function_toggle-auth"
     | "home"
+    | "k8s_clusters"
     | "manage_menu"
     | "manage_role"
     | "manage_user-detail"

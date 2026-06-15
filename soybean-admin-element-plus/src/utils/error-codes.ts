@@ -42,7 +42,7 @@ export enum ErrorCode {
   CREDENTIAL_IN_USE = 45001,
 
   // 审计相关错误 (46000-46099)
-  AUDIT_NOT_FOUND = 46000,
+  AUDIT_NOT_FOUND = 46000
 }
 
 /**
@@ -87,7 +87,7 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   [ErrorCode.CREDENTIAL_IN_USE]: '该凭证正在使用中',
 
   // 审计相关错误
-  [ErrorCode.AUDIT_NOT_FOUND]: '审计记录不存在',
+  [ErrorCode.AUDIT_NOT_FOUND]: '审计记录不存在'
 };
 
 /**

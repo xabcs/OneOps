@@ -309,7 +309,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="info-card" v-if="server?.provider || server?.serverType">
+      <div v-if="server?.provider || server?.serverType" class="info-card">
         <div class="card-head"><span class="card-title">云平台信息</span></div>
         <div class="card-body">
           <div class="desc-grid">
@@ -399,7 +399,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="info-card" v-if="server?.cabinet || server?.uPosition">
+      <div v-if="server?.cabinet || server?.uPosition" class="info-card">
         <div class="card-head"><span class="card-title">机柜信息</span></div>
         <div class="card-body">
           <div class="desc-grid">
@@ -421,7 +421,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="info-card" v-if="server?.purchaseDate || server?.expireWarranty">
+      <div v-if="server?.purchaseDate || server?.expireWarranty" class="info-card">
         <div class="card-head"><span class="card-title">时间信息</span></div>
         <div class="card-body">
           <div class="desc-grid">

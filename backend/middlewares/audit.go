@@ -230,6 +230,42 @@ func (m *AuditMiddleware) getModuleFromPath(path string) string {
 	// 去掉/api前缀
 	apiPath := strings.TrimPrefix(path, "/api")
 
+	// K8s 集群管理模块
+	if strings.HasPrefix(apiPath, "/k8s") {
+		// 进一步细分 K8s 操作类型
+		if strings.Contains(path, "/clusters") {
+			return "K8s集群管理"
+		}
+		if strings.Contains(path, "/deployments") {
+			return "K8s Deployment管理"
+		}
+		if strings.Contains(path, "/statefulsets") {
+			return "K8s StatefulSet管理"
+		}
+		if strings.Contains(path, "/daemonsets") {
+			return "K8s DaemonSet管理"
+		}
+		if strings.Contains(path, "/services") {
+			return "K8s Service管理"
+		}
+		if strings.Contains(path, "/pods") {
+			return "K8s Pod管理"
+		}
+		if strings.Contains(path, "/configmaps") {
+			return "K8s ConfigMap管理"
+		}
+		if strings.Contains(path, "/secrets") {
+			return "K8s Secret管理"
+		}
+		if strings.Contains(path, "/terminal") {
+			return "K8s终端管理"
+		}
+		if strings.Contains(path, "/permissions") {
+			return "K8s权限管理"
+		}
+		return "K8s资源管理"
+	}
+
 	// 基于 API 路径前缀智能识别模块
 	if strings.HasPrefix(apiPath, "/login") || strings.HasPrefix(apiPath, "/logout") || strings.HasPrefix(apiPath, "/user") {
 		return "认证管理"
@@ -359,6 +395,51 @@ func (m *AuditMiddleware) generateDescription(module, action, path string) strin
 	}
 	if action == "统计" {
 		return fmt.Sprintf("查询%s统计数据", module)
+	}
+
+	// K8s 操作的特殊处理
+	if strings.HasPrefix(module, "K8s") {
+		// 从路径中提取资源信息
+		resourceType := ""
+		if strings.Contains(path, "/clusters") {
+			resourceType = "集群"
+		} else if strings.Contains(path, "/deployments") {
+			resourceType = "Deployment"
+		} else if strings.Contains(path, "/statefulsets") {
+			resourceType = "StatefulSet"
+		} else if strings.Contains(path, "/daemonsets") {
+			resourceType = "DaemonSet"
+		} else if strings.Contains(path, "/services") {
+			resourceType = "Service"
+		} else if strings.Contains(path, "/pods") {
+			resourceType = "Pod"
+		} else if strings.Contains(path, "/configmaps") {
+			resourceType = "ConfigMap"
+		} else if strings.Contains(path, "/secrets") {
+			resourceType = "Secret"
+		} else if strings.Contains(path, "/terminal") {
+			resourceType = "终端"
+		}
+
+		// 提取操作类型
+		operationType := ""
+		if strings.Contains(path, "/scale") {
+			operationType = "扩缩容"
+		} else if strings.Contains(path, "/restart") {
+			operationType = "重启"
+		} else if strings.Contains(path, "/logs") {
+			operationType = "查看日志"
+		} else if strings.Contains(path, "/test") {
+			operationType = "测试连接"
+		} else if strings.Contains(path, "/permissions") {
+			operationType = "权限"
+		}
+
+		if operationType != "" {
+			return fmt.Sprintf("%s%s", operationType, resourceType)
+		}
+
+		return fmt.Sprintf("%s%s", action, resourceType)
 	}
 
 	// 根据模块和动作生成描述

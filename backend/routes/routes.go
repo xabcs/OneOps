@@ -39,6 +39,10 @@ func SetupRoutes(r *gin.Engine) {
 	bastionController := controllers.NewBastionController()
 	attributeController := controllers.NewAttributeController()
 	sshHandler := handlers.NewSSHWebSocketHandler()
+	k8sClusterController := controllers.NewK8sClusterController(cnt)
+	k8sPermissionController := controllers.NewK8sPermissionController(cnt)
+	k8sResourceController := controllers.NewK8sResourceController(cnt)
+	k8sTerminalHandler := handlers.NewK8sTerminalHandler(cnt)
 
 	// API 路由组
 	api := r.Group("/api")
@@ -277,6 +281,11 @@ func SetupRoutes(r *gin.Engine) {
 			sshHandler.HandleWebSocket(ctx)
 		})
 
+		// K8s Pod 终端 WebSocket（不经过 Auth 中间件，由 handler 自行验证）
+		api.GET("/k8s/terminal/ws", func(ctx *gin.Context) {
+			k8sTerminalHandler.HandleWebSocket(ctx)
+		})
+
 		// Agent 心跳（不经过 Auth 中间件，由 Agent 直接上报）
 		api.POST("/cmdb/agent/heartbeat", cmdbController.ReceiveAgentHeartbeat)
 
@@ -301,5 +310,86 @@ func SetupRoutes(r *gin.Engine) {
 			routeGroup.GET("/isRouteExist", routeController.IsRouteExist)
 			routeGroup.POST("/invalidateCache", routeController.InvalidateCache)
 		}
+
+			// K8s 集群管理路由（需要认证）
+			k8s := api.Group("/k8s")
+			k8s.Use(middlewares.Auth())
+			{
+				// 集群管理
+				k8s.GET("/clusters", k8sClusterController.GetClusters)
+				k8s.POST("/clusters", k8sClusterController.CreateCluster)
+				k8s.GET("/clusters/:id", k8sClusterController.GetClusterByID)
+				k8s.PUT("/clusters/:id", k8sClusterController.UpdateCluster)
+				k8s.DELETE("/clusters/:id", k8sClusterController.DeleteCluster)
+
+				// 连接测试
+				k8s.POST("/clusters/:id/test", k8sClusterController.TestConnection)
+
+				// 集群节点和命名空间
+				k8s.GET("/clusters/:id/nodes", k8sClusterController.GetClusterNodes)
+				k8s.GET("/clusters/:id/namespaces", k8sClusterController.GetClusterNamespaces)
+
+				// 集群用户管理
+				k8s.GET("/clusters/:id/users", k8sClusterController.GetClusterUsers)
+
+				// 权限管理
+				k8s.POST("/clusters/:id/permissions", k8sPermissionController.AssignClusterRole)
+				k8s.DELETE("/clusters/:id/permissions/:userId", k8sPermissionController.RevokeClusterRole)
+				k8s.GET("/users/clusters", k8sPermissionController.GetUserClusters)
+				k8s.GET("/clusters/:id/users/:userId/role", k8sPermissionController.GetUserRoleInCluster)
+				k8s.POST("/permissions/batch-assign", k8sPermissionController.BatchAssignClusterRoles)
+					// Workloads - Deployments
+					k8s.GET("/clusters/:id/deployments", k8sResourceController.ListDeployments)
+					k8s.GET("/clusters/:id/deployments/:namespace/:name", k8sResourceController.GetDeployment)
+					k8s.POST("/clusters/:id/deployments", k8sResourceController.CreateDeployment)
+					k8s.PUT("/clusters/:id/deployments", k8sResourceController.UpdateDeployment)
+					k8s.DELETE("/clusters/:id/deployments", k8sResourceController.DeleteDeployment)
+					k8s.POST("/clusters/:id/deployments/scale", k8sResourceController.ScaleDeployment)
+					k8s.POST("/clusters/:id/deployments/restart", k8sResourceController.RestartDeployment)
+
+					// Workloads - StatefulSets
+					k8s.GET("/clusters/:id/statefulsets", k8sResourceController.ListStatefulSets)
+					k8s.GET("/clusters/:id/statefulsets/:namespace/:name", k8sResourceController.GetStatefulSet)
+
+					// Workloads - DaemonSets
+					k8s.GET("/clusters/:id/daemonsets", k8sResourceController.ListDaemonSets)
+					k8s.GET("/clusters/:id/daemonsets/:namespace/:name", k8sResourceController.GetDaemonSet)
+
+					// Services
+					k8s.GET("/clusters/:id/services", k8sResourceController.ListServices)
+					k8s.GET("/clusters/:id/services/:namespace/:name", k8sResourceController.GetService)
+					k8s.POST("/clusters/:id/services", k8sResourceController.CreateService)
+					k8s.PUT("/clusters/:id/services", k8sResourceController.UpdateService)
+					k8s.DELETE("/clusters/:id/services", k8sResourceController.DeleteService)
+
+					// Pods
+					k8s.GET("/clusters/:id/pods", k8sResourceController.ListPods)
+					k8s.GET("/clusters/:id/pods/:namespace/:name", k8sResourceController.GetPod)
+					k8s.GET("/clusters/:id/pods/:namespace/:name/logs", k8sResourceController.GetPodLogs)
+					k8s.DELETE("/clusters/:id/pods", k8sResourceController.DeletePod)
+
+					// ConfigMaps
+					k8s.GET("/clusters/:id/configmaps", k8sResourceController.ListConfigMaps)
+					k8s.GET("/clusters/:id/configmaps/:namespace/:name", k8sResourceController.GetConfigMap)
+					k8s.POST("/clusters/:id/configmaps", k8sResourceController.CreateConfigMap)
+					k8s.PUT("/clusters/:id/configmaps", k8sResourceController.UpdateConfigMap)
+					k8s.DELETE("/clusters/:id/configmaps", k8sResourceController.DeleteConfigMap)
+
+					// Secrets
+					k8s.GET("/clusters/:id/secrets", k8sResourceController.ListSecrets)
+					k8s.GET("/clusters/:id/secrets/:namespace/:name", k8sResourceController.GetSecret)
+					k8s.POST("/clusters/:id/secrets", k8sResourceController.CreateSecret)
+					k8s.PUT("/clusters/:id/secrets", k8sResourceController.UpdateSecret)
+					k8s.DELETE("/clusters/:id/secrets", k8sResourceController.DeleteSecret)
+
+					// Events
+					k8s.GET("/clusters/:id/events", k8sResourceController.ListEvents)
+
+					// K8s 终端管理（需要认证）
+					k8s.GET("/terminal/active", k8sTerminalHandler.GetActiveSessions)
+					k8s.POST("/terminal/sessions/:sessionId/terminate", k8sTerminalHandler.TerminateSession)
+
+			}
+
 	}
 }

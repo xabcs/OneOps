@@ -226,6 +226,8 @@ const routeMap: RouteMap = {
   "function_toggle-auth": "/function/toggle-auth",
   "home": "/home",
   "iframe-page": "/iframe-page/:url",
+  "k8s": "/k8s",
+  "k8s_clusters": "/k8s/clusters",
   "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?",
   "manage": "/manage",
   "manage_menu": "/manage/menu",

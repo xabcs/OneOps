@@ -67,5 +67,15 @@ VALUES ('关于', 'fluent:book-information-24-regular', '/about', '', 0, 5, 1, N
 INSERT INTO menus (name, icon, path, permission, parent_id, sort, status, created_at, updated_at)
 VALUES ('用户中心', 'mdi:user-circle-outline', '/user-center', '', 0, 6, 1, NOW(), NOW());
 
+-- 一级菜单：K8s管理
+INSERT INTO menus (name, icon, path, permission, parent_id, sort, status, created_at, updated_at)
+VALUES ('K8s管理', 'mdi:kubernetes', '/k8s', '', 0, 5, 1, NOW(), NOW());
+
+SET @k8s_id = LAST_INSERT_ID();
+
+-- K8s管理子菜单：集群管理
+INSERT INTO menus (name, icon, path, permission, parent_id, sort, status, created_at, updated_at)
+VALUES ('集群管理', 'mdi:server-network', '/k8s/clusters', 'k8s:cluster:query', @k8s_id, 1, 1, NOW(), NOW());
+
 -- 验证插入结果
 SELECT id, name, path, parent_id, sort FROM menus ORDER BY sort;

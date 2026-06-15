@@ -40,6 +40,8 @@ func (s *InitService) InitDatabase() error {
 		&models.BusinessUnit{},
 		&models.SSHCredential{},
 		&models.AttributeDefinition{},
+			// K8s 集群管理基础表
+			&models.K8sCluster{},
 		// Agent 版本管理表
 		&models.AgentVersion{},
 		&models.AgentUpgradeTask{},
@@ -61,6 +63,10 @@ func (s *InitService) InitDatabase() error {
 		&models.BastionCommand{},
 		&models.BastionFileTransfer{},
 		&models.BastionApproval{},
+			// K8s 集群管理关联表
+			&models.ClusterRoleBinding{},
+			&models.K8sSession{},
+			&models.K8sCommand{},
 	)
 
 	if migrateErr != nil {
@@ -251,9 +257,10 @@ func (s *InitService) syncMenus() error {
 		{ID: 2, Name: "资产管理", Icon: "mdi:server-network", Path: "/cmdb", Permission: "", MenuType: "directory", Sort: 2, Status: 1, ParentID: 0},
 		{ID: 3, Name: "监控中心", Icon: "mdi:chart-line", Path: "/monitoring", Permission: "", MenuType: "directory", Sort: 3, Status: 1, ParentID: 0},
 		{ID: 4, Name: "审计中心", Icon: "mdi:file-document", Path: "/audit", Permission: "", MenuType: "directory", Sort: 4, Status: 1, ParentID: 0},
+		{ID: 5, Name: "K8s管理", Icon: "mdi:kubernetes", Path: "/k8s", Permission: "", MenuType: "directory", Sort: 5, Status: 1, ParentID: 0},
 		// web终端作为独立的一级路由（无导航栏），使用 Sort=5
-		{ID: 60, Name: "web终端", Icon: "mdi:console", Path: "/webterminal", Permission: "", MenuType: "menu", Sort: 5, Status: 1, ParentID: 0},
-		{ID: 6, Name: "系统管理", Icon: "mdi:cog", Path: "/manage", Permission: "", MenuType: "directory", Sort: 6, Status: 1, ParentID: 0},
+		{ID: 60, Name: "web终端", Icon: "mdi:console", Path: "/webterminal", Permission: "", MenuType: "menu", Sort: 6, Status: 1, ParentID: 0},
+		{ID: 6, Name: "系统管理", Icon: "mdi:cog", Path: "/manage", Permission: "", MenuType: "directory", Sort: 7, Status: 1, ParentID: 0},
 
 		// ========== CMDB 二级菜单 (ID: 20-39) ==========
 		{ID: 20, Name: "主机管理", Icon: "mdi:server", Path: "/cmdb/servers", Permission: "cmdb:server:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 2},
@@ -297,6 +304,9 @@ func (s *InitService) syncMenus() error {
 
 		// （web终端 已移为一级菜单，见上方 ParentID: 0 的定义）
 
+
+		// ========== K8s管理二级菜单 (ID: 80-89) ==========
+		{ID: 80, Name: "集群管理", Icon: "mdi:server-network", Path: "/k8s/clusters", Permission: "k8s:cluster:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 5},
 		// ========== 系统管理二级菜单 (ID: 70-79) ==========
 		{ID: 70, Name: "用户管理", Icon: "mdi:account-multiple", Path: "/manage/user", Permission: "system:user:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 6},
 		{ID: 71, Name: "角色管理", Icon: "mdi:shield-account", Path: "/manage/role", Permission: "system:role:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 6},
@@ -376,8 +386,8 @@ func (s *InitService) syncRoleMenus() error {
 
 	// 定义5个内置角色的菜单权限（动态路由模式）
 	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46} // 超级管理员：所有权限
-	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46}               // 运维工程师：含监控权限
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 6, 13, 60, 80, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46} // 超级管理员：所有权限
+	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 60, 80, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46}               // 运维工程师：含监控权限
 	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44}                                                           // 审计员：含监控查看权限
 	userMenuIDs := []uint{1}                                                                                                                      // 普通用户：仅首页
 	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44, 45, 46}                                                      // 测试角色：含监控权限
@@ -450,8 +460,8 @@ func (s *InitService) syncRoleMenus() error {
 func (s *InitService) initRoles() error {
 	// 定义5个内置角色的菜单权限（动态路由模式）
 	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46} // 超级管理员：所有权限
-	opsMenuIDs := []uint{1, 13, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46}               // 运维工程师：含监控权限
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 6, 13, 60, 80, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46} // 超级管理员：所有权限
+	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 60, 80, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46}               // 运维工程师：含监控权限
 	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44}                                                           // 审计员：含监控查看权限
 	userMenuIDs := []uint{1}                                                                                                                      // 普通用户：仅首页
 	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44, 45, 46}                                                      // 测试角色：含监控权限

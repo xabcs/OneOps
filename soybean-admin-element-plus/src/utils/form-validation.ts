@@ -3,7 +3,7 @@
  * 用于在提交前验证表单数据
  */
 
-import { validateObject, ValidationRules } from './validation';
+import { ValidationRules, validateObject } from './validation';
 
 /**
  * 服务器表单验证规则
@@ -139,10 +139,7 @@ export const MenuFormRules = {
 /**
  * 验证表单数据
  */
-export function validateForm<T extends Record<string, any>>(
-  data: T,
-  rules: Record<string, any>
-): ValidationResult {
+export function validateForm<T extends Record<string, any>>(data: T, rules: Record<string, any>): ValidationResult {
   // 提取验证规则
   const validationRules: Record<string, any> = {};
 

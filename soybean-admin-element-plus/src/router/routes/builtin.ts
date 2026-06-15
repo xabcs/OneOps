@@ -1,7 +1,6 @@
 import type { CustomRoute } from '@elegant-router/types';
-import { getRoutePath } from '../elegant/transform';
+import { getRoutePath, transformElegantRoutesToVueRoutes } from '../elegant/transform';
 import { layouts, views } from '../elegant/imports';
-import { transformElegantRoutesToVueRoutes } from '../elegant/transform';
 
 export const ROOT_ROUTE: CustomRoute = {
   name: 'root',
@@ -41,4 +40,3 @@ export const builtinRoutes: CustomRoute[] = [ROOT_ROUTE, NOT_FOUND_ROUTE, WEBTER
 export function createBuiltinVueRoutes() {
   return transformElegantRoutesToVueRoutes(builtinRoutes, layouts, views);
 }
-

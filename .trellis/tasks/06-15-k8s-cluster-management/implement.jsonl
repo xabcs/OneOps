@@ -1,0 +1,5 @@
+{"file": ".trellis/spec/guides/code-reuse-thinking.md", "reason": "代码复用思考指南：帮助识别现有可复用的组件、模块和模式"}
+{"file": ".trellis/spec/guides/cross-layer-thinking.md", "reason": "跨层思考指南：指导前后端协调、架构决策和系统集成"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "前端开发规范：Vue 3 + Element Plus 编码标准、组件设计模式和最佳实践"}
+{"file": ".trellis/tasks/06-15-k8s-cluster-management/research/k8s-platform-permissions.md", "reason": "K8s 平台权限研究：主流平台的权限架构对比和设计模式参考"}
+{"file": ".trellis/tasks/06-15-k8s-cluster-management/research/aliyun-ack-permissions.md", "reason": "阿里云 ACK 权限实现：RAM + RBAC 双层架构的详细实现和用户身份映射"}

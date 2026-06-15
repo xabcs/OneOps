@@ -41,7 +41,7 @@ export enum ErrorCode {
   CREDENTIAL_IN_USE = 45001,
 
   // 审计相关错误 (46000-46099)
-  AUDIT_NOT_FOUND = 46000,
+  AUDIT_NOT_FOUND = 46000
 }
 
 // API 错误接口
@@ -123,7 +123,7 @@ export class ErrorHandler {
         ElMessage.error('该凭证正在使用中，无法删除');
         break;
       case ErrorCode.INVALID_PARAMS:
-        ElMessage.error('请求参数错误：' + error.message);
+        ElMessage.error(`请求参数错误：${error.message}`);
         break;
       case ErrorCode.INTERNAL_ERROR:
         ElMessage.error('服务器内部错误，请稍后重试');

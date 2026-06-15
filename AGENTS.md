@@ -593,27 +593,15 @@ const apiUrl = import.meta.env.VITE_SERVICE_BASE_URL;
 <claude-mem-context>
 # Memory Context
 
-# [OneOps] recent context, 2026-06-11 4:12pm GMT+8
+# [OneOps] recent context, 2026-06-11 5:02pm GMT+8
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (8,838t read) | 216,678t work | 96% savings
+Stats: 50 obs (8,608t read) | 216,678t work | 96% savings
 
 ### May 20, 2026
-137 2:53p 🔴 修复服务器创建/更新错误处理逻辑
-138 2:54p 🔵 TypeScript 类型检查发现大量预存错误
-139 " 🔵 cmdb_servers 模块代码质量问题
-140 2:55p 🔄 重构 cmdb_servers 错误处理逻辑，降低代码复杂度
-141 " 🔄 完成 cmdb_servers 模块错误处理重构
-142 4:18p 🔵 OneOps 资产管理与堡垒机集成方案设计
-143 " 🔵 OneOps 项目使用 write-spec 技能进行架构设计
-144 " 🔵 OneOps 代码库中资产管理和堡垒机相关功能搜索
-145 4:19p 🔵 OneOps 现有架构分析：完整的 CMDB 资产管理系统
-146 4:29p 🔵 OneOps 项目文档结构完整，为架构设计提供上下文
-147 4:30p ⚖️ OneOps 资产管理与堡垒机集成架构设计完成
-148 4:31p ✅ 资产管理与堡垒机集成设计文档已创建完成
 149 4:32p 🔵 OneOps 主机分组功能实现调研开始
 150 4:33p 🔵 OneOps 主机分组功能实现完整但菜单配置缺失
 151 4:34p 🔵 OneOps 前端主机分组路由配置完整可用
@@ -654,6 +642,18 @@ Stats: 50 obs (8,838t read) | 216,678t work | 96% savings
 221 " 🔵 监控服务器模块文件结构发现
 222 4:11p 🔴 监控服务器详情页面自定义路由配置实现
 223 4:12p 🔴 路由命名修正确保与自定义路由配置一致
+224 4:13p 🔵 路由跳转方式对比：CMDB与监控页面差异
+225 4:16p 🔴 统一路由跳转方式：从name改为path
+226 4:20p 🔴 监控详情页面路由配置修复完成
+227 4:21p 🔵 监控详情页面完整实现确认
+228 4:25p 🟣 监控服务器详情页面组件实现
+229 4:28p 🔄 监控服务器详情页面图表初始化优化
+230 4:41p 🔵 Element Plus CheckCircle import error discovered
+231 " 🔴 Fixed incorrect icon import in monitoring server detail view
+232 4:58p 🔴 Vite导入错误 - Element Plus HardDrive图标不存在
+233 5:00p 🔴 修复Element Plus图标导入错误
+234 " 🔴 修复多个Element Plus无效图标导入
+235 5:01p 🔴 验证Element Plus图标修复完成
 
 Access 217k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

@@ -241,6 +241,8 @@ const local: App.I18n.Schema = {
     cmdb_terminal: 'SSH 终端',
     cmdb_webterminal: 'Web终端',
     webterminal: 'web终端',
+    k8s: 'K8s管理',
+    k8s_clusters: '集群管理',
     plugin_copy: '剪贴板',
     plugin_charts: '图表',
     plugin_charts_echarts: 'ECharts',

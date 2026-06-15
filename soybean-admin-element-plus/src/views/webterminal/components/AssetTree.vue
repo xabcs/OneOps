@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch, nextTick } from 'vue';
-import { ElButton, ElMessage, ElTooltip, ElTree, ElInput } from 'element-plus';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { ElButton, ElInput, ElMessage, ElTooltip, ElTree } from 'element-plus';
 import { Icon } from '@iconify/vue';
 import { fetchGetAssetTree } from '@/service/api';
 
@@ -281,7 +281,7 @@ function getNodeIcon(node: TreeNode): string {
 }
 
 // 监听搜索关键词变化，自动展开
-watch(searchKeyword, (newVal) => {
+watch(searchKeyword, newVal => {
   if (newVal && !searchExpanded.value) {
     searchExpanded.value = true;
   }
@@ -304,7 +304,7 @@ onUnmounted(() => {
     <!-- 侧边栏头部 -->
     <div class="wb-sidebar-header">
       <div class="wb-header-left">
-        <transition name="wb-search-expand">
+        <Transition name="wb-search-expand">
           <span v-if="!searchExpanded" key="title" class="wb-sidebar-title">主机资产</span>
           <div v-else key="search" class="wb-search-container">
             <div class="wb-search-input-wrapper">
@@ -320,7 +320,7 @@ onUnmounted(() => {
               />
             </div>
           </div>
-        </transition>
+        </Transition>
       </div>
       <div class="wb-sidebar-actions">
         <ElTooltip v-if="!searchExpanded" content="搜索" placement="bottom">
@@ -330,7 +330,11 @@ onUnmounted(() => {
         </ElTooltip>
         <ElTooltip content="刷新" placement="bottom">
           <ElButton size="small" link @click="handleRefresh">
-            <Icon :icon="loading ? 'lucide:loader-2' : 'lucide:refresh-cw'" :class="{ 'wb-spinning': loading }" class="wb-icon" />
+            <Icon
+              :icon="loading ? 'lucide:loader-2' : 'lucide:refresh-cw'"
+              :class="{ 'wb-spinning': loading }"
+              class="wb-icon"
+            />
           </ElButton>
         </ElTooltip>
       </div>
@@ -358,10 +362,7 @@ onUnmounted(() => {
           >
             <Icon :icon="getNodeIcon(data)" class="wb-tree-node-icon" />
             <span class="wb-tree-node-label">{{ node.label }}</span>
-            <span
-              v-if="data.serverCount !== undefined && !data.isLeaf"
-              class="wb-tree-node-count"
-            >
+            <span v-if="data.serverCount !== undefined && !data.isLeaf" class="wb-tree-node-count">
               {{ data.serverCount }}
             </span>
             <span
@@ -398,12 +399,7 @@ onUnmounted(() => {
         }"
         @click="handleClickOutside"
       >
-        <div
-          v-for="item in contextMenuItems"
-          :key="item.label"
-          class="wb-dropdown-item"
-          @click.stop="item.action()"
-        >
+        <div v-for="item in contextMenuItems" :key="item.label" class="wb-dropdown-item" @click.stop="item.action()">
           <Icon :icon="item.icon" class="wb-dropdown-item-icon" />
           <span>{{ item.label }}</span>
         </div>

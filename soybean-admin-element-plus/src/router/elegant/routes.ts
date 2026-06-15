@@ -447,6 +447,26 @@ export const generatedRoutes: GeneratedRoute[] = [
     }
   },
   {
+    name: 'k8s',
+    path: '/k8s',
+    component: 'layout.base',
+    meta: {
+      title: 'k8s',
+      i18nKey: 'route.k8s'
+    },
+    children: [
+      {
+        name: 'k8s_clusters',
+        path: '/k8s/clusters',
+        component: 'view.k8s_clusters',
+        meta: {
+          title: 'k8s_clusters',
+          i18nKey: 'route.k8s_clusters'
+        }
+      }
+    ]
+  },
+  {
     name: 'login',
     path: '/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?',
     component: 'layout.base$view.login',

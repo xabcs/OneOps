@@ -3,7 +3,6 @@
  * 这些路由不会被Elegant Router自动生成或覆盖
  */
 import type { RouteRecordRaw } from 'vue-router';
-
 import BaseLayout from '@/layouts/base-layout/index.vue';
 
 // 自定义视图组件导入
