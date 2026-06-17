@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
-	"os"
 	"oneops/backend/logger"
 	"oneops/backend/models"
 	"oneops/backend/utils"
+	"os"
 	"sync"
 	"time"
 
@@ -27,10 +27,10 @@ type K8sClientPool struct {
 
 // k8sClientHolder K8s客户端持有者
 type k8sClientHolder struct {
-	clientset  *kubernetes.Clientset
-	config     *rest.Config
-	cluster    *models.K8sCluster
-	lastUsed   time.Time
+	clientset    *kubernetes.Clientset
+	config       *rest.Config
+	cluster      *models.K8sCluster
+	lastUsed     time.Time
 	healthStatus string // "healthy", "unhealthy", "unknown"
 }
 
@@ -56,19 +56,42 @@ func (p *K8sClientPool) GetClient(clusterID uint) (*kubernetes.Clientset, *rest.
 	// 先尝试读缓存
 	p.mu.RLock()
 	holder, exists := p.clients[clusterKey]
+	isHealthy := exists && holder != nil && holder.healthStatus == "healthy"
 	p.mu.RUnlock()
 
+	if isHealthy {
+		// 更新 lastUsed 需要加写锁
+		p.mu.Lock()
+		if holder != nil {
+			holder.lastUsed = time.Now()
+		}
+		p.mu.Unlock()
+		return holder.clientset, holder.config, nil
+	}
+
+	// 缓存未命中或连接不健康，创建新连接（需要加锁防止并发创建）
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	// 再次检查，因为可能有其他 goroutine 已经创建了连接
+	holder, exists = p.clients[clusterKey]
 	if exists && holder != nil && holder.healthStatus == "healthy" {
 		holder.lastUsed = time.Now()
 		return holder.clientset, holder.config, nil
 	}
 
-	// 缓存未命中或连接不健康，创建新连接
-	return p.createClient(clusterID)
+	return p.createClientLocked(clusterID)
 }
 
-// createClient 创建新的K8s客户端连接
+// createClient 创建新的K8s客户端连接（公共方法，带锁）
 func (p *K8sClientPool) createClient(clusterID uint) (*kubernetes.Clientset, *rest.Config, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return p.createClientLocked(clusterID)
+}
+
+// createClientLocked 创建新的K8s客户端连接（内部方法，假设已持有锁）
+func (p *K8sClientPool) createClientLocked(clusterID uint) (*kubernetes.Clientset, *rest.Config, error) {
 	// 从数据库获取集群信息
 	var cluster models.K8sCluster
 	if err := db.Where("id = ? AND status = 1", clusterID).First(&cluster).Error; err != nil {
@@ -100,6 +123,9 @@ func (p *K8sClientPool) createClient(clusterID uint) (*kubernetes.Clientset, *re
 		return nil, nil, fmt.Errorf("加载kubeconfig失败: %w", err)
 	}
 
+	// 设置客户端超时时间
+	config.Timeout = 30 * time.Second
+
 	// 创建clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
@@ -124,9 +150,7 @@ func (p *K8sClientPool) createClient(clusterID uint) (*kubernetes.Clientset, *re
 	}
 
 	clusterKey := fmt.Sprintf("%d", clusterID)
-	p.mu.Lock()
 	p.clients[clusterKey] = holder
-	p.mu.Unlock()
 
 	logger.Info("K8s客户端连接成功",
 		zap.Uint("cluster_id", clusterID),

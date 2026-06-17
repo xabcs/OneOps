@@ -77,5 +77,21 @@ SET @k8s_id = LAST_INSERT_ID();
 INSERT INTO menus (name, icon, path, permission, parent_id, sort, status, created_at, updated_at)
 VALUES ('集群管理', 'mdi:server-network', '/k8s/clusters', 'k8s:cluster:query', @k8s_id, 1, 1, NOW(), NOW());
 
+-- K8s管理子菜单：工作负载（Tab切换统一入口）
+INSERT INTO menus (name, icon, path, permission, parent_id, sort, status, created_at, updated_at)
+VALUES ('工作负载', 'mdi:cube-outline', '/k8s/workloads', 'k8s:workload:query', @k8s_id, 2, 1, NOW(), NOW());
+
+-- K8s管理子菜单：网络（Tab切换统一入口）
+INSERT INTO menus (name, icon, path, permission, parent_id, sort, status, created_at, updated_at)
+VALUES ('网络', 'mdi:network-outline', '/k8s/network', 'k8s:network:query', @k8s_id, 3, 1, NOW(), NOW());
+
+-- K8s管理子菜单：配置管理（Tab切换统一入口）
+INSERT INTO menus (name, icon, path, permission, parent_id, sort, status, created_at, updated_at)
+VALUES ('配置管理', 'mdi:cog', '/k8s/config', 'k8s:config:query', @k8s_id, 4, 1, NOW(), NOW());
+
+-- K8s管理子菜单：会话审计
+INSERT INTO menus (name, icon, path, permission, parent_id, sort, status, created_at, updated_at)
+VALUES ('会话审计', 'mdi:history', '/k8s/audit/sessions', 'k8s:session:query', @k8s_id, 7, 1, NOW(), NOW());
+
 -- 验证插入结果
 SELECT id, name, path, parent_id, sort FROM menus ORDER BY sort;

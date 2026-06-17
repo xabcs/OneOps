@@ -4,6 +4,7 @@ import { $t } from '@/locales';
 import DarkMode from './modules/dark-mode.vue';
 import LayoutMode from './modules/layout-mode.vue';
 import ThemeColor from './modules/theme-color.vue';
+import BorderRadius from './modules/border-radius.vue';
 import PageFun from './modules/page-fun.vue';
 import ConfigOperation from './modules/config-operation.vue';
 
@@ -17,6 +18,7 @@ const appStore = useAppStore();
     <DarkMode />
     <LayoutMode />
     <ThemeColor />
+    <BorderRadius />
     <PageFun />
     <template #footer>
       <ConfigOperation />

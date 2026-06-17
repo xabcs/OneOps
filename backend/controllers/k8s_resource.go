@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 	"oneops/backend/container"
+	"oneops/backend/dto"
 	"oneops/backend/utils"
 	"strconv"
 
@@ -30,14 +31,19 @@ func (ctrl *K8sResourceController) ListDeployments(c *gin.Context) {
 		return
 	}
 
-	// 解析参数
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	// 解析集群ID
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
 	}
 
-	namespace := c.DefaultQuery("namespace", "default")
+	// 绑定查询参数（复用项目标准方式）
+	var params dto.K8sResourceQueryParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		return
+	}
 
 	// 检查权限
 	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
@@ -46,14 +52,18 @@ func (ctrl *K8sResourceController) ListDeployments(c *gin.Context) {
 		return
 	}
 
-	// 获取列表
-	deployments, err := ctrl.container.K8sResourceService().ListDeployments(uint(clusterID), namespace)
+	// 获取分页数据
+	deployments, total, err := ctrl.container.K8sResourceService().ListDeployments(uint(clusterID), params.Namespace, params.Page, params.PageSize)
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Deployment 列表失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Deployment 列表失败: "+err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(deployments))
+	// 返回分页数据（使用项目标准格式）
+	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"list":  deployments,
+		"total": total,
+	}))
 }
 
 // GetDeployment 获取 Deployment 详情
@@ -64,7 +74,7 @@ func (ctrl *K8sResourceController) GetDeployment(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -89,6 +99,39 @@ func (ctrl *K8sResourceController) GetDeployment(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(deployment))
 }
 
+// GetDeploymentPods 获取 Deployment 管理的 Pods
+func (ctrl *K8sResourceController) GetDeploymentPods(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	namespace := c.Param("namespace")
+	name := c.Param("name")
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	pods, err := ctrl.container.K8sResourceService().GetDeploymentPods(uint(clusterID), namespace, name)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Deployment Pods 失败: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(pods))
+}
+
 // CreateDeploymentRequest 创建 Deployment 请求
 type CreateDeploymentRequest struct {
 	Namespace string                 `json:"namespace" binding:"required"`
@@ -103,7 +146,7 @@ func (ctrl *K8sResourceController) CreateDeployment(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -144,7 +187,7 @@ func (ctrl *K8sResourceController) UpdateDeployment(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -185,7 +228,7 @@ func (ctrl *K8sResourceController) DeleteDeployment(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -227,7 +270,7 @@ func (ctrl *K8sResourceController) ScaleDeployment(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -268,7 +311,7 @@ func (ctrl *K8sResourceController) RestartDeployment(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -305,7 +348,7 @@ func (ctrl *K8sResourceController) ListStatefulSets(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -337,7 +380,7 @@ func (ctrl *K8sResourceController) GetStatefulSet(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -372,7 +415,7 @@ func (ctrl *K8sResourceController) ListDaemonSets(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -404,7 +447,7 @@ func (ctrl *K8sResourceController) GetDaemonSet(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -439,13 +482,18 @@ func (ctrl *K8sResourceController) ListServices(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
 	}
 
-	namespace := c.DefaultQuery("namespace", "default")
+	// 绑定查询参数（复用项目标准方式）
+	var params dto.K8sResourceQueryParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		return
+	}
 
 	// 检查权限
 	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
@@ -454,13 +502,18 @@ func (ctrl *K8sResourceController) ListServices(c *gin.Context) {
 		return
 	}
 
-	services, err := ctrl.container.K8sResourceService().ListServices(uint(clusterID), namespace)
+	// 获取分页数据
+	services, total, err := ctrl.container.K8sResourceService().ListServices(uint(clusterID), params.Namespace, params.Page, params.PageSize)
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Service 列表失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Service 列表失败: "+err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(services))
+	// 返回分页数据（使用项目标准格式）
+	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"list":  services,
+		"total": total,
+	}))
 }
 
 // GetService 获取 Service 详情
@@ -471,7 +524,7 @@ func (ctrl *K8sResourceController) GetService(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -510,7 +563,7 @@ func (ctrl *K8sResourceController) CreateService(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -551,7 +604,7 @@ func (ctrl *K8sResourceController) UpdateService(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -592,7 +645,7 @@ func (ctrl *K8sResourceController) DeleteService(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -629,14 +682,18 @@ func (ctrl *K8sResourceController) ListPods(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
 	}
 
-	namespace := c.DefaultQuery("namespace", "default")
-	labelSelector := c.Query("labelSelector")
+	// 绑定查询参数（复用项目标准方式）
+	var params dto.K8sPodQueryParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		return
+	}
 
 	// 检查权限
 	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
@@ -645,13 +702,18 @@ func (ctrl *K8sResourceController) ListPods(c *gin.Context) {
 		return
 	}
 
-	pods, err := ctrl.container.K8sResourceService().ListPods(uint(clusterID), namespace, labelSelector)
+	// 获取分页数据
+	pods, total, err := ctrl.container.K8sResourceService().ListPods(uint(clusterID), params.Namespace, params.LabelSelector, params.Page, params.PageSize)
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Pod 列表失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Pod 列表失败: "+err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(pods))
+	// 返回分页数据（使用项目标准格式）
+	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"list":  pods,
+		"total": total,
+	}))
 }
 
 // GetPod 获取 Pod 详情
@@ -662,7 +724,7 @@ func (ctrl *K8sResourceController) GetPod(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -695,7 +757,7 @@ func (ctrl *K8sResourceController) GetPodLogs(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -745,7 +807,7 @@ func (ctrl *K8sResourceController) DeletePod(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -782,13 +844,18 @@ func (ctrl *K8sResourceController) ListConfigMaps(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
 	}
 
-	namespace := c.DefaultQuery("namespace", "default")
+	// 绑定查询参数（复用项目标准方式）
+	var params dto.K8sResourceQueryParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		return
+	}
 
 	// 检查权限
 	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
@@ -797,13 +864,18 @@ func (ctrl *K8sResourceController) ListConfigMaps(c *gin.Context) {
 		return
 	}
 
-	configMaps, err := ctrl.container.K8sResourceService().ListConfigMaps(uint(clusterID), namespace)
+	// 获取分页数据
+	configMaps, total, err := ctrl.container.K8sResourceService().ListConfigMaps(uint(clusterID), params.Namespace, params.Page, params.PageSize)
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取 ConfigMap 列表失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 ConfigMap 列表失败: "+err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(configMaps))
+	// 返回分页数据（使用项目标准格式）
+	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"list":  configMaps,
+		"total": total,
+	}))
 }
 
 // GetConfigMap 获取 ConfigMap 详情
@@ -814,7 +886,7 @@ func (ctrl *K8sResourceController) GetConfigMap(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -853,7 +925,7 @@ func (ctrl *K8sResourceController) CreateConfigMap(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -894,7 +966,7 @@ func (ctrl *K8sResourceController) UpdateConfigMap(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -935,7 +1007,7 @@ func (ctrl *K8sResourceController) DeleteConfigMap(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -972,13 +1044,18 @@ func (ctrl *K8sResourceController) ListSecrets(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
 	}
 
-	namespace := c.DefaultQuery("namespace", "default")
+	// 绑定查询参数（复用项目标准方式）
+	var params dto.K8sResourceQueryParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		return
+	}
 
 	// 检查权限
 	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
@@ -987,13 +1064,18 @@ func (ctrl *K8sResourceController) ListSecrets(c *gin.Context) {
 		return
 	}
 
-	secrets, err := ctrl.container.K8sResourceService().ListSecrets(uint(clusterID), namespace)
+	// 获取分页数据
+	secrets, total, err := ctrl.container.K8sResourceService().ListSecrets(uint(clusterID), params.Namespace, params.Page, params.PageSize)
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Secret 列表失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Secret 列表失败: "+err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(secrets))
+	// 返回分页数据（使用项目标准格式）
+	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"list":  secrets,
+		"total": total,
+	}))
 }
 
 // GetSecret 获取 Secret 详情
@@ -1004,7 +1086,7 @@ func (ctrl *K8sResourceController) GetSecret(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -1043,7 +1125,7 @@ func (ctrl *K8sResourceController) CreateSecret(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -1084,7 +1166,7 @@ func (ctrl *K8sResourceController) UpdateSecret(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -1125,7 +1207,7 @@ func (ctrl *K8sResourceController) DeleteSecret(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
@@ -1162,7 +1244,7 @@ func (ctrl *K8sResourceController) ListEvents(c *gin.Context) {
 		return
 	}
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return

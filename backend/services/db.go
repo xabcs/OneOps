@@ -47,9 +47,10 @@ func InitDB(cfg *config.DatabaseConfig) error {
 	}
 
 	// 设置连接池
-	sqlDB2.SetMaxIdleConns(10)
-	sqlDB2.SetMaxOpenConns(100)
+	sqlDB2.SetMaxIdleConns(cfg.MaxIdleConns)
+	sqlDB2.SetMaxOpenConns(cfg.MaxOpenConns)
 	sqlDB2.SetConnMaxLifetime(time.Hour)
+	sqlDB2.SetConnMaxIdleTime(30 * time.Minute) // 空闲连接最大存活时间
 
 	return nil
 }

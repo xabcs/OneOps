@@ -3,12 +3,15 @@ package controllers
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"oneops/backend/container"
+	"oneops/backend/logger"
 	"oneops/backend/services"
 	"oneops/backend/utils"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // AuthController 认证控制器
@@ -31,17 +34,35 @@ type LoginRequest struct {
 
 // Login 登录
 func (ctrl *AuthController) Login(c *gin.Context) {
+	startTime := time.Now()
+	logger.Debug("[登录调试] 登录请求开始",
+		zap.String("username", c.PostForm("username")),
+		zap.String("clientIP", c.ClientIP()))
+
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Debug("[登录调试] 参数验证失败", zap.Error(err))
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("用户名和密码不能为空"))
 		return
 	}
 
+	logger.Debug("[登录调试] 参数验证成功", zap.String("username", req.Username))
+
 	authService := ctrl.container.AuthService()
 	auditService := ctrl.container.AuditService()
 
+	logger.Debug("[登录调试] 开始调用authService.Login")
+	loginStart := time.Now()
+
 	token, user, err := authService.Login(req.Username, req.Password)
+
+	logger.Debug("[登录调试] authService.Login完成",
+		zap.Duration("耗时", time.Since(loginStart)),
+		zap.Error(err))
+
 	if err != nil {
+		logger.Debug("[登录调试] 登录失败", zap.Error(err))
+
 		// 记录登录失败日志
 		if logErr := auditService.LogLogin(
 			0, // 用户ID未知
@@ -65,12 +86,24 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 		return
 	}
 
+	logger.Debug("[登录调试] 登录成功，开始获取用户信息",
+		zap.Uint("userID", user.ID))
+
 	// 获取用户信息（包含权限和菜单）
+	userInfoStart := time.Now()
 	userInfo, err := authService.GetUserInfo(user.ID)
+
+	logger.Debug("[登录调试] authService.GetUserInfo完成",
+		zap.Duration("耗时", time.Since(userInfoStart)),
+		zap.Error(err))
+
 	if err != nil {
+		logger.Error("[登录调试] 获取用户信息失败", zap.Error(err))
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户信息失败"))
 		return
 	}
+
+	logger.Debug("[登录调试] 开始记录登录日志")
 
 	// 记录登录成功日志
 	if logErr := auditService.LogLogin(
@@ -87,11 +120,16 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 		log.Printf("记录登录成功日志出错: %v", logErr)
 	}
 
+	logger.Debug("[登录调试] 记录登录日志完成，准备返回响应")
+
 	// 构建响应数据
 	responseData := gin.H{
 		"token": token,
 		"user":  userInfo.ToMap(),
 	}
+
+	logger.Debug("[登录调试] 登录请求完成",
+		zap.Duration("总耗时", time.Since(startTime)))
 
 	c.JSON(http.StatusOK, utils.SuccessResponse(responseData, "登录成功"))
 }

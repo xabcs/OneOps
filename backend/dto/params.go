@@ -16,6 +16,21 @@ type ServerQueryParams struct {
 	Tags         string `form:"tags" binding:"omitempty"`
 }
 
+// K8sResourceQueryParams K8s资源查询参数（复用分页参数）
+type K8sResourceQueryParams struct {
+	Page       int    `form:"page" binding:"min=1"`
+	PageSize   int    `form:"pageSize" binding:"min=1,max=100"`
+	Namespace  string `form:"namespace" binding:"required,max=255"`
+}
+
+// K8sPodQueryParams K8s Pod查询参数（支持labelSelector）
+type K8sPodQueryParams struct {
+	Page          int    `form:"page" binding:"min=1"`
+	PageSize      int    `form:"pageSize" binding:"min=1,max=100"`
+	Namespace     string `form:"namespace" binding:"required,max=255"`
+	LabelSelector string `form:"labelSelector" binding:"omitempty"`
+}
+
 // ServerCreateParams 创建服务器参数
 type ServerCreateParams struct {
 	Hostname      string `json:"hostname" binding:"required,min=1,max=100,hostname"`

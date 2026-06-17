@@ -341,6 +341,7 @@ func SetupRoutes(r *gin.Engine) {
 					// Workloads - Deployments
 					k8s.GET("/clusters/:id/deployments", k8sResourceController.ListDeployments)
 					k8s.GET("/clusters/:id/deployments/:namespace/:name", k8sResourceController.GetDeployment)
+					k8s.GET("/clusters/:id/deployments/:namespace/:name/pods", k8sResourceController.GetDeploymentPods)
 					k8s.POST("/clusters/:id/deployments", k8sResourceController.CreateDeployment)
 					k8s.PUT("/clusters/:id/deployments", k8sResourceController.UpdateDeployment)
 					k8s.DELETE("/clusters/:id/deployments", k8sResourceController.DeleteDeployment)

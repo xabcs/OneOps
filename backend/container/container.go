@@ -44,7 +44,32 @@ func Initialize(db *gorm.DB) {
 		globalContainer = &ServiceContainer{
 			db: db,
 		}
+
+		// 预初始化常用服务，避免运行时懒加载导致的锁竞争
+		globalContainer.preloadCommonServices()
 	})
+}
+
+// preloadCommonServices 预加载常用服务
+func (c *ServiceContainer) preloadCommonServices() {
+	// 预初始化认证相关服务
+	c.authService = services.NewAuthService()
+	c.auditService = services.NewAuditService()
+	c.rbacService = services.NewRBACService()
+
+	// 预初始化K8s相关服务
+	c.k8sClientPool = services.NewK8sClientPool()
+	c.k8sIdentityService = services.NewK8sIdentityService(c.k8sClientPool)
+	c.k8sClusterService = services.NewK8sClusterService(c.k8sClientPool, c.k8sIdentityService)
+	c.k8sResourceService = services.NewK8sResourceService(c.k8sClientPool)
+
+	// 预初始化其他常用服务
+	c.cmdbService = services.NewCMDBService()
+	c.bastionService = services.NewBastionService()
+	c.attributeService = services.NewAttributeService()
+	c.monitoringService = services.NewMonitoringService()
+	c.agentService = services.NewAgentService()
+	c.alertRuleService = services.NewAlertRuleService()
 }
 
 // GetContainer 获取全局容器实例
@@ -263,7 +288,12 @@ func (c *ServiceContainer) K8sIdentityService() *services.K8sIdentityService {
 		return c.k8sIdentityService
 	}
 
-	c.k8sIdentityService = services.NewK8sIdentityService(c.K8sClientPool())
+	// 直接访问字段初始化K8sClientPool，避免在持锁时调用方法
+	if c.k8sClientPool == nil {
+		c.k8sClientPool = services.NewK8sClientPool()
+	}
+
+	c.k8sIdentityService = services.NewK8sIdentityService(c.k8sClientPool)
 	return c.k8sIdentityService
 }
 
@@ -309,7 +339,12 @@ func (c *ServiceContainer) K8sClusterService() *services.K8sClusterService {
 			return c.k8sResourceService
 		}
 
-		c.k8sResourceService = services.NewK8sResourceService(c.K8sClientPool())
+		// 直接访问字段初始化K8sClientPool，避免在持锁时调用方法
+		if c.k8sClientPool == nil {
+			c.k8sClientPool = services.NewK8sClientPool()
+		}
+
+		c.k8sResourceService = services.NewK8sResourceService(c.k8sClientPool)
 		return c.k8sResourceService
 	}
 

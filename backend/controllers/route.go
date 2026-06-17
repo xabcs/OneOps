@@ -140,9 +140,62 @@ func (c *RouteController) IsRouteExist(ctx *gin.Context) {
 		return
 	}
 
-	// 这里可以根据实际需求实现路由存在性检查
-	// 目前简单返回 true
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(true))
+	// 获取用户信息
+	userID, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	// 检查是否为管理员
+	rbacService := services.NewRBACService()
+	isSuper := rbacService.IsSuperAdmin(userID.(uint))
+	if isSuper {
+		// 管理员可以访问所有路由
+		ctx.JSON(http.StatusOK, utils.SuccessWithData(true))
+		return
+	}
+
+	// 获取用户权限列表
+	_, permissions, err := rbacService.BuildMenuTreeAndPermissions(userID.(uint))
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("获取用户权限失败: " + err.Error()))
+		return
+	}
+
+	// 检查路由是否在用户权限中
+	// 对于详情页，检查其父路由权限
+	parentRoute := ""
+	switch routeName {
+	case "k8s_deployment_detail", "k8s_deployment_detail_view":
+		parentRoute = "k8s_workload_query"
+	case "cmdb_server_detail", "cmdb_server_detail_view":
+		parentRoute = "cmdb:server:query"
+	case "monitoring_servers_detail", "monitoring_servers_detail_view":
+		parentRoute = "monitoring:server:query"
+	default:
+		// 对于其他路由，检查是否直接拥有权限
+		for _, perm := range permissions {
+			if perm == routeName {
+				ctx.JSON(http.StatusOK, utils.SuccessWithData(true))
+				return
+			}
+		}
+		ctx.JSON(http.StatusOK, utils.SuccessWithData(false))
+		return
+	}
+
+	// 检查父路由权限
+	if parentRoute != "" {
+		for _, perm := range permissions {
+			if perm == parentRoute {
+				ctx.JSON(http.StatusOK, utils.SuccessWithData(true))
+				return
+			}
+		}
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(false))
 }
 
 // InvalidateCache 清除RBAC缓存

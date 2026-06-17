@@ -4,3 +4,4 @@ export * from './system-manage';
 export * from './audit';
 export * from './cmdb';
 export * from './monitoring';
+export * from './k8s';

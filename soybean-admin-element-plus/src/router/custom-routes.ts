@@ -8,6 +8,10 @@ import BaseLayout from '@/layouts/base-layout/index.vue';
 // 自定义视图组件导入
 const CMDBServerDetail = () => import('@/views/cmdb/server/detail.vue');
 const MonitoringServersDetail = () => import('@/views/monitoring/servers/detail/index.vue');
+const K8sDeploymentDetail = () => import('@/views/k8s/resources/deployments/detail.vue');
+const K8sWorkloads = () => import('@/views/k8s/workloads/index.vue');
+const K8sNetwork = () => import('@/views/k8s/network/index.vue');
+const K8sConfig = () => import('@/views/k8s/config/index.vue');
 
 /**
  * 自定义路由列表
@@ -47,6 +51,78 @@ export const customRoutes: RouteRecordRaw[] = [
         name: 'monitoring_servers_detail_view',
         path: '',
         component: MonitoringServersDetail
+      }
+    ]
+  },
+  {
+    name: 'k8s_deployment_detail',
+    path: '/k8s/resources/deployments/detail',
+    component: BaseLayout,
+    meta: {
+      title: 'Deployment详情',
+      i18nKey: null,
+      hideInMenu: true,
+      activeMenu: 'k8s_workloads'
+    },
+    children: [
+      {
+        name: 'k8s_deployment_detail_view',
+        path: '',
+        component: K8sDeploymentDetail
+      }
+    ]
+  },
+  {
+    name: 'k8s_workloads',
+    path: '/k8s/workloads',
+    component: BaseLayout,
+    meta: {
+      title: '工作负载',
+      i18nKey: null,
+      hideInMenu: false,
+      activeMenu: 'k8s_workloads'
+    },
+    children: [
+      {
+        name: 'k8s_workloads_view',
+        path: '',
+        component: K8sWorkloads
+      }
+    ]
+  },
+  {
+    name: 'k8s_network',
+    path: '/k8s/network',
+    component: BaseLayout,
+    meta: {
+      title: '网络',
+      i18nKey: null,
+      hideInMenu: false,
+      activeMenu: 'k8s_network'
+    },
+    children: [
+      {
+        name: 'k8s_network_view',
+        path: '',
+        component: K8sNetwork
+      }
+    ]
+  },
+  {
+    name: 'k8s_config',
+    path: '/k8s/config',
+    component: BaseLayout,
+    meta: {
+      title: '配置管理',
+      i18nKey: null,
+      hideInMenu: false,
+      activeMenu: 'k8s_config'
+    },
+    children: [
+      {
+        name: 'k8s_config_view',
+        path: '',
+        component: K8sConfig
       }
     ]
   }

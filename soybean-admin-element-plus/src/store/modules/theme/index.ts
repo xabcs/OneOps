@@ -49,7 +49,12 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
   });
 
   /** UI theme */
-  const uiTheme = computed(() => getNaiveTheme(themeColors.value, settings.value.recommendColor));
+  const uiTheme = computed(() => {
+    const borderRadius = settings.value.borderRadius.unified
+      ? settings.value.borderRadius.global
+      : settings.value.borderRadius.medium;
+    return getNaiveTheme(themeColors.value, settings.value.recommendColor, borderRadius);
+  });
 
   /**
    * Settings json
@@ -136,12 +141,15 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
 
   /** Setup theme vars to global */
   function setupThemeVarsToGlobal() {
+    console.log('[ThemeStore] setupThemeVarsToGlobal called, borderRadius:', settings.value.borderRadius);
     const { themeTokens, darkThemeTokens } = createThemeToken(
       themeColors.value,
       settings.value.tokens,
       settings.value.recommendColor
     );
-    addThemeVarsToGlobal(themeTokens, darkThemeTokens);
+    console.log('[ThemeStore] themeTokens:', themeTokens);
+    addThemeVarsToGlobal(themeTokens, darkThemeTokens, settings.value.borderRadius);
+    console.log('[ThemeStore] addThemeVarsToGlobal completed');
   }
   /**
    * Set layout reverse horizontal mix
@@ -150,6 +158,29 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
    */
   function setLayoutReverseHorizontalMix(reverse: boolean) {
     settings.value.layout.reverseHorizontalMix = reverse;
+  }
+
+  /**
+   * Set border radius
+   *
+   * @param key Border radius key
+   * @param value Border radius value
+   */
+  function setBorderRadius<K extends keyof App.Theme.ThemeSetting['borderRadius']>(key: K, value: App.Theme.ThemeSetting['borderRadius'][K]) {
+    (settings.value.borderRadius as any)[key] = value;
+  }
+
+  /**
+   * Set component border radius
+   *
+   * @param component Component name
+   * @param value Border radius value
+   */
+  function setComponentBorderRadius<K extends keyof App.Theme.ThemeSetting['borderRadius']['components']>(
+    component: K,
+    value: App.Theme.ThemeSetting['borderRadius']['components'][K]
+  ) {
+    settings.value.borderRadius.components[component] = value;
   }
 
   /** Cache theme settings */
@@ -196,6 +227,17 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
       { immediate: true }
     );
 
+    // watch border radius change
+    watch(
+      () => settings.value.borderRadius,
+      (newVal) => {
+        console.log('[ThemeStore] borderRadius changed:', newVal);
+        setupThemeVarsToGlobal();
+        console.log('[ThemeStore] setupThemeVarsToGlobal called');
+      },
+      { deep: true }
+    );
+
     // cache theme settings when settings change
     watch(
       settings,
@@ -224,6 +266,8 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     toggleThemeScheme,
     updateThemeColors,
     setThemeLayout,
-    setLayoutReverseHorizontalMix
+    setLayoutReverseHorizontalMix,
+    setBorderRadius,
+    setComponentBorderRadius
   };
 });

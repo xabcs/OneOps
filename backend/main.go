@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"time"
 
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"oneops/backend/config"
 	"oneops/backend/container"
 	"oneops/backend/dto"
@@ -14,6 +14,9 @@ import (
 	"oneops/backend/routes"
 	"oneops/backend/services"
 	"oneops/backend/utils"
+
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -69,6 +72,7 @@ func main() {
 	}
 
 	// 初始化服务容器（依赖数据库连接）
+	logger.Info("开始初始化服务容器")
 	container.Initialize(services.GetDB())
 	logger.Info("服务容器初始化成功")
 
@@ -109,12 +113,24 @@ func main() {
 
 	// 启动服务器
 	addr := cfg.Server.GetServerAddr()
+
+	// 创建 HTTP 服务器并配置超时
+	srv := &http.Server{
+		Addr:         addr,
+		Handler:      r,
+		ReadTimeout:  time.Duration(cfg.Server.ReadTimeout) * time.Second,
+		WriteTimeout: time.Duration(cfg.Server.WriteTimeout) * time.Second,
+		IdleTimeout:  120 * time.Second, // 空闲连接超时
+	}
+
 	logger.Info("服务器启动成功",
 		zap.String("port", cfg.Server.Port),
 		zap.String("address", fmt.Sprintf("http://localhost:%s", cfg.Server.Port)),
+		zap.Int("read_timeout", cfg.Server.ReadTimeout),
+		zap.Int("write_timeout", cfg.Server.WriteTimeout),
 	)
 
-	if err := r.Run(addr); err != nil {
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		logger.Fatal("服务器启动失败", zap.Error(err))
 	}
 

@@ -463,6 +463,88 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'k8s_clusters',
           i18nKey: 'route.k8s_clusters'
         }
+      },
+      {
+        name: 'k8s_config',
+        path: '/k8s/config',
+        component: 'view.k8s_config',
+        meta: {
+          title: 'k8s_config',
+          i18nKey: 'route.k8s_config'
+        }
+      },
+      {
+        name: 'k8s_network',
+        path: '/k8s/network',
+        component: 'view.k8s_network',
+        meta: {
+          title: 'k8s_network',
+          i18nKey: 'route.k8s_network'
+        }
+      },
+      {
+        name: 'k8s_resources',
+        path: '/k8s/resources',
+        meta: {
+          title: 'k8s_resources',
+          i18nKey: 'route.k8s_resources'
+        },
+        children: [
+          {
+            name: 'k8s_resources_configmaps',
+            path: '/k8s/resources/configmaps',
+            component: 'view.k8s_resources_configmaps',
+            meta: {
+              title: 'k8s_resources_configmaps',
+              i18nKey: 'route.k8s_resources_configmaps'
+            }
+          },
+          {
+            name: 'k8s_resources_deployments',
+            path: '/k8s/resources/deployments',
+            component: 'view.k8s_resources_deployments',
+            meta: {
+              title: 'k8s_resources_deployments',
+              i18nKey: 'route.k8s_resources_deployments'
+            }
+          },
+          {
+            name: 'k8s_resources_pods',
+            path: '/k8s/resources/pods',
+            component: 'view.k8s_resources_pods',
+            meta: {
+              title: 'k8s_resources_pods',
+              i18nKey: 'route.k8s_resources_pods'
+            }
+          },
+          {
+            name: 'k8s_resources_secrets',
+            path: '/k8s/resources/secrets',
+            component: 'view.k8s_resources_secrets',
+            meta: {
+              title: 'k8s_resources_secrets',
+              i18nKey: 'route.k8s_resources_secrets'
+            }
+          },
+          {
+            name: 'k8s_resources_services',
+            path: '/k8s/resources/services',
+            component: 'view.k8s_resources_services',
+            meta: {
+              title: 'k8s_resources_services',
+              i18nKey: 'route.k8s_resources_services'
+            }
+          }
+        ]
+      },
+      {
+        name: 'k8s_workloads',
+        path: '/k8s/workloads',
+        component: 'view.k8s_workloads',
+        meta: {
+          title: 'k8s_workloads',
+          i18nKey: 'route.k8s_workloads'
+        }
       }
     ]
   },

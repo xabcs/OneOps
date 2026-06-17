@@ -30,5 +30,10 @@ export const themeVars: App.Theme.ThemeTokenCSSVars = {
     header: 'var(--header-box-shadow)',
     sider: 'var(--sider-box-shadow)',
     tab: 'var(--tab-box-shadow)'
+  },
+  borderRadius: {
+    small: 'var(--border-radius-small)',
+    medium: 'var(--border-radius-medium)',
+    large: 'var(--border-radius-large)'
   }
 };

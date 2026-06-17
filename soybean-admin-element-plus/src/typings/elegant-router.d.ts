@@ -82,6 +82,15 @@ declare module "@elegant-router/types" {
     "iframe-page": "/iframe-page/:url";
     "k8s": "/k8s";
     "k8s_clusters": "/k8s/clusters";
+    "k8s_config": "/k8s/config";
+    "k8s_network": "/k8s/network";
+    "k8s_resources": "/k8s/resources";
+    "k8s_resources_configmaps": "/k8s/resources/configmaps";
+    "k8s_resources_deployments": "/k8s/resources/deployments";
+    "k8s_resources_pods": "/k8s/resources/pods";
+    "k8s_resources_secrets": "/k8s/resources/secrets";
+    "k8s_resources_services": "/k8s/resources/services";
+    "k8s_workloads": "/k8s/workloads";
     "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?";
     "manage": "/manage";
     "manage_menu": "/manage/menu";
@@ -255,6 +264,14 @@ declare module "@elegant-router/types" {
     | "function_toggle-auth"
     | "home"
     | "k8s_clusters"
+    | "k8s_config"
+    | "k8s_network"
+    | "k8s_resources_configmaps"
+    | "k8s_resources_deployments"
+    | "k8s_resources_pods"
+    | "k8s_resources_secrets"
+    | "k8s_resources_services"
+    | "k8s_workloads"
     | "manage_menu"
     | "manage_role"
     | "manage_user-detail"

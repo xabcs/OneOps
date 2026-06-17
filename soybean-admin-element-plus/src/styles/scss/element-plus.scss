@@ -1,4 +1,4 @@
-$radius: 6px;
+$radius: var(--border-radius-medium, 6px);
 
 html:root,
 html.dark:root {
@@ -45,7 +45,7 @@ html.dark:root,
 }
 .el-popper {
   border: none;
-  border-radius: $radius;
+  border-radius: var(--border-radius-medium, 6px);
 }
 .el-menu {
   border-right: none;
@@ -69,7 +69,7 @@ html.dark:root,
       right: 8px;
       top: 0;
       bottom: 0;
-      border-radius: $radius;
+      border-radius: var(--border-radius-medium, 6px);
       pointer-events: none;
       background-color: var(--el-menu-item-hover-fill);
     }
@@ -154,7 +154,7 @@ html .el-collapse {
 
 .el-tabs {
   &.segment {
-    border-radius: $radius;
+    border-radius: var(--border-radius-medium, 6px);
     border: none;
     padding: 4px;
     background-color: var(--el-fill-color-light);
@@ -167,7 +167,7 @@ html .el-collapse {
       .el-tabs__item {
         border: none;
         padding: 0 24px;
-        border-radius: $radius;
+        border-radius: var(--border-radius-medium, 6px);
       }
     }
   }
@@ -179,12 +179,12 @@ html .el-collapse {
 
 .el-segmented {
   padding: 5px;
-  border-radius: $radius;
+  border-radius: var(--border-radius-medium, 6px);
   .el-segmented__item {
-    border-radius: $radius;
+    border-radius: var(--border-radius-medium, 6px);
     padding: 4px 20px;
   }
   .el-segmented__item-selected {
-    border-radius: $radius;
+    border-radius: var(--border-radius-medium, 6px);
   }
 }

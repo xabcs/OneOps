@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref } from 'vue';
-import { NButton, useMessage } from 'naive-ui';
+import { ElButton, ElMessage } from 'element-plus';
 import { useAuthStore } from '@/store/modules/auth';
 
 interface Props {
@@ -12,7 +12,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const message = useMessage();
+const message = ElMessage;
 const authStore = useAuthStore();
 
 const terminalRef = ref<HTMLElement | null>(null);
@@ -128,7 +128,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
         </span>
       </div>
       <div class="flex items-center space-x-2">
-        <NButton size="small" @click="handleDisconnect">断开连接</NButton>
+        <el-button size="small" @click="handleDisconnect">断开连接</el-button>
       </div>
     </div>
     <div ref="terminalRef" class="flex-1 overflow-auto bg-black p-2 text-sm font-mono">

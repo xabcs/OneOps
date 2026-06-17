@@ -114,6 +114,42 @@ declare namespace App {
         /** Whether to use user name as watermark text */
         enableUserName: boolean;
       };
+      /** Border radius settings */
+      borderRadius: {
+        /** Whether to use component-specific border radius */
+        useComponentSpecific: boolean;
+        /** Small components border radius: buttons, inputs, selects, etc. */
+        small: string;
+        /** Medium components border radius: menu items, tabs, popups, etc. */
+        medium: string;
+        /** Large containers border radius: cards, panels, etc. */
+        large: string;
+        /** Component-specific border radius values */
+        components: {
+          /** Button border radius */
+          button: string;
+          /** Input border radius */
+          input: string;
+          /** Select border radius */
+          select: string;
+          /** Card border radius */
+          card: string;
+          /** Table border radius */
+          table: string;
+          /** Modal/Dialog border radius */
+          modal: string;
+          /** Tag border radius */
+          tag: string;
+          /** Switch border radius */
+          switch: string;
+          /** Checkbox border radius */
+          checkbox: string;
+          /** Radio border radius */
+          radio: string;
+          /** Menu border radius */
+          menu: string;
+        };
+      };
       /** define some theme settings tokens, will transform to css variables */
       tokens: {
         light: ThemeSettingToken;
@@ -157,9 +193,16 @@ declare namespace App {
       tab: string;
     }
 
+    interface ThemeSettingTokenBorderRadius {
+      small: string;
+      medium: string;
+      large: string;
+    }
+
     interface ThemeSettingToken {
       colors: ThemeSettingTokenColor;
       boxShadow: ThemeSettingTokenBoxShadow;
+      borderRadius: ThemeSettingTokenBorderRadius;
     }
 
     type ThemeTokenColor = ThemePaletteColor & ThemeSettingTokenColor;
@@ -168,6 +211,7 @@ declare namespace App {
     type ThemeTokenCSSVars = {
       colors: ThemeTokenColor & { [key: string]: string };
       boxShadow: ThemeSettingTokenBoxShadow & { [key: string]: string };
+      borderRadius: ThemeSettingTokenBorderRadius & { [key: string]: string };
     };
   }
 

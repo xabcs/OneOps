@@ -134,6 +134,16 @@ export namespace K8s {
     container: string;
     last_activity: string;
   }
+
+  export interface Event {
+    type: string;
+    reason: string;
+    message: string;
+    source: string;
+    count: number;
+    firstTimestamp: string;
+    lastTimestamp: string;
+  }
 }
 
 // ========== Cluster Management ==========
@@ -142,14 +152,15 @@ export namespace K8s {
  * 获取集群列表
  */
 export function fetchK8sClusters(params?: K8s.ClusterQuery) {
-  return request<K8s.Cluster[]>({
+  return request<{
+    data: K8s.Cluster[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }>({
     url: '/k8s/clusters',
     method: 'get',
-    params,
-    transform: (response: any) => {
-      // 返回完整的响应对象，包含 data 和 total
-      return response.data;
-    }
+    params
   });
 }
 
@@ -262,10 +273,18 @@ export function revokeK8sClusterRole(clusterId: number, userId: number) {
 // ========== Workloads - Deployments ==========
 
 /**
- * 获取 Deployment 列表
+ * 分页响应接口（项目标准格式）
  */
-export function fetchK8sDeployments(clusterId: number, params?: { namespace?: string }) {
-  return request<K8s.Deployment[]>({
+interface PaginatedResponse<T> {
+  list: T[];
+  total: number;
+}
+
+/**
+ * 获取 Deployment 列表（支持分页）
+ */
+export function fetchK8sDeployments(clusterId: number, params?: { namespace?: string; page?: number; pageSize?: number }) {
+  return request<PaginatedResponse<K8s.Deployment>>({
     url: `/k8s/clusters/${clusterId}/deployments`,
     method: 'get',
     params
@@ -278,6 +297,16 @@ export function fetchK8sDeployments(clusterId: number, params?: { namespace?: st
 export function getK8sDeployment(clusterId: number, namespace: string, name: string) {
   return request<K8s.Deployment & { manifest: string; images: string[] }>({
     url: `/k8s/clusters/${clusterId}/deployments/${namespace}/${name}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 获取 Deployment 管理的 Pods
+ */
+export function getK8sDeploymentPods(clusterId: number, namespace: string, name: string) {
+  return request<K8s.Pod[]>({
+    url: `/k8s/clusters/${clusterId}/deployments/${namespace}/${name}/pods`,
     method: 'get'
   });
 }
@@ -340,10 +369,10 @@ export function restartK8sDeployment(clusterId: number, data: { namespace: strin
 // ========== Pods ==========
 
 /**
- * 获取 Pod 列表
+ * 获取 Pod 列表（支持分页）
  */
-export function fetchK8sPods(clusterId: number, params?: { namespace?: string; labelSelector?: string }) {
-  return request<K8s.Pod[]>({
+export function fetchK8sPods(clusterId: number, params?: { namespace?: string; labelSelector?: string; page?: number; pageSize?: number }) {
+  return request<PaginatedResponse<K8s.Pod>>({
     url: `/k8s/clusters/${clusterId}/pods`,
     method: 'get',
     params
@@ -390,10 +419,10 @@ export function deleteK8sPod(clusterId: number, data: { namespace: string; name:
 // ========== Services ==========
 
 /**
- * 获取 Service 列表
+ * 获取 Service 列表（支持分页）
  */
-export function fetchK8sServices(clusterId: number, params?: { namespace?: string }) {
-  return request<K8s.Service[]>({
+export function fetchK8sServices(clusterId: number, params?: { namespace?: string; page?: number; pageSize?: number }) {
+  return request<PaginatedResponse<K8s.Service>>({
     url: `/k8s/clusters/${clusterId}/services`,
     method: 'get',
     params
@@ -413,10 +442,10 @@ export function getK8sService(clusterId: number, namespace: string, name: string
 // ========== ConfigMaps ==========
 
 /**
- * 获取 ConfigMap 列表
+ * 获取 ConfigMap 列表（支持分页）
  */
-export function fetchK8sConfigMaps(clusterId: number, params?: { namespace?: string }) {
-  return request<K8s.ConfigMap[]>({
+export function fetchK8sConfigMaps(clusterId: number, params?: { namespace?: string; page?: number; pageSize?: number }) {
+  return request<PaginatedResponse<K8s.ConfigMap>>({
     url: `/k8s/clusters/${clusterId}/configmaps`,
     method: 'get',
     params
@@ -436,10 +465,10 @@ export function getK8sConfigMap(clusterId: number, namespace: string, name: stri
 // ========== Secrets ==========
 
 /**
- * 获取 Secret 列表
+ * 获取 Secret 列表（支持分页）
  */
-export function fetchK8sSecrets(clusterId: number, params?: { namespace?: string }) {
-  return request<K8s.Secret[]>({
+export function fetchK8sSecrets(clusterId: number, params?: { namespace?: string; page?: number; pageSize?: number }) {
+  return request<PaginatedResponse<K8s.Secret>>({
     url: `/k8s/clusters/${clusterId}/secrets`,
     method: 'get',
     params
@@ -453,6 +482,19 @@ export function getK8sSecret(clusterId: number, namespace: string, name: string)
   return request<K8s.Secret & { manifest: string; data: Record<string, string> }>({
     url: `/k8s/clusters/${clusterId}/secrets/${namespace}/${name}`,
     method: 'get'
+  });
+}
+
+// ========== Events ==========
+
+/**
+ * 获取 Event 列表
+ */
+export function fetchK8sEvents(clusterId: number, namespace?: string, fieldSelector?: string) {
+  return request<K8s.Event[]>({
+    url: `/k8s/clusters/${clusterId}/events`,
+    method: 'get',
+    params: { namespace, fieldSelector }
   });
 }
 

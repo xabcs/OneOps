@@ -3,9 +3,13 @@ package services
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"oneops/backend/models"
 	"strings"
 	"time"
+
+	"oneops/backend/logger"
+	"oneops/backend/models"
+
+	"go.uber.org/zap"
 )
 
 // RBACService 权限服务
@@ -44,15 +48,28 @@ func (s *RBACService) GetUserRoles(userID uint) ([]*models.Role, error) {
 
 // BuildMenuTreeAndPermissions 构建菜单树和权限列表，同时返回角色（避免调用方重复查询）
 func (s *RBACService) BuildMenuTreeAndPermissions(userID uint) ([]*models.Menu, []string, []*models.Role, error) {
+	startTime := time.Now()
+	logger.Debug("[登录调试-RBAC] BuildMenuTreeAndPermissions开始", zap.Uint("userID", userID))
+
 	// 先查缓存
+	logger.Debug("[登录调试-RBAC] 检查缓存")
 	rbacCache.mu.RLock()
 	if entry, ok := rbacCache.entries[userID]; ok && time.Now().Before(entry.expireAt) {
 		rbacCache.mu.RUnlock()
+		logger.Debug("[登录调试-RBAC] 命中缓存，直接返回")
 		return entry.menuTree, entry.permissions, entry.roles, nil
 	}
 	rbacCache.mu.RUnlock()
+	logger.Debug("[登录调试-RBAC] 缓存未命中，开始查询")
 
+	logger.Debug("[登录调试-RBAC] 开始获取用户角色")
+	roleStart := time.Now()
 	roles, err := s.GetUserRoles(userID)
+	logger.Debug("[登录调试-RBAC] 用户角色获取完成",
+		zap.Duration("耗时", time.Since(roleStart)),
+		zap.Error(err),
+		zap.Int("角色数量", len(roles)))
+
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -74,9 +91,16 @@ func (s *RBACService) BuildMenuTreeAndPermissions(userID uint) ([]*models.Menu, 
 		}
 	}
 
+	logger.Debug("[登录调试-RBAC] 开始查询所有菜单")
+	menuStart := time.Now()
 	// 获取所有菜单
 	var allMenus []*models.Menu
 	err = db.Where("status = 1").Order("sort ASC").Find(&allMenus).Error
+	logger.Debug("[登录调试-RBAC] 所有菜单查询完成",
+		zap.Duration("耗时", time.Since(menuStart)),
+		zap.Error(err),
+		zap.Int("菜单总数", len(allMenus)))
+
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -89,8 +113,13 @@ func (s *RBACService) BuildMenuTreeAndPermissions(userID uint) ([]*models.Menu, 
 		}
 	}
 
+	logger.Debug("[登录调试-RBAC] 开始构建菜单树")
+	treeStart := time.Now()
 	// 构建菜单树
 	menuTree := s.buildMenuTree(allMenus, menuIDs, 0)
+	logger.Debug("[登录调试-RBAC] 菜单树构建完成",
+		zap.Duration("耗时", time.Since(treeStart)),
+		zap.Int("菜单树节点数", len(menuTree)))
 
 	// 提取权限列表
 	permissions := s.extractPermissions(menuTree)
@@ -98,6 +127,7 @@ func (s *RBACService) BuildMenuTreeAndPermissions(userID uint) ([]*models.Menu, 
 		permissions = append(permissions, "*:*:*")
 	}
 
+	logger.Debug("[登录调试-RBAC] 开始写入缓存")
 	// 写入缓存
 	rbacCache.mu.Lock()
 	rbacCache.entries[userID] = &rbacCacheEntry{
@@ -107,6 +137,12 @@ func (s *RBACService) BuildMenuTreeAndPermissions(userID uint) ([]*models.Menu, 
 		expireAt:    time.Now().Add(rbacCacheTTL),
 	}
 	rbacCache.mu.Unlock()
+	logger.Debug("[登录调试-RBAC] 缓存写入完成")
+
+	logger.Debug("[登录调试-RBAC] BuildMenuTreeAndPermissions完成",
+		zap.Duration("总耗时", time.Since(startTime)),
+		zap.Bool("是管理员", isAdmin),
+		zap.Int("权限数量", len(permissions)))
 
 	return menuTree, permissions, roles, nil
 }

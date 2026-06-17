@@ -11,7 +11,11 @@ export function initThemeSettings() {
   const isProd = import.meta.env.MODE === 'prod';
 
   // if it is development mode, the theme settings will not be cached, by update `themeSettings` in `src/theme/settings.ts` to update theme settings
-  if (!isProd) return themeSettings;
+  if (!isProd) {
+    // 调试：打印初始化的设置
+    console.log('[ThemeInit] themeSettings.borderRadius:', themeSettings.borderRadius);
+    return themeSettings;
+  }
 
   // if it is production mode, the theme settings will be cached in localStorage
   // if want to update theme settings when publish new version, please update `overrideThemeSettings` in `src/theme/settings.ts`
@@ -54,6 +58,9 @@ export function createThemeToken(
     },
     boxShadow: {
       ...light.boxShadow
+    },
+    borderRadius: {
+      ...light.borderRadius
     }
   };
 
@@ -65,6 +72,10 @@ export function createThemeToken(
     boxShadow: {
       ...themeTokens.boxShadow,
       ...dark?.boxShadow
+    },
+    borderRadius: {
+      ...themeTokens.borderRadius,
+      ...dark?.borderRadius
     }
   };
 
@@ -134,15 +145,76 @@ function getCssVarByTokens(tokens: App.Theme.BaseToken) {
 }
 
 /**
+ * Get border radius CSS vars
+ *
+ * @param borderRadius Border radius settings
+ */
+export function getBorderRadiusCssVars(borderRadius: App.Theme.ThemeSetting['borderRadius']) {
+  const { useComponentSpecific, small, medium, large, components } = borderRadius;
+
+  if (useComponentSpecific) {
+    // 使用组件级圆角
+    // 同时覆盖 Element Plus 的默认变量和自定义组件变量
+    return `
+      --border-radius-button: ${components.button};
+      --border-radius-input: ${components.input};
+      --border-radius-select: ${components.select};
+      --border-radius-card: ${components.card};
+      --border-radius-table: ${components.table};
+      --border-radius-modal: ${components.modal};
+      --border-radius-tag: ${components.tag};
+      --border-radius-switch: ${components.switch};
+      --border-radius-checkbox: ${components.checkbox};
+      --border-radius-radio: ${components.radio};
+      --border-radius-menu: ${components.menu};
+      --border-radius-small: ${small};
+      --border-radius-medium: ${medium};
+      --border-radius-large: ${large};
+      --el-border-radius-base: ${components.button};
+      --el-border-radius-small: ${components.input};
+      --el-border-radius-round: ${components.tag};
+      --el-border-radius-circle: ${components.radio};
+    `.replace(/\s+/g, ' ').trim();
+  }
+
+  // 使用统一分类圆角
+  return `
+    --border-radius-small: ${small};
+    --border-radius-medium: ${medium};
+    --border-radius-large: ${large};
+    --el-border-radius-base: ${medium};
+    --el-border-radius-small: ${small};
+    --border-radius-card: ${large};
+    --border-radius-modal: ${large};
+    --border-radius-table: ${medium};
+    --border-radius-menu: ${medium};
+    --border-radius-tag: ${medium};
+    --border-radius-switch: 12px;
+    --border-radius-checkbox: 4px;
+    --border-radius-radio: 50%;
+  `.replace(/\s+/g, ' ').trim();
+}
+
+/**
  * Add theme vars to global
  *
  * @param tokens
+ * @param borderRadius Border radius settings
  */
-export function addThemeVarsToGlobal(tokens: App.Theme.BaseToken, darkTokens: App.Theme.BaseToken) {
+export function addThemeVarsToGlobal(tokens: App.Theme.BaseToken, darkTokens: App.Theme.BaseToken, borderRadius?: App.Theme.ThemeSetting['borderRadius']) {
+  // 调试：入口日志
+  console.log('[ThemeVars] ========== addThemeVarsToGlobal called ==========');
+
   const cssVarStr = getCssVarByTokens(tokens);
   const darkCssVarStr = getCssVarByTokens(darkTokens);
+  const borderRadiusStr = borderRadius ? getBorderRadiusCssVars(borderRadius) : '';
 
-  const css = `:root { ${cssVarStr} }`;
+  // 调试：打印参数
+  console.log('[ThemeVars] borderRadius:', borderRadius);
+  console.log('[ThemeVars] borderRadiusStr:', borderRadiusStr);
+  console.log('[ThemeVars] full CSS:', cssVarStr + ' ' + borderRadiusStr);
+
+  const css = `:root { ${cssVarStr} ${borderRadiusStr} }`;
 
   const darkCss = `html.${DARK_CLASS} { ${darkCssVarStr} }`;
 
@@ -155,6 +227,8 @@ export function addThemeVarsToGlobal(tokens: App.Theme.BaseToken, darkTokens: Ap
   style.textContent = css + darkCss;
 
   document.head.appendChild(style);
+
+  console.log('[ThemeVars] ========== addThemeVarsToGlobal completed ==========');
 }
 
 /**
@@ -228,20 +302,21 @@ function getNaiveThemeColors(colors: App.Theme.ThemeColor, recommended = false) 
  *
  * @param colors Theme colors
  * @param [recommended=false] Use recommended color. Default is `false`
+ * @param [borderRadius='6px'] Border radius value. Default is `'6px'`
  */
-export function getNaiveTheme(colors: App.Theme.ThemeColor, recommended = false) {
+export function getNaiveTheme(colors: App.Theme.ThemeColor, recommended = false, borderRadius = '6px') {
   const { primary: colorLoading } = colors;
 
   const theme = {
     common: {
       ...getNaiveThemeColors(colors, recommended),
-      borderRadius: '6px'
+      borderRadius
     },
     LoadingBar: {
       colorLoading
     },
     Tag: {
-      borderRadius: '6px'
+      borderRadius
     }
   };
 

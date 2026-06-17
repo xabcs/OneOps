@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"oneops/backend/logger"
+	"strings"
+	"time"
 
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
@@ -27,27 +29,53 @@ func NewK8sResourceService(clientPool *K8sClientPool) *K8sResourceService {
 	}
 }
 
+// createContextWithTimeout 创建带超时的context
+func (s *K8sResourceService) createContextWithTimeout() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), 30*time.Second)
+}
+
 // ========== Workloads 管理 ==========
 
-// ListDeployments 获取 Deployment 列表
-func (s *K8sResourceService) ListDeployments(clusterID uint, namespace string) ([]map[string]interface{}, error) {
+// ListDeployments 获取 Deployment 列表（支持分页）
+func (s *K8sResourceService) ListDeployments(clusterID uint, namespace string, page, pageSize int) ([]map[string]interface{}, int64, error) {
 	clientset, _, err := s.clientPool.GetClient(clusterID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
+
 	list, err := clientset.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("获取 Deployment 列表失败: %w", err)
+		return nil, 0, fmt.Errorf("获取 Deployment 列表失败: %w", err)
 	}
 
-	result := make([]map[string]interface{}, len(list.Items))
-	for i, item := range list.Items {
+	total := int64(len(list.Items))
+
+	// 计算分页范围
+	start := (page - 1) * pageSize
+	end := start + pageSize
+
+	// 边界检查
+	if start < 0 {
+		start = 0
+	}
+	if start > len(list.Items) {
+		start = len(list.Items)
+	}
+	if end > len(list.Items) {
+		end = len(list.Items)
+	}
+
+	// 提取分页数据
+	items := list.Items[start:end]
+	result := make([]map[string]interface{}, len(items))
+	for i, item := range items {
 		result[i] = s.formatDeployment(&item)
 	}
 
-	return result, nil
+	return result, total, nil
 }
 
 // GetDeployment 获取 Deployment 详情
@@ -57,13 +85,60 @@ func (s *K8sResourceService) GetDeployment(clusterID uint, namespace, name strin
 		return nil, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	deployment, err := clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("获取 Deployment 详情失败: %w", err)
 	}
 
 	return s.formatDeploymentDetail(deployment), nil
+}
+
+// GetDeploymentPods 获取 Deployment 管理的 Pods
+func (s *K8sResourceService) GetDeploymentPods(clusterID uint, namespace, deploymentName string) ([]map[string]interface{}, error) {
+	clientset, _, err := s.clientPool.GetClient(clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	// 首先获取 Deployment，提取其 label selector
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
+
+	deployment, err := clientset.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("获取 Deployment 失败: %w", err)
+	}
+
+	// 构建 label selector
+	var labelSelector string
+	if len(deployment.Spec.Selector.MatchLabels) > 0 {
+		selectors := []string{}
+		for k, v := range deployment.Spec.Selector.MatchLabels {
+			selectors = append(selectors, fmt.Sprintf("%s=%s", k, v))
+		}
+		labelSelector = strings.Join(selectors, ",")
+	}
+
+	// 使用 label selector 查询 Pods
+	list, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("获取 Pod 列表失败: %w", err)
+	}
+
+	// 格式化 Pod 数据
+	result := make([]map[string]interface{}, len(list.Items))
+	for i, item := range list.Items {
+		podData := s.formatPod(&item)
+		// 添加是否属于当前 Deployment 的标记
+		podData["ownerDeployment"] = deploymentName
+		result[i] = podData
+	}
+
+	return result, nil
 }
 
 // CreateDeployment 创建 Deployment
@@ -93,7 +168,8 @@ func (s *K8sResourceService) CreateDeployment(clusterID uint, namespace string, 
 		uns.SetNamespace(namespace)
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	_, err = dynamicClient.Resource(gvr).Namespace(namespace).Create(ctx, uns, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("创建 Deployment 失败: %w", err)
@@ -133,7 +209,8 @@ gvr := schema.GroupVersionResource{
 	uns := &unstructured.Unstructured{}
 	uns.SetUnstructuredContent(manifest)
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	_, err = dynamicClient.Resource(gvr).Namespace(namespace).Update(ctx, uns, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("更新 Deployment 失败: %w", err)
@@ -154,7 +231,8 @@ func (s *K8sResourceService) DeleteDeployment(clusterID uint, namespace, name st
 		return err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	err = clientset.AppsV1().Deployments(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("删除 Deployment 失败: %w", err)
@@ -175,7 +253,8 @@ func (s *K8sResourceService) ScaleDeployment(clusterID uint, namespace, name str
 		return err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	deployment, err := clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("获取 Deployment 失败: %w", err)
@@ -203,7 +282,8 @@ func (s *K8sResourceService) RestartDeployment(clusterID uint, namespace, name s
 		return err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	deployment, err := clientset.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("获取 Deployment 失败: %w", err)
@@ -235,7 +315,8 @@ func (s *K8sResourceService) ListStatefulSets(clusterID uint, namespace string) 
 		return nil, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	list, err := clientset.AppsV1().StatefulSets(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("获取 StatefulSet 列表失败: %w", err)
@@ -256,7 +337,8 @@ func (s *K8sResourceService) GetStatefulSet(clusterID uint, namespace, name stri
 		return nil, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	sts, err := clientset.AppsV1().StatefulSets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("获取 StatefulSet 详情失败: %w", err)
@@ -272,7 +354,8 @@ func (s *K8sResourceService) ListDaemonSets(clusterID uint, namespace string) ([
 		return nil, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	list, err := clientset.AppsV1().DaemonSets(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("获取 DaemonSet 列表失败: %w", err)
@@ -293,7 +376,8 @@ func (s *K8sResourceService) GetDaemonSet(clusterID uint, namespace, name string
 		return nil, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	ds, err := clientset.AppsV1().DaemonSets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("获取 DaemonSet 详情失败: %w", err)
@@ -304,25 +388,45 @@ func (s *K8sResourceService) GetDaemonSet(clusterID uint, namespace, name string
 
 // ========== Services 管理 ==========
 
-// ListServices 获取 Service 列表
-func (s *K8sResourceService) ListServices(clusterID uint, namespace string) ([]map[string]interface{}, error) {
+// ListServices 获取 Service 列表（支持分页）
+func (s *K8sResourceService) ListServices(clusterID uint, namespace string, page, pageSize int) ([]map[string]interface{}, int64, error) {
 	clientset, _, err := s.clientPool.GetClient(clusterID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	list, err := clientset.CoreV1().Services(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("获取 Service 列表失败: %w", err)
+		return nil, 0, fmt.Errorf("获取 Service 列表失败: %w", err)
 	}
 
-	result := make([]map[string]interface{}, len(list.Items))
-	for i, item := range list.Items {
+	total := int64(len(list.Items))
+
+	// 计算分页范围
+	start := (page - 1) * pageSize
+	end := start + pageSize
+
+	// 边界检查
+	if start < 0 {
+		start = 0
+	}
+	if start > len(list.Items) {
+		start = len(list.Items)
+	}
+	if end > len(list.Items) {
+		end = len(list.Items)
+	}
+
+	// 提取分页数据
+	items := list.Items[start:end]
+	result := make([]map[string]interface{}, len(items))
+	for i, item := range items {
 		result[i] = s.formatService(&item)
 	}
 
-	return result, nil
+	return result, total, nil
 }
 
 // GetService 获取 Service 详情
@@ -332,7 +436,8 @@ func (s *K8sResourceService) GetService(clusterID uint, namespace, name string) 
 		return nil, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	svc, err := clientset.CoreV1().Services(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("获取 Service 详情失败: %w", err)
@@ -376,7 +481,8 @@ gvr := schema.GroupVersionResource{
 		uns.SetNamespace(namespace)
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	_, err = dynamicClient.Resource(gvr).Namespace(namespace).Create(ctx, uns, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("创建 Service 失败: %w", err)
@@ -416,7 +522,8 @@ gvr := schema.GroupVersionResource{
 	uns := &unstructured.Unstructured{}
 	uns.SetUnstructuredContent(manifest)
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	_, err = dynamicClient.Resource(gvr).Namespace(namespace).Update(ctx, uns, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("更新 Service 失败: %w", err)
@@ -437,7 +544,8 @@ func (s *K8sResourceService) DeleteService(clusterID uint, namespace, name strin
 		return err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	err = clientset.CoreV1().Services(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("删除 Service 失败: %w", err)
@@ -453,27 +561,47 @@ func (s *K8sResourceService) DeleteService(clusterID uint, namespace, name strin
 
 // ========== Pods 管理 ==========
 
-// ListPods 获取 Pod 列表
-func (s *K8sResourceService) ListPods(clusterID uint, namespace string, labelSelector string) ([]map[string]interface{}, error) {
+// ListPods 获取 Pod 列表（支持分页）
+func (s *K8sResourceService) ListPods(clusterID uint, namespace string, labelSelector string, page, pageSize int) ([]map[string]interface{}, int64, error) {
 	clientset, _, err := s.clientPool.GetClient(clusterID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	list, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("获取 Pod 列表失败: %w", err)
+		return nil, 0, fmt.Errorf("获取 Pod 列表失败: %w", err)
 	}
 
-	result := make([]map[string]interface{}, len(list.Items))
-	for i, item := range list.Items {
+	total := int64(len(list.Items))
+
+	// 计算分页范围
+	start := (page - 1) * pageSize
+	end := start + pageSize
+
+	// 边界检查
+	if start < 0 {
+		start = 0
+	}
+	if start > len(list.Items) {
+		start = len(list.Items)
+	}
+	if end > len(list.Items) {
+		end = len(list.Items)
+	}
+
+	// 提取分页数据
+	items := list.Items[start:end]
+	result := make([]map[string]interface{}, len(items))
+	for i, item := range items {
 		result[i] = s.formatPod(&item)
 	}
 
-	return result, nil
+	return result, total, nil
 }
 
 // GetPod 获取 Pod 详情
@@ -483,7 +611,8 @@ func (s *K8sResourceService) GetPod(clusterID uint, namespace, name string) (map
 		return nil, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	pod, err := clientset.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("获取 Pod 详情失败: %w", err)
@@ -499,7 +628,8 @@ func (s *K8sResourceService) GetPodLogs(clusterID uint, namespace, name, contain
 		return "", err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	req := clientset.CoreV1().Pods(namespace).GetLogs(name, &corev1.PodLogOptions{
 		Container: container,
 		TailLines: &tailLines,
@@ -520,7 +650,8 @@ func (s *K8sResourceService) DeletePod(clusterID uint, namespace, name string) e
 		return err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	err = clientset.CoreV1().Pods(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("删除 Pod 失败: %w", err)
@@ -536,25 +667,45 @@ func (s *K8sResourceService) DeletePod(clusterID uint, namespace, name string) e
 
 // ========== 配置管理 ==========
 
-// ListConfigMaps 获取 ConfigMap 列表
-func (s *K8sResourceService) ListConfigMaps(clusterID uint, namespace string) ([]map[string]interface{}, error) {
+// ListConfigMaps 获取 ConfigMap 列表（支持分页）
+func (s *K8sResourceService) ListConfigMaps(clusterID uint, namespace string, page, pageSize int) ([]map[string]interface{}, int64, error) {
 	clientset, _, err := s.clientPool.GetClient(clusterID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	list, err := clientset.CoreV1().ConfigMaps(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("获取 ConfigMap 列表失败: %w", err)
+		return nil, 0, fmt.Errorf("获取 ConfigMap 列表失败: %w", err)
 	}
 
-	result := make([]map[string]interface{}, len(list.Items))
-	for i, item := range list.Items {
+	total := int64(len(list.Items))
+
+	// 计算分页范围
+	start := (page - 1) * pageSize
+	end := start + pageSize
+
+	// 边界检查
+	if start < 0 {
+		start = 0
+	}
+	if start > len(list.Items) {
+		start = len(list.Items)
+	}
+	if end > len(list.Items) {
+		end = len(list.Items)
+	}
+
+	// 提取分页数据
+	items := list.Items[start:end]
+	result := make([]map[string]interface{}, len(items))
+	for i, item := range items {
 		result[i] = s.formatConfigMap(&item)
 	}
 
-	return result, nil
+	return result, total, nil
 }
 
 // GetConfigMap 获取 ConfigMap 详情
@@ -564,7 +715,8 @@ func (s *K8sResourceService) GetConfigMap(clusterID uint, namespace, name string
 		return nil, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	cm, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("获取 ConfigMap 详情失败: %w", err)
@@ -602,7 +754,8 @@ gvr := schema.GroupVersionResource{
 		uns.SetNamespace(namespace)
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	_, err = dynamicClient.Resource(gvr).Namespace(namespace).Create(ctx, uns, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("创建 ConfigMap 失败: %w", err)
@@ -642,7 +795,8 @@ gvr := schema.GroupVersionResource{
 	uns := &unstructured.Unstructured{}
 	uns.SetUnstructuredContent(manifest)
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	_, err = dynamicClient.Resource(gvr).Namespace(namespace).Update(ctx, uns, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("更新 ConfigMap 失败: %w", err)
@@ -663,7 +817,8 @@ func (s *K8sResourceService) DeleteConfigMap(clusterID uint, namespace, name str
 		return err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	err = clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("删除 ConfigMap 失败: %w", err)
@@ -677,25 +832,45 @@ func (s *K8sResourceService) DeleteConfigMap(clusterID uint, namespace, name str
 	return nil
 }
 
-// ListSecrets 获取 Secret 列表
-func (s *K8sResourceService) ListSecrets(clusterID uint, namespace string) ([]map[string]interface{}, error) {
+// ListSecrets 获取 Secret 列表（支持分页）
+func (s *K8sResourceService) ListSecrets(clusterID uint, namespace string, page, pageSize int) ([]map[string]interface{}, int64, error) {
 	clientset, _, err := s.clientPool.GetClient(clusterID)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	list, err := clientset.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("获取 Secret 列表失败: %w", err)
+		return nil, 0, fmt.Errorf("获取 Secret 列表失败: %w", err)
 	}
 
-	result := make([]map[string]interface{}, len(list.Items))
-	for i, item := range list.Items {
+	total := int64(len(list.Items))
+
+	// 计算分页范围
+	start := (page - 1) * pageSize
+	end := start + pageSize
+
+	// 边界检查
+	if start < 0 {
+		start = 0
+	}
+	if start > len(list.Items) {
+		start = len(list.Items)
+	}
+	if end > len(list.Items) {
+		end = len(list.Items)
+	}
+
+	// 提取分页数据
+	items := list.Items[start:end]
+	result := make([]map[string]interface{}, len(items))
+	for i, item := range items {
 		result[i] = s.formatSecret(&item)
 	}
 
-	return result, nil
+	return result, total, nil
 }
 
 // GetSecret 获取 Secret 详情
@@ -705,7 +880,8 @@ func (s *K8sResourceService) GetSecret(clusterID uint, namespace, name string) (
 		return nil, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("获取 Secret 详情失败: %w", err)
@@ -743,7 +919,8 @@ gvr := schema.GroupVersionResource{
 		uns.SetNamespace(namespace)
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	_, err = dynamicClient.Resource(gvr).Namespace(namespace).Create(ctx, uns, metav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("创建 Secret 失败: %w", err)
@@ -783,7 +960,8 @@ gvr := schema.GroupVersionResource{
 	uns := &unstructured.Unstructured{}
 	uns.SetUnstructuredContent(manifest)
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	_, err = dynamicClient.Resource(gvr).Namespace(namespace).Update(ctx, uns, metav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("更新 Secret 失败: %w", err)
@@ -804,7 +982,8 @@ func (s *K8sResourceService) DeleteSecret(clusterID uint, namespace, name string
 		return err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	err = clientset.CoreV1().Secrets(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("删除 Secret 失败: %w", err)
@@ -827,7 +1006,8 @@ func (s *K8sResourceService) ListEvents(clusterID uint, namespace string, fieldS
 		return nil, err
 	}
 
-	ctx := context.Background()
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
 	list, err := clientset.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{
 		FieldSelector: fieldSelector,
 	})

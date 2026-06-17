@@ -1,14 +1,14 @@
-/** Default theme settings - 腾讯云风格 */
+/** Default theme settings - OneOps 风格 */
 export const themeSettings: App.Theme.ThemeSetting = {
   themeScheme: 'light',
   grayscale: false,
   colourWeakness: false,
   recommendColor: false,
-  themeColor: 'rgb(0, 82, 217)', // 腾讯云蓝 #0052D9
+  themeColor: 'rgb(232, 26, 101)', // OneOps #e81a65
   otherColor: {
-    info: 'rgb(0, 82, 217)', // 与主色保持一致
-    success: 'rgb(38, 187, 23)', // 腾讯云绿
-    warning: 'rgb(255, 168, 0)', // 腾讯云橙
+    info: 'rgb(232, 26, 101)', // 与主色保持一致
+    success: 'rgb(38, 187, 23)', // 绿色
+    warning: 'rgb(255, 168, 0)', // 橙色
     error: 'rgb(245, 34, 46)' // 保持红色
   },
   isInfoFollowPrimary: true,
@@ -60,6 +60,25 @@ export const themeSettings: App.Theme.ThemeSetting = {
     text: 'SoybeanAdmin',
     enableUserName: false
   },
+  borderRadius: {
+    useComponentSpecific: false,
+    small: '6px',
+    medium: '6px',
+    large: '8px',
+    components: {
+      button: '6px',
+      input: '6px',
+      select: '6px',
+      card: '8px',
+      table: '6px',
+      modal: '8px',
+      tag: '6px',
+      switch: '12px',
+      checkbox: '4px',
+      radio: '4px',
+      menu: '6px'
+    }
+  },
   tokens: {
     light: {
       colors: {
@@ -72,6 +91,11 @@ export const themeSettings: App.Theme.ThemeSetting = {
         header: '0 1px 3px rgb(0 0 0 / 6%), 0 1px 2px rgb(0 0 0 / 4%)', // 腾讯云风格：更轻的阴影
         sider: '2px 0 6px 0 rgb(0 0 0 / 4%), 1px 0 2px 0 rgb(0 0 0 / 2%)', // 腾讯云风格：更柔和的侧边栏阴影
         tab: '0 1px 2px rgb(0 0 0 / 6%)' // 腾讯云风格：标签页阴影
+      },
+      borderRadius: {
+        small: '6px',
+        medium: '6px',
+        large: '8px'
       }
     },
     dark: {
