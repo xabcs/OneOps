@@ -24,7 +24,8 @@ import {
   getK8sDeployment,
   getK8sDeploymentPods,
   restartK8sDeployment,
-  scaleK8sDeployment
+  scaleK8sDeployment,
+  updateK8sDeployment
 } from '@/service/api/k8s';
 import { formatConditions, formatLabels } from '@/utils/k8s-formatters';
 import PodTerminal from '../../terminal/PodTerminal.vue';
