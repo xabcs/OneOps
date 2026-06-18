@@ -53,7 +53,7 @@ function formatDuration(seconds: number): string {
 // 处理主机连接
 function handleConnect(server: CMDB.Server) {
   selectedServer.value = server;
-  loginAccount.value = server.sshUser || 'root';
+  loginAccount.value = server.sshCredential?.username || 'root';
   showConnectDialog.value = true;
 }
 
@@ -122,9 +122,9 @@ function handleCancelConnect() {
           <ElSelect v-model="loginAccount" placeholder="选择登录账号">
             <ElOption value="root" label="root" />
             <ElOption
-              v-if="selectedServer?.sshUser && selectedServer.sshUser !== 'root'"
-              :value="selectedServer.sshUser"
-              :label="selectedServer.sshUser"
+              v-if="selectedServer?.sshCredential?.username && selectedServer.sshCredential.username !== 'root'"
+              :value="selectedServer.sshCredential.username"
+              :label="selectedServer.sshCredential.username"
             />
           </ElSelect>
         </ElFormItem>

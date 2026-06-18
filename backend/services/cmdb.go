@@ -216,6 +216,7 @@ func (s *CMDBService) GetServerByID(id uint) (*models.Server, error) {
 		Preload("Credentials").
 		Preload("Groups").
 		Preload("Attributes").
+		Preload("SSHCredential").
 		First(&server, id).Error
 	return &server, err
 }
@@ -223,8 +224,11 @@ func (s *CMDBService) GetServerByID(id uint) (*models.Server, error) {
 // GetServerForConnect 获取连接所需的服务器信息（轻量级）
 func (s *CMDBService) GetServerForConnect(id uint) (*models.Server, error) {
 	var server models.Server
-	// 只 Preload Credentials，其他不需要的数据不加载
-	err := db.Preload("Credentials").First(&server, id).Error
+	// Preload SSHCredential 和 Credentials
+	err := db.
+		Preload("SSHCredential").
+		Preload("Credentials").
+		First(&server, id).Error
 	return &server, err
 }
 

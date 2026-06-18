@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   ElButton,
   ElDialog,
@@ -19,14 +20,15 @@ import {
 } from 'element-plus';
 import {
   deleteK8sService,
-  fetchK8sClusters,
   fetchK8sClusterNamespaces,
+  fetchK8sClusters,
   fetchK8sServices,
   getK8sService
 } from '@/service/api/k8s';
 
 defineOptions({ name: 'K8sServices' });
 
+const router = useRouter();
 const message = ElMessage;
 
 const loading = ref(false);
@@ -136,7 +138,7 @@ const loadServices = async () => {
     });
 
     // 处理不同的响应格式
-    const services = Array.isArray(res) ? res : (res?.data || []);
+    const services = Array.isArray(res) ? res : res?.data || [];
     dataSource.value = services;
     pagination.itemCount = services?.length || 0;
   } catch (error: any) {
@@ -157,6 +159,18 @@ const handleClusterChange = async () => {
 // 命名空间变化
 const handleNamespaceChange = () => {
   loadServices();
+};
+
+// 跳转到详情页
+const goToDetail = (row: any) => {
+  router.push({
+    path: '/k8s/resources/services/detail',
+    query: {
+      clusterId: selectedCluster.value,
+      namespace: filters.namespace,
+      name: row.name
+    }
+  });
 };
 
 // 查看详情
@@ -203,164 +217,137 @@ onMounted(() => {
 <template>
   <div class="p-4">
     <!-- 筛选栏 -->
-    <div class="mb-4 flex items-center gap-4 bg-card p-4 rounded-lg">
+    <div class="bg-card mb-4 flex items-center gap-4 rounded-lg p-4">
       <div class="flex items-center gap-2">
         <span class="text-sm font-medium">集群:</span>
-        <el-select
-          v-model="selectedCluster"
-          placeholder="请选择集群"
-          style="width: 200px"
-          @change="handleClusterChange"
-        >
-          <el-option
-            v-for="cluster in clusters"
-            :key="cluster.id"
-            :label="cluster.name"
-            :value="cluster.id"
-          />
-        </el-select>
+        <ElSelect v-model="selectedCluster" placeholder="请选择集群" style="width: 200px" @change="handleClusterChange">
+          <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
+        </ElSelect>
       </div>
 
       <div class="flex items-center gap-2">
         <span class="text-sm font-medium">命名空间:</span>
-        <el-select
+        <ElSelect
           v-model="filters.namespace"
           placeholder="请选择命名空间"
           style="width: 180px"
           @change="handleNamespaceChange"
         >
-          <el-option
-            v-for="ns in namespaces"
-            :key="ns"
-            :label="ns"
-            :value="ns"
-          />
-        </el-select>
+          <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
+        </ElSelect>
       </div>
 
       <div class="flex-1" />
 
-      <el-button type="primary" :disabled="!selectedCluster" @click="handleRefresh">
-        刷新
-      </el-button>
+      <ElButton type="primary" :disabled="!selectedCluster" @click="handleRefresh">刷新</ElButton>
     </div>
 
     <!-- Service 列表 -->
-    <el-table v-loading="loading" :data="dataSource" stripe>
-      <el-table-column prop="name" label="名称" min-width="180" />
-      <el-table-column prop="namespace" label="命名空间" width="150" />
-      <el-table-column label="类型" width="140">
+    <ElTable v-loading="loading" :data="dataSource" stripe>
+      <ElTableColumn prop="name" label="名称" min-width="180" />
+      <ElTableColumn prop="namespace" label="命名空间" width="150" />
+      <ElTableColumn label="类型" width="140">
         <template #default="{ row }">
-          <el-tag :type="getServiceTypeTag(row.type).type">
+          <ElTag :type="getServiceTypeTag(row.type).type">
             {{ getServiceTypeTag(row.type).text }}
-          </el-tag>
+          </ElTag>
         </template>
-      </el-table-column>
-      <el-table-column prop="clusterIP" label="Cluster IP" width="150" />
-      <el-table-column label="端口" min-width="250">
+      </ElTableColumn>
+      <ElTableColumn prop="clusterIP" label="Cluster IP" width="150" />
+      <ElTableColumn label="端口" min-width="250">
         <template #default="{ row }">
-          <div class="text-sm text-gray-600 truncate" :title="formatPorts(row.ports)">
+          <div class="truncate text-sm text-gray-600" :title="formatPorts(row.ports)">
             {{ formatPorts(row.ports) }}
           </div>
         </template>
-      </el-table-column>
-      <el-table-column prop="age" label="年龄" width="160" />
-      <el-table-column label="操作" width="180" fixed="right">
+      </ElTableColumn>
+      <ElTableColumn prop="age" label="年龄" width="160" />
+      <ElTableColumn label="操作" width="180" fixed="right">
         <template #default="{ row }">
-          <el-space>
-            <el-button size="small" @click="handleViewDetail(row)">
-              详情
-            </el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">
-              删除
-            </el-button>
-          </el-space>
+          <ElSpace>
+            <ElButton size="small" type="primary" @click="goToDetail(row)">详情</ElButton>
+            <ElButton size="small" type="danger" @click="handleDelete(row)">删除</ElButton>
+          </ElSpace>
         </template>
-      </el-table-column>
-    </el-table>
+      </ElTableColumn>
+    </ElTable>
 
     <!-- 详情弹窗 -->
-    <el-dialog v-model="showDetail" :title="`Service: ${currentDetail?.name}`" width="800px">
+    <ElDialog v-model="showDetail" :title="`Service: ${currentDetail?.name}`" width="800px">
       <div v-if="currentDetail" class="space-y-4">
         <!-- 基本信息 -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <span class="text-sm font-medium text-gray-700">名称:</span>
+            <span class="text-sm text-gray-700 font-medium">名称:</span>
             <span class="ml-2">{{ currentDetail.name }}</span>
           </div>
           <div>
-            <span class="text-sm font-medium text-gray-700">命名空间:</span>
+            <span class="text-sm text-gray-700 font-medium">命名空间:</span>
             <span class="ml-2">{{ currentDetail.namespace }}</span>
           </div>
           <div>
-            <span class="text-sm font-medium text-gray-700">类型:</span>
+            <span class="text-sm text-gray-700 font-medium">类型:</span>
             <span class="ml-2">{{ currentDetail.type }}</span>
           </div>
           <div>
-            <span class="text-sm font-medium text-gray-700">Cluster IP:</span>
+            <span class="text-sm text-gray-700 font-medium">Cluster IP:</span>
             <span class="ml-2">{{ currentDetail.clusterIP || '-' }}</span>
           </div>
           <div>
-            <span class="text-sm font-medium text-gray-700">外部 IP:</span>
+            <span class="text-sm text-gray-700 font-medium">外部 IP:</span>
             <span class="ml-2">{{ currentDetail.externalIP?.join(', ') || '-' }}</span>
           </div>
           <div>
-            <span class="text-sm font-medium text-gray-700">年龄:</span>
+            <span class="text-sm text-gray-700 font-medium">年龄:</span>
             <span class="ml-2">{{ currentDetail.age }}</span>
           </div>
         </div>
 
         <!-- 端口信息 -->
         <div v-if="currentDetail.ports && currentDetail.ports.length > 0">
-          <h4 class="text-sm font-medium text-gray-700 mb-2">端口:</h4>
-          <el-table :data="currentDetail.ports" size="small">
-            <el-table-column prop="name" label="名称" width="120" />
-            <el-table-column prop="protocol" label="协议" width="80" />
-            <el-table-column prop="port" label="端口" width="80" />
-            <el-table-column prop="targetPort" label="目标端口" width="100" />
-            <el-table-column prop="nodePort" label="NodePort" width="100" />
-          </el-table>
+          <h4 class="mb-2 text-sm text-gray-700 font-medium">端口:</h4>
+          <ElTable :data="currentDetail.ports" size="small">
+            <ElTableColumn prop="name" label="名称" width="120" />
+            <ElTableColumn prop="protocol" label="协议" width="80" />
+            <ElTableColumn prop="port" label="端口" width="80" />
+            <ElTableColumn prop="targetPort" label="目标端口" width="100" />
+            <ElTableColumn prop="nodePort" label="NodePort" width="100" />
+          </ElTable>
         </div>
 
         <!-- Selector -->
         <div v-if="currentDetail.selector">
-          <h4 class="text-sm font-medium text-gray-700 mb-2">选择器:</h4>
+          <h4 class="mb-2 text-sm text-gray-700 font-medium">选择器:</h4>
           <div class="flex flex-wrap gap-2">
-            <el-tag
-              v-for="(value, key) in currentDetail.selector"
-              :key="key"
-              type="info"
-            >
-              {{ key }}: {{ value }}
-            </el-tag>
+            <ElTag v-for="(value, key) in currentDetail.selector" :key="key" type="info">{{ key }}: {{ value }}</ElTag>
           </div>
         </div>
 
         <!-- Endpoints -->
         <div v-if="currentDetail.endpoints && currentDetail.endpoints.length > 0">
-          <h4 class="text-sm font-medium text-gray-700 mb-2">后端端点:</h4>
-          <el-table :data="currentDetail.endpoints" size="small">
-            <el-table-column prop="ip" label="IP" width="140" />
-            <el-table-column prop="hostname" label="主机名" width="180" />
-            <el-table-column label="端口" min-width="200">
+          <h4 class="mb-2 text-sm text-gray-700 font-medium">后端端点:</h4>
+          <ElTable :data="currentDetail.endpoints" size="small">
+            <ElTableColumn prop="ip" label="IP" width="140" />
+            <ElTableColumn prop="hostname" label="主机名" width="180" />
+            <ElTableColumn label="端口" min-width="200">
               <template #default="{ row }">
                 <span v-if="row.ports">
                   {{ row.ports.map((p: any) => `${p.port}/${p.protocol}`).join(', ') }}
                 </span>
                 <span v-else>-</span>
               </template>
-            </el-table-column>
-          </el-table>
+            </ElTableColumn>
+          </ElTable>
         </div>
 
         <!-- YAML Manifest -->
         <div>
-          <h4 class="text-sm font-medium text-gray-700 mb-2">YAML 配置:</h4>
-          <div class="bg-gray-50 p-3 rounded text-sm font-mono overflow-auto max-h-400 whitespace-pre">
+          <h4 class="mb-2 text-sm text-gray-700 font-medium">YAML 配置:</h4>
+          <div class="max-h-400 overflow-auto whitespace-pre rounded bg-gray-50 p-3 text-sm font-mono">
             {{ currentDetail.manifest }}
           </div>
         </div>
       </div>
-    </el-dialog>
+    </ElDialog>
   </div>
 </template>

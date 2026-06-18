@@ -149,15 +149,19 @@ func (c *RouteController) IsRouteExist(ctx *gin.Context) {
 
 	// 检查是否为管理员
 	rbacService := services.NewRBACService()
-	isSuper := rbacService.IsSuperAdmin(userID.(uint))
-	if isSuper {
-		// 管理员可以访问所有路由
-		ctx.JSON(http.StatusOK, utils.SuccessWithData(true))
-		return
+	roles, err := rbacService.GetUserRoles(userID.(uint))
+	if err == nil {
+		for _, role := range roles {
+			if role.Code == "admin" {
+				// 管理员可以访问所有路由
+				ctx.JSON(http.StatusOK, utils.SuccessWithData(true))
+				return
+			}
+		}
 	}
 
 	// 获取用户权限列表
-	_, permissions, err := rbacService.BuildMenuTreeAndPermissions(userID.(uint))
+	_, permissions, _, err := rbacService.BuildMenuTreeAndPermissions(userID.(uint))
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal("获取用户权限失败: " + err.Error()))
 		return
@@ -168,6 +172,12 @@ func (c *RouteController) IsRouteExist(ctx *gin.Context) {
 	parentRoute := ""
 	switch routeName {
 	case "k8s_deployment_detail", "k8s_deployment_detail_view":
+		parentRoute = "k8s_workload_query"
+	case "k8s_statefulset_detail", "k8s_statefulset_detail_view":
+		parentRoute = "k8s_workload_query"
+	case "k8s_daemonset_detail", "k8s_daemonset_detail_view":
+		parentRoute = "k8s_workload_query"
+	case "k8s_pod_detail", "k8s_pod_detail_view":
 		parentRoute = "k8s_workload_query"
 	case "cmdb_server_detail", "cmdb_server_detail_view":
 		parentRoute = "cmdb:server:query"

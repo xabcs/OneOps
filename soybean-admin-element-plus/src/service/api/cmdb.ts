@@ -76,7 +76,7 @@ export function fetchGetServerStats() {
 /**
  * 获取服务器配置（通过SSH）
  */
-export function fetchGetServerConfig(data: { hostname: string; ip: string; sshUser?: string; sshPort?: number }) {
+export function fetchGetServerConfig(data: { hostname: string; ip: string; sshPort?: number }) {
   return request<{
     cpu: number;
     memory: number;

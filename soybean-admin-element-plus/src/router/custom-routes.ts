@@ -9,6 +9,14 @@ import BaseLayout from '@/layouts/base-layout/index.vue';
 const CMDBServerDetail = () => import('@/views/cmdb/server/detail.vue');
 const MonitoringServersDetail = () => import('@/views/monitoring/servers/detail/index.vue');
 const K8sDeploymentDetail = () => import('@/views/k8s/resources/deployments/detail.vue');
+const K8sStatefulSetDetail = () => import('@/views/k8s/resources/statefulsets/detail.vue');
+const K8sDaemonSetDetail = () => import('@/views/k8s/resources/daemonsets/detail.vue');
+const K8sPodDetail = () => import('@/views/k8s/resources/pods/detail.vue');
+const K8sJobDetail = () => import('@/views/k8s/resources/jobs/detail.vue');
+const K8sCronJobDetail = () => import('@/views/k8s/resources/cronjobs/detail.vue');
+const K8sConfigMapDetail = () => import('@/views/k8s/resources/configmaps/detail.vue');
+const K8sSecretDetail = () => import('@/views/k8s/resources/secrets/detail.vue');
+const K8sServiceDetail = () => import('@/views/k8s/resources/services/detail.vue');
 const K8sWorkloads = () => import('@/views/k8s/workloads/index.vue');
 const K8sNetwork = () => import('@/views/k8s/network/index.vue');
 const K8sConfig = () => import('@/views/k8s/config/index.vue');
@@ -73,6 +81,96 @@ export const customRoutes: RouteRecordRaw[] = [
     ]
   },
   {
+    name: 'k8s_statefulset_detail',
+    path: '/k8s/resources/statefulsets/detail',
+    component: BaseLayout,
+    meta: {
+      title: 'StatefulSet详情',
+      i18nKey: null,
+      hideInMenu: true,
+      activeMenu: 'k8s_workloads'
+    },
+    children: [
+      {
+        name: 'k8s_statefulset_detail_view',
+        path: '',
+        component: K8sStatefulSetDetail
+      }
+    ]
+  },
+  {
+    name: 'k8s_daemonset_detail',
+    path: '/k8s/resources/daemonsets/detail',
+    component: BaseLayout,
+    meta: {
+      title: 'DaemonSet详情',
+      i18nKey: null,
+      hideInMenu: true,
+      activeMenu: 'k8s_workloads'
+    },
+    children: [
+      {
+        name: 'k8s_daemonset_detail_view',
+        path: '',
+        component: K8sDaemonSetDetail
+      }
+    ]
+  },
+  {
+    name: 'k8s_pod_detail',
+    path: '/k8s/resources/pods/detail',
+    component: BaseLayout,
+    meta: {
+      title: 'Pod详情',
+      i18nKey: null,
+      hideInMenu: true,
+      activeMenu: 'k8s_workloads'
+    },
+    children: [
+      {
+        name: 'k8s_pod_detail_view',
+        path: '',
+        component: K8sPodDetail
+      }
+    ]
+  },
+  {
+    name: 'k8s_job_detail',
+    path: '/k8s/resources/jobs/detail',
+    component: BaseLayout,
+    meta: {
+      title: 'Job详情',
+      i18nKey: null,
+      hideInMenu: true,
+      activeMenu: 'k8s_workloads'
+    },
+    children: [
+      {
+        name: 'k8s_job_detail_view',
+        path: '',
+        component: K8sJobDetail
+      }
+    ]
+  },
+  {
+    name: 'k8s_cronjob_detail',
+    path: '/k8s/resources/cronjobs/detail',
+    component: BaseLayout,
+    meta: {
+      title: 'CronJob详情',
+      i18nKey: null,
+      hideInMenu: true,
+      activeMenu: 'k8s_workloads'
+    },
+    children: [
+      {
+        name: 'k8s_cronjob_detail_view',
+        path: '',
+        component: K8sCronJobDetail
+      }
+    ]
+  },
+  {
     name: 'k8s_workloads',
     path: '/k8s/workloads',
     component: BaseLayout,
@@ -108,6 +206,66 @@ export const customRoutes: RouteRecordRaw[] = [
       }
     ]
   },
+  // ConfigMap 详情页
+  {
+    name: 'k8s_configmap_detail',
+    path: '/k8s/resources/configmaps/detail',
+    component: BaseLayout,
+    meta: {
+      title: 'ConfigMap详情',
+      i18nKey: null,
+      hideInMenu: true,
+      activeMenu: 'k8s_resources_configmaps'
+    },
+    children: [
+      {
+        name: 'k8s_configmap_detail_view',
+        path: '',
+        component: K8sConfigMapDetail
+      }
+    ]
+  },
+
+  // Secret 详情页
+  {
+    name: 'k8s_secret_detail',
+    path: '/k8s/resources/secrets/detail',
+    component: BaseLayout,
+    meta: {
+      title: 'Secret详情',
+      i18nKey: null,
+      hideInMenu: true,
+      activeMenu: 'k8s_resources_secrets'
+    },
+    children: [
+      {
+        name: 'k8s_secret_detail_view',
+        path: '',
+        component: K8sSecretDetail
+      }
+    ]
+  },
+
+  // Service 详情页
+  {
+    name: 'k8s_service_detail',
+    path: '/k8s/resources/services/detail',
+    component: BaseLayout,
+    meta: {
+      title: 'Service详情',
+      i18nKey: null,
+      hideInMenu: true,
+      activeMenu: 'k8s_resources_services'
+    },
+    children: [
+      {
+        name: 'k8s_service_detail_view',
+        path: '',
+        component: K8sServiceDetail
+      }
+    ]
+  },
+
   {
     name: 'k8s_config',
     path: '/k8s/config',

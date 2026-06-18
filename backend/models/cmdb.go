@@ -149,7 +149,6 @@ type Server struct {
 	Env               string     `json:"env" gorm:"type:varchar(20);default:'test';index"`       // 环境
 	Status            string     `json:"status" gorm:"type:varchar(20);default:'unknown';index"` // 状态
 	SSHPort           int        `json:"sshPort" gorm:"default:22"`                     // SSH端口
-	SSHUser           string     `json:"sshUser" gorm:"size:50;default:'root'"`         // SSH用户
 	CredentialID      uint       `json:"credentialId" gorm:"index"`                     // SSH凭证ID（兼容旧字段）
 	SSHCredentialID   uint       `json:"sshCredentialId" gorm:"index"`                  // SSH凭证ID
 	CabinetID         uint       `json:"cabinetId" gorm:"index"`                        // 所在机柜ID

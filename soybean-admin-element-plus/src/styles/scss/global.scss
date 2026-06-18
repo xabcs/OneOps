@@ -1,2 +1,4 @@
+// 这个文件被 Vite 的 additionalData 自动注入到每个组件中
+// 所以不需要在这里 self-import，避免循环依赖
 @forward 'element-plus';
 @forward 'scrollbar';

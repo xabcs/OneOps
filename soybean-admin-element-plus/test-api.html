@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <title>API测试</title>
+  </head>
+  <body>
+    <h1>API 测试页面</h1>
+    <div id="results"></div>
+
+    <script>
+      const results = document.getElementById('results');
+
+      async function testAPI(url, name) {
+        try {
+          const response = await fetch(url);
+          const data = await response.json();
+          results.innerHTML += `<h2>${name}</h2>`;
+          results.innerHTML += `<p>状态: ${response.status}</p>`;
+          results.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+          results.innerHTML += `<hr>`;
+        } catch (error) {
+          results.innerHTML += `<h2>${name} - 错误</h2>`;
+          results.innerHTML += `<p>${error.message}</p>`;
+          results.innerHTML += `<hr>`;
+        }
+      }
+
+      // 测试各个API端点
+      testAPI('/api/route/getConstantRoutes', '常量路由');
+      testAPI('/api/login', '登录接口');
+    </script>
+  </body>
+</html>

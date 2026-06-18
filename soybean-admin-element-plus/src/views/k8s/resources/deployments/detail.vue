@@ -27,8 +27,11 @@ import {
   scaleK8sDeployment,
   updateK8sDeployment
 } from '@/service/api/k8s';
-import { formatConditions, formatLabels } from '@/utils/k8s-formatters';
+import { formatAnnotations, formatConditions, formatImages, formatLabels, formatSelectors, formatStrategy } from '@/utils/k8s-formatters';
 import PodTerminal from '../../terminal/PodTerminal.vue';
+import K8sBasicInfoGrid from '@/components/k8s/K8sBasicInfoGrid.vue';
+import K8sPodsTable from '@/components/k8s/K8sPodsTable.vue';
+import K8sEventsTable from '@/components/k8s/K8sEventsTable.vue';
 
 defineOptions({ name: 'K8sDeploymentDetail' });
 
@@ -89,6 +92,60 @@ const getStatusTag = computed(() => {
     return { type: 'warning', text: `部分就绪 (${ready}/${total})` };
   }
   return { type: 'danger', text: '未就绪' };
+});
+
+// 基本信息
+const basicInfoFields = computed(() => {
+  if (!deployment.value) return [[]];
+
+  const fields = [
+    [
+      { label: '名称', value: deployment.value.name || '-' },
+      { label: '命名空间', value: deployment.value.namespace || '-' },
+      { label: '创建时间', value: deployment.value.age || '-' }
+    ],
+    [
+      { label: '副本数', value: `${deployment.value.ready || 0} / ${deployment.value.replicas || 0}` },
+      { label: '可用副本', value: deployment.value.available?.toString() || '0' },
+      { label: '最新副本', value: deployment.value.upToDate?.toString() || '0' }
+    ]
+  ];
+
+  if (deployment.value.labels) {
+    fields.push([
+      { label: '标签', value: formatLabels(deployment.value.labels), fullRow: true, isTags: true }
+    ]);
+  }
+
+  if (deployment.value.selector && Object.keys(deployment.value.selector).length > 0) {
+    fields.push([
+      { label: '选择器', value: formatSelectors(deployment.value.selector), fullRow: true }
+    ]);
+  }
+
+  if (deployment.value.strategy) {
+    fields.push([
+      { label: '更新策略', value: formatStrategy(deployment.value.strategy), fullRow: false },
+      { label: '策略类型', value: deployment.value.strategy.type || '-', fullRow: false }
+    ]);
+  }
+
+  if (deployment.value.annotations && Object.keys(deployment.value.annotations).length > 0) {
+    const annotationStr = formatAnnotations(deployment.value.annotations);
+    if (annotationStr !== '-') {
+      fields.push([
+        { label: '注解', value: annotationStr, fullRow: true }
+      ]);
+    }
+  }
+
+  if (deployment.value.conditions?.length) {
+    fields.push([
+      { label: '状态条件', value: formatConditions(deployment.value.conditions), fullRow: true, isConditions: true }
+    ]);
+  }
+
+  return fields;
 });
 
 // Pod 状态标签
@@ -385,67 +442,9 @@ onMounted(() => {
 
     <!-- 基本信息区域 -->
     <div class="basic-info-section">
-      <!-- 基本信息 -->
       <div class="info-section">
         <h3 class="section-title">基本信息</h3>
-        <div class="desc-grid">
-          <div class="desc-row">
-            <div class="desc-item">
-              <div class="item-label">名称</div>
-              <div class="item-content">
-                <span class="value-text">{{ deployment?.name || '-' }}</span>
-              </div>
-            </div>
-            <div class="desc-item">
-              <div class="item-label">命名空间</div>
-              <div class="item-content">
-                <span class="value-text">{{ deployment?.namespace || '-' }}</span>
-              </div>
-            </div>
-            <div class="desc-item">
-              <div class="item-label">创建时间</div>
-              <div class="item-content">
-                <span class="value-text">{{ deployment?.age || '-' }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="desc-row">
-            <div class="desc-item">
-              <div class="item-label">副本数</div>
-              <div class="item-content">
-                <span class="value-text">{{ deployment?.ready || 0 }} / {{ deployment?.replicas || 0 }}</span>
-              </div>
-            </div>
-            <div class="desc-item">
-              <div class="item-label">可用副本</div>
-              <div class="item-content">
-                <span class="value-text">{{ deployment?.available || 0 }}</span>
-              </div>
-            </div>
-            <div class="desc-item">
-              <div class="item-label">最新副本</div>
-              <div class="item-content">
-                <span class="value-text">{{ deployment?.upToDate || 0 }}</span>
-              </div>
-            </div>
-          </div>
-          <div v-if="deployment?.labels" class="desc-row">
-            <div class="desc-item desc-item-full">
-              <div class="item-label">标签</div>
-              <div class="item-content">
-                <span class="value-text">{{ formatLabels(deployment.labels) }}</span>
-              </div>
-            </div>
-          </div>
-          <div v-if="deployment?.conditions && deployment.conditions.length > 0" class="desc-row">
-            <div class="desc-item desc-item-full">
-              <div class="item-label">状态条件</div>
-              <div class="item-content">
-                <span class="value-text">{{ formatConditions(deployment.conditions) }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <K8sBasicInfoGrid :fields="basicInfoFields" />
       </div>
     </div>
 
@@ -458,31 +457,12 @@ onMounted(() => {
             <span class="section-title">共 {{ pods.length }} 个容器组</span>
             <ElButton size="small" @click="handleRefreshPods">刷新</ElButton>
           </div>
-          <ElTable v-loading="podsLoading" :data="pods" stripe size="small">
-            <ElTableColumn prop="name" label="Pod 名称" min-width="200" show-overflow-tooltip />
-            <ElTableColumn label="状态" width="120">
-              <template #default="{ row }">
-                <ElTag :type="getPodStatusTag(row).type" size="small">
-                  {{ getPodStatusTag(row).text }}
-                </ElTag>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn prop="ip" label="IP 地址" width="140" />
-            <ElTableColumn prop="node" label="节点" width="150" show-overflow-tooltip />
-            <ElTableColumn label="重启次数" width="100" align="center">
-              <template #default="{ row }">
-                {{ row.restarts || 0 }}
-              </template>
-            </ElTableColumn>
-            <ElTableColumn prop="age" label="年龄" width="140" />
-            <ElTableColumn label="操作" width="150" fixed="right">
-              <template #default="{ row }">
-                <ElButton size="small" type="primary" link @click="handlePodTerminal(row)">终端</ElButton>
-                <ElButton size="small" link @click="handlePodLogs(row)">日志</ElButton>
-              </template>
-            </ElTableColumn>
-          </ElTable>
-          <div v-if="!podsLoading && pods.length === 0" class="py-8 text-center text-gray-500">暂无容器组</div>
+          <K8sPodsTable
+            :pods="pods"
+            :loading="podsLoading"
+            @terminal="handlePodTerminal"
+            @logs="handlePodLogs"
+          />
         </div>
       </ElTabPane>
 
@@ -493,21 +473,7 @@ onMounted(() => {
             <span class="section-title">共 {{ events.length }} 个事件</span>
             <ElButton size="small" @click="loadEvents">刷新</ElButton>
           </div>
-          <ElTable v-loading="eventsLoading" :data="events" stripe size="small">
-            <ElTableColumn prop="type" label="类型" width="120">
-              <template #default="{ row }">
-                <ElTag :type="row.type === 'Normal' ? 'success' : 'warning'" size="small">
-                  {{ row.type }}
-                </ElTag>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn prop="reason" label="原因" width="150" show-overflow-tooltip />
-            <ElTableColumn prop="message" label="消息" min-width="300" show-overflow-tooltip />
-            <ElTableColumn prop="source" label="来源" width="150" show-overflow-tooltip />
-            <ElTableColumn prop="count" label="次数" width="80" align="center" />
-            <ElTableColumn prop="lastTimestamp" label="最后时间" width="160" />
-          </ElTable>
-          <div v-if="!eventsLoading && events.length === 0" class="py-8 text-center text-gray-500">暂无事件</div>
+          <K8sEventsTable :events="events" :loading="eventsLoading" />
         </div>
       </ElTabPane>
     </ElTabs>
@@ -680,6 +646,12 @@ onMounted(() => {
 
 .value-text {
   color: #303133;
+}
+
+/* 镜像列换行显示 */
+.whitespace-pre-line {
+  white-space: pre-line;
+  word-break: break-all;
 }
 
 .font-mono {

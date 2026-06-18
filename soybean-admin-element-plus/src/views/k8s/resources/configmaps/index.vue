@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   ElButton,
   ElDialog,
@@ -14,14 +15,15 @@ import {
 } from 'element-plus';
 import {
   deleteK8sConfigMap,
-  fetchK8sClusters,
   fetchK8sClusterNamespaces,
+  fetchK8sClusters,
   fetchK8sConfigMaps,
   getK8sConfigMap
 } from '@/service/api/k8s';
 
 defineOptions({ name: 'K8sConfigMaps' });
 
+const router = useRouter();
 const message = ElMessage;
 
 const loading = ref(false);
@@ -100,7 +102,7 @@ const loadConfigMaps = async () => {
     });
 
     // 处理不同的响应格式
-    const configmaps = Array.isArray(res) ? res : (res?.data || []);
+    const configmaps = Array.isArray(res) ? res : res?.data || [];
     dataSource.value = configmaps;
     pagination.itemCount = configmaps?.length || 0;
   } catch (error: any) {
@@ -123,7 +125,19 @@ const handleNamespaceChange = () => {
   loadConfigMaps();
 };
 
-// 查看详情
+// 跳转到详情页
+const goToDetail = (row: any) => {
+  router.push({
+    path: '/k8s/resources/configmaps/detail',
+    query: {
+      clusterId: selectedCluster.value,
+      namespace: filters.namespace,
+      name: row.name
+    }
+  });
+};
+
+// 查看详情（弹窗）
 const handleViewDetail = async (row: any) => {
   try {
     const res = await getK8sConfigMap(selectedCluster.value!, filters.namespace, row.name);
@@ -167,125 +181,89 @@ onMounted(() => {
 <template>
   <div class="p-4">
     <!-- 筛选栏 -->
-    <div class="mb-4 flex items-center gap-4 bg-card p-4 rounded-lg">
+    <div class="bg-card mb-4 flex items-center gap-4 rounded-lg p-4">
       <div class="flex items-center gap-2">
         <span class="text-sm font-medium">集群:</span>
-        <el-select
-          v-model="selectedCluster"
-          placeholder="请选择集群"
-          style="width: 200px"
-          @change="handleClusterChange"
-        >
-          <el-option
-            v-for="cluster in clusters"
-            :key="cluster.id"
-            :label="cluster.name"
-            :value="cluster.id"
-          />
-        </el-select>
+        <ElSelect v-model="selectedCluster" placeholder="请选择集群" style="width: 200px" @change="handleClusterChange">
+          <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
+        </ElSelect>
       </div>
 
       <div class="flex items-center gap-2">
         <span class="text-sm font-medium">命名空间:</span>
-        <el-select
+        <ElSelect
           v-model="filters.namespace"
           placeholder="请选择命名空间"
           style="width: 180px"
           @change="handleNamespaceChange"
         >
-          <el-option
-            v-for="ns in namespaces"
-            :key="ns"
-            :label="ns"
-            :value="ns"
-          />
-        </el-select>
+          <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
+        </ElSelect>
       </div>
 
       <div class="flex-1" />
 
-      <el-button type="primary" :disabled="!selectedCluster" @click="handleRefresh">
-        刷新
-      </el-button>
+      <ElButton type="primary" :disabled="!selectedCluster" @click="handleRefresh">刷新</ElButton>
     </div>
 
     <!-- ConfigMap 列表 -->
-    <el-table v-loading="loading" :data="dataSource" stripe>
-      <el-table-column prop="name" label="名称" min-width="200" />
-      <el-table-column prop="namespace" label="命名空间" width="150" />
-      <el-table-column label="数据键" min-width="300">
+    <ElTable v-loading="loading" :data="dataSource" stripe>
+      <ElTableColumn prop="name" label="名称" min-width="200" />
+      <ElTableColumn prop="namespace" label="命名空间" width="150" />
+      <ElTableColumn label="数据键" min-width="300">
         <template #default="{ row }">
           <div class="flex flex-wrap gap-1">
-            <el-tag
-              v-for="key in row.dataKeys"
-              :key="key"
-              size="small"
-              type="info"
-            >
+            <ElTag v-for="key in row.dataKeys" :key="key" size="small" type="info">
               {{ key }}
-            </el-tag>
+            </ElTag>
           </div>
         </template>
-      </el-table-column>
-      <el-table-column prop="age" label="年龄" width="160" />
-      <el-table-column label="操作" width="180" fixed="right">
+      </ElTableColumn>
+      <ElTableColumn prop="age" label="年龄" width="160" />
+      <ElTableColumn label="操作" width="180" fixed="right">
         <template #default="{ row }">
-          <el-space>
-            <el-button size="small" @click="handleViewDetail(row)">
-              详情
-            </el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">
-              删除
-            </el-button>
-          </el-space>
+          <ElSpace>
+            <ElButton size="small" type="primary" @click="goToDetail(row)">详情</ElButton>
+            <ElButton size="small" type="danger" @click="handleDelete(row)">删除</ElButton>
+          </ElSpace>
         </template>
-      </el-table-column>
-    </el-table>
+      </ElTableColumn>
+    </ElTable>
 
     <!-- 详情弹窗 -->
-    <el-dialog v-model="showDetail" :title="`ConfigMap: ${currentDetail?.name}`" width="800px">
+    <ElDialog v-model="showDetail" :title="`ConfigMap: ${currentDetail?.name}`" width="800px">
       <div v-if="currentDetail" class="space-y-4">
         <!-- 基本信息 -->
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <span class="text-sm font-medium text-gray-700">名称:</span>
+            <span class="text-sm text-gray-700 font-medium">名称:</span>
             <span class="ml-2">{{ currentDetail.name }}</span>
           </div>
           <div>
-            <span class="text-sm font-medium text-gray-700">命名空间:</span>
+            <span class="text-sm text-gray-700 font-medium">命名空间:</span>
             <span class="ml-2">{{ currentDetail.namespace }}</span>
           </div>
           <div>
-            <span class="text-sm font-medium text-gray-700">年龄:</span>
+            <span class="text-sm text-gray-700 font-medium">年龄:</span>
             <span class="ml-2">{{ currentDetail.age }}</span>
           </div>
         </div>
 
         <!-- Labels -->
         <div v-if="currentDetail.labels && Object.keys(currentDetail.labels).length > 0">
-          <h4 class="text-sm font-medium text-gray-700 mb-2">标签:</h4>
+          <h4 class="mb-2 text-sm text-gray-700 font-medium">标签:</h4>
           <div class="flex flex-wrap gap-2">
-            <el-tag
-              v-for="(value, key) in currentDetail.labels"
-              :key="key"
-              type="info"
-            >
-              {{ key }}: {{ value }}
-            </el-tag>
+            <ElTag v-for="(value, key) in currentDetail.labels" :key="key" type="info">{{ key }}: {{ value }}</ElTag>
           </div>
         </div>
 
         <!-- Data -->
         <div v-if="currentDetail.data && Object.keys(currentDetail.data).length > 0">
-          <h4 class="text-sm font-medium text-gray-700 mb-2">数据:</h4>
+          <h4 class="mb-2 text-sm text-gray-700 font-medium">数据:</h4>
           <div class="space-y-2">
-            <div
-              v-for="(value, key) in currentDetail.data"
-              :key="key"
-              class="border rounded p-2"
-            >
-              <div class="text-sm font-medium text-gray-700 mb-1">{{ key }}</div>
-              <div class="text-sm bg-gray-50 p-2 rounded whitespace-pre-wrap font-mono break-all">
+            <div v-for="(value, key) in currentDetail.data" :key="key" class="border rounded p-2">
+              <div class="mb-1 text-sm text-gray-700 font-medium">{{ key }}</div>
+              <div class="whitespace-pre-wrap break-all rounded bg-gray-50 p-2 text-sm font-mono">
                 {{ value }}
               </div>
             </div>
@@ -294,12 +272,12 @@ onMounted(() => {
 
         <!-- YAML Manifest -->
         <div>
-          <h4 class="text-sm font-medium text-gray-700 mb-2">YAML 配置:</h4>
-          <div class="bg-gray-50 p-3 rounded text-sm font-mono overflow-auto max-h-400 whitespace-pre">
+          <h4 class="mb-2 text-sm text-gray-700 font-medium">YAML 配置:</h4>
+          <div class="max-h-400 overflow-auto whitespace-pre rounded bg-gray-50 p-3 text-sm font-mono">
             {{ currentDetail.manifest }}
           </div>
         </div>
       </div>
-    </el-dialog>
+    </ElDialog>
   </div>
 </template>

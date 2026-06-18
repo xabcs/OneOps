@@ -68,6 +68,8 @@ declare module "@elegant-router/types" {
     "cmdb_server": "/cmdb/server";
     "cmdb_servers": "/cmdb/servers";
     "cmdb_tags": "/cmdb/tags";
+    "demo-route": "/demo-route";
+    "demo-route_child": "/demo-route/child/:id";
     "function": "/function";
     "function_hide-child": "/function/hide-child";
     "function_hide-child_one": "/function/hide-child/one";
@@ -193,6 +195,7 @@ declare module "@elegant-router/types" {
     | "alova"
     | "audit"
     | "cmdb"
+    | "demo-route"
     | "function"
     | "home"
     | "iframe-page"
@@ -254,6 +257,7 @@ declare module "@elegant-router/types" {
     | "cmdb_server"
     | "cmdb_servers"
     | "cmdb_tags"
+    | "demo-route_child"
     | "function_hide-child_one"
     | "function_hide-child_three"
     | "function_hide-child_two"

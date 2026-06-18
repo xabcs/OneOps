@@ -38,9 +38,6 @@ func dialSSH(server *models.Server) (*ssh.Client, error) {
 
 	loginUser := credential.Username
 	if loginUser == "" {
-		loginUser = server.SSHUser
-	}
-	if loginUser == "" {
 		loginUser = "root"
 	}
 

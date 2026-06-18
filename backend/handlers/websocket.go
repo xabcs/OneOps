@@ -284,31 +284,73 @@ func (h *SSHWebSocketHandler) HandleWebSocket(ctx *gin.Context) {
 func (h *SSHWebSocketHandler) connectToServer(session *models.BastionSession) (*ssh.Client, error) {
 	// 获取服务器信息
 	server := session.Server
+	log.Printf("[SSH CONNECT DEBUG] Connecting to %s (SSHPort=%d)", server.IP, server.SSHPort)
 
 	// 获取 SSH 凭证
 	credential := session.SSHCredential
 	if credential == nil {
 		return nil, fmt.Errorf("未找到 SSH 凭证")
 	}
+	log.Printf("[SSH CONNECT] Using credential: %s (credential username: %s)", credential.Name, credential.Username)
+	log.Printf("[SSH CONNECT] Session LoginAccount: %s", session.LoginAccount)
+
+	// 解密密码（如果加密存储）
+	if credential.Password != "" {
+		decryptedPwd, err := utils.DecryptString(credential.Password)
+		if err != nil {
+			log.Printf("[SSH CONNECT] Failed to decrypt password: %v", err)
+			// 如果解密失败，尝试使用原值（可能是旧数据）
+			log.Printf("[SSH CONNECT] Using original password (maybe old data)")
+		} else {
+			credential.Password = decryptedPwd
+			log.Printf("[SSH CONNECT] Password decrypted successfully, length: %d", len(decryptedPwd))
+		}
+	}
+
+	// 解密私钥（如果加密存储）
+	if credential.PrivateKey != "" {
+		decryptedKey, err := utils.DecryptString(credential.PrivateKey)
+		if err != nil {
+			log.Printf("[SSH CONNECT] Failed to decrypt private key: %v", err)
+		} else {
+			credential.PrivateKey = decryptedKey
+			log.Printf("[SSH CONNECT] Private key decrypted successfully, length: %d", len(decryptedKey))
+		}
+	}
+
+	// 确定连接端口
+	port := server.SSHPort
+	if port == 0 {
+		port = 22
+		log.Printf("[SSH CONNECT WARNING] SSHPort is 0, using default port 22")
+	}
+	log.Printf("[SSH CONNECT] Final address: %s:%d (original SSHPort: %d)", server.IP, port, server.SSHPort)
 
 	// 构建认证方法
 	var authMethods []ssh.AuthMethod
 
+	log.Printf("[SSH CONNECT] Credential check - Password: %t, PrivateKey length: %d",
+		credential.Password != "", len(credential.PrivateKey))
+
 	if credential.Password != "" {
 		authMethods = append(authMethods, ssh.Password(credential.Password))
+		log.Printf("[SSH CONNECT] Added password auth method")
 	}
 
 	if credential.PrivateKey != "" {
 		signer, err := ssh.ParsePrivateKey([]byte(credential.PrivateKey))
 		if err != nil {
+			log.Printf("[SSH CONNECT] Failed to parse private key: %v", err)
 			return nil, fmt.Errorf("解析私钥失败: %w", err)
 		}
 		authMethods = append(authMethods, ssh.PublicKeys(signer))
+		log.Printf("[SSH CONNECT] Added publickey auth method")
 	}
 
 	if len(authMethods) == 0 {
 		return nil, fmt.Errorf("没有可用的认证方法")
 	}
+	log.Printf("[SSH CONNECT] Total auth methods: %d", len(authMethods))
 
 	// 构建客户端配置
 	config := &ssh.ClientConfig{
@@ -317,9 +359,11 @@ func (h *SSHWebSocketHandler) connectToServer(session *models.BastionSession) (*
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // 生产环境应该验证主机密钥
 		Timeout:         30 * time.Second,
 	}
+	log.Printf("[SSH CONNECT] SSH Client Config - User: %s, AuthMethods: %d", session.LoginAccount, len(authMethods))
 
 	// 连接到服务器
-	address := fmt.Sprintf("%s:%d", server.IP, server.SSHPort)
+	address := fmt.Sprintf("%s:%d", server.IP, port)
+	log.Printf("[SSH CONNECT] Attempting to connect to: %s (user: %s)", address, session.LoginAccount)
 	client, err := ssh.Dial("tcp", address, config)
 	if err != nil {
 		return nil, fmt.Errorf("连接失败: %w", err)

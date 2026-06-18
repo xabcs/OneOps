@@ -109,6 +109,17 @@ export namespace K8s {
     selector?: Record<string, string>;
   }
 
+  export interface Ingress {
+    name: string;
+    namespace: string;
+    hosts: string[];
+    addresses: string[];
+    ports: string[];
+    age: string;
+    annotations?: Record<string, string>;
+    ingressClassName?: string;
+  }
+
   export interface ConfigMap {
     name: string;
     namespace: string;
@@ -124,6 +135,66 @@ export namespace K8s {
     age: string;
     labels?: Record<string, string>;
     dataKeys: string[];
+  }
+
+  export interface StatefulSet {
+    name: string;
+    namespace: string;
+    replicas: number;
+    ready: number;
+    upToDate: number;
+    available: number;
+    age: string;
+    labels?: Record<string, string>;
+    conditions?: Array<{
+      type: string;
+      status: string;
+      reason: string;
+      message: string;
+    }>;
+  }
+
+  export interface DaemonSet {
+    name: string;
+    namespace: string;
+    desired: number;
+    current: number;
+    ready: number;
+    available: number;
+    age: string;
+    labels?: Record<string, string>;
+    conditions?: Array<{
+      type: string;
+      status: string;
+      reason: string;
+      message: string;
+    }>;
+  }
+
+  export interface Job {
+    name: string;
+    namespace: string;
+    completions: number;
+    duration: string;
+    age: string;
+    labels?: Record<string, string>;
+    conditions?: Array<{
+      type: string;
+      status: string;
+      reason: string;
+      message: string;
+    }>;
+  }
+
+  export interface CronJob {
+    name: string;
+    namespace: string;
+    schedule: string;
+    suspend: boolean;
+    active: number;
+    lastSchedule: string;
+    age: string;
+    labels?: Record<string, string>;
   }
 
   export interface TerminalSession {
@@ -283,7 +354,10 @@ interface PaginatedResponse<T> {
 /**
  * 获取 Deployment 列表（支持分页）
  */
-export function fetchK8sDeployments(clusterId: number, params?: { namespace?: string; page?: number; pageSize?: number }) {
+export function fetchK8sDeployments(
+  clusterId: number,
+  params?: { namespace?: string; page?: number; pageSize?: number }
+) {
   return request<PaginatedResponse<K8s.Deployment>>({
     url: `/k8s/clusters/${clusterId}/deployments`,
     method: 'get',
@@ -371,7 +445,10 @@ export function restartK8sDeployment(clusterId: number, data: { namespace: strin
 /**
  * 获取 Pod 列表（支持分页）
  */
-export function fetchK8sPods(clusterId: number, params?: { namespace?: string; labelSelector?: string; page?: number; pageSize?: number }) {
+export function fetchK8sPods(
+  clusterId: number,
+  params?: { namespace?: string; labelSelector?: string; page?: number; pageSize?: number }
+) {
   return request<PaginatedResponse<K8s.Pod>>({
     url: `/k8s/clusters/${clusterId}/pods`,
     method: 'get',
@@ -416,6 +493,17 @@ export function deleteK8sPod(clusterId: number, data: { namespace: string; name:
   });
 }
 
+/**
+ * 更新 Pod
+ */
+export function updateK8sPod(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/pods`,
+    method: 'put',
+    data
+  });
+}
+
 // ========== Services ==========
 
 /**
@@ -439,12 +527,96 @@ export function getK8sService(clusterId: number, namespace: string, name: string
   });
 }
 
+/**
+ * 更新 Service
+ */
+export function updateK8sService(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/services`,
+    method: 'put',
+    data
+  });
+}
+
+/**
+ * 删除 Service
+ */
+export function deleteK8sService(clusterId: number, data: { namespace: string; name: string }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/services`,
+    method: 'delete',
+    data
+  });
+}
+
+// ========== Ingresses ==========
+
+/**
+ * 获取 Ingress 列表（支持分页）
+ */
+export function fetchK8sIngresses(
+  clusterId: number,
+  params?: { namespace?: string; page?: number; pageSize?: number }
+) {
+  return request<PaginatedResponse<K8s.Ingress>>({
+    url: `/k8s/clusters/${clusterId}/ingresses`,
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取 Ingress 详情
+ */
+export function getK8sIngress(clusterId: number, namespace: string, name: string) {
+  return request<K8s.Ingress & { manifest: string }>({
+    url: `/k8s/clusters/${clusterId}/ingresses/${namespace}/${name}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 创建 Ingress
+ */
+export function createK8sIngress(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/ingresses`,
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 更新 Ingress
+ */
+export function updateK8sIngress(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/ingresses`,
+    method: 'put',
+    data
+  });
+}
+
+/**
+ * 删除 Ingress
+ */
+export function deleteK8sIngress(clusterId: number, data: { namespace: string; name: string }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/ingresses`,
+    method: 'delete',
+    data
+  });
+}
+
 // ========== ConfigMaps ==========
 
 /**
  * 获取 ConfigMap 列表（支持分页）
  */
-export function fetchK8sConfigMaps(clusterId: number, params?: { namespace?: string; page?: number; pageSize?: number }) {
+export function fetchK8sConfigMaps(
+  clusterId: number,
+  params?: { namespace?: string; page?: number; pageSize?: number }
+) {
   return request<PaginatedResponse<K8s.ConfigMap>>({
     url: `/k8s/clusters/${clusterId}/configmaps`,
     method: 'get',
@@ -459,6 +631,28 @@ export function getK8sConfigMap(clusterId: number, namespace: string, name: stri
   return request<K8s.ConfigMap & { manifest: string; data: Record<string, string> }>({
     url: `/k8s/clusters/${clusterId}/configmaps/${namespace}/${name}`,
     method: 'get'
+  });
+}
+
+/**
+ * 更新 ConfigMap
+ */
+export function updateK8sConfigMap(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/configmaps`,
+    method: 'put',
+    data
+  });
+}
+
+/**
+ * 删除 ConfigMap
+ */
+export function deleteK8sConfigMap(clusterId: number, data: { namespace: string; name: string }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/configmaps`,
+    method: 'delete',
+    data
   });
 }
 
@@ -485,6 +679,28 @@ export function getK8sSecret(clusterId: number, namespace: string, name: string)
   });
 }
 
+/**
+ * 更新 Secret
+ */
+export function updateK8sSecret(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/secrets`,
+    method: 'put',
+    data
+  });
+}
+
+/**
+ * 删除 Secret
+ */
+export function deleteK8sSecret(clusterId: number, data: { namespace: string; name: string }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/secrets`,
+    method: 'delete',
+    data
+  });
+}
+
 // ========== Events ==========
 
 /**
@@ -495,6 +711,245 @@ export function fetchK8sEvents(clusterId: number, namespace?: string, fieldSelec
     url: `/k8s/clusters/${clusterId}/events`,
     method: 'get',
     params: { namespace, fieldSelector }
+  });
+}
+
+// ========== StatefulSets ==========
+
+/**
+ * 获取 StatefulSet 列表（支持分页）
+ */
+export function fetchK8sStatefulSets(
+  clusterId: number,
+  params?: { namespace?: string; page?: number; pageSize?: number }
+) {
+  return request<PaginatedResponse<K8s.StatefulSet>>({
+    url: `/k8s/clusters/${clusterId}/statefulsets`,
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取 StatefulSet 详情
+ */
+export function getK8sStatefulSet(clusterId: number, namespace: string, name: string) {
+  return request<K8s.StatefulSet & { manifest: string; images: string[] }>({
+    url: `/k8s/clusters/${clusterId}/statefulsets/${namespace}/${name}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 重启 StatefulSet
+ */
+export function restartK8sStatefulSet(clusterId: number, data: { namespace: string; name: string }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/statefulsets/restart`,
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 获取 StatefulSet 管理的 Pods
+ */
+export function getK8sStatefulSetPods(clusterId: number, namespace: string, name: string) {
+  return request<K8s.Pod[]>({
+    url: `/k8s/clusters/${clusterId}/statefulsets/${namespace}/${name}/pods`,
+    method: 'get'
+  });
+}
+
+/**
+ * 删除 StatefulSet
+ */
+export function deleteK8sStatefulSet(clusterId: number, data: { namespace: string; name: string }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/statefulsets`,
+    method: 'delete',
+    data
+  });
+}
+
+/**
+ * 更新 StatefulSet
+ */
+export function updateK8sStatefulSet(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/statefulsets`,
+    method: 'put',
+    data
+  });
+}
+
+// ========== DaemonSets ==========
+
+/**
+ * 获取 DaemonSet 列表（支持分页）
+ */
+export function fetchK8sDaemonSets(
+  clusterId: number,
+  params?: { namespace?: string; page?: number; pageSize?: number }
+) {
+  return request<PaginatedResponse<K8s.DaemonSet>>({
+    url: `/k8s/clusters/${clusterId}/daemonsets`,
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取 DaemonSet 详情
+ */
+export function getK8sDaemonSet(clusterId: number, namespace: string, name: string) {
+  return request<K8s.DaemonSet & { manifest: string; images: string[] }>({
+    url: `/k8s/clusters/${clusterId}/daemonsets/${namespace}/${name}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 重启 DaemonSet
+ */
+export function restartK8sDaemonSet(clusterId: number, data: { namespace: string; name: string }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/daemonsets/restart`,
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 获取 DaemonSet 管理的 Pods
+ */
+export function getK8sDaemonSetPods(clusterId: number, namespace: string, name: string) {
+  return request<K8s.Pod[]>({
+    url: `/k8s/clusters/${clusterId}/daemonsets/${namespace}/${name}/pods`,
+    method: 'get'
+  });
+}
+
+/**
+ * 删除 DaemonSet
+ */
+export function deleteK8sDaemonSet(clusterId: number, data: { namespace: string; name: string }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/daemonsets`,
+    method: 'delete',
+    data
+  });
+}
+
+/**
+ * 更新 DaemonSet
+ */
+export function updateK8sDaemonSet(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/daemonsets`,
+    method: 'put',
+    data
+  });
+}
+
+// ========== Jobs ==========
+
+/**
+ * 获取 Job 列表（支持分页）
+ */
+export function fetchK8sJobs(clusterId: number, params?: { namespace?: string; page?: number; pageSize?: number }) {
+  return request<PaginatedResponse<K8s.Job>>({
+    url: `/k8s/clusters/${clusterId}/jobs`,
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取 Job 详情
+ */
+export function getK8sJob(clusterId: number, namespace: string, name: string) {
+  return request<K8s.Job & { manifest: string; images: string[] }>({
+    url: `/k8s/clusters/${clusterId}/jobs/${namespace}/${name}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 删除 Job
+ */
+export function deleteK8sJob(clusterId: number, data: { namespace: string; name: string }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/jobs`,
+    method: 'delete',
+    data
+  });
+}
+
+/**
+ * 更新 Job
+ */
+export function updateK8sJob(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/jobs`,
+    method: 'put',
+    data
+  });
+}
+
+// ========== CronJobs ==========
+
+/**
+ * 获取 CronJob 列表（支持分页）
+ */
+export function fetchK8sCronJobs(clusterId: number, params?: { namespace?: string; page?: number; pageSize?: number }) {
+  return request<PaginatedResponse<K8s.CronJob>>({
+    url: `/k8s/clusters/${clusterId}/cronjobs`,
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取 CronJob 详情
+ */
+export function getK8sCronJob(clusterId: number, namespace: string, name: string) {
+  return request<K8s.CronJob & { manifest: string; images: string[] }>({
+    url: `/k8s/clusters/${clusterId}/cronjobs/${namespace}/${name}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 暂停 CronJob
+ */
+export function suspendK8sCronJob(clusterId: number, data: { namespace: string; name: string }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/cronjobs/suspend`,
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 删除 CronJob
+ */
+export function deleteK8sCronJob(clusterId: number, data: { namespace: string; name: string }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/cronjobs`,
+    method: 'delete',
+    data
+  });
+}
+
+/**
+ * 更新 CronJob
+ */
+export function updateK8sCronJob(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/cronjobs`,
+    method: 'put',
+    data
   });
 }
 

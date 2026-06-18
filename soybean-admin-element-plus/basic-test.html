@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>原始页面测试</title>
+  </head>
+  <body>
+    <h1>原始页面测试</h1>
+    <p>如果你能看到这个页面，说明HTML基础加载正常。</p>
+    <div id="app"></div>
+    <script>
+      console.log('=== 开始JavaScript执行 ===');
+      const app = document.getElementById('app');
+      console.log('找到app元素:', app);
+
+      // 尝试加载main.ts
+      import('/src/main.ts')
+        .then(() => {
+          console.log('✓ main.ts加载成功');
+          app.innerHTML = '<p style="color: green;">main.ts加载成功！2秒后检查是否挂载...</p>';
+
+          setTimeout(() => {
+            const appContent = document.getElementById('app');
+            console.log('App当前内容:', appContent?.innerHTML.substring(0, 100));
+            if (appContent?.innerHTML.includes('main.ts加载成功')) {
+              app.innerHTML = '<p style="color: red;">Vue应用没有挂载，main.ts可能执行失败</p>';
+            }
+          }, 2000);
+        })
+        .catch(error => {
+          console.error('✗ main.ts加载失败:', error);
+          app.innerHTML = '<p style="color: red;">main.ts加载失败: ' + error.message + '</p>';
+        });
+    </script>
+  </body>
+</html>

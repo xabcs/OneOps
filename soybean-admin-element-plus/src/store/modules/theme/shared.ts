@@ -174,7 +174,9 @@ export function getBorderRadiusCssVars(borderRadius: App.Theme.ThemeSetting['bor
       --el-border-radius-small: ${components.input};
       --el-border-radius-round: ${components.tag};
       --el-border-radius-circle: ${components.radio};
-    `.replace(/\s+/g, ' ').trim();
+    `
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   // 使用统一分类圆角
@@ -192,7 +194,9 @@ export function getBorderRadiusCssVars(borderRadius: App.Theme.ThemeSetting['bor
     --border-radius-switch: 12px;
     --border-radius-checkbox: 4px;
     --border-radius-radio: 50%;
-  `.replace(/\s+/g, ' ').trim();
+  `
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /**
@@ -201,7 +205,11 @@ export function getBorderRadiusCssVars(borderRadius: App.Theme.ThemeSetting['bor
  * @param tokens
  * @param borderRadius Border radius settings
  */
-export function addThemeVarsToGlobal(tokens: App.Theme.BaseToken, darkTokens: App.Theme.BaseToken, borderRadius?: App.Theme.ThemeSetting['borderRadius']) {
+export function addThemeVarsToGlobal(
+  tokens: App.Theme.BaseToken,
+  darkTokens: App.Theme.BaseToken,
+  borderRadius?: App.Theme.ThemeSetting['borderRadius']
+) {
   // 调试：入口日志
   console.log('[ThemeVars] ========== addThemeVarsToGlobal called ==========');
 
@@ -212,7 +220,7 @@ export function addThemeVarsToGlobal(tokens: App.Theme.BaseToken, darkTokens: Ap
   // 调试：打印参数
   console.log('[ThemeVars] borderRadius:', borderRadius);
   console.log('[ThemeVars] borderRadiusStr:', borderRadiusStr);
-  console.log('[ThemeVars] full CSS:', cssVarStr + ' ' + borderRadiusStr);
+  console.log('[ThemeVars] full CSS:', `${cssVarStr} ${borderRadiusStr}`);
 
   const css = `:root { ${cssVarStr} ${borderRadiusStr} }`;
 

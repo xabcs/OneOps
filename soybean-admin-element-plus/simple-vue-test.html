@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>简单Vue测试</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .success {
+        color: green;
+      }
+      .error {
+        color: red;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 5px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div class="container">
+        <h1>简单Vue测试</h1>
+        <p v-if="message" :class="success ? 'success' : 'error'">{{ message }}</p>
+        <button @click="testVue">测试Vue</button>
+        <button @click="testAPI">测试API</button>
+        <button @click="testMain">测试Main.ts</button>
+        <div v-if="results.length > 0">
+          <h3>测试结果:</h3>
+          <ul>
+            <li v-for="(result, index) in results" :key="index" :class="result.success ? 'success' : 'error'">
+              {{ result.text }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { createApp } = Vue;
+
+      createApp({
+        data() {
+          return {
+            message: '',
+            success: false,
+            results: []
+          };
+        },
+        methods: {
+          addResult(text, success) {
+            this.results.push({ text, success });
+          },
+          testVue() {
+            try {
+              this.message = 'Vue工作正常！';
+              this.success = true;
+              this.addResult('✓ Vue框架正常工作', true);
+            } catch (error) {
+              this.message = 'Vue错误: ' + error.message;
+              this.success = false;
+              this.addResult('✗ Vue错误: ' + error.message, false);
+            }
+          },
+          async testAPI() {
+            try {
+              const response = await fetch('/api/route/getConstantRoutes');
+              const data = await response.json();
+              if (data.success) {
+                this.addResult('✓ API代理工作正常', true);
+              } else {
+                this.addResult('✗ API响应异常', false);
+              }
+            } catch (error) {
+              this.addResult('✗ API请求失败: ' + error.message, false);
+            }
+          },
+          async testMain() {
+            try {
+              const mainModule = await import('/src/main.ts');
+              this.addResult('✓ main.ts模块加载成功', true);
+            } catch (error) {
+              this.addResult('✗ main.ts加载失败: ' + error.message, false);
+              console.error('Main.ts加载错误:', error);
+            }
+          }
+        }
+      }).mount('#app');
+    </script>
+  </body>
+</html>

@@ -385,7 +385,6 @@ onMounted(async () => {
       id: Number(query.serverId),
       hostname: query.hostname as string,
       ip: query.ip as string,
-      sshUser: (query.sshUser as string) || 'root',
       env: query.env as string,
       agentStatus: query.agentStatus as string
     };

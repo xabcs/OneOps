@@ -128,7 +128,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
         </span>
       </div>
       <div class="flex items-center space-x-2">
-        <el-button size="small" @click="handleDisconnect">断开连接</el-button>
+        <ElButton size="small" @click="handleDisconnect">断开连接</ElButton>
       </div>
     </div>
     <div ref="terminalRef" class="flex-1 overflow-auto bg-black p-2 text-sm font-mono">

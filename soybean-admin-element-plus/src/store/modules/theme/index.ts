@@ -166,7 +166,10 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
    * @param key Border radius key
    * @param value Border radius value
    */
-  function setBorderRadius<K extends keyof App.Theme.ThemeSetting['borderRadius']>(key: K, value: App.Theme.ThemeSetting['borderRadius'][K]) {
+  function setBorderRadius<K extends keyof App.Theme.ThemeSetting['borderRadius']>(
+    key: K,
+    value: App.Theme.ThemeSetting['borderRadius'][K]
+  ) {
     (settings.value.borderRadius as any)[key] = value;
   }
 
@@ -230,7 +233,7 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     // watch border radius change
     watch(
       () => settings.value.borderRadius,
-      (newVal) => {
+      newVal => {
         console.log('[ThemeStore] borderRadius changed:', newVal);
         setupThemeVarsToGlobal();
         console.log('[ThemeStore] setupThemeVarsToGlobal called');

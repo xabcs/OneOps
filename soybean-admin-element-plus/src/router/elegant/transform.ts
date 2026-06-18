@@ -214,6 +214,8 @@ const routeMap: RouteMap = {
   "cmdb_server": "/cmdb/server",
   "cmdb_servers": "/cmdb/servers",
   "cmdb_tags": "/cmdb/tags",
+  "demo-route": "/demo-route",
+  "demo-route_child": "/demo-route/child/:id",
   "function": "/function",
   "function_hide-child": "/function/hide-child",
   "function_hide-child_one": "/function/hide-child/one",

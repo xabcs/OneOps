@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>JavaScript测试</title>
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+      }
+      .test {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ccc;
+      }
+      .error {
+        background: #fee;
+        color: red;
+      }
+      .success {
+        background: #efe;
+        color: green;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>JavaScript执行测试</h1>
+    <div id="results"></div>
+
+    <script>
+      const results = document.getElementById('results');
+
+      function log(message, type = 'info') {
+        const div = document.createElement('div');
+        div.className = `test ${type}`;
+        div.textContent = message;
+        results.appendChild(div);
+      }
+
+      // 测试1: 检查DOM是否正常
+      log('✓ DOM正常加载', 'success');
+
+      // 测试2: 检查fetch是否正常
+      fetch('/api/route/getConstantRoutes')
+        .then(response => response.json())
+        .then(data => log('✓ API请求正常: ' + data.success, 'success'))
+        .catch(error => log('✗ API请求失败: ' + error.message, 'error'));
+
+      // 测试3: 检查模块加载
+      log('正在测试模块加载...', 'info');
+
+      // 动态导入测试
+      import('/src/main.ts')
+        .then(() => log('✓ main.ts模块加载成功', 'success'))
+        .catch(error => log('✗ main.ts模块加载失败: ' + error.message, 'error'));
+
+      log('测试完成，如果看到此消息，说明基础JavaScript正常工作', 'success');
+    </script>
+  </body>
+</html>

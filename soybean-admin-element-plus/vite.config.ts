@@ -23,7 +23,13 @@ export default defineConfig(configEnv => {
       preprocessorOptions: {
         scss: {
           api: 'modern-compiler',
-          additionalData: `@use "@/styles/scss/global.scss" as *;`
+          additionalData: (content, loaderPath) => {
+            // 避免循环依赖：不要在 global.scss 文件中注入自己
+            if (loaderPath.includes('/styles/scss/global.scss')) {
+              return content;
+            }
+            return `@use "@/styles/scss/global.scss" as *; ${content}`;
+          }
         }
       }
     },

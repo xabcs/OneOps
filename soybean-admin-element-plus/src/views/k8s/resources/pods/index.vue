@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   ElButton,
   ElDialog,
@@ -20,15 +21,16 @@ import {
 } from 'element-plus';
 import {
   deleteK8sPod,
-  fetchK8sClusters,
   fetchK8sClusterNamespaces,
-  fetchK8sPods,
-  fetchK8sPodLogs
+  fetchK8sClusters,
+  fetchK8sPodLogs,
+  fetchK8sPods
 } from '@/service/api/k8s';
 import PodTerminal from '../../terminal/PodTerminal.vue';
 
 defineOptions({ name: 'K8sPods' });
 
+const router = useRouter();
 const message = ElMessage;
 
 const loading = ref(false);
@@ -144,7 +146,7 @@ const loadPods = async () => {
     });
 
     // 处理不同的响应格式
-    const pods = Array.isArray(res) ? res : (res?.data || []);
+    const pods = Array.isArray(res) ? res : res?.data || [];
     dataSource.value = pods;
     pagination.itemCount = pods?.length || 0;
   } catch (error: any) {
@@ -192,18 +194,13 @@ const handleLogs = async (row: any, containerName?: string) => {
   showLogs.value = true;
 
   try {
-    const res = await fetchK8sPodLogs(
-      selectedCluster.value!,
-      filters.namespace,
-      row.name,
-      {
-        container: containerName || '',
-        tailLines: logTailLines.value
-      }
-    );
+    const res = await fetchK8sPodLogs(selectedCluster.value!, filters.namespace, row.name, {
+      container: containerName || '',
+      tailLines: logTailLines.value
+    });
     logContent.value = res.logs || '暂无日志';
   } catch (error: any) {
-    logContent.value = '日志加载失败: ' + (error.message || '未知错误');
+    logContent.value = `日志加载失败: ${error.message || '未知错误'}`;
   }
 };
 
@@ -225,6 +222,18 @@ const handleDelete = async (row: any) => {
       message.error(error.message || '删除失败');
     }
   }
+};
+
+// 查看详情
+const handleViewDetail = (row: any) => {
+  router.push({
+    path: '/k8s/resources/pods/detail',
+    query: {
+      clusterId: selectedCluster.value?.toString(),
+      namespace: filters.namespace,
+      name: row.name
+    }
+  });
 };
 
 // 刷新
@@ -251,43 +260,28 @@ onMounted(() => {
 <template>
   <div class="p-4">
     <!-- 筛选栏 -->
-    <div class="mb-4 flex items-center gap-4 bg-card p-4 rounded-lg">
+    <div class="bg-card mb-4 flex items-center gap-4 rounded-lg p-4">
       <div class="flex items-center gap-2">
         <span class="text-sm font-medium">集群:</span>
-        <el-select
-          v-model="selectedCluster"
-          placeholder="请选择集群"
-          style="width: 200px"
-          @change="handleClusterChange"
-        >
-          <el-option
-            v-for="cluster in clusters"
-            :key="cluster.id"
-            :label="cluster.name"
-            :value="cluster.id"
-          />
-        </el-select>
+        <ElSelect v-model="selectedCluster" placeholder="请选择集群" style="width: 200px" @change="handleClusterChange">
+          <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
+        </ElSelect>
       </div>
 
       <div class="flex items-center gap-2">
         <span class="text-sm font-medium">命名空间:</span>
-        <el-select
+        <ElSelect
           v-model="filters.namespace"
           placeholder="请选择命名空间"
           style="width: 180px"
           @change="handleNamespaceChange"
         >
-          <el-option
-            v-for="ns in namespaces"
-            :key="ns"
-            :label="ns"
-            :value="ns"
-          />
-        </el-select>
+          <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
+        </ElSelect>
       </div>
 
       <div class="flex items-center gap-2">
-        <el-input
+        <ElInput
           v-model="filters.labelSelector"
           placeholder="标签选择器 (可选)"
           style="width: 200px"
@@ -298,61 +292,56 @@ onMounted(() => {
 
       <div class="flex-1" />
 
-      <el-button type="primary" :disabled="!selectedCluster" @click="handleRefresh">
-        刷新
-      </el-button>
+      <ElButton type="primary" :disabled="!selectedCluster" @click="handleRefresh">刷新</ElButton>
     </div>
 
     <!-- Pod 列表 -->
-    <el-table v-loading="loading" :data="dataSource" stripe>
-      <el-table-column prop="name" label="名称" min-width="200" />
-      <el-table-column prop="namespace" label="命名空间" width="150" />
-      <el-table-column label="状态" width="120">
+    <ElTable v-loading="loading" :data="dataSource" stripe>
+      <ElTableColumn prop="name" label="名称" min-width="200" />
+      <ElTableColumn prop="namespace" label="命名空间" width="150" />
+      <ElTableColumn label="状态" width="120">
         <template #default="{ row }">
-          <el-tag :type="getStatusTag(row).type">
+          <ElTag :type="getStatusTag(row).type">
             {{ getStatusTag(row).text }}
-          </el-tag>
+          </ElTag>
         </template>
-      </el-table-column>
-      <el-table-column prop="ip" label="IP 地址" width="140" />
-      <el-table-column prop="node" label="节点" width="180" />
-      <el-table-column label="重启次数" width="100" align="center">
+      </ElTableColumn>
+      <ElTableColumn prop="ip" label="IP 地址" width="140" />
+      <ElTableColumn prop="node" label="节点" width="180" />
+      <ElTableColumn label="重启次数" width="100" align="center">
         <template #default="{ row }">
           {{ row.restarts || 0 }}
         </template>
-      </el-table-column>
-      <el-table-column prop="age" label="年龄" width="160" />
-      <el-table-column label="操作" width="280" fixed="right">
+      </ElTableColumn>
+      <ElTableColumn prop="age" label="年龄" width="160" />
+      <ElTableColumn label="操作" width="350" fixed="right">
         <template #default="{ row }">
-          <el-space wrap>
-            <el-button size="small" type="primary" @click="handleTerminal(row)">
-              进入终端
-            </el-button>
-            <el-button size="small" @click="handleLogs(row)">
-              查看日志
-            </el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">
-              删除
-            </el-button>
-          </el-space>
+          <ElSpace wrap>
+            <ElButton size="small" @click="handleViewDetail(row)">查看详情</ElButton>
+            <ElButton size="small" type="primary" @click="handleTerminal(row)">进入终端</ElButton>
+            <ElButton size="small" @click="handleLogs(row)">查看日志</ElButton>
+            <ElButton size="small" type="danger" @click="handleDelete(row)">删除</ElButton>
+          </ElSpace>
         </template>
-      </el-table-column>
-    </el-table>
+      </ElTableColumn>
+    </ElTable>
 
     <!-- 日志弹窗 -->
-    <el-dialog v-model="showLogs" :title="`日志: ${logPodName}`" width="900px" top="5vh">
-      <div class="flex items-center gap-4 mb-4">
+    <ElDialog v-model="showLogs" :title="`日志: ${logPodName}`" width="900px" top="5vh">
+      <div class="mb-4 flex items-center gap-4">
         <span class="text-sm text-gray-600">行数:</span>
-        <el-input-number v-model="logTailLines" :min="10" :max="10000" :step="100" />
-        <el-button size="small" @click="handleLogs({ name: logPodName }, logContainerName)">
-          刷新
-        </el-button>
+        <ElInputNumber v-model="logTailLines" :min="10" :max="10000" :step="100" />
+        <ElButton size="small" @click="handleLogs({ name: logPodName }, logContainerName)">刷新</ElButton>
       </div>
-      <div class="bg-black text-green-400 p-4 rounded font-mono text-sm overflow-auto max-h-[600px] whitespace-pre-wrap">{{ logContent }}</div>
-    </el-dialog>
+      <div
+        class="max-h-[600px] overflow-auto whitespace-pre-wrap rounded bg-black p-4 text-sm text-green-400 font-mono"
+      >
+        {{ logContent }}
+      </div>
+    </ElDialog>
 
     <!-- 终端弹窗 -->
-    <el-dialog v-model="showTerminal" title="Pod 终端" width="900px" fullscreen @close="closeTerminal">
+    <ElDialog v-model="showTerminal" title="Pod 终端" width="900px" fullscreen @close="closeTerminal">
       <PodTerminal
         v-if="showTerminal"
         :cluster-id="terminalProps.clusterId"
@@ -360,6 +349,6 @@ onMounted(() => {
         :pod-name="terminalProps.podName"
         :container-name="terminalProps.containerName"
       />
-    </el-dialog>
+    </ElDialog>
   </div>
 </template>

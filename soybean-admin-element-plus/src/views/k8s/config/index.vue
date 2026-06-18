@@ -1,20 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import {
-  ElButton,
-  ElMessage,
-  ElPagination,
-  ElSpace,
-  ElTag,
-  ElTabs,
-  ElTabPane
-} from 'element-plus';
-import {
-  fetchK8sClusters,
-  fetchK8sClusterNamespaces,
-  fetchK8sConfigMaps,
-  fetchK8sSecrets
-} from '@/service/api/k8s';
+import { ElButton, ElMessage, ElPagination, ElTabPane, ElTabs, ElTag } from 'element-plus';
+import { fetchK8sClusterNamespaces, fetchK8sClusters, fetchK8sConfigMaps, fetchK8sSecrets } from '@/service/api/k8s';
 
 defineOptions({ name: 'K8sConfig' });
 
@@ -181,151 +168,166 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="config-page p-24px bg-layout">
+  <div class="config-page p-24px">
     <!-- 页面标题 -->
     <div class="mb-24px">
-      <h1 class="text-28px font-bold text-primary">配置管理</h1>
-      <p class="text-14px text-tertiary mt-8px">管理 Kubernetes 配置资源</p>
+      <h1 class="text-28px text-primary font-bold">配置管理</h1>
+      <p class="text-tertiary mt-8px text-14px">管理 Kubernetes 配置资源</p>
     </div>
 
     <!-- 头部：集群/命名空间选择和刷新按钮（同一行）-->
     <div class="mb-16px flex items-center justify-between gap-12px">
       <!-- 左侧：集群和命名空间选择 -->
       <div class="filter-inputs flex items-center gap-8px">
-        <el-select
-          v-model="selectedCluster"
-          style="width: 200px"
-          @change="loadNamespaces"
-        >
+        <ElSelect v-model="selectedCluster" style="width: 200px" @change="loadNamespaces">
           <template #prefix>
             <span class="select-fixed-label">选择集群</span>
           </template>
-          <el-option
-            v-for="cluster in clusters"
-            :key="cluster.id"
-            :label="cluster.name"
-            :value="cluster.id"
-          />
-        </el-select>
-        <el-select
-          v-model="selectedNamespace"
-          style="width: 180px"
-          @change="loadCurrentData"
-        >
+          <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
+        </ElSelect>
+        <ElSelect v-model="selectedNamespace" style="width: 180px" @change="loadCurrentData">
           <template #prefix>
             <span class="select-fixed-label">选择命名空间</span>
           </template>
-          <el-option
-            v-for="ns in namespaces"
-            :key="ns"
-            :label="ns"
-            :value="ns"
-          />
-        </el-select>
+          <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
+        </ElSelect>
       </div>
 
       <!-- 右侧：刷新按钮 -->
-      <el-button text @click="loadCurrentData">
+      <ElButton text @click="loadCurrentData">
         <icon-mdi-refresh class="text-18px" :class="{ 'animate-spin': loading }" />
-      </el-button>
+      </ElButton>
     </div>
 
     <!-- Tab 切换 -->
-    <el-tabs v-model="activeTab" @tab-change="handleTabChange">
+    <ElTabs v-model="activeTab" @tab-change="handleTabChange">
       <!-- 配置项 -->
-      <el-tab-pane label="配置项" name="configmaps">
-        <div v-loading="loading" class="tab-content">
-          <el-table :data="configmapsData" stripe>
-            <el-table-column prop="name" label="名称" width="200" />
-            <el-table-column prop="namespace" label="命名空间" width="150" />
-            <el-table-column label="数据键" width="300">
+      <ElTabPane label="配置项" name="configmaps">
+        <div v-loading="loading" class="table-container">
+          <ElTable
+            :data="configmapsData"
+            class="config-table"
+            :header-cell-style="{ background: '#f5f7fa', color: '#303133', fontWeight: '600' }"
+            :row-style="{ backgroundColor: 'transparent' }"
+            :cell-style="{ backgroundColor: 'transparent', padding: '8px 0' }"
+          >
+            <ElTableColumn prop="name" label="名称" min-width="200" align="left" />
+            <ElTableColumn prop="namespace" label="命名空间" min-width="150" align="left" />
+            <ElTableColumn label="数据键" min-width="300" align="left">
               <template #default="{ row }">
-                <el-tag
-                  v-for="(key, index) in row.dataKeys"
-                  :key="index"
-                  size="small"
-                  class="mr-4px mb-4px"
-                >
+                <ElTag v-for="(key, index) in row.dataKeys" :key="index" size="small" class="mb-4px mr-4px">
                   {{ key }}
-                </el-tag>
+                </ElTag>
               </template>
-            </el-table-column>
-            <el-table-column prop="age" label="年龄" width="120" />
-            <el-table-column label="操作" width="150">
+            </ElTableColumn>
+            <ElTableColumn prop="age" label="年龄" min-width="120" align="left" />
+            <ElTableColumn label="操作" min-width="120" align="left">
               <template #default="{ row }">
-                <el-button link type="primary" size="small">
-                  查看详情
-                </el-button>
+                <ElButton link type="primary" size="default">查看详情</ElButton>
               </template>
-            </el-table-column>
-          </el-table>
+            </ElTableColumn>
+          </ElTable>
 
-          <el-pagination
-            v-model:current-page="configmapsPagination.page"
-            v-model:page-size="configmapsPagination.pageSize"
-            :total="configmapsPagination.itemCount"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, sizes, prev, pager, next, jumper"
-            class="mt-16px"
-            @current-change="loadConfigMaps"
-            @size-change="handlePageSizeChange"
-          />
+          <div class="bottom-toolbar">
+            <ElPagination
+              v-model:current-page="configmapsPagination.page"
+              v-model:page-size="configmapsPagination.pageSize"
+              :total="configmapsPagination.itemCount"
+              :page-sizes="[10, 20, 50, 100]"
+              layout="total, sizes, prev, pager, next, jumper"
+              @current-change="loadConfigMaps"
+              @size-change="handlePageSizeChange"
+            />
+          </div>
         </div>
-      </el-tab-pane>
+      </ElTabPane>
 
       <!-- 保密字典 -->
-      <el-tab-pane label="保密字典" name="secrets">
-        <div v-loading="loading" class="tab-content">
-          <el-table :data="secretsData" stripe>
-            <el-table-column prop="name" label="名称" width="200" />
-            <el-table-column prop="namespace" label="命名空间" width="150" />
-            <el-table-column prop="type" label="类型" width="150">
+      <ElTabPane label="保密字典" name="secrets">
+        <div v-loading="loading" class="table-container">
+          <ElTable
+            :data="secretsData"
+            class="config-table"
+            :header-cell-style="{ background: '#f5f7fa', color: '#303133', fontWeight: '600' }"
+            :row-style="{ backgroundColor: 'transparent' }"
+            :cell-style="{ backgroundColor: 'transparent', padding: '8px 0' }"
+          >
+            <ElTableColumn prop="name" label="名称" min-width="200" align="left" />
+            <ElTableColumn prop="namespace" label="命名空间" min-width="150" align="left" />
+            <ElTableColumn prop="type" label="类型" min-width="150" align="left">
               <template #default="{ row }">
-                <el-tag>{{ row.type }}</el-tag>
+                <ElTag>{{ row.type }}</ElTag>
               </template>
-            </el-table-column>
-            <el-table-column label="数据键" width="300">
+            </ElTableColumn>
+            <ElTableColumn label="数据键" min-width="300" align="left">
               <template #default="{ row }">
-                <el-tag
+                <ElTag
                   v-for="(key, index) in row.dataKeys"
                   :key="index"
                   size="small"
-                  class="mr-4px mb-4px"
+                  class="mb-4px mr-4px"
                   type="warning"
                 >
                   ***
-                </el-tag>
+                </ElTag>
               </template>
-            </el-table-column>
-            <el-table-column prop="age" label="年龄" width="120" />
-            <el-table-column label="操作" width="150">
+            </ElTableColumn>
+            <ElTableColumn prop="age" label="年龄" min-width="120" align="left" />
+            <ElTableColumn label="操作" min-width="120" align="left">
               <template #default="{ row }">
-                <el-button link type="primary" size="small">
-                  查看详情
-                </el-button>
+                <ElButton link type="primary" size="default">查看详情</ElButton>
               </template>
-            </el-table-column>
-          </el-table>
+            </ElTableColumn>
+          </ElTable>
 
-          <el-pagination
-            v-model:current-page="secretsPagination.page"
-            v-model:page-size="secretsPagination.pageSize"
-            :total="secretsPagination.itemCount"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, sizes, prev, pager, next, jumper"
-            class="mt-16px"
-            @current-change="loadSecrets"
-            @size-change="handlePageSizeChange"
-          />
+          <div class="bottom-toolbar">
+            <ElPagination
+              v-model:current-page="secretsPagination.page"
+              v-model:page-size="secretsPagination.pageSize"
+              :total="secretsPagination.itemCount"
+              :page-sizes="[10, 20, 50, 100]"
+              layout="total, sizes, prev, pager, next, jumper"
+              @current-change="loadSecrets"
+              @size-change="handlePageSizeChange"
+            />
+          </div>
         </div>
-      </el-tab-pane>
-    </el-tabs>
+      </ElTabPane>
+    </ElTabs>
   </div>
 </template>
 
 <style scoped>
 .config-page {
-  min-height: 100vh;
+  height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Tab 容器自动填充剩余空间 */
+:deep(.el-tabs) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Tab 内容区域自动填充 */
+:deep(.el-tabs__content) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 每个 Tab 页面填充空间 */
+:deep(.el-tab-pane) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
 }
 
 /* 筛选输入框样式 - 参考主机资产页面 */
@@ -348,7 +350,6 @@ onMounted(async () => {
     font-size: 12px;
   }
 
-  /* 隐藏选中项的显示，因为我们要显示固定的标签文案 */
   :deep(.el-select .el-select__selection) {
     display: none;
   }
@@ -357,12 +358,10 @@ onMounted(async () => {
     display: none;
   }
 
-  /* placeholder 样式 - 隐藏，因为我们用 prefix 替代 */
   :deep(.el-select .el-select__placeholder) {
     display: none;
   }
 
-  /* 固定标签文案样式 */
   .select-fixed-label {
     font-size: 12px;
     color: var(--el-text-color-regular);
@@ -370,14 +369,94 @@ onMounted(async () => {
     padding-left: 8px;
   }
 
-  /* 当有选中值时，调整 prefix 的位置 */
   :deep(.el-select.has-value .el-select__prefix) {
     position: static;
     flex: none;
   }
 }
 
-.tab-content {
-  min-height: 400px;
+/* 表格容器 */
+.table-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+}
+
+/* 表格样式 */
+.config-table {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-bottom: 60px;
+
+  /* 表头样式 */
+  :deep(.el-table__header-wrapper) {
+    th.el-table__cell {
+      background-color: #f5f7fa !important;
+      color: #303133;
+      font-weight: 600;
+      text-align: left;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+  }
+
+  /* 数据行透明 */
+  :deep(.el-table__body-wrapper) {
+    background-color: transparent !important;
+  }
+
+  :deep(.el-table__body) {
+    background-color: transparent !important;
+  }
+
+  :deep(.el-table__body tr) {
+    background-color: transparent !important;
+  }
+
+  :deep(.el-table__body td.el-table__cell) {
+    background-color: transparent !important;
+  }
+
+  :deep(.el-table__body tr:hover > td.el-table__cell) {
+    background-color: transparent !important;
+  }
+
+  :deep(.el-table__inner-wrapper) {
+    background-color: transparent !important;
+  }
+
+  :deep(.el-table__fixed),
+  :deep(.el-table__fixed-body-wrapper) {
+    background-color: transparent !important;
+
+    .el-table__body tr,
+    .el-table__body td.el-table__cell {
+      background-color: transparent !important;
+    }
+  }
+}
+
+/* 底部工具栏固定在底部 */
+.bottom-toolbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 12px 16px;
+  background-color: #fff;
+  border-top: 1px solid #ebeef5;
+  z-index: 10;
+
+  :deep(.el-pagination) {
+    margin: 0;
+  }
 }
 </style>

@@ -335,6 +335,26 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'demo-route',
+    path: '/demo-route',
+    component: 'layout.base',
+    meta: {
+      title: 'demo-route',
+      i18nKey: 'route.demo-route'
+    },
+    children: [
+      {
+        name: 'demo-route_child',
+        path: '/demo-route/child/:id',
+        component: 'view.demo-route_child',
+        meta: {
+          title: 'demo-route_child',
+          i18nKey: 'route.demo-route_child'
+        }
+      }
+    ]
+  },
+  {
     name: 'function',
     path: '/function',
     component: 'layout.base',

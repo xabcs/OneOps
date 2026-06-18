@@ -273,13 +273,13 @@ onMounted(() => {
               <div class="desc-item">
                 <div class="item-label">SSH 用户</div>
                 <div class="item-content">
-                  <span class="value-text">{{ server?.sshUser || '-' }}</span>
+                  <span class="value-text">{{ server?.sshCredential?.username || '-' }}</span>
                 </div>
               </div>
               <div class="desc-item">
                 <div class="item-label">用户凭证</div>
                 <div class="item-content">
-                  <span class="value-text">{{ server?.credential?.name || '-' }}</span>
+                  <span class="value-text">{{ server?.sshCredential?.name || '-' }}</span>
                 </div>
               </div>
             </div>

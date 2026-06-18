@@ -826,6 +826,55 @@ const apiUrl = import.meta.env.VITE_SERVICE_BASE_URL;
 2. 确认后端服务正常运行
 3. 查看网络请求的错误信息
 
+## 前端开发最佳实践
+
+### Element Plus 表格透明背景设置
+
+**问题**：设置 Element Plus 表格数据行透明背景时，发现没有数据时显示透明，有数据时数据行不透明。
+
+**原因分析**：Element Plus 表格的背景色是通过多层级设置的，包括行级别（`tr`）、单元格级别（`td`）和容器级别。只覆盖部分层级无法完全实现透明效果。
+
+**解决方案**：
+
+1. **在组件上直接设置样式属性**
+   ```vue
+   <el-table
+     :data="tableData"
+     :header-cell-style="{ background: '#f5f7fa', color: '#303133', fontWeight: '600' }"
+     :row-style="{ backgroundColor: 'transparent' }"
+     :cell-style="{ backgroundColor: 'transparent', padding: '8px 0' }"
+   >
+   ```
+
+2. **关键属性说明**
+   - `:header-cell-style` - 表头单元格样式，保持灰色背景以区分表头
+   - `:row-style` - **关键**：在 `tr` 元素上设置行内样式，优先级最高
+   - `:cell-style` - 数据单元格样式
+
+3. **属性名称差异**
+   - ❌ 错误：`:cell-style="{ background: 'transparent' }"` - CSS 简写属性可能不被识别
+   - ✅ 正确：`:cell-style="{ backgroundColor: 'transparent' }"` - 使用具体的 `backgroundColor` 属性
+
+4. **CSS 深度覆盖（额外保障）**
+   ```css
+   /* 精确选择数据行单元格 */
+   :deep(.el-table__body td.el-table__cell) {
+     background-color: transparent !important;
+   }
+
+   /* 表头单元格单独处理 */
+   :deep(.el-table__header th.el-table__cell) {
+     background-color: #f5f7fa !important;
+   }
+   ```
+
+5. **选择器精确度**
+   - ❌ `.el-table__cell` - 会同时选中表头和表体的单元格
+   - ✅ `td.el-table__cell` - 只选中表体的数据单元格
+   - ✅ `th.el-table__cell` - 只选中表头的单元格
+
+**总结**：Element Plus 组件的样式覆盖需要从最外层开始，使用组件属性 + CSS 深度选择器双重保障，确保样式优先级最高。
+
 ## 故障排查
 
 ### 后端启动失败

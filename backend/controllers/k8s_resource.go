@@ -354,7 +354,12 @@ func (ctrl *K8sResourceController) ListStatefulSets(c *gin.Context) {
 		return
 	}
 
-	namespace := c.DefaultQuery("namespace", "default")
+	// 绑定查询参数
+	var params dto.K8sResourceQueryParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+		return
+	}
 
 	// 检查权限
 	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
@@ -363,13 +368,16 @@ func (ctrl *K8sResourceController) ListStatefulSets(c *gin.Context) {
 		return
 	}
 
-	statefulSets, err := ctrl.container.K8sResourceService().ListStatefulSets(uint(clusterID), namespace)
+	statefulSets, total, err := ctrl.container.K8sResourceService().ListStatefulSets(uint(clusterID), params.Namespace, params.Page, params.PageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 StatefulSet 列表失败: " + err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(statefulSets))
+	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"list":  statefulSets,
+		"total": total,
+	}))
 }
 
 // GetStatefulSet 获取 StatefulSet 详情
@@ -405,6 +413,39 @@ func (ctrl *K8sResourceController) GetStatefulSet(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(statefulSet))
 }
 
+// GetStatefulSetPods 获取 StatefulSet 管理的 Pods
+func (ctrl *K8sResourceController) GetStatefulSetPods(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	namespace := c.Param("namespace")
+	name := c.Param("name")
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	pods, err := ctrl.container.K8sResourceService().GetStatefulSetPods(uint(clusterID), namespace, name)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 StatefulSet Pods 失败: " + err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(pods))
+}
+
 // ========== Workloads - DaemonSet ==========
 
 // ListDaemonSets 获取 DaemonSet 列表
@@ -421,7 +462,12 @@ func (ctrl *K8sResourceController) ListDaemonSets(c *gin.Context) {
 		return
 	}
 
-	namespace := c.DefaultQuery("namespace", "default")
+	// 绑定查询参数
+	var params dto.K8sResourceQueryParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+		return
+	}
 
 	// 检查权限
 	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
@@ -430,13 +476,16 @@ func (ctrl *K8sResourceController) ListDaemonSets(c *gin.Context) {
 		return
 	}
 
-	daemonSets, err := ctrl.container.K8sResourceService().ListDaemonSets(uint(clusterID), namespace)
+	daemonSets, total, err := ctrl.container.K8sResourceService().ListDaemonSets(uint(clusterID), params.Namespace, params.Page, params.PageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 DaemonSet 列表失败: " + err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(daemonSets))
+	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"list":  daemonSets,
+		"total": total,
+	}))
 }
 
 // GetDaemonSet 获取 DaemonSet 详情
@@ -470,6 +519,39 @@ func (ctrl *K8sResourceController) GetDaemonSet(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, utils.SuccessWithData(daemonSet))
+}
+
+// GetDaemonSetPods 获取 DaemonSet 管理的 Pods
+func (ctrl *K8sResourceController) GetDaemonSetPods(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	namespace := c.Param("namespace")
+	name := c.Param("name")
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	pods, err := ctrl.container.K8sResourceService().GetDaemonSetPods(uint(clusterID), namespace, name)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 DaemonSet Pods 失败: " + err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(pods))
 }
 
 // ========== Services ==========
@@ -672,6 +754,206 @@ func (ctrl *K8sResourceController) DeleteService(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("删除 Service 成功"))
 }
 
+// ========== Ingresses ==========
+
+// ListIngress 获取 Ingress 列表
+func (ctrl *K8sResourceController) ListIngress(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	// 绑定查询参数
+	var params dto.K8sResourceQueryParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		return
+	}
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	// 获取分页数据
+	ingresses, total, err := ctrl.container.K8sResourceService().ListIngress(uint(clusterID), params.Namespace, params.Page, params.PageSize)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Ingress 列表失败: "+err.Error()))
+		return
+	}
+
+	// 返回分页数据
+	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"list":  ingresses,
+		"total": total,
+	}))
+}
+
+// GetIngress 获取 Ingress 详情
+func (ctrl *K8sResourceController) GetIngress(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	namespace := c.Param("namespace")
+	name := c.Param("name")
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	ingress, err := ctrl.container.K8sResourceService().GetIngress(uint(clusterID), namespace, name)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Ingress 详情失败: " + err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(ingress))
+}
+
+// CreateIngressRequest 创建 Ingress 请求
+type CreateIngressRequest struct {
+	Namespace string                 `json:"namespace" binding:"required"`
+	Manifest  map[string]interface{} `json:"manifest" binding:"required"`
+}
+
+// CreateIngress 创建 Ingress
+func (ctrl *K8sResourceController) CreateIngress(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	var req CreateIngressRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+		return
+	}
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	if err := ctrl.container.K8sResourceService().CreateIngress(uint(clusterID), req.Namespace, req.Manifest); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("创建 Ingress 失败: " + err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("创建 Ingress 成功"))
+}
+
+// UpdateIngressRequest 更新 Ingress 请求
+type UpdateIngressRequest struct {
+	Namespace string                 `json:"namespace" binding:"required"`
+	Manifest  map[string]interface{} `json:"manifest" binding:"required"`
+}
+
+// UpdateIngress 更新 Ingress
+func (ctrl *K8sResourceController) UpdateIngress(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	var req UpdateIngressRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+		return
+	}
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	if err := ctrl.container.K8sResourceService().UpdateIngress(uint(clusterID), req.Namespace, req.Manifest); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("更新 Ingress 失败: " + err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("更新 Ingress 成功"))
+}
+
+// DeleteIngressRequest 删除 Ingress 请求
+type DeleteIngressRequest struct {
+	Namespace string `json:"namespace" binding:"required"`
+	Name      string `json:"name" binding:"required"`
+}
+
+// DeleteIngress 删除 Ingress
+func (ctrl *K8sResourceController) DeleteIngress(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	var req DeleteIngressRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+		return
+	}
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	if err := ctrl.container.K8sResourceService().DeleteIngress(uint(clusterID), req.Namespace, req.Name); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("删除 Ingress 失败: " + err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("删除 Ingress 成功"))
+}
+
 // ========== Pods ==========
 
 // ListPods 获取 Pod 列表
@@ -793,6 +1075,47 @@ func (ctrl *K8sResourceController) GetPodLogs(c *gin.Context) {
 	}))
 }
 
+// UpdatePodRequest 更新 Pod 请求
+type UpdatePodRequest struct {
+	Namespace string                 `json:"namespace" binding:"required"`
+	Manifest  map[string]interface{} `json:"manifest" binding:"required"`
+}
+
+// UpdatePod 更新 Pod
+func (ctrl *K8sResourceController) UpdatePod(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	var req UpdatePodRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+		return
+	}
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	if err := ctrl.container.K8sResourceService().UpdatePod(uint(clusterID), req.Namespace, req.Manifest); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("更新 Pod 失败: " + err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("更新 Pod 成功"))
+}
+
 // DeletePodRequest 删除 Pod 请求
 type DeletePodRequest struct {
 	Namespace string `json:"namespace" binding:"required"`
@@ -832,6 +1155,282 @@ func (ctrl *K8sResourceController) DeletePod(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("删除 Pod 成功"))
+}
+
+// ========== Workloads - Jobs ==========
+
+// ListJobs 获取 Job 列表
+func (ctrl *K8sResourceController) ListJobs(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	// 绑定查询参数（复用项目标准方式）
+	var params dto.K8sResourceQueryParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		return
+	}
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	// 获取分页数据
+	jobs, total, err := ctrl.container.K8sResourceService().ListJobs(uint(clusterID), params.Namespace, params.Page, params.PageSize)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Job 列表失败: "+err.Error()))
+		return
+	}
+
+	// 返回分页数据（使用项目标准格式）
+	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"list":  jobs,
+		"total": total,
+	}))
+}
+
+// GetJob 获取 Job 详情
+func (ctrl *K8sResourceController) GetJob(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	namespace := c.Param("namespace")
+	name := c.Param("name")
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	job, err := ctrl.container.K8sResourceService().GetJob(uint(clusterID), namespace, name)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Job 详情失败: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(job))
+}
+
+// DeleteJobRequest 删除 Job 请求
+type DeleteJobRequest struct {
+	Namespace string `json:"namespace" binding:"required"`
+	Name      string `json:"name" binding:"required"`
+}
+
+// DeleteJob 删除 Job（需要二次确认）
+func (ctrl *K8sResourceController) DeleteJob(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	var req DeleteJobRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		return
+	}
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	if err := ctrl.container.K8sResourceService().DeleteJob(uint(clusterID), req.Namespace, req.Name); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("删除 Job 失败: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("删除 Job 成功"))
+}
+
+// ========== Workloads - CronJobs ==========
+
+// ListCronJobs 获取 CronJob 列表
+func (ctrl *K8sResourceController) ListCronJobs(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	// 绑定查询参数
+	var params dto.K8sResourceQueryParams
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+		return
+	}
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	cronJobs, total, err := ctrl.container.K8sResourceService().ListCronJobs(uint(clusterID), params.Namespace, params.Page, params.PageSize)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 CronJob 列表失败: " + err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"list":  cronJobs,
+		"total": total,
+	}))
+}
+
+// GetCronJob 获取 CronJob 详情
+func (ctrl *K8sResourceController) GetCronJob(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	namespace := c.Param("namespace")
+	name := c.Param("name")
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	cronJob, err := ctrl.container.K8sResourceService().GetCronJob(uint(clusterID), namespace, name)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 CronJob 详情失败: " + err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(cronJob))
+}
+
+// DeleteCronJobRequest 删除 CronJob 请求
+type DeleteCronJobRequest struct {
+	Namespace string `json:"namespace" binding:"required"`
+	Name      string `json:"name" binding:"required"`
+}
+
+// DeleteCronJob 删除 CronJob
+func (ctrl *K8sResourceController) DeleteCronJob(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	var req DeleteCronJobRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+		return
+	}
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	if err := ctrl.container.K8sResourceService().DeleteCronJob(uint(clusterID), req.Namespace, req.Name); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("删除 CronJob 失败: " + err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("删除 CronJob 成功"))
+}
+
+// SuspendCronJobRequest 暂停 CronJob 请求
+type SuspendCronJobRequest struct {
+	Namespace string `json:"namespace" binding:"required"`
+	Name      string `json:"name" binding:"required"`
+	Suspend   bool   `json:"suspend"`
+}
+
+// SuspendCronJob 暂停/恢复 CronJob
+func (ctrl *K8sResourceController) SuspendCronJob(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	var req SuspendCronJobRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+		return
+	}
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	if err := ctrl.container.K8sResourceService().SuspendCronJob(uint(clusterID), req.Namespace, req.Name, req.Suspend); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("暂停 CronJob 失败: " + err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("操作 CronJob 成功"))
 }
 
 // ========== ConfigMaps ==========

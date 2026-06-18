@@ -1217,7 +1217,7 @@ function handleConnect(row: CMDB.Server) {
     serverId: row.id.toString(),
     hostname: row.hostname,
     ip: row.ip,
-    sshUser: row.sshUser || 'root',
+    sshUser: row.sshCredential?.username || 'root',
     env: row.env || 'unknown',
     agentStatus: row.agentStatus || 'unknown'
   });
@@ -2320,6 +2320,17 @@ onUnmounted(() => {
             >
               {{ submitError }}
             </div>
+          </ElFormItem>
+
+          <ElFormItem label="SSH端口">
+            <ElInputNumber
+              v-model="serverForm.sshPort"
+              :min="1"
+              :max="65535"
+              placeholder="默认22"
+              style="width: 100%"
+            />
+            <div class="mt-4px text-12px text-gray-400">SSH 连接端口，默认 22</div>
           </ElFormItem>
 
           <ElFormItem label="SSH凭证" prop="credentialIds">

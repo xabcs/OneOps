@@ -28,7 +28,6 @@ declare namespace CMDB {
     env: ServerEnv;
     status: ServerStatus;
     sshPort: number;
-    sshUser: string;
     credentialId?: number;
     cabinetId?: number;
     uPosition?: number;

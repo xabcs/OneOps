@@ -351,10 +351,31 @@ func SetupRoutes(r *gin.Engine) {
 					// Workloads - StatefulSets
 					k8s.GET("/clusters/:id/statefulsets", k8sResourceController.ListStatefulSets)
 					k8s.GET("/clusters/:id/statefulsets/:namespace/:name", k8sResourceController.GetStatefulSet)
+					k8s.GET("/clusters/:id/statefulsets/:namespace/:name/pods", k8sResourceController.GetStatefulSetPods)
+					// k8s.POST("/clusters/:id/statefulsets", k8sResourceController.CreateStatefulSet)
+					// k8s.PUT("/clusters/:id/statefulsets", k8sResourceController.UpdateStatefulSet)
+					// k8s.DELETE("/clusters/:id/statefulsets", k8sResourceController.DeleteStatefulSet)
+					// k8s.POST("/clusters/:id/statefulsets/restart", k8sResourceController.RestartStatefulSet)
 
 					// Workloads - DaemonSets
 					k8s.GET("/clusters/:id/daemonsets", k8sResourceController.ListDaemonSets)
 					k8s.GET("/clusters/:id/daemonsets/:namespace/:name", k8sResourceController.GetDaemonSet)
+					k8s.GET("/clusters/:id/daemonsets/:namespace/:name/pods", k8sResourceController.GetDaemonSetPods)
+					// k8s.POST("/clusters/:id/daemonsets", k8sResourceController.CreateDaemonSet)
+					// k8s.PUT("/clusters/:id/daemonsets", k8sResourceController.UpdateDaemonSet)
+					// k8s.DELETE("/clusters/:id/daemonsets", k8sResourceController.DeleteDaemonSet)
+					// k8s.POST("/clusters/:id/daemonsets/restart", k8sResourceController.RestartDaemonSet)
+
+					// Workloads - Jobs
+					k8s.GET("/clusters/:id/jobs", k8sResourceController.ListJobs)
+					k8s.GET("/clusters/:id/jobs/:namespace/:name", k8sResourceController.GetJob)
+					k8s.DELETE("/clusters/:id/jobs", k8sResourceController.DeleteJob)
+
+					// Workloads - CronJobs
+					k8s.GET("/clusters/:id/cronjobs", k8sResourceController.ListCronJobs)
+					k8s.GET("/clusters/:id/cronjobs/:namespace/:name", k8sResourceController.GetCronJob)
+					k8s.DELETE("/clusters/:id/cronjobs", k8sResourceController.DeleteCronJob)
+					k8s.PUT("/clusters/:id/cronjobs/suspend", k8sResourceController.SuspendCronJob)
 
 					// Services
 					k8s.GET("/clusters/:id/services", k8sResourceController.ListServices)
@@ -363,9 +384,17 @@ func SetupRoutes(r *gin.Engine) {
 					k8s.PUT("/clusters/:id/services", k8sResourceController.UpdateService)
 					k8s.DELETE("/clusters/:id/services", k8sResourceController.DeleteService)
 
+					// Ingresses
+					k8s.GET("/clusters/:id/ingresses", k8sResourceController.ListIngress)
+					k8s.GET("/clusters/:id/ingresses/:namespace/:name", k8sResourceController.GetIngress)
+					k8s.POST("/clusters/:id/ingresses", k8sResourceController.CreateIngress)
+					k8s.PUT("/clusters/:id/ingresses", k8sResourceController.UpdateIngress)
+					k8s.DELETE("/clusters/:id/ingresses", k8sResourceController.DeleteIngress)
+
 					// Pods
 					k8s.GET("/clusters/:id/pods", k8sResourceController.ListPods)
 					k8s.GET("/clusters/:id/pods/:namespace/:name", k8sResourceController.GetPod)
+					k8s.PUT("/clusters/:id/pods", k8sResourceController.UpdatePod)
 					k8s.GET("/clusters/:id/pods/:namespace/:name/logs", k8sResourceController.GetPodLogs)
 					k8s.DELETE("/clusters/:id/pods", k8sResourceController.DeletePod)
 

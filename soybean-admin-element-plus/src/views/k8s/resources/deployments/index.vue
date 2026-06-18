@@ -22,9 +22,9 @@ import {
 } from 'element-plus';
 import {
   deleteK8sDeployment,
+  fetchK8sClusterNamespaces,
   fetchK8sClusters,
   fetchK8sDeployments,
-  fetchK8sClusterNamespaces,
   restartK8sDeployment,
   scaleK8sDeployment
 } from '@/service/api/k8s';
@@ -114,9 +114,8 @@ const getStatusTag = (deployment: any) => {
     return { type: 'success', text: `运行中 (${ready}/${total})` };
   } else if (ready > 0) {
     return { type: 'warning', text: `部分就绪 (${ready}/${total})` };
-  } else {
-    return { type: 'danger', text: '未就绪' };
   }
+  return { type: 'danger', text: '未就绪' };
 };
 
 // 加载集群列表
@@ -362,7 +361,6 @@ const handleViewDetail = (row: any) => {
   });
 };
 
-
 onMounted(() => {
   loadClusters();
 });
@@ -371,88 +369,61 @@ onMounted(() => {
 <template>
   <div class="p-4">
     <!-- 筛选栏 -->
-    <div class="mb-4 flex items-center gap-4 bg-card p-4 rounded-lg">
+    <div class="bg-card mb-4 flex items-center gap-4 rounded-lg p-4">
       <div class="flex items-center gap-2">
         <span class="text-sm font-medium">集群:</span>
-        <el-select
-          v-model="selectedCluster"
-          placeholder="请选择集群"
-          style="width: 200px"
-          @change="handleClusterChange"
-        >
-          <el-option
-            v-for="cluster in clusters"
-            :key="cluster.id"
-            :label="cluster.name"
-            :value="cluster.id"
-          />
-        </el-select>
+        <ElSelect v-model="selectedCluster" placeholder="请选择集群" style="width: 200px" @change="handleClusterChange">
+          <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
+        </ElSelect>
       </div>
 
       <div class="flex items-center gap-2">
         <span class="text-sm font-medium">命名空间:</span>
-        <el-select
+        <ElSelect
           v-model="filters.namespace"
           placeholder="请选择命名空间"
           style="width: 180px"
           @change="handleNamespaceChange"
         >
-          <el-option
-            v-for="ns in namespaces"
-            :key="ns"
-            :label="ns"
-            :value="ns"
-          />
-        </el-select>
+          <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
+        </ElSelect>
       </div>
 
       <div class="flex-1" />
 
-      <el-button type="primary" :disabled="!selectedCluster" @click="handleRefresh">
-        刷新
-      </el-button>
+      <ElButton type="primary" :disabled="!selectedCluster" @click="handleRefresh">刷新</ElButton>
     </div>
 
     <!-- Deployment 列表 -->
-    <el-table v-loading="loading" :data="dataSource" stripe>
-      <el-table-column prop="name" label="名称" min-width="200" />
-      <el-table-column prop="namespace" label="命名空间" width="150" />
-      <el-table-column label="状态" width="150">
+    <ElTable v-loading="loading" :data="dataSource" stripe>
+      <ElTableColumn prop="name" label="名称" min-width="200" />
+      <ElTableColumn prop="namespace" label="命名空间" width="150" />
+      <ElTableColumn label="状态" width="150">
         <template #default="{ row }">
-          <el-tag :type="getStatusTag(row).type">
+          <ElTag :type="getStatusTag(row).type">
             {{ getStatusTag(row).text }}
-          </el-tag>
+          </ElTag>
         </template>
-      </el-table-column>
-      <el-table-column label="副本数" width="120" align="center">
+      </ElTableColumn>
+      <ElTableColumn label="副本数" width="120" align="center">
+        <template #default="{ row }">{{ row.ready || 0 }} / {{ row.replicas || 0 }}</template>
+      </ElTableColumn>
+      <ElTableColumn prop="age" label="年龄" width="160" />
+      <ElTableColumn label="操作" width="280" fixed="right">
         <template #default="{ row }">
-          {{ row.ready || 0 }} / {{ row.replicas || 0 }}
+          <ElSpace>
+            <ElButton size="small" @click="handleViewDetail(row)">详情</ElButton>
+            <ElButton size="small" type="primary" @click="handleScale(row)">缩放</ElButton>
+            <ElButton size="small" type="warning" @click="handleRestart(row)">重启</ElButton>
+            <ElButton size="small" type="danger" @click="handleDelete(row)">删除</ElButton>
+          </ElSpace>
         </template>
-      </el-table-column>
-      <el-table-column prop="age" label="年龄" width="160" />
-      <el-table-column label="操作" width="280" fixed="right">
-        <template #default="{ row }">
-          <el-space>
-            <el-button size="small" @click="handleViewDetail(row)">
-              详情
-            </el-button>
-            <el-button size="small" type="primary" @click="handleScale(row)">
-              缩放
-            </el-button>
-            <el-button size="small" type="warning" @click="handleRestart(row)">
-              重启
-            </el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">
-              删除
-            </el-button>
-          </el-space>
-        </template>
-      </el-table-column>
-    </el-table>
+      </ElTableColumn>
+    </ElTable>
 
     <!-- 分页 -->
     <div class="mt-4 flex justify-end">
-      <el-pagination
+      <ElPagination
         v-model:current-page="pagination.page"
         v-model:page-size="pagination.pageSize"
         :page-sizes="[10, 20, 50, 100]"
@@ -464,26 +435,19 @@ onMounted(() => {
     </div>
 
     <!-- 缩放对话框 -->
-    <el-dialog v-model="showScaleModal" title="缩放 Deployment" width="500px">
-      <el-form ref="scaleFormRef" :model="scaleData" :rules="scaleRules" label-width="100px">
-        <el-form-item label="Deployment">
-          <el-input :value="currentDeploymentName" disabled />
-        </el-form-item>
-        <el-form-item label="副本数" prop="replicas">
-          <el-input-number
-            v-model="scaleData.replicas"
-            :min="0"
-            :max="100"
-            :step="1"
-          />
-        </el-form-item>
-      </el-form>
+    <ElDialog v-model="showScaleModal" title="缩放 Deployment" width="500px">
+      <ElForm ref="scaleFormRef" :model="scaleData" :rules="scaleRules" label-width="100px">
+        <ElFormItem label="Deployment">
+          <ElInput :value="currentDeploymentName" disabled />
+        </ElFormItem>
+        <ElFormItem label="副本数" prop="replicas">
+          <ElInputNumber v-model="scaleData.replicas" :min="0" :max="100" :step="1" />
+        </ElFormItem>
+      </ElForm>
       <template #footer>
-        <el-button @click="showScaleModal = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleScaleSubmit">
-          确定
-        </el-button>
+        <ElButton @click="showScaleModal = false">取消</ElButton>
+        <ElButton type="primary" :loading="submitting" @click="handleScaleSubmit">确定</ElButton>
       </template>
-    </el-dialog>
+    </ElDialog>
   </div>
 </template>
