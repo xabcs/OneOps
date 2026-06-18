@@ -10,23 +10,24 @@ import {
   ElInputNumber,
   ElMessage,
   ElMessageBox,
+  ElTabPane,
   ElTable,
   ElTableColumn,
-  ElTabPane,
   ElTabs,
   ElTag
 } from 'element-plus';
+import * as yaml from 'js-yaml';
 import {
+  deleteK8sDeployment,
+  fetchK8sEvents,
+  fetchK8sPodLogs,
   getK8sDeployment,
   getK8sDeploymentPods,
-  deleteK8sDeployment,
   restartK8sDeployment,
-  scaleK8sDeployment,
-  fetchK8sPodLogs,
-  fetchK8sEvents
-} from '@/service/api';
+  scaleK8sDeployment
+} from '@/service/api/k8s';
+import { formatConditions, formatLabels } from '@/utils/k8s-formatters';
 import PodTerminal from '../../terminal/PodTerminal.vue';
-import * as yaml from 'js-yaml';
 
 defineOptions({ name: 'K8sDeploymentDetail' });
 
@@ -85,9 +86,8 @@ const getStatusTag = computed(() => {
     return { type: 'success', text: `运行中 (${ready}/${total})` };
   } else if (ready > 0) {
     return { type: 'warning', text: `部分就绪 (${ready}/${total})` };
-  } else {
-    return { type: 'danger', text: '未就绪' };
   }
+  return { type: 'danger', text: '未就绪' };
 });
 
 // Pod 状态标签
@@ -115,7 +115,7 @@ async function loadDeploymentDetail() {
 
   if (!queryClusterId || !queryNamespace || !queryName) {
     ElMessage.error('参数不完整');
-    router.push('/k8s/resources/deployments');
+    router.push('/k8s/workloads');
     return;
   }
 
@@ -246,18 +246,22 @@ async function handleRestart() {
 // 删除 Deployment
 async function handleDelete() {
   try {
-    await ElMessageBox.confirm(`确定要删除 Deployment "${deploymentName.value}" 吗？此操作危险，请谨慎操作。`, '确认删除', {
-      type: 'warning',
-      confirmButtonText: '危险操作确认',
-      cancelButtonText: '取消'
-    });
+    await ElMessageBox.confirm(
+      `确定要删除 Deployment "${deploymentName.value}" 吗？此操作危险，请谨慎操作。`,
+      '确认删除',
+      {
+        type: 'warning',
+        confirmButtonText: '危险操作确认',
+        cancelButtonText: '取消'
+      }
+    );
 
     await deleteK8sDeployment(clusterId.value, {
       namespace: namespace.value,
       name: deploymentName.value
     });
     ElMessage.success('删除成功');
-    router.push('/k8s/resources/deployments');
+    router.push('/k8s/workloads');
   } catch (error: any) {
     if (error !== 'cancel') {
       ElMessage.error(error.message || '删除失败');
@@ -294,7 +298,7 @@ async function handlePodLogs(row: any) {
     });
     logContent.value = res.data?.logs || '暂无日志';
   } catch (error: any) {
-    logContent.value = '日志加载失败: ' + (error.message || '未知错误');
+    logContent.value = `日志加载失败: ${error.message || '未知错误'}`;
   }
 }
 
@@ -334,15 +338,18 @@ async function handleSaveYaml() {
   try {
     // 将 YAML 转换回 JSON 对象
     const manifestObj = yaml.load(yamlEditingContent.value);
-    // TODO: 调用更新 API，将 manifestObj 传递给后端
-    // await updateK8sDeployment(clusterId.value, namespace.value, deploymentName.value, { manifest: manifestObj });
-    ElMessage.success('保存成功（功能待实现）');
+    // 调用更新 API，将 manifestObj 传递给后端
+    await updateK8sDeployment(clusterId.value, {
+      namespace: namespace.value,
+      manifest: manifestObj
+    });
+    ElMessage.success('保存成功');
     closeYamlEditor();
     // 刷新数据
     await loadDeploymentDetail();
   } catch (error: any) {
     console.error('保存 YAML 失败:', error);
-    ElMessage.error('保存失败: ' + (error.message || 'YAML 格式错误'));
+    ElMessage.error(`保存失败: ${error.message || 'YAML 格式错误'}`);
   } finally {
     yamlSaving.value = false;
   }
@@ -358,7 +365,7 @@ onMounted(() => {
     <!-- 顶部操作栏 -->
     <div class="instance-bar">
       <div class="instance-left">
-        <span class="back-arrow" @click="router.push('/k8s/resources/deployments')">←</span>
+        <span class="back-arrow" @click="router.push('/k8s/workloads')">←</span>
         <span class="instance-name">{{ deployment?.name || '-' }}</span>
         <span class="instance-meta">命名空间: {{ deployment?.namespace || '-' }}</span>
         <span class="instance-meta">副本数: {{ deployment?.ready || 0 }} / {{ deployment?.replicas || 0 }}</span>
@@ -371,7 +378,7 @@ onMounted(() => {
         <ElButton size="small" type="primary" @click="handleScale">缩放</ElButton>
         <ElButton size="small" type="warning" @click="handleRestart">重启</ElButton>
         <ElButton size="small" type="danger" @click="handleDelete">删除</ElButton>
-        <ElButton size="small" @click="router.push('/k8s/resources/deployments')">返回列表</ElButton>
+        <ElButton size="small" @click="router.push('/k8s/workloads')">返回列表</ElButton>
       </div>
     </div>
 
@@ -395,7 +402,7 @@ onMounted(() => {
               </div>
             </div>
             <div class="desc-item">
-              <div class="item-label">年龄</div>
+              <div class="item-label">创建时间</div>
               <div class="item-content">
                 <span class="value-text">{{ deployment?.age || '-' }}</span>
               </div>
@@ -421,48 +428,28 @@ onMounted(() => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- 镜像信息 -->
-      <div v-if="deployment?.images && deployment.images.length > 0" class="info-section">
-        <h3 class="section-title">镜像信息</h3>
-        <div class="desc-grid">
-          <div class="desc-row">
-            <div class="desc-item desc-item-full" v-for="(image, index) in deployment.images" :key="index">
-              <div class="item-label">镜像 {{ index + 1 }}</div>
+          <div v-if="deployment?.labels" class="desc-row">
+            <div class="desc-item desc-item-full">
+              <div class="item-label">标签</div>
               <div class="item-content">
-                <span class="value-text font-mono">{{ image }}</span>
+                <span class="value-text">{{ formatLabels(deployment.labels) }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-if="deployment?.conditions && deployment.conditions.length > 0" class="desc-row">
+            <div class="desc-item desc-item-full">
+              <div class="item-label">状态条件</div>
+              <div class="item-content">
+                <span class="value-text">{{ formatConditions(deployment.conditions) }}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- 标签 -->
-      <div v-if="deployment?.labels && Object.keys(deployment.labels).length > 0" class="info-section">
-        <h3 class="section-title">标签</h3>
-        <div class="tag-list">
-          <ElTag v-for="(value, key) in deployment.labels" :key="key" type="info" size="small">
-            {{ key }}: {{ value }}
-          </ElTag>
-        </div>
-      </div>
-
-      <!-- 状态条件 -->
-      <div v-if="deployment?.conditions && deployment.conditions.length > 0" class="info-section">
-        <h3 class="section-title">状态条件</h3>
-        <ElTable :data="deployment.conditions" size="small" border>
-          <ElTableColumn prop="type" label="类型" width="150" />
-          <ElTableColumn prop="status" label="状态" width="100" />
-          <ElTableColumn prop="reason" label="原因" width="150" />
-          <ElTableColumn prop="message" label="消息" min-width="300" />
-        </ElTable>
-      </div>
     </div>
 
     <!-- 标签切换 -->
-    <ElTabs v-model="activeTab" @tab-change="handleTabChange" class="detail-tabs">
+    <ElTabs v-model="activeTab" class="detail-tabs" @tab-change="handleTabChange">
       <!-- 容器组 -->
       <ElTabPane label="容器组" name="pods">
         <div class="tab-content">
@@ -494,9 +481,7 @@ onMounted(() => {
               </template>
             </ElTableColumn>
           </ElTable>
-          <div v-if="!podsLoading && pods.length === 0" class="text-center text-gray-500 py-8">
-            暂无容器组
-          </div>
+          <div v-if="!podsLoading && pods.length === 0" class="py-8 text-center text-gray-500">暂无容器组</div>
         </div>
       </ElTabPane>
 
@@ -521,9 +506,7 @@ onMounted(() => {
             <ElTableColumn prop="count" label="次数" width="80" align="center" />
             <ElTableColumn prop="lastTimestamp" label="最后时间" width="160" />
           </ElTable>
-          <div v-if="!eventsLoading && events.length === 0" class="text-center text-gray-500 py-8">
-            暂无事件
-          </div>
+          <div v-if="!eventsLoading && events.length === 0" class="py-8 text-center text-gray-500">暂无事件</div>
         </div>
       </ElTabPane>
     </ElTabs>
@@ -547,11 +530,7 @@ onMounted(() => {
     <!-- YAML 编辑器对话框 -->
     <ElDialog v-model="showYamlEditor" title="编辑 YAML 配置" width="900px" top="5vh" @close="closeYamlEditor">
       <div class="yaml-editor-container">
-        <textarea
-          v-model="yamlEditingContent"
-          class="yaml-editor"
-          spellcheck="false"
-        ></textarea>
+        <textarea v-model="yamlEditingContent" class="yaml-editor" spellcheck="false"></textarea>
       </div>
       <template #footer>
         <ElButton @click="closeYamlEditor">取消</ElButton>
