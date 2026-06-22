@@ -27,7 +27,7 @@ import {
   scaleK8sDeployment,
   updateK8sDeployment
 } from '@/service/api/k8s';
-import { formatAnnotations, formatConditions, formatImages, formatLabels, formatSelectors, formatStrategy } from '@/utils/k8s-formatters';
+import { formatAnnotations, formatConditions, formatImages, formatLabels, formatSelectors, formatStrategy, getAnnotationSummary } from '@/utils/k8s-formatters';
 import PodTerminal from '../../terminal/PodTerminal.vue';
 import K8sBasicInfoGrid from '@/components/k8s/K8sBasicInfoGrid.vue';
 import K8sPodsTable from '@/components/k8s/K8sPodsTable.vue';
@@ -103,11 +103,6 @@ const basicInfoFields = computed(() => {
       { label: '名称', value: deployment.value.name || '-' },
       { label: '命名空间', value: deployment.value.namespace || '-' },
       { label: '创建时间', value: deployment.value.age || '-' }
-    ],
-    [
-      { label: '副本数', value: `${deployment.value.ready || 0} / ${deployment.value.replicas || 0}` },
-      { label: '可用副本', value: deployment.value.available?.toString() || '0' },
-      { label: '最新副本', value: deployment.value.upToDate?.toString() || '0' }
     ]
   ];
 
@@ -131,21 +126,33 @@ const basicInfoFields = computed(() => {
   }
 
   if (deployment.value.annotations && Object.keys(deployment.value.annotations).length > 0) {
-    const annotationStr = formatAnnotations(deployment.value.annotations);
-    if (annotationStr !== '-') {
-      fields.push([
-        { label: '注解', value: annotationStr, fullRow: true }
-      ]);
-    }
+    fields.push([
+      { label: '注解', value: formattedAnnotations.value, fullRow: true, isAnnotations: true }
+    ]);
   }
 
-  if (deployment.value.conditions?.length) {
+  // 状态条件 + 副本状态信息
+  const statusConditions = deployment.value.conditions?.length ? formatConditions(deployment.value.conditions) : [];
+  const statusInfo = [
+    { type: '就绪/期望', status: `${deployment.value.ready || 0} / ${deployment.value.replicas || 0}`, isStatusInfo: true },
+    { type: '可用', status: deployment.value.available?.toString() || '0', isStatusInfo: true },
+    { type: '已更新', status: deployment.value.upToDate?.toString() || '0', isStatusInfo: true }
+  ];
+
+  if (statusConditions.length > 0 || statusInfo.length > 0) {
     fields.push([
-      { label: '状态条件', value: formatConditions(deployment.value.conditions), fullRow: true, isConditions: true }
+      { label: '状态条件', value: [...statusConditions, ...statusInfo], fullRow: true, isConditions: true }
     ]);
   }
 
   return fields;
+});
+
+// 格式化注解数据
+const formattedAnnotations = computed(() => {
+  if (!deployment.value?.annotations) return [];
+  const result = formatAnnotations(deployment.value.annotations);
+  return [...result.user, ...result.system];
 });
 
 // Pod 状态标签
@@ -453,10 +460,6 @@ onMounted(() => {
       <!-- 容器组 -->
       <ElTabPane label="容器组" name="pods">
         <div class="tab-content">
-          <div class="section-header">
-            <span class="section-title">共 {{ pods.length }} 个容器组</span>
-            <ElButton size="small" @click="handleRefreshPods">刷新</ElButton>
-          </div>
           <K8sPodsTable
             :pods="pods"
             :loading="podsLoading"
@@ -469,10 +472,6 @@ onMounted(() => {
       <!-- 事件 -->
       <ElTabPane label="事件" name="events">
         <div class="tab-content">
-          <div class="section-header">
-            <span class="section-title">共 {{ events.length }} 个事件</span>
-            <ElButton size="small" @click="loadEvents">刷新</ElButton>
-          </div>
           <K8sEventsTable :events="events" :loading="eventsLoading" />
         </div>
       </ElTabPane>

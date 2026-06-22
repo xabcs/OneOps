@@ -26,18 +26,78 @@ export function formatSelectors(selectors: Record<string, string> | undefined): 
 }
 
 /**
- * 格式化注解对象为字符串（只显示常用字段）
+ * 注解分类
  */
-export function formatAnnotations(annotations: Record<string, string> | undefined): string {
-  if (!annotations || Object.keys(annotations).length === 0) return '-';
-  // 过滤掉 kubernetes 系统注解，只显示用户添加的
-  const userAnnotations = Object.entries(annotations).filter(
-    ([key]) => !key.startsWith('kubernetes.io/') && !key.startsWith('k8s.io/')
-  );
-  if (userAnnotations.length === 0) return '-';
-  return userAnnotations
-    .map(([key, value]) => `${key}: ${value}`)
-    .join(', ');
+export interface AnnotationItem {
+  key: string;
+  value: string;
+  category: 'user' | 'system';
+  isLong: boolean;
+}
+
+/**
+ * 分类和格式化注解
+ * - 系统注解：以 kubernetes.io/ 或 k8s.io/ 开头
+ * - 用户注解：其他所有注解
+ * - 长内容：value 长度超过 100 字符
+ */
+export function formatAnnotations(annotations: Record<string, string> | undefined): {
+  user: AnnotationItem[];
+  system: AnnotationItem[];
+  total: number;
+} {
+  if (!annotations || Object.keys(annotations).length === 0) {
+    return { user: [], system: [], total: 0 };
+  }
+
+  const result: { user: AnnotationItem[]; system: AnnotationItem[]; total: number } = {
+    user: [],
+    system: [],
+    total: 0
+  };
+
+  Object.entries(annotations).forEach(([key, value]) => {
+    const item: AnnotationItem = {
+      key,
+      value: value || '',
+      category: key.startsWith('kubernetes.io/') || key.startsWith('k8s.io/') ? 'system' : 'user',
+      isLong: (value || '').length > 100
+    };
+
+    if (item.category === 'user') {
+      result.user.push(item);
+    } else {
+      result.system.push(item);
+    }
+    result.total++;
+  });
+
+  return result;
+}
+
+/**
+ * 截断注解显示值（用于基本信息展示）
+ */
+export function truncateAnnotation(value: string, maxLength: number = 50): string {
+  if (!value || value.length <= maxLength) return value;
+  return value.substring(0, maxLength) + '...';
+}
+
+/**
+ * 获取简短的注解摘要（用于基本信息预览）
+ */
+export function getAnnotationSummary(annotations: Record<string, string> | undefined): string {
+  const formatted = formatAnnotations(annotations);
+  if (formatted.total === 0) return '-';
+
+  const parts: string[] = [];
+  if (formatted.user.length > 0) {
+    parts.push(`用户: ${formatted.user.length}个`);
+  }
+  if (formatted.system.length > 0) {
+    parts.push(`系统: ${formatted.system.length}个`);
+  }
+  return parts.join(', ');
 }
 
 /**

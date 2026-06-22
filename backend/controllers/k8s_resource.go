@@ -554,6 +554,72 @@ func (ctrl *K8sResourceController) GetDaemonSetPods(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(pods))
 }
 
+// GetJobPods 获取 Job 关联的 Pods
+func (ctrl *K8sResourceController) GetJobPods(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	namespace := c.Param("namespace")
+	name := c.Param("name")
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	pods, err := ctrl.container.K8sResourceService().GetJobPods(uint(clusterID), namespace, name)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Job Pods 失败: " + err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(pods))
+}
+
+// GetCronJobPods 获取 CronJob 关联的 Pods
+func (ctrl *K8sResourceController) GetCronJobPods(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	namespace := c.Param("namespace")
+	name := c.Param("name")
+
+	// 检查权限
+	hasAccess, err := ctrl.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	if err != nil || !hasAccess {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+		return
+	}
+
+	pods, err := ctrl.container.K8sResourceService().GetCronJobPods(uint(clusterID), namespace, name)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取 CronJob Pods 失败: " + err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(pods))
+}
+
 // ========== Services ==========
 
 // ListServices 获取 Service 列表

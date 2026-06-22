@@ -18,14 +18,14 @@ export const themeSettings: App.Theme.ThemeSetting = {
     reverseHorizontalMix: false
   },
   page: {
-    animate: true,
+    animate: false,
     animateMode: 'fade-slide'
   },
   header: {
     height: 56,
     breadcrumb: {
       visible: true,
-      showIcon: true
+      showIcon: false
     },
     multilingual: {
       visible: true
@@ -35,7 +35,7 @@ export const themeSettings: App.Theme.ThemeSetting = {
     }
   },
   tab: {
-    visible: true,
+    visible: false,
     cache: true,
     height: 44,
     mode: 'chrome'
@@ -50,7 +50,7 @@ export const themeSettings: App.Theme.ThemeSetting = {
     mixChildMenuWidth: 200
   },
   footer: {
-    visible: true,
+    visible: false,
     fixed: false,
     height: 48,
     right: true
@@ -62,21 +62,21 @@ export const themeSettings: App.Theme.ThemeSetting = {
   },
   borderRadius: {
     useComponentSpecific: false,
-    small: '6px',
-    medium: '6px',
-    large: '8px',
+    small: '0px',
+    medium: '0px',
+    large: '0px',
     components: {
-      button: '6px',
-      input: '6px',
-      select: '6px',
-      card: '8px',
-      table: '6px',
-      modal: '8px',
-      tag: '6px',
+      button: '0px',
+      input: '0px',
+      select: '0px',
+      card: '0px',
+      table: '0px',
+      modal: '0px',
+      tag: '0px',
       switch: '12px',
-      checkbox: '4px',
-      radio: '4px',
-      menu: '6px'
+      checkbox: '0px',
+      radio: '50%',
+      menu: '0px'
     }
   },
   tokens: {
@@ -93,9 +93,9 @@ export const themeSettings: App.Theme.ThemeSetting = {
         tab: '0 1px 2px rgb(0 0 0 / 6%)' // 腾讯云风格：标签页阴影
       },
       borderRadius: {
-        small: '6px',
-        medium: '6px',
-        large: '8px'
+        small: '0px',
+        medium: '0px',
+        large: '0px'
       }
     },
     dark: {

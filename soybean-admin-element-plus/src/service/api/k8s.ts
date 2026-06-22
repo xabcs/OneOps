@@ -876,6 +876,16 @@ export function getK8sJob(clusterId: number, namespace: string, name: string) {
 }
 
 /**
+ * 获取 Job 管理的 Pods
+ */
+export function getK8sJobPods(clusterId: number, namespace: string, name: string) {
+  return request<K8s.Pod[]>({
+    url: `/k8s/clusters/${clusterId}/jobs/${namespace}/${name}/pods`,
+    method: 'get'
+  });
+}
+
+/**
  * 删除 Job
  */
 export function deleteK8sJob(clusterId: number, data: { namespace: string; name: string }) {
@@ -928,6 +938,16 @@ export function suspendK8sCronJob(clusterId: number, data: { namespace: string; 
     url: `/k8s/clusters/${clusterId}/cronjobs/suspend`,
     method: 'post',
     data
+  });
+}
+
+/**
+ * 获取 CronJob 管理的 Pods
+ */
+export function getK8sCronJobPods(clusterId: number, namespace: string, name: string) {
+  return request<K8s.Pod[]>({
+    url: `/k8s/clusters/${clusterId}/cronjobs/${namespace}/${name}/pods`,
+    method: 'get'
   });
 }
 

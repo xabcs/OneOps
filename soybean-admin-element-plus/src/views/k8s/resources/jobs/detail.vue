@@ -4,9 +4,10 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
 import yaml from 'js-yaml';
-import { deleteK8sJob, fetchK8sEvents, getK8sJob, updateK8sJob } from '@/service/api/k8s';
+import { deleteK8sJob, fetchK8sEvents, getK8sJob, getK8sJobPods, updateK8sJob } from '@/service/api/k8s';
 import { formatLabels, formatConditions } from '@/utils/k8s-formatters';
 import YamlEditor from '@/components/YamlEditor.vue';
+import K8sPodsTable from '@/components/k8s/K8sPodsTable.vue';
 
 defineOptions({ name: 'K8sJobDetail' });
 
@@ -19,8 +20,10 @@ const namespace = computed(() => route.query.namespace as string);
 const resourceName = computed(() => route.query.name as string);
 
 const resource = ref<any>(null);
+const pods = ref<any[]>([]);
 const events = ref<any[]>([]);
 const loading = ref(true);
+const podsLoading = ref(false);
 const eventsLoading = ref(false);
 const activeTab = ref('basic');
 const showYamlEditor = ref(false);
@@ -78,6 +81,19 @@ async function loadEvents() {
   }
 }
 
+async function loadPods() {
+  if (!clusterId.value) return;
+  podsLoading.value = true;
+  try {
+    const response = await getK8sJobPods(clusterId.value, namespace.value, resourceName.value);
+    pods.value = response.data || response || [];
+  } catch (error: any) {
+    message.error(error.message || '加载容器组失败');
+  } finally {
+    podsLoading.value = false;
+  }
+}
+
 function goBack() {
   router.back();
 }
@@ -119,8 +135,18 @@ async function handleYamlApply(yamlStr: string) {
   }
 }
 
+async function handleTabChange(tab: string) {
+  activeTab.value = tab;
+  if (tab === 'pods' && pods.value.length === 0) {
+    await loadPods();
+  } else if (tab === 'events' && events.value.length === 0) {
+    await loadEvents();
+  }
+}
+
 onMounted(() => {
   loadData();
+  loadPods();
   loadEvents();
 });
 </script>
@@ -139,7 +165,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <ElTabs v-model="activeTab" class="detail-tabs">
+    <ElTabs v-model="activeTab" class="detail-tabs" @tab-change="handleTabChange">
       <ElTabPane label="基本信息" name="basic">
         <ElDescriptions :column="2" border>
           <ElDescriptionsItem label="名称">{{ resource?.name }}</ElDescriptionsItem>
@@ -151,10 +177,8 @@ onMounted(() => {
         </ElDescriptions>
       </ElTabPane>
 
-      <ElTabPane label="YAML" name="yaml">
-        <div class="yaml-viewer">
-          <pre>{{ yamlContent }}</pre>
-        </div>
+      <ElTabPane label="容器组" name="pods">
+        <K8sPodsTable :pods="pods" :loading="podsLoading" />
       </ElTabPane>
 
       <ElTabPane label="事件" name="events">

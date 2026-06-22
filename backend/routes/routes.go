@@ -369,11 +369,13 @@ func SetupRoutes(r *gin.Engine) {
 					// Workloads - Jobs
 					k8s.GET("/clusters/:id/jobs", k8sResourceController.ListJobs)
 					k8s.GET("/clusters/:id/jobs/:namespace/:name", k8sResourceController.GetJob)
+					k8s.GET("/clusters/:id/jobs/:namespace/:name/pods", k8sResourceController.GetJobPods)
 					k8s.DELETE("/clusters/:id/jobs", k8sResourceController.DeleteJob)
 
 					// Workloads - CronJobs
 					k8s.GET("/clusters/:id/cronjobs", k8sResourceController.ListCronJobs)
 					k8s.GET("/clusters/:id/cronjobs/:namespace/:name", k8sResourceController.GetCronJob)
+					k8s.GET("/clusters/:id/cronjobs/:namespace/:name/pods", k8sResourceController.GetCronJobPods)
 					k8s.DELETE("/clusters/:id/cronjobs", k8sResourceController.DeleteCronJob)
 					k8s.PUT("/clusters/:id/cronjobs/suspend", k8sResourceController.SuspendCronJob)
 

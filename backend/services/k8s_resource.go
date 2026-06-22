@@ -512,6 +512,70 @@ func (s *K8sResourceService) GetDaemonSetPods(clusterID uint, namespace, name st
 	return result, nil
 }
 
+// GetJobPods 获取 Job 关联的 Pods
+func (s *K8sResourceService) GetJobPods(clusterID uint, namespace, jobName string) ([]map[string]interface{}, error) {
+	clientset, _, err := s.clientPool.GetClient(clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
+
+	// 构建 label selector: job-name=<job-name>
+	labelSelector := fmt.Sprintf("job-name=%s", jobName)
+
+	// 使用 label selector 查询 Pods
+	list, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("获取 Pod 列表失败: %w", err)
+	}
+
+	// 格式化 Pod 数据
+	result := make([]map[string]interface{}, len(list.Items))
+	for i, item := range list.Items {
+		podData := s.formatPod(&item)
+		podData["ownerJob"] = jobName
+		result[i] = podData
+	}
+
+	return result, nil
+}
+
+// GetCronJobPods 获取 CronJob 关联的 Pods
+func (s *K8sResourceService) GetCronJobPods(clusterID uint, namespace, cronJobName string) ([]map[string]interface{}, error) {
+	clientset, _, err := s.clientPool.GetClient(clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := s.createContextWithTimeout()
+	defer cancel()
+
+	// 构建 label selector: cronjob-name=<cronjob-name>
+	labelSelector := fmt.Sprintf("cronjob-name=%s", cronJobName)
+
+	// 使用 label selector 查询 Pods
+	list, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("获取 Pod 列表失败: %w", err)
+	}
+
+	// 格式化 Pod 数据
+	result := make([]map[string]interface{}, len(list.Items))
+	for i, item := range list.Items {
+		podData := s.formatPod(&item)
+		podData["ownerCronJob"] = cronJobName
+		result[i] = podData
+	}
+
+	return result, nil
+}
+
 // ========== Workloads - Jobs ==========
 
 // ListJobs 获取 Job 列表（支持分页）
@@ -1833,15 +1897,16 @@ func (s *K8sResourceService) formatEndpoints(endpoints *corev1.Endpoints) []map[
 // formatPod 格式化 Pod 基本信息
 func (s *K8sResourceService) formatPod(pod *corev1.Pod) map[string]interface{} {
 	return map[string]interface{}{
-		"name":      pod.Name,
-		"namespace": pod.Namespace,
-		"status":    getPodStatus(pod),
-		"phase":     string(pod.Status.Phase),
-		"ip":        pod.Status.PodIP,
-		"node":      pod.Spec.NodeName,
-		"age":       pod.CreationTimestamp.Format("2006-01-02 15:04:05"),
-		"labels":    pod.Labels,
-		"restarts":  countPodRestarts(pod),
+		"name":       pod.Name,
+		"namespace":  pod.Namespace,
+		"status":     getPodStatus(pod),
+		"phase":      string(pod.Status.Phase),
+		"ip":         pod.Status.PodIP,
+		"node":       pod.Spec.NodeName,
+		"age":        pod.CreationTimestamp.Format("2006-01-02 15:04:05"),
+		"labels":     pod.Labels,
+		"restarts":   countPodRestarts(pod),
+		"containers": s.formatContainers(pod),
 	}
 }
 

@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { ElButton, ElDialog, ElMessage, ElTabPane, ElTable, ElTableColumn, ElTabs, ElTag } from 'element-plus';
 import yaml from 'js-yaml';
 import { fetchK8sEvents, getK8sDaemonSet, getK8sDaemonSetPods, updateK8sDaemonSet } from '@/service/api/k8s';
-import { formatAnnotations, formatConditions, formatImages, formatLabels, formatSelectors, formatStrategy } from '@/utils/k8s-formatters';
+import { formatAnnotations, formatConditions, formatImages, formatLabels, formatSelectors, formatStrategy, getAnnotationSummary } from '@/utils/k8s-formatters';
 import K8sBasicInfoGrid from '@/components/k8s/K8sBasicInfoGrid.vue';
 import K8sPodsTable from '@/components/k8s/K8sPodsTable.vue';
 import K8sEventsTable from '@/components/k8s/K8sEventsTable.vue';
@@ -51,15 +51,6 @@ const basicInfoFields = computed(() => {
       { label: '名称', value: resource.value.name || '-' },
       { label: '命名空间', value: resource.value.namespace || '-' },
       { label: '创建时间', value: resource.value.age || '-' }
-    ],
-    [
-      { label: '期望节点数', value: resource.value.desired?.toString() || '0' },
-      { label: '当前节点数', value: resource.value.current?.toString() || '0' },
-      { label: '就绪数量', value: resource.value.ready?.toString() || '0' }
-    ],
-    [
-      { label: '已更新数量', value: resource.value.updated?.toString() || '0' },
-      { label: '可用数量', value: resource.value.available?.toString() || '0' }
     ]
   ];
 
@@ -83,21 +74,35 @@ const basicInfoFields = computed(() => {
   }
 
   if (resource.value.annotations && Object.keys(resource.value.annotations).length > 0) {
-    const annotationStr = formatAnnotations(resource.value.annotations);
-    if (annotationStr !== '-') {
-      fields.push([
-        { label: '注解', value: annotationStr, fullRow: true }
-      ]);
-    }
+    fields.push([
+      { label: '注解', value: formattedAnnotations.value, fullRow: true, isAnnotations: true }
+    ]);
   }
 
-  if (resource.value.conditions?.length) {
+  // 状态条件 + 节点状态信息
+  const statusConditions = resource.value.conditions?.length ? formatConditions(resource.value.conditions) : [];
+  const statusInfo = [
+    { type: '期望节点', status: resource.value.desired?.toString() || '0', isStatusInfo: true },
+    { type: '当前节点', status: resource.value.current?.toString() || '0', isStatusInfo: true },
+    { type: '就绪', status: resource.value.ready?.toString() || '0', isStatusInfo: true },
+    { type: '已更新', status: resource.value.updated?.toString() || '0', isStatusInfo: true },
+    { type: '可用', status: resource.value.available?.toString() || '0', isStatusInfo: true }
+  ];
+
+  if (statusConditions.length > 0 || statusInfo.length > 0) {
     fields.push([
-      { label: '状态条件', value: formatConditions(resource.value.conditions), fullRow: true, isConditions: true }
+      { label: '状态条件', value: [...statusConditions, ...statusInfo], fullRow: true, isConditions: true }
     ]);
   }
 
   return fields;
+});
+
+// 格式化注解数据
+const formattedAnnotations = computed(() => {
+  if (!resource.value?.annotations) return [];
+  const result = formatAnnotations(resource.value.annotations);
+  return [...result.user, ...result.system];
 });
 
 const getPodStatusTag = (pod: any) => {
@@ -259,20 +264,12 @@ onMounted(() => loadDetail());
     <ElTabs v-model="activeTab" class="detail-tabs" @tab-change="handleTabChange">
       <ElTabPane label="容器组" name="pods">
         <div class="tab-content">
-          <div class="section-header">
-            <span class="section-title">共 {{ pods.length }} 个容器组</span>
-            <ElButton size="small" @click="loadPods">刷新</ElButton>
-          </div>
           <K8sPodsTable :pods="pods" :loading="podsLoading" />
         </div>
       </ElTabPane>
 
       <ElTabPane label="事件" name="events">
         <div class="tab-content">
-          <div class="section-header">
-            <span class="section-title">共 {{ events.length }} 个事件</span>
-            <ElButton size="small" @click="loadEvents">刷新</ElButton>
-          </div>
           <K8sEventsTable :events="events" :loading="eventsLoading" />
         </div>
       </ElTabPane>
