@@ -5,11 +5,18 @@ import type { AnnotationItem } from '@/utils/k8s-formatters';
 
 interface Field {
   label: string;
-  value: string | number | Array<{ key: string; value: string; type?: string }> | AnnotationItem[];
+  value: string | number | Array<{ key: string; value: string; type?: string }> | AnnotationItem[] | StatusSummaryItem[];
   fullRow?: boolean;
   isTags?: boolean;
   isConditions?: boolean;
   isAnnotations?: boolean;
+  isStatusSummary?: boolean;
+}
+
+interface StatusSummaryItem {
+  type: string;
+  value: string;
+  status: 'success' | 'warning' | 'danger' | 'info';
 }
 
 const props = defineProps<{
@@ -160,6 +167,20 @@ const getShortValue = (value: string) => {
               </ElTag>
             </span>
           </template>
+          <!-- 状态摘要列表 -->
+          <template v-else-if="field.isStatusSummary && Array.isArray(field.value)">
+            <span class="status-summary-list">
+              <ElTag
+                v-for="(item, idx) in field.value"
+                :key="idx"
+                :type="item.status"
+                size="small"
+                class="status-summary-item"
+              >
+                {{ item.type }}: {{ item.value }}
+              </ElTag>
+            </span>
+          </template>
           <!-- 普通值 -->
           <template v-else>
             <span class="item-value">{{ field.value }}</span>
@@ -207,7 +228,7 @@ const getShortValue = (value: string) => {
 
 .desc-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 24px;
 }
 
@@ -223,7 +244,7 @@ const getShortValue = (value: string) => {
 
 .item-content-inline {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   flex-wrap: nowrap;
 }
@@ -234,6 +255,7 @@ const getShortValue = (value: string) => {
   white-space: nowrap;
   width: 80px;
   flex-shrink: 0;
+  padding-top: 2px;
 }
 
 .item-value {
@@ -243,32 +265,35 @@ const getShortValue = (value: string) => {
 
 .tags-list,
 .conditions-list,
-.annotations-list {
+.annotations-list,
+.status-summary-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
-  align-items: center;
+  align-items: flex-start;
+  width: 100%;
 }
 
 /* 统一所有标签的基础样式 */
 .tag-item,
 .condition-item,
-.annotation-tag {
-  display: inline-flex;
+.annotation-tag,
+.status-summary-item {
+  display: flex;
   align-items: center;
-  gap: 4px;
+  width: 100%;
   cursor: pointer;
   font-size: 12px;
   font-family: 'Courier New', Courier, monospace;
   margin: 0;
-  padding: 0 8px;
+  padding: 4px 8px;
   border: none !important;
 }
 
 /* 标签和状态条件特殊样式 */
 .tag-item,
 .condition-item {
-  margin-right: 4px;
+  /* 垂直排列，不需要横向间距 */
 }
 
 /* 注解标签特殊样式 */
@@ -323,12 +348,6 @@ const getShortValue = (value: string) => {
   font-weight: 600;
   font-size: 11px;
   flex-shrink: 0;
-}
-
-/* 标签内部间距 */
-.tag-item,
-.condition-item {
-  margin-right: 4px;
 }
 
 

@@ -1,6 +1,6 @@
 const local: App.I18n.Schema = {
   system: {
-    title: 'SoybeanAdmin',
+    title: 'Operations Platform',
     updateTitle: 'System Version Update Notification',
     updateContent: 'A new version of the system has been detected. Do you want to refresh the page immediately?',
     updateConfirm: 'Refresh immediately',
@@ -128,12 +128,19 @@ const local: App.I18n.Schema = {
       }
     },
     sider: {
+      title: 'Sider Settings',
       inverted: 'Dark Sider',
       width: 'Sider Width',
       collapsedWidth: 'Sider Collapsed Width',
       mixWidth: 'Mix Sider Width',
       mixCollapsedWidth: 'Mix Sider Collapse Width',
-      mixChildMenuWidth: 'Mix Child Menu Width'
+      mixChildMenuWidth: 'Mix Child Menu Width',
+      useCustomColor: 'Use Custom Color',
+      customColor: 'Sider Background Color',
+      showIcon: 'Show Menu Icon',
+      useLogoGradient: 'Enable Logo Area Gradient',
+      logoGradientStart: 'Logo Gradient Start Color',
+      logoGradientEnd: 'Logo Gradient End Color'
     },
     footer: {
       visible: 'Footer Visible',

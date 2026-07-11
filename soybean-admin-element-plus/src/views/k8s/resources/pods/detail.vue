@@ -6,6 +6,7 @@ import yaml from 'js-yaml';
 import { fetchK8sEvents, fetchK8sPodLogs, getK8sPod, updateK8sPod } from '@/service/api/k8s';
 import { formatAnnotations, formatLabels, formatSelectors } from '@/utils/k8s-formatters';
 import PodTerminal from '../../terminal/PodTerminal.vue';
+import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
 
 defineOptions({ name: 'K8sPodDetail' });
 
@@ -38,6 +39,9 @@ const yamlContent = ref('');
 const yamlEditingContent = ref('');
 const yamlSaving = ref(false);
 
+// 返回列表页的路径 - 直接返回工作负载汇总页，状态由 store 管理
+const backPath = '/k8s/workloads';
+
 const getPhaseTag = computed(() => {
   if (!resource.value) return { type: 'info', text: '未知' };
   switch (resource.value.phase) {
@@ -62,6 +66,52 @@ const getTagType = (key: string) => {
   if (keyLower.includes('version') || keyLower.includes('ver')) return 'warning';
   if (keyLower.includes('component')) return 'info';
   return 'default';
+};
+
+// 获取注解标签颜色
+const getAnnotationTagType = (key: string) => {
+  const keyLower = key.toLowerCase();
+  if (keyLower.includes('last-applied')) return 'warning';
+  if (keyLower.includes('revision')) return 'success';
+  if (keyLower.includes('project')) return 'primary';
+  if (keyLower.includes('version')) return 'info';
+  if (keyLower.includes('kubernetes.io/') || keyLower.includes('k8s.io/')) return 'info';
+  return 'default';
+};
+
+// 获取截断的注解键名
+const getShortAnnotationKey = (key: string) => {
+  if (key.length > 25) {
+    if (key.startsWith('kubectl.kubernetes.io/')) {
+      return 'kubectl.../' + key.split('/').pop();
+    }
+    if (key.startsWith('deployment.kubernetes.io/')) {
+      return 'dep.../' + key.split('/').pop();
+    }
+    return key.substring(0, 10) + '...' + key.substring(key.length - 10);
+  }
+  return key;
+};
+
+// 获取截断的注解值
+const getShortAnnotationValue = (value: string) => {
+  if (value.length > 20) {
+    return value.substring(0, 20) + '...';
+  }
+  return value;
+};
+
+// 格式化注解数据
+const formattedAnnotations = computed(() => {
+  if (!resource.value?.annotations) return [];
+  const result = formatAnnotations(resource.value.annotations);
+  return [...result.user, ...result.system];
+});
+
+// 格式化选择器为列表
+const formatSelectorsList = (selectors: Record<string, string> | undefined) => {
+  if (!selectors || Object.keys(selectors).length === 0) return [];
+  return Object.entries(selectors).map(([key, value]) => ({ key, value }));
 };
 
 async function loadDetail() {
@@ -201,29 +251,32 @@ async function handleSaveYaml() {
   }
 }
 
-onMounted(() => loadDetail());
+onMounted(() => {
+  console.log('[Pod详情] onMounted');
+  console.log('[Pod详情] 当前路由参数:', {
+    clusterId: route.query.clusterId,
+    namespace: route.query.namespace,
+    name: route.query.name
+  });
+
+  loadDetail();
+});
 </script>
 
 <template>
   <div v-loading="loading" class="detail-page bg-layout">
-    <!-- 顶部操作栏 -->
-    <div class="instance-bar">
-      <div class="instance-left">
-        <span class="back-arrow" @click="router.push('/k8s/workloads')">←</span>
-        <span class="instance-name">{{ resource?.name || '-' }}</span>
-        <span class="instance-meta">命名空间: {{ resource?.namespace || '-' }}</span>
-        <span class="instance-meta">节点: {{ resource?.node || '-' }}</span>
-        <ElTag v-if="resource" :type="getPhaseTag.type" size="small">{{ getPhaseTag.text }}</ElTag>
-      </div>
-      <div class="instance-actions">
-        <ElButton v-if="resource?.phase === 'Running'" size="small" type="primary" @click="handleTerminal()">
-          终端
-        </ElButton>
-        <ElButton size="small" @click="handleLogs()">日志</ElButton>
-        <ElButton size="small" @click="handleEditYaml">编辑YAML</ElButton>
-        <ElButton size="small" @click="router.push('/k8s/workloads')">返回列表</ElButton>
-      </div>
-    </div>
+    <!-- 顶部操作栏 - 使用新组件 -->
+    <K8sResourceActionBar
+      :name="resource?.name || '-'"
+      :namespace="resource?.namespace || '-'"
+      :status-tag="getPhaseTag"
+      :back-path="backPath"
+      :actions="[
+        ...(resource?.phase === 'Running' ? [{ label: '终端', type: 'primary', handler: () => handleTerminal(), tooltip: '打开容器终端' }] : []),
+        { label: '日志', handler: () => handleLogs(), tooltip: '查看容器日志' },
+        { label: '编辑YAML', handler: handleEditYaml, tooltip: '编辑 YAML 配置' }
+      ]"
+    />
 
     <!-- 基本信息区域 -->
     <div class="basic-info-section">
@@ -240,18 +293,20 @@ onMounted(() => loadDetail());
               <div class="item-label">命名空间:</div>
               <div class="item-content">{{ resource?.namespace || '-' }}</div>
             </div>
+          </div>
+          <div class="desc-row">
             <div class="desc-item">
               <div class="item-label">创建时间:</div>
               <div class="item-content">{{ resource?.age || '-' }}</div>
             </div>
-          </div>
-          <div class="desc-row">
             <div class="desc-item">
               <div class="item-label">状态:</div>
               <div class="item-content">
                 <ElTag :type="getPhaseTag.type" size="small">{{ getPhaseTag.text }}</ElTag>
               </div>
             </div>
+          </div>
+          <div class="desc-row">
             <div class="desc-item">
               <div class="item-label">IP 地址:</div>
               <div class="item-content">{{ resource?.ip || '-' }}</div>
@@ -269,14 +324,34 @@ onMounted(() => loadDetail());
           </div>
           <div v-if="resource?.selectors && Object.keys(resource.selectors).length > 0" class="desc-row">
             <div class="desc-item desc-item-full">
-              <div class="item-label">选择器:</div>
-              <div class="item-content">{{ formatSelectors(resource.selectors) }}</div>
+              <div class="item-label-vertical">选择器:</div>
+              <div class="item-content-vertical selectors-list">
+                <ElTag
+                  v-for="(selector, idx) in formatSelectorsList(resource.selectors)"
+                  :key="idx"
+                  type="primary"
+                  size="small"
+                  class="selector-tag"
+                >
+                  {{ selector.key }}: {{ selector.value }}
+                </ElTag>
+              </div>
             </div>
           </div>
           <div v-if="resource?.annotations && Object.keys(resource.annotations).length > 0" class="desc-row">
             <div class="desc-item desc-item-full">
-              <div class="item-label">注解:</div>
-              <div class="item-content">{{ formatAnnotations(resource.annotations) }}</div>
+              <div class="item-label-vertical">注解:</div>
+              <div class="item-content-vertical annotations-list">
+                <div v-for="(item, idx) in formattedAnnotations" :key="idx" class="annotation-item">
+                  <ElTag :type="getAnnotationTagType(item.key)" size="small" class="annotation-tag-vertical">
+                    <span v-if="item.isLong" class="annotation-key-short">{{ getShortAnnotationKey(item.key) }}</span>
+                    <span v-else class="annotation-key-full">{{ item.key }}</span>
+                    <span v-if="!item.isLong" class="annotation-sep">:</span>
+                    <span v-if="item.isLong" class="expand-hint">展开</span>
+                    <span v-else class="annotation-value-short">{{ getShortAnnotationValue(item.value) }}</span>
+                  </ElTag>
+                </div>
+              </div>
             </div>
           </div>
           <div v-if="resource?.labels && Object.keys(resource.labels).length > 0" class="desc-row">
@@ -315,7 +390,13 @@ onMounted(() => loadDetail());
     <!-- 标签切换 -->
     <ElTabs v-model="activeTab" class="detail-tabs" @tab-change="handleTabChange">
       <!-- 容器组 -->
-      <ElTabPane label="容器组" name="containers">
+      <ElTabPane :label="`容器 (${resource?.containers?.length || 0})`" name="containers">
+        <template #label>
+          <div class="tab-pane-header">
+            <span>容器</span>
+            <ElTag size="small" class="count-tag">{{ resource?.containers?.length || 0 }}</ElTag>
+          </div>
+        </template>
         <div class="tab-content">
           <div v-if="resource?.containers && resource.containers.length > 0">
             <ElTable
@@ -342,12 +423,11 @@ onMounted(() => loadDetail());
       </ElTabPane>
 
       <!-- 事件 -->
-      <ElTabPane label="事件" name="events">
+      <ElTabPane :label="`事件 (${events.length})`" name="events">
+        <div class="tab-toolbar">
+          <ElButton size="small" @click="loadEvents">刷新</ElButton>
+        </div>
         <div class="tab-content">
-          <div class="section-header">
-            <span class="section-title">共 {{ events.length }} 个事件</span>
-            <ElButton size="small" @click="loadEvents">刷新</ElButton>
-          </div>
           <ElTable
             v-loading="eventsLoading"
             :data="events"
@@ -418,45 +498,11 @@ onMounted(() => loadDetail());
   padding: 24px;
 }
 
-/* 顶部操作栏 */
-.instance-bar {
+/* 标签页工具栏 */
+.tab-toolbar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.instance-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.back-arrow {
-  font-size: 20px;
-  color: #0052d9;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.back-arrow:hover {
-  opacity: 0.8;
-}
-
-.instance-name {
-  font-size: 16px;
-  font-weight: 500;
-  color: #303133;
-}
-
-.instance-meta {
-  font-size: 14px;
-  color: #909399;
-}
-
-.instance-actions {
-  display: flex;
-  gap: 8px;
+  justify-content: flex-end;
+  padding: 0 16px 8px 16px;
 }
 
 /* 基本信息区域 */
@@ -491,6 +537,32 @@ onMounted(() => loadDetail());
   margin-top: 16px;
 }
 
+/* 移除 tab内容默认的padding，让内容更紧凑 */
+.detail-tabs :deep(.el-tabs__content) {
+  padding: 0;
+}
+
+/* tab标题栏 - 自定义样式 */
+.tab-pane-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+/* 计数标签 */
+.tab-pane-header .count-tag {
+  background: #f0f2f5;
+  color: #606266;
+  border: none;
+  font-size: 12px;
+  height: 18px;
+  line-height: 18px;
+  padding: 0 6px;
+  font-weight: 500;
+}
+
 /* 描述列表样式 */
 .desc-grid {
   display: flex;
@@ -500,7 +572,7 @@ onMounted(() => loadDetail());
 
 .desc-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 24px;
 }
 
@@ -529,14 +601,107 @@ onMounted(() => loadDetail());
 
 .tags-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
+  align-items: flex-start;
+  width: 100%;
 }
 
 .tag-item {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  width: 100%;
   gap: 4px;
+}
+
+/* 注解列表样式 */
+.annotations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.annotation-item {
+  width: 100%;
+}
+
+.annotation-tag-vertical {
+  display: flex !important;
+  align-items: center;
+  width: 100%;
+  font-family: 'Courier New', Courier, monospace;
+  padding: 4px 8px !important;
+}
+
+.annotation-key-full {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+
+.annotation-key-short {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+  font-weight: 500;
+}
+
+.annotation-sep {
+  flex-shrink: 0;
+}
+
+.annotation-value-short {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 80px;
+  flex-shrink: 1;
+}
+
+.expand-hint {
+  color: inherit;
+  font-weight: 600;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+/* 选择器列表样式 */
+.selectors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.selector-tag {
+  display: flex !important;
+  align-items: center;
+  width: 100%;
+  font-family: 'Courier New', Courier, monospace;
+  margin: 0;
+  padding: 4px 8px !important;
+  border: none !important;
+}
+
+/* 垂直布局样式 */
+.item-label-vertical {
+  font-size: 13px;
+  color: #606266;
+  white-space: nowrap;
+  width: 80px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.item-content-vertical {
+  flex: 1;
+  font-size: 13px;
+  color: #303133;
 }
 
 .font-mono {

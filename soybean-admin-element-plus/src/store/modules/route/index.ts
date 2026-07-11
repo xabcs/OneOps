@@ -279,9 +279,24 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
 
     const vueRoutes = getAuthVueRoutes(sortRoutes);
 
-    resetVueRoutes();
+    // 获取当前已注册的路由名称（排除内置路由）
+    const currentRouteNames = new Set(
+      router.getRoutes().map(r => r.name).filter(Boolean)
+    );
 
-    addRoutesToVueRouter(vueRoutes);
+    // 添加新路由或更新已存在的路由
+    vueRoutes.forEach(route => {
+      if (!currentRouteNames.has(route.name)) {
+        // 新路由：直接添加
+        const removeFn = router.addRoute(route);
+        addRemoveRouteFn(removeFn);
+      } else {
+        // 已存在的路由：先移除再添加（实现更新效果）
+        router.removeRoute(route.name);
+        const removeFn = router.addRoute(route);
+        addRemoveRouteFn(removeFn);
+      }
+    });
 
     getGlobalMenus(sortRoutes);
 
@@ -298,6 +313,49 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
     const sortRoutes = sortRoutesByOrder(allRoutes);
 
     getGlobalMenus(sortRoutes);
+  }
+
+  /**
+   * Rebuild routes when menu configuration changes
+   * This will update both menu display and router configuration
+   */
+  async function rebuildRoutes() {
+    const allRoutes = [...constantRoutes.value, ...authRoutes.value];
+    const sortRoutes = sortRoutesByOrder(allRoutes);
+    const vueRoutes = getAuthVueRoutes(sortRoutes);
+
+    // 获取当前已注册的路由名称
+    const currentRouteNames = new Set(
+      router.getRoutes().map(r => r.name).filter(Boolean)
+    );
+
+    // 移除已删除的路由
+    currentRouteNames.forEach(name => {
+      // 排除内置路由
+      if (['root', 'not-found', 'webterminal_redirect'].includes(name as string)) {
+        return;
+      }
+
+      // 检查路由是否仍然存在
+      const stillExists = vueRoutes.some(route => route.name === name);
+      if (!stillExists) {
+        router.removeRoute(name);
+      }
+    });
+
+    // 添加新路由或更新路由
+    vueRoutes.forEach(route => {
+      if (currentRouteNames.has(route.name)) {
+        // 路由已存在，先移除再添加（更新）
+        router.removeRoute(route.name);
+      }
+      const removeFn = router.addRoute(route);
+      addRemoveRouteFn(removeFn);
+    });
+
+    // 更新菜单显示
+    getGlobalMenus(sortRoutes);
+    getCacheRoutes(vueRoutes);
   }
 
   /**
@@ -372,7 +430,10 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
   }
 
   async function onRouteSwitchWhenLoggedIn() {
-    await authStore.initUserInfo();
+    // 只有在用户信息未初始化时才调用
+    if (!authStore.userInfo.id) {
+      await authStore.initUserInfo();
+    }
   }
 
   async function onRouteSwitchWhenNotLoggedIn() {
@@ -386,6 +447,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
     searchMenus,
     updateGlobalMenusByLocale,
     rebuildMenus,
+    rebuildRoutes,
     cacheRoutes,
     excludeCacheRoutes,
     resetRouteCache,

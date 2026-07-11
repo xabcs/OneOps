@@ -5,6 +5,7 @@ import presetWind3 from '@unocss/preset-wind3';
 import type { Theme } from '@unocss/preset-uno';
 import { presetSoybeanAdmin } from '@sa/uno-preset';
 import { themeVars } from './src/theme/vars';
+import gradientDesignSystem from './src/unocss/presets/gradient-design-system';
 
 export default defineConfig<Theme>({
   content: {
@@ -26,5 +27,13 @@ export default defineConfig<Theme>({
     'card-wrapper': 'rd-8px shadow-sm'
   },
   transformers: [transformerDirectives(), transformerVariantGroup()],
-  presets: [presetWind3({ dark: 'class' }), presetSoybeanAdmin()]
+  presets: [
+    presetWind3({ dark: 'class' }),
+    presetSoybeanAdmin(),
+    {
+      name: 'gradient-design-system',
+      rules: gradientDesignSystem,
+      variantParent: 'gradient'
+    }
+  ]
 });

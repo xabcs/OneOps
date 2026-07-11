@@ -216,6 +216,7 @@ const routeMap: RouteMap = {
   "cmdb_tags": "/cmdb/tags",
   "demo-route": "/demo-route",
   "demo-route_child": "/demo-route/child/:id",
+  "design-system-demo": "/design-system-demo",
   "function": "/function",
   "function_hide-child": "/function/hide-child",
   "function_hide-child_one": "/function/hide-child/one",

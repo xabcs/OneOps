@@ -93,6 +93,12 @@ declare namespace App {
         mixCollapsedWidth: number;
         /** Child menu width when the layout is 'vertical-mix' or 'horizontal-mix' */
         mixChildMenuWidth: number;
+        /** Custom background color for sider (when inverted is true) */
+        customColor?: string;
+        /** Use custom color for sider background */
+        useCustomColor?: boolean;
+        /** Show sider menu icon */
+        showIcon?: boolean;
       };
       /** Footer */
       footer: {
@@ -185,6 +191,8 @@ declare namespace App {
       layout: string;
       inverted: string;
       'base-text': string;
+      /** Custom sider background color */
+      'sider-custom'?: string;
     }
 
     interface ThemeSettingTokenBoxShadow {

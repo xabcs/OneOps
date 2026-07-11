@@ -478,9 +478,9 @@ async function handleMove(row: Api.SystemManage.Menu, direction: 'up' | 'down') 
     // 强制刷新表格
     tableKey.value++;
 
-    // 刷新用户信息和左侧菜单栏
+    // 刷新用户信息和左侧菜单栏，同时更新路由配置
     await authStore.getUserInfo();
-    routeStore.rebuildMenus();
+    routeStore.rebuildRoutes();
   } catch (error) {
     console.error('排序更新失败:', error);
     ElNotification({
@@ -503,9 +503,9 @@ async function handleStatusChange(row: Api.SystemManage.Menu, val: number) {
       duration: 3000
     });
     await getData();
-    // 刷新左侧菜单栏
+    // 刷新左侧菜单栏，同时更新路由配置
     await authStore.getUserInfo();
-    routeStore.rebuildMenus();
+    routeStore.rebuildRoutes();
   } catch (error) {
     console.error('状态更新失败:', error);
     ElNotification({
@@ -524,17 +524,8 @@ function handleAddChild(row: Api.SystemManage.Menu) {
   operateType.value = 'add';
   isAddingChild.value = true;
   parentMenuName.value = row.name;
-  editingData.value = {
-    id: 0,
-    name: '',
-    icon: '',
-    path: '',
-    permission: '',
-    menuType: 'menu',
-    parentId: row.id,
-    sort: getNextSort(row.id),
-    status: 1
-  } as Api.SystemManage.Menu;
+  // 传递父菜单的完整数据，而不是空数据
+  editingData.value = jsonClone(row);
   drawerVisible.value = true;
 }
 
@@ -571,9 +562,9 @@ async function handleDelete(id: number) {
       duration: 3000
     });
     onDeleted();
-    // 刷新左侧菜单栏
+    // 刷新左侧菜单栏，同时更新路由配置
     await authStore.getUserInfo();
-    routeStore.rebuildMenus();
+    routeStore.rebuildRoutes();
   } else {
     ElNotification({
       title: '错误',
@@ -604,97 +595,74 @@ async function handleFilterChange() {
 </script>
 
 <template>
-  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
-    <ElCard class="card-wrapper sm:flex-1-hidden">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <p>{{ $t('page.manage.menu.title') }}</p>
-          <div class="flex items-center gap-12px">
-            <ElInput
-              v-model="filterText"
-              placeholder="搜索菜单名称"
-              clearable
-              style="width: 200px"
-              @input="handleFilterChange"
-              @clear="handleFilterChange"
-            >
-              <template #prefix>
-                <SvgIcon icon="ri:search-line" />
-              </template>
-            </ElInput>
-            <ElButton type="primary" :icon="Plus" @click="handleAdd">新增菜单</ElButton>
-            <ElButton :icon="Top" @click="getData">刷新</ElButton>
-          </div>
-        </div>
-      </template>
-      <div class="h-[calc(100%-52px)]">
-        <ElTable
-          :key="tableKey"
-          v-loading="loading"
-          height="100%"
-          border
-          class="sm:h-full"
-          :data="data"
-          row-key="id"
-          :tree-props="{ children: 'children', indent: 20 }"
-        >
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
-      <MenuOperateDrawer
-        v-model:visible="drawerVisible"
-        :operate-type="operateType"
-        :row-data="editingData"
-        :is-adding-child="isAddingChild"
-        :parent-menu-name="parentMenuName"
-        @submitted="handleMenuSubmitted"
-      />
-    </ElCard>
-  </div>
+    <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
+        <ElCard class="card-wrapper sm:flex-1-hidden">
+            <template #header>
+                <div class="flex items-center justify-between">
+                    <p>{{ $t('page.manage.menu.title') }}</p>
+                    <div class="flex items-center gap-12px">
+                        <ElInput v-model="filterText" placeholder="搜索菜单名称" clearable style="width: 200px" @input="handleFilterChange" @clear="handleFilterChange">
+                            <template #prefix>
+                                <SvgIcon icon="ri:search-line" />
+                            </template>
+                        </ElInput>
+                        <ElButton type="primary" :icon="Plus" @click="handleAdd">新增菜单</ElButton>
+                        <ElButton :icon="Top" @click="getData">刷新</ElButton>
+                    </div>
+                </div>
+            </template>
+            <div class="h-[calc(100%-52px)]">
+                <ElTable :key="tableKey" v-loading="loading" height="100%" border class="sm:h-full" :data="data" row-key="id" :tree-props="{ children: 'children', indent: 20 }">
+                    <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+                </ElTable>
+            </div>
+            <MenuOperateDrawer v-model:visible="drawerVisible" :operate-type="operateType" :row-data="editingData" :is-adding-child="isAddingChild" :parent-menu-name="parentMenuName" @submitted="handleMenuSubmitted" />
+        </ElCard>
+    </div>
 </template>
 
 <style lang="scss" scoped>
-:deep(.el-card) {
-  .ht50 {
-    height: calc(100% - 50px);
-  }
-}
+    :deep(.el-card) {
+        .ht50 {
+            height: calc(100% - 50px);
+        }
+    }
 
-/* 自定义表头居中 */
-:deep(.custom-header-center) {
-  .cell {
-    text-align: center !important;
-  }
-}
+    /* 自定义表头居中 */
+    :deep(.custom-header-center) {
+        .cell {
+            text-align: center !important;
+        }
+    }
 
-/* 菜单名称列左边距 */
-:deep(.menu-name-column) {
-  .cell {
-    padding-left: 8px !important;
-  }
-}
+    /* 菜单名称列左边距 */
+    :deep(.menu-name-column) {
+        .cell {
+            padding-left: 8px !important;
+        }
+    }
 
-.text-tertiary {
-  color: var(--el-text-color-placeholder);
-}
+    .text-tertiary {
+        color: var(--el-text-color-placeholder);
+    }
 
-.sort-value {
-  min-width: 24px;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 500;
-}
+    .sort-value {
+        min-width: 24px;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 500;
+    }
 
-:deep(.el-button--link.is-disabled) {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
+    :deep(.el-button--link.is-disabled) {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
 
-/* 层级序号样式 */
-.hierarchy-index {
-  font-family: 'Courier New', monospace;
-  font-weight: 600;
-  color: var(--el-color-primary);
-  font-size: 13px;
-}
+    /* 层级序号样式 */
+    .hierarchy-index {
+        font-family: "Courier New", monospace;
+        font-weight: 600;
+        color: var(--el-color-primary);
+        font-size: 13px;
+    }
 </style>

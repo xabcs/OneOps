@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import {
   ElButton,
   ElDialog,
@@ -32,6 +32,7 @@ import {
 defineOptions({ name: 'K8sDeployments' });
 
 const router = useRouter();
+const route = useRoute();
 const message = ElMessage;
 
 const loading = ref(false);
@@ -351,6 +352,30 @@ const handlePageSizeChange = (pageSize: number) => {
 
 // 查看详情
 const handleViewDetail = (row: any) => {
+  console.log('[Deployment列表] ========== handleViewDetail 被调用 ==========');
+  console.log('[Deployment列表] 当前选择的集群:', selectedCluster.value);
+  console.log('[Deployment列表] 当前选择的命名空间:', filters.namespace);
+  console.log('[Deployment列表] 点击的行数据:', row);
+
+  // 保存当前选择到 sessionStorage
+  const stateToSave = {
+    clusterId: selectedCluster.value,
+    namespace: filters.namespace,
+    listPath: '/k8s/workloads'
+  };
+  console.log('[Deployment列表] 准备保存状态到 sessionStorage:', stateToSave);
+
+  try {
+    sessionStorage.setItem('k8s_deployments_list_state', JSON.stringify(stateToSave));
+    console.log('[Deployment列表] ✅ sessionStorage 保存成功');
+
+    // 验证保存是否成功
+    const saved = sessionStorage.getItem('k8s_deployments_list_state');
+    console.log('[Deployment列表] 验证保存结果:', saved);
+  } catch (e) {
+    console.error('[Deployment列表] ❌ sessionStorage 保存失败:', e);
+  }
+
   router.push({
     path: '/k8s/resources/deployments/detail',
     query: {
@@ -361,9 +386,59 @@ const handleViewDetail = (row: any) => {
   });
 };
 
+// 从 sessionStorage 恢复状态
+const restoreStateFromStorage = () => {
+  console.log('[Deployment列表] 开始恢复状态...');
+  const savedState = sessionStorage.getItem('k8s_deployments_list_state');
+  console.log('[Deployment列表] sessionStorage 内容:', savedState);
+
+  if (savedState) {
+    try {
+      const state = JSON.parse(savedState);
+      console.log('[Deployment列表] 解析后的状态:', state);
+
+      selectedCluster.value = state.clusterId;
+      filters.namespace = state.namespace;
+      console.log('[Deployment列表] 已设置 clusterId:', selectedCluster.value, 'namespace:', filters.namespace);
+
+      // 清除保存的状态
+      sessionStorage.removeItem('k8s_deployments_list_state');
+      console.log('[Deployment列表] 已清除 sessionStorage');
+
+      // 加载命名空间和数据
+      if (selectedCluster.value) {
+        console.log('[Deployment列表] 开始加载命名空间和数据...');
+        return loadNamespaces().then(() => {
+          console.log('[Deployment列表] 命名空间加载完成，开始加载数据...');
+          return loadDeployments();
+        });
+      }
+    } catch (e) {
+      console.error('[Deployment列表] 恢复状态失败:', e);
+    }
+  }
+
+  // 正常加载流程
+  console.log('[Deployment列表] 无保存状态，执行正常加载流程');
+  return loadClusters();
+};
+
 onMounted(() => {
-  loadClusters();
+  restoreStateFromStorage();
 });
+
+// 监听路由变化，当从详情页返回时恢复状态
+watch(
+  () => route.path,
+  (newPath, oldPath) => {
+    console.log('[Deployment列表] 路由变化:', { oldPath, newPath });
+    // 如果从详情页返回到列表页
+    if (newPath === '/k8s/workloads' && oldPath?.includes('/detail')) {
+      console.log('[Deployment列表] 检测到从详情页返回，触发状态恢复');
+      restoreStateFromStorage();
+    }
+  }
+);
 </script>
 
 <template>

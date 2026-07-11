@@ -210,8 +210,53 @@ func (c *RouteController) IsRouteExist(ctx *gin.Context) {
 
 // InvalidateCache 清除RBAC缓存
 func (c *RouteController) InvalidateCache(ctx *gin.Context) {
+	// 先清除缓存
 	services.InvalidateRBACCache(0)
-	ctx.JSON(http.StatusOK, utils.SuccessWithData("缓存已清除"))
+
+	// 然后重新同步菜单，确保数据最新
+	initService := services.NewInitService()
+	if err := initService.SyncMenus(); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("菜单同步失败: "+err.Error()))
+		return
+	}
+
+	// 再次清除缓存，确保新菜单权限立即生效
+	services.InvalidateRBACCache(0)
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithData("缓存已清除并重新同步菜单数据"))
+}
+
+// DebugCache 调试当前缓存内容
+func (c *RouteController) DebugCache(ctx *gin.Context) {
+	userID, exists := ctx.Get("user_id")
+	if !exists {
+		ctx.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
+		return
+	}
+
+	rbacService := services.NewRBACService()
+	menuTree, permissions, roles, err := rbacService.BuildMenuTreeAndPermissions(userID.(uint))
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("获取缓存失败: "+err.Error()))
+		return
+	}
+
+	// 检查是否包含 webterminal
+	hasWebTerminal := false
+	for _, menu := range menuTree {
+		if menu.Path == "/webterminal" {
+			hasWebTerminal = true
+			break
+		}
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(map[string]interface{}{
+		"has_webterminal":     hasWebTerminal,
+		"menu_count":          len(menuTree),
+		"permission_count":    len(permissions),
+		"role_count":          len(roles),
+		"menus":               menuTree,
+	}))
 }
 
 // convertMenusToRoutes 将数据库菜单转换为前端路由格式
@@ -314,8 +359,10 @@ func (c *RouteController) generateComponent(path string, parentID uint, hasChild
 	routeName := c.generateRouteName(path)
 
 	// 特殊处理：web终端使用独立布局（无导航栏）
+	// 注意：如果遇到路由跳转问题，可以先注释掉特殊处理，使用默认布局
 	if path == "/webterminal" {
-		return "layout.terminalLayout$view." + routeName
+		// 使用默认 base 布局，避免路由解析问题
+		return "layout.base$view." + routeName
 	}
 
 	// 如果是一级菜单（父级为0）

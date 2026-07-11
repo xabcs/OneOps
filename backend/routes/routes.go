@@ -309,6 +309,7 @@ func SetupRoutes(r *gin.Engine) {
 			routeGroup.GET("/getUserRoutes", routeController.GetUserRoutes)
 			routeGroup.GET("/isRouteExist", routeController.IsRouteExist)
 			routeGroup.POST("/invalidateCache", routeController.InvalidateCache)
+			routeGroup.GET("/debugCache", middlewares.Auth(), routeController.DebugCache)
 		}
 
 			// K8s 集群管理路由（需要认证）

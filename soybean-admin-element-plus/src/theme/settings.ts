@@ -4,9 +4,9 @@ export const themeSettings: App.Theme.ThemeSetting = {
   grayscale: false,
   colourWeakness: false,
   recommendColor: false,
-  themeColor: 'rgb(232, 26, 101)', // OneOps #e81a65
+  themeColor: 'rgb(64, 73, 101)', // OneOps #404965
   otherColor: {
-    info: 'rgb(232, 26, 101)', // 与主色保持一致
+    info: 'rgb(64, 73, 101)', // 与主色保持一致
     success: 'rgb(38, 187, 23)', // 绿色
     warning: 'rgb(255, 168, 0)', // 橙色
     error: 'rgb(245, 34, 46)' // 保持红色
@@ -42,12 +42,18 @@ export const themeSettings: App.Theme.ThemeSetting = {
   },
   fixedHeaderAndTab: true,
   sider: {
-    inverted: false,
+    inverted: true, // 默认开启深色侧边栏
     width: 200,
     collapsedWidth: 56,
     mixWidth: 80,
     mixCollapsedWidth: 56,
-    mixChildMenuWidth: 200
+    mixChildMenuWidth: 200,
+    useCustomColor: true, // 默认启用自定义颜色
+    customColor: 'rgb(228, 235, 255)', // 默认自定义侧边栏颜色 #e4ebff
+    showIcon: true, // 默认显示图标
+    useLogoGradient: true, // 默认启用logo区域渐变
+    logoGradientStart: '#f1f6fffa', // logo区域渐变起始颜色
+    logoGradientEnd: '#e8f0ffe6' // logo区域渐变结束颜色
   },
   footer: {
     visible: false,
@@ -62,21 +68,21 @@ export const themeSettings: App.Theme.ThemeSetting = {
   },
   borderRadius: {
     useComponentSpecific: false,
-    small: '0px',
-    medium: '0px',
-    large: '0px',
+    small: '8px',
+    medium: '8px',
+    large: '8px',
     components: {
-      button: '0px',
-      input: '0px',
-      select: '0px',
-      card: '0px',
-      table: '0px',
-      modal: '0px',
-      tag: '0px',
+      button: '8px',
+      input: '8px',
+      select: '8px',
+      card: '8px',
+      table: '8px',
+      modal: '8px',
+      tag: '8px',
       switch: '12px',
-      checkbox: '0px',
+      checkbox: '8px',
       radio: '50%',
-      menu: '0px'
+      menu: '8px'
     }
   },
   tokens: {
@@ -85,7 +91,8 @@ export const themeSettings: App.Theme.ThemeSetting = {
         container: 'rgb(255, 255, 255)',
         layout: 'rgb(247, 250, 252)',
         inverted: 'rgb(0, 20, 40)',
-        'base-text': 'rgb(31, 31, 31)'
+        'base-text': 'rgb(31, 31, 31)',
+        'sider-custom': 'rgb(228, 235, 255)' // 自定义侧边栏默认颜色 #e4ebff
       },
       boxShadow: {
         header: '0 1px 3px rgb(0 0 0 / 6%), 0 1px 2px rgb(0 0 0 / 4%)', // 腾讯云风格：更轻的阴影
@@ -93,16 +100,17 @@ export const themeSettings: App.Theme.ThemeSetting = {
         tab: '0 1px 2px rgb(0 0 0 / 6%)' // 腾讯云风格：标签页阴影
       },
       borderRadius: {
-        small: '0px',
-        medium: '0px',
-        large: '0px'
+        small: '8px',
+        medium: '8px',
+        large: '8px'
       }
     },
     dark: {
       colors: {
         container: 'rgb(28, 28, 28)',
         layout: 'rgb(18, 18, 18)',
-        'base-text': 'rgb(224, 224, 224)'
+        'base-text': 'rgb(224, 224, 224)',
+        'sider-custom': 'rgb(20, 20, 30)'
       }
     }
   }

@@ -355,6 +355,15 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'design-system-demo',
+    path: '/design-system-demo',
+    component: 'layout.base$view.design-system-demo',
+    meta: {
+      title: 'design-system-demo',
+      i18nKey: 'route.design-system-demo'
+    }
+  },
+  {
     name: 'function',
     path: '/function',
     component: 'layout.base',

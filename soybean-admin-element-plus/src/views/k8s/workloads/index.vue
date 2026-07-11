@@ -50,6 +50,7 @@ import {
   updateK8sStatefulSet
 } from '@/service/api/k8s';
 import YamlEditor from '@/components/YamlEditor.vue';
+import { useK8sStore } from '@/store/modules/k8s';
 
 // 解析资源manifest为YAML格式
 function parseManifest(manifestStr: string): string {
@@ -74,13 +75,14 @@ defineOptions({ name: 'K8sWorkloads' });
 
 const router = useRouter();
 const message = ElMessage;
+const k8sStore = useK8sStore();
 
 const loading = ref(false);
-const activeTab = ref('deployments');
+const activeTab = ref(k8sStore.workloadFilterState.activeTab || 'deployments');
 
-// 当前选中的集群和命名空间
-const selectedCluster = ref<number | null>(null);
-const selectedNamespace = ref('default');
+// 当前选中的集群和命名空间 - 从 store 读取
+const selectedCluster = ref(k8sStore.workloadFilterState.clusterId);
+const selectedNamespace = ref(k8sStore.workloadFilterState.namespace);
 
 // 可用的命名空间列表
 const namespaces = ref<string[]>([]);
@@ -424,7 +426,14 @@ async function loadCurrentData() {
 
 // 跳转到详情页
 function goToDetail(row: any) {
+  console.log('[工作负载汇总] goToDetail 被调用');
+  console.log('[工作负载汇总] 当前标签页:', activeTab.value);
+  console.log('[工作负载汇总] 点击的行数据:', row);
+
+  // 状态已经通过 watch 自动同步到 store，无需手动保存
   const baseQuery = { clusterId: selectedCluster.value, namespace: row.namespace, name: row.name };
+
+  // 跳转到详情页
   switch (activeTab.value) {
     case 'deployments':
       router.push({ path: '/k8s/resources/deployments/detail', query: baseQuery });
@@ -1240,13 +1249,25 @@ function handlePageSizeChange(pageSize: number) {
 // Tab切换
 function handleTabChange(tabName: string) {
   activeTab.value = tabName;
-  // 切换Tab时清空选择
+  // 切换Tab时清空选择并同步到 store
   clearSelection();
+  k8sStore.setWorkloadFilterState({
+    clusterId: selectedCluster.value,
+    namespace: selectedNamespace.value,
+    activeTab: tabName
+  });
   loadCurrentData();
 }
 
-// 监听集群和命名空间变化
+// 监听集群和命名空间变化，同步到 store
 watch([selectedCluster, selectedNamespace], () => {
+  // 同步状态到 store
+  k8sStore.setWorkloadFilterState({
+    clusterId: selectedCluster.value,
+    namespace: selectedNamespace.value,
+    activeTab: activeTab.value
+  });
+
   if (selectedCluster.value) {
     loadNamespaces();
     loadCurrentData();
@@ -1254,11 +1275,44 @@ watch([selectedCluster, selectedNamespace], () => {
 });
 
 onMounted(async () => {
+  console.log('[工作负载汇总] ========== onMounted 开始 ==========');
+
   await loadClusters();
+
+  // 从 store 恢复状态
+  const savedState = k8sStore.getWorkloadFilterState();
+  console.log('[工作负载汇总] 从 store 恢复状态:', savedState);
+
+  if (savedState.clusterId) {
+    selectedCluster.value = savedState.clusterId;
+  } else if (clusters.value.length > 0) {
+    selectedCluster.value = clusters.value[0].id;
+  }
+
+  if (savedState.namespace) {
+    selectedNamespace.value = savedState.namespace;
+  }
+
+  if (savedState.activeTab) {
+    activeTab.value = savedState.activeTab;
+    console.log('[工作负载汇总] 恢复标签页:', activeTab.value);
+  }
+
+  console.log('[工作负载汇总] 恢复后状态 - 集群:', selectedCluster.value, '命名空间:', selectedNamespace.value, '标签页:', activeTab.value);
+
+  // 手动加载数据
   if (selectedCluster.value) {
     await loadNamespaces();
-    await loadDeployments();
+
+    // 如果命名空间列表中没有当前选择的命名空间，选择第一个
+    if (namespaces.value.length > 0 && !namespaces.value.includes(selectedNamespace.value)) {
+      selectedNamespace.value = namespaces.value[0];
+    }
+
+    await loadCurrentData();
   }
+
+  console.log('[工作负载汇总] ========== onMounted 结束 ==========');
 });
 </script>
 

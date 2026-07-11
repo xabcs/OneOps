@@ -1,0 +1,11 @@
+<svg viewBox="0 0 200 60" width="200" height="60" xmlns="http://www.w3.org/2000/svg">
+  <title>MSRE</title>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <text x="100" y="30" text-anchor="middle" dominant-baseline="central"
+        font-family="'Palatino', 'Palatino Linotype', 'Book Antiqua', serif" font-size="78" font-weight="700" fill="url(#g)" letter-spacing="0">MSRE</text>
+</svg>

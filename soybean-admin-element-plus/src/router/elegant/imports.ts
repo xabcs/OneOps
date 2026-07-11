@@ -48,6 +48,7 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   cmdb_servers: () => import("@/views/cmdb/servers/index.vue"),
   cmdb_tags: () => import("@/views/cmdb/tags/index.vue"),
   "demo-route_child": () => import("@/views/demo-route/child/[id].vue"),
+  "design-system-demo": () => import("@/views/design-system-demo/index.vue"),
   "function_hide-child_one": () => import("@/views/function/hide-child/one/index.vue"),
   "function_hide-child_three": () => import("@/views/function/hide-child/three/index.vue"),
   "function_hide-child_two": () => import("@/views/function/hide-child/two/index.vue"),

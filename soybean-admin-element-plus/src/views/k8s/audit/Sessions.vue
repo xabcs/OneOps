@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import {
   ElButton,
   ElMessage,
+  ElMessageBox,
   ElOption,
   ElSelect,
   ElSpace,
@@ -12,16 +13,8 @@ import {
   ElTooltip
 } from 'element-plus';
 import { fetchK8sActiveTerminalSessions, fetchK8sClusters, terminateK8sTerminalSession } from '@/service/api/k8s';
-defineOptions({
-  setup() {
-    // onBeforeUnmount 已经在 script setup 中处理
-  }
-});
-</script>
 
-<script>
-
-defineOptions({ name: 'K8sSessions' });
+defineOptions({ name: 'K8sAuditSessions' });
 
 const message = ElMessage;
 

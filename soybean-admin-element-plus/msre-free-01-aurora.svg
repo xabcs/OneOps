@@ -1,0 +1,20 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <title>MSRE Aurora</title>
+  <defs>
+    <linearGradient id="aur1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="0.5" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="aur2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a5b4fc" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#c4b5fd" stop-opacity="0.3"/>
+    </linearGradient>
+    <filter id="blur1"><feGaussianBlur stdDeviation="8"/></filter>
+  </defs>
+  <path d="M30,100 C30,50 70,20 100,20 C140,20 175,55 175,100 C175,140 145,175 100,175 C60,175 30,145 30,100 Z" fill="url(#aur1)" filter="url(#blur1)" opacity="0.3"/>
+  <path d="M30,100 C30,50 70,20 100,20 C140,20 175,55 175,100 C175,140 145,175 100,175 C60,175 30,145 30,100 Z" fill="url(#aur1)"/>
+  <path d="M50,90 C55,65 75,45 100,45 C130,45 155,70 155,95 C155,120 135,140 100,140 C70,140 50,120 50,90 Z" fill="url(#aur2)"/>
+  <path d="M70,85 C75,70 85,60 100,60 C115,60 130,70 135,85 C138,100 128,115 100,115 C78,115 68,100 70,85 Z" fill="#ffffff" opacity="0.15"/>
+  <path d="M85,80 C90,72 95,68 100,68 C108,68 115,73 118,80 C120,88 115,95 100,95 C90,95 83,90 85,80 Z" fill="#ffffff" opacity="0.25"/>
+</svg>

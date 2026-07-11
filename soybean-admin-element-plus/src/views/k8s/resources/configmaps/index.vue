@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { onMounted, reactive, ref, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import {
   ElButton,
   ElDialog,
@@ -24,6 +24,7 @@ import {
 defineOptions({ name: 'K8sConfigMaps' });
 
 const router = useRouter();
+const route = useRoute();
 const message = ElMessage;
 
 const loading = ref(false);
@@ -127,6 +128,12 @@ const handleNamespaceChange = () => {
 
 // 跳转到详情页
 const goToDetail = (row: any) => {
+  sessionStorage.setItem('k8s_configmaps_list_state', JSON.stringify({
+    clusterId: selectedCluster.value,
+    namespace: filters.namespace,
+    listPath: '/k8s/config'
+  }));
+
   router.push({
     path: '/k8s/resources/configmaps/detail',
     query: {
@@ -173,9 +180,41 @@ const handleRefresh = () => {
   loadConfigMaps();
 };
 
+// 从 sessionStorage 恢复状态
+const restoreStateFromStorage = () => {
+  const savedState = sessionStorage.getItem('k8s_configmaps_list_state');
+  if (savedState) {
+    try {
+      const state = JSON.parse(savedState);
+      selectedCluster.value = state.clusterId;
+      filters.namespace = state.namespace;
+
+      sessionStorage.removeItem('k8s_configmaps_list_state');
+
+      if (selectedCluster.value) {
+        return loadNamespaces().then(() => {
+          return loadConfigMaps();
+        });
+      }
+    } catch (e) {
+      console.error('Failed to restore state:', e);
+    }
+  }
+  return loadClusters();
+};
+
 onMounted(() => {
-  loadClusters();
+  restoreStateFromStorage();
 });
+
+watch(
+  () => route.path,
+  (newPath, oldPath) => {
+    if (newPath === '/k8s/workloads' && oldPath?.includes('/detail')) {
+      restoreStateFromStorage();
+    }
+  }
+);
 </script>
 
 <template>

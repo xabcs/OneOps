@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { onMounted, reactive, ref, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import {
   ElButton,
   ElDialog,
@@ -25,12 +25,13 @@ import {
   fetchK8sClusters,
   fetchK8sPodLogs,
   fetchK8sPods
-} from '@/service/api/k8s';
+import PodTerminal from '../terminal/PodTerminal.vue';
 import PodTerminal from '../../terminal/PodTerminal.vue';
 
 defineOptions({ name: 'K8sPods' });
 
 const router = useRouter();
+const route = useRoute();
 const message = ElMessage;
 
 const loading = ref(false);
@@ -114,9 +115,8 @@ const loadClusters = async () => {
 // 加载命名空间列表
 const loadNamespaces = async () => {
   if (!selectedCluster.value) return;
-
-  try {
-    const namespaceList = await fetchK8sClusterNamespaces(selectedCluster.value);
+    const res = await fetchK8sClusterNamespaces(selectedCluster.value);
+    namespaces.value = res.map((ns: any) => ns.name);
     const namespaceNames = namespaceList.map((ns: any) => ns.name);
     namespaces.value = [...namespaceNames];
 
@@ -226,6 +226,16 @@ const handleDelete = async (row: any) => {
 
 // 查看详情
 const handleViewDetail = (row: any) => {
+  // 保存当前选择到 sessionStorage
+  // 保存当前选择到 sessionStorage
+  const stateToSave = {
+    clusterId: selectedCluster.value,
+    namespace: filters.namespace,
+    listPath: '/k8s/workloads'
+  };
+  console.log('[Pod列表] 保存状态:', stateToSave);
+  sessionStorage.setItem('k8s_pods_list_state', JSON.stringify(stateToSave));
+
   router.push({
     path: '/k8s/resources/pods/detail',
     query: {
@@ -252,9 +262,55 @@ const closeTerminal = () => {
   showTerminal.value = false;
 };
 
+// 从 sessionStorage 恢复状态
+const restoreStateFromStorage = () => {
+  console.log('[Pod列表] 开始恢复状态...');
+  const savedState = sessionStorage.getItem('k8s_pods_list_state');
+  console.log('[Pod列表] sessionStorage 内容:', savedState);
+
+  if (savedState) {
+    try {
+      const state = JSON.parse(savedState);
+      console.log('[Pod列表] 解析后的状态:', state);
+
+      selectedCluster.value = state.clusterId;
+      filters.namespace = state.namespace;
+      console.log('[Pod列表] 已设置 clusterId:', selectedCluster.value, 'namespace:', filters.namespace);
+
+      // 清除保存的状态
+      sessionStorage.removeItem('k8s_pods_list_state');
+      console.log('[Pod列表] 已清除 sessionStorage');
+
+      // 加载命名空间和数据
+      if (selectedCluster.value) {
+        console.log('[Pod列表] 开始加载数据...');
+        return loadNamespaces().then(() => {
+          console.log('[Pod列表] 命名空间加载完成，加载 pods...');
+          return loadPods();
+        });
+      }
+    } catch (e) {
+      console.error('[Pod列表] 恢复状态失败:', e);
+    }
+  }
+  // 正常加载流程
+  console.log('[Pod列表] 无保存状态，执行正常加载');
+  return loadClusters();
+};
+
 onMounted(() => {
-  loadClusters();
+  restoreStateFromStorage();
 });
+
+// 监听路由变化
+watch(
+  () => route.path,
+  (newPath, oldPath) => {
+    if (newPath === '/k8s/workloads' && oldPath?.includes('/detail')) {
+      restoreStateFromStorage();
+    }
+  }
+);
 </script>
 
 <template>

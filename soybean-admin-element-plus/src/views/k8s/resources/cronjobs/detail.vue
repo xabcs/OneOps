@@ -92,8 +92,29 @@ async function loadPods() {
   }
 }
 
+// 返回列表页的路径
+const backPath = computed(() => {
+  console.log('[CronJob详情] 计算 backPath...');
+  const savedState = sessionStorage.getItem('k8s_cronjobs_list_state');
+  console.log('[CronJob详情] sessionStorage 内容:', savedState);
+
+  if (savedState) {
+    try {
+      const state = JSON.parse(savedState);
+      console.log('[CronJob详情] 解析后的状态:', state);
+      const path = state.listPath || '/k8s/workloads';
+      console.log('[CronJob详情] 返回路径:', path);
+      return path;
+    } catch (e) {
+      console.error('[CronJob详情] 解析状态失败:', e);
+    }
+  }
+  console.log('[CronJob详情] 无保存状态，使用默认路径 /k8s/workloads');
+  return '/k8s/workloads';
+});
+
 function goBack() {
-  router.back();
+  router.push(backPath.value);
 }
 
 async function handleToggleSuspend() {
@@ -121,7 +142,7 @@ async function handleDelete() {
     });
 
     message.success('删除成功');
-    router.back();
+    router.push(backPath);
   } catch (error: any) {
     if (error !== 'cancel') {
       message.error(error.message || '删除失败');
@@ -155,7 +176,24 @@ async function handleTabChange(tab: string) {
   }
 }
 
+// 获取标签颜色
+const getTagType = (key: string) => {
+  const keyLower = key.toLowerCase();
+  if (keyLower.includes('app') || keyLower.includes('name')) return 'primary';
+  if (keyLower.includes('env') || keyLower.includes('environment')) return 'success';
+  if (keyLower.includes('version') || keyLower.includes('ver')) return 'warning';
+  if (keyLower.includes('component')) return 'info';
+  return 'default';
+};
+
 onMounted(() => {
+  console.log('[CronJob详情] onMounted');
+  console.log('[CronJob详情] 当前路由参数:', {
+    clusterId: route.query.clusterId,
+    namespace: route.query.namespace,
+    name: route.query.name
+  });
+
   loadData();
   loadPods();
   loadEvents();
@@ -191,32 +229,58 @@ onMounted(() => {
           <ElDescriptionsItem label="活跃Job数">{{ resource?.active }}</ElDescriptionsItem>
           <ElDescriptionsItem label="上次执行">{{ resource?.lastSchedule || '-' }}</ElDescriptionsItem>
           <ElDescriptionsItem label="创建时间">{{ resource?.age }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="标签">
-            <span style="font-size: 13px; color: #606266">{{ formatLabels(resource?.labels) }}</span>
+          <ElDescriptionsItem label="标签" v-if="resource?.labels && Object.keys(resource?.labels).length > 0">
+            <div class="vertical-tags-list">
+              <ElTag
+                v-for="(tag, idx) in formatLabels(resource?.labels)"
+                :key="idx"
+                :type="getTagType(tag.key)"
+                size="small"
+                class="vertical-tag-item"
+              >
+                {{ tag.key }}: {{ tag.value }}
+              </ElTag>
+            </div>
           </ElDescriptionsItem>
         </ElDescriptions>
       </ElTabPane>
 
-      <ElTabPane label="容器组" name="pods">
-        <K8sPodsTable :pods="pods" :loading="podsLoading" />
+      <ElTabPane :label="`容器组 (${pods.length})`" name="pods">
+        <template #label>
+          <div class="tab-pane-header">
+            <span>容器组</span>
+            <ElTag size="small" class="count-tag">{{ pods.length }}</ElTag>
+          </div>
+        </template>
+        <div class="tab-content">
+          <K8sPodsTable :pods="pods" :loading="podsLoading" />
+        </div>
       </ElTabPane>
 
-      <ElTabPane label="事件" name="events">
-        <ElTable
-          v-loading="eventsLoading"
-          :data="events"
-          class="cronjobs-events-table"
-          :header-cell-style="{ background: '#f5f7fa', color: '#303133', fontWeight: '600', paddingLeft: '16px', paddingRight: '16px' }"
-          :row-style="{ backgroundColor: 'transparent' }"
-          :cell-style="{ backgroundColor: 'transparent', padding: '8px 16px' }"
-        >
-          <ElTableColumn type="index" label="序号" width="60" />
-          <ElTableColumn prop="type" label="类型" width="100" />
-          <ElTableColumn prop="reason" label="原因" width="150" />
-          <ElTableColumn prop="message" label="消息" />
-          <ElTableColumn prop="count" label="次数" width="80" />
-          <ElTableColumn prop="lastTimestamp" label="最后时间" width="180" />
-        </ElTable>
+      <ElTabPane :label="`事件 (${events.length})`" name="events">
+        <template #label>
+          <div class="tab-pane-header">
+            <span>事件</span>
+            <ElTag size="small" class="count-tag">{{ events.length }}</ElTag>
+          </div>
+        </template>
+        <div class="tab-content">
+          <ElTable
+            v-loading="eventsLoading"
+            :data="events"
+            class="cronjobs-events-table"
+            :header-cell-style="{ background: '#f5f7fa', color: '#303133', fontWeight: '600', paddingLeft: '16px', paddingRight: '16px' }"
+            :row-style="{ backgroundColor: 'transparent' }"
+            :cell-style="{ backgroundColor: 'transparent', padding: '8px 16px' }"
+          >
+            <ElTableColumn type="index" label="序号" width="60" />
+            <ElTableColumn prop="type" label="类型" width="100" />
+            <ElTableColumn prop="reason" label="原因" width="150" />
+            <ElTableColumn prop="message" label="消息" />
+            <ElTableColumn prop="count" label="次数" width="80" />
+            <ElTableColumn prop="lastTimestamp" label="最后时间" width="180" />
+          </ElTable>
+        </div>
       </ElTabPane>
     </ElTabs>
 
@@ -260,10 +324,42 @@ onMounted(() => {
   gap: 8px;
 }
 
+/* 标签页样式 - 优化与tab的衔接 */
 .detail-tabs {
   background: var(--el-bg-color);
   border-radius: 8px;
   padding: 16px;
+}
+
+/* 移除 tab内容默认的padding，让内容更紧凑 */
+.detail-tabs :deep(.el-tabs__content) {
+  padding: 0;
+}
+
+/* tab标题栏 - 自定义样式 */
+.tab-pane-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+/* 计数标签 */
+.tab-pane-header .count-tag {
+  background: #f0f2f5;
+  color: #606266;
+  border: none;
+  font-size: 12px;
+  height: 18px;
+  line-height: 18px;
+  padding: 0 6px;
+  font-weight: 500;
+}
+
+/* 标签内容容器 - 移除多余的padding */
+.tab-content {
+  padding: 12px 0;
 }
 
 .yaml-viewer {
@@ -355,5 +451,24 @@ onMounted(() => {
 /* 移除表格容器的背景色 */
 :deep(.el-table__inner-wrapper) {
   background-color: transparent !important;
+}
+
+/* 垂直标签列表样式 */
+.vertical-tags-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.vertical-tag-item {
+  display: flex !important;
+  align-items: center;
+  width: 100%;
+  font-family: 'Courier New', Courier, monospace;
+  margin: 0;
+  padding: 4px 8px !important;
+  border: none !important;
 }
 </style>

@@ -1,4 +1,4 @@
-$radius: var(--border-radius-medium, 6px);
+$radius: var(--border-radius-medium, 8px);
 
 html:root,
 html.dark:root {
@@ -9,6 +9,7 @@ html.dark:root {
     --el-color-#{$color}-light-5: rgb(var(--#{$color}-300-color));
     --el-color-#{$color}-light-7: rgb(var(--#{$color}-200-color));
     --el-color-#{$color}-light-9: rgb(var(--#{$color}-color) / 0.1);
+    --el-color-#{$color}-rgba: rgb(var(--#{$color}-color) / 0.15); /* 添加半透明版本用于渐变效果 */
   }
 
   --el-color-danger: rgb(var(--error-color));
@@ -45,7 +46,7 @@ html.dark:root,
 }
 .el-popper {
   border: none;
-  border-radius: var(--border-radius-medium, 6px);
+  border-radius: var(--border-radius-medium, 8px);
 }
 .el-menu {
   border-right: none;
@@ -69,7 +70,7 @@ html.dark:root,
       right: 8px;
       top: 0;
       bottom: 0;
-      border-radius: var(--border-radius-medium, 6px);
+      border-radius: var(--border-radius-medium, 8px);
       pointer-events: none;
       background-color: var(--el-menu-item-hover-fill);
     }
@@ -167,7 +168,7 @@ html .el-collapse {
       .el-tabs__item {
         border: none;
         padding: 0 24px;
-        border-radius: var(--border-radius-medium, 6px);
+        border-radius: var(--border-radius-medium, 8px);
       }
     }
   }

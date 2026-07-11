@@ -166,18 +166,9 @@ func (s *InitService) initData() error {
 		return err
 	}
 
-	// 检查角色表是否为空
-	var roleCount int64
-	db.Model(&models.Role{}).Count(&roleCount)
-	if roleCount == 0 {
-		if err := s.initRoles(); err != nil {
-			return err
-		}
-	} else {
-		// 同步角色权限（确保角色包含所有新菜单）
-		if err := s.syncRoleMenus(); err != nil {
-			return err
-		}
+	// 先同步角色权限（确保角色包含所有新菜单）
+	if err := s.syncRoleMenus(); err != nil {
+		logger.Warn("角色菜单权限同步失败，继续执行", zap.Error(err))
 	}
 
 	// 检查用户表是否为空
@@ -382,7 +373,16 @@ func (s *InitService) syncMenus() error {
 		zap.Int("updated", updatedCount),
 		zap.Int("total", len(menus)))
 
+	// 清除RBAC缓存，确保新菜单权限立即生效
+	InvalidateRBACCache(0)
+	logger.Info("已清除所有用户RBAC缓存")
+
 	return nil
+}
+
+// SyncMenus 公开的菜单同步方法（用于外部调用）
+func (s *InitService) SyncMenus() error {
+	return s.syncMenus()
 }
 
 // syncRoleMenus 同步角色菜单权限
@@ -458,6 +458,11 @@ func (s *InitService) syncRoleMenus() error {
 	}
 
 	logger.Info("角色菜单权限同步完成")
+
+	// 清除RBAC缓存，确保新的角色权限立即生效
+	InvalidateRBACCache(0)
+	logger.Info("已清除所有用户RBAC缓存")
+
 	return nil
 }
 

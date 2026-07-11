@@ -32,6 +32,7 @@ import PodTerminal from '../../terminal/PodTerminal.vue';
 import K8sBasicInfoGrid from '@/components/k8s/K8sBasicInfoGrid.vue';
 import K8sPodsTable from '@/components/k8s/K8sPodsTable.vue';
 import K8sEventsTable from '@/components/k8s/K8sEventsTable.vue';
+import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
 
 defineOptions({ name: 'K8sDeploymentDetail' });
 
@@ -75,6 +76,9 @@ const yamlContent = ref('');
 const yamlEditingContent = ref('');
 const yamlSaving = ref(false);
 
+// 返回列表页的路径 - 直接返回工作负载汇总页，状态由 store 管理
+const backPath = '/k8s/workloads';
+
 // 状态显示
 const getStatusTag = computed(() => {
   if (!deployment.value) return { type: 'info', text: '未知' };
@@ -94,6 +98,14 @@ const getStatusTag = computed(() => {
   return { type: 'danger', text: '未就绪' };
 });
 
+// 获取副本状态类型
+const getReplicaStatusType = (ready: number, total: number): 'success' | 'warning' | 'danger' | 'info' => {
+  if (total === 0) return 'info';
+  if (ready === total) return 'success';
+  if (ready > 0) return 'warning';
+  return 'danger';
+};
+
 // 基本信息
 const basicInfoFields = computed(() => {
   if (!deployment.value) return [[]];
@@ -101,7 +113,9 @@ const basicInfoFields = computed(() => {
   const fields = [
     [
       { label: '名称', value: deployment.value.name || '-' },
-      { label: '命名空间', value: deployment.value.namespace || '-' },
+      { label: '命名空间', value: deployment.value.namespace || '-' }
+    ],
+    [
       { label: '创建时间', value: deployment.value.age || '-' }
     ]
   ];
@@ -133,15 +147,25 @@ const basicInfoFields = computed(() => {
 
   // 状态条件 + 副本状态信息
   const statusConditions = deployment.value.conditions?.length ? formatConditions(deployment.value.conditions) : [];
-  const statusInfo = [
-    { type: '就绪/期望', status: `${deployment.value.ready || 0} / ${deployment.value.replicas || 0}`, isStatusInfo: true },
-    { type: '可用', status: deployment.value.available?.toString() || '0', isStatusInfo: true },
-    { type: '已更新', status: deployment.value.upToDate?.toString() || '0', isStatusInfo: true }
+
+  // 状态摘要：聚合显示副本状态
+  const ready = deployment.value.ready || 0;
+  const total = deployment.value.replicas || 0;
+  const statusSummary = [
+    { type: '副本', value: `${ready}/${total}`, status: getReplicaStatusType(ready, total) },
+    { type: '可用', value: deployment.value.available?.toString() || '0', status: 'info' },
+    { type: '已更新', value: deployment.value.upToDate?.toString() || '0', status: 'info' }
   ];
 
-  if (statusConditions.length > 0 || statusInfo.length > 0) {
+  if (statusConditions.length > 0) {
     fields.push([
-      { label: '状态条件', value: [...statusConditions, ...statusInfo], fullRow: true, isConditions: true }
+      { label: '状态条件', value: statusConditions, fullRow: true, isConditions: true }
+    ]);
+  }
+
+  if (statusSummary.length > 0) {
+    fields.push([
+      { label: '副本状态', value: statusSummary, fullRow: true, isStatusSummary: true }
     ]);
   }
 
@@ -421,31 +445,32 @@ async function handleSaveYaml() {
 }
 
 onMounted(() => {
+  console.log('[Deployment详情] onMounted');
+  console.log('[Deployment详情] 当前路由参数:', {
+    clusterId: route.query.clusterId,
+    namespace: route.query.namespace,
+    name: route.query.name
+  });
+
   loadDeploymentDetail();
 });
 </script>
 
 <template>
   <div v-loading="loading" class="detail-page bg-layout">
-    <!-- 顶部操作栏 -->
-    <div class="instance-bar">
-      <div class="instance-left">
-        <span class="back-arrow" @click="router.push('/k8s/workloads')">←</span>
-        <span class="instance-name">{{ deployment?.name || '-' }}</span>
-        <span class="instance-meta">命名空间: {{ deployment?.namespace || '-' }}</span>
-        <span class="instance-meta">副本数: {{ deployment?.ready || 0 }} / {{ deployment?.replicas || 0 }}</span>
-        <ElTag v-if="deployment" :type="getStatusTag.type" size="small">
-          {{ getStatusTag.text }}
-        </ElTag>
-      </div>
-      <div class="instance-actions">
-        <ElButton size="small" @click="handleEditYaml">YAML 编辑</ElButton>
-        <ElButton size="small" type="primary" @click="handleScale">缩放</ElButton>
-        <ElButton size="small" type="warning" @click="handleRestart">重启</ElButton>
-        <ElButton size="small" type="danger" @click="handleDelete">删除</ElButton>
-        <ElButton size="small" @click="router.push('/k8s/workloads')">返回列表</ElButton>
-      </div>
-    </div>
+    <!-- 顶部操作栏 - 使用新组件 -->
+    <K8sResourceActionBar
+      :name="deployment?.name || '-'"
+      :namespace="deployment?.namespace || '-'"
+      :status-tag="getStatusTag"
+      :back-path="backPath"
+      :actions="[
+        { label: 'YAML 编辑', handler: handleEditYaml, tooltip: '编辑 YAML 配置' },
+        { label: '缩放', type: 'primary', handler: handleScale, tooltip: '调整副本数量' },
+        { label: '重启', type: 'warning', handler: handleRestart, tooltip: '滚动重启所有 Pod' },
+        { label: '删除', type: 'danger', handler: handleDelete, tooltip: '删除 Deployment（危险操作）' }
+      ]"
+    />
 
     <!-- 基本信息区域 -->
     <div class="basic-info-section">
@@ -458,7 +483,16 @@ onMounted(() => {
     <!-- 标签切换 -->
     <ElTabs v-model="activeTab" class="detail-tabs" @tab-change="handleTabChange">
       <!-- 容器组 -->
-      <ElTabPane label="容器组" name="pods">
+      <ElTabPane :label="`容器组 (${pods.length})`" name="pods">
+        <template #label>
+          <div class="tab-pane-header">
+            <span>容器组</span>
+            <ElTag size="small" class="count-tag">{{ pods.length }}</ElTag>
+            <ElButton size="small" text @click="handleRefreshPods" class="refresh-btn">
+              <icon-mdi-refresh class="text-14px" />
+            </ElButton>
+          </div>
+        </template>
         <div class="tab-content">
           <K8sPodsTable
             :pods="pods"
@@ -470,7 +504,16 @@ onMounted(() => {
       </ElTabPane>
 
       <!-- 事件 -->
-      <ElTabPane label="事件" name="events">
+      <ElTabPane :label="`事件 (${events.length})`" name="events">
+        <template #label>
+          <div class="tab-pane-header">
+            <span>事件</span>
+            <ElTag size="small" class="count-tag">{{ events.length }}</ElTag>
+            <ElButton size="small" text @click="loadEvents" class="refresh-btn">
+              <icon-mdi-refresh class="text-14px" />
+            </ElButton>
+          </div>
+        </template>
         <div class="tab-content">
           <K8sEventsTable :events="events" :loading="eventsLoading" />
         </div>
@@ -534,45 +577,60 @@ onMounted(() => {
   padding: 24px;
 }
 
-/* 顶部操作栏 */
-.instance-bar {
+/* 标签页样式 - 优化与tab的衔接 */
+.detail-tabs {
+  margin-top: 16px;
+}
+
+/* 移除 tab内容默认的padding，让内容更紧凑 */
+.detail-tabs :deep(.el-tabs__content) {
+  padding: 0;
+}
+
+/* tab标题栏 - 自定义样式 */
+.tab-pane-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-}
-
-.instance-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.back-arrow {
-  font-size: 20px;
-  color: #0052d9;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.back-arrow:hover {
-  opacity: 0.8;
-}
-
-.instance-name {
-  font-size: 16px;
-  font-weight: 500;
-  color: #303133;
-}
-
-.instance-meta {
-  font-size: 14px;
-  color: #909399;
-}
-
-.instance-actions {
-  display: flex;
   gap: 8px;
+  padding: 0 8px;
+  line-height: 1;
+}
+
+/* 计数标签 */
+.tab-pane-header .count-tag {
+  background: #f0f2f5;
+  color: #606266;
+  border: none;
+  font-size: 12px;
+  height: 18px;
+  line-height: 18px;
+  padding: 0 6px;
+  font-weight: 500;
+}
+
+/* 刷新按钮 - 内联样式 */
+.tab-pane-header .refresh-btn {
+  padding: 4px;
+  margin-left: auto;
+}
+
+.tab-pane-header .refresh-btn:hover {
+  background: transparent;
+}
+
+/* tab工具栏 - 保持原有样式但优化间距 */
+.tab-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 8px 16px;
+  background: transparent;
+  border-bottom: 1px solid #ebeef5;
+}
+
+/* 标签内容容器 - 移除多余的padding */
+.tab-content {
+  padding: 12px 0;
 }
 
 /* 基本信息区域 - 透明背景，无边框 */
@@ -598,16 +656,6 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
-}
-
-/* 标签内容 */
-.tab-content {
-  padding: 16px;
-}
-
-/* 标签页样式 */
-.detail-tabs {
-  margin-top: 16px;
 }
 
 /* 描述网格 */

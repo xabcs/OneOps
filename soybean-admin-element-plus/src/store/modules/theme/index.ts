@@ -141,15 +141,14 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
 
   /** Setup theme vars to global */
   function setupThemeVarsToGlobal() {
-    console.log('[ThemeStore] setupThemeVarsToGlobal called, borderRadius:', settings.value.borderRadius);
+    const siderCustomColor = settings.value.sider.useCustomColor ? settings.value.sider.customColor : undefined;
     const { themeTokens, darkThemeTokens } = createThemeToken(
       themeColors.value,
       settings.value.tokens,
-      settings.value.recommendColor
+      settings.value.recommendColor,
+      siderCustomColor
     );
-    console.log('[ThemeStore] themeTokens:', themeTokens);
     addThemeVarsToGlobal(themeTokens, darkThemeTokens, settings.value.borderRadius);
-    console.log('[ThemeStore] addThemeVarsToGlobal completed');
   }
   /**
    * Set layout reverse horizontal mix
@@ -184,6 +183,54 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     value: App.Theme.ThemeSetting['borderRadius']['components'][K]
   ) {
     settings.value.borderRadius.components[component] = value;
+  }
+
+  /**
+   * Set sider custom color
+   *
+   * @param useCustomColor Whether to use custom color
+   * @param color Custom color
+   */
+  function setSiderCustomColor(useCustomColor: boolean, color?: string) {
+    settings.value.sider.useCustomColor = useCustomColor;
+    if (color !== undefined) {
+      settings.value.sider.customColor = color;
+    }
+  }
+
+  /**
+   * Set sider inverted
+   *
+   * @param inverted Inverted
+   */
+  function setSiderInverted(inverted: boolean) {
+    settings.value.sider.inverted = inverted;
+  }
+
+  /**
+   * Set sider show icon
+   *
+   * @param showIcon Show icon
+   */
+  function setSiderShowIcon(showIcon: boolean) {
+    settings.value.sider.showIcon = showIcon;
+  }
+
+  /**
+   * Set sider logo gradient
+   *
+   * @param useLogoGradient Use logo gradient
+   * @param startColor Gradient start color
+   * @param endColor Gradient end color
+   */
+  function setSiderLogoGradient(useLogoGradient: boolean, startColor?: string, endColor?: string) {
+    settings.value.sider.useLogoGradient = useLogoGradient;
+    if (startColor !== undefined) {
+      settings.value.sider.logoGradientStart = startColor;
+    }
+    if (endColor !== undefined) {
+      settings.value.sider.logoGradientEnd = endColor;
+    }
   }
 
   /** Cache theme settings */
@@ -233,10 +280,17 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     // watch border radius change
     watch(
       () => settings.value.borderRadius,
-      newVal => {
-        console.log('[ThemeStore] borderRadius changed:', newVal);
+      () => {
         setupThemeVarsToGlobal();
-        console.log('[ThemeStore] setupThemeVarsToGlobal called');
+      },
+      { deep: true }
+    );
+
+    // watch sider custom color change
+    watch(
+      () => [settings.value.sider.useCustomColor, settings.value.sider.customColor],
+      () => {
+        setupThemeVarsToGlobal();
       },
       { deep: true }
     );
@@ -271,6 +325,10 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     setThemeLayout,
     setLayoutReverseHorizontalMix,
     setBorderRadius,
-    setComponentBorderRadius
+    setComponentBorderRadius,
+    setSiderCustomColor,
+    setSiderInverted,
+    setSiderShowIcon,
+    setSiderLogoGradient
   };
 });

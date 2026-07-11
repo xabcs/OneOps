@@ -40,17 +40,17 @@
 /* 卡片 - 通常需要较大的圆角 */
 .el-card,
 .card-wrapper {
-  border-radius: var(--border-radius-card, var(--el-border-radius-base, 6px)) !important;
+  border-radius: var(--border-radius-card, var(--el-border-radius-base, 8px)) !important;
 }
 
 /* 表格 */
 .el-table {
-  border-radius: var(--border-radius-table, var(--el-border-radius-base, 6px)) !important;
+  border-radius: var(--border-radius-table, var(--el-border-radius-base, 8px)) !important;
 }
 
 .el-table__header-wrapper {
-  border-radius: var(--border-radius-table, var(--el-border-radius-base, 6px))
-    var(--border-radius-table, var(--el-border-radius-base, 6px)) 0 0 !important;
+  border-radius: var(--border-radius-table, var(--el-border-radius-base, 8px))
+    var(--border-radius-table, var(--el-border-radius-base, 8px)) 0 0 !important;
 }
 
 /* 对话框 */
@@ -81,7 +81,7 @@
 
 /* 复选框 - 方形但有小圆角 */
 .el-checkbox__inner {
-  border-radius: var(--border-radius-checkbox, 4px) !important;
+  border-radius: var(--border-radius-checkbox, 8px) !important;
 }
 
 /* 单选框 - 必须是圆形 */
@@ -93,7 +93,7 @@
 .el-menu .el-sub-menu__title:hover::before,
 .el-menu li.el-menu-item:not(.is-disabled):hover::before,
 .el-menu li.el-menu-item.is-active::before {
-  border-radius: var(--border-radius-menu, var(--el-border-radius-base, 6px)) !important;
+  border-radius: var(--border-radius-menu, var(--el-border-radius-base, 8px)) !important;
 }
 
 .el-menu-item,
@@ -101,12 +101,12 @@
 .el-menu-item:hover,
 .el-sub-menu__title,
 .el-sub-menu__title:hover {
-  border-radius: var(--border-radius-menu, var(--el-border-radius-base, 6px)) !important;
+  border-radius: var(--border-radius-menu, var(--el-border-radius-base, 8px)) !important;
 }
 
 /* 下拉菜单 */
 .el-dropdown-menu {
-  border-radius: var(--border-radius-medium, var(--el-border-radius-base, 6px)) !important;
+  border-radius: var(--border-radius-medium, var(--el-border-radius-base, 8px)) !important;
 }
 
 /* 分页按钮 */
@@ -119,7 +119,7 @@
 .el-notification,
 .el-message,
 .el-alert {
-  border-radius: var(--border-radius-medium, var(--el-border-radius-base, 6px)) !important;
+  border-radius: var(--border-radius-medium, var(--el-border-radius-base, 8px)) !important;
 }
 
 /* 徽章 */
@@ -132,7 +132,7 @@
 .el-dropdown,
 .el-popconfirm,
 .el-tooltip__popper {
-  border-radius: var(--border-radius-medium, var(--el-border-radius-base, 6px)) !important;
+  border-radius: var(--border-radius-medium, var(--el-border-radius-base, 8px)) !important;
 }
 
 /* 进度条 - 保持方形 */

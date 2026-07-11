@@ -12,8 +12,6 @@ export function initThemeSettings() {
 
   // if it is development mode, the theme settings will not be cached, by update `themeSettings` in `src/theme/settings.ts` to update theme settings
   if (!isProd) {
-    // 调试：打印初始化的设置
-    console.log('[ThemeInit] themeSettings.borderRadius:', themeSettings.borderRadius);
     return themeSettings;
   }
 
@@ -40,11 +38,13 @@ export function initThemeSettings() {
  * @param colors Theme colors
  * @param tokens Theme setting tokens
  * @param [recommended=false] Use recommended color. Default is `false`
+ * @param siderCustomColor Custom sider color
  */
 export function createThemeToken(
   colors: App.Theme.ThemeColor,
   tokens?: App.Theme.ThemeSetting['tokens'],
-  recommended = false
+  recommended = false,
+  siderCustomColor?: string
 ) {
   const paletteColors = createThemePaletteColors(colors, recommended);
 
@@ -54,7 +54,8 @@ export function createThemeToken(
     colors: {
       ...paletteColors,
       nprogress: paletteColors.primary,
-      ...light.colors
+      ...light.colors,
+      ...(siderCustomColor && { 'sider-custom': siderCustomColor })
     },
     boxShadow: {
       ...light.boxShadow
@@ -67,7 +68,8 @@ export function createThemeToken(
   const darkThemeTokens: App.Theme.ThemeTokenCSSVars = {
     colors: {
       ...themeTokens.colors,
-      ...dark?.colors
+      ...dark?.colors,
+      ...(siderCustomColor && { 'sider-custom': siderCustomColor })
     },
     boxShadow: {
       ...themeTokens.boxShadow,
@@ -210,17 +212,9 @@ export function addThemeVarsToGlobal(
   darkTokens: App.Theme.BaseToken,
   borderRadius?: App.Theme.ThemeSetting['borderRadius']
 ) {
-  // 调试：入口日志
-  console.log('[ThemeVars] ========== addThemeVarsToGlobal called ==========');
-
   const cssVarStr = getCssVarByTokens(tokens);
   const darkCssVarStr = getCssVarByTokens(darkTokens);
   const borderRadiusStr = borderRadius ? getBorderRadiusCssVars(borderRadius) : '';
-
-  // 调试：打印参数
-  console.log('[ThemeVars] borderRadius:', borderRadius);
-  console.log('[ThemeVars] borderRadiusStr:', borderRadiusStr);
-  console.log('[ThemeVars] full CSS:', `${cssVarStr} ${borderRadiusStr}`);
 
   const css = `:root { ${cssVarStr} ${borderRadiusStr} }`;
 
@@ -235,8 +229,6 @@ export function addThemeVarsToGlobal(
   style.textContent = css + darkCss;
 
   document.head.appendChild(style);
-
-  console.log('[ThemeVars] ========== addThemeVarsToGlobal completed ==========');
 }
 
 /**

@@ -6,6 +6,7 @@ import { ArrowLeft } from '@element-plus/icons-vue';
 import yaml from 'js-yaml';
 import { deleteK8sService, fetchK8sEvents, getK8sService, updateK8sService } from '@/service/api/k8s';
 import YamlEditor from '@/components/YamlEditor.vue';
+import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
 
 defineOptions({ name: 'K8sServiceDetail' });
 
@@ -38,6 +39,9 @@ function parseManifest(manifestStr: string): string {
     return manifestStr;
   }
 }
+
+// 返回列表页的路径 - Services 返回到自己的列表页
+const backPath = '/k8s/services';
 
 async function loadData() {
   loading.value = true;
@@ -84,7 +88,7 @@ async function handleDelete() {
     });
 
     message.success('删除成功');
-    router.back();
+    router.push(backPath);
   } catch (error: any) {
     if (error !== 'cancel') {
       message.error(error.message || '删除失败');
@@ -110,24 +114,31 @@ async function handleYamlApply(yamlStr: string) {
 }
 
 onMounted(() => {
+  console.log('[Service详情] onMounted');
+  console.log('[Service详情] 当前路由参数:', {
+    clusterId: route.query.clusterId,
+    namespace: route.query.namespace,
+    name: route.query.name
+  });
+
   loadData();
   loadEvents();
 });
 </script>
 
 <template>
-  <div class="detail-page">
-    <div class="page-header">
-      <div class="header-left">
-        <ElButton :icon="ArrowLeft" @click="goBack">返回</ElButton>
-        <h2 class="title">{{ resourceName }}</h2>
-        <ElTag type="info">Service</ElTag>
-      </div>
-      <div class="header-actions">
-        <ElButton type="primary" @click="showYamlEditor = true">编辑YAML</ElButton>
-        <ElButton type="danger" @click="handleDelete">删除</ElButton>
-      </div>
-    </div>
+  <div class="detail-page bg-layout">
+    <!-- 顶部操作栏 - 使用新组件 -->
+    <K8sResourceActionBar
+      :name="resourceName || '-'"
+      :namespace="namespace || '-'"
+      :status-tag="{ type: 'info', text: 'Service' }"
+      :back-path="backPath"
+      :actions="[
+        { label: '编辑YAML', type: 'primary', handler: () => (showYamlEditor = true), tooltip: '编辑 YAML 配置' },
+        { label: '删除', type: 'danger', handler: handleDelete, tooltip: '删除 Service（危险操作）' }
+      ]"
+    />
 
     <ElTabs v-model="activeTab" class="detail-tabs">
       <ElTabPane label="基本信息" name="basic">
@@ -179,7 +190,10 @@ onMounted(() => {
         </div>
       </ElTabPane>
 
-      <ElTabPane label="事件" name="events">
+      <ElTabPane :label="`事件 (${events.length})`" name="events">
+        <div class="tab-toolbar">
+          <ElButton size="small" @click="loadEvents">刷新</ElButton>
+        </div>
         <ElTable v-loading="eventsLoading" :data="events">
           <ElTableColumn type="index" label="序号" width="60" />
           <ElTableColumn prop="type" label="类型" width="100" />
@@ -207,11 +221,31 @@ onMounted(() => {
   padding: 20px;
 }
 
-.page-header {
+.tab-toolbar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
+  justify-content: flex-end;
+  padding: 0 16px 8px 16px;
+}
+
+.detail-tabs {
+  margin-top: 16px;
+}
+
+.yaml-viewer {
+  background: #f5f7fa;
+  padding: 16px;
+  border-radius: 4px;
+  overflow: auto;
+}
+
+.yaml-viewer pre {
+  margin: 0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #303133;
+}
+</style>
 }
 
 .header-left {

@@ -1,6 +1,6 @@
 const local: App.I18n.Schema = {
   system: {
-    title: 'Soybean 管理系统',
+    title: '运维平台',
     updateTitle: '系统版本更新通知',
     updateContent: '检测到系统有新版本发布，是否立即刷新页面？',
     updateConfirm: '立即刷新',
@@ -128,12 +128,19 @@ const local: App.I18n.Schema = {
       }
     },
     sider: {
+      title: '侧边栏设置',
       inverted: '深色侧边栏',
       width: '侧边栏宽度',
       collapsedWidth: '侧边栏折叠宽度',
       mixWidth: '混合布局侧边栏宽度',
       mixCollapsedWidth: '混合布局侧边栏折叠宽度',
-      mixChildMenuWidth: '混合布局子菜单宽度'
+      mixChildMenuWidth: '混合布局子菜单宽度',
+      useCustomColor: '使用自定义颜色',
+      customColor: '侧边栏背景颜色',
+      showIcon: '显示菜单图标',
+      useLogoGradient: '启用Logo区域渐变',
+      logoGradientStart: 'Logo渐变起始颜色',
+      logoGradientEnd: 'Logo渐变结束颜色'
     },
     footer: {
       visible: '显示底部',

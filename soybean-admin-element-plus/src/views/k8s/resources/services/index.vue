@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { onMounted, reactive, ref, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import {
   ElButton,
   ElDialog,
@@ -29,6 +29,7 @@ import {
 defineOptions({ name: 'K8sServices' });
 
 const router = useRouter();
+const route = useRoute();
 const message = ElMessage;
 
 const loading = ref(false);
@@ -163,6 +164,13 @@ const handleNamespaceChange = () => {
 
 // 跳转到详情页
 const goToDetail = (row: any) => {
+  // 保存当前选择到 sessionStorage
+  sessionStorage.setItem('k8s_services_list_state', JSON.stringify({
+    clusterId: selectedCluster.value,
+    namespace: filters.namespace,
+    listPath: '/k8s/services'
+  }));
+
   router.push({
     path: '/k8s/resources/services/detail',
     query: {
@@ -209,9 +217,45 @@ const handleRefresh = () => {
   loadServices();
 };
 
+// 从 sessionStorage 恢复状态
+const restoreStateFromStorage = () => {
+  const savedState = sessionStorage.getItem('k8s_services_list_state');
+  if (savedState) {
+    try {
+      const state = JSON.parse(savedState);
+      selectedCluster.value = state.clusterId;
+      filters.namespace = state.namespace;
+
+      // 清除保存的状态
+      sessionStorage.removeItem('k8s_services_list_state');
+
+      // 加载命名空间和数据
+      if (selectedCluster.value) {
+        return loadNamespaces().then(() => {
+          return loadServices();
+        });
+      }
+    } catch (e) {
+      console.error('Failed to restore state:', e);
+    }
+  }
+  // 正常加载流程
+  return loadClusters();
+};
+
 onMounted(() => {
-  loadClusters();
+  restoreStateFromStorage();
 });
+
+// 监听路由变化
+watch(
+  () => route.path,
+  (newPath, oldPath) => {
+    if (newPath === '/k8s/workloads' && oldPath?.includes('/detail')) {
+      restoreStateFromStorage();
+    }
+  }
+);
 </script>
 
 <template>

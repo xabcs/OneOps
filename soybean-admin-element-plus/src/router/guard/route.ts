@@ -67,84 +67,58 @@ async function initRoute(to: RouteLocationNormalized): Promise<RouteLocationRaw 
   const notFoundRoute: RouteKey = 'not-found';
   const isNotFoundRoute = to.name === notFoundRoute;
 
-  // if the constant route is not initialized, then initialize the constant route
+  // 首次初始化常量路由
   if (!routeStore.isInitConstantRoute) {
     await routeStore.initConstantRoute();
-
-    // the route is captured by the "not-found" route because the constant route is not initialized
-    // after the constant route is initialized, redirect to the original route
-    const path = to.fullPath;
-    const location: RouteLocationRaw = {
-      path,
-      replace: true,
-      query: to.query,
-      hash: to.hash
-    };
-
-    return location;
+    
+    // 只有当路由被not-found捕获时才重定向
+    if (isNotFoundRoute) {
+      return {
+        path: to.fullPath,
+        replace: true,
+        query: to.query,
+        hash: to.hash
+      };
+    }
+    return undefined;
   }
 
   const isLogin = Boolean(localStg.get('token'));
 
   if (!isLogin) {
-    // if the user is not logged in and the route is a constant route but not the "not-found" route, then it is allowed to access.
+    // 未登录状态：常量路由直接访问，其他路由跳转到登录页
     if (to.meta.constant && !isNotFoundRoute) {
-      routeStore.onRouteSwitchWhenNotLoggedIn();
-
       return undefined;
     }
-
-    // if the user is not logged in, then switch to the login page
-    const loginRoute: RouteKey = 'login';
-    const query = getRouteQueryOfLoginRoute(to, routeStore.routeHome);
-
-    const location: RouteLocationRaw = {
-      name: loginRoute,
-      query
-    };
-
-    return location;
+    
+    return { name: 'login', query: { redirect: to.fullPath } };
   }
 
+  // 已登录状态：首次初始化认证路由
   if (!routeStore.isInitAuthRoute) {
-    // initialize the auth route
     await routeStore.initAuthRoute();
-
-    // the route is captured by the "not-found" route because the auth route is not initialized
-    // after the auth route is initialized, redirect to the original route
+    
+    // 如果被not-found捕获，重定向到首页
     if (isNotFoundRoute) {
-      const rootRoute: RouteKey = 'root';
-      const path = to.redirectedFrom?.name === rootRoute ? '/' : to.fullPath;
-
-      const location: RouteLocationRaw = {
-        path,
-        replace: true,
-        query: to.query,
-        hash: to.hash
+      return {
+        path: '/',
+        replace: true
       };
-
-      return location;
     }
   }
 
   routeStore.onRouteSwitchWhenLoggedIn();
 
-  // the auth route is initialized
-  // it is not the "not-found" route, then it is allowed to access
+  // 正常路由直接访问
   if (!isNotFoundRoute) {
     return undefined;
   }
 
-  // it is captured by the "not-found" route, then check whether the route exists
+  // not-found路由：检查是否存在权限路由（有权限但无访问权限）
   const exist = await routeStore.getIsAuthRouteExist(to.path as RoutePath);
-  const noPermissionRoute: RouteKey = '403';
-
+  
   if (exist) {
-    const location: RouteLocationRaw = {
-      name: noPermissionRoute
-    };
-
-    return location;
+    return { name: '403' };
   }
 
   return undefined;

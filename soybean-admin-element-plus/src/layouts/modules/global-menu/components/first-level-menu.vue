@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { createReusableTemplate } from '@vueuse/core';
 import { SimpleScrollbar } from '@sa/materials';
 import { transformColorWithOpacity } from '@sa/color';
+import { useThemeStore } from '@/store/modules/theme';
 
 defineOptions({ name: 'FirstLevelMenu' });
 
@@ -16,6 +17,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const themeStore = useThemeStore();
 
 interface Emits {
   (e: 'select', menu: App.Global.Menu): boolean;
@@ -35,6 +37,8 @@ interface MixMenuItemProps {
   isMini?: boolean;
 }
 const [DefineMixMenuItem, MixMenuItem] = createReusableTemplate<MixMenuItemProps>();
+
+const showIcon = computed(() => themeStore.sider.showIcon !== false); // 默认显示图标
 
 const selectedBgColor = computed(() => {
   const { darkMode, themeColor } = props;
@@ -65,7 +69,7 @@ function toggleSiderCollapse() {
         '!text-white !bg-primary': active && inverted
       }"
     >
-      <component :is="icon" :class="[isMini ? 'text-icon-small' : 'text-icon-large']" />
+      <component v-if="showIcon" :is="icon" :class="[isMini ? 'text-icon-small' : 'text-icon-large']" />
       <p
         class="w-full ellipsis-text text-center text-12px transition-height-300"
         :class="[isMini ? 'h-0 pt-0' : 'h-20px pt-4px']"

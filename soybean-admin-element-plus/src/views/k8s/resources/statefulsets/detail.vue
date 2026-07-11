@@ -8,6 +8,7 @@ import { formatAnnotations, formatConditions, formatImages, formatLabels, format
 import K8sBasicInfoGrid from '@/components/k8s/K8sBasicInfoGrid.vue';
 import K8sPodsTable from '@/components/k8s/K8sPodsTable.vue';
 import K8sEventsTable from '@/components/k8s/K8sEventsTable.vue';
+import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
 
 defineOptions({ name: 'K8sStatefulSetDetail' });
 
@@ -42,6 +43,17 @@ const getStatusTag = computed(() => {
   return { type: 'danger', text: '未就绪' };
 });
 
+// 返回列表页的路径 - 直接返回工作负载汇总页，状态由 store 管理
+const backPath = '/k8s/workloads';
+
+// 获取副本状态类型
+const getReplicaStatusType = (ready: number, total: number): 'success' | 'warning' | 'danger' | 'info' => {
+  if (total === 0) return 'info';
+  if (ready === total) return 'success';
+  if (ready > 0) return 'warning';
+  return 'danger';
+};
+
 // 基本信息
 const basicInfoFields = computed(() => {
   if (!resource.value) return [[]];
@@ -49,7 +61,9 @@ const basicInfoFields = computed(() => {
   const fields = [
     [
       { label: '名称', value: resource.value.name || '-' },
-      { label: '命名空间', value: resource.value.namespace || '-' },
+      { label: '命名空间', value: resource.value.namespace || '-' }
+    ],
+    [
       { label: '创建时间', value: resource.value.age || '-' }
     ]
   ];
@@ -57,7 +71,6 @@ const basicInfoFields = computed(() => {
   if (resource.value.serviceName) {
     fields.push([
       { label: 'Service 名称', value: resource.value.serviceName, fullRow: false },
-      { label: '', value: '', fullRow: false },
       { label: '', value: '', fullRow: false }
     ]);
   }
@@ -89,15 +102,25 @@ const basicInfoFields = computed(() => {
 
   // 状态条件 + 副本状态信息
   const statusConditions = resource.value.conditions?.length ? formatConditions(resource.value.conditions) : [];
-  const statusInfo = [
-    { type: '就绪/期望', status: `${resource.value.ready || 0} / ${resource.value.replicas || 0}`, isStatusInfo: true },
-    { type: '当前', status: resource.value.current?.toString() || '0', isStatusInfo: true },
-    { type: '已更新', status: resource.value.updated?.toString() || '0', isStatusInfo: true }
+
+  // 状态摘要：聚合显示副本状态
+  const ready = resource.value.ready || 0;
+  const total = resource.value.replicas || 0;
+  const statusSummary = [
+    { type: '副本', value: `${ready}/${total}`, status: getReplicaStatusType(ready, total) },
+    { type: '当前', value: resource.value.current?.toString() || '0', status: 'info' },
+    { type: '已更新', value: resource.value.updated?.toString() || '0', status: 'info' }
   ];
 
-  if (statusConditions.length > 0 || statusInfo.length > 0) {
+  if (statusConditions.length > 0) {
     fields.push([
-      { label: '状态条件', value: [...statusConditions, ...statusInfo], fullRow: true, isConditions: true }
+      { label: '状态条件', value: statusConditions, fullRow: true, isConditions: true }
+    ]);
+  }
+
+  if (statusSummary.length > 0) {
+    fields.push([
+      { label: '副本状态', value: statusSummary, fullRow: true, isStatusSummary: true }
     ]);
   }
 
@@ -238,25 +261,30 @@ async function handleSaveYaml() {
   }
 }
 
-onMounted(() => loadDetail());
+onMounted(() => {
+  console.log('[StatefulSet详情] onMounted');
+  console.log('[StatefulSet详情] 当前路由参数:', {
+    clusterId: route.query.clusterId,
+    namespace: route.query.namespace,
+    name: route.query.name
+  });
+
+  loadDetail();
+});
 </script>
 
 <template>
-  <div v-loading="loading" class="detail-page">
-    <!-- 顶部操作栏 -->
-    <div class="instance-bar">
-      <div class="instance-left">
-        <span class="back-arrow" @click="router.push('/k8s/workloads')">←</span>
-        <span class="instance-name">{{ resource?.name || '-' }}</span>
-        <span class="instance-meta">命名空间: {{ resource?.namespace || '-' }}</span>
-        <span class="instance-meta">副本: {{ resource?.ready || 0 }} / {{ resource?.replicas || 0 }}</span>
-        <ElTag v-if="resource" :type="getStatusTag.type" size="small">{{ getStatusTag.text }}</ElTag>
-      </div>
-      <div class="instance-actions">
-        <ElButton size="small" @click="handleEditYaml">YAML 编辑</ElButton>
-        <ElButton size="small" @click="router.push('/k8s/workloads')">返回列表</ElButton>
-      </div>
-    </div>
+  <div v-loading="loading" class="detail-page bg-layout">
+    <!-- 顶部操作栏 - 使用新组件 -->
+    <K8sResourceActionBar
+      :name="resource?.name || '-'"
+      :namespace="resource?.namespace || '-'"
+      :status-tag="getStatusTag"
+      :back-path="backPath"
+      :actions="[
+        { label: 'YAML 编辑', handler: handleEditYaml, tooltip: '编辑 YAML 配置' }
+      ]"
+    />
 
     <!-- 基本信息 -->
     <div class="basic-info-section">
@@ -268,13 +296,32 @@ onMounted(() => loadDetail());
 
     <!-- 标签切换 -->
     <ElTabs v-model="activeTab" class="detail-tabs" @tab-change="handleTabChange">
-      <ElTabPane label="容器组" name="pods">
+      <!-- 容器组 -->
+      <ElTabPane :label="`容器组 (${pods.length})`" name="pods">
+        <template #label>
+          <div class="tab-pane-header">
+            <span>容器组</span>
+            <ElTag size="small" class="count-tag">{{ pods.length }}</ElTag>
+            <ElButton size="small" text @click="loadPods" class="refresh-btn">
+              <icon-mdi-refresh class="text-14px" />
+            </ElButton>
+          </div>
+        </template>
         <div class="tab-content">
           <K8sPodsTable :pods="pods" :loading="podsLoading" />
         </div>
       </ElTabPane>
 
-      <ElTabPane label="事件" name="events">
+      <ElTabPane :label="`事件 (${events.length})`" name="events">
+        <template #label>
+          <div class="tab-pane-header">
+            <span>事件</span>
+            <ElTag size="small" class="count-tag">{{ events.length }}</ElTag>
+            <ElButton size="small" text @click="loadEvents" class="refresh-btn">
+              <icon-mdi-refresh class="text-14px" />
+            </ElButton>
+          </div>
+        </template>
         <div class="tab-content">
           <K8sEventsTable :events="events" :loading="eventsLoading" />
         </div>
@@ -299,129 +346,109 @@ onMounted(() => loadDetail());
   min-height: 100vh;
   padding: 24px;
 }
-.instance-bar {
+
+/* 标签页样式 - 优化与tab的衔接 */
+.detail-tabs {
+  margin-top: 16px;
+}
+
+/* 移除 tab内容默认的padding，让内容更紧凑 */
+.detail-tabs :deep(.el-tabs__content) {
+  padding: 0;
+}
+
+/* tab标题栏 - 自定义样式 */
+.tab-pane-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-}
-.instance-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.back-arrow {
-  font-size: 20px;
-  color: #0052d9;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-.back-arrow:hover {
-  opacity: 0.8;
-}
-.instance-name {
-  font-size: 16px;
-  font-weight: 500;
-  color: #303133;
-}
-.instance-meta {
-  font-size: 14px;
-  color: #909399;
-}
-.instance-actions {
-  display: flex;
   gap: 8px;
+  padding: 0 8px;
+  line-height: 1;
 }
+
+/* 计数标签 */
+.tab-pane-header .count-tag {
+  background: #f0f2f5;
+  color: #606266;
+  border: none;
+  font-size: 12px;
+  height: 18px;
+  line-height: 18px;
+  padding: 0 6px;
+  font-weight: 500;
+}
+
+/* 刷新按钮 - 内联样式 */
+.tab-pane-header .refresh-btn {
+  padding: 4px;
+  margin-left: auto;
+}
+
+.tab-pane-header .refresh-btn:hover {
+  background: transparent;
+}
+
+/* tab工具栏 */
+.tab-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 8px 16px;
+  background: transparent;
+  border-bottom: 1px solid #ebeef5;
+}
+
+/* 标签内容容器 - 移除多余的padding */
+.tab-content {
+  padding: 12px 0;
+}
+
 .basic-info-section {
   background: transparent;
   margin-bottom: 24px;
 }
+
 .info-section {
   background: transparent;
   margin-bottom: 16px;
 }
+
 .section-title {
   font-size: 14px;
   font-weight: 500;
   color: #303133;
   margin-bottom: 12px;
 }
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
+
 .tab-content {
   padding: 16px;
 }
+
 .detail-tabs {
   margin-top: 16px;
 }
-.desc-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.desc-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-}
-.desc-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.desc-item-full {
-  grid-column: 1 / -1;
-}
-.item-label {
-  font-size: 12px;
-  color: #909399;
-}
-.item-content {
-  font-size: 14px;
-  color: #303133;
-}
-.value-text {
-  color: #303133;
-}
 
-/* 镜像列换行显示 */
-.whitespace-pre-line {
-  white-space: pre-line;
-  word-break: break-all;
-}
-
-.font-mono {
-  font-family: 'Courier New', Courier, monospace;
-  word-break: break-all;
-}
-.tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
 .yaml-editor-wrapper {
   width: 100%;
   height: 500px;
 }
+
 .yaml-editor {
   width: 100%;
   height: 100%;
   padding: 12px;
   font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.5;
-  border: 1px solid #dcdfe6;
+  border: 1px solid #e4e7ed;
   border-radius: 4px;
-  resize: none;
-  background-color: #f5f7fa;
+  background: #f5f7fa;
   color: #303133;
-}
-.yaml-editor:focus {
+  resize: none;
   outline: none;
-  border-color: #409eff;
+}
+
+.yaml-editor:focus {
+  border-color: #0052d9;
 }
 </style>

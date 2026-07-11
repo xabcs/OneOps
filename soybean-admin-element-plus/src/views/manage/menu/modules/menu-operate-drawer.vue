@@ -140,6 +140,7 @@ function handleInitModel() {
   console.log('🔧 [菜单操作抽屉] handleInitModel', {
     operateType: props.operateType,
     isEdit: isEdit.value,
+    isAddingChild: props.isAddingChild,
     hasRowData: Boolean(props.rowData),
     rowData: props.rowData
   });
@@ -159,9 +160,10 @@ function handleInitModel() {
     console.log('✏️ [菜单操作抽屉] 编辑模式数据', model.value);
   } else {
     // 新增模式：使用空表单
+    // 如果是添加子菜单，从 rowData（父菜单数据）中获取父菜单ID
+    // 否则从 rowData 中获取父菜单ID（正常新增时可能用户手动选择父级）
+    const parent_Id = props.isAddingChild && props.rowData ? props.rowData.id : (props.rowData?.parentId ?? 0);
     const nextSort = props.isAddingChild ? getNextSort() : 1;
-    // 添加子菜单时，父ID来自 rowData.parentId；添加一级菜单时父ID为0
-    const parent_Id = props.isAddingChild ? (props.rowData?.parentId ?? 0) : 0;
 
     model.value = {
       name: '',
@@ -188,8 +190,9 @@ function handleInitModel() {
 
 // 计算下一个排序值
 function getNextSort(): number {
-  // 添加子菜单时，从 parentId 字段获取父菜单ID；否则从 id 字段获取（编辑模式）
-  const parentId = props.isAddingChild ? props.rowData?.parentId : props.rowData?.id;
+  // 当添加子菜单时，props.rowData 是父菜单的完整数据
+  // 从 id 字段获取父菜单ID
+  const parentId = props.rowData?.id;
 
   console.log('🔢 [计算排序] getNextSort', {
     isAddingChild: props.isAddingChild,
@@ -292,27 +295,7 @@ watch(
   { immediate: false }
 );
 
-// 监听 rowData 和 operateType 变化
-watch(
-  () => props.rowData,
-  async newRowData => {
-    console.log('🔍 [菜单操作抽屉] rowData变化', {
-      visible: visible.value,
-      operateType: props.operateType,
-      isEdit: isEdit.value,
-      hasRowData: Boolean(newRowData),
-      rowData: newRowData
-    });
-
-    if (visible.value && newRowData) {
-      await nextTick();
-      await loadMenuTree(); // 确保菜单数据已加载
-      handleInitModel();
-      restoreValidation();
-    }
-  },
-  { immediate: true }
-);
+// 移除重复的 watch，合并到 visible watch 中
 </script>
 
 <template>
