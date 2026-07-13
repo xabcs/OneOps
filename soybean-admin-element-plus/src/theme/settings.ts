@@ -1,15 +1,15 @@
-/** Default theme settings - OneOps 风格 */
+/** Default theme settings - SxDevOps 风格 */
 export const themeSettings: App.Theme.ThemeSetting = {
   themeScheme: 'light',
   grayscale: false,
   colourWeakness: false,
   recommendColor: false,
-  themeColor: 'rgb(64, 73, 101)', // OneOps #404965
+  themeColor: 'rgb(99, 102, 241)', // SxDevOps 主色 #6366f1 靛蓝色
   otherColor: {
-    info: 'rgb(64, 73, 101)', // 与主色保持一致
-    success: 'rgb(38, 187, 23)', // 绿色
-    warning: 'rgb(255, 168, 0)', // 橙色
-    error: 'rgb(245, 34, 46)' // 保持红色
+    info: 'rgb(99, 102, 241)', // 与主色保持一致
+    success: 'rgb(16, 185, 129)', // 绿色 #10b981
+    warning: 'rgb(245, 158, 11)', // 橙色 #f59e0b
+    error: 'rgb(239, 68, 68)' // 红色 #ef4444
   },
   isInfoFollowPrimary: true,
   layout: {
@@ -22,7 +22,7 @@ export const themeSettings: App.Theme.ThemeSetting = {
     animateMode: 'fade-slide'
   },
   header: {
-    height: 56,
+    height: 60, // SxDevOps 顶栏高度
     breadcrumb: {
       visible: true,
       showIcon: false
@@ -42,18 +42,21 @@ export const themeSettings: App.Theme.ThemeSetting = {
   },
   fixedHeaderAndTab: true,
   sider: {
-    inverted: true, // 默认开启深色侧边栏
+    inverted: false,
     width: 200,
     collapsedWidth: 56,
     mixWidth: 80,
     mixCollapsedWidth: 56,
     mixChildMenuWidth: 200,
-    useCustomColor: true, // 默认启用自定义颜色
-    customColor: 'rgb(228, 235, 255)', // 默认自定义侧边栏颜色 #e4ebff
-    showIcon: true, // 默认显示图标
-    useLogoGradient: true, // 默认启用logo区域渐变
-    logoGradientStart: '#f1f6fffa', // logo区域渐变起始颜色
-    logoGradientEnd: '#e8f0ffe6' // logo区域渐变结束颜色
+    useCustomColor: false,
+    customColor: 'rgb(241, 246, 255)',
+    showIcon: true,
+    useSiderGradient: false,
+    siderGradientStart: 'rgba(241, 246, 255, 0.98)', // SxDevOps 浅蓝渐变起始
+    siderGradientEnd: 'rgba(232, 240, 255, 0.9)', // SxDevOps 浅蓝渐变结束
+    useLogoGradient: false,
+    logoGradientStart: 'rgba(241, 246, 255, 0.98)', // SxDevOps Logo渐变起始
+    logoGradientEnd: 'rgba(232, 240, 255, 0.9)' // SxDevOps Logo渐变结束
   },
   footer: {
     visible: false,
@@ -69,48 +72,48 @@ export const themeSettings: App.Theme.ThemeSetting = {
   borderRadius: {
     useComponentSpecific: false,
     small: '8px',
-    medium: '8px',
-    large: '8px',
+    medium: '10px', // 略微增大到SxDevOps风格
+    large: '12px', // 卡片使用更大的圆角
     components: {
       button: '8px',
       input: '8px',
       select: '8px',
-      card: '8px',
+      card: '12px', // 卡片使用SxDevOps的12px
       table: '8px',
-      modal: '8px',
+      modal: '12px',
       tag: '8px',
       switch: '12px',
       checkbox: '8px',
       radio: '50%',
-      menu: '8px'
+      menu: '10px' // 菜单项使用SxDevOps的10px
     }
   },
   tokens: {
     light: {
       colors: {
         container: 'rgb(255, 255, 255)',
-        layout: 'rgb(247, 250, 252)',
-        inverted: 'rgb(0, 20, 40)',
-        'base-text': 'rgb(31, 31, 31)',
-        'sider-custom': 'rgb(228, 235, 255)' // 自定义侧边栏默认颜色 #e4ebff
+        layout: 'rgb(241, 245, 249)', // SxDevOps 内容背景 #f1f5f9
+        inverted: 'rgb(30, 41, 59)',
+        'base-text': 'rgb(30, 41, 60)', // SxDevOps 深色文字
+        'sider-custom': 'rgb(241, 246, 255)' // SxDevOps 侧边栏颜色
       },
       boxShadow: {
-        header: '0 1px 3px rgb(0 0 0 / 6%), 0 1px 2px rgb(0 0 0 / 4%)', // 腾讯云风格：更轻的阴影
-        sider: '2px 0 6px 0 rgb(0 0 0 / 4%), 1px 0 2px 0 rgb(0 0 0 / 2%)', // 腾讯云风格：更柔和的侧边栏阴影
-        tab: '0 1px 2px rgb(0 0 0 / 6%)' // 腾讯云风格：标签页阴影
+        header: '0 1px 3px rgb(15 23 42 / 4%)', // SxDevOps 极简阴影
+        sider: '8px 0 24px rgb(15 23 42 / 3%)', // SxDevOps 侧边栏阴影
+        tab: '0 1px 2px rgb(0 0 0 / 6%)'
       },
       borderRadius: {
         small: '8px',
-        medium: '8px',
-        large: '8px'
+        medium: '10px',
+        large: '12px'
       }
     },
     dark: {
       colors: {
-        container: 'rgb(28, 28, 28)',
-        layout: 'rgb(18, 18, 18)',
-        'base-text': 'rgb(224, 224, 224)',
-        'sider-custom': 'rgb(20, 20, 30)'
+        container: 'rgb(30, 41, 59)',
+        layout: 'rgb(15, 23, 42)',
+        'base-text': 'rgb(226, 232, 240)',
+        'sider-custom': 'rgb(30, 41, 59)'
       }
     }
   }

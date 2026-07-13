@@ -135,12 +135,15 @@ const local: App.I18n.Schema = {
       mixWidth: '混合布局侧边栏宽度',
       mixCollapsedWidth: '混合布局侧边栏折叠宽度',
       mixChildMenuWidth: '混合布局子菜单宽度',
-      useCustomColor: '使用自定义颜色',
-      customColor: '侧边栏背景颜色',
+      useCustomColor: '使用自定义单一颜色',
+      customColor: '侧边栏背景颜色（整体）',
       showIcon: '显示菜单图标',
-      useLogoGradient: '启用Logo区域渐变',
-      logoGradientStart: 'Logo渐变起始颜色',
-      logoGradientEnd: 'Logo渐变结束颜色'
+      useSiderGradient: '菜单区域渐变',
+      siderGradientStart: '菜单区域渐变起始颜色',
+      siderGradientEnd: '菜单区域渐变结束颜色',
+      useLogoGradient: 'Logo区域渐变',
+      logoGradientStart: 'Logo区域渐变起始颜色',
+      logoGradientEnd: 'Logo区域渐变结束颜色'
     },
     footer: {
       visible: '显示底部',

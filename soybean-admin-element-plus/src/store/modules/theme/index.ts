@@ -233,6 +233,23 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     }
   }
 
+  /**
+   * Set sider gradient
+   *
+   * @param useSiderGradient Use sider gradient
+   * @param startColor Gradient start color
+   * @param endColor Gradient end color
+   */
+  function setSiderGradient(useSiderGradient: boolean, startColor?: string, endColor?: string) {
+    settings.value.sider.useSiderGradient = useSiderGradient;
+    if (startColor !== undefined) {
+      settings.value.sider.siderGradientStart = startColor;
+    }
+    if (endColor !== undefined) {
+      settings.value.sider.siderGradientEnd = endColor;
+    }
+  }
+
   /** Cache theme settings */
   function cacheThemeSettings() {
     const isProd = import.meta.env.MODE === 'prod';
@@ -295,6 +312,23 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
       { deep: true }
     );
 
+    // watch sider gradient change
+    watch(
+      () => [
+        settings.value.sider.useSiderGradient,
+        settings.value.sider.siderGradientStart,
+        settings.value.sider.siderGradientEnd,
+        settings.value.sider.useLogoGradient,
+        settings.value.sider.logoGradientStart,
+        settings.value.sider.logoGradientEnd
+      ],
+      () => {
+        // Gradient changes are handled directly by the component
+        // No need to regenerate CSS vars
+      },
+      { deep: true }
+    );
+
     // cache theme settings when settings change
     watch(
       settings,
@@ -329,6 +363,7 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     setSiderCustomColor,
     setSiderInverted,
     setSiderShowIcon,
-    setSiderLogoGradient
+    setSiderLogoGradient,
+    setSiderGradient
   };
 });

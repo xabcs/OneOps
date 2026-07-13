@@ -1,0 +1,577 @@
+/**
+ * OneOps 组件交互状态配色系统
+ * 基于 SxDevOps 交互设计理念
+ * 提供完整的组件悬停、激活、禁用状态配色
+ */
+
+/* ========== 按钮状态系统 ========== */
+.btn-interactive {
+  transition: var(--transition);
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 按钮悬停效果 */
+.btn-interactive:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--brand-shadow-md);
+}
+
+/* 按钮激活效果 */
+.btn-interactive:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  box-shadow: var(--brand-shadow-sm);
+}
+
+/* 按钮禁用状态 */
+.btn-interactive:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* ========== 卡片交互状态 ========== */
+.card-interactive {
+  transition: var(--transition);
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--card-shadow);
+}
+
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--brand-shadow-md);
+  border-color: var(--border-medium);
+}
+
+.card-interactive:active {
+  transform: translateY(0);
+  box-shadow: var(--brand-shadow-sm);
+}
+
+/* ========== 输入框交互状态 ========== */
+.input-interactive {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  box-shadow: var(--input-shadow);
+  border-radius: 12px;
+  transition: var(--transition);
+}
+
+.input-interactive:hover {
+  border-color: var(--input-hover-border);
+  box-shadow: 0 0 0 1px var(--input-hover-border) inset;
+}
+
+.input-interactive:focus {
+  border-color: var(--input-focus-border);
+  box-shadow: var(--input-focus-shadow);
+  outline: none;
+}
+
+/* ========== 表格交互状态 ========== */
+.table-interactive {
+  --el-table-border-color: var(--table-border);
+  --el-table-header-bg-color: var(--table-header-bg);
+  --el-table-row-hover-bg-color: var(--table-row-hover);
+  border: 1px solid var(--table-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-interactive .el-table th.el-table__cell {
+  color: var(--table-text-color);
+  font-weight: 600;
+  background: var(--table-header-bg);
+}
+
+.table-interactive .el-table__row:hover {
+  background-color: var(--table-row-hover);
+}
+
+/* ========== 状态指示器系统 ========== */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.status-dot.online,
+.status-dot.success {
+  background: var(--success);
+  box-shadow: var(--success-shadow);
+}
+
+.status-dot.offline,
+.status-dot.failed {
+  background: var(--danger);
+  box-shadow: var(--danger-shadow);
+}
+
+.status-dot.warning,
+.status-dot.running {
+  background: var(--warning);
+  box-shadow: var(--warning-shadow);
+}
+
+.status-dot.pending {
+  background: var(--text-muted);
+}
+
+.status-dot.rollback {
+  background: var(--info);
+  box-shadow: var(--info-shadow);
+}
+
+/* ========== 脉冲动画状态 ========== */
+.state-pulse {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.state-pulse.running {
+  background: var(--success);
+  box-shadow: 0 0 0 0 var(--pulse-success);
+  animation: pulse-state 2s infinite;
+}
+
+.state-pulse.exited,
+.state-pulse.dead {
+  background: var(--text-muted);
+}
+
+.state-pulse.paused,
+.state-pulse.restarting {
+  background: var(--warning);
+  box-shadow: 0 0 0 0 var(--pulse-warning);
+  animation: pulse-state 1.5s infinite;
+}
+
+.state-pulse.created {
+  background: var(--primary);
+}
+
+@keyframes pulse-state {
+  0% {
+    box-shadow: 0 0 0 0 var(--pulse-success);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* ========== 标签系统 ========== */
+.tag-interactive {
+  transition: var(--transition-fast);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tag-interactive:hover {
+  transform: scale(1.05);
+}
+
+.tag-success {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.tag-warning {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.tag-danger {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.tag-info {
+  background: var(--info-light);
+  color: var(--info);
+}
+
+/* ========== 通知项交互状态 ========== */
+.notice-item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 10px 10px 8px;
+  border: 1px solid var(--notice-item-border);
+  border-radius: 12px;
+  background: var(--notice-item-bg);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notice-item:hover {
+  border-color: var(--border-medium);
+  background: var(--notice-item-hover);
+}
+
+.notice-item__dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #94a3b8;
+}
+
+.notice-item__dot.is-danger {
+  background: var(--notice-dot-danger);
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.08);
+}
+
+.notice-item__dot.is-warning {
+  background: var(--notice-dot-warning);
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.08);
+}
+
+.notice-item__dot.is-info {
+  background: var(--notice-dot-info);
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.08);
+}
+
+/* ========== 复选框交互状态 ========== */
+.checkbox-interactive .el-checkbox__inner {
+  border-radius: 6px;
+  transition: var(--transition-fast);
+}
+
+.checkbox-interactive:hover .el-checkbox__inner {
+  border-color: var(--primary);
+}
+
+.checkbox-interactive.is-checked .el-checkbox__inner {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ========== 单选框交互状态 ========== */
+.radio-interactive .el-radio__inner {
+  transition: var(--transition-fast);
+}
+
+.radio-interactive:hover .el-radio__inner {
+  border-color: var(--primary);
+}
+
+.radio-interactive.is-checked .el-radio__inner {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ========== 开关交互状态 ========== */
+.switch-interactive .el-switch__core {
+  border-radius: 12px;
+  transition: var(--transition);
+}
+
+.switch-interactive.is-checked .el-switch__core {
+  background-color: var(--primary);
+}
+
+/* ========== 进度条交互状态 ========== */
+.progress-interactive .el-progress__bar {
+  background: var(--brand-gradient);
+  border-radius: 4px;
+  transition: var(--transition-slow);
+}
+
+.progress-interactive:hover .el-progress__bar {
+  opacity: 0.9;
+}
+
+/* ========== 滑块交互状态 ========== */
+.slider-interactive .el-slider__runway {
+  background-color: var(--border-light);
+  border-radius: 4px;
+}
+
+.slider-interactive .el-slider__bar {
+  background: var(--brand-gradient);
+  border-radius: 4px;
+}
+
+.slider-interactive .el-slider__button {
+  border: 2px solid var(--primary);
+  transition: var(--transition-fast);
+}
+
+.slider-interactive:hover .el-slider__button {
+  transform: scale(1.2);
+}
+
+/* ========== 分页交互状态 ========== */
+.pagination-interactive .el-pager li {
+  border-radius: 8px;
+  transition: var(--transition-fast);
+}
+
+.pagination-interactive .el-pager li:hover {
+  background-color: var(--sidebar-hover);
+}
+
+.pagination-interactive .el-pager li.is-active {
+  background-color: var(--primary);
+  color: white;
+}
+
+/* ========== 下拉菜单交互状态 ========== */
+.dropdown-interactive .el-dropdown-menu__item {
+  transition: var(--transition-fast);
+  border-radius: 8px;
+}
+
+.dropdown-interactive .el-dropdown-menu__item:hover {
+  background-color: var(--sidebar-hover);
+  color: var(--primary);
+}
+
+/* ========== 工具提示交互状态 ========== */
+.tooltip-interactive {
+  border-radius: 8px;
+  background-color: var(--industrial-bg);
+  color: var(--industrial-text);
+  box-shadow: var(--brand-shadow-lg);
+}
+
+/* ========== 气泡确认框交互状态 ========== */
+.popconfirm-interactive .el-popconfirm__main {
+  border-radius: 8px;
+  background: var(--card-bg);
+  box-shadow: var(--brand-shadow-md);
+}
+
+/* ========== 加载状态 ========== */
+.loading-interactive .el-loading-mask {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: var(--card-radius);
+}
+
+.loading-interactive .el-loading-spinner .circular {
+  stroke: var(--primary);
+}
+
+/* ========== 空状态 ========== */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+  color: var(--text-muted);
+}
+
+.empty-text {
+  font-size: 15px;
+  color: var(--text-secondary);
+}
+
+/* ========== 徽章交互状态 ========== */
+.badge-interactive .el-badge__content {
+  border-radius: 10px;
+  transition: var(--transition-fast);
+}
+
+.badge-interactive:hover .el-badge__content {
+  transform: scale(1.1);
+}
+
+/* ========== 警告框交互状态 ========== */
+.alert-interactive {
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  transition: var(--transition);
+}
+
+.alert-interactive:hover {
+  box-shadow: var(--brand-shadow-sm);
+}
+
+.alert-success {
+  background-color: var(--success-light);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.alert-warning {
+  background-color: var(--warning-light);
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.alert-danger {
+  background-color: var(--danger-light);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.alert-info {
+  background-color: var(--info-light);
+  border-color: var(--info);
+  color: var(--info);
+}
+
+/* ========== 消息提示交互状态 ========== */
+.message-interactive {
+  border-radius: 8px;
+  box-shadow: var(--brand-shadow-md);
+  transition: var(--transition);
+}
+
+.message-interactive:hover {
+  transform: translateY(-1px);
+}
+
+/* ========== 通知提示交互状态 ========== */
+.notification-interactive {
+  border-radius: 8px;
+  box-shadow: var(--brand-shadow-lg);
+  transition: var(--transition);
+}
+
+.notification-interactive:hover {
+  transform: translateY(-1px);
+}
+
+/* ========== 面板交互状态 ========== */
+.panel-interactive {
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  transition: var(--transition);
+}
+
+.panel-interactive:hover {
+  border-color: var(--border-medium);
+  box-shadow: var(--brand-shadow-sm);
+}
+
+/* ========== 时间轴交互状态 ========== */
+.timeline-interactive .el-timeline-item__node {
+  transition: var(--transition-fast);
+}
+
+.timeline-interactive .el-timeline-item__node:hover {
+  transform: scale(1.2);
+}
+
+/* ========== 折叠面板交互状态 ========== */
+.collapse-interactive .el-collapse-item__header {
+  border-radius: 8px;
+  transition: var(--transition-fast);
+}
+
+.collapse-interactive .el-collapse-item__header:hover {
+  background-color: var(--sidebar-hover);
+}
+
+/* ========== 标签页交互状态 ========== */
+.tabs-interactive .el-tabs__item {
+  border-radius: 8px 8px 0 0;
+  transition: var(--transition-fast);
+}
+
+.tabs-interactive .el-tabs__item:hover {
+  color: var(--primary);
+}
+
+.tabs-interactive .el-tabs__item.is-active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* ========== 树形控件交互状态 ========== */
+.tree-interactive .el-tree-node__content {
+  border-radius: 8px;
+  transition: var(--transition-fast);
+}
+
+.tree-interactive .el-tree-node__content:hover {
+  background-color: var(--sidebar-hover);
+}
+
+.tree-interactive .el-tree-node.is-current > .el-tree-node__content {
+  background-color: var(--sidebar-active);
+  color: var(--primary);
+}
+
+/* ========== 级联选择器交互状态 ========== */
+.cascader-interactive .el-cascader-menu__item {
+  transition: var(--transition-fast);
+  border-radius: 8px;
+}
+
+.cascader-interactive .el-cascader-menu__item:hover {
+  background-color: var(--sidebar-hover);
+}
+
+.cascader-interactive .el-cascader-menu__item.is-active {
+  background-color: var(--sidebar-active);
+  color: var(--primary);
+}
+
+/* ========== 颜色选择器交互状态 ========== */
+.color-picker-interactive .el-color-picker__trigger {
+  border-radius: 8px;
+  transition: var(--transition-fast);
+}
+
+.color-picker-interactive .el-color-picker__trigger:hover {
+  border-color: var(--primary);
+}
+
+/* ========== 日期选择器交互状态 ========== */
+.date-picker-interactive .el-picker-panel {
+  border-radius: 12px;
+  box-shadow: var(--brand-shadow-lg);
+}
+
+.date-picker-interactive .el-date-table td.available:hover {
+  background-color: var(--sidebar-hover);
+}
+
+.date-picker-interactive .el-date-table td.in-range {
+  background-color: var(--sidebar-active);
+}
+
+.date-picker-interactive .el-date-table td.current:not(.disabled) {
+  background-color: var(--primary);
+  color: white;
+}
+
+/* ========== 时间选择器交互状态 ========== */
+.time-picker-interactive .el-time-panel {
+  border-radius: 12px;
+  box-shadow: var(--brand-shadow-lg);
+}
+
+.time-picker-interactive .el-time-spinner__item:hover {
+  background-color: var(--sidebar-hover);
+}
+
+.time-picker-interactive .el-time-spinner__item.is-active:not(.is-disabled) {
+  color: var(--primary);
+}

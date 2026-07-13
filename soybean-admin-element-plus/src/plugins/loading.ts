@@ -1,12 +1,14 @@
 // @unocss-include
-import { getColorPalette, getRgb } from '@sa/color';
+import { getColorPalette, getRgb, isValidColor } from '@sa/color';
 import { DARK_CLASS } from '@/constants/app';
 import { localStg } from '@/utils/storage';
 import { toggleHtmlClass } from '@/utils/common';
 import { $t } from '@/locales';
 
 export function setupLoading() {
-  const themeColor = localStg.get('themeColor') || '#646cff';
+  const storedThemeColor = localStg.get('themeColor');
+  const defaultThemeColor = '#6366f1'; // SxDevOps indigo
+  const themeColor = storedThemeColor && isValidColor(storedThemeColor) ? storedThemeColor : defaultThemeColor;
   const darkMode = localStg.get('darkMode') || false;
   const palette = getColorPalette(themeColor);
 

@@ -30,11 +30,41 @@ html.dark:root,
 
 .bg-inverted {
   .el-menu {
-    // --el-menu-bg-color: var(--el-fill-color-blank);
-    // --el-menu-text-color: var(--el-text-color-primary);
     --el-menu-bg-color: transparent;
     --el-menu-text-color: #e5eaf3;
+    --el-menu-hover-bg-color: rgba(255, 255, 255, 0.08);
+    --el-menu-active-color: var(--el-color-primary);
   }
+}
+
+/* 深色模式菜单样式增强 */
+html.dark .el-menu,
+.bg-inverted .el-menu {
+  --el-menu-bg-color: transparent !important;
+  --el-menu-text-color: rgba(255, 255, 255, 0.85) !important;
+  --el-menu-hover-bg-color: rgba(255, 255, 255, 0.08) !important;
+  --el-menu-active-color: var(--el-color-primary) !important;
+}
+
+html.dark .el-menu-item,
+html.dark .el-sub-menu__title,
+.bg-inverted .el-menu-item,
+.bg-inverted .el-sub-menu__title {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+html.dark .el-menu-item:hover,
+html.dark .el-sub-menu__title:hover,
+.bg-inverted .el-menu-item:hover,
+.bg-inverted .el-sub-menu__title:hover {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .el-menu-item.is-active,
+.bg-inverted .el-menu-item.is-active {
+  color: var(--el-color-primary) !important;
+  background-color: rgba(var(--primary-color), 0.1) !important;
 }
 
 :focus-visible {

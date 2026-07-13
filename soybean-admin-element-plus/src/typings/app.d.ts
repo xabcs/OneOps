@@ -99,6 +99,18 @@ declare namespace App {
         useCustomColor?: boolean;
         /** Show sider menu icon */
         showIcon?: boolean;
+        /** Enable sider gradient background */
+        useSiderGradient?: boolean;
+        /** Sider gradient start color */
+        siderGradientStart?: string;
+        /** Sider gradient end color */
+        siderGradientEnd?: string;
+        /** Enable logo area gradient background */
+        useLogoGradient?: boolean;
+        /** Logo gradient start color */
+        logoGradientStart?: string;
+        /** Logo gradient end color */
+        logoGradientEnd?: string;
       };
       /** Footer */
       footer: {

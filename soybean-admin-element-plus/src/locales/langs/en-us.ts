@@ -135,12 +135,15 @@ const local: App.I18n.Schema = {
       mixWidth: 'Mix Sider Width',
       mixCollapsedWidth: 'Mix Sider Collapse Width',
       mixChildMenuWidth: 'Mix Child Menu Width',
-      useCustomColor: 'Use Custom Color',
-      customColor: 'Sider Background Color',
+      useCustomColor: 'Use Custom Single Color',
+      customColor: 'Sider Background Color (All)',
       showIcon: 'Show Menu Icon',
-      useLogoGradient: 'Enable Logo Area Gradient',
-      logoGradientStart: 'Logo Gradient Start Color',
-      logoGradientEnd: 'Logo Gradient End Color'
+      useSiderGradient: 'Menu Area Gradient',
+      siderGradientStart: 'Menu Area Gradient Start Color',
+      siderGradientEnd: 'Menu Area Gradient End Color',
+      useLogoGradient: 'Logo Area Gradient',
+      logoGradientStart: 'Logo Area Gradient Start Color',
+      logoGradientEnd: 'Logo Area Gradient End Color'
     },
     footer: {
       visible: 'Footer Visible',

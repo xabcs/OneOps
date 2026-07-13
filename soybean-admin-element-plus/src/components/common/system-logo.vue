@@ -3,7 +3,7 @@
     <svg
       width="100%"
       height="100%"
-      viewBox="0 0 180 50"
+      viewBox="0 0 175 50"
       xmlns="http://www.w3.org/2000/svg"
       preserveAspectRatio="xMidYMid meet"
     >
@@ -16,6 +16,14 @@
           </feMerge>
         </filter>
 
+        <!-- SxDevOps 品牌渐变 -->
+        <linearGradient id="sxdevopsBrand" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#67b7ab"/>
+          <stop offset="58%" stop-color="#5586b6"/>
+          <stop offset="100%" stop-color="#49639a"/>
+        </linearGradient>
+
+        <!-- 备用渐变 -->
         <linearGradient id="nexgrad" x1="0%" y1="0%" x2="100%" y2="0%">
           <stop offset="0%" stop-color="#00D4FF"/>
           <stop offset="50%" stop-color="#7B61FF"/>
@@ -23,11 +31,11 @@
         </linearGradient>
       </defs>
 
-      <text x="2" y="38"
+      <text x="5" y="38"
             font-family="'SF Pro Display', 'Helvetica Neue', sans-serif"
-            font-size="36"
+            font-size="30"
             font-weight="900"
-            fill="url(#nexgrad)"
+            fill="url(#sxdevopsBrand)"
             filter="url(#glow)">NexOps</text>
     </svg>
   </div>

@@ -24,8 +24,22 @@ export default defineConfig(configEnv => {
         scss: {
           api: 'modern-compiler',
           additionalData: (content, loaderPath) => {
-            // 避免循环依赖：不要在 global.scss 文件中注入自己
-            if (loaderPath.includes('/styles/scss/global.scss')) {
+            // 避免循环依赖：不要在以下文件中注入 global.scss
+            // 1. global.scss 本身
+            // 2. global.scss 导入的文件（避免反向注入造成循环）
+            const excludedPaths = [
+              '/styles/scss/global.scss',
+              '/styles/scss/sxdevops-theme.scss',
+              '/styles/scss/layout-theme.scss',
+              '/styles/scss/interaction-states.scss',
+              '/styles/scss/sidebar-enhanced.scss',
+              '/styles/scss/design-system.scss',
+              '/styles/scss/element-plus.scss',
+              '/styles/scss/compact-theme.scss',
+              '/styles/scss/terminal-workbench.scss'
+            ];
+
+            if (excludedPaths.some(path => loaderPath.includes(path))) {
               return content;
             }
             return `@use "@/styles/scss/global.scss" as *; ${content}`;

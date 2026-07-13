@@ -8,6 +8,7 @@ import '../styles/css/transition.css';
 import '../styles/css/global.css';
 import '../styles/css/border-radius.css';
 import '../styles/scss/design-system.scss';
+import '../styles/scss/sxdevops-colors.scss'; // SxDevOps 颜色方案
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
