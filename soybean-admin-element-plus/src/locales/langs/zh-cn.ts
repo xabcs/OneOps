@@ -115,7 +115,35 @@ const local: App.I18n.Schema = {
       },
       globalSearch: {
         visible: '显示全局搜索按钮'
-      }
+      },
+      title: '顶栏设置',
+      useCustomColor: '使用自定义单一颜色',
+      customColor: '顶栏背景颜色（整体）',
+      useHeaderGradient: '顶栏颜色渐变',
+      headerGradientStart: '顶栏渐变起始颜色',
+      headerGradientEnd: '顶栏渐变结束颜色'
+    },
+    content: {
+      title: '内容区设置',
+      card: '卡片',
+      cardBg: '卡片背景颜色',
+      cardRadius: '卡片圆角',
+      useCardGradient: '卡片背景渐变',
+      cardGradientStart: '卡片渐变起始颜色',
+      cardGradientEnd: '卡片渐变结束颜色',
+      table: '表格',
+      tableBorder: '表格边框颜色',
+      tableHeaderBg: '表头背景颜色',
+      tableHoverBg: '行悬停背景颜色',
+      tableRadius: '表格圆角',
+      button: '按钮',
+      buttonRadius: '按钮圆角',
+      input: '输入框',
+      inputRadius: '输入框圆角',
+      toolbar: '工具栏',
+      useToolbarGradient: '工具栏背景渐变',
+      toolbarGradientStart: '工具栏渐变起始颜色',
+      toolbarGradientEnd: '工具栏渐变结束颜色'
     },
     tab: {
       visible: '显示标签栏',

@@ -32,7 +32,12 @@ export const themeSettings: App.Theme.ThemeSetting = {
     },
     globalSearch: {
       visible: true
-    }
+    },
+    useCustomColor: false,
+    customColor: 'rgb(248, 251, 255)',
+    useHeaderGradient: true, // SxDevOps 默认使用渐变
+    headerGradientStart: 'rgba(248, 251, 255, 0.98)', // SxDevOps 顶栏渐变起始
+    headerGradientEnd: 'rgba(243, 247, 255, 0.94)' // SxDevOps 顶栏渐变结束
   },
   tab: {
     visible: false,
@@ -51,10 +56,10 @@ export const themeSettings: App.Theme.ThemeSetting = {
     useCustomColor: false,
     customColor: 'rgb(241, 246, 255)',
     showIcon: true,
-    useSiderGradient: false,
+    useSiderGradient: true, // SxDevOps 默认开启菜单区域渐变
     siderGradientStart: 'rgba(241, 246, 255, 0.98)', // SxDevOps 浅蓝渐变起始
     siderGradientEnd: 'rgba(232, 240, 255, 0.9)', // SxDevOps 浅蓝渐变结束
-    useLogoGradient: false,
+    useLogoGradient: true, // SxDevOps 默认开启Logo区域渐变
     logoGradientStart: 'rgba(241, 246, 255, 0.98)', // SxDevOps Logo渐变起始
     logoGradientEnd: 'rgba(232, 240, 255, 0.9)' // SxDevOps Logo渐变结束
   },
@@ -63,6 +68,42 @@ export const themeSettings: App.Theme.ThemeSetting = {
     fixed: false,
     height: 48,
     right: true
+  },
+  contentTheme: {
+    // 卡片配置 - SxDevOps 风格
+    cardBg: '#ffffff',
+    cardRadius: '12px',
+    cardShadow: '0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)',
+    useCardGradient: false, // 默认不使用卡片渐变
+    cardGradientStart: 'rgba(255, 255, 255, 0.98)',
+    cardGradientEnd: 'rgba(248, 250, 252, 0.94)',
+
+    // 表格配置 - SxDevOps 风格
+    tableBorder: 'rgba(148, 163, 184, 0.16)',
+    tableHeaderBg: '#f8fafc',
+    tableHoverBg: '#f8fbff',
+    tableRadius: '12px',
+
+    // 按钮配置 - SxDevOps 风格
+    buttonRadius: '10px',
+    buttonDefaultBg: 'rgba(255, 255, 255, 0.9)',
+    buttonDefaultColor: '#475569',
+    buttonDefaultBorder: 'rgba(148, 163, 184, 0.12)',
+    buttonHoverBg: '#f8fbff',
+    buttonHoverColor: '#1d4ed8',
+    buttonHoverBorder: 'rgba(59, 130, 246, 0.18)',
+
+    // 输入框配置 - SxDevOps 风格
+    inputRadius: '12px',
+    inputBg: 'rgba(255, 255, 255, 0.92)',
+    inputBorderShadow: 'rgba(148, 163, 184, 0.16)',
+    inputHoverShadow: 'rgba(59, 130, 246, 0.18)',
+    inputFocusShadow: 'rgba(37, 99, 235, 0.22)',
+
+    // 工具栏渐变 - SxDevOps 风格
+    useToolbarGradient: false,
+    toolbarGradientStart: 'rgba(248, 250, 252, 0.92)',
+    toolbarGradientEnd: 'rgba(255, 255, 255, 0.96)'
   },
   watermark: {
     visible: false,

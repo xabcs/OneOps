@@ -27,6 +27,26 @@ const appStore = useAppStore();
 const themeStore = useThemeStore();
 const { isFullscreen, toggle } = useFullscreen();
 
+// 计算 Header 的自定义背景样式
+const headerStyle = computed(() => {
+  // 如果使用渐变
+  if (themeStore.header.useHeaderGradient) {
+    return {
+      background: `linear-gradient(180deg, ${themeStore.header.headerGradientStart || 'rgba(248, 251, 255, 0.98)'} 0%, ${themeStore.header.headerGradientEnd || 'rgba(243, 247, 255, 0.94)'} 100%)`
+    };
+  }
+
+  // 如果使用自定义单一颜色
+  if (themeStore.header.useCustomColor && themeStore.header.customColor) {
+    return {
+      backgroundColor: themeStore.header.customColor
+    };
+  }
+
+  // 默认情况，使用主题默认背景
+  return {};
+});
+
 // 系统状态
 const currentTime = ref(new Date());
 const systemStatus = ref({
@@ -138,7 +158,7 @@ const handleNotificationClick = (notification: any) => {
 </script>
 
 <template>
-  <DarkModeContainer class="h-full flex-y-center px-12px shadow-header relative" @click="handleClickOutside">
+  <DarkModeContainer class="global-header h-full flex-y-center px-12px shadow-header relative" :style="headerStyle" @click="handleClickOutside">
     <GlobalLogo v-if="showLogo" class="h-full" :style="{ width: themeStore.sider.width + 'px' }" />
     <MenuToggler v-if="showMenuToggler" :collapsed="appStore.siderCollapse" @click="appStore.toggleSiderCollapse" />
     <div v-if="showMenu" :id="GLOBAL_HEADER_MENU_ID" class="h-full flex-y-center flex-1-hidden"></div>

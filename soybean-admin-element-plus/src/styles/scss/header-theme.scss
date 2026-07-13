@@ -1,0 +1,274 @@
+/**
+ * Header theme styles
+ * Ensures header internal elements follow header color scheme
+ */
+
+/* ========== Header CSS 变量 ========== */
+:root {
+  /* Header 内部元素变量 */
+  --header-button-default-bg: rgba(255, 255, 255, 0.85);
+  --header-button-default-color: #475569;
+  --header-button-default-border: rgba(148, 163, 184, 0.1);
+  --header-button-hover-bg: rgba(255, 255, 255, 0.95);
+  --header-button-hover-color: #1d4ed8;
+  --header-button-hover-border: rgba(59, 130, 246, 0.16);
+  --header-button-radius: 8px;
+
+  --header-input-bg: rgba(255, 255, 255, 0.75);
+  --header-input-border: rgba(148, 163, 184, 0.1);
+  --header-input-hover-border: rgba(59, 130, 246, 0.14);
+  --header-input-focus-border: rgba(37, 99, 235, 0.18);
+  --header-input-radius: 8px;
+  --header-input-color: #475569;
+
+  --header-breadcrumb-color: #475569;
+  --header-breadcrumb-hover: #1d4ed8;
+
+  --header-status-bg: rgba(255, 255, 255, 0.6);
+  --header-status-radius: 6px;
+}
+
+/* ========== Header 内部元素样式 ========== */
+
+/* Header 容器 */
+.global-header,
+.el-header {
+  /* 确保内部元素使用 header 配色 */
+}
+
+/* Header 内部按钮 */
+.global-header .el-button,
+.global-header .header-action-item,
+.global-header .el-button:not(.is-link):not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info) {
+  background-color: var(--header-button-default-bg) !important;
+  color: var(--header-button-default-color) !important;
+  border-color: var(--header-button-default-border) !important;
+  border-radius: var(--header-button-radius) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.global-header .el-button:hover,
+.global-header .header-action-item:hover {
+  background-color: var(--header-button-hover-bg) !important;
+  color: var(--header-button-hover-color) !important;
+  border-color: var(--header-button-hover-border) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.global-header .el-button--primary {
+  border-radius: var(--header-button-radius) !important;
+}
+
+/* Header 内部输入框 */
+.global-header .el-input .el-input__wrapper {
+  background-color: var(--header-input-bg) !important;
+  border-radius: var(--header-input-radius) !important;
+  box-shadow: 0 0 0 1px var(--header-input-border) inset !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.global-header .el-input .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--header-input-hover-border) inset !important;
+}
+
+.global-header .el-input.is-focus .el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--header-input-focus-border) inset !important;
+}
+
+.global-header .el-input .el-input__inner {
+  color: var(--header-input-color) !important;
+}
+
+/* Header 内部选择器 */
+.global-header .el-select .el-input__wrapper {
+  background-color: var(--header-input-bg) !important;
+  border-radius: var(--header-input-radius) !important;
+  box-shadow: 0 0 0 1px var(--header-input-border) inset !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.global-header .el-select .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--header-input-hover-border) inset !important;
+}
+
+.global-header .el-select.is-focus .el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--header-input-focus-border) inset !important;
+}
+
+/* Header 面包屑 */
+.global-header .el-breadcrumb {
+  font-size: 14px;
+}
+
+.global-header .el-breadcrumb__item {
+  color: var(--header-breadcrumb-color) !important;
+}
+
+.global-header .el-breadcrumb__item:hover {
+  color: var(--header-breadcrumb-hover) !important;
+}
+
+.global-header .el-breadcrumb__item:last-child {
+  font-weight: 600 !important;
+}
+
+/* Header 状态指示器 */
+.global-header .status-item {
+  background-color: var(--header-status-bg) !important;
+  border-radius: var(--header-status-radius) !important;
+  padding: 4px 8px !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.global-header .status-label {
+  color: var(--header-input-color) !important;
+}
+
+.global-header .time-display {
+  background-color: var(--header-status-bg) !important;
+  border-radius: var(--header-status-radius) !important;
+  color: var(--header-input-color) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Header 下拉面板 */
+.global-header .dropdown-panel {
+  background: #ffffff !important;
+  border: 1px solid rgba(148, 163, 184, 0.16) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.global-header .dropdown-header {
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%) !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.global-header .dropdown-item {
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.global-header .dropdown-item:hover {
+  background-color: #f8fbff !important;
+}
+
+.global-header .notification-item {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08) !important;
+}
+
+.global-header .notification-item:hover {
+  background-color: rgba(248, 251, 255, 0.5) !important;
+}
+
+/* Header 图标按钮 */
+.global-header .header-icon-button {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--header-button-radius) !important;
+  background-color: var(--header-button-default-bg) !important;
+  color: var(--header-button-default-color) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.global-header .header-icon-button:hover {
+  background-color: var(--header-button-hover-bg) !important;
+  color: var(--header-button-hover-color) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Header 徽章 */
+.global-header .notification-badge {
+  background-color: var(--el-color-danger) !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  min-width: 16px !important;
+  height: 16px !important;
+  line-height: 16px !important;
+  padding: 0 4px !important;
+  text-align: center !important;
+  box-shadow: 0 2px 4px rgba(245, 108, 108, 0.3) !important;
+}
+
+/* Header 快速菜单 */
+.global-header .quick-menu-dropdown {
+  min-width: 140px !important;
+  max-width: 180px !important;
+}
+
+.global-header .notification-dropdown {
+  width: 320px !important;
+  max-width: 90vw !important;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .global-header .dropdown-panel {
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 8px !important;
+  }
+
+  .global-header .notification-dropdown {
+    width: calc(100vw - 16px) !important;
+  }
+}
+
+/* ========== Header 特殊状态 ========== */
+
+/* 深色模式下的 header 内部元素调整 */
+.html-dark .global-header .el-button:not(.is-link):not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info) {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.html-dark .global-header .el-button:hover {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.html-dark .global-header .el-input .el-input__wrapper {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) inset !important;
+}
+
+.html-dark .global-header .el-input .el-input__inner {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.html-dark .global-header .status-item {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.html-dark .global-header .status-label {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.html-dark .global-header .time-display {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.html-dark .global-header .dropdown-panel {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.html-dark .global-header .dropdown-header {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.8) 100%) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+}

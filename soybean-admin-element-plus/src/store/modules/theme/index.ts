@@ -14,6 +14,7 @@ import {
   toggleAuxiliaryColorModes,
   toggleCssDarkMode
 } from './shared';
+import { applyHeaderTheme } from '@/utils/content-theme';
 
 /** Theme store */
 export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
@@ -250,6 +251,66 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     }
   }
 
+  /**
+   * Set header custom color
+   *
+   * @param useCustomColor Whether to use custom color
+   * @param color Custom color
+   */
+  function setHeaderCustomColor(useCustomColor: boolean, color?: string) {
+    settings.value.header.useCustomColor = useCustomColor;
+    if (color !== undefined) {
+      settings.value.header.customColor = color;
+    }
+    // 当使用自定义颜色时，关闭渐变
+    if (useCustomColor && settings.value.header.useHeaderGradient) {
+      settings.value.header.useHeaderGradient = false;
+    }
+  }
+
+  /**
+   * Set header gradient
+   *
+   * @param useHeaderGradient Use header gradient
+   * @param startColor Gradient start color
+   * @param endColor Gradient end color
+   */
+  function setHeaderGradient(useHeaderGradient: boolean, startColor?: string, endColor?: string) {
+    settings.value.header.useHeaderGradient = useHeaderGradient;
+    if (startColor !== undefined) {
+      settings.value.header.headerGradientStart = startColor;
+    }
+    if (endColor !== undefined) {
+      settings.value.header.headerGradientEnd = endColor;
+    }
+    // 当使用渐变时，关闭自定义颜色
+    if (useHeaderGradient && settings.value.header.useCustomColor) {
+      settings.value.header.useCustomColor = false;
+    }
+  }
+
+  /**
+   * Set content theme settings
+   *
+   * @param key Content theme key
+   * @param value Content theme value
+   */
+  function setContentTheme<K extends keyof App.Theme.ThemeSetting['contentTheme']>(
+    key: K,
+    value: App.Theme.ThemeSetting['contentTheme'][K]
+  ) {
+    settings.value.contentTheme[key] = value;
+  }
+
+  /**
+   * Set multiple content theme settings at once
+   *
+   * @param theme Partial content theme settings
+   */
+  function setContentThemeBatch(theme: Partial<App.Theme.ThemeSetting['contentTheme']>) {
+    Object.assign(settings.value.contentTheme, theme);
+  }
+
   /** Cache theme settings */
   function cacheThemeSettings() {
     const isProd = import.meta.env.MODE === 'prod';
@@ -329,6 +390,32 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
       { deep: true }
     );
 
+    // watch header color change
+    watch(
+      () => [
+        settings.value.header.useCustomColor,
+        settings.value.header.customColor,
+        settings.value.header.useHeaderGradient,
+        settings.value.header.headerGradientStart,
+        settings.value.header.headerGradientEnd
+      ],
+      () => {
+        // Apply header theme to ensure internal elements follow header color scheme
+        applyHeaderTheme(settings.value.header);
+      },
+      { deep: true }
+    );
+
+    // watch content theme change
+    watch(
+      () => settings.value.contentTheme,
+      () => {
+        // Content theme changes are handled directly by CSS variables
+        // No need to regenerate CSS vars
+      },
+      { deep: true }
+    );
+
     // cache theme settings when settings change
     watch(
       settings,
@@ -364,6 +451,10 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     setSiderInverted,
     setSiderShowIcon,
     setSiderLogoGradient,
-    setSiderGradient
+    setSiderGradient,
+    setHeaderCustomColor,
+    setHeaderGradient,
+    setContentTheme,
+    setContentThemeBatch
   };
 });

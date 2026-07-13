@@ -4,6 +4,8 @@ import { $t } from '@/locales';
 import DarkMode from './modules/dark-mode.vue';
 import LayoutMode from './modules/layout-mode.vue';
 import ThemeColor from './modules/theme-color.vue';
+import HeaderColor from './modules/header-color.vue';
+import ContentTheme from './modules/content-theme.vue';
 import SiderColor from './modules/sider-color.vue';
 import BorderRadius from './modules/border-radius.vue';
 import PageFun from './modules/page-fun.vue';
@@ -19,6 +21,8 @@ const appStore = useAppStore();
     <DarkMode />
     <LayoutMode />
     <ThemeColor />
+    <HeaderColor />
+    <ContentTheme />
     <SiderColor />
     <BorderRadius />
     <PageFun />

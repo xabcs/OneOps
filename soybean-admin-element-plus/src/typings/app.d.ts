@@ -61,6 +61,16 @@ declare namespace App {
           /** Whether to show the global search */
           visible: boolean;
         };
+        /** Use custom header color */
+        useCustomColor?: boolean;
+        /** Custom header background color (single color) */
+        customColor?: string;
+        /** Use header gradient background */
+        useHeaderGradient?: boolean;
+        /** Header gradient start color */
+        headerGradientStart?: string;
+        /** Header gradient end color */
+        headerGradientEnd?: string;
       };
       /** Tab */
       tab: {
@@ -167,6 +177,59 @@ declare namespace App {
           /** Menu border radius */
           menu: string;
         };
+      };
+      /** Content area theme settings */
+      contentTheme: {
+        /** Card background color */
+        cardBg?: string;
+        /** Card border radius */
+        cardRadius?: string;
+        /** Card shadow */
+        cardShadow?: string;
+        /** Table border color */
+        tableBorder?: string;
+        /** Table header background */
+        tableHeaderBg?: string;
+        /** Table row hover background */
+        tableHoverBg?: string;
+        /** Table border radius */
+        tableRadius?: string;
+        /** Button border radius */
+        buttonRadius?: string;
+        /** Button default background */
+        buttonDefaultBg?: string;
+        /** Button default color */
+        buttonDefaultColor?: string;
+        /** Button default border */
+        buttonDefaultBorder?: string;
+        /** Button hover background */
+        buttonHoverBg?: string;
+        /** Button hover color */
+        buttonHoverColor?: string;
+        /** Button hover border */
+        buttonHoverBorder?: string;
+        /** Input border radius */
+        inputRadius?: string;
+        /** Input background */
+        inputBg?: string;
+        /** Input border shadow */
+        inputBorderShadow?: string;
+        /** Input hover border shadow */
+        inputHoverShadow?: string;
+        /** Input focus border shadow */
+        inputFocusShadow?: string;
+        /** Use gradient for cards */
+        useCardGradient?: boolean;
+        /** Card gradient start */
+        cardGradientStart?: string;
+        /** Card gradient end */
+        cardGradientEnd?: string;
+        /** Use gradient for toolbar */
+        useToolbarGradient?: boolean;
+        /** Toolbar gradient start */
+        toolbarGradientStart?: string;
+        /** Toolbar gradient end */
+        toolbarGradientEnd?: string;
       };
       /** define some theme settings tokens, will transform to css variables */
       tokens: {

@@ -115,7 +115,35 @@ const local: App.I18n.Schema = {
       },
       globalSearch: {
         visible: 'Display global search button'
-      }
+      },
+      title: 'Header Settings',
+      useCustomColor: 'Use Custom Single Color',
+      customColor: 'Header Background Color (All)',
+      useHeaderGradient: 'Header Color Gradient',
+      headerGradientStart: 'Header Gradient Start Color',
+      headerGradientEnd: 'Header Gradient End Color'
+    },
+    content: {
+      title: 'Content Area Settings',
+      card: 'Card',
+      cardBg: 'Card Background Color',
+      cardRadius: 'Card Border Radius',
+      useCardGradient: 'Card Background Gradient',
+      cardGradientStart: 'Card Gradient Start Color',
+      cardGradientEnd: 'Card Gradient End Color',
+      table: 'Table',
+      tableBorder: 'Table Border Color',
+      tableHeaderBg: 'Table Header Background',
+      tableHoverBg: 'Row Hover Background',
+      tableRadius: 'Table Border Radius',
+      button: 'Button',
+      buttonRadius: 'Button Border Radius',
+      input: 'Input',
+      inputRadius: 'Input Border Radius',
+      toolbar: 'Toolbar',
+      useToolbarGradient: 'Toolbar Background Gradient',
+      toolbarGradientStart: 'Toolbar Gradient Start Color',
+      toolbarGradientEnd: 'Toolbar Gradient End Color'
     },
     tab: {
       visible: 'Tab Visible',

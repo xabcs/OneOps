@@ -9,6 +9,12 @@
 @use './interaction-states.scss';
 @use './sidebar-enhanced.scss';
 
+// ========== 导入内容区主题 ==========
+@use './content-theme.scss';
+
+// ========== 导入 Header 主题 ==========
+@use './header-theme.scss';
+
 // ========== 导入项目现有样式 ==========
 // @forward './design-system.scss'; // 暂时禁用以避免循环依赖 - 这些样式将在其他地方引入
 @use './element-plus.scss';
