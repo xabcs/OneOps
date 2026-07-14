@@ -131,6 +131,12 @@
   background-color: transparent !important;
 }
 
+/* 禁用 Element Plus 默认的激活背景色，统一使用 ::before 伪元素 */
+.global-sider-enhanced :deep(.el-menu-item.is-active),
+.global-sider-enhanced.bg-inverted :deep(.el-menu-item.is-active) {
+  background-color: transparent !important;
+}
+
 .global-sider-enhanced :deep(.el-menu-item),
 .global-sider-enhanced :deep(.el-sub-menu__title) {
   height: 40px;
@@ -159,8 +165,8 @@
   content: '';
   position: absolute;
   z-index: 0;
-  left: 8px;
-  right: 8px;
+  left: 0;
+  right: 0;
   top: 0;
   bottom: 0;
   border-radius: 10px;
@@ -173,7 +179,7 @@
   background: transparent !important;
   color: #2563eb !important;
   font-weight: 600;
-  border-color: rgba(96, 165, 250, 0.2);
+  border-color: transparent !important;
   box-shadow: 0 8px 18px rgba(37, 99, 235, 0.07);
 }
 
@@ -181,8 +187,8 @@
   content: '';
   position: absolute;
   z-index: 0;
-  left: 8px;
-  right: 8px;
+  left: 0;
+  right: 0;
   top: 0;
   bottom: 0;
   border-radius: 10px;
@@ -342,7 +348,7 @@
 
   .global-sider-enhanced :deep(.el-menu-item.is-active) {
     color: #60a5fa !important;
-    border-color: rgba(96, 165, 250, 0.2);
+    border-color: transparent !important;
   }
 
   .global-sider-enhanced :deep(.el-menu-item.is-active::before) {

@@ -5,7 +5,7 @@ import { setupAppVersionNotification, setupDayjs, setupIconifyOffline, setupLoad
 import { setupStore } from './store';
 import { setupRouter } from './router';
 import { setupI18n } from './locales';
-import { initContentTheme, initHeaderTheme } from './utils/content-theme';
+import { initContentTheme, initContentTheme2, initHeaderTheme } from './utils/content-theme';
 import App from './App.vue';
 
 async function setupApp() {
@@ -19,6 +19,7 @@ async function setupApp() {
 
   // 初始化内容主题和Header主题
   initContentTheme();
+  initContentTheme2();
   initHeaderTheme();
 
   const app = createApp(App);

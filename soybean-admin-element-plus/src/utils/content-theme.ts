@@ -6,6 +6,7 @@
 import { themeSettings } from '@/theme/settings';
 
 export type ContentThemeSettings = App.Theme.ThemeSetting['contentTheme'];
+export type ContentTheme2Settings = App.Theme.ThemeSetting['contentTheme2'];
 
 /**
  * Apply content theme to CSS variables
@@ -94,6 +95,344 @@ export function applyContentTheme(theme: ContentThemeSettings) {
     );
   } else {
     root.style.removeProperty('--sx-toolbar-bg');
+  }
+
+  // Hero gradient
+  if (theme.heroGradientStart && theme.heroGradientEnd) {
+    root.style.setProperty(
+      '--sx-gradient-hero',
+      `linear-gradient(135deg, ${theme.heroGradientStart} 0%, ${theme.heroGradientEnd} 100%)`
+    );
+  }
+
+  // Color variables
+  if (theme.primary) {
+    root.style.setProperty('--sx-primary', theme.primary);
+  }
+  if (theme.primaryLight) {
+    root.style.setProperty('--sx-primary-light', theme.primaryLight);
+  }
+  if (theme.success) {
+    root.style.setProperty('--sx-success', theme.success);
+  }
+  if (theme.warning) {
+    root.style.setProperty('--sx-warning', theme.warning);
+  }
+  if (theme.danger) {
+    root.style.setProperty('--sx-danger', theme.danger);
+  }
+  if (theme.info) {
+    root.style.setProperty('--sx-info', theme.info);
+  }
+
+  // Text colors
+  if (theme.textPrimary) {
+    root.style.setProperty('--sx-text-primary', theme.textPrimary);
+  }
+  if (theme.textSecondary) {
+    root.style.setProperty('--sx-text-secondary', theme.textSecondary);
+  }
+  if (theme.textMuted) {
+    root.style.setProperty('--sx-text-muted', theme.textMuted);
+  }
+
+  // Border colors
+  if (theme.borderSoft) {
+    root.style.setProperty('--sx-border-soft', theme.borderSoft);
+  }
+  if (theme.borderMedium) {
+    root.style.setProperty('--sx-border-medium', theme.borderMedium);
+  }
+}
+
+/**
+ * Apply content theme 2 to CSS variables
+ * Enhanced modular theme system for fine-grained control
+ */
+export function applyContentTheme2(theme: ContentTheme2Settings) {
+  const root = document.documentElement;
+
+  // Hero section styles
+  if (theme.heroSection) {
+    const hero = theme.heroSection;
+    if (hero.useGradient && hero.gradientStart && hero.gradientEnd) {
+      const angle = hero.gradientAngle || 135;
+      if (hero.gradientMiddle) {
+        // 三色渐变
+        root.style.setProperty(
+          '--sx-hero-bg',
+          `linear-gradient(${angle}deg, ${hero.gradientStart} 0%, ${hero.gradientMiddle} 50%, ${hero.gradientEnd} 100%)`
+        );
+      } else {
+        // 两色渐变
+        root.style.setProperty(
+          '--sx-hero-bg',
+          `linear-gradient(${angle}deg, ${hero.gradientStart} 0%, ${hero.gradientEnd} 100%)`
+        );
+      }
+    } else if (hero.background) {
+      root.style.setProperty('--sx-hero-bg', hero.background);
+    }
+    if (hero.borderColor) {
+      root.style.setProperty('--sx-hero-border', hero.borderColor);
+    }
+    if (hero.borderRadius) {
+      root.style.setProperty('--sx-hero-radius', hero.borderRadius);
+    }
+    if (hero.shadow) {
+      root.style.setProperty('--sx-hero-shadow', hero.shadow);
+    }
+    if (hero.padding) {
+      root.style.setProperty('--sx-hero-padding', hero.padding);
+    }
+    if (hero.iconGradientStart && hero.iconGradientEnd) {
+      root.style.setProperty(
+        '--sx-hero-icon-bg',
+        `linear-gradient(180deg, ${hero.iconGradientStart} 0%, ${hero.iconGradientEnd} 100%)`
+      );
+    }
+    if (hero.iconBorderColor) {
+      root.style.setProperty('--sx-hero-icon-border', hero.iconBorderColor);
+    }
+    if (hero.iconColor) {
+      root.style.setProperty('--sx-hero-icon-color', hero.iconColor);
+    }
+  }
+
+  // Statistics cards styles
+  if (theme.statCards) {
+    const stat = theme.statCards;
+
+    if (stat.useGradient) {
+      // 渐变模式：所有卡片使用渐变
+      if (stat.defaultBgStart && stat.defaultBgEnd) {
+        root.style.setProperty(
+          '--sx-stat-default-bg',
+          `linear-gradient(145deg, ${stat.defaultBgStart} 0%, ${stat.defaultBgEnd} 100%)`
+        );
+      }
+      if (stat.successBgStart && stat.successBgEnd) {
+        root.style.setProperty(
+          '--sx-stat-success-bg',
+          `linear-gradient(145deg, ${stat.successBgStart} 0%, ${stat.successBgEnd} 100%)`
+        );
+      }
+      if (stat.warningBgStart && stat.warningBgEnd) {
+        root.style.setProperty(
+          '--sx-stat-warning-bg',
+          `linear-gradient(145deg, ${stat.warningBgStart} 0%, ${stat.warningBgEnd} 100%)`
+        );
+      }
+      if (stat.dangerBgStart && stat.dangerBgEnd) {
+        root.style.setProperty(
+          '--sx-stat-danger-bg',
+          `linear-gradient(145deg, ${stat.dangerBgStart} 0%, ${stat.dangerBgEnd} 100%)`
+        );
+      }
+    } else {
+      // 纯色模式：所有卡片使用纯色
+      if (stat.defaultBg) {
+        root.style.setProperty('--sx-stat-default-bg', stat.defaultBg);
+      }
+      if (stat.successBg) {
+        root.style.setProperty('--sx-stat-success-bg', stat.successBg);
+      }
+      if (stat.warningBg) {
+        root.style.setProperty('--sx-stat-warning-bg', stat.warningBg);
+      }
+      if (stat.dangerBg) {
+        root.style.setProperty('--sx-stat-danger-bg', stat.dangerBg);
+      }
+    }
+
+    // 通用样式（不受渐变开关影响）
+    if (stat.defaultBorder) {
+      root.style.setProperty('--sx-stat-default-border', stat.defaultBorder);
+    }
+    if (stat.borderRadius) {
+      root.style.setProperty('--sx-stat-radius', stat.borderRadius);
+    }
+    if (stat.shadow) {
+      root.style.setProperty('--sx-stat-shadow', stat.shadow);
+    }
+  }
+
+  // Toolbar styles
+  if (theme.toolbar) {
+    const toolbar = theme.toolbar;
+    if (toolbar.gradientStart && toolbar.gradientEnd) {
+      const angle = toolbar.gradientAngle || 180;
+      if (toolbar.gradientMiddle) {
+        // 三色渐变
+        root.style.setProperty(
+          '--sx-toolbar-bg',
+          `linear-gradient(${angle}deg, ${toolbar.gradientStart} 0%, ${toolbar.gradientMiddle} 50%, ${toolbar.gradientEnd} 100%)`
+        );
+      } else {
+        // 两色渐变
+        root.style.setProperty(
+          '--sx-toolbar-bg',
+          `linear-gradient(${angle}deg, ${toolbar.gradientStart} 0%, ${toolbar.gradientEnd} 100%)`
+        );
+      }
+    }
+    if (toolbar.borderColor) {
+      root.style.setProperty('--sx-toolbar-border', toolbar.borderColor);
+    }
+    if (toolbar.borderRadius) {
+      root.style.setProperty('--sx-toolbar-radius', toolbar.borderRadius);
+    }
+    if (toolbar.padding) {
+      root.style.setProperty('--sx-toolbar-padding', toolbar.padding);
+    }
+    if (toolbar.shadow) {
+      root.style.setProperty('--sx-toolbar-shadow', toolbar.shadow);
+    }
+  }
+
+  // Content card styles
+  if (theme.contentCard) {
+    const card = theme.contentCard;
+    if (card.useGradient && card.bgGradientStart && card.bgGradientEnd) {
+      const angle = card.gradientAngle || 145;
+      if (card.bgGradientMiddle) {
+        // 三色渐变
+        root.style.setProperty(
+          '--sx-content-card-bg',
+          `linear-gradient(${angle}deg, ${card.bgGradientStart} 0%, ${card.bgGradientMiddle} 50%, ${card.bgGradientEnd} 100%)`
+        );
+      } else {
+        // 两色渐变
+        root.style.setProperty(
+          '--sx-content-card-bg',
+          `linear-gradient(${angle}deg, ${card.bgGradientStart} 0%, ${card.bgGradientEnd} 100%)`
+        );
+      }
+    } else if (card.background) {
+      root.style.setProperty('--sx-content-card-bg', card.background);
+    }
+    if (card.borderColor) {
+      root.style.setProperty('--sx-content-card-border', card.borderColor);
+    }
+    if (card.borderRadius) {
+      root.style.setProperty('--sx-content-card-radius', card.borderRadius);
+    }
+    if (card.shadow) {
+      root.style.setProperty('--sx-content-card-shadow', card.shadow);
+    }
+    if (card.padding) {
+      root.style.setProperty('--sx-content-card-padding', card.padding);
+    }
+  }
+
+  // Data table styles
+  if (theme.dataTable) {
+    const table = theme.dataTable;
+    if (table.headerBg) {
+      root.style.setProperty('--sx-table-header-bg', table.headerBg);
+    }
+    if (table.headerTextColor) {
+      root.style.setProperty('--sx-table-header-text', table.headerTextColor);
+    }
+    if (table.headerBorderColor) {
+      root.style.setProperty('--sx-table-header-border', table.headerBorderColor);
+    }
+    if (table.rowHoverBg) {
+      root.style.setProperty('--sx-table-row-hover', table.rowHoverBg);
+    }
+    if (table.rowBorderColor) {
+      root.style.setProperty('--sx-table-row-border', table.rowBorderColor);
+    }
+    if (table.tableBorder) {
+      root.style.setProperty('--sx-table-border', table.tableBorder);
+    }
+    if (table.borderRadius) {
+      root.style.setProperty('--sx-table-radius', table.borderRadius);
+    }
+    if (table.stripedBg) {
+      root.style.setProperty('--sx-table-striped-bg', table.stripedBg);
+    }
+  }
+
+  // Search filters styles
+  if (theme.searchFilters) {
+    const search = theme.searchFilters;
+    if (search.inputBg) {
+      root.style.setProperty('--sx-search-input-bg', search.inputBg);
+    }
+    if (search.inputBorder) {
+      root.style.setProperty('--sx-search-input-border', search.inputBorder);
+    }
+    if (search.inputHoverBorder) {
+      root.style.setProperty('--sx-search-input-hover-border', search.inputHoverBorder);
+    }
+    if (search.inputFocusBorder) {
+      root.style.setProperty('--sx-search-input-focus-border', search.inputFocusBorder);
+    }
+    if (search.inputBorderRadius) {
+      root.style.setProperty('--sx-search-input-radius', search.inputBorderRadius);
+    }
+    if (search.buttonBg) {
+      root.style.setProperty('--sx-search-button-bg', search.buttonBg);
+    }
+    if (search.buttonTextColor) {
+      root.style.setProperty('--sx-search-button-text', search.buttonTextColor);
+    }
+    if (search.buttonHoverBg) {
+      root.style.setProperty('--sx-search-button-hover', search.buttonHoverBg);
+    }
+  }
+
+  // Pagination styles
+  if (theme.pagination) {
+    const pagination = theme.pagination;
+    if (pagination.buttonBg) {
+      root.style.setProperty('--sx-pagination-button-bg', pagination.buttonBg);
+    }
+    if (pagination.buttonTextColor) {
+      root.style.setProperty('--sx-pagination-button-text', pagination.buttonTextColor);
+    }
+    if (pagination.buttonHoverBg) {
+      root.style.setProperty('--sx-pagination-button-hover', pagination.buttonHoverBg);
+    }
+    if (pagination.activeButtonBg) {
+      root.style.setProperty('--sx-pagination-active-bg', pagination.activeButtonBg);
+    }
+    if (pagination.activeButtonTextColor) {
+      root.style.setProperty('--sx-pagination-active-text', pagination.activeButtonTextColor);
+    }
+    if (pagination.borderRadius) {
+      root.style.setProperty('--sx-pagination-radius', pagination.borderRadius);
+    }
+  }
+
+  // Tags styles
+  if (theme.tags) {
+    const tags = theme.tags;
+    if (tags.defaultBg) {
+      root.style.setProperty('--sx-tag-default-bg', tags.defaultBg);
+    }
+    if (tags.defaultBorder) {
+      root.style.setProperty('--sx-tag-default-border', tags.defaultBorder);
+    }
+    if (tags.defaultTextColor) {
+      root.style.setProperty('--sx-tag-default-text', tags.defaultTextColor);
+    }
+    if (tags.successBg) {
+      root.style.setProperty('--sx-tag-success-bg', tags.successBg);
+    }
+    if (tags.warningBg) {
+      root.style.setProperty('--sx-tag-warning-bg', tags.warningBg);
+    }
+    if (tags.dangerBg) {
+      root.style.setProperty('--sx-tag-danger-bg', tags.dangerBg);
+    }
+    if (tags.infoBg) {
+      root.style.setProperty('--sx-tag-info-bg', tags.infoBg);
+    }
+    if (tags.borderRadius) {
+      root.style.setProperty('--sx-tag-radius', tags.borderRadius);
+    }
   }
 }
 
@@ -250,6 +589,13 @@ export function initContentTheme() {
 }
 
 /**
+ * Initialize content theme 2 with default settings
+ */
+export function initContentTheme2() {
+  applyContentTheme2(themeSettings.contentTheme2);
+}
+
+/**
  * Initialize header theme with default settings
  */
 export function initHeaderTheme() {
@@ -261,4 +607,11 @@ export function initHeaderTheme() {
  */
 export function resetContentTheme() {
   applyContentTheme(themeSettings.contentTheme);
+}
+
+/**
+ * Reset content theme 2 to defaults
+ */
+export function resetContentTheme2() {
+  applyContentTheme2(themeSettings.contentTheme2);
 }

@@ -230,6 +230,223 @@ declare namespace App {
         toolbarGradientStart?: string;
         /** Toolbar gradient end */
         toolbarGradientEnd?: string;
+        /** Hero gradient start */
+        heroGradientStart?: string;
+        /** Hero gradient end */
+        heroGradientEnd?: string;
+        /** Primary color */
+        primary?: string;
+        /** Primary light color */
+        primaryLight?: string;
+        /** Success color */
+        success?: string;
+        /** Warning color */
+        warning?: string;
+        /** Danger color */
+        danger?: string;
+        /** Info color */
+        info?: string;
+        /** Text primary color */
+        textPrimary?: string;
+        /** Text secondary color */
+        textSecondary?: string;
+        /** Text muted color */
+        textMuted?: string;
+        /** Border soft color */
+        borderSoft?: string;
+        /** Border medium color */
+        borderMedium?: string;
+      };
+      /** Content area theme settings 2 - Enhanced modular customization */
+      contentTheme2: {
+        /** Hero section configuration */
+        heroSection: {
+          /** Enable hero gradient background */
+          useGradient?: boolean;
+          /** Gradient start color */
+          gradientStart?: string;
+          /** Gradient middle color (optional, for complex gradients) */
+          gradientMiddle?: string;
+          /** Gradient end color */
+          gradientEnd?: string;
+          /** Gradient angle in degrees */
+          gradientAngle?: number;
+          /** Background color (fallback when gradient is disabled) */
+          background?: string;
+          /** Border color */
+          borderColor?: string;
+          /** Border radius */
+          borderRadius?: string;
+          /** Shadow effect */
+          shadow?: string;
+          /** Padding */
+          padding?: string;
+          /** Icon background gradient start */
+          iconGradientStart?: string;
+          /** Icon background gradient end */
+          iconGradientEnd?: string;
+          /** Icon border color */
+          iconBorderColor?: string;
+          /** Icon text color */
+          iconColor?: string;
+        };
+        /** Statistics cards configuration */
+        statCards: {
+          /** Use gradient for all cards */
+          useGradient?: boolean;
+          /** Default card background */
+          defaultBg?: string;
+          /** Default card background gradient start */
+          defaultBgStart?: string;
+          /** Default card background gradient end */
+          defaultBgEnd?: string;
+          /** Default card border */
+          defaultBorder?: string;
+          /** Success card background */
+          successBg?: string;
+          /** Success card background gradient */
+          successBgStart?: string;
+          /** Success card background gradient end */
+          successBgEnd?: string;
+          /** Warning card background */
+          warningBg?: string;
+          /** Warning card background gradient start */
+          warningBgStart?: string;
+          /** Warning card background gradient end */
+          warningBgEnd?: string;
+          /** Danger card background */
+          dangerBg?: string;
+          /** Danger card background gradient start */
+          dangerBgStart?: string;
+          /** Danger card background gradient end */
+          dangerBgEnd?: string;
+          /** Card border radius */
+          borderRadius?: string;
+          /** Card shadow */
+          shadow?: string;
+        };
+        /** Toolbar configuration */
+        toolbar: {
+          /** Section toolbar background */
+          sectionBg?: string;
+          /** Section toolbar border */
+          sectionBorder?: string;
+          /** Search toolbar background */
+          searchBg?: string;
+          /** Search toolbar border */
+          searchBorder?: string;
+          /** Toolbar background gradient start */
+          gradientStart?: string;
+          /** Toolbar background gradient middle (optional) */
+          gradientMiddle?: string;
+          /** Toolbar background gradient end */
+          gradientEnd?: string;
+          /** Gradient angle in degrees */
+          gradientAngle?: number;
+          /** Toolbar border color */
+          borderColor?: string;
+          /** Toolbar border radius */
+          borderRadius?: string;
+          /** Toolbar padding */
+          padding?: string;
+          /** Toolbar shadow */
+          shadow?: string;
+        };
+        /** Content card configuration */
+        contentCard: {
+          /** Background color */
+          background?: string;
+          /** Background gradient start */
+          bgGradientStart?: string;
+          /** Background gradient middle (optional, for 3-color gradients) */
+          bgGradientMiddle?: string;
+          /** Background gradient end */
+          bgGradientEnd?: string;
+          /** Use gradient background */
+          useGradient?: boolean;
+          /** Gradient angle in degrees (e.g., 145, 75, 253) */
+          gradientAngle?: number;
+          /** Border color */
+          borderColor?: string;
+          /** Border radius */
+          borderRadius?: string;
+          /** Shadow effect */
+          shadow?: string;
+          /** Padding */
+          padding?: string;
+        };
+        /** Data table configuration */
+        dataTable: {
+          /** Header background */
+          headerBg?: string;
+          /** Header text color */
+          headerTextColor?: string;
+          /** Header border color */
+          headerBorderColor?: string;
+          /** Row hover background */
+          rowHoverBg?: string;
+          /** Row border color */
+          rowBorderColor?: string;
+          /** Table border color */
+          tableBorder?: string;
+          /** Table border radius */
+          borderRadius?: string;
+          /** Striped row background */
+          stripedBg?: string;
+        };
+        /** Search filters configuration */
+        searchFilters: {
+          /** Input background */
+          inputBg?: string;
+          /** Input border color */
+          inputBorder?: string;
+          /** Input hover border */
+          inputHoverBorder?: string;
+          /** Input focus border */
+          inputFocusBorder?: string;
+          /** Input border radius */
+          inputBorderRadius?: string;
+          /** Button background */
+          buttonBg?: string;
+          /** Button text color */
+          buttonTextColor?: string;
+          /** Button hover background */
+          buttonHoverBg?: string;
+        };
+        /** Pagination configuration */
+        pagination: {
+          /** Button background */
+          buttonBg?: string;
+          /** Button text color */
+          buttonTextColor?: string;
+          /** Button hover background */
+          buttonHoverBg?: string;
+          /** Active button background */
+          activeButtonBg?: string;
+          /** Active button text color */
+          activeButtonTextColor?: string;
+          /** Border radius */
+          borderRadius?: string;
+        };
+        /** Tags configuration */
+        tags: {
+          /** Default tag background */
+          defaultBg?: string;
+          /** Default tag border */
+          defaultBorder?: string;
+          /** Default tag text color */
+          defaultTextColor?: string;
+          /** Success tag background */
+          successBg?: string;
+          /** Warning tag background */
+          warningBg?: string;
+          /** Danger tag background */
+          dangerBg?: string;
+          /** Info tag background */
+          infoBg?: string;
+          /** Tag border radius */
+          borderRadius?: string;
+        };
       };
       /** define some theme settings tokens, will transform to css variables */
       tokens: {

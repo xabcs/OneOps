@@ -14,7 +14,7 @@ import {
   toggleAuxiliaryColorModes,
   toggleCssDarkMode
 } from './shared';
-import { applyHeaderTheme } from '@/utils/content-theme';
+import { applyHeaderTheme, applyContentTheme2 } from '@/utils/content-theme';
 
 /** Theme store */
 export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
@@ -311,6 +311,46 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     Object.assign(settings.value.contentTheme, theme);
   }
 
+  /**
+   * Set content theme 2 settings
+   *
+   * @param theme Complete content theme 2 object or key
+   * @param value Value if setting a specific key
+   */
+  function setContentTheme2(theme: App.Theme.ThemeSetting['contentTheme2'] | string, value?: any) {
+    if (typeof theme === 'string') {
+      // 单个键值对设置
+      (settings.value.contentTheme2 as any)[theme] = value;
+    } else {
+      // 整个对象替换
+      Object.assign(settings.value.contentTheme2, theme);
+    }
+  }
+
+  /**
+   * Set content theme 2 module settings
+   *
+   * @param module Module name
+   * @param key Setting key
+   * @param value Setting value
+   */
+  function setContentTheme2Module<M extends keyof App.Theme.ThemeSetting['contentTheme2']>(
+    module: M,
+    key: keyof App.Theme.ThemeSetting['contentTheme2'][M],
+    value: any
+  ) {
+    (settings.value.contentTheme2[module] as any)[key] = value;
+  }
+
+  /**
+   * Set multiple content theme 2 settings at once
+   *
+   * @param theme Partial content theme 2 settings
+   */
+  function setContentTheme2Batch(theme: Partial<App.Theme.ThemeSetting['contentTheme2']>) {
+    Object.assign(settings.value.contentTheme2, theme);
+  }
+
   /** Cache theme settings */
   function cacheThemeSettings() {
     const isProd = import.meta.env.MODE === 'prod';
@@ -416,6 +456,16 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
       { deep: true }
     );
 
+    // watch content theme 2 change
+    watch(
+      () => settings.value.contentTheme2,
+      (newTheme) => {
+        // Apply contentTheme2 styles when theme changes
+        applyContentTheme2(newTheme);
+      },
+      { deep: true }
+    );
+
     // cache theme settings when settings change
     watch(
       settings,
@@ -455,6 +505,9 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     setHeaderCustomColor,
     setHeaderGradient,
     setContentTheme,
-    setContentThemeBatch
+    setContentThemeBatch,
+    setContentTheme2,
+    setContentTheme2Module,
+    setContentTheme2Batch
   };
 });
