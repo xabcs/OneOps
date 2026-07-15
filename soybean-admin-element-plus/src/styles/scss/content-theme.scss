@@ -20,11 +20,11 @@
 
   /* 表格样式 - SxDevOps 风格 */
   --sx-table-border: rgba(148, 163, 184, 0.16);
-  --sx-table-header-bg: #f8fafc;
-  --sx-table-header-text: #1e293b;
+  --sx-table-header-bg: rgba(208, 229, 253, 0.98);
+  --sx-table-header-text: #334155;
   --sx-table-hover-bg: #f8fbff;
   --sx-table-row-hover: #f1f5f9;
-  --sx-table-striped-bg: #f8fafc;
+  --sx-table-striped-bg: #fbfaff;
   --sx-table-radius: 12px;
 
   /* 按钮样式 - SxDevOps 风格 */
@@ -68,9 +68,15 @@
   transform: translateY(-2px);
 }
 
-/* 卡片内部元素统一配色 */
-.content-card *,
-.sx-card * {
+/* 卡片内部元素统一配色 - 排除表格元素 */
+.content-card button *,
+.content-card input *,
+.content-card select *,
+.content-card textarea *,
+.sx-card button *,
+.sx-card input *,
+.sx-card select *,
+.sx-card textarea * {
   border-radius: var(--sx-button-radius) !important;
 }
 
@@ -98,7 +104,7 @@
   overflow: hidden;
 }
 
-/* 强制覆盖所有表头单元格的圆角 - 最高优先级 */
+/* 表格内部单元格 - 强制移除所有圆角 */
 .el-table th.el-table__cell,
 .el-table td.el-table__cell {
   border-radius: 0 !important;
@@ -108,32 +114,34 @@
   border-bottom-right-radius: 0 !important;
 }
 
-/* 特别针对第一列和最后一列 */
-.el-table th.el-table__cell:first-child,
-.el-table th.el-table__cell:last-child {
-  border-radius: 0 !important;
+/* 特别针对第一列和最后一列的表头单元格 - 确保下角无圆角 */
+.el-table th.el-table__cell:first-child {
+  border-top-left-radius: 0 !important;
   border-bottom-left-radius: 0 !important;
+}
+
+.el-table th.el-table__cell:last-child {
+  border-top-right-radius: 0 !important;
   border-bottom-right-radius: 0 !important;
 }
 
-/* 强制覆盖表格内部元素的圆角 */
-.el-table .cell,
-.el-table .el-checkbox__inner,
-.el-table .el-checkbox__inner::before,
-.el-table .el-checkbox__inner::after {
-  border-radius: 0 !important;
+/* 表格内部其他元素可以保持圆角 */
+.el-table .el-checkbox__inner {
+  border-radius: 2px !important;
 }
 
-/* 移除之前错误添加的样式 */
+/* 斑马纹间隔行 */
+.el-table--striped .el-table__body tr.el-table__row--striped td {
+  background-color: var(--sx-table-striped-bg) !important;
+}
 
-  /* 斑马纹间隔行 */
-  .el-table--striped .el-table__body tr.el-table__row--striped td {
-    background-color: var(--sx-table-striped-bg) !important;
-  }
-
-/* 表格内部元素 */
+/* 表格内部按钮和输入框 */
 .el-table .el-button {
   border-radius: var(--sx-button-radius) !important;
+}
+
+.el-table .el-input .el-input__wrapper {
+  border-radius: calc(var(--sx-button-radius) - 2px) !important;
 }
 
 .el-table .el-input .el-input__wrapper {
@@ -288,10 +296,19 @@
   box-shadow: var(--sx-card-shadow) !important;
 }
 
-/* 工具栏内部元素统一 */
-.toolbar *,
-.filter-bar *,
-.workbench-toolbar * {
+/* 工具栏内部元素统一 - 排除表格元素 */
+.toolbar button *,
+.toolbar input *,
+.toolbar select *,
+.toolbar textarea *,
+.filter-bar button *,
+.filter-bar input *,
+.filter-bar select *,
+.filter-bar textarea *,
+.workbench-toolbar button *,
+.workbench-toolbar input *,
+.workbench-toolbar select *,
+.workbench-toolbar textarea * {
   border-radius: var(--sx-button-radius) !important;
 }
 

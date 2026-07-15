@@ -102,6 +102,9 @@ lerna-debug.log*
 # 后端日志目录
 backend/logs/
 
+# Air 热加载临时文件
+backend/tmp/
+
 # 环境变量文件
 .env*
 !.env.example

@@ -12,7 +12,7 @@
 .app-logo {
   width: 100%;
   height: 100%;
-  max-width: 120px;
+  max-width: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -22,6 +22,6 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  max-width: 120px;
+  max-width: none;
 }
 </style>

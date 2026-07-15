@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { User, Refresh, Plus, Delete, Search } from '@element-plus/icons-vue';
 import { fetchDeleteUser, fetchGetAllRoles, fetchGetUserList } from '@/service/api';
 import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
@@ -20,9 +20,14 @@ const userStats = ref({
 const allRoles = ref<Api.SystemManage.AllRole[]>([]);
 const roleMap = computed(() => {
   const map = new Map<number, Api.SystemManage.AllRole>();
-  allRoles.value.forEach(role => {
-    map.set(role.id, role);
-  });
+  // 添加安全检查，避免在路由切换时出错
+  if (allRoles.value && Array.isArray(allRoles.value)) {
+    allRoles.value.forEach(role => {
+      if (role && role.id) {
+        map.set(role.id, role);
+      }
+    });
+  }
   return map;
 });
 
@@ -70,7 +75,18 @@ function getRoleTagClass(roleCode: string): string {
 async function getAllRoles() {
   const { error, data } = await fetchGetAllRoles();
   if (!error && data) {
-    allRoles.value = data;
+    // fetchGetAllRoles 返回的是分页对象，需要提取 records 数组
+    if (Array.isArray(data)) {
+      // 如果直接返回数组（兼容旧格式）
+      allRoles.value = data;
+    } else if (data && Array.isArray(data.records)) {
+      // 如果返回分页对象（新格式）
+      allRoles.value = data.records;
+    } else {
+      allRoles.value = [];
+    }
+  } else {
+    allRoles.value = [];
   }
 }
 
@@ -111,6 +127,7 @@ onMounted(() => {
   getAllRoles();
   updateUserStats();
 });
+
 
 const searchParams = ref(getInitSearchParams());
 
@@ -156,7 +173,7 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
         // 将 roleIds 数组转换为角色标签
         const roleTags = row.roleIds
           .map((id: number) => {
-            const role = roleMap.value.get(id);
+            const role = roleMap.value ? roleMap.value.get(id) : null;
             if (!role) return null;
 
             // 根据角色编码（code）获取标签颜色，更严谨
@@ -333,6 +350,21 @@ function handleSearchInput() {
     getDataByPage();
   }, 300);
 }
+
+// 手动搜索（点击搜索按钮）
+function handleSearch() {
+  searchParams.value.current = 1;
+  getDataByPage();
+}
+
+// 组件卸载时清理资源
+onUnmounted(() => {
+  // 清理搜索定时器，避免内存泄漏
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+    searchTimeout = null;
+  }
+});
 </script>
 
 <template>
@@ -452,7 +484,7 @@ function handleSearchInput() {
             <el-icon><Refresh /></el-icon>
             重置
           </el-button>
-          <el-button class="filter-refresh-btn" @click="getDataByPage">
+          <el-button class="filter-refresh-btn" type="primary" @click="handleSearch">
             <el-icon><Search /></el-icon>
             搜索
           </el-button>

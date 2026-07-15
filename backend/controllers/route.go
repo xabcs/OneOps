@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"oneops/backend/logger"
 	"oneops/backend/models"
 	"oneops/backend/services"
 	"oneops/backend/utils"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // RouteController 路由控制器
@@ -100,8 +102,15 @@ func (c *RouteController) GetUserRoutes(ctx *gin.Context) {
 		return
 	}
 
-	// 获取用户菜单（BuildMenuTreeAndPermissions 内部已查角色，无需额外调用 GetUserRoles）
 	userIDUint := userID.(uint)
+
+	// 🐛 调试：显示路由生成开始
+	logger.Info("🐛 [GetUserRoutes] 开始生成路由", zap.Uint("userID", userIDUint))
+
+	// 清除该用户的缓存，确保路由配置每次都是最新的
+	// 因为路由配置（component字段）需要动态生成，缓存会导致代码修改不生效
+	services.InvalidateRBACCache(userIDUint)
+
 	rbacService := services.NewRBACService()
 	menuTree, _, roles, err := rbacService.BuildMenuTreeAndPermissions(userIDUint)
 	if err != nil {
@@ -123,6 +132,18 @@ func (c *RouteController) GetUserRoutes(ctx *gin.Context) {
 
 		// 添加隐藏路由到对应的父路由下
 		routes = c.appendHiddenRoutesToMenuTree(routes)
+
+		// 🐛 调试：显示webterminal路由的最终配置
+		for _, route := range routes {
+			if path, ok := route["path"].(string); ok && path == "/webterminal" {
+				component, _ := route["component"].(string)
+				logger.Info("🐛 [GetUserRoutes] 返回给前端的webterminal路由",
+					zap.String("path", path),
+					zap.String("component", component),
+					zap.Any("full_route", route))
+				break
+			}
+		}
 
 	// 返回路由和首页
 	result := map[string]interface{}{
@@ -327,10 +348,25 @@ func (c *RouteController) buildRouteFromMenu(menu *models.Menu, hasChildren bool
 		route["meta"].(map[string]interface{})["permission"] = menu.Permission
 	}
 
-	// 特殊处理：Web终端 在新窗口打开
-	if menu.ID == 47 {
+	// 🐛 调试信息：检查webterminal路由处理
+	if menu.Path == "/webterminal" {
+		logger.Info("🐛 [Web终端路由] 开始构建",
+			zap.String("path", menu.Path),
+			zap.Uint("id", menu.ID),
+			zap.String("name", menu.Name),
+			zap.String("component", component))
+	}
+
+	// 特殊处理：Web终端 在新窗口打开（基于路径判断，避免ID变化导致的失效）
+	if menu.Path == "/webterminal" {
+		logger.Info("🐛 [Web终端路由] 设置href属性", zap.String("href", menu.Path))
 		route["meta"].(map[string]interface{})["href"] = menu.Path
 		route["meta"].(map[string]interface{})["hideInMenu"] = false
+
+		// 🐛 调试：显示最终的路由配置
+		logger.Info("🐛 [Web终端路由] 最终配置",
+			zap.String("component", component),
+			zap.Any("route", route))
 	}
 
 	return route
@@ -358,11 +394,22 @@ func (c *RouteController) generateRouteName(path string) string {
 func (c *RouteController) generateComponent(path string, parentID uint, hasChildren bool) string {
 	routeName := c.generateRouteName(path)
 
+	// 🐛 调试信息：显示路由组件生成过程
+	logger.Debug("🐛 [路由组件生成]",
+		zap.String("path", path),
+		zap.String("routeName", routeName),
+		zap.Uint("parentID", parentID),
+		zap.Bool("hasChildren", hasChildren))
+
 	// 特殊处理：web终端使用独立布局（无导航栏）
-	// 注意：如果遇到路由跳转问题，可以先注释掉特殊处理，使用默认布局
 	if path == "/webterminal" {
-		// 使用默认 base 布局，避免路由解析问题
-		return "layout.base$view." + routeName
+		// 使用 terminalLayout 布局，提供纯终端界面体验
+		// 注意：命名需与前端 Elegant Router 自动生成的布局名称一致
+		component := "layout.terminalLayout$view." + routeName
+		logger.Info("🐛 [Web终端] 使用terminalLayout布局",
+			zap.String("path", path),
+			zap.String("component", component))
+		return component
 	}
 
 	// 如果是一级菜单（父级为0）

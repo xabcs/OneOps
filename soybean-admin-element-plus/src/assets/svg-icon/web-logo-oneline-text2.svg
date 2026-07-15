@@ -1,0 +1,12 @@
+<svg viewBox="0 0 200 120" width="200" height="120" xmlns="http://www.w3.org/2000/svg">
+  <title>Msre Logo</title>
+  <defs>
+    <linearGradient id="g6" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <!-- Wordmark: outlined -->
+  <text x="100" y="60" text-anchor="middle" dominant-baseline="central"
+        font-family="'Avenir Next', system-ui, sans-serif" font-size="72" font-weight="800" fill="none" stroke="url(#g6)" stroke-width="3" letter-spacing="1">Msre</text>
+</svg>

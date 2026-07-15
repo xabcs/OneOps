@@ -1,4 +1,6 @@
-/* fade */
+/* 页面过渡动画 */
+
+/* 淡入淡出效果 */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease-in-out;
@@ -8,7 +10,7 @@
   opacity: 0;
 }
 
-/* fade-slide */
+/* 底部滑动淡入淡出 */
 .fade-slide-leave-active,
 .fade-slide-enter-active {
   transition: all 0.3s;
@@ -22,7 +24,7 @@
   transform: translateX(30px);
 }
 
-/* fade-bottom */
+/* 底部消退效果 */
 .fade-bottom-enter-active,
 .fade-bottom-leave-active {
   transition:
@@ -38,7 +40,7 @@
   transform: translateY(10%);
 }
 
-/* fade-scale */
+/* 缩放淡入淡出 */
 .fade-scale-leave-active,
 .fade-scale-enter-active {
   transition: all 0.28s;
@@ -52,7 +54,7 @@
   transform: scale(0.8);
 }
 
-/* zoom-fade */
+/* 缩放淡入淡出效果 */
 .zoom-fade-enter-active,
 .zoom-fade-leave-active {
   transition:
@@ -68,7 +70,7 @@
   transform: scale(1.06);
 }
 
-/* zoom-out */
+/* 缩放淡出效果 */
 .zoom-out-enter-active,
 .zoom-out-leave-active {
   transition:

@@ -89,9 +89,8 @@ VALUES ('网络', 'mdi:network-outline', '/k8s/network', 'k8s:network:query', @k
 INSERT INTO menus (name, icon, path, permission, parent_id, sort, status, created_at, updated_at)
 VALUES ('配置管理', 'mdi:cog', '/k8s/config', 'k8s:config:query', @k8s_id, 4, 1, NOW(), NOW());
 
--- K8s管理子菜单：会话审计
-INSERT INTO menus (name, icon, path, permission, parent_id, sort, status, created_at, updated_at)
-VALUES ('会话审计', 'mdi:history', '/k8s/audit/sessions', 'k8s:session:query', @k8s_id, 7, 1, NOW(), NOW());
+-- 注意：会话审计功能已移除，应使用堡垒机模块的会话审计功能
+-- 不再在 K8s 管理中显示会话审计菜单项
 
 -- 验证插入结果
 SELECT id, name, path, parent_id, sort FROM menus ORDER BY sort;

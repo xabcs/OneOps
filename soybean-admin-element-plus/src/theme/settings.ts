@@ -4,7 +4,7 @@ export const themeSettings: App.Theme.ThemeSetting = {
   grayscale: false,
   colourWeakness: false,
   recommendColor: false,
-  themeColor: 'rgb(99, 102, 241)', // SxDevOps 主色 #6366f1 靛蓝色
+  themeColor: 'rgb(146, 173, 164)', // 主色默认值 rgb(146, 173, 164)
   otherColor: {
     info: 'rgb(99, 102, 241)', // 与主色保持一致
     success: 'rgb(16, 185, 129)', // 绿色 #10b981
@@ -18,8 +18,8 @@ export const themeSettings: App.Theme.ThemeSetting = {
     reverseHorizontalMix: false
   },
   page: {
-    animate: false,
-    animateMode: 'fade-slide'
+    animate: true,
+    animateMode: 'fade-bottom'
   },
   header: {
     height: 60, // SxDevOps 顶栏高度
@@ -60,8 +60,8 @@ export const themeSettings: App.Theme.ThemeSetting = {
     siderGradientStart: 'rgba(241, 246, 255, 0.98)', // SxDevOps 浅蓝渐变起始
     siderGradientEnd: 'rgba(232, 240, 255, 0.9)', // SxDevOps 浅蓝渐变结束
     useLogoGradient: true, // SxDevOps 默认开启Logo区域渐变
-    logoGradientStart: 'rgba(241, 246, 255, 0.98)', // SxDevOps Logo渐变起始
-    logoGradientEnd: 'rgba(232, 240, 255, 0.9)' // SxDevOps Logo渐变结束
+    logoGradientStart: 'rgba(210, 235, 255, 0.98)', // SxDevOps Logo渐变起始
+    logoGradientEnd: 'rgba(221, 222, 222, 0.9)' // SxDevOps Logo渐变结束
   },
   footer: {
     visible: false,
@@ -135,11 +135,11 @@ export const themeSettings: App.Theme.ThemeSetting = {
     // Hero 区域配置
     heroSection: {
       useGradient: true,
-      gradientStart: 'rgba(226, 239, 253, 0.98)',
-      gradientMiddle: '', // 可选中间色
-      gradientEnd: 'rgba(255, 255, 233, 0.96)',
+      gradientStart: 'rgba(208, 229, 253, 0.98)',
+      gradientMiddle: 'rgb(161, 230, 253)',
+      gradientEnd: 'rgba(235, 216, 255, 0.96)',
       gradientAngle: 135, // 默认角度
-      background: 'rgba(226, 239, 253, 0.98)',
+      background: 'rgba(208, 229, 253, 0.98)',
       borderColor: 'rgba(36, 91, 219, 0.09)',
       borderRadius: '20px',
       shadow: '0 8px 24px rgba(15, 23, 42, 0.04)',
@@ -198,14 +198,14 @@ export const themeSettings: App.Theme.ThemeSetting = {
     },
     // 数据表格配置
     dataTable: {
-      headerBg: '#f8fafc',
-      headerTextColor: '#475569',
+      headerBg: 'rgba(208, 229, 253, 0.98)',
+      headerTextColor: '#334155',
       headerBorderColor: 'rgba(148, 163, 184, 0.16)',
       rowHoverBg: '#f8fbff',
       rowBorderColor: 'rgba(148, 163, 184, 0.16)',
       tableBorder: 'rgba(148, 163, 184, 0.14)',
       borderRadius: '12px',
-      stripedBg: '#f8fafc'
+      stripedBg: '#fbfaff'
     },
     // 搜索筛选配置
     searchFilters: {
@@ -296,8 +296,9 @@ export const gradientPresets = {
   /** Classic SxDevOps subtle gradients */
   subtle: {
     heroSection: {
-      gradientStart: 'rgba(226, 239, 253, 0.98)',
-      gradientEnd: 'rgba(255, 255, 233, 0.96)',
+      gradientStart: 'rgba(208, 229, 253, 0.98)',
+      gradientMiddle: 'rgb(161, 230, 253)',
+      gradientEnd: 'rgba(235, 216, 255, 0.96)',
       gradientAngle: 135
     },
     contentCard: {

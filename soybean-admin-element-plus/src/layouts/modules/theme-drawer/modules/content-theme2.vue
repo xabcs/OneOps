@@ -11,10 +11,10 @@ const themeStore = useThemeStore();
 
 // Hero区域设置
 const heroUseGradient = ref(themeStore.contentTheme2.heroSection.useGradient || false);
-const heroBackground = ref(themeStore.contentTheme2.heroSection.background || 'rgba(251, 253, 255, 0.98)');
-const heroGradientStart = ref(themeStore.contentTheme2.heroSection.gradientStart || 'rgba(251, 253, 255, 0.98)');
-const heroGradientMiddle = ref(themeStore.contentTheme2.heroSection.gradientMiddle || '');
-const heroGradientEnd = ref(themeStore.contentTheme2.heroSection.gradientEnd || 'rgba(246, 250, 255, 0.96)');
+const heroBackground = ref(themeStore.contentTheme2.heroSection.background || 'rgba(208, 229, 253, 0.98)');
+const heroGradientStart = ref(themeStore.contentTheme2.heroSection.gradientStart || 'rgba(208, 229, 253, 0.98)');
+const heroGradientMiddle = ref(themeStore.contentTheme2.heroSection.gradientMiddle || 'rgb(161, 230, 253)');
+const heroGradientEnd = ref(themeStore.contentTheme2.heroSection.gradientEnd || 'rgba(235, 216, 255, 0.96)');
 const heroGradientAngle = ref(themeStore.contentTheme2.heroSection.gradientAngle || 135);
 const heroBorderColor = ref(themeStore.contentTheme2.heroSection.borderColor || 'rgba(36, 91, 219, 0.09)');
 const heroBorderRadius = ref(themeStore.contentTheme2.heroSection.borderRadius || '20px');
@@ -60,10 +60,10 @@ const contentCardBorderColor = ref(themeStore.contentTheme2.contentCard.borderCo
 const contentCardBorderRadius = ref(themeStore.contentTheme2.contentCard.borderRadius || '12px');
 
 // 数据表格设置
-const tableHeaderBg = ref(themeStore.contentTheme2.dataTable.headerBg || '#f8fafc');
-const tableHeaderTextColor = ref(themeStore.contentTheme2.dataTable.headerTextColor || '#475569');
+const tableHeaderBg = ref(themeStore.contentTheme2.dataTable.headerBg || 'rgba(208, 229, 253, 0.98)');
+const tableHeaderTextColor = ref(themeStore.contentTheme2.dataTable.headerTextColor || '#334155');
 const tableRowHoverBg = ref(themeStore.contentTheme2.dataTable.rowHoverBg || '#f8fbff');
-const tableStripedBg = ref(themeStore.contentTheme2.dataTable.stripedBg || '#f8fafc');
+const tableStripedBg = ref(themeStore.contentTheme2.dataTable.stripedBg || '#fbfaff');
 const tableBorderColor = ref(themeStore.contentTheme2.dataTable.tableBorder || 'rgba(148, 163, 184, 0.14)');
 const tableBorderRadius = ref(themeStore.contentTheme2.dataTable.borderRadius || '12px');
 

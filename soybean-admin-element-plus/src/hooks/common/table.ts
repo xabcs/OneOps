@@ -140,8 +140,6 @@ export function useUIPaginatedTable<ResponseData, ApiData>(options: UseUIPaginat
   async function getDataByPage(page: number = 1) {
     if (page !== pagination.currentPage) {
       pagination.currentPage = page;
-
-      return;
     }
 
     await result.getData();

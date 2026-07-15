@@ -10,20 +10,24 @@ tmp_dir = "backend/tmp"
   include_ext = ["go", "yaml", "yml"]
   # 忽略的文件扩展名
   exclude_ext = ["tmp"]
-  # 监听的目录
+  # 监听的目录 - 空数组表示监听所有目录
   include_dir = []
   # 忽略的目录
-  exclude_dir = ["tmp", "vendor", "frontend", "node_modules", "logs"]
+  exclude_dir = ["tmp", "vendor", "frontend", "node_modules", "logs", "soybean-admin-element-plus"]
   # 忽略的文件
   exclude_file = []
   # 忽略的正则
   exclude_regex = ["_test.go"]
-  # 延迟时间（毫秒）
-  delay = 1000
+  # 延迟时间（毫秒）- 减少延迟，更快响应
+  delay = 500
   # 遇到错误时停止
   stop_on_error = true
   # 日志文件
   log = "build-errors.log"
+  # 🆕 发送中断信号给正在运行的进程
+  send_interrupt = true
+  # 🆕 构建前删除bin目录
+  kill_delay = 500
 
 [log]
   # 显示时间

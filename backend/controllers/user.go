@@ -73,12 +73,61 @@ func (ctrl *UserController) validateHomePathPermission(homePath string, roleIDs 
 	return true, ""
 }
 
-// GetUsers 获取所有用户
+// GetUsers 获取所有用户（支持搜索和分页）
 func (ctrl *UserController) GetUsers(c *gin.Context) {
 	db := services.GetDB()
 
+	// 获取查询参数
+	username := c.Query("username")
+	nickname := c.Query("nickname")
+	email := c.Query("email")
+	status := c.Query("status")
+	currentStr := c.Query("current")
+	sizeStr := c.Query("size")
+
+	// 解析分页参数
+	current := 1 // 默认第1页
+	size := 10  // 默认每页10条
+
+	if currentStr != "" {
+		if page, err := strconv.Atoi(currentStr); err == nil && page > 0 {
+			current = page
+		}
+	}
+	if sizeStr != "" {
+		if limit, err := strconv.Atoi(sizeStr); err == nil && limit > 0 {
+			size = limit
+		}
+	}
+
+	// 构建查询
+	query := db.Model(&models.User{})
+
+	// 添加搜索条件
+	if username != "" {
+		query = query.Where("username LIKE ?", "%"+username+"%")
+	}
+	if nickname != "" {
+		query = query.Where("nickname LIKE ?", "%"+nickname+"%")
+	}
+	if email != "" {
+		query = query.Where("email LIKE ?", "%"+email+"%")
+	}
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	// 获取总数
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户总数失败"))
+		return
+	}
+
+	// 分页查询
 	var users []models.User
-	if err := db.Find(&users).Error; err != nil {
+	offset := (current - 1) * size
+	if err := query.Offset(offset).Limit(size).Find(&users).Error; err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户列表失败"))
 		return
 	}
@@ -89,7 +138,15 @@ func (ctrl *UserController) GetUsers(c *gin.Context) {
 		result[i] = ctrl.userToMap(user)
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(result))
+	// 构建分页响应数据
+	responseData := map[string]interface{}{
+		"records": result,
+		"current": current,
+		"size":   size,
+		"total":  total,
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(responseData))
 }
 
 // userToMap 将用户模型转换为 map，处理 JSON 字段

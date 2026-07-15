@@ -20,17 +20,74 @@ func NewRoleController() *RoleController {
 	return &RoleController{}
 }
 
-// GetRoles 获取所有角色
+// GetRoles 获取所有角色（支持搜索和分页）
 func (ctrl *RoleController) GetRoles(c *gin.Context) {
 	db := services.GetDB()
 
+	// 获取查询参数
+	name := c.Query("name")
+	code := c.Query("code")
+	status := c.Query("status")
+	description := c.Query("description")
+	currentStr := c.Query("current")
+	sizeStr := c.Query("size")
+
+	// 解析分页参数
+	current := 1 // 默认第1页
+	size := 10  // 默认每页10条
+
+	if currentStr != "" {
+		if page, err := strconv.Atoi(currentStr); err == nil && page > 0 {
+			current = page
+		}
+	}
+	if sizeStr != "" {
+		if limit, err := strconv.Atoi(sizeStr); err == nil && limit > 0 {
+			size = limit
+		}
+	}
+
+	// 构建查询
+	query := db.Model(&models.Role{})
+
+	// 添加搜索条件
+	if name != "" {
+		query = query.Where("name LIKE ?", "%"+name+"%")
+	}
+	if code != "" {
+		query = query.Where("code LIKE ?", "%"+code+"%")
+	}
+	if description != "" {
+		query = query.Where("description LIKE ?", "%"+description+"%")
+	}
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	// 获取总数
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取角色总数失败"))
+		return
+	}
+
+	// 分页查询
 	var roles []models.Role
-	if err := db.Find(&roles).Error; err != nil {
+	offset := (current - 1) * size
+	if err := query.Offset(offset).Limit(size).Find(&roles).Error; err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取角色列表失败"))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(roles))
+	// 构建分页响应数据
+	responseData := map[string]interface{}{
+		"records": roles,
+		"current": current,
+		"size":   size,
+		"total":  total,
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(responseData))
 }
 
 // CreateRoleRequest 创建角色请求
