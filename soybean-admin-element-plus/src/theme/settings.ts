@@ -36,8 +36,8 @@ export const themeSettings: App.Theme.ThemeSetting = {
     useCustomColor: false,
     customColor: 'rgb(248, 251, 255)',
     useHeaderGradient: true, // SxDevOps 默认使用渐变
-    headerGradientStart: 'rgba(248, 251, 255, 0.98)', // SxDevOps 顶栏渐变起始
-    headerGradientEnd: 'rgba(243, 247, 255, 0.94)' // SxDevOps 顶栏渐变结束
+    headerGradientStart: 'rgba(232, 237, 255, 0.98)', // SxDevOps 顶栏渐变起始
+    headerGradientEnd: 'rgba(232, 240, 251, 0.94)' // SxDevOps 顶栏渐变结束
   },
   tab: {
     visible: false,

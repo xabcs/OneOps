@@ -12,8 +12,8 @@ const useCustomColor = ref(themeStore.header.useCustomColor || false);
 
 // Header颜色渐变配置
 const useHeaderGradient = ref(themeStore.header.useHeaderGradient || false);
-const headerGradientStart = ref(themeStore.header.headerGradientStart || 'rgba(248, 251, 255, 0.98)');
-const headerGradientEnd = ref(themeStore.header.headerGradientEnd || 'rgba(243, 247, 255, 0.94)');
+const headerGradientStart = ref(themeStore.header.headerGradientStart || 'rgba(232, 237, 255, 0.98)');
+const headerGradientEnd = ref(themeStore.header.headerGradientEnd || 'rgba(232, 240, 251, 0.94)');
 
 // Header区域预设颜色（浅色系）
 const headerGradientSwatches: string[] = [
@@ -90,10 +90,10 @@ watch(
       useHeaderGradient.value = newHeader.useHeaderGradient;
     }
     if (newHeader.headerGradientStart !== undefined && newHeader.headerGradientStart !== headerGradientStart.value) {
-      headerGradientStart.value = newHeader.headerGradientStart || 'rgba(248, 251, 255, 0.98)';
+      headerGradientStart.value = newHeader.headerGradientStart || 'rgba(232, 237, 255, 0.98)';
     }
     if (newHeader.headerGradientEnd !== undefined && newHeader.headerGradientEnd !== headerGradientEnd.value) {
-      headerGradientEnd.value = newHeader.headerGradientEnd || 'rgba(243, 247, 255, 0.94)';
+      headerGradientEnd.value = newHeader.headerGradientEnd || 'rgba(232, 240, 251, 0.94)';
     }
   },
   { deep: true }

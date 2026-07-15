@@ -32,7 +32,7 @@ const headerStyle = computed(() => {
   // 如果使用渐变
   if (themeStore.header.useHeaderGradient) {
     return {
-      background: `linear-gradient(180deg, ${themeStore.header.headerGradientStart || 'rgba(248, 251, 255, 0.98)'} 0%, ${themeStore.header.headerGradientEnd || 'rgba(243, 247, 255, 0.94)'} 100%)`
+      background: `linear-gradient(180deg, ${themeStore.header.headerGradientStart || 'rgba(232, 237, 255, 0.98)'} 0%, ${themeStore.header.headerGradientEnd || 'rgba(232, 240, 251, 0.94)'} 100%)`
     };
   }
 

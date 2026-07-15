@@ -18,6 +18,16 @@
   --sx-content-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   --sx-content-card-padding: 20px;
 
+  /* Hero Section 样式变量 */
+  --sx-hero-bg: linear-gradient(135deg, #fbfdff 0%, #f7faff 52%, #f9fbfd 100%);
+  --sx-hero-border: rgba(36, 91, 219, 0.09);
+  --sx-hero-radius: 12px;
+  --sx-hero-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  --sx-hero-padding: 12px 14px;
+  --sx-hero-icon-bg: linear-gradient(180deg, #f3f7ff 0%, #ebf2ff 100%);
+  --sx-hero-icon-border: rgba(36, 91, 219, 0.12);
+  --sx-hero-icon-color: #245bdb;
+
   /* 表格样式 - SxDevOps 风格 */
   --sx-table-border: rgba(148, 163, 184, 0.16);
   --sx-table-header-bg: rgba(208, 229, 253, 0.98);
@@ -98,6 +108,7 @@
 .el-table {
   --el-table-border-color: var(--sx-table-border) !important;
   --el-table-header-bg-color: var(--sx-table-header-bg) !important;
+  --el-table-header-text-color: var(--sx-table-header-text) !important;
   --el-table-row-hover-bg-color: var(--sx-table-hover-bg) !important;
   border-radius: var(--sx-table-radius) !important;
   border: 1px solid var(--sx-table-border) !important;
@@ -324,6 +335,64 @@
   border-radius: calc(var(--sx-input-radius) - 1px) !important;
 }
 
+/* ========== Workbench Toolbar 左右侧区域 ========== */
+.workbench-toolbar-left,
+.workbench-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ========== Workbench Toolbar --history 样式 ========== */
+.workbench-toolbar.workbench-toolbar--history {
+  padding: 6px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.92) 0%, rgba(255, 255, 255, 0.96) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.workbench-toolbar--history .workbench-toolbar-left,
+.workbench-toolbar--history .workbench-toolbar-right {
+  gap: 5px; /* 搜索框之间有 5px 间距 */
+}
+
+.workbench-toolbar--history .el-input__wrapper,
+.workbench-toolbar--history .el-select__wrapper {
+  min-height: 28px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.12) inset;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.workbench-toolbar--history .el-input__wrapper:hover,
+.workbench-toolbar--history .el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.16) inset;
+}
+
+.workbench-toolbar--history .el-button:not(.is-link) {
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.workbench-toolbar--history .el-button:not(.el-button--primary):not(.is-link) {
+  border-color: rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  color: #475569;
+}
+
+.workbench-toolbar--history .el-button:not(.is-link):hover {
+  border-color: rgba(59, 130, 246, 0.18);
+  color: #1d4ed8;
+  background: #f8fbff;
+}
+
 /* ========== 状态卡片样式 ========== */
 .status-card.success-card {
   background: linear-gradient(145deg, #f0fdf4 0%, #ffffff 100%) !important;
@@ -464,4 +533,29 @@
 
 .el-slider__button {
   border-radius: 50% !important;
+}
+
+/* ========== Hero Section 主题支持 ========== */
+section.hero.panel {
+  background: var(--sx-hero-bg, linear-gradient(135deg, #fbfdff 0%, #f7faff 52%, #f9fbfd 100%)) !important;
+  border-color: var(--sx-hero-border, rgba(36,91,219,.09)) !important;
+  border-radius: var(--sx-hero-radius, 12px) !important;
+  box-shadow: var(--sx-hero-shadow, 0 8px 24px rgba(15,23,42,.04)) !important;
+  padding: var(--sx-hero-padding, 12px 14px) !important;
+}
+
+section.hero.panel .release-header-icon,
+section.hero.panel .hero-icon,
+section.hero.panel .host-header-icon,
+section.hero.panel .title-icon,
+section.hero.panel .ticket-header-icon {
+  background: var(--sx-hero-icon-bg, linear-gradient(180deg,#f3f7ff 0%,#ebf2ff 100%)) !important;
+  border-color: var(--sx-hero-icon-border, rgba(36,91,219,.12)) !important;
+  color: var(--sx-hero-icon-color, #245bdb) !important;
+}
+
+section.hero.panel .hero-actions .el-button:not(.is-link) {
+  min-height: 32px !important;
+  padding: 0 14px !important;
+  border-radius: 10px !important;
 }
