@@ -17,7 +17,6 @@ import {
   ElTag,
   type FormInstance
 } from 'element-plus';
-import { RefreshRight } from '@element-plus/icons-vue';
 import yaml from 'js-yaml';
 import {
   deleteK8sCronJob,
@@ -1326,22 +1325,27 @@ onMounted(async () => {
     </div>
 
     <!-- 头部：集群/命名空间选择和刷新按钮（同一行）-->
-    <div class="workbench-toolbar workbench-toolbar--history workloads-toolbar">
-      <div class="workbench-toolbar-left">
-        <el-select v-model="selectedCluster" placeholder="选择集群" clearable style="width: 160px" @change="loadNamespaces">
-          <el-option v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
-        </el-select>
-        <el-select v-model="selectedNamespace" placeholder="选择命名空间" clearable style="width: 140px" @change="loadCurrentData">
-          <el-option v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
-        </el-select>
+    <div class="mb-16px flex items-center justify-between gap-12px">
+      <!-- 左侧：集群和命名空间选择 -->
+      <div class="filter-inputs flex items-center gap-8px">
+        <ElSelect v-model="selectedCluster" style="width: 200px" @change="loadNamespaces">
+          <template #prefix>
+            <span class="select-fixed-label">选择集群</span>
+          </template>
+          <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
+        </ElSelect>
+        <ElSelect v-model="selectedNamespace" style="width: 180px" @change="loadCurrentData">
+          <template #prefix>
+            <span class="select-fixed-label">选择命名空间</span>
+          </template>
+          <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
+        </ElSelect>
       </div>
 
-      <div class="workbench-toolbar-right">
-        <el-button class="filter-refresh-btn" @click="loadCurrentData">
-          <el-icon><RefreshRight /></el-icon>
-          刷新
-        </el-button>
-      </div>
+      <!-- 右侧：刷新按钮 -->
+      <ElButton text @click="loadCurrentData">
+        <icon-mdi-refresh class="text-18px" :class="{ 'animate-spin': loading }" />
+      </ElButton>
     </div>
 
     <!-- Tab 切换不同资源类型 -->
@@ -1860,40 +1864,53 @@ onMounted(async () => {
   height: 100%;
 }
 
-/* Workloads 工具栏特定样式 */
-.workloads-toolbar {
-	/* 防止工具栏元素换行 */
-	.workbench-toolbar-left,
-	.workbench-toolbar-right {
-		flex-wrap: nowrap !important;
-	}
-	/* Select 下拉框的 prefix 固定标签样式 */
-	:deep(.el-select) {
-		height: 30px;
-		font-size: 12px;
-	}
+/* 筛选输入框样式 - 参考主机资产页面 */
+.filter-inputs {
+  :deep(.el-select__wrapper) {
+    border-radius: 0 !important;
+    height: 30px;
+    font-size: 12px;
+    line-height: 30px;
+  }
 
-	:deep(.el-select__wrapper) {
-		border-radius: 8px !important;
-		height: 30px;
-		font-size: 12px;
-	}
+  :deep(.el-input__wrapper) {
+    border-radius: 0 !important;
+    height: 30px;
+    font-size: 12px;
+  }
 
-	/* 刷新按钮样式 */
-	.filter-refresh-btn {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		min-height: 28px;
-		padding: 0 8px;
-		border-radius: 8px;
-		font-weight: 500;
-		font-size: 12px;
-	}
+  :deep(.el-select) {
+    height: 30px;
+    font-size: 12px;
+  }
 
-	:deep(.filter-refresh-btn .el-icon) {
-		font-size: 16px;
-	}
+  /* 隐藏选中项的显示，因为我们要显示固定的标签文案 */
+  :deep(.el-select .el-select__selection) {
+    display: none;
+  }
+
+  :deep(.el-select .el-select__selected-item) {
+    display: none;
+  }
+
+  /* placeholder 样式 - 隐藏，因为我们用 prefix 替代 */
+  :deep(.el-select .el-select__placeholder) {
+    display: none;
+  }
+
+  /* 固定标签文案样式 */
+  .select-fixed-label {
+    font-size: 12px;
+    color: var(--el-text-color-regular);
+    line-height: 30px;
+    padding-left: 8px;
+  }
+
+  /* 当有选中值时，调整 prefix 的位置 */
+  :deep(.el-select.has-value .el-select__prefix) {
+    position: static;
+    flex: none;
+  }
 }
 
 /* 底部工具栏：批量操作 + 分页 - 固定在容器底部 */
