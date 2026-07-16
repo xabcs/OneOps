@@ -30,10 +30,12 @@ func (s *CMDBService) GetServersLight(query map[string]interface{}, page, pageSi
 
 	// 应用相同的过滤条件（复用逻辑）
 	if hostname, ok := query["hostname"].(string); ok && hostname != "" {
-		tx = tx.Where("hostname LIKE ?", "%"+hostname+"%")
+		safeHostname := utils.SanitizeLikeInput(hostname)
+		tx = tx.Where("hostname LIKE ?", "%"+safeHostname+"%")
 	}
 	if ip, ok := query["ip"].(string); ok && ip != "" {
-		tx = tx.Where("ip LIKE ?", "%"+ip+"%")
+		safeIP := utils.SanitizeLikeInput(ip)
+		tx = tx.Where("ip LIKE ?", "%"+safeIP+"%")
 	}
 	if env, ok := query["env"].(string); ok && env != "" {
 		tx = tx.Where("env = ?", env)

@@ -136,15 +136,12 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 
 // GetUserInfo 获取用户信息
 func (ctrl *AuthController) GetUserInfo(c *gin.Context) {
-	// 从上下文获取用户ID
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusOK, utils.ErrorUnauthorized("未登录"))
+	authService := ctrl.container.AuthService()
+	uid, ok := utils.GetUserIDFromContext(c)
+	if !ok {
 		return
 	}
-
-	authService := ctrl.container.AuthService()
-	userInfo, err := authService.GetUserInfo(userID.(uint))
+	userInfo, err := authService.GetUserInfo(uid)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户信息失败"))
 		return
@@ -155,16 +152,14 @@ func (ctrl *AuthController) GetUserInfo(c *gin.Context) {
 
 // Logout 登出
 func (ctrl *AuthController) Logout(c *gin.Context) {
-	// 从上下文获取用户ID
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusOK, utils.ErrorUnauthorized("未登录"))
-		return
-	}
 
 	// 记录登出日志
 	auditService := ctrl.container.AuditService()
-	auditService.LogLogout(userID.(uint))
+	uid, ok := utils.GetUserIDFromContext(c)
+	if !ok {
+		return
+	}
+	auditService.LogLogout(uid)
 
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("登出成功"))
 }

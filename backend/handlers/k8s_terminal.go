@@ -7,6 +7,7 @@ import (
 	"oneops/backend/container"
 	"oneops/backend/logger"
 	"oneops/backend/models"
+	"oneops/backend/utils"
 	"strconv"
 	"sync"
 	"time"
@@ -99,12 +100,22 @@ func (q *K8sTerminalSizeQueue) Stop() {
 
 // HandleWebSocket 处理 WebSocket 连接
 func (h *K8sTerminalHandler) HandleWebSocket(c *gin.Context) {
-	// 获取当前用户信息
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusOK, gin.H{"code": 401, "success": false, "message": "用户未登录"})
+	// 从查询参数获取 token
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusOK, gin.H{"code": 401, "success": false, "message": "缺少认证token"})
 		return
 	}
+
+	// 验证 token 并获取用户ID
+	userID, err := h.validateToken(token)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"code": 401, "success": false, "message": "token验证失败"})
+		return
+	}
+
+	// 将用户ID设置到context中
+	c.Set("user_id", userID)
 
 	// 解析参数
 	clusterIDStr := c.Query("clusterId")
@@ -125,7 +136,7 @@ func (h *K8sTerminalHandler) HandleWebSocket(c *gin.Context) {
 	}
 
 	// 检查集群访问权限
-	hasAccess, err := h.container.K8sClusterService().CheckUserClusterAccess(userID.(uint), uint(clusterID))
+	hasAccess, err := h.container.K8sClusterService().CheckUserClusterAccess(userID, uint(clusterID))
 	if err != nil || !hasAccess {
 		c.JSON(http.StatusOK, gin.H{"code": 403, "success": false, "message": "无权访问该集群"})
 		return
@@ -172,7 +183,7 @@ func (h *K8sTerminalHandler) HandleWebSocket(c *gin.Context) {
 
 	// 创建 K8s 会话记录
 	session := &models.K8sSession{
-		UserID:        userID.(uint),
+		UserID:        userID,
 		ClusterID:     uint(clusterID),
 		Namespace:     namespace,
 		PodName:       podName,
@@ -196,7 +207,7 @@ func (h *K8sTerminalHandler) HandleWebSocket(c *gin.Context) {
 		wsConn:        wsConn,
 		ctx:           sessionCtx,
 		cancel:        cancel,
-		userID:        userID.(uint),
+		userID:        userID,
 		lastActivity:  time.Now(),
 	}
 
@@ -223,7 +234,7 @@ func (h *K8sTerminalHandler) HandleWebSocket(c *gin.Context) {
 
 	logger.Info("K8s 终端会话已建立",
 		zap.Uint("session_id", session.ID),
-		zap.Uint("user_id", userID.(uint)),
+		zap.Uint("user_id", userID),
 		zap.Uint("cluster_id", uint(clusterID)),
 		zap.String("namespace", namespace),
 		zap.String("pod", podName),
@@ -251,6 +262,10 @@ func (h *K8sTerminalHandler) createExecutor(session *K8sSession, size *K8sStream
 		return nil, fmt.Errorf("获取集群连接失败: %w", err)
 	}
 
+	// 直接使用 bash 作为登录 shell
+	// 如果某些容器确实没有 bash，可以改为 []string{"/bin/sh"}
+	command := []string{"/bin/bash", "-l"}
+
 	req := clientset.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(session.podName).
@@ -258,7 +273,7 @@ func (h *K8sTerminalHandler) createExecutor(session *K8sSession, size *K8sStream
 		SubResource("exec").
 		VersionedParams(&v1.PodExecOptions{
 			Container: session.containerName,
-			Command:   []string{"/bin/sh"},
+			Command:   command,
 			Stdin:     true,
 			Stdout:    true,
 			Stderr:    true,
@@ -332,6 +347,17 @@ func (h *K8sTerminalHandler) closeSession(session *models.K8sSession, reason str
 		zap.Int("duration", session.Duration))
 }
 
+// validateToken 验证token并返回用户ID
+func (h *K8sTerminalHandler) validateToken(token string) (uint, error) {
+	// 使用JWT工具验证token
+	claims, err := utils.ParseToken(token)
+	if err != nil {
+		return 0, fmt.Errorf("token验证失败: %w", err)
+	}
+
+	return claims.UserID, nil
+}
+
 // GetActiveSessions 获取活跃的 K8s 终端会话
 func (h *K8sTerminalHandler) GetActiveSessions(c *gin.Context) {
 	userID, exists := c.Get("user_id")
@@ -345,7 +371,7 @@ func (h *K8sTerminalHandler) GetActiveSessions(c *gin.Context) {
 
 	sessions := make([]map[string]interface{}, 0)
 	for _, session := range h.activeSessions {
-		if session.userID == userID.(uint) {
+		if session.userID == userID {
 			sessions = append(sessions, map[string]interface{}{
 				"session_id":    session.sessionID,
 				"cluster_id":    session.clusterID,
@@ -383,7 +409,7 @@ func (h *K8sTerminalHandler) TerminateSession(c *gin.Context) {
 		return
 	}
 
-	if session.userID != userID.(uint) {
+	if session.userID != userID {
 		c.JSON(http.StatusOK, gin.H{"code": 403, "success": false, "message": "无权操作该会话"})
 		return
 	}

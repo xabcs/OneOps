@@ -24,12 +24,6 @@ func NewK8sClusterController(cnt *container.ServiceContainer) *K8sClusterControl
 
 // GetClusters 获取集群列表
 func (ctrl *K8sClusterController) GetClusters(c *gin.Context) {
-	// 获取当前用户信息
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户未登录"))
-		return
-	}
 
 	// 解析查询参数
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -55,7 +49,11 @@ func (ctrl *K8sClusterController) GetClusters(c *gin.Context) {
 	}
 
 	// 获取集群列表
-	clusters, total, err := ctrl.container.K8sClusterService().GetClusters(userID.(uint), page, pageSize, filter)
+	uid, ok := utils.GetUserIDFromContext(c)
+	if !ok {
+		return
+	}
+	clusters, total, err := ctrl.container.K8sClusterService().GetClusters(uid, page, pageSize, filter)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群列表失败: " + err.Error()))
 		return

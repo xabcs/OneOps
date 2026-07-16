@@ -90,7 +90,20 @@ func (m *AuditMiddleware) shouldSkipAudit(c *gin.Context) bool {
 		return true
 	}
 
-	// 跳过 WebSocket 升级请求（包装的 ResponseWriter 不实现 Hijacker，会导致 WS 升级失败）
+	// 跳过所有 WebSocket 请求（无论是否有Upgrade头）
+	// WebSocket路径列表
+	wsPaths := []string{
+		"/api/k8s/terminal/ws",
+		"/api/cmdb/sessions",  // SSH WebSocket路径
+		"/api/monitoring/ws",
+	}
+	for _, wsPath := range wsPaths {
+		if strings.HasPrefix(path, wsPath) {
+			return true
+		}
+	}
+
+	// 也跳过带有 Upgrade: websocket 头的请求
 	if strings.EqualFold(c.GetHeader("Upgrade"), "websocket") {
 		return true
 	}

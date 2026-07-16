@@ -13,7 +13,7 @@ tmp_dir = "backend/tmp"
   # 监听的目录 - 空数组表示监听所有目录
   include_dir = []
   # 忽略的目录
-  exclude_dir = ["tmp", "vendor", "frontend", "node_modules", "logs", "soybean-admin-element-plus"]
+  exclude_dir = ["tmp", "vendor", "frontend", "node_modules", "logs"]
   # 忽略的文件
   exclude_file = []
   # 忽略的正则

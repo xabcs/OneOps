@@ -40,8 +40,6 @@ func (s *InitService) InitDatabase() error {
 		&models.BusinessUnit{},
 		&models.SSHCredential{},
 		&models.AttributeDefinition{},
-			// K8s 集群管理基础表
-			&models.K8sCluster{},
 		// Agent 版本管理表
 		&models.AgentVersion{},
 		&models.AgentUpgradeTask{},
@@ -63,14 +61,24 @@ func (s *InitService) InitDatabase() error {
 		&models.BastionCommand{},
 		&models.BastionFileTransfer{},
 		&models.BastionApproval{},
-			// K8s 集群管理关联表
-			&models.ClusterRoleBinding{},
-			&models.K8sSession{},
-			&models.K8sCommand{},
 	)
 
+	// 第二阶段：K8s 相关表单独迁移，确保即使基础表失败，K8s 表也能创建
+	k8sMigrateErr := db.AutoMigrate(
+		&models.K8sCluster{},
+		&models.ClusterRoleBinding{},
+		&models.K8sSession{},
+		&models.K8sCommand{},
+	)
+
+	if k8sMigrateErr != nil {
+		logger.Warn("AutoMigrate K8s表迁移失败", zap.Error(k8sMigrateErr))
+	} else {
+		logger.Info("K8s 表迁移成功")
+	}
+
 	if migrateErr != nil {
-		// AutoMigrate 失败只记录警告，不阻止数据初始化（菜单/角色同步必须执行）
+		// AutoMigrate 失败只记录警告，不阻止后续迁移
 		logger.Warn("AutoMigrate 部分失败，继续执行数据初始化", zap.Error(migrateErr))
 	}
 

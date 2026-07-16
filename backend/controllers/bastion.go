@@ -32,10 +32,6 @@ func NewBastionController() *BastionController {
 // ConnectServer 连接服务器
 func (c *BastionController) ConnectServer(ctx *gin.Context) {
 	// 添加调试日志
-	println("[DEBUG] ConnectServer called")
-	println("[DEBUG] Path:", ctx.Request.URL.Path)
-	println("[DEBUG] Method:", ctx.Request.Method)
-	println("[DEBUG] Authorization:", ctx.GetHeader("Authorization"))
 
 	// 获取服务器ID
 	serverIDStr := ctx.Param("id")
