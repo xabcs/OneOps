@@ -31,7 +31,7 @@ build/Release
 # 依赖目录
 node_modules/
 jspm_packages/
-
+frontend/node_modules/
 # TypeScript 缓存
 *.tsbuildinfo
 
