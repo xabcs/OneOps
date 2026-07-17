@@ -250,7 +250,11 @@ watch(
 
     <!-- ConfigMap 列表 -->
     <ElTable v-loading="loading" :data="dataSource" stripe>
-      <ElTableColumn prop="name" label="名称" min-width="200" />
+      <ElTableColumn prop="name" label="名称" min-width="200">
+        <template #default="{ row }">
+          <ElButton link type="primary" @click="goToDetail(row)">{{ row.name }}</ElButton>
+        </template>
+      </ElTableColumn>
       <ElTableColumn prop="namespace" label="命名空间" width="150" />
       <ElTableColumn label="数据键" min-width="300">
         <template #default="{ row }">

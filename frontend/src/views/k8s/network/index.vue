@@ -436,7 +436,11 @@ onMounted(async () => {
             @select-all="handleSelectAll"
           >
             <ElTableColumn type="selection" width="50" align="center" />
-            <ElTableColumn prop="name" label="名称" min-width="180" align="left" />
+            <ElTableColumn prop="name" label="名称" min-width="180" align="left">
+              <template #default="{ row }">
+                <ElButton link type="primary" @click="goToDetail(row)">{{ row.name }}</ElButton>
+              </template>
+            </ElTableColumn>
             <ElTableColumn prop="namespace" label="命名空间" min-width="120" align="left" />
             <ElTableColumn prop="type" label="类型" min-width="100" align="left">
               <template #default="{ row }">
@@ -504,7 +508,11 @@ onMounted(async () => {
             @select-all="handleSelectAll"
           >
             <ElTableColumn type="selection" width="50" align="center" />
-            <ElTableColumn prop="name" label="名称" min-width="180" align="left" />
+            <ElTableColumn prop="name" label="名称" min-width="180" align="left">
+              <template #default="{ row }">
+                <ElButton link type="primary" @click="goToDetail(row)">{{ row.name }}</ElButton>
+              </template>
+            </ElTableColumn>
             <ElTableColumn prop="namespace" label="命名空间" min-width="120" align="left" />
             <ElTableColumn label="主机" min-width="180" align="left">
               <template #default="{ row }">

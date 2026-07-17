@@ -1417,7 +1417,11 @@ onMounted(async () => {
             @select-all="handlePodSelectAll"
           >
             <ElTableColumn type="selection" width="50" align="center" />
-            <ElTableColumn prop="name" label="名称" min-width="200" align="left" />
+            <ElTableColumn prop="name" label="名称" min-width="200" align="left">
+              <template #default="{ row }">
+                <ElButton link type="primary" @click="goToDetail(row)">{{ row.name }}</ElButton>
+              </template>
+            </ElTableColumn>
             <ElTableColumn prop="namespace" label="命名空间" min-width="120" align="left" />
             <ElTableColumn label="状态" min-width="100" align="left">
               <template #default="{ row }">
@@ -1501,7 +1505,11 @@ onMounted(async () => {
             @select-all="handleDeploymentSelectAll"
           >
             <ElTableColumn type="selection" width="50" align="center" />
-            <ElTableColumn prop="name" label="名称" min-width="180" align="left" />
+            <ElTableColumn prop="name" label="名称" min-width="180" align="left">
+              <template #default="{ row }">
+                <ElButton link type="primary" @click="goToDetail(row)">{{ row.name }}</ElButton>
+              </template>
+            </ElTableColumn>
             <ElTableColumn prop="namespace" label="命名空间" min-width="120" align="left" />
             <ElTableColumn prop="replicas" label="副本数" min-width="100" align="left">
               <template #default="{ row }">{{ row.ready }} / {{ row.replicas }}</template>
@@ -1589,7 +1597,11 @@ onMounted(async () => {
             @select-all="handleStatefulSetSelectAll"
           >
             <ElTableColumn type="selection" width="50" align="center" />
-            <ElTableColumn prop="name" label="名称" min-width="180" align="left" />
+            <ElTableColumn prop="name" label="名称" min-width="180" align="left">
+              <template #default="{ row }">
+                <ElButton link type="primary" @click="goToDetail(row)">{{ row.name }}</ElButton>
+              </template>
+            </ElTableColumn>
             <ElTableColumn prop="namespace" label="命名空间" min-width="120" align="left" />
             <ElTableColumn prop="replicas" label="副本数" min-width="100" align="left">
               <template #default="{ row }">{{ row.ready }} / {{ row.replicas }}</template>
@@ -1663,7 +1675,11 @@ onMounted(async () => {
             @select-all="handleDaemonSetSelectAll"
           >
             <ElTableColumn type="selection" width="50" align="center" />
-            <ElTableColumn prop="name" label="名称" min-width="180" align="left" />
+            <ElTableColumn prop="name" label="名称" min-width="180" align="left">
+              <template #default="{ row }">
+                <ElButton link type="primary" @click="goToDetail(row)">{{ row.name }}</ElButton>
+              </template>
+            </ElTableColumn>
             <ElTableColumn prop="namespace" label="命名空间" min-width="120" align="left" />
             <ElTableColumn label="节点数" min-width="120" align="left">
               <template #default="{ row }">{{ row.current }} / {{ row.desired }}</template>
@@ -1737,7 +1753,11 @@ onMounted(async () => {
             @select-all="handleJobSelectAll"
           >
             <ElTableColumn type="selection" width="50" align="center" />
-            <ElTableColumn prop="name" label="名称" min-width="180" align="left" />
+            <ElTableColumn prop="name" label="名称" min-width="180" align="left">
+              <template #default="{ row }">
+                <ElButton link type="primary" @click="goToDetail(row)">{{ row.name }}</ElButton>
+              </template>
+            </ElTableColumn>
             <ElTableColumn prop="namespace" label="命名空间" min-width="120" align="left" />
             <ElTableColumn label="完成数" min-width="100" align="left">
               <template #default="{ row }">{{ row.succeeded || 0 }} / {{ row.completions || '-' }}</template>
@@ -1824,7 +1844,11 @@ onMounted(async () => {
             @select-all="handleCronJobSelectAll"
           >
             <ElTableColumn type="selection" width="50" align="center" />
-            <ElTableColumn prop="name" label="名称" min-width="180" align="left" />
+            <ElTableColumn prop="name" label="名称" min-width="180" align="left">
+              <template #default="{ row }">
+                <ElButton link type="primary" @click="goToDetail(row)">{{ row.name }}</ElButton>
+              </template>
+            </ElTableColumn>
             <ElTableColumn prop="namespace" label="命名空间" min-width="120" align="left" />
             <ElTableColumn prop="schedule" label="调度规则" min-width="160" align="left" />
             <ElTableColumn label="挂起" min-width="80" align="left">

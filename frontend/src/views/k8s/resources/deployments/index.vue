@@ -471,7 +471,11 @@ watch(
 
     <!-- Deployment 列表 -->
     <ElTable v-loading="loading" :data="dataSource" stripe>
-      <ElTableColumn prop="name" label="名称" min-width="200" />
+      <ElTableColumn prop="name" label="名称" min-width="200">
+        <template #default="{ row }">
+          <ElButton link type="primary" @click="handleViewDetail(row)">{{ row.name }}</ElButton>
+        </template>
+      </ElTableColumn>
       <ElTableColumn prop="namespace" label="命名空间" width="150" />
       <ElTableColumn label="状态" width="150">
         <template #default="{ row }">
