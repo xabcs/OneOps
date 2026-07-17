@@ -9,6 +9,7 @@ build/
 dist/
 coverage/
 .claude/
+.claude-cache/
 # 依赖目录
 jspm_packages/
 
