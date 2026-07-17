@@ -1,6 +1,6 @@
 <script setup lang="tsx">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { User, Refresh, Plus, Delete, Search } from '@element-plus/icons-vue';
+import { Delete, Plus, Refresh, Search, User } from '@element-plus/icons-vue';
 import { fetchDeleteUser, fetchGetAllRoles, fetchGetUserList } from '@/service/api';
 import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
@@ -127,7 +127,6 @@ onMounted(() => {
   getAllRoles();
   updateUserStats();
 });
-
 
 const searchParams = ref(getInitSearchParams());
 
@@ -383,17 +382,17 @@ onUnmounted(() => {
       <div class="hero-content">
         <div class="hero-title-row">
           <span class="hero-icon">
-            <el-icon><User /></el-icon>
+            <ElIcon><User /></ElIcon>
           </span>
           <h2>{{ $t('page.manage.user.title') }}</h2>
           <p class="hero-desc">统一维护用户、分配角色与权限，支持账号治理与安全策略管理</p>
         </div>
       </div>
       <div class="hero-actions">
-        <el-button size="small" :loading="loading" @click="refreshData">
-          <el-icon><Refresh /></el-icon>
+        <ElButton size="small" :loading="loading" @click="refreshData">
+          <ElIcon><Refresh /></ElIcon>
           刷新
-        </el-button>
+        </ElButton>
       </div>
     </section>
 
@@ -434,44 +433,35 @@ onUnmounted(() => {
           <span class="toolbar-desc">管理系统用户账号、角色分配与状态控制</span>
         </div>
         <div class="toolbar-actions">
-          <el-button
-            type="primary"
-            size="small"
-            @click="handleAdd"
-          >
-            <el-icon><Plus /></el-icon>
+          <ElButton type="primary" size="small" @click="handleAdd">
+            <ElIcon><Plus /></ElIcon>
             新增用户
-          </el-button>
-          <el-button
-            type="danger"
-            size="small"
-            :disabled="checkedRowKeys.length === 0"
-            @click="handleBatchDelete"
-          >
-            <el-icon><Delete /></el-icon>
+          </ElButton>
+          <ElButton type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
+            <ElIcon><Delete /></ElIcon>
             批量删除
-          </el-button>
+          </ElButton>
         </div>
       </div>
 
       <!-- 搜索工具栏 -->
       <div class="workbench-toolbar workbench-toolbar--history users-toolbar">
         <div class="workbench-toolbar-left">
-          <el-input
+          <ElInput
             v-model="searchParams.username"
             placeholder="搜索用户名"
             clearable
             style="width: 200px"
             @input="handleSearchInput"
           />
-          <el-input
+          <ElInput
             v-model="searchParams.nickname"
             placeholder="搜索昵称"
             clearable
             style="width: 200px"
             @input="handleSearchInput"
           />
-          <el-input
+          <ElInput
             v-model="searchParams.email"
             placeholder="搜索邮箱"
             clearable
@@ -480,14 +470,14 @@ onUnmounted(() => {
           />
         </div>
         <div class="workbench-toolbar-right">
-          <el-button class="filter-refresh-btn" @click="resetSearchParams">
-            <el-icon><Refresh /></el-icon>
+          <ElButton class="filter-refresh-btn" @click="resetSearchParams">
+            <ElIcon><Refresh /></ElIcon>
             重置
-          </el-button>
-          <el-button class="filter-refresh-btn" type="primary" @click="handleSearch">
-            <el-icon><Search /></el-icon>
+          </ElButton>
+          <ElButton class="filter-refresh-btn" type="primary" @click="handleSearch">
+            <ElIcon><Search /></ElIcon>
             搜索
-          </el-button>
+          </ElButton>
         </div>
       </div>
 

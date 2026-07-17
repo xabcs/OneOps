@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { ElButton, ElMessage } from 'element-plus';
-import { useAuthStore } from '@/store/modules/auth';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { useAuthStore } from '@/store/modules/auth';
 import '@xterm/xterm/css/xterm.css';
 
 interface Props {
@@ -26,11 +26,14 @@ const fitAddon = ref<FitAddon | null>(null);
 const isComponentMounted = ref(true);
 
 // 监听组件卸载
-watch(() => isComponentMounted.value, (newVal) => {
-  if (!newVal && ws.value) {
-    ws.value.close();
+watch(
+  () => isComponentMounted.value,
+  newVal => {
+    if (!newVal && ws.value) {
+      ws.value.close();
+    }
   }
-});
+);
 
 const connectTerminal = () => {
   if (!isComponentMounted.value || !terminalContainer.value) return;
@@ -39,7 +42,8 @@ const connectTerminal = () => {
 
   // 构造 WebSocket URL
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = import.meta.env.VITE_SERVICE_BASE_URL?.replace(/^https?:\/\//, '').replace(/\/api$/, '') || window.location.host;
+  const host =
+    import.meta.env.VITE_SERVICE_BASE_URL?.replace(/^https?:\/\//, '').replace(/\/api$/, '') || window.location.host;
   const wsUrl = `${protocol}//${host}/api/k8s/terminal/ws?clusterId=${props.clusterId}&namespace=${props.namespace}&podName=${props.podName}&containerName=${props.containerName || ''}&token=${token}`;
 
   console.log('Connecting to WebSocket:', wsUrl);
@@ -86,12 +90,14 @@ const connectTerminal = () => {
   fitAddon.value.fit();
 
   // 监听终端输入
-  terminal.value.onData((data) => {
+  terminal.value.onData(data => {
     if (ws.value && ws.value.readyState === WebSocket.OPEN) {
-      ws.value.send(JSON.stringify({
-        type: 'stdin',
-        data: data
-      }));
+      ws.value.send(
+        JSON.stringify({
+          type: 'stdin',
+          data
+        })
+      );
     }
   });
 
@@ -102,11 +108,13 @@ const connectTerminal = () => {
 
       // 发送终端大小到后端
       if (ws.value && ws.value.readyState === WebSocket.OPEN) {
-        ws.value.send(JSON.stringify({
-          type: 'resize',
-          cols: terminal.value.cols,
-          rows: terminal.value.rows
-        }));
+        ws.value.send(
+          JSON.stringify({
+            type: 'resize',
+            cols: terminal.value.cols,
+            rows: terminal.value.rows
+          })
+        );
       }
     }
   };
@@ -122,21 +130,23 @@ const connectTerminal = () => {
         return;
       }
       connected.value = true;
-      terminal.value?.writeln('\x1b[32m✓ 已连接到 Pod 终端\x1b[0m');
-      terminal.value?.writeln(`\x1b[36mPod: ${props.namespace}/${props.podName}\x1b[0m`);
+      terminal.value?.writeln('\x1B[32m✓ 已连接到 Pod 终端\x1B[0m');
+      terminal.value?.writeln(`\x1B[36mPod: ${props.namespace}/${props.podName}\x1B[0m`);
       if (props.containerName) {
-        terminal.value?.writeln(`\x1b[36mContainer: ${props.containerName}\x1b[0m`);
+        terminal.value?.writeln(`\x1B[36mContainer: ${props.containerName}\x1B[0m`);
       }
-      terminal.value?.writeln('\x1b[33m提示: 点击上方"设置提示符"按钮显示当前目录\x1b[0m');
+      terminal.value?.writeln('\x1B[33m提示: 点击上方"设置提示符"按钮显示当前目录\x1B[0m');
       terminal.value?.writeln('');
 
       // 发送初始终端大小
       if (terminal.value) {
-        ws.value?.send(JSON.stringify({
-          type: 'resize',
-          cols: terminal.value.cols,
-          rows: terminal.value.rows
-        }));
+        ws.value?.send(
+          JSON.stringify({
+            type: 'resize',
+            cols: terminal.value.cols,
+            rows: terminal.value.rows
+          })
+        );
       }
     };
 
@@ -156,23 +166,23 @@ const connectTerminal = () => {
     ws.value.onerror = error => {
       console.error('WebSocket error:', error);
       if (!isComponentMounted.value) return;
-      terminal.value?.writeln('\x1b[31m✗ 终端连接错误\x1b[0m');
+      terminal.value?.writeln('\x1B[31m✗ 终端连接错误\x1B[0m');
       message.error('终端连接错误');
     };
 
-    ws.value.onclose = (event) => {
+    ws.value.onclose = event => {
       if (!isComponentMounted.value) return;
       connected.value = false;
       if (event.wasClean) {
-        terminal.value?.writeln(`\x1b[33m连接已关闭 (code: ${event.code})\x1b[0m`);
+        terminal.value?.writeln(`\x1B[33m连接已关闭 (code: ${event.code})\x1B[0m`);
       } else {
-        terminal.value?.writeln('\x1b[31m连接异常关闭\x1b[0m');
+        terminal.value?.writeln('\x1B[31m连接异常关闭\x1B[0m');
       }
       window.removeEventListener('resize', handleResize);
     };
   } catch (error: any) {
     if (!isComponentMounted.value) return;
-    terminal.value?.writeln(`\x1b[31m✗ 连接失败: ${error.message}\x1b[0m`);
+    terminal.value?.writeln(`\x1B[31m✗ 连接失败: ${error.message}\x1B[0m`);
     message.error(error.message || '连接失败');
   }
 };
@@ -187,11 +197,14 @@ const handleDisconnect = () => {
 const setFriendlyPrompt = () => {
   if (ws.value && ws.value.readyState === WebSocket.OPEN) {
     // 一次性发送完整的命令，使用分号分隔避免多行输入
-    const cmd = 'if [ -n "$BASH_VERSION" ]; then export PS1=\'[\\u@\\h \\w]\\$ \'; else export PS1=\'[$(pwd)]\\$ \'; fi\n';
-    ws.value.send(JSON.stringify({
-      type: 'stdin',
-      data: cmd
-    }));
+    const cmd =
+      "if [ -n \"$BASH_VERSION\" ]; then export PS1='[\\u@\\h \\w]\\$ '; else export PS1='[$(pwd)]\\$ '; fi\n";
+    ws.value.send(
+      JSON.stringify({
+        type: 'stdin',
+        data: cmd
+      })
+    );
   }
 };
 
@@ -218,24 +231,16 @@ onUnmounted(() => {
       <div class="flex items-center space-x-3">
         <div class="flex items-center space-x-2">
           <span :class="connected ? 'text-green-400 animate-pulse' : 'text-red-400'">●</span>
-          <span class="text-sm font-mono text-white">
+          <span class="text-sm text-white font-mono">
             {{ namespace }}/{{ podName }}{{ containerName ? `:${containerName}` : '' }}
           </span>
         </div>
-        <div v-if="connected" class="text-xs text-gray-400">
-          按 Ctrl+C 发送中断信号
-        </div>
+        <div v-if="connected" class="text-xs text-gray-400">按 Ctrl+C 发送中断信号</div>
       </div>
       <div class="flex items-center space-x-2">
-        <ElButton v-if="connected" size="small" @click="setFriendlyPrompt">
-          设置提示符
-        </ElButton>
-        <ElButton v-if="connected" size="small" type="danger" @click="handleDisconnect">
-          断开连接
-        </ElButton>
-        <ElButton v-if="!connected" size="small" type="primary" @click="connectTerminal">
-          重新连接
-        </ElButton>
+        <ElButton v-if="connected" size="small" @click="setFriendlyPrompt">设置提示符</ElButton>
+        <ElButton v-if="connected" size="small" type="danger" @click="handleDisconnect">断开连接</ElButton>
+        <ElButton v-if="!connected" size="small" type="primary" @click="connectTerminal">重新连接</ElButton>
       </div>
     </div>
 
@@ -247,7 +252,8 @@ onUnmounted(() => {
 <style scoped>
 /* 动画效果 */
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

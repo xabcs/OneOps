@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { ArrowLeft } from '@element-plus/icons-vue';
+import { ElButton, ElDescriptions, ElDescriptionsItem, ElMessage, ElMessageBox, ElTable, ElTableColumn, ElTabPane, ElTabs, ElTag } from 'element-plus';
 import yaml from 'js-yaml';
 import { deleteK8sIngress, fetchK8sEvents, getK8sIngress, updateK8sIngress } from '@/service/api/k8s';
 import YamlEditor from '@/components/YamlEditor.vue';
+import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
 
 defineOptions({ name: 'K8sIngressDetail' });
 
@@ -39,6 +39,9 @@ function parseManifest(manifestStr: string): string {
   }
 }
 
+// 返回列表页的路径 - Ingress 返回到网络页面
+const backPath = '/k8s/network';
+
 async function loadData() {
   loading.value = true;
   try {
@@ -71,10 +74,6 @@ async function loadEvents() {
   }
 }
 
-function goBack() {
-  router.back();
-}
-
 async function handleDelete() {
   try {
     await ElMessageBox.confirm(`确定要删除 Ingress "${resourceName.value}" 吗？`, '确认删除', { type: 'warning' });
@@ -85,7 +84,7 @@ async function handleDelete() {
     });
 
     message.success('删除成功');
-    router.back();
+    router.push(backPath);
   } catch (error: any) {
     if (error !== 'cancel') {
       message.error(error.message || '删除失败');
@@ -117,18 +116,18 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="detail-page">
-    <div class="page-header">
-      <div class="header-left">
-        <ElButton :icon="ArrowLeft" @click="goBack">返回</ElButton>
-        <h2 class="title">{{ resourceName }}</h2>
-        <ElTag type="info">Ingress</ElTag>
-      </div>
-      <div class="header-actions">
-        <ElButton type="primary" @click="showYamlEditor = true">编辑YAML</ElButton>
-        <ElButton type="danger" @click="handleDelete">删除</ElButton>
-      </div>
-    </div>
+  <div class="detail-page bg-layout">
+    <!-- 顶部操作栏 - 使用新组件 -->
+    <K8sResourceActionBar
+      :name="resourceName || '-'"
+      :namespace="namespace || '-'"
+      :status-tag="{ type: 'info', text: 'Ingress' }"
+      :back-path="backPath"
+      :actions="[
+        { label: '编辑YAML', type: 'primary', handler: () => (showYamlEditor = true), tooltip: '编辑 YAML 配置' },
+        { label: '删除', type: 'danger', handler: handleDelete, tooltip: '删除 Ingress（危险操作）' }
+      ]"
+    />
 
     <ElTabs v-model="activeTab" class="detail-tabs">
       <ElTabPane label="基本信息" name="basic">
@@ -183,12 +182,18 @@ onMounted(() => {
       </ElTabPane>
 
       <ElTabPane label="YAML" name="yaml">
+        <div class="tab-toolbar">
+          <ElButton type="primary" size="small" @click="showYamlEditor = true">编辑 YAML</ElButton>
+        </div>
         <div class="yaml-viewer">
           <pre>{{ yamlContent }}</pre>
         </div>
       </ElTabPane>
 
-      <ElTabPane label="事件" name="events">
+      <ElTabPane :label="`事件 (${events.length})`" name="events">
+        <div class="tab-toolbar">
+          <ElButton size="small" @click="loadEvents">刷新</ElButton>
+        </div>
         <ElTable v-loading="eventsLoading" :data="events">
           <ElTableColumn type="index" label="序号" width="60" />
           <ElTableColumn prop="type" label="类型" width="100" />
@@ -213,54 +218,34 @@ onMounted(() => {
 
 <style scoped>
 .detail-page {
-  padding: 20px;
+  min-height: 100vh;
+  padding: 24px;
 }
 
-.page-header {
+.tab-toolbar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.header-actions {
-  display: flex;
-  gap: 8px;
+  justify-content: flex-end;
+  padding: 0 16px 8px 16px;
 }
 
 .detail-tabs {
-  background: #fff;
-  padding: 16px;
-  border-radius: 4px;
+  margin-top: 16px;
 }
 
 .yaml-viewer {
   background: #1e1e1e;
   padding: 16px;
   border-radius: 4px;
-  max-height: 500px;
+  max-height: 600px;
   overflow: auto;
 }
 
 .yaml-viewer pre {
   margin: 0;
   color: #d4d4d4;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Courier New", monospace;
   font-size: 13px;
+  line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-all;
 }

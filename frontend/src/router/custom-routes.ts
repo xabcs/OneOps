@@ -18,6 +18,7 @@ const K8sCronJobDetail = () => import('@/views/k8s/resources/cronjobs/detail.vue
 const K8sConfigMapDetail = () => import('@/views/k8s/resources/configmaps/detail.vue');
 const K8sSecretDetail = () => import('@/views/k8s/resources/secrets/detail.vue');
 const K8sServiceDetail = () => import('@/views/k8s/resources/services/detail.vue');
+const K8sIngressDetail = () => import('@/views/k8s/resources/ingresses/detail.vue');
 const K8sWorkloads = () => import('@/views/k8s/workloads/index.vue');
 const K8sNetwork = () => import('@/views/k8s/network/index.vue');
 const K8sConfig = () => import('@/views/k8s/config/index.vue');
@@ -257,13 +258,33 @@ export const customRoutes: RouteRecordRaw[] = [
       title: 'Service详情',
       i18nKey: null,
       hideInMenu: true,
-      activeMenu: 'k8s_resources_services'
+      activeMenu: 'k8s_network'
     },
     children: [
       {
         name: 'k8s_service_detail_view',
         path: '',
         component: K8sServiceDetail
+      }
+    ]
+  },
+
+  // Ingress 详情页
+  {
+    name: 'k8s_ingress_detail',
+    path: '/k8s/resources/ingresses/detail',
+    component: BaseLayout,
+    meta: {
+      title: 'Ingress详情',
+      i18nKey: null,
+      hideInMenu: true,
+      activeMenu: 'k8s_network'
+    },
+    children: [
+      {
+        name: 'k8s_ingress_detail_view',
+        path: '',
+        component: K8sIngressDetail
       }
     ]
   },

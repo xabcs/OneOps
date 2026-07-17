@@ -1,10 +1,6 @@
 <template>
   <div class="app-logo">
-    <img
-      src="@/assets/svg-icon/msre-logo.svg"
-      alt="MSRE Logo"
-      class="logo-image"
-    />
+    <img src="@/assets/svg-icon/msre-logo.svg" alt="MSRE Logo" class="logo-image" />
   </div>
 </template>
 

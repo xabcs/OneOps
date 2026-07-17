@@ -80,7 +80,7 @@ export function formatAnnotations(annotations: Record<string, string> | undefine
  */
 export function truncateAnnotation(value: string, maxLength: number = 50): string {
   if (!value || value.length <= maxLength) return value;
-  return value.substring(0, maxLength) + '...';
+  return `${value.substring(0, maxLength)}...`;
 }
 
 /**

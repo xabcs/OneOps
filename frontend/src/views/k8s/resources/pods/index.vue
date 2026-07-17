@@ -25,7 +25,7 @@ import {
   fetchK8sClusters,
   fetchK8sPodLogs,
   fetchK8sPods
-import PodTerminal from '../terminal/PodTerminal.vue';
+} from '@/service/api/k8s';
 import PodTerminal from '../../terminal/PodTerminal.vue';
 
 defineOptions({ name: 'K8sPods' });
@@ -115,8 +115,9 @@ const loadClusters = async () => {
 // 加载命名空间列表
 const loadNamespaces = async () => {
   if (!selectedCluster.value) return;
+  try {
     const res = await fetchK8sClusterNamespaces(selectedCluster.value);
-    namespaces.value = res.map((ns: any) => ns.name);
+    const namespaceList = res.data || res || [];
     const namespaceNames = namespaceList.map((ns: any) => ns.name);
     namespaces.value = [...namespaceNames];
 

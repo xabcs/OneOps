@@ -10,81 +10,79 @@
  * })
  */
 
-import { ref, computed, onMounted, onUnmounted, type Ref } from 'vue'
+import { type Ref, computed, onMounted, onUnmounted, ref } from 'vue';
 
 export interface VirtualListOptions<T> {
   /** 数据源 */
-  data: Ref<T[]>
+  data: Ref<T[]>;
   /** 每个项目的高度 */
-  itemHeight: number
+  itemHeight: number;
   /** 容器高度 */
-  containerHeight?: number
+  containerHeight?: number;
   /** 缓冲区大小（渲染额外项目） */
-  bufferSize?: number
+  bufferSize?: number;
 }
 
 export interface VirtualListReturn {
   /** 可见列表数据 */
-  list: Ref<any[]>
+  list: Ref<any[]>;
   /** 容器属性 */
   containerProps: {
-    ref: Ref<HTMLElement | undefined>
-    style: Record<string, string>
-  }
+    ref: Ref<HTMLElement | undefined>;
+    style: Record<string, string>;
+  };
   /** 包装器属性 */
   wrapperProps: {
-    style: Record<string, string>
-  }
+    style: Record<string, string>;
+  };
   /** 滚动到指定索引 */
-  scrollToIndex: (index: number) => void
+  scrollToIndex: (index: number) => void;
 }
 
-export function useVirtualList<T>(
-  options: VirtualListOptions<T>
-): VirtualListReturn {
-  const { data, itemHeight, containerHeight = 600, bufferSize = 3 } = options
+export function useVirtualList<T>(options: VirtualListOptions<T>): VirtualListReturn {
+  const { data, itemHeight, containerHeight = 600, bufferSize = 3 } = options;
 
-  const scrollTop = ref(0)
-  const containerRef = ref<HTMLElement>()
+  const scrollTop = ref(0);
+  const containerRef = ref<HTMLElement>();
 
   // 计算可见范围
   const visibleRange = computed(() => {
-    const start = Math.floor(scrollTop.value / itemHeight)
-    const visibleCount = Math.ceil(containerHeight / itemHeight)
-    const end = start + visibleCount
+    const start = Math.floor(scrollTop.value / itemHeight);
+    const visibleCount = Math.ceil(containerHeight / itemHeight);
+    const end = start + visibleCount;
 
     return {
       start: Math.max(0, start - bufferSize),
       end: Math.min(data.value.length, end + bufferSize)
-    }
-  })
+    };
+  });
 
   // 可见列表数据
   const list = computed(() => {
-    const { start, end } = visibleRange.value
+    const { start, end } = visibleRange.value;
     return data.value.slice(start, end).map((item, index) => ({
       data: item,
       index: start + index
-    }))
-  })
+    }));
+  });
 
   // 容器总高度
-  const totalHeight = computed(() => data.value.length * itemHeight)
+  const totalHeight = computed(() => data.value.length * itemHeight);
 
   // 偏移量
-  const offsetY = computed(() => visibleRange.value.start * itemHeight)
+  const offsetY = computed(() => visibleRange.value.start * itemHeight);
 
   // 处理滚动事件
   const handleScroll = (e: Event) => {
-    scrollTop.value = (e.target as HTMLElement).scrollTop
-  }
+    scrollTop.value = (e.target as HTMLElement).scrollTop;
+  };
 
   // 滚动到指定索引
   const scrollToIndex = (index: number) => {
     if (containerRef.value) {
-      containerRef.value.scrollTop = index * itemHeight
+      containerRef.value.scrollTop = index * itemHeight;
     }
-  }
+  };
 
   // 容器属性
   const containerProps = {
@@ -93,7 +91,7 @@ export function useVirtualList<T>(
       height: `${containerHeight}px`,
       overflow: 'auto'
     }
-  }
+  };
 
   // 包装器属性
   const wrapperProps = {
@@ -101,24 +99,24 @@ export function useVirtualList<T>(
       height: `${totalHeight.value}px`,
       position: 'relative'
     }))
-  }
+  };
 
   onMounted(() => {
     if (containerRef.value) {
-      containerRef.value.addEventListener('scroll', handleScroll)
+      containerRef.value.addEventListener('scroll', handleScroll);
     }
-  })
+  });
 
   onUnmounted(() => {
     if (containerRef.value) {
-      containerRef.value.removeEventListener('scroll', handleScroll)
+      containerRef.value.removeEventListener('scroll', handleScroll);
     }
-  })
+  });
 
   return {
     list,
     containerProps,
     wrapperProps,
     scrollToIndex
-  }
+  };
 }

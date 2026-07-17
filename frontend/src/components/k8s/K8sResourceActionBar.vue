@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-import {
-  ElButton,
-  ElTag,
-  ElTooltip
-} from 'element-plus';
+import { ElButton, ElTag, ElTooltip } from 'element-plus';
 
 interface MetaItem {
   label: string;

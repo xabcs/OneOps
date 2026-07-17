@@ -1,3 +1,15 @@
+<script setup lang="ts">
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+withDefaults(defineProps<Props>(), {
+  title: '',
+  description: ''
+});
+</script>
+
 <template>
   <div class="page-header">
     <div class="header-left">
@@ -15,18 +27,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-interface Props {
-  title?: string
-  description?: string
-}
-
-withDefaults(defineProps<Props>(), {
-  title: '',
-  description: ''
-})
-</script>
 
 <style scoped>
 .page-header {

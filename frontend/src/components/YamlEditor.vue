@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Check, Edit, MagicStick, WarningFilled } from '@element-plus/icons-vue';
-import loader from '@monaco-editor/loader';
-import type * as Monaco from 'monaco-editor';
+import * as Monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
+
+// 简单配置 - 不需要 worker，使用基本的编辑器功能
+(self as any).MonacoEnvironment = {
+  getWorkerUrl: function(_moduleId: string, label: string) {
+    // 不使用 worker，直接返回空
+    return '';
+  }
+};
 
 interface Props {
   modelValue: boolean;
@@ -31,21 +38,19 @@ const isEditMode = ref(false);
 const errorMessage = ref('');
 const applying = ref(false);
 const editorContainer = ref<HTMLElement | null>(null);
+const useMonaco = ref(true); // 是否使用 Monaco Editor
 let editor: Monaco.editor.IStandaloneCodeEditor | null = null;
-let monaco: typeof Monaco | null = null;
 
 // Monaco Editor 主题定义
 const DARK_THEME = 'k8s-yaml-dark';
 
 // 初始化 Monaco Editor
-async function initEditor() {
+function initEditor() {
   if (!editorContainer.value) return;
 
   try {
-    monaco = await loader.init();
-
     // 定义自定义暗色主题（类似VS Code）
-    monaco.editor.defineTheme(DARK_THEME, {
+    Monaco.editor.defineTheme(DARK_THEME, {
       base: 'vs-dark',
       inherit: true,
       rules: [
@@ -65,7 +70,7 @@ async function initEditor() {
       }
     });
 
-    editor = monaco.editor.create(editorContainer.value, {
+    editor = Monaco.editor.create(editorContainer.value, {
       value: yamlContent.value,
       language: 'yaml',
       theme: DARK_THEME,
@@ -95,9 +100,12 @@ async function initEditor() {
         yamlContent.value = editor.getValue();
       }
     });
+
+    useMonaco.value = true;
   } catch (error) {
-    console.error('Monaco Editor 初始化失败:', error);
-    ElMessage.error('编辑器初始化失败');
+    console.error('Monaco Editor 初始化失败，切换到简单编辑器:', error);
+    useMonaco.value = false;
+    // 不显示错误消息，因为已经有备用方案
   }
 }
 
@@ -124,7 +132,7 @@ watch(
 
       await nextTick();
       if (!editor) {
-        await initEditor();
+        initEditor();
       }
       if (editor) {
         updateEditorContent(yamlContent.value);
@@ -145,7 +153,7 @@ watch(visible, val => {
 function startEdit() {
   isEditMode.value = true;
   errorMessage.value = '';
-  if (editor) {
+  if (useMonaco.value && editor) {
     editor.updateOptions({ readOnly: false });
     editor.focus();
   }
@@ -156,7 +164,7 @@ function handleCancel() {
   yamlContent.value = originalYaml.value;
   isEditMode.value = false;
   errorMessage.value = '';
-  if (editor) {
+  if (useMonaco.value && editor) {
     updateEditorContent(originalYaml.value);
     editor.updateOptions({ readOnly: true });
   }
@@ -180,7 +188,7 @@ async function handleApply() {
     ElMessage.success('YAML 应用成功');
     originalYaml.value = yamlContent.value;
     isEditMode.value = false;
-    if (editor) {
+    if (useMonaco.value && editor) {
       editor.updateOptions({ readOnly: true });
     }
   } catch (error: any) {
@@ -201,7 +209,36 @@ function handleClose() {
 
 // 格式化 YAML
 function handleFormat() {
-  if (!editor || !monaco) return;
+  if (!useMonaco.value) {
+    // 简单编辑器模式：直接格式化 yamlContent
+    try {
+      const content = yamlContent.value;
+      const lines = content.split('\n');
+      const formatted: string[] = [];
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          formatted.push('');
+          continue;
+        }
+        // 计算当前行前面有多少空格
+        const match = line.match(/^(\s*)/);
+        const indent = match ? match[1].length : 0;
+        // 确保缩进是2的倍数
+        const newIndent = Math.floor(indent / 2) * 2;
+        formatted.push(' '.repeat(newIndent) + trimmed);
+      }
+
+      yamlContent.value = formatted.join('\n');
+      ElMessage.success('格式化成功');
+    } catch (error) {
+      ElMessage.error('格式化失败');
+    }
+    return;
+  }
+
+  if (!editor) return;
 
   try {
     // 简单格式化：调整缩进
@@ -301,7 +338,16 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- Monaco Editor 容器 -->
-      <div ref="editorContainer" class="monaco-editor-wrapper" />
+      <div v-if="useMonaco" ref="editorContainer" class="monaco-editor-wrapper" />
+
+      <!-- 备用简单编辑器 -->
+      <textarea
+        v-else
+        v-model="yamlContent"
+        class="simple-editor"
+        :readonly="!isEditMode"
+        spellcheck="false"
+      ></textarea>
 
       <!-- 错误信息 -->
       <div v-if="errorMessage" class="error-message">
@@ -354,6 +400,25 @@ onBeforeUnmount(() => {
   min-height: 500px;
   max-height: 60vh;
   border: none;
+}
+
+.simple-editor {
+  width: 100%;
+  min-height: 500px;
+  max-height: 60vh;
+  padding: 16px;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border: none;
+  resize: none;
+  outline: none;
+}
+
+.simple-editor:focus {
+  outline: none;
 }
 
 .error-message {

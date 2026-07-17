@@ -1,37 +1,18 @@
-<template>
-  <button
-    :type="nativeType"
-    :class="buttonClass"
-    :disabled="disabled || loading"
-    @click="handleClick"
-  >
-    <ElIcon v-if="loading" class="is-loading">
-      <Loading />
-    </ElIcon>
-    <ElIcon v-else-if="icon">
-      <component :is="icon" />
-    </ElIcon>
-    <span v-if="$slots.default" class="button-content">
-      <slot />
-    </span>
-  </button>
-</template>
-
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Loading } from '@element-plus/icons-vue'
-import type { Icon } from '@element-plus/icons-vue'
+import { computed } from 'vue';
+import { Loading } from '@element-plus/icons-vue';
+import type { Icon } from '@element-plus/icons-vue';
 
 interface Props {
-  type?: 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'text'
-  size?: 'large' | 'default' | 'small'
-  disabled?: boolean
-  loading?: boolean
-  icon?: any
-  nativeType?: 'button' | 'submit' | 'reset'
-  plain?: boolean
-  round?: boolean
-  circle?: boolean
+  type?: 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'text';
+  size?: 'large' | 'default' | 'small';
+  disabled?: boolean;
+  loading?: boolean;
+  icon?: any;
+  nativeType?: 'button' | 'submit' | 'reset';
+  plain?: boolean;
+  round?: boolean;
+  circle?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -43,11 +24,11 @@ const props = withDefaults(defineProps<Props>(), {
   plain: false,
   round: false,
   circle: false
-})
+});
 
 const emit = defineEmits<{
-  click: [event: MouseEvent]
-}>()
+  click: [event: MouseEvent];
+}>();
 
 const buttonClass = computed(() => {
   return [
@@ -61,15 +42,29 @@ const buttonClass = computed(() => {
       'is-round': props.round,
       'is-circle': props.circle
     }
-  ]
-})
+  ];
+});
 
 const handleClick = (event: MouseEvent) => {
   if (!props.disabled && !props.loading) {
-    emit('click', event)
+    emit('click', event);
   }
-}
+};
 </script>
+
+<template>
+  <button :type="nativeType" :class="buttonClass" :disabled="disabled || loading" @click="handleClick">
+    <ElIcon v-if="loading" class="is-loading">
+      <Loading />
+    </ElIcon>
+    <ElIcon v-else-if="icon">
+      <component :is="icon" />
+    </ElIcon>
+    <span v-if="$slots.default" class="button-content">
+      <slot />
+    </span>
+  </button>
+</template>
 
 <style scoped>
 .a-button {

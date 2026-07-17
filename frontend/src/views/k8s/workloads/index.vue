@@ -31,12 +31,14 @@ import {
   fetchK8sDaemonSets,
   fetchK8sDeployments,
   fetchK8sJobs,
+  fetchK8sPodLogs,
   fetchK8sPods,
   fetchK8sStatefulSets,
   getK8sCronJob,
   getK8sDaemonSet,
   getK8sDeployment,
   getK8sJob,
+  getK8sPod,
   getK8sStatefulSet,
   restartK8sDaemonSet,
   restartK8sDeployment,
@@ -49,8 +51,8 @@ import {
   updateK8sJob,
   updateK8sStatefulSet
 } from '@/service/api/k8s';
-import YamlEditor from '@/components/YamlEditor.vue';
 import { useK8sStore } from '@/store/modules/k8s';
+import YamlEditor from '@/components/YamlEditor.vue';
 
 // 解析资源manifest为YAML格式
 function parseManifest(manifestStr: string): string {
@@ -118,6 +120,10 @@ const yamlDialogTitle = ref('');
 const yamlContent = ref('');
 const selectedResource = ref<any>(null);
 const yamlLoading = ref(false);
+
+// 日志对话框状态
+const showLogDialog = ref(false);
+const logDialogContent = ref('');
 
 // 批量操作
 const selectedDeployments = ref<any[]>([]);
@@ -436,22 +442,22 @@ function goToDetail(row: any) {
   // 跳转到详情页
   switch (activeTab.value) {
     case 'deployments':
-      router.push({ name: 'k8s_deployment_detail_view', query: baseQuery });
+      router.push({ path: '/k8s/resources/deployments/detail', query: baseQuery });
       break;
     case 'statefulsets':
-      router.push({ name: 'k8s_statefulset_detail_view', query: baseQuery });
+      router.push({ path: '/k8s/resources/statefulsets/detail', query: baseQuery });
       break;
     case 'daemonsets':
-      router.push({ name: 'k8s_daemonset_detail_view', query: baseQuery });
+      router.push({ path: '/k8s/resources/daemonsets/detail', query: baseQuery });
       break;
     case 'pods':
-      router.push({ name: 'k8s_pod_detail_view', query: baseQuery });
+      router.push({ path: '/k8s/resources/pods/detail', query: baseQuery });
       break;
     case 'jobs':
-      router.push({ name: 'k8s_job_detail_view', query: baseQuery });
+      router.push({ path: '/k8s/resources/jobs/detail', query: baseQuery });
       break;
     case 'cronjobs':
-      router.push({ name: 'k8s_cronjob_detail_view', query: baseQuery });
+      router.push({ path: '/k8s/resources/cronjobs/detail', query: baseQuery });
       break;
   }
 }
@@ -577,7 +583,7 @@ async function handleCronJobEdit(row: any) {
 }
 
 // YAML 应用
-async function handleYamlApply(yaml: string) {
+async function handleYamlApply(yamlStr: string) {
   if (!selectedCluster.value || !selectedResource.value) {
     throw new Error('缺少必要参数');
   }
@@ -585,39 +591,42 @@ async function handleYamlApply(yaml: string) {
   const resourceType = activeTab.value;
 
   try {
+    // 将 YAML 字符串解析为对象
+    const manifestObj = yaml.load(yamlStr);
+
     switch (resourceType) {
       case 'deployments':
         await updateK8sDeployment(selectedCluster.value, {
           namespace: selectedResource.value.namespace,
-          manifest: yaml
+          manifest: manifestObj
         });
         await loadDeployments();
         break;
       case 'statefulsets':
         await updateK8sStatefulSet(selectedCluster.value, {
           namespace: selectedResource.value.namespace,
-          manifest: yaml
+          manifest: manifestObj
         });
         await loadStatefulSets();
         break;
       case 'daemonsets':
         await updateK8sDaemonSet(selectedCluster.value, {
           namespace: selectedResource.value.namespace,
-          manifest: yaml
+          manifest: manifestObj
         });
         await loadDaemonSets();
         break;
       case 'jobs':
         await updateK8sJob(selectedCluster.value, {
           namespace: selectedResource.value.namespace,
-          manifest: yaml
+          manifest: manifestObj
         });
         await loadJobs();
         break;
       case 'cronjobs':
         await updateK8sCronJob(selectedCluster.value, {
           namespace: selectedResource.value.namespace,
-          manifest: yaml
+          manifest: manifestObj
         });
         await loadCronJobs();
         break;
@@ -713,8 +722,27 @@ async function handleDelete(row: any) {
 }
 
 // Pod 操作
-function handlePodLogs(row: any) {
-  message.info('Pod 日志功能即将推出');
+async function handlePodLogs(row: any) {
+  if (!selectedCluster.value) {
+    message.warning('请先选择集群');
+    return;
+  }
+
+  const containerName = row.containers?.[0]?.name || '';
+  selectedResource.value = row;
+  logDialogContent.value = '加载中...';
+  showLogDialog.value = true;
+
+  try {
+    const response = await fetchK8sPodLogs(selectedCluster.value, row.namespace, row.name, {
+      container: containerName,
+      tailLines: 100
+    });
+    logDialogContent.value = response.data?.logs || '暂无日志';
+  } catch (error: any) {
+    logDialogContent.value = `日志加载失败: ${error.message || '未知错误'}`;
+    message.error(`日志加载失败: ${error.message}`);
+  }
 }
 
 // Pod YAML编辑
@@ -747,7 +775,20 @@ function handlePodMoreCommand(command: string, row: any) {
       handlePodEdit(row);
       break;
     case 'terminal':
-      message.info('Pod 终端功能即将推出');
+      // 打开 Pod 终端
+      if (!selectedCluster.value) {
+        message.warning('请先选择集群');
+        return;
+      }
+      const containerName = row.containers?.[0]?.name || '';
+      const baseUrl = window.location.origin;
+      const terminalUrl = `${baseUrl}/k8s/terminal?clusterId=${selectedCluster.value}&namespace=${row.namespace}&podName=${row.name}&containerName=${containerName}`;
+      const newWindow = window.open(terminalUrl, '_blank');
+      if (!newWindow) {
+        message.warning('浏览器阻止了新标签页打开，请检查浏览器设置允许弹窗');
+      } else {
+        newWindow.focus();
+      }
       break;
     case 'delete':
       handlePodDelete(row);
@@ -1298,7 +1339,14 @@ onMounted(async () => {
     console.log('[工作负载汇总] 恢复标签页:', activeTab.value);
   }
 
-  console.log('[工作负载汇总] 恢复后状态 - 集群:', selectedCluster.value, '命名空间:', selectedNamespace.value, '标签页:', activeTab.value);
+  console.log(
+    '[工作负载汇总] 恢复后状态 - 集群:',
+    selectedCluster.value,
+    '命名空间:',
+    selectedNamespace.value,
+    '标签页:',
+    activeTab.value
+  );
 
   // 手动加载数据
   if (selectedCluster.value) {
@@ -1356,7 +1404,13 @@ onMounted(async () => {
           <ElTable
             :data="podsData"
             class="workloads-table"
-            :header-cell-style="{ background: '#f5f7fa', color: '#303133', fontWeight: '600', paddingLeft: '16px', paddingRight: '16px' }"
+            :header-cell-style="{
+              background: '#f5f7fa',
+              color: '#303133',
+              fontWeight: '600',
+              paddingLeft: '16px',
+              paddingRight: '16px'
+            }"
             :row-style="{ backgroundColor: 'transparent' }"
             :cell-style="{ backgroundColor: 'transparent', padding: '8px 16px' }"
             @selection-change="handlePodSelectionChange"
@@ -1434,7 +1488,13 @@ onMounted(async () => {
           <ElTable
             :data="deploymentsData"
             class="workloads-table"
-            :header-cell-style="{ background: '#f5f7fa', color: '#303133', fontWeight: '600', paddingLeft: '16px', paddingRight: '16px' }"
+            :header-cell-style="{
+              background: '#f5f7fa',
+              color: '#303133',
+              fontWeight: '600',
+              paddingLeft: '16px',
+              paddingRight: '16px'
+            }"
             :row-style="{ backgroundColor: 'transparent' }"
             :cell-style="{ backgroundColor: 'transparent', padding: '8px 16px' }"
             @selection-change="handleDeploymentSelectionChange"
@@ -1516,7 +1576,13 @@ onMounted(async () => {
           <ElTable
             :data="statefulSetsData"
             class="workloads-table"
-            :header-cell-style="{ background: '#f5f7fa', color: '#303133', fontWeight: '600', paddingLeft: '16px', paddingRight: '16px' }"
+            :header-cell-style="{
+              background: '#f5f7fa',
+              color: '#303133',
+              fontWeight: '600',
+              paddingLeft: '16px',
+              paddingRight: '16px'
+            }"
             :row-style="{ backgroundColor: 'transparent' }"
             :cell-style="{ backgroundColor: 'transparent', padding: '8px 16px' }"
             @selection-change="handleStatefulSetSelectionChange"
@@ -1584,7 +1650,13 @@ onMounted(async () => {
           <ElTable
             :data="daemonSetsData"
             class="workloads-table"
-            :header-cell-style="{ background: '#f5f7fa', color: '#303133', fontWeight: '600', paddingLeft: '16px', paddingRight: '16px' }"
+            :header-cell-style="{
+              background: '#f5f7fa',
+              color: '#303133',
+              fontWeight: '600',
+              paddingLeft: '16px',
+              paddingRight: '16px'
+            }"
             :row-style="{ backgroundColor: 'transparent' }"
             :cell-style="{ backgroundColor: 'transparent', padding: '8px 16px' }"
             @selection-change="handleDaemonSetSelectionChange"
@@ -1652,7 +1724,13 @@ onMounted(async () => {
           <ElTable
             :data="jobsData"
             class="workloads-table"
-            :header-cell-style="{ background: '#f5f7fa', color: '#303133', fontWeight: '600', paddingLeft: '16px', paddingRight: '16px' }"
+            :header-cell-style="{
+              background: '#f5f7fa',
+              color: '#303133',
+              fontWeight: '600',
+              paddingLeft: '16px',
+              paddingRight: '16px'
+            }"
             :row-style="{ backgroundColor: 'transparent' }"
             :cell-style="{ backgroundColor: 'transparent', padding: '8px 16px' }"
             @selection-change="handleJobSelectionChange"
@@ -1733,7 +1811,13 @@ onMounted(async () => {
           <ElTable
             :data="cronJobsData"
             class="workloads-table"
-            :header-cell-style="{ background: '#f5f7fa', color: '#303133', fontWeight: '600', paddingLeft: '16px', paddingRight: '16px' }"
+            :header-cell-style="{
+              background: '#f5f7fa',
+              color: '#303133',
+              fontWeight: '600',
+              paddingLeft: '16px',
+              paddingRight: '16px'
+            }"
             :row-style="{ backgroundColor: 'transparent' }"
             :cell-style="{ backgroundColor: 'transparent', padding: '8px 16px' }"
             @selection-change="handleCronJobSelectionChange"
@@ -1817,6 +1901,19 @@ onMounted(async () => {
       <template #footer>
         <ElButton @click="showScaleDialog = false">取消</ElButton>
         <ElButton type="primary" @click="handleScaleSubmit">确定</ElButton>
+      </template>
+    </ElDialog>
+
+    <!-- 日志对话框 -->
+    <ElDialog
+      v-model="showLogDialog"
+      :title="`日志: ${selectedResource?.name}${selectedResource?.containers?.[0]?.name ? ' (' + selectedResource.containers[0].name + ')' : ''}`"
+      width="900px"
+      top="5vh"
+    >
+      <div class="log-content">{{ logDialogContent }}</div>
+      <template #footer>
+        <ElButton @click="showLogDialog = false">关闭</ElButton>
       </template>
     </ElDialog>
 
@@ -2110,5 +2207,19 @@ onMounted(async () => {
       }
     }
   }
+}
+
+/* 日志内容样式 */
+.log-content {
+  background: #1e1e1e;
+  color: #4ec9b0;
+  padding: 16px;
+  border-radius: 4px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 600px;
+  overflow: auto;
 }
 </style>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import {
   ElButton,
   ElDialog,
@@ -165,11 +165,14 @@ const handleNamespaceChange = () => {
 // 跳转到详情页
 const goToDetail = (row: any) => {
   // 保存当前选择到 sessionStorage
-  sessionStorage.setItem('k8s_services_list_state', JSON.stringify({
-    clusterId: selectedCluster.value,
-    namespace: filters.namespace,
-    listPath: '/k8s/services'
-  }));
+  sessionStorage.setItem(
+    'k8s_services_list_state',
+    JSON.stringify({
+      clusterId: selectedCluster.value,
+      namespace: filters.namespace,
+      listPath: '/k8s/services'
+    })
+  );
 
   router.push({
     path: '/k8s/resources/services/detail',

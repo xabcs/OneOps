@@ -1,18 +1,3 @@
-<template>
-  <button
-    :class="['gradient-button', `gradient-button-${variant}`, { 'gradient-button-disabled': disabled }]"
-    :disabled="disabled"
-    @click="handleClick"
-  >
-    <span v-if="$slots.icon" class="gradient-button-icon">
-      <slot name="icon" />
-    </span>
-    <span class="gradient-button-content">
-      <slot />
-    </span>
-  </button>
-</template>
-
 <script setup lang="ts">
 interface Props {
   /** 按钮变体 */
@@ -33,6 +18,22 @@ const handleClick = (event: MouseEvent) => {
   }
 };
 </script>
+
+<template>
+  <button
+    class="gradient-button"
+    :class="[`gradient-button-${variant}`, { 'gradient-button-disabled': disabled }]"
+    :disabled="disabled"
+    @click="handleClick"
+  >
+    <span v-if="$slots.icon" class="gradient-button-icon">
+      <slot name="icon" />
+    </span>
+    <span class="gradient-button-content">
+      <slot />
+    </span>
+  </button>
+</template>
 
 <style scoped>
 .gradient-button {
@@ -57,7 +58,7 @@ const handleClick = (event: MouseEvent) => {
 .gradient-button-light:hover {
   background: linear-gradient(135deg, #dbeafefa, #d1fae5d6);
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.20);
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.2);
 }
 
 .gradient-button-white {
@@ -68,7 +69,7 @@ const handleClick = (event: MouseEvent) => {
 .gradient-button-white:hover {
   background: linear-gradient(135deg, #dbeafef5, #ffedd5d1);
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.20);
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.2);
 }
 
 .gradient-button-brand {

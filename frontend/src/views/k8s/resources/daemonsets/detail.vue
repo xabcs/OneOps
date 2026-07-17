@@ -1,14 +1,23 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElButton, ElDialog, ElMessage, ElTabPane, ElTable, ElTableColumn, ElTabs, ElTag } from 'element-plus';
+import { ElButton, ElMessage, ElTabPane, ElTable, ElTableColumn, ElTabs, ElTag } from 'element-plus';
 import yaml from 'js-yaml';
 import { fetchK8sEvents, getK8sDaemonSet, getK8sDaemonSetPods, updateK8sDaemonSet } from '@/service/api/k8s';
-import { formatAnnotations, formatConditions, formatImages, formatLabels, formatSelectors, formatStrategy, getAnnotationSummary } from '@/utils/k8s-formatters';
+import {
+  formatAnnotations,
+  formatConditions,
+  formatImages,
+  formatLabels,
+  formatSelectors,
+  formatStrategy,
+  getAnnotationSummary
+} from '@/utils/k8s-formatters';
 import K8sBasicInfoGrid from '@/components/k8s/K8sBasicInfoGrid.vue';
 import K8sPodsTable from '@/components/k8s/K8sPodsTable.vue';
 import K8sEventsTable from '@/components/k8s/K8sEventsTable.vue';
 import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
+import YamlEditor from '@/components/YamlEditor.vue';
 
 defineOptions({ name: 'K8sDaemonSetDetail' });
 
@@ -30,9 +39,7 @@ const resourceName = ref('');
 // YAML 编辑相关
 const showYamlEditor = ref(false);
 const yamlContent = ref('');
-const yamlEditingContent = ref('');
 const yamlSaving = ref(false);
-
 
 const getStatusTag = computed(() => {
   if (!resource.value) return { type: 'info', text: '未知' };
@@ -64,21 +71,15 @@ const basicInfoFields = computed(() => {
       { label: '名称', value: resource.value.name || '-' },
       { label: '命名空间', value: resource.value.namespace || '-' }
     ],
-    [
-      { label: '创建时间', value: resource.value.age || '-' }
-    ]
+    [{ label: '创建时间', value: resource.value.age || '-' }]
   ];
 
   if (resource.value.labels) {
-    fields.push([
-      { label: '标签', value: formatLabels(resource.value.labels), fullRow: true, isTags: true }
-    ]);
+    fields.push([{ label: '标签', value: formatLabels(resource.value.labels), fullRow: true, isTags: true }]);
   }
 
   if (resource.value.selector && Object.keys(resource.value.selector).length > 0) {
-    fields.push([
-      { label: '选择器', value: formatSelectors(resource.value.selector), fullRow: true }
-    ]);
+    fields.push([{ label: '选择器', value: formatSelectors(resource.value.selector), fullRow: true }]);
   }
 
   if (resource.value.strategy) {
@@ -89,9 +90,7 @@ const basicInfoFields = computed(() => {
   }
 
   if (resource.value.annotations && Object.keys(resource.value.annotations).length > 0) {
-    fields.push([
-      { label: '注解', value: formattedAnnotations.value, fullRow: true, isAnnotations: true }
-    ]);
+    fields.push([{ label: '注解', value: formattedAnnotations.value, fullRow: true, isAnnotations: true }]);
   }
 
   // 状态条件 + 节点状态信息
@@ -108,15 +107,11 @@ const basicInfoFields = computed(() => {
   ];
 
   if (statusConditions.length > 0) {
-    fields.push([
-      { label: '状态条件', value: statusConditions, fullRow: true, isConditions: true }
-    ]);
+    fields.push([{ label: '状态条件', value: statusConditions, fullRow: true, isConditions: true }]);
   }
 
   if (statusSummary.length > 0) {
-    fields.push([
-      { label: '节点状态', value: statusSummary, fullRow: true, isStatusSummary: true }
-    ]);
+    fields.push([{ label: '节点状态', value: statusSummary, fullRow: true, isStatusSummary: true }]);
   }
 
   return fields;
@@ -163,6 +158,15 @@ async function loadDetail() {
   try {
     const res = await getK8sDaemonSet(clusterId.value, namespace.value, resourceName.value);
     resource.value = res.data || res;
+    // 解析 manifest 为 YAML
+    if (resource.value?.manifest) {
+      try {
+        const manifestObj = JSON.parse(resource.value.manifest);
+        yamlContent.value = yaml.dump(manifestObj, { indent: 2, lineWidth: 120, noRefs: true });
+      } catch (e) {
+        yamlContent.value = resource.value.manifest;
+      }
+    }
     if (activeTab.value === 'pods') await loadPods();
   } catch (error: any) {
     ElMessage.error(error.message || '获取详情失败');
@@ -210,47 +214,22 @@ async function handleTabChange(tab: string) {
 
 // 打开 YAML 编辑器
 function handleEditYaml() {
-  try {
-    // 后端返回的是 JSON 字符串，需要先解析为对象
-    const manifestObj = resource.value?.manifest ? JSON.parse(resource.value.manifest) : {};
-    // 转换为格式化的 YAML
-    yamlEditingContent.value = yaml.dump(manifestObj, {
-      indent: 2,
-      lineWidth: -1,
-      noRefs: true
-    });
-    yamlContent.value = yamlEditingContent.value;
-    showYamlEditor.value = true;
-  } catch (error) {
-    console.error('解析 manifest 失败:', error);
-    ElMessage.error('解析 YAML 失败');
-  }
-}
-
-// 关闭 YAML 编辑器
-function closeYamlEditor() {
-  showYamlEditor.value = false;
-  yamlEditingContent.value = '';
+  showYamlEditor.value = true;
 }
 
 // 保存 YAML
-async function handleSaveYaml() {
+async function handleYamlApply(yamlStr: string) {
   yamlSaving.value = true;
   try {
-    // 将 YAML 转换回 JSON 对象
-    const manifestObj = yaml.load(yamlEditingContent.value);
-    // 调用更新 API，将 manifestObj 传递给后端
+    const manifest = yaml.load(yamlStr);
     await updateK8sDaemonSet(clusterId.value, {
       namespace: namespace.value,
-      manifest: manifestObj
+      manifest
     });
-    ElMessage.success('保存成功');
-    closeYamlEditor();
-    // 刷新数据
+    ElMessage.success('更新成功');
     await loadDetail();
   } catch (error: any) {
-    console.error('保存 YAML 失败:', error);
-    ElMessage.error(`保存失败: ${error.message || 'YAML 格式错误'}`);
+    throw new Error(error.message || '更新失败');
   } finally {
     yamlSaving.value = false;
   }
@@ -276,9 +255,7 @@ onMounted(() => {
       :namespace="resource?.namespace || '-'"
       :status-tag="getStatusTag"
       :back-path="backPath"
-      :actions="[
-        { label: 'YAML 编辑', handler: handleEditYaml, tooltip: '编辑 YAML 配置' }
-      ]"
+      :actions="[{ label: 'YAML 编辑', handler: handleEditYaml, tooltip: '编辑 YAML 配置' }]"
     />
 
     <!-- 基本信息 -->
@@ -296,7 +273,7 @@ onMounted(() => {
           <div class="tab-pane-header">
             <span>容器组</span>
             <ElTag size="small" class="count-tag">{{ pods.length }}</ElTag>
-            <ElButton size="small" text @click="loadPods" class="refresh-btn">
+            <ElButton size="small" text class="refresh-btn" @click="loadPods">
               <icon-mdi-refresh class="text-14px" />
             </ElButton>
           </div>
@@ -311,7 +288,7 @@ onMounted(() => {
           <div class="tab-pane-header">
             <span>事件</span>
             <ElTag size="small" class="count-tag">{{ events.length }}</ElTag>
-            <ElButton size="small" text @click="loadEvents" class="refresh-btn">
+            <ElButton size="small" text class="refresh-btn" @click="loadEvents">
               <icon-mdi-refresh class="text-14px" />
             </ElButton>
           </div>
@@ -322,16 +299,14 @@ onMounted(() => {
       </ElTabPane>
     </ElTabs>
 
-    <!-- YAML 编辑对话框 -->
-    <ElDialog v-model="showYamlEditor" title="YAML 编辑" width="900px" top="5vh" @close="closeYamlEditor">
-      <div class="yaml-editor-wrapper">
-        <textarea v-model="yamlEditingContent" class="yaml-editor" spellcheck="false"></textarea>
-      </div>
-      <template #footer>
-        <ElButton @click="closeYamlEditor">取消</ElButton>
-        <ElButton type="primary" :loading="yamlSaving" @click="handleSaveYaml">保存</ElButton>
-      </template>
-    </ElDialog>
+    <!-- YAML 编辑器 -->
+    <YamlEditor
+      v-model="showYamlEditor"
+      :title="`编辑 ${resourceName}`"
+      :yaml="yamlContent"
+      :can-edit="true"
+      :on-apply="handleYamlApply"
+    />
   </div>
 </template>
 
@@ -411,29 +386,5 @@ onMounted(() => {
 
 .detail-tabs {
   margin-top: 16px;
-}
-
-.yaml-editor-wrapper {
-  width: 100%;
-  height: 500px;
-}
-
-.yaml-editor {
-  width: 100%;
-  height: 100%;
-  padding: 12px;
-  font-family: "Courier New", Courier, monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  border: 1px solid #e4e7ed;
-  border-radius: 4px;
-  background: #f5f7fa;
-  color: #303133;
-  resize: none;
-  outline: none;
-}
-
-.yaml-editor:focus {
-  border-color: #0052d9;
 }
 </style>

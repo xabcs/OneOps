@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { ElTag, ElDialog, ElInput, ElButton, ElMessage } from 'element-plus';
+import { ElButton, ElDialog, ElInput, ElMessage, ElTag } from 'element-plus';
 import type { AnnotationItem } from '@/utils/k8s-formatters';
 
 interface Field {
   label: string;
-  value: string | number | Array<{ key: string; value: string; type?: string }> | AnnotationItem[] | StatusSummaryItem[];
+  value:
+    | string
+    | number
+    | Array<{ key: string; value: string; type?: string }>
+    | AnnotationItem[]
+    | StatusSummaryItem[];
   fullRow?: boolean;
   isTags?: boolean;
   isConditions?: boolean;
@@ -73,11 +78,14 @@ const handleCloseAnnotationDialog = () => {
 
 // 复制注解内容
 const handleCopyAnnotation = (text: string) => {
-  navigator.clipboard.writeText(text).then(() => {
-    ElMessage.success('已复制到剪贴板');
-  }).catch(() => {
-    ElMessage.error('复制失败');
-  });
+  navigator.clipboard
+    .writeText(text)
+    .then(() => {
+      ElMessage.success('已复制到剪贴板');
+    })
+    .catch(() => {
+      ElMessage.error('复制失败');
+    });
 };
 
 // 获取截断的键名
@@ -85,12 +93,12 @@ const getShortKey = (key: string) => {
   if (key.length > 25) {
     // 保留开头和结尾，中间用...代替
     if (key.startsWith('kubectl.kubernetes.io/')) {
-      return 'kubectl.../' + key.split('/').pop();
+      return `kubectl.../${key.split('/').pop()}`;
     }
     if (key.startsWith('deployment.kubernetes.io/')) {
-      return 'dep.../' + key.split('/').pop();
+      return `dep.../${key.split('/').pop()}`;
     }
-    return key.substring(0, 10) + '...' + key.substring(key.length - 10);
+    return `${key.substring(0, 10)}...${key.substring(key.length - 10)}`;
   }
   return key;
 };
@@ -98,7 +106,7 @@ const getShortKey = (key: string) => {
 // 获取截断的值
 const getShortValue = (value: string) => {
   if (value.length > 20) {
-    return value.substring(0, 20) + '...';
+    return `${value.substring(0, 20)}...`;
   }
   return value;
 };
@@ -110,7 +118,8 @@ const getShortValue = (value: string) => {
       <div
         v-for="(field, fieldIndex) in row"
         :key="fieldIndex"
-        :class="['desc-item', { 'desc-item-full': field.fullRow }]"
+        class="desc-item"
+        :class="[{ 'desc-item-full': field.fullRow }]"
       >
         <div class="item-content-inline">
           <span class="item-label">{{ field.label }}</span>
@@ -138,9 +147,7 @@ const getShortValue = (value: string) => {
                 size="small"
                 class="condition-item"
               >
-                <template v-if="cond.isStatusInfo">
-                  {{ cond.type }}: {{ cond.status }}
-                </template>
+                <template v-if="cond.isStatusInfo">{{ cond.type }}: {{ cond.status }}</template>
                 <template v-else>
                   {{ cond.type }}: {{ cond.status }}
                   <span v-if="cond.reason" class="condition-reason">({{ cond.reason }})</span>
@@ -202,13 +209,7 @@ const getShortValue = (value: string) => {
         <div class="detail-content">{{ editingAnnotationKey }}</div>
 
         <div class="detail-label">值:</div>
-        <ElInput
-          v-model="editingAnnotationValue"
-          type="textarea"
-          :rows="15"
-          readonly
-          class="detail-textarea"
-        />
+        <ElInput v-model="editingAnnotationValue" type="textarea" :rows="15" readonly class="detail-textarea" />
 
         <div class="detail-actions">
           <ElButton @click="handleCloseAnnotationDialog">关闭</ElButton>
@@ -284,7 +285,7 @@ const getShortValue = (value: string) => {
   width: 100%;
   cursor: pointer;
   font-size: 12px;
-  font-family: "Courier New", Courier, monospace;
+  font-family: 'Courier New', Courier, monospace;
   margin: 0;
   padding: 4px 8px;
   border: none !important;
@@ -350,7 +351,6 @@ const getShortValue = (value: string) => {
   flex-shrink: 0;
 }
 
-
 /* 状态条件原因文字 */
 .condition-reason {
   font-size: 11px;
@@ -382,7 +382,7 @@ const getShortValue = (value: string) => {
 }
 
 .detail-textarea {
-  font-family: "Courier New", Courier, monospace;
+  font-family: 'Courier New', Courier, monospace;
 }
 
 .detail-actions {

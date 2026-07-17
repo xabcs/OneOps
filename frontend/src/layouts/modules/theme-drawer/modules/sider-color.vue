@@ -22,29 +22,29 @@ const logoGradientEnd = ref(themeStore.sider.logoGradientEnd || 'rgba(232, 240, 
 
 // 深色侧边栏预设颜色（深色系）
 const swatches: string[] = [
-  'rgb(30, 41, 59)',   // 蓝灰
-  'rgb(15, 23, 42)',   // 深蓝灰
-  'rgb(30, 30, 40)',   // 深灰蓝
-  'rgb(51, 65, 85)',   // 中蓝灰
-  'rgb(71, 85, 105)',  // 灰蓝
-  'rgb(20, 20, 30)',   // 近黑蓝
-  'rgb(26, 32, 44)',   // 深岩灰
-  'rgb(33, 43, 67)',   // 深紫灰
-  'rgb(45, 55, 72)'    // 蓝灰
+  'rgb(30, 41, 59)', // 蓝灰
+  'rgb(15, 23, 42)', // 深蓝灰
+  'rgb(30, 30, 40)', // 深灰蓝
+  'rgb(51, 65, 85)', // 中蓝灰
+  'rgb(71, 85, 105)', // 灰蓝
+  'rgb(20, 20, 30)', // 近黑蓝
+  'rgb(26, 32, 44)', // 深岩灰
+  'rgb(33, 43, 67)', // 深紫灰
+  'rgb(45, 55, 72)' // 蓝灰
 ];
 
 // Logo区域渐变预设颜色（浅色系）
 const logoGradientSwatches: string[] = [
-  '#f1f6fffa',      // 浅蓝白
-  '#e8f0ffe6',      // 淡蓝
-  '#f5f8ff',        // 极浅蓝
-  '#e8f0ffff',      // 淡蓝色
-  '#f0f5ffff',      // 浅蓝色
-  '#e5ecffff',      // 浅蓝灰
-  '#f8fbffff',      // 近白蓝
-  '#e0eaffff',      // 淡紫蓝
-  '#f0f4ffff',      // 浅蓝白
-  '#eef2ffff'       // 浅灰蓝
+  '#f1f6fffa', // 浅蓝白
+  '#e8f0ffe6', // 淡蓝
+  '#f5f8ff', // 极浅蓝
+  '#e8f0ffff', // 淡蓝色
+  '#f0f5ffff', // 浅蓝色
+  '#e5ecffff', // 浅蓝灰
+  '#f8fbffff', // 近白蓝
+  '#e0eaffff', // 淡紫蓝
+  '#f0f4ffff', // 浅蓝白
+  '#eef2ffff' // 浅灰蓝
 ];
 
 function handleUseCustomColorChange(value: boolean | string | number) {
@@ -149,7 +149,7 @@ function handleLogoGradientEndChange(color: string | null) {
 // 监听 store 中的值变化
 watch(
   () => themeStore.sider,
-  (newSider) => {
+  newSider => {
     if (newSider.customColor !== customColor.value) {
       customColor.value = newSider.customColor || 'rgb(30, 41, 59)';
     }

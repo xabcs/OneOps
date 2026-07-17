@@ -35,13 +35,11 @@ const containerName = computed(() => {
       :pod-name="podName"
       :container-name="containerName"
     />
-    <div v-else class="flex h-full items-center justify-center bg-gray-900 text-white">
+    <div v-else class="h-full flex items-center justify-center bg-gray-900 text-white">
       <div class="text-center">
         <div class="mb-4 text-6xl">⚠️</div>
         <div class="text-xl">缺少必要参数</div>
-        <div class="mt-2 text-sm text-gray-400">
-          请从 Pod 详情页点击"终端"按钮打开此页面
-        </div>
+        <div class="mt-2 text-sm text-gray-400">请从 Pod 详情页点击"终端"按钮打开此页面</div>
       </div>
     </div>
   </div>

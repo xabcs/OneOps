@@ -67,14 +67,16 @@
   right: 0;
   top: 0;
   height: 1px;
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     transparent 0%,
     var(--el-color-primary-rgba) 20%,
     var(--el-color-primary-rgba) 50%,
     var(--el-color-primary-rgba) 80%,
     transparent 100%
   );
-  background: linear-gradient(180deg,
+  background: linear-gradient(
+    180deg,
     transparent 0%,
     var(--el-color-primary-rgba) 20%,
     var(--el-color-primary-rgba) 50%,
@@ -95,14 +97,16 @@
   right: 0;
   bottom: 0;
   height: 1px;
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     transparent 0%,
     var(--el-border-color) 20%,
     var(--el-border-color) 50%,
     var(--el-border-color) 80%,
     transparent 100%
   );
-  background: linear-gradient(180deg,
+  background: linear-gradient(
+    180deg,
     transparent 0%,
     var(--el-border-color) 20%,
     var(--el-border-color) 50%,
@@ -116,42 +120,42 @@
 /* 菜单卡片渐变背景 */
 .menu-card-gradient {
   background: linear-gradient(145deg, #ffffff 0%, #f8f9fb 100%);
-  box-shadow: 0 2px 8px rgba(64, 73, 101, 0.08),
-              0 1px 4px rgba(64, 73, 101, 0.04);
+  box-shadow:
+    0 2px 8px rgba(64, 73, 101, 0.08),
+    0 1px 4px rgba(64, 73, 101, 0.04);
   border: 1px solid rgba(64, 73, 101, 0.1);
   transition: all 0.3s ease;
 }
 
 .menu-card-gradient:hover {
   background: linear-gradient(145deg, #ffffff 0%, #f0f2f5 100%);
-  box-shadow: 0 4px 12px rgba(64, 73, 101, 0.12),
-              0 2px 6px rgba(64, 73, 101, 0.08);
+  box-shadow:
+    0 4px 12px rgba(64, 73, 101, 0.12),
+    0 2px 6px rgba(64, 73, 101, 0.08);
   transform: translateY(-1px);
 }
 
 /* 深色模式菜单卡片渐变 */
 .menu-card-gradient-dark {
   background: linear-gradient(145deg, #1e293b 0%, #252b36 100%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2),
-              0 1px 4px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    0 1px 4px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .menu-card-gradient-dark:hover {
   background: linear-gradient(145deg, #252b36 0%, #2d333b 100%);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3),
-              0 2px 6px rgba(0, 0, 0, 0.15);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 /* ========== 强调渐变 ========== */
 
 /* 重要功能菜单渐变 - 上下渐变 */
 .menu-highlight-gradient {
-  background: linear-gradient(180deg,
-    rgba(64, 73, 101, 0.1) 0%,
-    rgba(64, 73, 101, 0.05) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(180deg, rgba(64, 73, 101, 0.1) 0%, rgba(64, 73, 101, 0.05) 50%, transparent 100%);
   border-left: 3px solid;
   border-image: linear-gradient(180deg, var(--el-color-primary), #5a8dee) 1;
 }
@@ -160,44 +164,29 @@
 
 /* Web终端菜单渐变 - 科技感 - 上下渐变 */
 .menu-webterminal-gradient {
-  background: linear-gradient(180deg,
-    rgba(23, 78, 123, 0.08) 0%,
-    rgba(23, 78, 123, 0.04) 100%
-  );
+  background: linear-gradient(180deg, rgba(23, 78, 123, 0.08) 0%, rgba(23, 78, 123, 0.04) 100%);
 }
 
 /* 监控菜单渐变 - 警示色 - 上下渐变 */
 .menu-monitoring-gradient {
-  background: linear-gradient(180deg,
-    rgba(245, 34, 46, 0.08) 0%,
-    rgba(245, 34, 46, 0.04) 100%
-  );
+  background: linear-gradient(180deg, rgba(245, 34, 46, 0.08) 0%, rgba(245, 34, 46, 0.04) 100%);
 }
 
 /* 审计菜单渐变 - 橙色 - 上下渐变 */
 .menu-audit-gradient {
-  background: linear-gradient(180deg,
-    rgba(230, 162, 60, 0.08) 0%,
-    rgba(230, 162, 60, 0.04) 100%
-  );
+  background: linear-gradient(180deg, rgba(230, 162, 60, 0.08) 0%, rgba(230, 162, 60, 0.04) 100%);
 }
 
 /* ========== 滚动条渐变 ========== */
 
 /* 侧边栏滚动条渐变 */
 .sider-scrollbar-gradient::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg,
-    var(--el-border-color-darker) 0%,
-    var(--el-border-color) 100%
-  );
+  background: linear-gradient(180deg, var(--el-border-color-darker) 0%, var(--el-border-color) 100%);
   border-radius: 10px;
 }
 
 .sider-scrollbar-gradient::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg,
-    var(--el-color-primary) 0%,
-    var(--el-color-primary-light-3) 100%
-  );
+  background: linear-gradient(180deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
 }
 
 /* ========== 激活指示器渐变 ========== */
@@ -209,10 +198,7 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: linear-gradient(180deg,
-    var(--el-color-primary) 0%,
-    var(--el-color-primary-light-3) 100%
-  );
+  background: linear-gradient(180deg, var(--el-color-primary) 0%, var(--el-color-primary-light-3) 100%);
   border-radius: 0 3px 3px 0;
 }
 
@@ -220,10 +206,7 @@
 
 /* 玻璃拟态效果（深色模式） */
 .glassmorphism-sider {
-  background: linear-gradient(135deg,
-    rgba(255, 255, 255, 0.1) 0%,
-    rgba(255, 255, 255, 0.05) 100%
-  );
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
@@ -241,11 +224,7 @@
   left: -100%;
   width: 50%;
   height: 100%;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.1) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
   animation: shimmer 2s infinite;
 }
 

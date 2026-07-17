@@ -1,16 +1,9 @@
-<template>
-  <div class="status-badge" :class="[`status-${type}`, size]">
-    <span v-if="showDot" class="status-dot" />
-    <slot>{{ text }}</slot>
-  </div>
-</template>
-
 <script setup lang="ts">
 interface Props {
-  type?: 'success' | 'warning' | 'danger' | 'info' | 'primary'
-  text?: string
-  size?: 'small' | 'medium' | 'large'
-  showDot?: boolean
+  type?: 'success' | 'warning' | 'danger' | 'info' | 'primary';
+  text?: string;
+  size?: 'small' | 'medium' | 'large';
+  showDot?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -18,8 +11,15 @@ const props = withDefaults(defineProps<Props>(), {
   text: '',
   size: 'medium',
   showDot: false
-})
+});
 </script>
+
+<template>
+  <div class="status-badge" :class="[`status-${type}`, size]">
+    <span v-if="showDot" class="status-dot" />
+    <slot>{{ text }}</slot>
+  </div>
+</template>
 
 <style scoped>
 .status-badge {
@@ -50,7 +50,8 @@ const props = withDefaults(defineProps<Props>(), {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

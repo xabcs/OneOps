@@ -3,7 +3,7 @@
  * 统一管理所有 Kubernetes 相关的 API 调用
  */
 
-import { request } from '@/service/request'
+import { request } from '@/service/request';
 
 /**
  * 集群相关 API
@@ -11,17 +11,17 @@ import { request } from '@/service/request'
 
 // 获取 K8s 集群列表
 export function fetchGetClusters(params?: {
-  page?: number
-  pageSize?: number
-  name?: string
-  status?: string
-  clusterType?: string
+  page?: number;
+  pageSize?: number;
+  name?: string;
+  status?: string;
+  clusterType?: string;
 }) {
   return request<K8s.ClusterPageResult>({
     url: '/api/v1/k8s/clusters',
     method: 'get',
     params
-  })
+  });
 }
 
 // 获取集群详情
@@ -29,7 +29,7 @@ export function fetchGetClusterById(id: number) {
   return request<K8s.Cluster>({
     url: `/api/v1/k8s/clusters/${id}`,
     method: 'get'
-  })
+  });
 }
 
 // 创建集群
@@ -38,7 +38,7 @@ export function fetchCreateCluster(data: K8s.ClusterFormData) {
     url: '/api/v1/k8s/clusters',
     method: 'post',
     data
-  })
+  });
 }
 
 // 更新集群
@@ -47,7 +47,7 @@ export function fetchUpdateCluster(id: number, data: Partial<K8s.ClusterFormData
     url: `/api/v1/k8s/clusters/${id}`,
     method: 'put',
     data
-  })
+  });
 }
 
 // 删除集群
@@ -56,7 +56,7 @@ export function fetchDeleteCluster(id: number, confirmName: string) {
     url: `/api/v1/k8s/clusters/${id}`,
     method: 'delete',
     data: { confirmName }
-  })
+  });
 }
 
 /**
@@ -65,10 +65,10 @@ export function fetchDeleteCluster(id: number, confirmName: string) {
 
 // 获取 Deployment 列表
 export function fetchListDeployments(params: {
-  clusterId: number
-  namespace?: string
-  page?: number
-  pageSize?: number
+  clusterId: number;
+  namespace?: string;
+  page?: number;
+  pageSize?: number;
 }) {
   return request<K8s.DeploymentPageResult>({
     url: `/api/v1/k8s/clusters/${params.clusterId}/deployments`,
@@ -78,40 +78,32 @@ export function fetchListDeployments(params: {
       page: params.page,
       pageSize: params.pageSize
     }
-  })
+  });
 }
 
 // 获取 Deployment 详情
-export function fetchGetDeployment(params: {
-  clusterId: number
-  namespace: string
-  name: string
-}) {
+export function fetchGetDeployment(params: { clusterId: number; namespace: string; name: string }) {
   return request<K8s.Deployment>({
     url: `/api/v1/k8s/clusters/${params.clusterId}/deployments/${params.namespace}/${params.name}`,
     method: 'get'
-  })
+  });
 }
 
 // 获取 Deployment 的 Pods
-export function fetchGetDeploymentPods(params: {
-  clusterId: number
-  namespace: string
-  name: string
-}) {
+export function fetchGetDeploymentPods(params: { clusterId: number; namespace: string; name: string }) {
   return request<K8s.Pod[]>({
     url: `/api/v1/k8s/clusters/${params.clusterId}/deployments/${params.namespace}/${params.name}/pods`,
     method: 'get'
-  })
+  });
 }
 
 // 创建 Deployment
 export function fetchCreateDeployment(data: {
-  clusterId: number
-  namespace: string
-  name: string
-  replicas: number
-  image: string
+  clusterId: number;
+  namespace: string;
+  name: string;
+  replicas: number;
+  image: string;
 }) {
   return request<K8s.Deployment>({
     url: `/api/v1/k8s/clusters/${data.clusterId}/deployments`,
@@ -122,16 +114,16 @@ export function fetchCreateDeployment(data: {
       replicas: data.replicas,
       image: data.image
     }
-  })
+  });
 }
 
 // 更新 Deployment
 export function fetchUpdateDeployment(params: {
-  clusterId: number
-  namespace: string
-  name: string
-  replicas?: number
-  image?: string
+  clusterId: number;
+  namespace: string;
+  name: string;
+  replicas?: number;
+  image?: string;
 }) {
   return request<K8s.Deployment>({
     url: `/api/v1/k8s/clusters/${params.clusterId}/deployments/${params.namespace}/${params.name}`,
@@ -140,45 +132,32 @@ export function fetchUpdateDeployment(params: {
       replicas: params.replicas,
       image: params.image
     }
-  })
+  });
 }
 
 // 删除 Deployment
-export function fetchDeleteDeployment(params: {
-  clusterId: number
-  namespace: string
-  name: string
-}) {
+export function fetchDeleteDeployment(params: { clusterId: number; namespace: string; name: string }) {
   return request({
     url: `/api/v1/k8s/clusters/${params.clusterId}/deployments/${params.namespace}/${params.name}`,
     method: 'delete'
-  })
+  });
 }
 
 // 扩缩容 Deployment
-export function fetchScaleDeployment(data: {
-  clusterId: number
-  namespace: string
-  name: string
-  replicas: number
-}) {
+export function fetchScaleDeployment(data: { clusterId: number; namespace: string; name: string; replicas: number }) {
   return request({
     url: `/api/v1/k8s/clusters/${data.clusterId}/deployments/${data.namespace}/${data.name}/scale`,
     method: 'post',
     data: { replicas: data.replicas }
-  })
+  });
 }
 
 // 重启 Deployment
-export function fetchRestartDeployment(params: {
-  clusterId: number
-  namespace: string
-  name: string
-}) {
+export function fetchRestartDeployment(params: { clusterId: number; namespace: string; name: string }) {
   return request({
     url: `/api/v1/k8s/clusters/${params.clusterId}/deployments/${params.namespace}/${params.name}/restart`,
     method: 'post'
-  })
+  });
 }
 
 /**
@@ -186,12 +165,7 @@ export function fetchRestartDeployment(params: {
  */
 
 // 获取 Pod 列表
-export function fetchListPods(params: {
-  clusterId: number
-  namespace?: string
-  page?: number
-  pageSize?: number
-}) {
+export function fetchListPods(params: { clusterId: number; namespace?: string; page?: number; pageSize?: number }) {
   return request<K8s.PodPageResult>({
     url: `/api/v1/k8s/clusters/${params.clusterId}/pods`,
     method: 'get',
@@ -200,45 +174,32 @@ export function fetchListPods(params: {
       page: params.page,
       pageSize: params.pageSize
     }
-  })
+  });
 }
 
 // 获取 Pod 详情
-export function fetchGetPod(params: {
-  clusterId: number
-  namespace: string
-  name: string
-}) {
+export function fetchGetPod(params: { clusterId: number; namespace: string; name: string }) {
   return request<K8s.Pod>({
     url: `/api/v1/k8s/clusters/${params.clusterId}/pods/${params.namespace}/${params.name}`,
     method: 'get'
-  })
+  });
 }
 
 // 获取 Pod 日志
-export function fetchGetPodLogs(params: {
-  clusterId: number
-  namespace: string
-  name: string
-  tailLines?: string
-}) {
+export function fetchGetPodLogs(params: { clusterId: number; namespace: string; name: string; tailLines?: string }) {
   return request<string>({
     url: `/api/v1/k8s/clusters/${params.clusterId}/pods/${params.namespace}/${params.name}/logs`,
     method: 'get',
     params: { tailLines: params.tailLines || '100' }
-  })
+  });
 }
 
 // 删除 Pod
-export function fetchDeletePod(params: {
-  clusterId: number
-  namespace: string
-  name: string
-}) {
+export function fetchDeletePod(params: { clusterId: number; namespace: string; name: string }) {
   return request({
     url: `/api/v1/k8s/clusters/${params.clusterId}/pods/${params.namespace}/${params.name}`,
     method: 'delete'
-  })
+  });
 }
 
 /**
@@ -246,12 +207,7 @@ export function fetchDeletePod(params: {
  */
 
 // 获取 Service 列表
-export function fetchListServices(params: {
-  clusterId: number
-  namespace?: string
-  page?: number
-  pageSize?: number
-}) {
+export function fetchListServices(params: { clusterId: number; namespace?: string; page?: number; pageSize?: number }) {
   return request<K8s.ServicePageResult>({
     url: `/api/v1/k8s/clusters/${params.clusterId}/services`,
     method: 'get',
@@ -260,33 +216,29 @@ export function fetchListServices(params: {
       page: params.page,
       pageSize: params.pageSize
     }
-  })
+  });
 }
 
 // 获取 Service 详情
-export function fetchGetService(params: {
-  clusterId: number
-  namespace: string
-  name: string
-}) {
+export function fetchGetService(params: { clusterId: number; namespace: string; name: string }) {
   return request<K8s.Service>({
     url: `/api/v1/k8s/clusters/${params.clusterId}/services/${params.namespace}/${params.name}`,
     method: 'get'
-  })
+  });
 }
 
 // 创建 Service
 export function fetchCreateService(data: {
-  clusterId: number
-  namespace: string
-  name: string
-  type: string
+  clusterId: number;
+  namespace: string;
+  name: string;
+  type: string;
   ports: Array<{
-    name: string
-    protocol: string
-    port: number
-    targetPort: number
-  }>
+    name: string;
+    protocol: string;
+    port: number;
+    targetPort: number;
+  }>;
 }) {
   return request<K8s.Service>({
     url: `/api/v1/k8s/clusters/${data.clusterId}/services`,
@@ -297,19 +249,15 @@ export function fetchCreateService(data: {
       type: data.type,
       ports: data.ports
     }
-  })
+  });
 }
 
 // 删除 Service
-export function fetchDeleteService(params: {
-  clusterId: number
-  namespace: string
-  name: string
-}) {
+export function fetchDeleteService(params: { clusterId: number; namespace: string; name: string }) {
   return request({
     url: `/api/v1/k8s/clusters/${params.clusterId}/services/${params.namespace}/${params.name}`,
     method: 'delete'
-  })
+  });
 }
 
 /**
@@ -321,7 +269,7 @@ export function fetchGetClusterPermissions() {
   return request<K8s.ClusterPermission[]>({
     url: '/api/v1/k8s/permissions/clusters',
     method: 'get'
-  })
+  });
 }
 
 // 获取用户集群权限
@@ -329,7 +277,7 @@ export function fetchGetUserClusters(userId: number) {
   return request<K8s.Cluster[]>({
     url: `/api/v1/k8s/permissions/users/${userId}/clusters`,
     method: 'get'
-  })
+  });
 }
 
 // 分配用户集群权限
@@ -338,7 +286,7 @@ export function fetchAssignUserClusters(userId: number, clusterIds: number[]) {
     url: `/api/v1/k8s/permissions/users/${userId}/clusters`,
     method: 'post',
     data: { clusterIds }
-  })
+  });
 }
 
 // 移除用户集群权限
@@ -346,7 +294,7 @@ export function fetchRemoveUserCluster(userId: number, clusterId: number) {
   return request({
     url: `/api/v1/k8s/permissions/users/${userId}/clusters/${clusterId}`,
     method: 'delete'
-  })
+  });
 }
 
 // 导出索引
@@ -385,4 +333,4 @@ export default {
   fetchGetUserClusters,
   fetchAssignUserClusters,
   fetchRemoveUserCluster
-}
+};

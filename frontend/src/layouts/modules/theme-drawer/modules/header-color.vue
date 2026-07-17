@@ -17,16 +17,16 @@ const headerGradientEnd = ref(themeStore.header.headerGradientEnd || 'rgba(232, 
 
 // Header区域预设颜色（浅色系）
 const headerGradientSwatches: string[] = [
-  '#f8fbfffa',      // 浅蓝白
-  '#f3f7ffe6',      // 淡蓝
-  '#f8fafc',        // 极浅蓝
-  '#f8f0ffff',      // 淡蓝色
-  '#f0f5ffff',      // 浅蓝色
-  '#f5f8ffff',      // 浅蓝灰
-  '#fafbffff',      // 近白蓝
-  '#f0f4ffff',      // 淡紫蓝
-  '#f8fcffff',      // 浅蓝白
-  '#f5f8ffff'       // 浅灰蓝
+  '#f8fbfffa', // 浅蓝白
+  '#f3f7ffe6', // 淡蓝
+  '#f8fafc', // 极浅蓝
+  '#f8f0ffff', // 淡蓝色
+  '#f0f5ffff', // 浅蓝色
+  '#f5f8ffff', // 浅蓝灰
+  '#fafbffff', // 近白蓝
+  '#f0f4ffff', // 淡紫蓝
+  '#f8fcffff', // 浅蓝白
+  '#f5f8ffff' // 浅灰蓝
 ];
 
 function handleUseCustomColorChange(value: boolean | string | number) {
@@ -78,7 +78,7 @@ function handleHeaderGradientEndChange(color: string | null) {
 // 监听 store 中的值变化
 watch(
   () => themeStore.header,
-  (newHeader) => {
+  newHeader => {
     if (newHeader.customColor !== undefined && newHeader.customColor !== customColor.value) {
       customColor.value = newHeader.customColor || 'rgb(248, 251, 255)';
     }

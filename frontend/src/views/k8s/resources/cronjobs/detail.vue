@@ -36,7 +36,6 @@ const showYamlEditor = ref(false);
 const yamlContent = ref('');
 const yamlSaving = ref(false);
 
-
 // 解析manifest为YAML
 function parseManifest(manifestStr: string): string {
   if (!manifestStr) return '';
@@ -229,7 +228,7 @@ onMounted(() => {
           <ElDescriptionsItem label="活跃Job数">{{ resource?.active }}</ElDescriptionsItem>
           <ElDescriptionsItem label="上次执行">{{ resource?.lastSchedule || '-' }}</ElDescriptionsItem>
           <ElDescriptionsItem label="创建时间">{{ resource?.age }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="标签" v-if="resource?.labels && Object.keys(resource?.labels).length > 0">
+          <ElDescriptionsItem v-if="resource?.labels && Object.keys(resource?.labels).length > 0" label="标签">
             <div class="vertical-tags-list">
               <ElTag
                 v-for="(tag, idx) in formatLabels(resource?.labels)"
@@ -269,7 +268,13 @@ onMounted(() => {
             v-loading="eventsLoading"
             :data="events"
             class="cronjobs-events-table"
-            :header-cell-style="{ background: '#f5f7fa', color: '#303133', fontWeight: '600', paddingLeft: '16px', paddingRight: '16px' }"
+            :header-cell-style="{
+              background: '#f5f7fa',
+              color: '#303133',
+              fontWeight: '600',
+              paddingLeft: '16px',
+              paddingRight: '16px'
+            }"
             :row-style="{ backgroundColor: 'transparent' }"
             :cell-style="{ backgroundColor: 'transparent', padding: '8px 16px' }"
           >
@@ -466,7 +471,7 @@ onMounted(() => {
   display: flex !important;
   align-items: center;
   width: 100%;
-  font-family: "Courier New", Courier, monospace;
+  font-family: 'Courier New', Courier, monospace;
   margin: 0;
   padding: 4px 8px !important;
   border: none !important;

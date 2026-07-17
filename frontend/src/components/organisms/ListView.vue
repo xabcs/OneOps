@@ -1,3 +1,89 @@
+<script setup lang="ts">
+import { ref } from 'vue';
+import PageHeader from '../organisms/PageHeader.vue';
+import SearchBar from '../molecules/SearchBar.vue';
+import DataTable from '../molecules/DataTable.vue';
+
+interface Column {
+  prop: string;
+  label: string;
+  slot?: string;
+  width?: number;
+  minWidth?: number;
+  align?: 'left' | 'center' | 'right';
+  sortable?: boolean;
+}
+
+interface Props {
+  title?: string;
+  searchPlaceholder?: string;
+  columns: Column[];
+  tableData: any[];
+  loading?: boolean;
+  showSelection?: boolean;
+  showIndex?: boolean;
+  showPagination?: boolean;
+  emptyText?: string;
+  pagination?: {
+    currentPage: number;
+    pageSize: number;
+    total: number;
+    pageSizes?: number[];
+  };
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  title: '',
+  searchPlaceholder: '请输入搜索内容',
+  loading: false,
+  showSelection: false,
+  showIndex: true,
+  showPagination: true,
+  emptyText: '暂无数据',
+  pagination: () => ({
+    currentPage: 1,
+    pageSize: 20,
+    total: 0
+  })
+});
+
+const emit = defineEmits<{
+  search: [keyword: string];
+  reset: [];
+  'selection-change': [selection: any[]];
+  'page-change': [page: number];
+  'size-change': [pageSize: number];
+}>();
+
+const searchKeyword = ref('');
+
+// 处理搜索
+const handleSearch = (keyword: string) => {
+  emit('search', keyword);
+};
+
+// 处理重置
+const handleReset = () => {
+  searchKeyword.value = '';
+  emit('reset');
+};
+
+// 处理选择变化
+const handleSelectionChange = (selection: any[]) => {
+  emit('selection-change', selection);
+};
+
+// 处理页面变化
+const handlePageChange = (page: number) => {
+  emit('page-change', page);
+};
+
+// 处理每页数量变化
+const handleSizeChange = (pageSize: number) => {
+  emit('size-change', pageSize);
+};
+</script>
+
 <template>
   <div class="list-view">
     <!-- 页面头部 -->
@@ -58,92 +144,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref } from 'vue'
-import PageHeader from '../organisms/PageHeader.vue'
-import SearchBar from '../molecules/SearchBar.vue'
-import DataTable from '../molecules/DataTable.vue'
-
-interface Column {
-  prop: string
-  label: string
-  slot?: string
-  width?: number
-  minWidth?: number
-  align?: 'left' | 'center' | 'right'
-  sortable?: boolean
-}
-
-interface Props {
-  title?: string
-  searchPlaceholder?: string
-  columns: Column[]
-  tableData: any[]
-  loading?: boolean
-  showSelection?: boolean
-  showIndex?: boolean
-  showPagination?: boolean
-  emptyText?: string
-  pagination?: {
-    currentPage: number
-    pageSize: number
-    total: number
-    pageSizes?: number[]
-  }
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  title: '',
-  searchPlaceholder: '请输入搜索内容',
-  loading: false,
-  showSelection: false,
-  showIndex: true,
-  showPagination: true,
-  emptyText: '暂无数据',
-  pagination: () => ({
-    currentPage: 1,
-    pageSize: 20,
-    total: 0
-  })
-})
-
-const emit = defineEmits<{
-  search: [keyword: string]
-  reset: []
-  'selection-change': [selection: any[]]
-  'page-change': [page: number]
-  'size-change': [pageSize: number]
-}>()
-
-const searchKeyword = ref('')
-
-// 处理搜索
-const handleSearch = (keyword: string) => {
-  emit('search', keyword)
-}
-
-// 处理重置
-const handleReset = () => {
-  searchKeyword.value = ''
-  emit('reset')
-}
-
-// 处理选择变化
-const handleSelectionChange = (selection: any[]) => {
-  emit('selection-change', selection)
-}
-
-// 处理页面变化
-const handlePageChange = (page: number) => {
-  emit('page-change', page)
-}
-
-// 处理每页数量变化
-const handleSizeChange = (pageSize: number) => {
-  emit('size-change', pageSize)
-}
-</script>
 
 <style scoped>
 .list-view {

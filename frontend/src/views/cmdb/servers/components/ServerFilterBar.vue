@@ -1,3 +1,81 @@
+<script setup lang="ts">
+import { reactive, ref } from 'vue';
+import { ElButton, ElForm, ElFormItem, ElIcon, ElInput, ElOption, ElSelect, ElSpace } from 'element-plus';
+import { Refresh, RefreshRight, Search } from '@element-plus/icons-vue';
+import type { ServerFilters, ServerStats } from '../types/server.types';
+
+interface Props {
+  showStats?: boolean;
+}
+
+interface Emits {
+  (e: 'search', filters: ServerFilters): void;
+  (e: 'reset'): void;
+  (e: 'refresh'): void;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  showStats: true
+});
+
+const emit = defineEmits<Emits>();
+
+// 过滤条件
+const filters = reactive<ServerFilters>({
+  keyword: '',
+  env: '',
+  agentStatus: '',
+  status: undefined,
+  groupId: undefined
+});
+
+// 统计信息
+const stats = reactive<ServerStats>({
+  total: 0,
+  online: 0,
+  offline: 0,
+  warning: 0,
+  healthy: 0
+});
+
+// 刷新状态
+const refreshing = ref(false);
+
+// 搜索
+const handleSearch = () => {
+  emit('search', { ...filters });
+};
+
+// 重置
+const handleReset = () => {
+  filters.keyword = '';
+  filters.env = '';
+  filters.agentStatus = '';
+  filters.status = undefined;
+  filters.groupId = undefined;
+  emit('reset');
+};
+
+// 刷新
+const handleRefresh = () => {
+  refreshing.value = true;
+  emit('refresh');
+  setTimeout(() => {
+    refreshing.value = false;
+  }, 1000);
+};
+
+// 更新统计信息
+const updateStats = (newStats: ServerStats) => {
+  Object.assign(stats, newStats);
+};
+
+// 暴露方法给父组件
+defineExpose({
+  updateStats
+});
+</script>
+
 <template>
   <div class="server-filter-bar">
     <ElForm inline class="filter-form">
@@ -18,13 +96,7 @@
 
       <!-- 环境筛选 -->
       <ElFormItem>
-        <ElSelect
-          v-model="filters.env"
-          placeholder="环境"
-          clearable
-          style="width: 100px"
-          @change="handleSearch"
-        >
+        <ElSelect v-model="filters.env" placeholder="环境" clearable style="width: 100px" @change="handleSearch">
           <ElOption label="全部" value="" />
           <ElOption label="生产" value="prod" />
           <ElOption label="测试" value="test" />
@@ -50,13 +122,7 @@
 
       <!-- 服务器状态筛选 -->
       <ElFormItem>
-        <ElSelect
-          v-model="filters.status"
-          placeholder="状态"
-          clearable
-          style="width: 100px"
-          @change="handleSearch"
-        >
+        <ElSelect v-model="filters.status" placeholder="状态" clearable style="width: 100px" @change="handleSearch">
           <ElOption label="全部" :value="undefined" />
           <ElOption label="在线" :value="1" />
           <ElOption label="离线" :value="0" />
@@ -73,10 +139,7 @@
           <ElIcon><RefreshRight /></ElIcon>
           重置
         </ElButton>
-        <ElButton
-          :loading="refreshing"
-          @click="handleRefresh"
-        >
+        <ElButton :loading="refreshing" @click="handleRefresh">
           <ElIcon><Refresh /></ElIcon>
           刷新
         </ElButton>
@@ -110,84 +173,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { ElIcon, ElForm, ElFormItem, ElInput, ElSelect, ElOption, ElButton, ElSpace } from 'element-plus'
-import { Search, RefreshRight, Refresh } from '@element-plus/icons-vue'
-import type { ServerFilters, ServerStats } from '../types/server.types'
-
-interface Props {
-  showStats?: boolean
-}
-
-interface Emits {
-  (e: 'search', filters: ServerFilters): void
-  (e: 'reset'): void
-  (e: 'refresh'): void
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  showStats: true
-})
-
-const emit = defineEmits<Emits>()
-
-// 过滤条件
-const filters = reactive<ServerFilters>({
-  keyword: '',
-  env: '',
-  agentStatus: '',
-  status: undefined,
-  groupId: undefined
-})
-
-// 统计信息
-const stats = reactive<ServerStats>({
-  total: 0,
-  online: 0,
-  offline: 0,
-  warning: 0,
-  healthy: 0
-})
-
-// 刷新状态
-const refreshing = ref(false)
-
-// 搜索
-const handleSearch = () => {
-  emit('search', { ...filters })
-}
-
-// 重置
-const handleReset = () => {
-  filters.keyword = ''
-  filters.env = ''
-  filters.agentStatus = ''
-  filters.status = undefined
-  filters.groupId = undefined
-  emit('reset')
-}
-
-// 刷新
-const handleRefresh = () => {
-  refreshing.value = true
-  emit('refresh')
-  setTimeout(() => {
-    refreshing.value = false
-  }, 1000)
-}
-
-// 更新统计信息
-const updateStats = (newStats: ServerStats) => {
-  Object.assign(stats, newStats)
-}
-
-// 暴露方法给父组件
-defineExpose({
-  updateStats
-})
-</script>
 
 <style scoped>
 .server-filter-bar {

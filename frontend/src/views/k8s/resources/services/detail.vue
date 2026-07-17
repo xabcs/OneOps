@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { ArrowLeft } from '@element-plus/icons-vue';
+import { ElButton, ElDescriptions, ElDescriptionsItem, ElMessage, ElMessageBox, ElTable, ElTableColumn, ElTabPane, ElTabs, ElTag } from 'element-plus';
 import yaml from 'js-yaml';
 import { deleteK8sService, fetchK8sEvents, getK8sService, updateK8sService } from '@/service/api/k8s';
 import YamlEditor from '@/components/YamlEditor.vue';
@@ -40,8 +39,8 @@ function parseManifest(manifestStr: string): string {
   }
 }
 
-// 返回列表页的路径 - Services 返回到自己的列表页
-const backPath = '/k8s/services';
+// 返回列表页的路径 - Services 返回到网络页面
+const backPath = '/k8s/network';
 
 async function loadData() {
   loading.value = true;
@@ -185,6 +184,9 @@ onMounted(() => {
       </ElTabPane>
 
       <ElTabPane label="YAML" name="yaml">
+        <div class="tab-toolbar">
+          <ElButton type="primary" size="small" @click="showYamlEditor = true">编辑 YAML</ElButton>
+        </div>
         <div class="yaml-viewer">
           <pre>{{ yamlContent }}</pre>
         </div>
@@ -218,7 +220,8 @@ onMounted(() => {
 
 <style scoped>
 .detail-page {
-  padding: 20px;
+  min-height: 100vh;
+  padding: 24px;
 }
 
 .tab-toolbar {
@@ -232,49 +235,9 @@ onMounted(() => {
 }
 
 .yaml-viewer {
-  background: #f5f7fa;
-  padding: 16px;
-  border-radius: 4px;
-  overflow: auto;
-}
-
-.yaml-viewer pre {
-  margin: 0;
-  font-family: "Courier New", Courier, monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #303133;
-}
-</style>
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.header-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.detail-tabs {
-  background: var(--el-bg-color);
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.yaml-viewer {
   background: #1e1e1e;
-  border-radius: 4px;
   padding: 16px;
+  border-radius: 4px;
   max-height: 600px;
   overflow: auto;
 }
@@ -282,7 +245,7 @@ onMounted(() => {
 .yaml-viewer pre {
   margin: 0;
   color: #d4d4d4;
-  font-family: 'Monaco', 'Menlo', monospace;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Courier New", monospace;
   font-size: 13px;
   line-height: 1.6;
   white-space: pre-wrap;

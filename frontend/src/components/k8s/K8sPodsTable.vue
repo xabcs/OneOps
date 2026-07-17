@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { ElButton, ElTag, ElTable, ElTableColumn, ElMessage, ElDialog } from 'element-plus';
+import { ElButton, ElDialog, ElMessage, ElTable, ElTableColumn, ElTag } from 'element-plus';
 import { fetchK8sPodLogs } from '@/service/api/k8s';
 import { formatImages } from '@/utils/k8s-formatters';
 
@@ -24,6 +24,11 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   loading: false
 });
+
+const emit = defineEmits<{
+  terminal: [pod: Pod];
+  logs: [pod: Pod];
+}>();
 
 const getPodStatusTag = (pod: Pod) => {
   const phase = pod.phase || 'Unknown';
@@ -107,7 +112,13 @@ const closeLogs = () => {
     stripe
     size="small"
     class="k8s-pods-table"
-    :header-cell-style="{ background: '#f5f7fa', color: '#303133', fontWeight: '600', paddingLeft: '16px', paddingRight: '16px' }"
+    :header-cell-style="{
+      background: '#f5f7fa',
+      color: '#303133',
+      fontWeight: '600',
+      paddingLeft: '16px',
+      paddingRight: '16px'
+    }"
     :row-style="{ backgroundColor: 'transparent' }"
     :cell-style="{ backgroundColor: 'transparent', padding: '8px 16px' }"
   >

@@ -1,8 +1,18 @@
+<script setup lang="ts">
+interface Props {
+  /** 面板标题 */
+  title?: string;
+  /** 面板变体 */
+  variant?: 'light' | 'brand' | 'toolbar' | 'glass';
+  /** 自定义样式 */
+  customStyle?: Record<string, string>;
+}
+
+defineProps<Props>();
+</script>
+
 <template>
-  <div
-    :class="['gradient-panel', `gradient-panel-${variant}`]"
-    :style="customStyle"
-  >
+  <div class="gradient-panel" :class="[`gradient-panel-${variant}`]" :style="customStyle">
     <div v-if="$slots.header || title" class="gradient-panel-header">
       <slot name="header">
         <h3 class="gradient-panel-title">{{ title }}</h3>
@@ -19,19 +29,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-interface Props {
-  /** 面板标题 */
-  title?: string;
-  /** 面板变体 */
-  variant?: 'light' | 'brand' | 'toolbar' | 'glass';
-  /** 自定义样式 */
-  customStyle?: Record<string, string>;
-}
-
-defineProps<Props>();
-</script>
 
 <style scoped>
 .gradient-panel {

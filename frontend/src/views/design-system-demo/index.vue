@@ -1,3 +1,13 @@
+<script setup lang="ts">
+import GradientCard from '@/components/common/gradient-card.vue';
+import GradientButton from '@/components/common/gradient-button.vue';
+import GradientPanel from '@/components/common/gradient-panel.vue';
+
+const handleButtonClick = () => {
+  console.log('按钮被点击');
+};
+</script>
+
 <template>
   <div class="design-system-demo">
     <h1>OneOps 设计系统示例</h1>
@@ -52,9 +62,7 @@
           蓝色按钮
         </GradientButton>
 
-        <GradientButton variant="light" :disabled="true">
-          禁用按钮
-        </GradientButton>
+        <GradientButton variant="light" :disabled="true">禁用按钮</GradientButton>
       </div>
     </section>
 
@@ -129,12 +137,12 @@
     <section class="demo-section">
       <h2>工具类示例</h2>
       <div class="demo-grid">
-        <div class="bg-gradient-diagonal border-gradient-light shadow-gradient-sm p-4 rounded-12px">
+        <div class="rounded-12px p-4 bg-gradient-diagonal border-gradient-light shadow-gradient-sm">
           <h4>对角线渐变背景</h4>
           <p>使用UnoCSS工具类快速创建渐变效果</p>
         </div>
 
-        <div class="bg-gradient-header border-b border-gradient-light p-4">
+        <div class="border-b p-4 bg-gradient-header border-gradient-light">
           <h4>Header渐变</h4>
           <p>180deg上下渐变配合底部分隔线</p>
         </div>
@@ -147,16 +155,6 @@
     </section>
   </div>
 </template>
-
-<script setup lang="ts">
-import GradientCard from '@/components/common/gradient-card.vue';
-import GradientButton from '@/components/common/gradient-button.vue';
-import GradientPanel from '@/components/common/gradient-panel.vue';
-
-const handleButtonClick = () => {
-  console.log('按钮被点击');
-};
-</script>
 
 <style scoped>
 .design-system-demo {

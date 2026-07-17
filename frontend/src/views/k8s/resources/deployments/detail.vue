@@ -26,11 +26,20 @@ import {
   scaleK8sDeployment,
   updateK8sDeployment
 } from '@/service/api/k8s';
-import { formatAnnotations, formatConditions, formatImages, formatLabels, formatSelectors, formatStrategy, getAnnotationSummary } from '@/utils/k8s-formatters';
+import {
+  formatAnnotations,
+  formatConditions,
+  formatImages,
+  formatLabels,
+  formatSelectors,
+  formatStrategy,
+  getAnnotationSummary
+} from '@/utils/k8s-formatters';
 import K8sBasicInfoGrid from '@/components/k8s/K8sBasicInfoGrid.vue';
 import K8sPodsTable from '@/components/k8s/K8sPodsTable.vue';
 import K8sEventsTable from '@/components/k8s/K8sEventsTable.vue';
 import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
+import YamlEditor from '@/components/YamlEditor.vue';
 
 defineOptions({ name: 'K8sDeploymentDetail' });
 
@@ -49,7 +58,6 @@ const clusterId = ref<number>(0);
 const namespace = ref('');
 const deploymentName = ref('');
 
-
 // 缩放相关
 const showScaleModal = ref(false);
 const scaleData = ref({ replicas: 1 });
@@ -58,7 +66,6 @@ const scaleFormRef = ref<any>(null);
 // YAML 编辑相关
 const showYamlEditor = ref(false);
 const yamlContent = ref('');
-const yamlEditingContent = ref('');
 const yamlSaving = ref(false);
 
 // 返回列表页的路径 - 直接返回工作负载汇总页，状态由 store 管理
@@ -100,21 +107,15 @@ const basicInfoFields = computed(() => {
       { label: '名称', value: deployment.value.name || '-' },
       { label: '命名空间', value: deployment.value.namespace || '-' }
     ],
-    [
-      { label: '创建时间', value: deployment.value.age || '-' }
-    ]
+    [{ label: '创建时间', value: deployment.value.age || '-' }]
   ];
 
   if (deployment.value.labels) {
-    fields.push([
-      { label: '标签', value: formatLabels(deployment.value.labels), fullRow: true, isTags: true }
-    ]);
+    fields.push([{ label: '标签', value: formatLabels(deployment.value.labels), fullRow: true, isTags: true }]);
   }
 
   if (deployment.value.selector && Object.keys(deployment.value.selector).length > 0) {
-    fields.push([
-      { label: '选择器', value: formatSelectors(deployment.value.selector), fullRow: true }
-    ]);
+    fields.push([{ label: '选择器', value: formatSelectors(deployment.value.selector), fullRow: true }]);
   }
 
   if (deployment.value.strategy) {
@@ -125,9 +126,7 @@ const basicInfoFields = computed(() => {
   }
 
   if (deployment.value.annotations && Object.keys(deployment.value.annotations).length > 0) {
-    fields.push([
-      { label: '注解', value: formattedAnnotations.value, fullRow: true, isAnnotations: true }
-    ]);
+    fields.push([{ label: '注解', value: formattedAnnotations.value, fullRow: true, isAnnotations: true }]);
   }
 
   // 状态条件 + 副本状态信息
@@ -143,15 +142,11 @@ const basicInfoFields = computed(() => {
   ];
 
   if (statusConditions.length > 0) {
-    fields.push([
-      { label: '状态条件', value: statusConditions, fullRow: true, isConditions: true }
-    ]);
+    fields.push([{ label: '状态条件', value: statusConditions, fullRow: true, isConditions: true }]);
   }
 
   if (statusSummary.length > 0) {
-    fields.push([
-      { label: '副本状态', value: statusSummary, fullRow: true, isStatusSummary: true }
-    ]);
+    fields.push([{ label: '副本状态', value: statusSummary, fullRow: true, isStatusSummary: true }]);
   }
 
   return fields;
@@ -349,12 +344,11 @@ function handleEditYaml() {
     // 后端返回的是 JSON 字符串，需要先解析为对象
     const manifestObj = deployment.value?.manifest ? JSON.parse(deployment.value.manifest) : {};
     // 转换为格式化的 YAML
-    yamlEditingContent.value = yaml.dump(manifestObj, {
+    yamlContent.value = yaml.dump(manifestObj, {
       indent: 2,
       lineWidth: -1,
       noRefs: true
     });
-    yamlContent.value = yamlEditingContent.value;
     showYamlEditor.value = true;
   } catch (error) {
     console.error('解析 manifest 失败:', error);
@@ -362,30 +356,23 @@ function handleEditYaml() {
   }
 }
 
-// 关闭 YAML 编辑器
-function closeYamlEditor() {
-  showYamlEditor.value = false;
-  yamlEditingContent.value = '';
-}
-
-// 保存 YAML
-async function handleSaveYaml() {
+// 应用 YAML 更改
+async function handleYamlApply(yamlStr: string) {
   yamlSaving.value = true;
   try {
     // 将 YAML 转换回 JSON 对象
-    const manifestObj = yaml.load(yamlEditingContent.value);
+    const manifestObj = yaml.load(yamlStr);
     // 调用更新 API，将 manifestObj 传递给后端
     await updateK8sDeployment(clusterId.value, {
       namespace: namespace.value,
       manifest: manifestObj
     });
     ElMessage.success('保存成功');
-    closeYamlEditor();
     // 刷新数据
     await loadDeploymentDetail();
   } catch (error: any) {
     console.error('保存 YAML 失败:', error);
-    ElMessage.error(`保存失败: ${error.message || 'YAML 格式错误'}`);
+    throw new Error(error.message || 'YAML 格式错误');
   } finally {
     yamlSaving.value = false;
   }
@@ -435,18 +422,13 @@ onMounted(() => {
           <div class="tab-pane-header">
             <span>容器组</span>
             <ElTag size="small" class="count-tag">{{ pods.length }}</ElTag>
-            <ElButton size="small" text @click="handleRefreshPods" class="refresh-btn">
+            <ElButton size="small" text class="refresh-btn" @click="handleRefreshPods">
               <icon-mdi-refresh class="text-14px" />
             </ElButton>
           </div>
         </template>
         <div class="tab-content">
-          <K8sPodsTable
-            :pods="pods"
-            :loading="podsLoading"
-            :cluster-id="clusterId"
-            :namespace="namespace"
-          />
+          <K8sPodsTable :pods="pods" :loading="podsLoading" :cluster-id="clusterId" :namespace="namespace" />
         </div>
       </ElTabPane>
 
@@ -456,7 +438,7 @@ onMounted(() => {
           <div class="tab-pane-header">
             <span>事件</span>
             <ElTag size="small" class="count-tag">{{ events.length }}</ElTag>
-            <ElButton size="small" text @click="loadEvents" class="refresh-btn">
+            <ElButton size="small" text class="refresh-btn" @click="loadEvents">
               <icon-mdi-refresh class="text-14px" />
             </ElButton>
           </div>
@@ -483,16 +465,14 @@ onMounted(() => {
       </template>
     </ElDialog>
 
-    <!-- YAML 编辑器对话框 -->
-    <ElDialog v-model="showYamlEditor" title="编辑 YAML 配置" width="900px" top="5vh" @close="closeYamlEditor">
-      <div class="yaml-editor-container">
-        <textarea v-model="yamlEditingContent" class="yaml-editor" spellcheck="false"></textarea>
-      </div>
-      <template #footer>
-        <ElButton @click="closeYamlEditor">取消</ElButton>
-        <ElButton type="primary" :loading="yamlSaving" @click="handleSaveYaml">保存</ElButton>
-      </template>
-    </ElDialog>
+    <!-- YAML 编辑器 -->
+    <YamlEditor
+      v-model="showYamlEditor"
+      :title="`编辑 ${deploymentName}`"
+      :yaml="yamlContent"
+      :can-edit="true"
+      :on-apply="handleYamlApply"
+    />
   </div>
 </template>
 
@@ -628,7 +608,7 @@ onMounted(() => {
 }
 
 .font-mono {
-  font-family: "Courier New", Courier, monospace;
+  font-family: 'Courier New', Courier, monospace;
   word-break: break-all;
 }
 
@@ -637,30 +617,5 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-/* YAML 编辑器 */
-.yaml-editor-container {
-  width: 100%;
-  height: 500px;
-}
-
-.yaml-editor {
-  width: 100%;
-  height: 100%;
-  padding: 12px;
-  font-family: "Courier New", Courier, monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  border: 1px solid #e4e7ed;
-  border-radius: 4px;
-  background: #f5f7fa;
-  color: #303133;
-  resize: none;
-  outline: none;
-}
-
-.yaml-editor:focus {
-  border-color: #0052d9;
 }
 </style>

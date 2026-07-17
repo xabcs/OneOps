@@ -95,11 +95,7 @@ const siderContainerClass = computed(() => {
     </div>
 
     <!-- 菜单区域：使用独立的样式 -->
-    <div
-      :id="GLOBAL_SIDER_MENU_ID"
-      :class="[menuWrapperClass, siderContainerClass]"
-      :style="menuAreaStyle"
-    ></div>
+    <div :id="GLOBAL_SIDER_MENU_ID" :class="[menuWrapperClass, siderContainerClass]" :style="menuAreaStyle"></div>
   </DarkModeContainer>
 </template>
 

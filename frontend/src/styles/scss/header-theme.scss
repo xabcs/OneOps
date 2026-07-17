@@ -39,7 +39,10 @@
 /* Header 内部按钮 */
 .global-header .el-button,
 .global-header .header-action-item,
-.global-header .el-button:not(.is-link):not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info) {
+.global-header
+  .el-button:not(.is-link):not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(
+    .el-button--danger
+  ):not(.el-button--info) {
   background-color: var(--header-button-default-bg) !important;
   color: var(--header-button-default-color) !important;
   border-color: var(--header-button-default-border) !important;
@@ -229,7 +232,11 @@
 /* ========== Header 特殊状态 ========== */
 
 /* 深色模式下的 header 内部元素调整 */
-.html-dark .global-header .el-button:not(.is-link):not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(.el-button--danger):not(.el-button--info) {
+.html-dark
+  .global-header
+  .el-button:not(.is-link):not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(
+    .el-button--danger
+  ):not(.el-button--info) {
   background-color: rgba(255, 255, 255, 0.1) !important;
   color: rgba(255, 255, 255, 0.9) !important;
   border-color: rgba(255, 255, 255, 0.2) !important;

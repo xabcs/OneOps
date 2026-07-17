@@ -1,12 +1,3 @@
-<template>
-  <div
-    :class="['gradient-card', `gradient-card-${variant}`, { 'gradient-card-hover': enableHover }]"
-    :style="customStyle"
-  >
-    <slot />
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue';
 
@@ -25,9 +16,19 @@ const variantClasses = computed(() => ({
   'gradient-card-diagonal': 'gradient-card-diagonal',
   'gradient-card-3d': 'gradient-card-3d',
   'gradient-card-hover': 'gradient-card-hover',
-  'gradient-card-glass': 'gradient-card-glass',
+  'gradient-card-glass': 'gradient-card-glass'
 }));
 </script>
+
+<template>
+  <div
+    class="gradient-card"
+    :class="[`gradient-card-${variant}`, { 'gradient-card-hover': enableHover }]"
+    :style="customStyle"
+  >
+    <slot />
+  </div>
+</template>
 
 <style scoped>
 .gradient-card {
@@ -45,13 +46,15 @@ const variantClasses = computed(() => ({
 .gradient-card-3d {
   background: linear-gradient(145deg, #eef5ff, #f6fbff);
   border: 1px solid rgba(148, 163, 184, 0.12);
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.95), 0 8px 16px rgba(59, 130, 246, 0.14);
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.95),
+    0 8px 16px rgba(59, 130, 246, 0.14);
 }
 
 .gradient-card-hover:hover {
   background: linear-gradient(180deg, #ffffff, #f8fbff);
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.20);
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.2);
 }
 
 .gradient-card-glass {

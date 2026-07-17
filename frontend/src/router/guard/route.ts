@@ -1,6 +1,6 @@
+import { nextTick } from 'vue';
 import type { LocationQueryRaw, RouteLocationNormalized, RouteLocationRaw, Router } from 'vue-router';
 import type { RouteKey, RoutePath } from '@elegant-router/types';
-import { nextTick } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { useRouteStore } from '@/store/modules/route';
 import { localStg } from '@/utils/storage';
@@ -140,9 +140,21 @@ async function initRoute(to: RouteLocationNormalized, router: Router): Promise<R
       await nextTick();
 
       // 重新检查目标路由是否已被注册
-      const routeExists = router.getRoutes().some(r => r.path === to.path);
+      const allRoutes = router.getRoutes();
+      const matchedRoute = allRoutes.find(r => {
+        // 检查路径匹配（支持带参数的路径）
+        if (r.path === to.path) return true;
 
-      if (routeExists) {
+        // 检查路由名称匹配（对于嵌套路由）
+        if (r.name && to.name && r.name === to.name) return true;
+
+        // 检查父路由路径匹配（对于嵌套子路由）
+        if (r.path && to.path.startsWith(r.path)) return true;
+
+        return false;
+      });
+
+      if (matchedRoute) {
         console.log('✅ [initRoute] 动态路由已注册，重新加载页面');
         return {
           path: to.fullPath,
@@ -171,24 +183,8 @@ async function initRoute(to: RouteLocationNormalized, router: Router): Promise<R
 
   // not-found路由：检查是否存在权限路由（有权限但无访问权限）
   console.log('🔍 [initRoute] 检查not-found路由是否存在权限路由...');
-
-  // 检查自定义路由是否存在
-  const allRoutes = router.getRoutes();
-  const matchedRoute = allRoutes.find(r => r.path === to.path);
-
-  if (matchedRoute) {
-    console.log('✅ [initRoute] 找到匹配的路由:', matchedRoute.name);
-    // 重新加载页面以正确匹配路由
-    return {
-      path: to.fullPath,
-      replace: true,
-      query: to.query,
-      hash: to.hash
-    };
-  }
-
   const exist = await routeStore.getIsAuthRouteExist(to.path as RoutePath);
-  console.log('  - 权限路由存在检查结果:', exist);
+  console.log('  - 路径存在检查结果:', exist);
 
   if (exist) {
     console.log('➡️ [initRoute] 路由存在但无权限，重定向到403');

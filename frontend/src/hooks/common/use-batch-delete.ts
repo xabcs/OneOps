@@ -14,7 +14,7 @@
  * });
  */
 
-import { ElNotification, ElMessageBox } from 'element-plus'
+import { ElMessageBox, ElNotification } from 'element-plus';
 
 export interface BatchDeleteOptions {
   /**
@@ -22,37 +22,37 @@ export interface BatchDeleteOptions {
    * @param id 要删除的项目ID
    * @returns Promise<any>
    */
-  deleteApi: (id: number) => Promise<any>
+  deleteApi: (id: number) => Promise<any>;
 
   /**
    * 成功消息模板
    * @default '成功删除 {count} 个项目'
    */
-  successMessage?: string
+  successMessage?: string;
 
   /**
    * 错误消息模板
    * @default '{count} 个项目删除失败'
    */
-  errorMessage?: string
+  errorMessage?: string;
 
   /**
    * 确认消息生成函数
    * @param count 选中的项目数量
    * @returns 确认消息
    */
-  confirmMessage?: (count: number) => string
+  confirmMessage?: (count: number) => string;
 
   /**
    * 删除完成后的回调
    */
-  onDeleted?: () => void | Promise<void>
+  onDeleted?: () => void | Promise<void>;
 
   /**
    * 是否显示确认对话框
    * @default true
    */
-  showConfirm?: boolean
+  showConfirm?: boolean;
 }
 
 export function useBatchDelete(options: BatchDeleteOptions) {
@@ -63,7 +63,7 @@ export function useBatchDelete(options: BatchDeleteOptions) {
     confirmMessage = (count: number) => `确定要删除选中的 ${count} 个项目吗？`,
     onDeleted,
     showConfirm = true
-  } = options
+  } = options;
 
   /**
    * 处理批量删除操作
@@ -75,39 +75,35 @@ export function useBatchDelete(options: BatchDeleteOptions) {
       ElNotification.warning({
         title: '警告',
         message: '请先选择要删除的项目'
-      })
-      return
+      });
+      return;
     }
 
     // 显示确认对话框
     if (showConfirm) {
       try {
-        await ElMessageBox.confirm(
-          confirmMessage(selectedIds.length),
-          '批量删除',
-          {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }
-        )
+        await ElMessageBox.confirm(confirmMessage(selectedIds.length), '批量删除', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        });
       } catch {
         // 用户取消操作
-        return
+        return;
       }
     }
 
     // 执行批量删除
-    let successCount = 0
-    let failCount = 0
+    let successCount = 0;
+    let failCount = 0;
 
     for (const id of selectedIds) {
       try {
-        await deleteApi(id)
-        successCount++
+        await deleteApi(id);
+        successCount++;
       } catch (error) {
-        console.error(`删除项目 ${id} 失败:`, error)
-        failCount++
+        console.error(`删除项目 ${id} 失败:`, error);
+        failCount++;
       }
     }
 
@@ -116,27 +112,27 @@ export function useBatchDelete(options: BatchDeleteOptions) {
       ElNotification.success({
         title: '删除成功',
         message: `${successMessage} ${successCount} 个项目`
-      })
+      });
     }
 
     if (failCount > 0) {
       ElNotification.error({
         title: '删除失败',
         message: `${failCount} ${errorMessage}`
-      })
+      });
     }
 
     // 执行删除完成回调
     if (successCount > 0 && onDeleted) {
       try {
-        await onDeleted()
+        await onDeleted();
       } catch (error) {
-        console.error('删除完成回调执行失败:', error)
+        console.error('删除完成回调执行失败:', error);
       }
     }
-  }
+  };
 
   return {
     handleBatchDelete
-  }
+  };
 }

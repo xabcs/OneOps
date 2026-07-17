@@ -466,10 +466,7 @@ export function applyHeaderTheme(headerTheme: App.Theme.ThemeSetting['header']) 
       '--header-button-hover-bg',
       `rgba(255, 255, 255, ${Math.max(startAlpha - 0.03, 0.85).toFixed(2)})`
     );
-    root.style.setProperty(
-      '--header-input-bg',
-      `rgba(255, 255, 255, ${Math.max(startAlpha - 0.23, 0.62).toFixed(2)})`
-    );
+    root.style.setProperty('--header-input-bg', `rgba(255, 255, 255, ${Math.max(startAlpha - 0.23, 0.62).toFixed(2)})`);
     root.style.setProperty(
       '--header-status-bg',
       `rgba(255, 255, 255, ${Math.max(startAlpha - 0.38, 0.47).toFixed(2)})`
@@ -540,7 +537,7 @@ export function applyHeaderTheme(headerTheme: App.Theme.ThemeSetting['header']) 
 function parseAlpha(color: string): number | null {
   const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
   if (match && match[4]) {
-    return parseFloat(match[4]);
+    return Number.parseFloat(match[4]);
   }
 
   // Handle hex colors
@@ -562,18 +559,18 @@ function getColorBrightness(color: string): number {
   // Handle rgb/rgba
   const rgbMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (rgbMatch) {
-    const r = parseInt(rgbMatch[1], 10);
-    const g = parseInt(rgbMatch[2], 10);
-    const b = parseInt(rgbMatch[3], 10);
+    const r = Number.parseInt(rgbMatch[1], 10);
+    const g = Number.parseInt(rgbMatch[2], 10);
+    const b = Number.parseInt(rgbMatch[3], 10);
     return (r * 299 + g * 587 + b * 114) / 1000;
   }
 
   // Handle hex
   const hexMatch = color.match(/#?([a-f0-9]{2})([a-f0-9]{2})([a-f0-9]{2})?/i);
   if (hexMatch) {
-    const r = parseInt(hexMatch[1], 16);
-    const g = parseInt(hexMatch[2], 16);
-    const b = parseInt(hexMatch[3] || '', 16);
+    const r = Number.parseInt(hexMatch[1], 16);
+    const g = Number.parseInt(hexMatch[2], 16);
+    const b = Number.parseInt(hexMatch[3] || '', 16);
     return (r * 299 + g * 587 + b * 114) / 1000;
   }
 

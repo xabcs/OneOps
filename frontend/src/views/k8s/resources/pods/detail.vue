@@ -5,6 +5,7 @@ import { ElTag } from 'element-plus';
 import yaml from 'js-yaml';
 import { fetchK8sEvents, fetchK8sPodLogs, getK8sPod, updateK8sPod } from '@/service/api/k8s';
 import { formatAnnotations, formatLabels, formatSelectors } from '@/utils/k8s-formatters';
+import YamlEditor from '@/components/YamlEditor.vue';
 import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
 
 defineOptions({ name: 'K8sPodDetail' });
@@ -31,7 +32,6 @@ const logContainerName = ref('');
 // YAML 编辑相关
 const showYamlEditor = ref(false);
 const yamlContent = ref('');
-const yamlEditingContent = ref('');
 const yamlSaving = ref(false);
 
 // 返回列表页的路径 - 直接返回工作负载汇总页，状态由 store 管理
@@ -78,12 +78,12 @@ const getAnnotationTagType = (key: string) => {
 const getShortAnnotationKey = (key: string) => {
   if (key.length > 25) {
     if (key.startsWith('kubectl.kubernetes.io/')) {
-      return 'kubectl.../' + key.split('/').pop();
+      return `kubectl.../${key.split('/').pop()}`;
     }
     if (key.startsWith('deployment.kubernetes.io/')) {
-      return 'dep.../' + key.split('/').pop();
+      return `dep.../${key.split('/').pop()}`;
     }
-    return key.substring(0, 10) + '...' + key.substring(key.length - 10);
+    return `${key.substring(0, 10)}...${key.substring(key.length - 10)}`;
   }
   return key;
 };
@@ -91,7 +91,7 @@ const getShortAnnotationKey = (key: string) => {
 // 获取截断的注解值
 const getShortAnnotationValue = (value: string) => {
   if (value.length > 20) {
-    return value.substring(0, 20) + '...';
+    return `${value.substring(0, 20)}...`;
   }
   return value;
 };
@@ -209,13 +209,14 @@ function handleEditYaml() {
     // 后端返回的是 JSON 字符串，需要先解析为对象
     const manifestStr = resource.value?.manifest || resource.value;
     const manifestObj = typeof manifestStr === 'string' ? JSON.parse(manifestStr) : manifestStr;
+    // 删除 managedFields
+    delete manifestObj.managedFields;
     // 转换为格式化的 YAML
-    yamlEditingContent.value = yaml.dump(manifestObj, {
+    yamlContent.value = yaml.dump(manifestObj, {
       indent: 2,
       lineWidth: -1,
       noRefs: true
     });
-    yamlContent.value = yamlEditingContent.value;
     showYamlEditor.value = true;
   } catch (error) {
     console.error('解析 manifest 失败:', error);
@@ -223,30 +224,23 @@ function handleEditYaml() {
   }
 }
 
-// 关闭 YAML 编辑器
-function closeYamlEditor() {
-  showYamlEditor.value = false;
-  yamlEditingContent.value = '';
-}
-
 // 保存 YAML
-async function handleSaveYaml() {
+async function handleYamlApply(yamlStr: string) {
   yamlSaving.value = true;
   try {
     // 将 YAML 转换回 JSON 对象
-    const manifestObj = yaml.load(yamlEditingContent.value);
+    const manifestObj = yaml.load(yamlStr);
     // 调用更新 API
     await updateK8sPod(clusterId.value, {
       namespace: namespace.value,
       manifest: manifestObj
     });
     ElMessage.success('保存成功');
-    closeYamlEditor();
     // 刷新数据
     await loadDetail();
   } catch (error: any) {
     console.error('保存 YAML 失败:', error);
-    ElMessage.error(`保存失败: ${error.message || 'YAML 格式错误'}`);
+    throw new Error(error.message || '保存失败');
   } finally {
     yamlSaving.value = false;
   }
@@ -273,7 +267,9 @@ onMounted(() => {
       :status-tag="getPhaseTag"
       :back-path="backPath"
       :actions="[
-        ...(resource?.phase === 'Running' ? [{ label: '终端', type: 'primary', handler: () => handleTerminal(), tooltip: '打开容器终端' }] : []),
+        ...(resource?.phase === 'Running'
+          ? [{ label: '终端', type: 'primary', handler: () => handleTerminal(), tooltip: '打开容器终端' }]
+          : []),
         { label: '日志', handler: () => handleLogs(), tooltip: '查看容器日志' },
         { label: '编辑YAML', handler: handleEditYaml, tooltip: '编辑 YAML 配置' }
       ]"
@@ -405,7 +401,13 @@ onMounted(() => {
               stripe
               size="small"
               class="pods-containers-table"
-              :header-cell-style="{ background: '#f5f7fa', color: '#303133', fontWeight: '600', paddingLeft: '16px', paddingRight: '16px' }"
+              :header-cell-style="{
+                background: '#f5f7fa',
+                color: '#303133',
+                fontWeight: '600',
+                paddingLeft: '16px',
+                paddingRight: '16px'
+              }"
               :row-style="{ backgroundColor: 'transparent' }"
               :cell-style="{ backgroundColor: 'transparent', padding: '8px 16px' }"
             >
@@ -468,16 +470,14 @@ onMounted(() => {
       </template>
     </ElDialog>
 
-    <!-- YAML 编辑对话框 -->
-    <ElDialog v-model="showYamlEditor" title="编辑 YAML 配置" width="900px" top="5vh" @close="closeYamlEditor">
-      <div class="yaml-editor-container">
-        <textarea v-model="yamlEditingContent" class="yaml-editor" spellcheck="false"></textarea>
-      </div>
-      <template #footer>
-        <ElButton @click="closeYamlEditor">取消</ElButton>
-        <ElButton type="primary" :loading="yamlSaving" @click="handleSaveYaml">保存</ElButton>
-      </template>
-    </ElDialog>
+    <!-- YAML 编辑器 -->
+    <YamlEditor
+      v-model="showYamlEditor"
+      :title="`编辑 ${resourceName}`"
+      :yaml="yamlContent"
+      :can-edit="true"
+      :on-apply="handleYamlApply"
+    />
   </div>
 </template>
 
@@ -621,7 +621,7 @@ onMounted(() => {
   display: flex !important;
   align-items: center;
   width: 100%;
-  font-family: "Courier New", Courier, monospace;
+  font-family: 'Courier New', Courier, monospace;
   padding: 4px 8px !important;
 }
 
@@ -672,7 +672,7 @@ onMounted(() => {
   display: flex !important;
   align-items: center;
   width: 100%;
-  font-family: "Courier New", Courier, monospace;
+  font-family: 'Courier New', Courier, monospace;
   margin: 0;
   padding: 4px 8px !important;
   border: none !important;
@@ -695,7 +695,7 @@ onMounted(() => {
 }
 
 .font-mono {
-  font-family: "Courier New", Courier, monospace;
+  font-family: 'Courier New', Courier, monospace;
   word-break: break-all;
 }
 
@@ -711,37 +711,12 @@ onMounted(() => {
   color: #4ec9b0;
   padding: 16px;
   border-radius: 4px;
-  font-family: "Courier New", Courier, monospace;
+  font-family: 'Courier New', Courier, monospace;
   font-size: 13px;
   white-space: pre-wrap;
   word-break: break-all;
   max-height: 600px;
   overflow: auto;
-}
-
-/* YAML 编辑器样式 */
-.yaml-editor-container {
-  width: 100%;
-  height: 500px;
-}
-
-.yaml-editor {
-  width: 100%;
-  height: 100%;
-  padding: 12px;
-  font-family: "Courier New", Courier, monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  resize: none;
-  background-color: #1e1e1e;
-  color: #d4d4d4;
-}
-
-.yaml-editor:focus {
-  outline: none;
-  border-color: #409eff;
 }
 
 /* 表格透明样式 - 完全覆盖 Element Plus 默认样式 */

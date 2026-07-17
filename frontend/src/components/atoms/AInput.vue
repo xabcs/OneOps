@@ -1,3 +1,75 @@
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue';
+import { CircleClose } from '@element-plus/icons-vue';
+
+interface Props {
+  modelValue?: string | number;
+  type?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  readonly?: boolean;
+  maxlength?: number;
+  clearable?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  type: 'text',
+  disabled: false,
+  readonly: false,
+  clearable: false
+});
+
+const emit = defineEmits<{
+  'update:modelValue': [value: string | number];
+  input: [value: string | number];
+  change: [value: string | number];
+  focus: [event: FocusEvent];
+  blur: [event: FocusEvent];
+  clear: [];
+}>();
+
+const inputValue = ref(props.modelValue || '');
+
+// 监听外部值变化
+watch(
+  () => props.modelValue,
+  newValue => {
+    inputValue.value = newValue || '';
+  }
+);
+
+// 处理输入
+const handleInput = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  inputValue.value = target.value;
+  emit('update:modelValue', target.value);
+  emit('input', target.value);
+};
+
+// 处理变化
+const handleChange = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  emit('change', target.value);
+};
+
+// 处理焦点
+const handleFocus = (event: FocusEvent) => {
+  emit('focus', event);
+};
+
+// 处理失焦
+const handleBlur = (event: FocusEvent) => {
+  emit('blur', event);
+};
+
+// 处理清除
+const handleClear = () => {
+  inputValue.value = '';
+  emit('update:modelValue', '');
+  emit('clear');
+};
+</script>
+
 <template>
   <div class="a-input-group">
     <div v-if="$slots.prepend" class="a-input-prepend">
@@ -27,75 +99,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { CircleClose } from '@element-plus/icons-vue'
-
-interface Props {
-  modelValue?: string | number
-  type?: string
-  placeholder?: string
-  disabled?: boolean
-  readonly?: boolean
-  maxlength?: number
-  clearable?: boolean
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  type: 'text',
-  disabled: false,
-  readonly: false,
-  clearable: false
-})
-
-const emit = defineEmits<{
-  'update:modelValue': [value: string | number]
-  input: [value: string | number]
-  change: [value: string | number]
-  focus: [event: FocusEvent]
-  blur: [event: FocusEvent]
-  clear: []
-}>()
-
-const inputValue = ref(props.modelValue || '')
-
-// 监听外部值变化
-watch(() => props.modelValue, (newValue) => {
-  inputValue.value = newValue || ''
-})
-
-// 处理输入
-const handleInput = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  inputValue.value = target.value
-  emit('update:modelValue', target.value)
-  emit('input', target.value)
-}
-
-// 处理变化
-const handleChange = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  emit('change', target.value)
-}
-
-// 处理焦点
-const handleFocus = (event: FocusEvent) => {
-  emit('focus', event)
-}
-
-// 处理失焦
-const handleBlur = (event: FocusEvent) => {
-  emit('blur', event)
-}
-
-// 处理清除
-const handleClear = () => {
-  inputValue.value = ''
-  emit('update:modelValue', '')
-  emit('clear')
-}
-</script>
 
 <style scoped>
 .a-input-group {

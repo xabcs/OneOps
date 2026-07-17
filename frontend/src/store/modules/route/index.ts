@@ -297,7 +297,10 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
 
     // 获取当前已注册的路由名称（排除内置路由）
     const currentRouteNames = new Set(
-      router.getRoutes().map(r => r.name).filter(Boolean)
+      router
+        .getRoutes()
+        .map(r => r.name)
+        .filter(Boolean)
     );
 
     // 添加新路由或更新已存在的路由
@@ -342,7 +345,10 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
 
     // 获取当前已注册的路由名称
     const currentRouteNames = new Set(
-      router.getRoutes().map(r => r.name).filter(Boolean)
+      router
+        .getRoutes()
+        .map(r => r.name)
+        .filter(Boolean)
     );
 
     // 移除已删除的路由

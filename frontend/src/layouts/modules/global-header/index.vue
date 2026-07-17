@@ -50,10 +50,10 @@ const headerStyle = computed(() => {
 // 系统状态
 const currentTime = ref(new Date());
 const systemStatus = ref({
-  api: true,    // API连接状态
-  db: true,    // 数据库连接状态
-  agents: 15,  // 在线Agent数量
-  alerts: 3   // 未读告警数量
+  api: true, // API连接状态
+  db: true, // 数据库连接状态
+  agents: 15, // 在线Agent数量
+  alerts: 3 // 未读告警数量
 });
 
 const systemInfo = computed(() => ({
@@ -158,7 +158,11 @@ const handleNotificationClick = (notification: any) => {
 </script>
 
 <template>
-  <DarkModeContainer class="global-header h-full flex-y-center px-12px shadow-header relative" :style="headerStyle" @click="handleClickOutside">
+  <DarkModeContainer
+    class="global-header relative h-full flex-y-center px-12px shadow-header"
+    :style="headerStyle"
+    @click="handleClickOutside"
+  >
     <GlobalLogo v-if="showLogo" class="h-full" :style="{ width: themeStore.sider.width + 'px' }" />
     <MenuToggler v-if="showMenuToggler" :collapsed="appStore.siderCollapse" @click="appStore.toggleSiderCollapse" />
     <div v-if="showMenu" :id="GLOBAL_HEADER_MENU_ID" class="h-full flex-y-center flex-1-hidden"></div>
@@ -167,7 +171,7 @@ const handleNotificationClick = (notification: any) => {
     </div>
 
     <!-- 左侧系统状态区域 -->
-    <div v-if="!appStore.isMobile" class="h-full flex-y-center mx-16px flex-1-hidden">
+    <div v-if="!appStore.isMobile" class="mx-16px h-full flex-y-center flex-1-hidden">
       <div class="flex items-center gap-12px text-xs">
         <!-- 状态指示器组 -->
         <div class="flex items-center gap-8px">
@@ -194,7 +198,7 @@ const handleNotificationClick = (notification: any) => {
 
         <!-- 环境信息 -->
         <div class="flex items-center gap-4px text-gray-500 dark:text-gray-400">
-          <span class="px-8px py-2px rounded bg-gray-100 dark:bg-gray-800">{{ systemInfo.environment }}</span>
+          <span class="rounded bg-gray-100 px-8px py-2px dark:bg-gray-800">{{ systemInfo.environment }}</span>
           <span class="text-gray-400">{{ systemInfo.version }}</span>
         </div>
       </div>
@@ -205,7 +209,7 @@ const handleNotificationClick = (notification: any) => {
       <!-- 通知中心 -->
       <div v-if="!appStore.isMobile" class="header-action-item">
         <div class="relative" @click.stop="showNotifications = !showNotifications">
-          <ButtonIcon icon="mdi:bell-outline" :tooltip-content="'通知中心'" />
+          <ButtonIcon icon="mdi:bell-outline" tooltip-content="通知中心" />
           <span v-if="systemStatus.alerts > 0" class="notification-badge">{{ systemStatus.alerts }}</span>
           <!-- 通知下拉面板 -->
           <div v-if="showNotifications" class="dropdown-panel notification-dropdown">
@@ -222,7 +226,15 @@ const handleNotificationClick = (notification: any) => {
                 @click="handleNotificationClick(notif)"
               >
                 <div class="notification-icon">
-                  <Icon :icon="notif.type === 'warning' ? 'mdi:alert' : notif.type === 'error' ? 'mdi:alert-circle' : 'mdi:information'" />
+                  <Icon
+                    :icon="
+                      notif.type === 'warning'
+                        ? 'mdi:alert'
+                        : notif.type === 'error'
+                          ? 'mdi:alert-circle'
+                          : 'mdi:information'
+                    "
+                  />
                 </div>
                 <div class="notification-content">
                   <div class="notification-title">{{ notif.title }}</div>
@@ -230,9 +242,7 @@ const handleNotificationClick = (notification: any) => {
                   <div class="notification-time">{{ notif.time }}</div>
                 </div>
               </div>
-              <div v-if="notifications.length === 0" class="text-center text-gray-500 py-12px">
-                暂无通知
-              </div>
+              <div v-if="notifications.length === 0" class="py-12px text-center text-gray-500">暂无通知</div>
             </div>
           </div>
         </div>
@@ -241,14 +251,9 @@ const handleNotificationClick = (notification: any) => {
       <!-- 快速操作菜单 -->
       <div v-if="!appStore.isMobile" class="header-action-item">
         <div class="relative" @click.stop="showQuickMenu = !showQuickMenu">
-          <ButtonIcon icon="mdi:dots-horizontal" :tooltip-content="'快速操作'" />
+          <ButtonIcon icon="mdi:dots-horizontal" tooltip-content="快速操作" />
           <div v-if="showQuickMenu" class="dropdown-panel quick-menu-dropdown">
-            <div
-              v-for="action in quickActions"
-              :key="action.name"
-              class="dropdown-item"
-              @click="action.action"
-            >
+            <div v-for="action in quickActions" :key="action.name" class="dropdown-item" @click="action.action">
               <Icon :icon="action.icon" />
               <span>{{ action.name }}</span>
             </div>
@@ -330,7 +335,8 @@ const handleNotificationClick = (notification: any) => {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

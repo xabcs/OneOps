@@ -1,3 +1,13 @@
+<script setup lang="ts">
+interface Props {
+  title?: string;
+}
+
+withDefaults(defineProps<Props>(), {
+  title: ''
+});
+</script>
+
 <template>
   <div class="info-card">
     <div v-if="$slots.header || title" class="card-header">
@@ -15,16 +25,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-interface Props {
-  title?: string
-}
-
-withDefaults(defineProps<Props>(), {
-  title: ''
-})
-</script>
 
 <style scoped>
 .info-card {

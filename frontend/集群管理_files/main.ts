@@ -1,28 +1,34 @@
-import { createApp } from "/node_modules/.vite/deps/vue.js?v=dc745294";
-import "/src/plugins/assets.ts";
-import "/src/plugins/ui.ts";
-import { setupAppVersionNotification, setupDayjs, setupIconifyOffline, setupLoading, setupNProgress } from "/src/plugins/index.ts";
-import { setupStore } from "/src/store/index.ts";
-import { setupRouter } from "/src/router/index.ts?t=1784099631712";
-import { setupI18n } from "/src/locales/index.ts";
-import { initContentTheme, initContentTheme2, initHeaderTheme } from "/src/utils/content-theme.ts";
-import App from "/src/App.vue?t=1784099631712";
+import { createApp } from '/node_modules/.vite/deps/vue.js?v=dc745294';
+import '/src/plugins/assets.ts';
+import '/src/plugins/ui.ts';
+import {
+  setupAppVersionNotification,
+  setupDayjs,
+  setupIconifyOffline,
+  setupLoading,
+  setupNProgress
+} from '/src/plugins/index.ts';
+import { setupStore } from '/src/store/index.ts';
+import { setupRouter } from '/src/router/index.ts?t=1784099631712';
+import { setupI18n } from '/src/locales/index.ts';
+import { initContentTheme, initContentTheme2, initHeaderTheme } from '/src/utils/content-theme.ts';
+import App from '/src/App.vue?t=1784099631712';
 async function setupApp() {
-	setupLoading();
-	setupNProgress();
-	setupIconifyOffline();
-	setupDayjs();
-	// 初始化内容主题和Header主题
-	initContentTheme();
-	initContentTheme2();
-	initHeaderTheme();
-	const app = createApp(App);
-	setupStore(app);
-	await setupRouter(app);
-	setupI18n(app);
-	setupAppVersionNotification();
-	app.mount("#app");
+  setupLoading();
+  setupNProgress();
+  setupIconifyOffline();
+  setupDayjs();
+  // 初始化内容主题和Header主题
+  initContentTheme();
+  initContentTheme2();
+  initHeaderTheme();
+  const app = createApp(App);
+  setupStore(app);
+  await setupRouter(app);
+  setupI18n(app);
+  setupAppVersionNotification();
+  app.mount('#app');
 }
 setupApp();
 
-//# sourceMappingURL=data:application/json;base64,eyJtYXBwaW5ncyI6IkFBQUEsU0FBUyxpQkFBaUI7QUFDMUIsT0FBTztBQUNQLE9BQU87QUFDUCxTQUFTLDZCQUE2QixZQUFZLHFCQUFxQixjQUFjLHNCQUFzQjtBQUMzRyxTQUFTLGtCQUFrQjtBQUMzQixTQUFTLG1CQUFtQjtBQUM1QixTQUFTLGlCQUFpQjtBQUMxQixTQUFTLGtCQUFrQixtQkFBbUIsdUJBQXVCO0FBQ3JFLE9BQU8sU0FBUztBQUVoQixlQUFlLFdBQVc7QUFDeEIsZUFBYztBQUVkLGlCQUFnQjtBQUVoQixzQkFBcUI7QUFFckIsYUFBWTs7QUFHWixtQkFBa0I7QUFDbEIsb0JBQW1CO0FBQ25CLGtCQUFpQjtDQUVqQixNQUFNLE1BQU0sVUFBVSxJQUFJO0FBRTFCLFlBQVcsSUFBSTtBQUVmLE9BQU0sWUFBWSxJQUFJO0FBRXRCLFdBQVUsSUFBSTtBQUVkLDhCQUE2QjtBQUU3QixLQUFJLE1BQU0sT0FBTzs7QUFHbkIsVUFBVSIsIm5hbWVzIjpbXSwic291cmNlcyI6WyJtYWluLnRzIl0sInZlcnNpb24iOjMsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IGNyZWF0ZUFwcCB9IGZyb20gJ3Z1ZSc7XG5pbXBvcnQgJy4vcGx1Z2lucy9hc3NldHMnO1xuaW1wb3J0ICcuL3BsdWdpbnMvdWknO1xuaW1wb3J0IHsgc2V0dXBBcHBWZXJzaW9uTm90aWZpY2F0aW9uLCBzZXR1cERheWpzLCBzZXR1cEljb25pZnlPZmZsaW5lLCBzZXR1cExvYWRpbmcsIHNldHVwTlByb2dyZXNzIH0gZnJvbSAnLi9wbHVnaW5zJztcbmltcG9ydCB7IHNldHVwU3RvcmUgfSBmcm9tICcuL3N0b3JlJztcbmltcG9ydCB7IHNldHVwUm91dGVyIH0gZnJvbSAnLi9yb3V0ZXInO1xuaW1wb3J0IHsgc2V0dXBJMThuIH0gZnJvbSAnLi9sb2NhbGVzJztcbmltcG9ydCB7IGluaXRDb250ZW50VGhlbWUsIGluaXRDb250ZW50VGhlbWUyLCBpbml0SGVhZGVyVGhlbWUgfSBmcm9tICcuL3V0aWxzL2NvbnRlbnQtdGhlbWUnO1xuaW1wb3J0IEFwcCBmcm9tICcuL0FwcC52dWUnO1xuXG5hc3luYyBmdW5jdGlvbiBzZXR1cEFwcCgpIHtcbiAgc2V0dXBMb2FkaW5nKCk7XG5cbiAgc2V0dXBOUHJvZ3Jlc3MoKTtcblxuICBzZXR1cEljb25pZnlPZmZsaW5lKCk7XG5cbiAgc2V0dXBEYXlqcygpO1xuXG4gIC8vIOWIneWni+WMluWGheWuueS4u+mimOWSjEhlYWRlcuS4u+mimFxuICBpbml0Q29udGVudFRoZW1lKCk7XG4gIGluaXRDb250ZW50VGhlbWUyKCk7XG4gIGluaXRIZWFkZXJUaGVtZSgpO1xuXG4gIGNvbnN0IGFwcCA9IGNyZWF0ZUFwcChBcHApO1xuXG4gIHNldHVwU3RvcmUoYXBwKTtcblxuICBhd2FpdCBzZXR1cFJvdXRlcihhcHApO1xuXG4gIHNldHVwSTE4bihhcHApO1xuXG4gIHNldHVwQXBwVmVyc2lvbk5vdGlmaWNhdGlvbigpO1xuXG4gIGFwcC5tb3VudCgnI2FwcCcpO1xufVxuXG5zZXR1cEFwcCgpO1xuIl19
+// # sourceMappingURL=data:application/json;base64,eyJtYXBwaW5ncyI6IkFBQUEsU0FBUyxpQkFBaUI7QUFDMUIsT0FBTztBQUNQLE9BQU87QUFDUCxTQUFTLDZCQUE2QixZQUFZLHFCQUFxQixjQUFjLHNCQUFzQjtBQUMzRyxTQUFTLGtCQUFrQjtBQUMzQixTQUFTLG1CQUFtQjtBQUM1QixTQUFTLGlCQUFpQjtBQUMxQixTQUFTLGtCQUFrQixtQkFBbUIsdUJBQXVCO0FBQ3JFLE9BQU8sU0FBUztBQUVoQixlQUFlLFdBQVc7QUFDeEIsZUFBYztBQUVkLGlCQUFnQjtBQUVoQixzQkFBcUI7QUFFckIsYUFBWTs7QUFHWixtQkFBa0I7QUFDbEIsb0JBQW1CO0FBQ25CLGtCQUFpQjtDQUVqQixNQUFNLE1BQU0sVUFBVSxJQUFJO0FBRTFCLFlBQVcsSUFBSTtBQUVmLE9BQU0sWUFBWSxJQUFJO0FBRXRCLFdBQVUsSUFBSTtBQUVkLDhCQUE2QjtBQUU3QixLQUFJLE1BQU0sT0FBTzs7QUFHbkIsVUFBVSIsIm5hbWVzIjpbXSwic291cmNlcyI6WyJtYWluLnRzIl0sInZlcnNpb24iOjMsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCB7IGNyZWF0ZUFwcCB9IGZyb20gJ3Z1ZSc7XG5pbXBvcnQgJy4vcGx1Z2lucy9hc3NldHMnO1xuaW1wb3J0ICcuL3BsdWdpbnMvdWknO1xuaW1wb3J0IHsgc2V0dXBBcHBWZXJzaW9uTm90aWZpY2F0aW9uLCBzZXR1cERheWpzLCBzZXR1cEljb25pZnlPZmZsaW5lLCBzZXR1cExvYWRpbmcsIHNldHVwTlByb2dyZXNzIH0gZnJvbSAnLi9wbHVnaW5zJztcbmltcG9ydCB7IHNldHVwU3RvcmUgfSBmcm9tICcuL3N0b3JlJztcbmltcG9ydCB7IHNldHVwUm91dGVyIH0gZnJvbSAnLi9yb3V0ZXInO1xuaW1wb3J0IHsgc2V0dXBJMThuIH0gZnJvbSAnLi9sb2NhbGVzJztcbmltcG9ydCB7IGluaXRDb250ZW50VGhlbWUsIGluaXRDb250ZW50VGhlbWUyLCBpbml0SGVhZGVyVGhlbWUgfSBmcm9tICcuL3V0aWxzL2NvbnRlbnQtdGhlbWUnO1xuaW1wb3J0IEFwcCBmcm9tICcuL0FwcC52dWUnO1xuXG5hc3luYyBmdW5jdGlvbiBzZXR1cEFwcCgpIHtcbiAgc2V0dXBMb2FkaW5nKCk7XG5cbiAgc2V0dXBOUHJvZ3Jlc3MoKTtcblxuICBzZXR1cEljb25pZnlPZmZsaW5lKCk7XG5cbiAgc2V0dXBEYXlqcygpO1xuXG4gIC8vIOWIneWni+WMluWGheWuueS4u+mimOWSjEhlYWRlcuS4u+mimFxuICBpbml0Q29udGVudFRoZW1lKCk7XG4gIGluaXRDb250ZW50VGhlbWUyKCk7XG4gIGluaXRIZWFkZXJUaGVtZSgpO1xuXG4gIGNvbnN0IGFwcCA9IGNyZWF0ZUFwcChBcHApO1xuXG4gIHNldHVwU3RvcmUoYXBwKTtcblxuICBhd2FpdCBzZXR1cFJvdXRlcihhcHApO1xuXG4gIHNldHVwSTE4bihhcHApO1xuXG4gIHNldHVwQXBwVmVyc2lvbk5vdGlmaWNhdGlvbigpO1xuXG4gIGFwcC5tb3VudCgnI2FwcCcpO1xufVxuXG5zZXR1cEFwcCgpO1xuIl19

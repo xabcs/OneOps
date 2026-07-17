@@ -4,6 +4,7 @@ import { usePreferredColorScheme } from '@vueuse/core';
 import { defineStore } from 'pinia';
 import { getPaletteColorByNumber } from '@sa/color';
 import { localStg } from '@/utils/storage';
+import { applyContentTheme2, applyHeaderTheme } from '@/utils/content-theme';
 import { themeSettings } from '@/theme/settings';
 import { SetupStoreId } from '@/enum';
 import {
@@ -14,7 +15,6 @@ import {
   toggleAuxiliaryColorModes,
   toggleCssDarkMode
 } from './shared';
-import { applyHeaderTheme, applyContentTheme2 } from '@/utils/content-theme';
 
 /** Theme store */
 export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
@@ -459,7 +459,7 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     // watch content theme 2 change
     watch(
       () => settings.value.contentTheme2,
-      (newTheme) => {
+      newTheme => {
         // Apply contentTheme2 styles when theme changes
         applyContentTheme2(newTheme);
       },

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useThemeStore } from '@/store/modules/theme';
+import { applyContentTheme2 } from '@/utils/content-theme';
 import { $t } from '@/locales';
 import SettingItem from '../components/setting-item.vue';
-import { applyContentTheme2 } from '@/utils/content-theme';
 
 defineOptions({ name: 'ContentTheme2' });
 
@@ -39,7 +39,9 @@ const statDangerBg = ref(themeStore.contentTheme2.statCards.dangerBg || 'rgba(25
 const statDangerBgStart = ref(themeStore.contentTheme2.statCards.dangerBgStart || 'rgba(254, 242, 242, 0.98)');
 const statDangerBgEnd = ref(themeStore.contentTheme2.statCards.dangerBgEnd || 'rgba(255, 255, 255, 0.94)');
 const statBorderRadius = ref(themeStore.contentTheme2.statCards.borderRadius || '12px');
-const statShadow = ref(themeStore.contentTheme2.statCards.shadow || '0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)');
+const statShadow = ref(
+  themeStore.contentTheme2.statCards.shadow || '0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)'
+);
 
 // 工具栏设置
 const toolbarGradientStart = ref(themeStore.contentTheme2.toolbar.gradientStart || 'rgba(248, 250, 252, 0.92)');
@@ -51,7 +53,9 @@ const toolbarBorderRadius = ref(themeStore.contentTheme2.toolbar.borderRadius ||
 
 // 内容卡片设置
 const contentCardBg = ref(themeStore.contentTheme2.contentCard.background || '#ffffff');
-const contentCardBgGradientStart = ref(themeStore.contentTheme2.contentCard.bgGradientStart || 'rgba(255, 255, 255, 0.98)');
+const contentCardBgGradientStart = ref(
+  themeStore.contentTheme2.contentCard.bgGradientStart || 'rgba(255, 255, 255, 0.98)'
+);
 const contentCardBgGradientMiddle = ref(themeStore.contentTheme2.contentCard.bgGradientMiddle || '');
 const contentCardBgGradientEnd = ref(themeStore.contentTheme2.contentCard.bgGradientEnd || 'rgba(248, 250, 252, 0.94)');
 const contentCardUseGradient = ref(themeStore.contentTheme2.contentCard.useGradient || false);
@@ -70,8 +74,12 @@ const tableBorderRadius = ref(themeStore.contentTheme2.dataTable.borderRadius ||
 // 搜索筛选设置
 const searchInputBg = ref(themeStore.contentTheme2.searchFilters.inputBg || 'rgba(255, 255, 255, 0.94)');
 const searchInputBorder = ref(themeStore.contentTheme2.searchFilters.inputBorder || 'rgba(148, 163, 184, 0.12)');
-const searchInputHoverBorder = ref(themeStore.contentTheme2.searchFilters.inputHoverBorder || 'rgba(59, 130, 246, 0.16)');
-const searchInputFocusBorder = ref(themeStore.contentTheme2.searchFilters.inputFocusBorder || 'rgba(37, 99, 235, 0.22)');
+const searchInputHoverBorder = ref(
+  themeStore.contentTheme2.searchFilters.inputHoverBorder || 'rgba(59, 130, 246, 0.16)'
+);
+const searchInputFocusBorder = ref(
+  themeStore.contentTheme2.searchFilters.inputFocusBorder || 'rgba(37, 99, 235, 0.22)'
+);
 const searchInputBorderRadius = ref(themeStore.contentTheme2.searchFilters.inputBorderRadius || '8px');
 
 // 分页设置
@@ -165,7 +173,7 @@ function updateTagSetting(key: string, value: any) {
 // 监听 store 变化
 watch(
   () => themeStore.contentTheme2,
-  (newTheme) => {
+  newTheme => {
     // Hero区域
     if (newTheme.heroSection) {
       heroUseGradient.value = newTheme.heroSection.useGradient;
@@ -270,7 +278,6 @@ watch(
 <template>
   <ElDivider>内容区设置2 (模块化主题)</ElDivider>
   <div class="flex-col-stretch gap-16px">
-
     <!-- Hero区域设置 -->
     <div class="theme-section">
       <div class="section-title">
@@ -684,7 +691,11 @@ watch(
         />
       </SettingItem>
       <SettingItem label="圆角大小">
-        <ElInput v-model="contentCardBorderRadius" class="w-120px" @change="updateContentCardSetting('borderRadius', $event)" />
+        <ElInput
+          v-model="contentCardBorderRadius"
+          class="w-120px"
+          @change="updateContentCardSetting('borderRadius', $event)"
+        />
       </SettingItem>
     </div>
 
@@ -789,7 +800,11 @@ watch(
         />
       </SettingItem>
       <SettingItem label="输入框圆角">
-        <ElInput v-model="searchInputBorderRadius" class="w-120px" @change="updateSearchSetting('inputBorderRadius', $event)" />
+        <ElInput
+          v-model="searchInputBorderRadius"
+          class="w-120px"
+          @change="updateSearchSetting('inputBorderRadius', $event)"
+        />
       </SettingItem>
     </div>
 
@@ -846,7 +861,11 @@ watch(
         />
       </SettingItem>
       <SettingItem label="圆角大小">
-        <ElInput v-model="paginationBorderRadius" class="w-120px" @change="updatePaginationSetting('borderRadius', $event)" />
+        <ElInput
+          v-model="paginationBorderRadius"
+          class="w-120px"
+          @change="updatePaginationSetting('borderRadius', $event)"
+        />
       </SettingItem>
     </div>
 

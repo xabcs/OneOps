@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import { useThemeStore } from '@/store/modules/theme';
+import { applyContentTheme } from '@/utils/content-theme';
 import { $t } from '@/locales';
 import SettingItem from '../components/setting-item.vue';
-import { applyContentTheme } from '@/utils/content-theme';
 
 defineOptions({ name: 'ContentTheme' });
 
@@ -111,7 +111,7 @@ function handleToolbarGradientEndChange(color: string | null) {
 // 监听 store 变化
 watch(
   () => themeStore.contentTheme,
-  (newTheme) => {
+  newTheme => {
     if (newTheme.cardBg && newTheme.cardBg !== cardBg.value) {
       cardBg.value = newTheme.cardBg;
     }
@@ -149,7 +149,7 @@ watch(
   <div class="flex-col-stretch gap-12px">
     <!-- 卡片设置 -->
     <div class="flex-col-stretch gap-12px">
-      <div class="text-14px font-500 text-gray-700 mb-8px">{{ $t('theme.content.card') }}</div>
+      <div class="mb-8px text-14px text-gray-700 font-500">{{ $t('theme.content.card') }}</div>
 
       <SettingItem :label="$t('theme.content.cardBg')">
         <ElColorPicker
@@ -193,7 +193,7 @@ watch(
 
     <!-- 表格设置 -->
     <div class="flex-col-stretch gap-12px">
-      <div class="text-14px font-500 text-gray-700 mb-8px">{{ $t('theme.content.table') }}</div>
+      <div class="mb-8px text-14px text-gray-700 font-500">{{ $t('theme.content.table') }}</div>
 
       <SettingItem :label="$t('theme.content.tableHeaderBg')">
         <ElColorPicker
@@ -222,7 +222,7 @@ watch(
 
     <!-- 按钮设置 -->
     <div class="flex-col-stretch gap-12px">
-      <div class="text-14px font-500 text-gray-700 mb-8px">{{ $t('theme.content.button') }}</div>
+      <div class="mb-8px text-14px text-gray-700 font-500">{{ $t('theme.content.button') }}</div>
 
       <SettingItem :label="$t('theme.content.buttonRadius')">
         <ElInput v-model="buttonRadius" class="w-120px" @change="updateSetting('buttonRadius', buttonRadius)" />
@@ -231,7 +231,7 @@ watch(
 
     <!-- 输入框设置 -->
     <div class="flex-col-stretch gap-12px">
-      <div class="text-14px font-500 text-gray-700 mb-8px">{{ $t('theme.content.input') }}</div>
+      <div class="mb-8px text-14px text-gray-700 font-500">{{ $t('theme.content.input') }}</div>
 
       <SettingItem :label="$t('theme.content.inputRadius')">
         <ElInput v-model="inputRadius" class="w-120px" @change="updateSetting('inputRadius', inputRadius)" />
@@ -240,7 +240,7 @@ watch(
 
     <!-- 工具栏渐变 -->
     <div class="flex-col-stretch gap-12px">
-      <div class="text-14px font-500 text-gray-700 mb-8px">{{ $t('theme.content.toolbar') }}</div>
+      <div class="mb-8px text-14px text-gray-700 font-500">{{ $t('theme.content.toolbar') }}</div>
 
       <SettingItem :label="$t('theme.content.useToolbarGradient')">
         <ElSwitch v-model="useToolbarGradient" @change="handleToolbarGradientChange" />
