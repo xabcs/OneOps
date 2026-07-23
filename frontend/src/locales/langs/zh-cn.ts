@@ -340,6 +340,14 @@ const local: App.I18n.Schema = {
     'manage_user-detail': '用户详情',
     manage_role: '角色管理',
     manage_menu: '菜单管理',
+    auth_center: '授权中心',
+    auth: '授权中心',
+    auth_users: '用户',
+    auth_roles: '用户组',
+    auth_applications: '外部应用',
+    auth_rolebindings: '权限映射',
+    auth_userauthorization: '用户组分配',
+    auth_operationlogs: '操作日志',
     'multi-menu': '多级菜单',
     'multi-menu_first': '菜单一',
     'multi-menu_first_child': '菜单一子菜单',
@@ -398,6 +406,7 @@ const local: App.I18n.Schema = {
     k8s_workloads: '工作负载',
     k8s_network: '网络',
     k8s_config: '配置管理',
+    k8s_diagnostic: '诊断中心',
     plugin_copy: '剪贴板',
     plugin_charts: '图表',
     plugin_charts_echarts: 'ECharts',
@@ -432,7 +441,14 @@ const local: App.I18n.Schema = {
     monitoring_trends: '趋势分析',
     monitoring_reports: '巡检报告',
     monitoring_settings: '监控配置',
-    webterminal: 'web终端'
+    webterminal: 'web终端',
+    auth: '授权中心',
+    auth_users: '用户',
+    auth_roles: '用户组',
+    auth_applications: '外部应用',
+    auth_rolebindings: '权限映射',
+    auth_userauthorization: '用户组分配',
+    auth_operationlogs: '操作日志'
   },
   page: {
     audit: {
@@ -619,21 +635,21 @@ const local: App.I18n.Schema = {
         }
       },
       role: {
-        title: '角色列表',
-        roleName: '角色名称',
-        roleCode: '角色编码',
-        roleStatus: '角色状态',
-        roleDesc: '角色描述',
+        title: '用户组列表',
+        groupName: '用户组名称',
+        groupCode: '用户组编码',
+        roleStatus: '用户组状态',
+        roleDesc: '用户组描述',
         menuAuth: '菜单权限',
         buttonAuth: '按钮权限',
         form: {
-          roleName: '请输入角色名称',
-          roleCode: '请输入角色编码',
-          roleStatus: '请选择角色状态',
-          roleDesc: '请输入角色描述'
+          groupName: '请输入用户组名称',
+          groupCode: '请输入用户组编码',
+          roleStatus: '请选择用户组状态',
+          roleDesc: '请输入用户组描述'
         },
-        addRole: '新增角色',
-        editRole: '编辑角色'
+        addGroup: '新增用户组',
+        editGroup: '编辑用户组'
       },
       user: {
         title: '用户列表',

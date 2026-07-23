@@ -1,0 +1,30 @@
+# 简化版Dockerfile - 只打包运行时环境
+FROM docker.xuanyuan.run/library/alpine:3.23.5
+
+# 更新软件包索引并安装运行时依赖
+RUN apk add --no-cache \
+    ca-certificates \
+    curl \
+    openjdk8-jre \
+    bash \
+    procps \
+    && rm -rf /var/cache/apk/*
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制已构建的二进制文件（注意路径）
+COPY ./diagnostic-agent .
+
+# 创建Arthas缓存目录
+RUN mkdir -p /tmp/arthas
+
+# 暴露端口
+EXPOSE 8888
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget -q -O- http://localhost:8888/health || exit 1
+
+# 启动agent
+ENTRYPOINT ["./diagnostic-agent"]

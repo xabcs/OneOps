@@ -64,12 +64,12 @@ const contentCardBorderColor = ref(themeStore.contentTheme2.contentCard.borderCo
 const contentCardBorderRadius = ref(themeStore.contentTheme2.contentCard.borderRadius || '12px');
 
 // 数据表格设置
-const tableHeaderBg = ref(themeStore.contentTheme2.dataTable.headerBg || 'rgba(208, 229, 253, 0.98)');
-const tableHeaderTextColor = ref(themeStore.contentTheme2.dataTable.headerTextColor || '#334155');
+const tableHeaderBg = ref(themeStore.contentTheme2.dataTable.headerBg || '#7f748c');
+const tableHeaderTextColor = ref(themeStore.contentTheme2.dataTable.headerTextColor || '#ffffff');
 const tableRowHoverBg = ref(themeStore.contentTheme2.dataTable.rowHoverBg || '#f8fbff');
 const tableStripedBg = ref(themeStore.contentTheme2.dataTable.stripedBg || '#fbfaff');
 const tableBorderColor = ref(themeStore.contentTheme2.dataTable.tableBorder || 'rgba(148, 163, 184, 0.14)');
-const tableBorderRadius = ref(themeStore.contentTheme2.dataTable.borderRadius || '12px');
+const tableBorderRadius = ref(themeStore.contentTheme2.dataTable.borderRadius || '0px');
 
 // 搜索筛选设置
 const searchInputBg = ref(themeStore.contentTheme2.searchFilters.inputBg || 'rgba(255, 255, 255, 0.94)');

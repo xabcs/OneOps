@@ -6,7 +6,7 @@ import * as Monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 
 // 简单配置 - 不需要 worker，使用基本的编辑器功能
 (self as any).MonacoEnvironment = {
-  getWorkerUrl: function(_moduleId: string, label: string) {
+  getWorkerUrl(_moduleId: string, label: string) {
     // 不使用 worker，直接返回空
     return '';
   }
@@ -407,7 +407,7 @@ onBeforeUnmount(() => {
   min-height: 500px;
   max-height: 60vh;
   padding: 16px;
-  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", monospace;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
   font-size: 14px;
   line-height: 1.6;
   background: #1e1e1e;

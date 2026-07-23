@@ -122,6 +122,71 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'auth',
+    path: '/auth',
+    component: 'layout.base',
+    meta: {
+      title: 'auth',
+      i18nKey: 'route.auth'
+    },
+    children: [
+      {
+        name: 'auth_applications',
+        path: '/auth/applications',
+        component: 'view.auth_applications',
+        meta: {
+          title: 'auth_applications',
+          i18nKey: 'route.auth_applications'
+        }
+      },
+      {
+        name: 'auth_operationlogs',
+        path: '/auth/operationlogs',
+        component: 'view.auth_operationlogs',
+        meta: {
+          title: 'auth_operationlogs',
+          i18nKey: 'route.auth_operationlogs'
+        }
+      },
+      {
+        name: 'auth_rolebindings',
+        path: '/auth/rolebindings',
+        component: 'view.auth_rolebindings',
+        meta: {
+          title: 'auth_rolebindings',
+          i18nKey: 'route.auth_rolebindings'
+        }
+      },
+      {
+        name: 'auth_roles',
+        path: '/auth/roles',
+        component: 'view.auth_roles',
+        meta: {
+          title: 'auth_roles',
+          i18nKey: 'route.auth_roles'
+        }
+      },
+      {
+        name: 'auth_userauthorization',
+        path: '/auth/userauthorization',
+        component: 'view.auth_userauthorization',
+        meta: {
+          title: 'auth_userauthorization',
+          i18nKey: 'route.auth_userauthorization'
+        }
+      },
+      {
+        name: 'auth_users',
+        path: '/auth/users',
+        component: 'view.auth_users',
+        meta: {
+          title: 'auth_users',
+          i18nKey: 'route.auth_users'
+        }
+      }
+    ]
+  },
+  {
     name: 'cmdb',
     path: '/cmdb',
     component: 'layout.base',
@@ -500,6 +565,15 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'k8s_config',
           i18nKey: 'route.k8s_config'
+        }
+      },
+      {
+        name: 'k8s_diagnostic',
+        path: '/k8s/diagnostic',
+        component: 'view.k8s_diagnostic',
+        meta: {
+          title: 'k8s_diagnostic',
+          i18nKey: 'route.k8s_diagnostic'
         }
       },
       {

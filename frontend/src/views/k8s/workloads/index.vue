@@ -2239,7 +2239,7 @@ onMounted(async () => {
   color: #4ec9b0;
   padding: 16px;
   border-radius: 4px;
-  font-family: "Courier New", Courier, monospace;
+  font-family: 'Courier New', Courier, monospace;
   font-size: 13px;
   white-space: pre-wrap;
   word-break: break-all;

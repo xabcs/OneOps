@@ -45,6 +45,13 @@ declare module "@elegant-router/types" {
     "audit_login": "/audit/login";
     "audit_operation": "/audit/operation";
     "audit_system": "/audit/system";
+    "auth": "/auth";
+    "auth_applications": "/auth/applications";
+    "auth_operationlogs": "/auth/operationlogs";
+    "auth_rolebindings": "/auth/rolebindings";
+    "auth_roles": "/auth/roles";
+    "auth_userauthorization": "/auth/userauthorization";
+    "auth_users": "/auth/users";
     "cmdb": "/cmdb";
     "cmdb_audit": "/cmdb/audit";
     "cmdb_audit_changes": "/cmdb/audit/changes";
@@ -86,6 +93,7 @@ declare module "@elegant-router/types" {
     "k8s": "/k8s";
     "k8s_clusters": "/k8s/clusters";
     "k8s_config": "/k8s/config";
+    "k8s_diagnostic": "/k8s/diagnostic";
     "k8s_network": "/k8s/network";
     "k8s_resources": "/k8s/resources";
     "k8s_resources_configmaps": "/k8s/resources/configmaps";
@@ -196,6 +204,7 @@ declare module "@elegant-router/types" {
     | "about"
     | "alova"
     | "audit"
+    | "auth"
     | "cmdb"
     | "demo-route"
     | "design-system-demo"
@@ -242,6 +251,13 @@ declare module "@elegant-router/types" {
     | "audit_login"
     | "audit_operation"
     | "audit_system"
+    | "auth_applications"
+    | "auth"
+    | "auth_operationlogs"
+    | "auth_rolebindings"
+    | "auth_roles"
+    | "auth_userauthorization"
+    | "auth_users"
     | "cmdb_audit_changes"
     | "cmdb_audit_command_history"
     | "cmdb_audit_commands"
@@ -273,6 +289,7 @@ declare module "@elegant-router/types" {
     | "home"
     | "k8s_clusters"
     | "k8s_config"
+    | "k8s_diagnostic"
     | "k8s_network"
     | "k8s_resources_configmaps"
     | "k8s_resources_deployments"

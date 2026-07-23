@@ -314,6 +314,14 @@ const local: App.I18n.Schema = {
     'manage_user-detail': 'User Detail',
     manage_role: 'Role Manage',
     manage_menu: 'Menu Manage',
+    auth_center: 'Auth Center',
+    auth: 'Auth Center',
+    auth_users: 'Users',
+    auth_roles: 'User Groups',
+    auth_applications: 'Applications',
+    auth_rolebindings: 'Permission Mapping',
+    auth_userauthorization: 'User Group Assignment',
+    auth_operationlogs: 'Operation Logs',
     'multi-menu': 'Multi Menu',
     'multi-menu_first': 'Menu One',
     'multi-menu_first_child': 'Menu One Child',
@@ -542,21 +550,21 @@ const local: App.I18n.Schema = {
         }
       },
       role: {
-        title: 'Role List',
-        roleName: 'Role Name',
-        roleCode: 'Role Code',
-        roleStatus: 'Role Status',
-        roleDesc: 'Role Description',
+        title: 'User Groups',
+        groupName: 'Group Name',
+        groupCode: 'Group Code',
+        roleStatus: 'Group Status',
+        roleDesc: 'Group Description',
         menuAuth: 'Menu Auth',
         buttonAuth: 'Button Auth',
         form: {
-          roleName: 'Please enter role name',
-          roleCode: 'Please enter role code',
-          roleStatus: 'Please select role status',
-          roleDesc: 'Please enter role description'
+          groupName: 'Please enter group name',
+          groupCode: 'Please enter group code',
+          roleStatus: 'Please select group status',
+          roleDesc: 'Please enter group description'
         },
-        addRole: 'Add Role',
-        editRole: 'Edit Role'
+        addGroup: 'Add Group',
+        editGroup: 'Edit Group'
       },
       user: {
         title: 'User List',

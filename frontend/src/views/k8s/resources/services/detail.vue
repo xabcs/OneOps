@@ -1,7 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElButton, ElDescriptions, ElDescriptionsItem, ElMessage, ElMessageBox, ElTable, ElTableColumn, ElTabPane, ElTabs, ElTag } from 'element-plus';
+import {
+  ElButton,
+  ElDescriptions,
+  ElDescriptionsItem,
+  ElMessage,
+  ElMessageBox,
+  ElTabPane,
+  ElTable,
+  ElTableColumn,
+  ElTabs,
+  ElTag
+} from 'element-plus';
 import yaml from 'js-yaml';
 import { deleteK8sService, fetchK8sEvents, getK8sService, updateK8sService } from '@/service/api/k8s';
 import YamlEditor from '@/components/YamlEditor.vue';
@@ -245,7 +256,7 @@ onMounted(() => {
 .yaml-viewer pre {
   margin: 0;
   color: #d4d4d4;
-  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Courier New", monospace;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.6;
   white-space: pre-wrap;

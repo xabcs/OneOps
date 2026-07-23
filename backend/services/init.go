@@ -26,8 +26,9 @@ func (s *InitService) InitDatabase() error {
 	defer sqlDB.Exec("SET FOREIGN_KEY_CHECKS=1")
 
 	// 清理历史遗留的外键约束（忽略错误，约束不存在时正常失败）
-	db.Exec("ALTER TABLE cabinets DROP FOREIGN KEY IF EXISTS cabinets_ibfk_1")
-	db.Exec("ALTER TABLE cabinets DROP FOREIGN KEY IF EXISTS fk_server_rooms_cabinets")
+	// MySQL 5.7+ 不支持 IF EXISTS 语法，需要忽略错误
+	db.Exec("ALTER TABLE cabinets DROP FOREIGN KEY cabinets_ibfk_1")
+	db.Exec("ALTER TABLE cabinets DROP FOREIGN KEY fk_server_rooms_cabinets")
 
 	migrateErr := db.AutoMigrate(
 		// 无外键依赖的基础表
@@ -43,6 +44,19 @@ func (s *InitService) InitDatabase() error {
 		// Agent 版本管理表
 		&models.AgentVersion{},
 		&models.AgentUpgradeTask{},
+		// 诊断功能相关表 (新增)
+		&models.DiagnosticHistory{},
+		&models.DiagnosticConfig{},
+		&models.DiagnosticPermission{},
+		// 外部应用权限管理表 (新增)
+		&models.Application{},
+		&models.ApplicationRole{},
+		&models.ApplicationUser{},
+		&models.GroupBinding{},
+		&models.AuthUser{},
+		&models.AuthGroup{},
+		&models.AuthUserGroup{},
+		&models.ApplicationOperationLog{},
 		// 有外键依赖的表（按依赖顺序）
 		&models.ServerRoom{},
 		&models.Cabinet{},
@@ -85,6 +99,11 @@ func (s *InitService) InitDatabase() error {
 	// 执行 SQL 迁移脚本（添加磁盘分区字段等）
 	if err := s.runMigrations(); err != nil {
 		logger.Warn("SQL 迁移执行失败，继续执行数据初始化", zap.Error(err))
+	}
+
+	// 初始化诊断权限和配置
+	if err := s.initDiagnosticData(); err != nil {
+		logger.Warn("诊断数据初始化失败，继续执行", zap.Error(err))
 	}
 
 	// 无论 AutoMigrate 是否完全成功，都执行数据初始化
@@ -163,6 +182,25 @@ func (s *InitService) runMigrations() error {
 		logger.Warn("创建 agent_alerts 表失败", zap.Error(err))
 	}
 
+	// 修复 group_bindings 表的 application_permission_id 字段
+	fixGroupBindingsTable := `
+		ALTER TABLE group_bindings
+		ADD COLUMN IF NOT EXISTS application_permission_id BIGINT UNSIGNED NULL COMMENT '关联的权限ID（可选）'
+		AFTER application_role_id;
+	`
+	if err := db.Exec(fixGroupBindingsTable).Error; err != nil {
+		logger.Debug("修复 group_bindings 表字段（可能已存在）", zap.Error(err))
+	}
+
+	// 如果字段已存在但不允许 NULL，则修改它
+	fixGroupBindingsNull := `
+		ALTER TABLE group_bindings
+		MODIFY COLUMN application_permission_id BIGINT UNSIGNED NULL COMMENT '关联的权限ID（可选）';
+	`
+	if err := db.Exec(fixGroupBindingsNull).Error; err != nil {
+		logger.Debug("修改 group_bindings 表字段允许 NULL（可能已正确）", zap.Error(err))
+	}
+
 	logger.Info("SQL 迁移执行完成")
 	return nil
 }
@@ -214,6 +252,141 @@ func (s *InitService) initData() error {
 	return nil
 }
 
+// initDiagnosticData 初始化诊断相关数据
+func (s *InitService) initDiagnosticData() error {
+	logger.Info("开始初始化诊断功能数据...")
+
+	// 1. 初始化诊断权限
+	if err := s.initDiagnosticPermissions(); err != nil {
+		return err
+	}
+
+	// 2. 初始化诊断配置
+	if err := s.initDiagnosticConfig(); err != nil {
+		return err
+	}
+
+	logger.Info("诊断功能数据初始化完成")
+	return nil
+}
+
+// initDiagnosticPermissions 初始化诊断权限
+func (s *InitService) initDiagnosticPermissions() error {
+	logger.Info("开始初始化诊断权限...")
+
+	permissions := []models.DiagnosticPermission{
+		{
+			Name:        "执行K8s诊断",
+			Code:        "k8s:diagnostic:execute",
+			Category:    "K8s诊断",
+			Description: "对K8s集群中的Java应用执行Arthas诊断",
+			RiskLevel:   "high",
+			Status:      1,
+		},
+		{
+			Name:        "查看诊断结果",
+			Code:        "k8s:diagnostic:view",
+			Category:    "K8s诊断",
+			Description: "查看K8s诊断结果和历史记录",
+			RiskLevel:   "medium",
+			Status:      1,
+		},
+	}
+
+	for _, permission := range permissions {
+		var existingPerm models.DiagnosticPermission
+		err := db.Where("code = ?", permission.Code).First(&existingPerm).Error
+
+		if err == nil {
+			// 权限已存在，更新数据
+			db.Model(&existingPerm).Updates(map[string]interface{}{
+				"name":        permission.Name,
+				"description": permission.Description,
+				"risk_level":  permission.RiskLevel,
+				"status":      permission.Status,
+			})
+			logger.Debug("更新诊断权限", zap.String("name", permission.Name))
+		} else {
+			// 权限不存在，创建新权限
+			if err := db.Create(&permission).Error; err != nil {
+				logger.Error("创建诊断权限失败",
+					zap.String("name", permission.Name),
+					zap.String("code", permission.Code),
+					zap.Error(err))
+				return err
+			}
+			logger.Info("创建诊断权限",
+				zap.String("name", permission.Name),
+				zap.Uint("id", permission.ID))
+		}
+	}
+
+	return nil
+}
+
+// initDiagnosticConfig 初始化诊断配置
+func (s *InitService) initDiagnosticConfig() error {
+	logger.Info("开始初始化诊断配置...")
+
+	configs := []models.DiagnosticConfig{
+		{
+			ClusterID:   "*",
+			Namespace:   "*",
+			ConfigKey:   "default_timeout",
+			ConfigValue: "60",
+			Description: "默认诊断超时时间(秒)",
+		},
+		{
+			ClusterID:   "*",
+			Namespace:   "*",
+			ConfigKey:   "max_output_size",
+			ConfigValue: "10485760", // 10MB
+			Description: "最大输出大小(字节)",
+		},
+		{
+			ClusterID:   "*",
+			Namespace:   "*",
+			ConfigKey:   "enable_auto_cleanup",
+			ConfigValue: "true",
+			Description: "是否自动清理临时文件",
+		},
+		{
+			ClusterID:   "*",
+			Namespace:   "*",
+			ConfigKey:   "history_retention_days",
+			ConfigValue: "30",
+			Description: "历史记录保留天数",
+		},
+	}
+
+	for _, config := range configs {
+		var existingConfig models.DiagnosticConfig
+		err := db.Where("cluster_id = ? AND namespace = ? AND config_key = ?",
+			config.ClusterID, config.Namespace, config.ConfigKey).First(&existingConfig).Error
+
+		if err == nil {
+			// 配置已存在，更新数据
+			db.Model(&existingConfig).Updates(map[string]interface{}{
+				"config_value": config.ConfigValue,
+				"description":  config.Description,
+			})
+			logger.Debug("更新诊断配置", zap.String("key", config.ConfigKey))
+		} else {
+			// 配置不存在，创建新配置
+			if err := db.Create(&config).Error; err != nil {
+				logger.Error("创建诊断配置失败",
+					zap.String("key", config.ConfigKey),
+					zap.Error(err))
+				return err
+			}
+			logger.Info("创建诊断配置",
+				zap.String("key", config.ConfigKey))
+		}
+	}
+
+	return nil
+}
+
 // initMenus 初始化菜单数据（动态路由模式）
 func (s *InitService) initMenus() error {
 	menus := []models.Menu{
@@ -251,72 +424,84 @@ func (s *InitService) syncMenus() error {
 	// V4 - 匹配新的前端模块化目录结构
 	menus := []models.Menu{
 		// ========== 一级菜单 ==========
-		{ID: 1, Name: "首页", Icon: "mdi:monitor-dashboard", Path: "/home", Permission: "", MenuType: "menu", Sort: 1, Status: 1, ParentID: 0},
+			{ID: 1, Name: "首页", Icon: "mdi:monitor-dashboard", Path: "/home", Permission: "", MenuType: "menu", Sort: 1, Status: 1, ParentID: 0},
 
-		{ID: 2, Name: "资产管理", Icon: "mdi:server-network", Path: "/cmdb", Permission: "", MenuType: "directory", Sort: 2, Status: 1, ParentID: 0},
-		{ID: 3, Name: "监控中心", Icon: "mdi:chart-line", Path: "/monitoring", Permission: "", MenuType: "directory", Sort: 3, Status: 1, ParentID: 0},
-		{ID: 4, Name: "审计中心", Icon: "mdi:file-document", Path: "/audit", Permission: "", MenuType: "directory", Sort: 4, Status: 1, ParentID: 0},
-		{ID: 5, Name: "K8s管理", Icon: "mdi:kubernetes", Path: "/k8s", Permission: "", MenuType: "directory", Sort: 5, Status: 1, ParentID: 0},
-		// web终端作为独立的一级路由（无导航栏），使用 Sort=5
-		{ID: 60, Name: "web终端", Icon: "mdi:console", Path: "/webterminal", Permission: "", MenuType: "menu", Sort: 6, Status: 1, ParentID: 0},
-		{ID: 6, Name: "系统管理", Icon: "mdi:cog", Path: "/manage", Permission: "", MenuType: "directory", Sort: 7, Status: 1, ParentID: 0},
+			{ID: 2, Name: "资产管理", Icon: "mdi:server-network", Path: "/cmdb", Permission: "", MenuType: "directory", Sort: 2, Status: 1, ParentID: 0},
+			{ID: 3, Name: "监控中心", Icon: "mdi:chart-line", Path: "/monitoring", Permission: "", MenuType: "directory", Sort: 3, Status: 1, ParentID: 0},
+			{ID: 7, Name: "授权中心", Icon: "mdi:shield-account", Path: "/auth", Permission: "", MenuType: "directory", Sort: 4, Status: 1, ParentID: 0},
+			{ID: 4, Name: "审计中心", Icon: "mdi:file-document", Path: "/audit", Permission: "", MenuType: "directory", Sort: 5, Status: 1, ParentID: 0},
+			{ID: 5, Name: "K8s管理", Icon: "mdi:kubernetes", Path: "/k8s", Permission: "", MenuType: "directory", Sort: 6, Status: 1, ParentID: 0},
+			// web终端作为独立的一级路由（无导航栏），使用 Sort=7
+			{ID: 60, Name: "web终端", Icon: "mdi:console", Path: "/webterminal", Permission: "", MenuType: "menu", Sort: 7, Status: 1, ParentID: 0},
+			{ID: 6, Name: "系统管理", Icon: "mdi:cog", Path: "/manage", Permission: "", MenuType: "directory", Sort: 8, Status: 1, ParentID: 0},
 
-		// ========== CMDB 二级菜单 (ID: 20-39) ==========
-		{ID: 20, Name: "主机管理", Icon: "mdi:server", Path: "/cmdb/servers", Permission: "cmdb:server:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 2},
-		{ID: 21, Name: "业务管理", Icon: "mdi:sitemap", Path: "/cmdb/business", Permission: "cmdb:business:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 2},
-		// 凭证管理目录
-		{ID: 22, Name: "凭证管理", Icon: "mdi:key", Path: "/cmdb/credentials", Permission: "", MenuType: "directory", Sort: 3, Status: 1, ParentID: 2},
-		{ID: 23, Name: "访问凭证", Icon: "mdi:key-variant", Path: "/cmdb/credentials/access", Permission: "cmdb:credentials:access", MenuType: "menu", Sort: 1, Status: 1, ParentID: 22},
-		{ID: 24, Name: "SSH密钥", Icon: "mdi:ssh", Path: "/cmdb/credentials/ssh", Permission: "cmdb:credentials:ssh", MenuType: "menu", Sort: 2, Status: 1, ParentID: 22},
-		// 访问策略
-		{ID: 25, Name: "访问策略", Icon: "mdi:shield-lock", Path: "/cmdb/policies", Permission: "cmdb:policies:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 2},
-		// 配置管理目录
-		{ID: 26, Name: "配置管理", Icon: "mdi:cog", Path: "/cmdb/config", Permission: "", MenuType: "directory", Sort: 5, Status: 1, ParentID: 2},
-		{ID: 27, Name: "业务配置", Icon: "mdi:sitemap", Path: "/cmdb/config/business", Permission: "cmdb:config:business", MenuType: "menu", Sort: 1, Status: 1, ParentID: 26},
-		{ID: 28, Name: "机房管理", Icon: "mdi:server", Path: "/cmdb/config/rooms", Permission: "cmdb:rooms:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 26},
-		{ID: 29, Name: "标签管理", Icon: "mdi:tag-multiple", Path: "/cmdb/config/tags", Permission: "cmdb:tags:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 26},
-		{ID: 30, Name: "代理配置", Icon: "mdi:robot", Path: "/cmdb/config/agents", Permission: "cmdb:agents:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 26},
-		// 资产总览
-		{ID: 31, Name: "资产总览", Icon: "mdi:chart-pie", Path: "/cmdb/dashboard", Permission: "cmdb:dashboard:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 2},
-		// 审计记录目录
-		{ID: 32, Name: "审计记录", Icon: "mdi:history", Path: "/cmdb/audit", Permission: "", MenuType: "directory", Sort: 7, Status: 1, ParentID: 2},
-		{ID: 33, Name: "变更记录", Icon: "mdi:file-document", Path: "/cmdb/audit/changes", Permission: "cmdb:audit:changes", MenuType: "menu", Sort: 1, Status: 1, ParentID: 32},
-		// 命令审计目录
-		{ID: 34, Name: "命令审计", Icon: "mdi:terminal", Path: "/cmdb/audit/command", Permission: "", MenuType: "directory", Sort: 2, Status: 1, ParentID: 32},
-		{ID: 35, Name: "命令历史", Icon: "mdi:history", Path: "/cmdb/audit/command/history", Permission: "cmdb:audit:command:history", MenuType: "menu", Sort: 1, Status: 1, ParentID: 34},
-		{ID: 36, Name: "在线会话", Icon: "mdi:laptop", Path: "/cmdb/audit/online", Permission: "cmdb:audit:online", MenuType: "menu", Sort: 3, Status: 1, ParentID: 32},
-		{ID: 37, Name: "历史会话", Icon: "mdi:history", Path: "/cmdb/audit/sessions", Permission: "cmdb:audit:sessions", MenuType: "menu", Sort: 4, Status: 1, ParentID: 32},
-		{ID: 38, Name: "命令记录", Icon: "mdi:code-tags", Path: "/cmdb/audit/commands", Permission: "cmdb:audit:commands", MenuType: "menu", Sort: 5, Status: 1, ParentID: 32},
+			// ========== CMDB 二级菜单 (ID: 20-39) ==========
+			{ID: 20, Name: "主机管理", Icon: "mdi:server", Path: "/cmdb/servers", Permission: "cmdb:server:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 2},
+			{ID: 21, Name: "业务管理", Icon: "mdi:sitemap", Path: "/cmdb/business", Permission: "cmdb:business:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 2},
+			// 凭证管理目录
+			{ID: 22, Name: "凭证管理", Icon: "mdi:key", Path: "/cmdb/credentials", Permission: "", MenuType: "directory", Sort: 3, Status: 1, ParentID: 2},
+			{ID: 23, Name: "访问凭证", Icon: "mdi:key-variant", Path: "/cmdb/credentials/access", Permission: "cmdb:credentials:access", MenuType: "menu", Sort: 1, Status: 1, ParentID: 22},
+			{ID: 24, Name: "SSH密钥", Icon: "mdi:ssh", Path: "/cmdb/credentials/ssh", Permission: "cmdb:credentials:ssh", MenuType: "menu", Sort: 2, Status: 1, ParentID: 22},
+			// 访问策略
+			{ID: 25, Name: "访问策略", Icon: "mdi:shield-lock", Path: "/cmdb/policies", Permission: "cmdb:policies:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 2},
+			// 配置管理目录
+			{ID: 26, Name: "配置管理", Icon: "mdi:cog", Path: "/cmdb/config", Permission: "", MenuType: "directory", Sort: 5, Status: 1, ParentID: 2},
+			{ID: 27, Name: "业务配置", Icon: "mdi:sitemap", Path: "/cmdb/config/business", Permission: "cmdb:config:business", MenuType: "menu", Sort: 1, Status: 1, ParentID: 26},
+			{ID: 28, Name: "机房管理", Icon: "mdi:server", Path: "/cmdb/config/rooms", Permission: "cmdb:rooms:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 26},
+			{ID: 29, Name: "标签管理", Icon: "mdi:tag-multiple", Path: "/cmdb/config/tags", Permission: "cmdb:tags:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 26},
+			{ID: 30, Name: "代理配置", Icon: "mdi:robot", Path: "/cmdb/config/agents", Permission: "cmdb:agents:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 26},
+			// 资产总览
+			{ID: 31, Name: "资产总览", Icon: "mdi:chart-pie", Path: "/cmdb/dashboard", Permission: "cmdb:dashboard:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 2},
+			// 审计记录目录
+			{ID: 32, Name: "审计记录", Icon: "mdi:history", Path: "/cmdb/audit", Permission: "", MenuType: "directory", Sort: 7, Status: 1, ParentID: 2},
+			{ID: 33, Name: "变更记录", Icon: "mdi:file-document", Path: "/cmdb/audit/changes", Permission: "cmdb:audit:changes", MenuType: "menu", Sort: 1, Status: 1, ParentID: 32},
+			// 命令审计目录
+			{ID: 34, Name: "命令审计", Icon: "mdi:terminal", Path: "/cmdb/audit/command", Permission: "", MenuType: "directory", Sort: 2, Status: 1, ParentID: 32},
+			{ID: 35, Name: "命令历史", Icon: "mdi:history", Path: "/cmdb/audit/command/history", Permission: "cmdb:audit:command:history", MenuType: "menu", Sort: 1, Status: 1, ParentID: 34},
+			{ID: 36, Name: "在线会话", Icon: "mdi:laptop", Path: "/cmdb/audit/online", Permission: "cmdb:audit:online", MenuType: "menu", Sort: 3, Status: 1, ParentID: 32},
+			{ID: 37, Name: "历史会话", Icon: "mdi:history", Path: "/cmdb/audit/sessions", Permission: "cmdb:audit:sessions", MenuType: "menu", Sort: 4, Status: 1, ParentID: 32},
+			{ID: 38, Name: "命令记录", Icon: "mdi:code-tags", Path: "/cmdb/audit/commands", Permission: "cmdb:audit:commands", MenuType: "menu", Sort: 5, Status: 1, ParentID: 32},
 
-		// ========== 监控中心二级菜单 (ID: 40-49) ==========
-		{ID: 40, Name: "监控概览", Icon: "mdi:chart-line", Path: "/monitoring/overview", Permission: "monitoring:overview:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 3},
-		{ID: 41, Name: "主机监控", Icon: "mdi:server-network", Path: "/monitoring/servers", Permission: "monitoring:servers:query", MenuType: "directory", Sort: 2, Status: 1, ParentID: 3},
-		{ID: 42, Name: "告警管理", Icon: "mdi:alert-circle", Path: "/monitoring/alerts", Permission: "monitoring:alerts:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 3},
-		{ID: 43, Name: "趋势分析", Icon: "mdi:chart-areaspline", Path: "/monitoring/trends", Permission: "monitoring:trends:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 3},
-		{ID: 44, Name: "巡检报告", Icon: "mdi:file-document", Path: "/monitoring/reports", Permission: "monitoring:reports:query", MenuType: "menu", Sort: 5, Status: 1, ParentID: 3},
-		{ID: 45, Name: "监控设置", Icon: "mdi:cog", Path: "/monitoring/settings", Permission: "monitoring:settings:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 3},
+			// ========== 监控中心二级菜单 (ID: 40-49) ==========
+			{ID: 40, Name: "监控概览", Icon: "mdi:chart-line", Path: "/monitoring/overview", Permission: "monitoring:overview:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 3},
+			{ID: 41, Name: "主机监控", Icon: "mdi:server-network", Path: "/monitoring/servers", Permission: "monitoring:servers:query", MenuType: "directory", Sort: 2, Status: 1, ParentID: 3},
+			{ID: 42, Name: "告警管理", Icon: "mdi:alert-circle", Path: "/monitoring/alerts", Permission: "monitoring:alerts:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 3},
+			{ID: 43, Name: "趋势分析", Icon: "mdi:chart-areaspline", Path: "/monitoring/trends", Permission: "monitoring:trends:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 3},
+			{ID: 44, Name: "巡检报告", Icon: "mdi:file-document", Path: "/monitoring/reports", Permission: "monitoring:reports:query", MenuType: "menu", Sort: 5, Status: 1, ParentID: 3},
+			{ID: 45, Name: "监控设置", Icon: "mdi:cog", Path: "/monitoring/settings", Permission: "monitoring:settings:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 3},
 
-		// ========== 审计中心二级菜单 (ID: 50-59) ==========
-		{ID: 50, Name: "登录审计", Icon: "mdi:login", Path: "/audit/login", Permission: "audit:login:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 4},
-		{ID: 51, Name: "操作审计", Icon: "mdi:account-edit", Path: "/audit/operation", Permission: "audit:operation:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 4},
-		{ID: 52, Name: "系统事件", Icon: "mdi:information", Path: "/audit/system", Permission: "audit:system:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 4},
+			// ========== 审计中心二级菜单 (ID: 50-59) ==========
+			{ID: 50, Name: "登录审计", Icon: "mdi:login", Path: "/audit/login", Permission: "audit:login:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 4},
+			{ID: 51, Name: "操作审计", Icon: "mdi:account-edit", Path: "/audit/operation", Permission: "audit:operation:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 4},
+			{ID: 52, Name: "系统事件", Icon: "mdi:information", Path: "/audit/system", Permission: "audit:system:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 4},
 
-		// （web终端 已移为一级菜单，见上方 ParentID: 0 的定义）
+			// ========== 授权中心二级菜单 (ID: 100-103) ==========
 
+			{ID: 100, Name: "用户", Icon: "mdi:account", Path: "/auth/users", Permission: "auth:user:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 7},
+			{ID: 101, Name: "用户组", Icon: "mdi:shield-account", Path: "/auth/roles", Permission: "auth:role:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 7},
+			{ID: 102, Name: "外部应用", Icon: "mdi:application", Path: "/auth/applications", Permission: "auth:app:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 7},
+			{ID: 103, Name: "权限映射", Icon: "mdi:link", Path: "/auth/rolebindings", Permission: "auth:binding:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 7},
+			{ID: 105, Name: "操作日志", Icon: "mdi:file-document", Path: "/auth/operationlogs", Permission: "auth:log:query", MenuType: "menu", Sort: 5, Status: 1, ParentID: 7},
 
-		// ========== K8s管理二级菜单 (ID: 80-99) ==========
-		// Tab 切换方案：统一的资源管理入口，页面内使用Tab切换不同资源类型
-		{ID: 80, Name: "集群管理", Icon: "mdi:server-network", Path: "/k8s/clusters", Permission: "k8s:cluster:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 5},
-		{ID: 87, Name: "工作负载", Icon: "mdi:cube-outline", Path: "/k8s/workloads", Permission: "k8s:workload:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 5},
-		{ID: 88, Name: "网络", Icon: "mdi:network-outline", Path: "/k8s/network", Permission: "k8s:network:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 5},
-		{ID: 89, Name: "配置管理", Icon: "mdi:cog", Path: "/k8s/config", Permission: "k8s:config:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 5},
-		// 注意：会话审计功能已移除，不再在 K8s 管理中显示
-		// 会话审计应使用堡垒机模块的功能
-		// ========== 系统管理二级菜单 (ID: 70-79) ==========
-		{ID: 70, Name: "用户管理", Icon: "mdi:account-multiple", Path: "/manage/user", Permission: "system:user:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 6},
-		{ID: 71, Name: "角色管理", Icon: "mdi:shield-account", Path: "/manage/role", Permission: "system:role:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 6},
-		{ID: 72, Name: "菜单管理", Icon: "mdi:menu", Path: "/manage/menu", Permission: "system:menu:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 6},
-	}
+			// （web终端 已移为一级菜单，见上方 ParentID: 0 的定义）
+
+			// ========== K8s管理二级菜单 (ID: 80-99) ==========
+			// Tab 切换方案：统一的资源管理入口，页面内使用Tab切换不同资源类型
+			{ID: 80, Name: "集群管理", Icon: "mdi:server-network", Path: "/k8s/clusters", Permission: "k8s:cluster:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 5},
+			{ID: 87, Name: "工作负载", Icon: "mdi:cube-outline", Path: "/k8s/workloads", Permission: "k8s:workload:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 5},
+
+			// 新增：诊断中心菜单
+			{ID: 90, Name: "诊断中心", Icon: "mdi:stethoscope", Path: "/k8s/diagnostic", Permission: "k8s:diagnostic:execute", MenuType: "menu", Sort: 3, Status: 1, ParentID: 5},
+
+			{ID: 88, Name: "网络", Icon: "mdi:network-outline", Path: "/k8s/network", Permission: "k8s:network:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 5},
+			{ID: 89, Name: "配置管理", Icon: "mdi:cog", Path: "/k8s/config", Permission: "k8s:config:query", MenuType: "menu", Sort: 5, Status: 1, ParentID: 5},
+			// 注意：会话审计功能已移除，不再在 K8s 管理中显示
+			// 会话审计应使用堡垒机模块的功能
+			// ========== 系统管理二级菜单 (ID: 70-79) ==========
+			{ID: 70, Name: "用户管理", Icon: "mdi:account-multiple", Path: "/manage/user", Permission: "system:user:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 6},
+			{ID: 71, Name: "角色管理", Icon: "mdi:shield-account", Path: "/manage/role", Permission: "system:role:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 6},
+			{ID: 72, Name: "菜单管理", Icon: "mdi:menu", Path: "/manage/menu", Permission: "system:menu:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 6},
+		}
 
 	addedCount := 0
 	updatedCount := 0
@@ -409,18 +594,20 @@ func (s *InitService) syncRoleMenus() error {
 	logger.Info("开始同步角色菜单权限...")
 
 	// 定义5个内置角色的菜单权限（动态路由模式）
-	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 6, 13, 60, 80, 87, 88, 89, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46} // 超级管理员：所有权限
-	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 60, 80, 87, 88, 89, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46}               // 运维工程师：含监控权限
-	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44, 80, 87, 88, 89}                                                           // 审计员：含监控查看权限
-	userMenuIDs := []uint{1}                                                                                                                      // 普通用户：仅首页
-	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44, 45, 46, 80, 87, 88, 89}                                                      // 测试角色：含监控权限
+	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心, 50=审计中心, 60=web终端, 80=K8s管理, 90=诊断中心, 100-105=授权中心
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 6, 7, 13, 60, 80, 87, 88, 89, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105} // 超级管理员：所有权限（包含授权中心）
+	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 60, 80, 87, 88, 89, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105}               // 运维工程师：含授权中心权限
+	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105}                                                                                                    // 审计员：含监控查看和授权中心权限
+	userMenuIDs := []uint{1}                                                                                                                                                      // 普通用户：仅首页
+	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 45, 46, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105}                                                                                          // 测试角色：含授权中心权限
+	viewerMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105}                                                                                            // 查看者：含授权中心权限
 
 	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
 	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)
 	auditorMenuIDsJSON, _ := json.Marshal(auditorMenuIDs)
 	userMenuIDsJSON, _ := json.Marshal(userMenuIDs)
 	testMenuIDsJSON, _ := json.Marshal(testMenuIDs)
+	viewerMenuIDsJSON, _ := json.Marshal(viewerMenuIDs)
 
 	// 定义需要同步的内置角色
 	builtinRoles := []struct {
@@ -433,7 +620,8 @@ func (s *InitService) syncRoleMenus() error {
 		{"admin", "超级管理员", "拥有系统所有权限", adminMenuIDs, adminMenuIDsJSON},
 		{"ops", "运维工程师", "负责主机和任务管理", opsMenuIDs, opsMenuIDsJSON},
 		{"auditor", "审计员", "仅拥有查看权限", auditorMenuIDs, auditorMenuIDsJSON},
-		{"user", "普通用户", "系统普通用户，拥有基础权限", userMenuIDs, userMenuIDsJSON},
+		{"viewer", "查看者", "仅拥有查看权限", viewerMenuIDs, viewerMenuIDsJSON},
+			{"user", "普通用户", "系统普通用户，拥有基础权限", userMenuIDs, userMenuIDsJSON},
 		{"test", "测试角色", "用于测试的角色，拥有部分权限", testMenuIDs, testMenuIDsJSON},
 	}
 
@@ -488,12 +676,12 @@ func (s *InitService) syncRoleMenus() error {
 // initRoles 初始化角色数据
 func (s *InitService) initRoles() error {
 	// 定义5个内置角色的菜单权限（动态路由模式）
-	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 6, 13, 60, 80, 87, 88, 89, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46} // 超级管理员：所有权限
-	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 60, 80, 87, 88, 89, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46}               // 运维工程师：含监控权限
-	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44, 80, 87, 88, 89}                                                           // 审计员：含监控查看权限
-	userMenuIDs := []uint{1}                                                                                                                      // 普通用户：仅首页
-	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 40, 41, 42, 43, 44, 45, 46, 80, 87, 88, 89}                                                      // 测试角色：含监控权限
+	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心, 50=审计中心, 60=web终端, 80=K8s管理, 90=诊断中心, 100-105=授权中心
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 6, 7, 13, 60, 80, 87, 88, 89, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105} // 超级管理员：所有权限（包含授权中心）
+	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 60, 80, 87, 88, 89, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105}               // 运维工程师：含授权中心权限
+	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105}                                                                                                    // 审计员：含监控查看和授权中心权限
+	userMenuIDs := []uint{1}                                                                                                                                                      // 普通用户：仅首页
+	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 45, 46, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105}                                                                                          // 测试角色：含授权中心权限
 
 	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
 	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)

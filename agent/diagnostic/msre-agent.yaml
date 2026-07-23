@@ -1,0 +1,171 @@
+# 诊断Agent简化部署配置
+# 参考 heapdump-watcher 结构，使用域名：diagnostic-agent.91yunebao.com
+
+---
+# DaemonSet配置（参考 heapdump-watcher 结构）
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: diagnostic-agent
+  namespace: test
+  labels:
+    app: diagnostic-agent
+    version: "1.0"
+spec:
+  selector:
+    matchLabels:
+      app: diagnostic-agent
+  template:
+    metadata:
+      labels:
+        app: diagnostic-agent
+        version: "1.0"
+    spec:
+      # 镜像拉取密钥（阿里云私有仓库）
+      imagePullSecrets:
+      - name: image-auth
+
+      # 容忍所有taints，确保部署到所有节点
+      tolerations:
+      - operator: Exists
+
+      # 仅调度到amd64架构节点
+      nodeSelector:
+        kubernetes.io/arch: amd64
+
+      containers:
+      - name: diagnostic-agent
+        image: mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/oneops/diagnostic-agent:1.0
+        imagePullPolicy: IfNotPresent
+
+        ports:
+        - name: http
+          containerPort: 8888
+          protocol: TCP
+
+        env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: ENV
+          value: test
+
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+
+        # 健康检查
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8888
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8888
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 2
+
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8888
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 12
+
+      # DNS策略
+      dnsPolicy: ClusterFirst
+
+      # 重启策略
+      restartPolicy: Always
+
+---
+# ClusterIP Service（集群内访问）
+apiVersion: v1
+kind: Service
+metadata:
+  name: diagnostic-service
+  namespace: test
+  labels:
+    app: diagnostic-agent
+spec:
+  selector:
+    app: diagnostic-agent
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8888
+    targetPort: 8888
+  type: ClusterIP
+
+---
+# Ingress配置（对外暴露服务）
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: diagnostic-agent-ingress
+  namespace: test
+  annotations:
+    # Nginx Ingress控制器
+    kubernetes.io/ingress.class: "nginx"
+
+    # 请求体大小限制（诊断输出可能很大）
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+
+    # 超时配置（诊断可能需要较长时间）
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+
+    # WebSocket支持
+    nginx.ingress.kubernetes.io/websocket-services: "diagnostic-service"
+
+    # 限流配置（防止滥用）
+    nginx.ingress.kubernetes.io/limit-rps: "10"
+    nginx.ingress.kubernetes.io/limit-connections: "20"
+
+spec:
+  # TLS配置（生产环境建议启用）
+  # tls:
+  # - hosts:
+  #   - diagnostic-agent.91yunebao.com
+  #   secretName: diagnostic-agent-tls
+
+  rules:
+  # 使用域名访问
+  - host: diagnostic-agent.91yunebao.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: diagnostic-service
+            port:
+              number: 8888

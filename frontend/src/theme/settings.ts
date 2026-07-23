@@ -198,13 +198,13 @@ export const themeSettings: App.Theme.ThemeSetting = {
     },
     // 数据表格配置
     dataTable: {
-      headerBg: 'rgba(208, 229, 253, 0.98)',
-      headerTextColor: '#334155',
+      headerBg: '#525454',
+      headerTextColor: '#ffffff',
       headerBorderColor: 'rgba(148, 163, 184, 0.16)',
       rowHoverBg: '#f8fbff',
       rowBorderColor: 'rgba(148, 163, 184, 0.16)',
       tableBorder: 'rgba(148, 163, 184, 0.14)',
-      borderRadius: '12px',
+      borderRadius: '0px',
       stripedBg: '#fbfaff'
     },
     // 搜索筛选配置
