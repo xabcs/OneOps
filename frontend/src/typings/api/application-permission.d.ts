@@ -133,6 +133,52 @@ declare namespace Api {
       syncTime: string;
     }>;
 
+    /** application group */
+    type ApplicationGroup = Common.CommonRecord<{
+      /** group code */
+      groupCode: string;
+      /** group name */
+      groupName: string;
+      /** description */
+      description: string;
+      /** sync time */
+      syncTime: string;
+    }>;
+
+    /** application authorization rule (应用授权规则) */
+    type AuthorizationRule = Common.CommonRecord<{
+      /** rule ID (from external system) */
+      ruleId: string;
+      /** rule name */
+      ruleName: string;
+      /** rule type: user, group */
+      ruleType: string;
+      /** subject type: user, group */
+      subjectType: string;
+      /** subject ID (user ID or group ID) */
+      subjectId: string;
+      /** subject name (for display) */
+      subjectName: string;
+      /** object type: asset, node, system */
+      objectType: string;
+      /** object ID (asset ID or * for all) */
+      objectId: string;
+      /** object name (for display) */
+      objectName: string;
+      /** actions (JSON array of action names) */
+      actions: string;
+      /** priority */
+      priority: number;
+      /** is enabled */
+      isEnabled: boolean;
+      /** is expired */
+      isExpired: boolean;
+      /** expire time */
+      expireTime: string;
+      /** sync time */
+      syncTime: string;
+    }>;
+
     /** group binding (用户组权限绑定) */
     type GroupBinding = Common.CommonRecord<{
       /** local group id */

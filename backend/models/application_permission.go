@@ -14,6 +14,7 @@ type AuthUser struct {
 	Phone       string    `json:"phone" gorm:"size:20"`
 	Description string    `json:"description" gorm:"size:200"`
 	Status      int       `json:"status" gorm:"default:1;comment:1=启用,0=禁用"`
+	Groups      []AuthGroup `json:"groups" gorm:"many2many:auth_user_groups;joinForeignKey:UserID;joinReferences:GroupID;association_foreignkey:ID;references:ID"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
@@ -73,7 +74,7 @@ type ApplicationAuthConfig struct {
 	Token    string `json:"token"`     // API Token
 }
 
-// Application 外部应用注册模型
+// Application 应用注册模型
 type Application struct {
 	ID           uint                   `json:"id" gorm:"primaryKey"`
 	Name         string                 `json:"name" gorm:"size:50;not null;uniqueIndex"`
@@ -94,7 +95,7 @@ func (Application) TableName() string {
 	return "applications"
 }
 
-// ApplicationRole 外部应用角色模型（同步过来的）
+// ApplicationRole 应用角色模型（同步过来的）
 type ApplicationRole struct {
 	ID          uint      `json:"id" gorm:"primaryKey"`
 	AppID       uint      `json:"appId" gorm:"not null;index"`
@@ -112,7 +113,7 @@ func (ApplicationRole) TableName() string {
 	return "application_roles"
 }
 
-// ApplicationUser 外部应用用户模型（同步过来的）
+// ApplicationUser 应用用户模型（同步过来的）
 type ApplicationUser struct {
 	ID          uint      `json:"id" gorm:"primaryKey"`
 	AppID       uint      `json:"appId" gorm:"not null;index"`
@@ -129,6 +130,24 @@ type ApplicationUser struct {
 func (ApplicationUser) TableName() string {
 	return "application_users"
 }
+
+// ApplicationGroup 应用用户组模型（同步过来的）
+type ApplicationGroup struct {
+	ID          uint      `json:"id" gorm:"primaryKey"`
+	AppID       uint      `json:"appId" gorm:"not null;index"`
+	AppIDField  Application `json:"-" gorm:"foreignKey:AppID"`
+	GroupCode   string    `json:"groupCode" gorm:"size:100;not null"`
+	GroupName   string    `json:"groupName" gorm:"size:100;not null"`
+	Description string    `json:"description" gorm:"size:200"`
+	SyncTime    time.Time `json:"syncTime"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+func (ApplicationGroup) TableName() string {
+	return "application_groups"
+}
+
 
 // GroupBinding 用户组权限绑定模型（授权中心用户组 → 外部系统角色）
 type GroupBinding struct {
@@ -148,7 +167,7 @@ func (GroupBinding) TableName() string {
 	return "group_bindings"
 }
 
-// ApplicationOperationLog 外部应用操作日志
+// ApplicationOperationLog 应用操作日志
 type ApplicationOperationLog struct {
 	ID          uint      `json:"id" gorm:"primaryKey"`
 	AppID       uint      `json:"appId" gorm:"not null;index"`

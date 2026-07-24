@@ -237,3 +237,57 @@ export function fetchAllUsers() {
 export function fetchAllRoles() {
   return fetchAllAuthGroups();
 }
+
+// ========== 应用类型配置 API ==========
+
+/** 获取支持的应用类型列表 */
+export function fetchSupportedAppTypes() {
+  return request<Array<{ type: string; displayName: string }>>({
+    url: '/system/applications/types',
+    method: 'get'
+  });
+}
+
+/** 获取应用类型的配置模板 */
+export function fetchAppTypeConfigTemplate(appType: string) {
+  return request<{
+    appType: string;
+    displayName: string;
+    configTemplate: Record<string, any>;
+  }>({
+    url: `/system/applications/types/${appType}/config`,
+    method: 'get'
+  });
+}
+
+/** 同步应用用户组 */
+export function syncApplicationGroups(id: number) {
+  return request<boolean>({
+    url: `/system/applications/${id}/sync-groups`,
+    method: 'post'
+  });
+}
+
+/** 获取应用用户组列表 */
+export function fetchApplicationGroups(id: number) {
+  return request<Api.ApplicationPermission.ApplicationGroup[]>({
+    url: `/system/applications/${id}/groups`,
+    method: 'get'
+  });
+}
+
+/** 同步应用授权规则 */
+export function syncApplicationAuthorizationRules(id: number) {
+  return request<boolean>({
+    url: `/system/applications/${id}/sync-rules`,
+    method: 'post'
+  });
+}
+
+/** 获取应用授权规则列表 */
+export function fetchApplicationAuthorizationRules(id: number) {
+  return request<Api.ApplicationPermission.AuthorizationRule[]>({
+    url: `/system/applications/${id}/rules`,
+    method: 'get'
+  });
+}

@@ -48,10 +48,12 @@ func (s *InitService) InitDatabase() error {
 		&models.DiagnosticHistory{},
 		&models.DiagnosticConfig{},
 		&models.DiagnosticPermission{},
-		// 外部应用权限管理表 (新增)
+		// 应用权限管理表
 		&models.Application{},
 		&models.ApplicationRole{},
 		&models.ApplicationUser{},
+		&models.ApplicationGroup{},
+		&models.ApplicationAuthorizationRule{},
 		&models.GroupBinding{},
 		&models.AuthUser{},
 		&models.AuthGroup{},
@@ -479,7 +481,7 @@ func (s *InitService) syncMenus() error {
 
 			{ID: 100, Name: "用户", Icon: "mdi:account", Path: "/auth/users", Permission: "auth:user:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 7},
 			{ID: 101, Name: "用户组", Icon: "mdi:shield-account", Path: "/auth/roles", Permission: "auth:role:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 7},
-			{ID: 102, Name: "外部应用", Icon: "mdi:application", Path: "/auth/applications", Permission: "auth:app:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 7},
+			{ID: 102, Name: "应用", Icon: "mdi:application", Path: "/auth/applications", Permission: "auth:app:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 7},
 			{ID: 103, Name: "权限映射", Icon: "mdi:link", Path: "/auth/rolebindings", Permission: "auth:binding:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 7},
 			{ID: 105, Name: "操作日志", Icon: "mdi:file-document", Path: "/auth/operationlogs", Permission: "auth:log:query", MenuType: "menu", Sort: 5, Status: 1, ParentID: 7},
 

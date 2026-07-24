@@ -16,15 +16,19 @@ import (
 	"go.uber.org/zap"
 )
 
-// ApplicationPermissionService 外部应用权限服务
-type ApplicationPermissionService struct{}
+// ApplicationPermissionService 应用权限服务
+type ApplicationPermissionService struct {
+	adapterFactory *AdapterFactory
+}
 
 // NewApplicationPermissionService 创建服务实例
 func NewApplicationPermissionService() *ApplicationPermissionService {
-	return &ApplicationPermissionService{}
+	return &ApplicationPermissionService{
+		adapterFactory: NewAdapterFactory(),
+	}
 }
 
-// CreateApplication 创建外部应用
+// CreateApplication 创建应用
 func (s *ApplicationPermissionService) CreateApplication(app *models.Application) error {
 	return db.Create(app).Error
 }
@@ -69,17 +73,41 @@ func (s *ApplicationPermissionService) DeleteApplication(id uint) error {
 	return db.Delete(&models.Application{}, id).Error
 }
 
-// SyncRoles 同步应用角色
+// GetSupportedAppTypes 获取支持的应用类型列表
+func (s *ApplicationPermissionService) GetSupportedAppTypes() []map[string]interface{} {
+	types := s.adapterFactory.GetSupportedTypes()
+	result := make([]map[string]interface{}, 0, len(types))
+
+	for _, appType := range types {
+		adapter, _ := s.adapterFactory.GetAdapter(appType)
+		result = append(result, map[string]interface{}{
+			"type":       appType,
+			"displayName": adapter.GetDisplayName(),
+		})
+	}
+
+	return result
+}
+
+// GetAppTypeConfigTemplate 获取应用类型的配置模板
+func (s *ApplicationPermissionService) GetAppTypeConfigTemplate(appType string) (map[string]interface{}, error) {
+	adapter, err := s.adapterFactory.GetAdapter(appType)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"appType":         appType,
+		"displayName":     adapter.GetDisplayName(),
+		"configTemplate":  adapter.GetConfigTemplate(),
+	}, nil
+}
+
+// SyncRoles 同步应用角色（使用适配器模式）
 func (s *ApplicationPermissionService) SyncRoles(appID uint, operator string) error {
 	app, err := s.GetApplicationByID(appID)
 	if err != nil {
 		return fmt.Errorf("获取应用失败: %w", err)
-	}
-
-	// 解析 API 配置
-	var endpoints map[string]string
-	if err := json.Unmarshal([]byte(app.Endpoints), &endpoints); err != nil {
-		return fmt.Errorf("解析 API 配置失败: %w", err)
 	}
 
 	// 解析认证配置
@@ -88,24 +116,47 @@ func (s *ApplicationPermissionService) SyncRoles(appID uint, operator string) er
 		return fmt.Errorf("解析认证配置失败: %w", err)
 	}
 
-	var roles []models.ApplicationRole
-
-	// 检查是否是 Jenkins 类型应用，使用 Script Console API
-	if app.Type == "jenkins" {
-		roles, err = s.fetchJenkinsRoles(app.BaseURL, authConfig)
-		if err != nil {
-			errorMsg := fmt.Sprintf("同步 Jenkins 角色失败: %w", err)
-			s.logOperation(appID, "sync_roles", "", "", "failed", errorMsg, operator)
-			return err
+	// 解析端点配置并合并到 authConfig 中
+	if app.Endpoints != "" && app.Endpoints != "null" {
+		var endpoints map[string]interface{}
+		if err := json.Unmarshal([]byte(app.Endpoints), &endpoints); err == nil {
+			authConfig["endpoints"] = endpoints
+			logger.Info("从数据库加载端点配置",
+				zap.Uint("appID", appID),
+				zap.Any("endpoints", endpoints))
+		} else {
+			logger.Warn("解析端点配置失败，将使用适配器默认端点",
+				zap.Uint("appID", appID),
+				zap.String("endpoints", app.Endpoints),
+				zap.Error(err))
 		}
 	} else {
-		// 调用外部 API 获取角色
-		roles, err = s.fetchRolesFromAPI(app.BaseURL, endpoints, authConfig)
-		if err != nil {
-			errorMsg := fmt.Sprintf("同步角色失败: %w", err)
-			s.logOperation(appID, "sync_roles", "", "", "failed", errorMsg, operator)
-			return fmt.Errorf("%s (应用: %s, BaseURL: %s)", err, app.Name, app.BaseURL)
-		}
+		logger.Info("数据库中无端点配置，将使用适配器默认端点",
+			zap.Uint("appID", appID),
+			zap.String("endpoints", app.Endpoints))
+	}
+
+	// 获取对应类型的适配器
+	adapter, err := s.adapterFactory.GetAdapter(app.Type)
+	if err != nil {
+		errorMsg := fmt.Sprintf("获取应用适配器失败: %w", err)
+		s.logOperation(appID, "sync_roles", "", "", "failed", errorMsg, operator)
+		return fmt.Errorf("%s (应用: %s, 类型: %s)", err, app.Name, app.Type)
+	}
+
+	// 验证配置
+	if err := adapter.ValidateConfig(authConfig); err != nil {
+		errorMsg := fmt.Sprintf("配置验证失败: %w", err)
+		s.logOperation(appID, "sync_roles", "", "", "failed", errorMsg, operator)
+		return fmt.Errorf("配置验证失败: %w", err)
+	}
+
+	// 使用适配器获取角色
+	roles, err := adapter.FetchRoles(app.BaseURL, authConfig)
+	if err != nil {
+		errorMsg := fmt.Sprintf("同步角色失败: %w", err)
+		s.logOperation(appID, "sync_roles", "", "", "failed", errorMsg, operator)
+		return err
 	}
 
 	// 删除旧的同步数据
@@ -128,6 +179,7 @@ func (s *ApplicationPermissionService) SyncRoles(appID uint, operator string) er
 	logger.Info("同步应用角色成功",
 		zap.Uint("appID", appID),
 		zap.String("appName", app.Name),
+		zap.String("appType", app.Type),
 		zap.Int("roleCount", len(roles)))
 
 	return nil
@@ -214,17 +266,11 @@ func (s *ApplicationPermissionService) fetchRolesFromAPI(baseURL string, endpoin
 	return roles, nil
 }
 
-// SyncUsers 同步应用用户
+// SyncUsers 同步应用用户（使用适配器模式）
 func (s *ApplicationPermissionService) SyncUsers(appID uint, operator string) error {
 	app, err := s.GetApplicationByID(appID)
 	if err != nil {
 		return fmt.Errorf("获取应用失败: %w", err)
-	}
-
-	// 解析 API 配置
-	var endpoints map[string]string
-	if err := json.Unmarshal([]byte(app.Endpoints), &endpoints); err != nil {
-		return fmt.Errorf("解析 API 配置失败: %w", err)
 	}
 
 	// 解析认证配置
@@ -233,42 +279,90 @@ func (s *ApplicationPermissionService) SyncUsers(appID uint, operator string) er
 		return fmt.Errorf("解析认证配置失败: %w", err)
 	}
 
-	var users []models.ApplicationUser
-
-	// 检查是否是 Jenkins 类型应用，使用 Script Console API
-	if app.Type == "jenkins" {
-		users, err = s.fetchJenkinsUsers(app.BaseURL, authConfig)
-		if err != nil {
-			errorMsg := fmt.Sprintf("同步 Jenkins 用户失败: %w", err)
-			s.logOperation(appID, "sync_users", "", "", "failed", errorMsg, operator)
-			return err
+	// 解析端点配置并合并到 authConfig 中
+	if app.Endpoints != "" && app.Endpoints != "null" {
+		var endpoints map[string]interface{}
+		if err := json.Unmarshal([]byte(app.Endpoints), &endpoints); err == nil {
+			authConfig["endpoints"] = endpoints
+			logger.Info("从数据库加载端点配置",
+				zap.Uint("appID", appID),
+				zap.Any("endpoints", endpoints))
+		} else {
+			logger.Warn("解析端点配置失败，将使用适配器默认端点",
+				zap.Uint("appID", appID),
+				zap.String("endpoints", app.Endpoints),
+				zap.Error(err))
 		}
 	} else {
-		// 调用外部 API 获取用户
-		users, err = s.fetchUsersFromAPI(app.BaseURL, endpoints, authConfig)
-		if err != nil {
-			errorMsg := fmt.Sprintf("同步用户失败: %w", err)
-			s.logOperation(appID, "sync_users", "", "", "failed", errorMsg, operator)
-			return fmt.Errorf("%s", err)
-		}
+		logger.Info("数据库中无端点配置，将使用适配器默认端点",
+			zap.Uint("appID", appID),
+			zap.String("endpoints", app.Endpoints))
 	}
 
-	// 删除旧的同步数据
-	db.Where("app_id = ?", appID).Delete(&models.ApplicationUser{})
-
-	// 保存新的用户数据
-	for _, user := range users {
-		user.AppID = appID
-		user.SyncTime = time.Now()
-		db.Create(&user)
+	// 获取对应类型的适配器
+	adapter, err := s.adapterFactory.GetAdapter(app.Type)
+	if err != nil {
+		errorMsg := fmt.Sprintf("获取应用适配器失败: %w", err)
+		s.logOperation(appID, "sync_users", "", "", "failed", errorMsg, operator)
+		return fmt.Errorf("%s (应用: %s, 类型: %s)", err, app.Name, app.Type)
 	}
 
-	s.logOperation(appID, "sync_users", "", fmt.Sprintf("同步了 %d 个用户", len(users)), "success", "", operator)
+	// 验证配置
+	if err := adapter.ValidateConfig(authConfig); err != nil {
+		errorMsg := fmt.Sprintf("配置验证失败: %w", err)
+		s.logOperation(appID, "sync_users", "", "", "failed", errorMsg, operator)
+		return fmt.Errorf("配置验证失败: %w", err)
+	}
 
-	logger.Info("同步应用用户成功",
+	// 使用适配器获取用户
+	users, err := adapter.FetchUsers(app.BaseURL, authConfig)
+	if err != nil {
+		errorMsg := fmt.Sprintf("同步用户失败: %w", err)
+		s.logOperation(appID, "sync_users", "", "", "failed", errorMsg, operator)
+		return err
+	}
+
+	logger.Info("从外部应用获取到用户数据",
 		zap.Uint("appID", appID),
 		zap.String("appName", app.Name),
 		zap.Int("userCount", len(users)))
+
+	// 删除旧的同步数据
+	deleteResult := db.Where("app_id = ?", appID).Delete(&models.ApplicationUser{})
+	if deleteResult.Error != nil {
+		logger.Error("删除旧用户数据失败",
+			zap.Uint("appID", appID),
+			zap.Error(deleteResult.Error))
+		return fmt.Errorf("删除旧用户数据失败: %w", deleteResult.Error)
+	}
+
+	logger.Info("已删除旧用户数据",
+		zap.Uint("appID", appID),
+		zap.Int64("deletedCount", deleteResult.RowsAffected))
+
+	// 保存新的用户数据
+	successCount := 0
+	for _, user := range users {
+		user.AppID = appID
+		user.SyncTime = time.Now()
+		if err := db.Create(&user).Error; err != nil {
+			logger.Error("保存用户数据失败",
+				zap.Uint("appID", appID),
+				zap.String("username", user.Username),
+				zap.Error(err))
+		} else {
+			successCount++
+		}
+	}
+
+	s.logOperation(appID, "sync_users", "", fmt.Sprintf("同步了 %d 个用户（成功保存 %d 个）", len(users), successCount), "success", "", operator)
+
+	logger.Info("同步应用用户完成",
+		zap.Uint("appID", appID),
+		zap.String("appName", app.Name),
+		zap.String("appType", app.Type),
+		zap.Int("totalFetched", len(users)),
+		zap.Int("successSaved", successCount))
 
 	return nil
 }
@@ -509,17 +603,11 @@ func (s *ApplicationPermissionService) getJenkinsCrumb(app *models.Application, 
 	return result, nil
 }
 
-// CreateExternalUser 在外部系统创建用户
+// CreateExternalUser 在外部系统创建用户（使用适配器模式）
 func (s *ApplicationPermissionService) CreateExternalUser(appID uint, username, password, email, fullName string, operator string) error {
 	app, err := s.GetApplicationByID(appID)
 	if err != nil {
 		return fmt.Errorf("获取应用失败: %w", err)
-	}
-
-	// 解析 API 配置
-	var endpoints map[string]string
-	if err := json.Unmarshal([]byte(app.Endpoints), &endpoints); err != nil {
-		return fmt.Errorf("解析 API 配置失败: %w", err)
 	}
 
 	// 解析认证配置
@@ -528,31 +616,60 @@ func (s *ApplicationPermissionService) CreateExternalUser(appID uint, username, 
 		return fmt.Errorf("解析认证配置失败: %w", err)
 	}
 
-	// 构建请求数据
-	reqData := map[string]interface{}{
-		"username": username,
-		"password": password,
+	// 解析端点配置并合并到 authConfig 中
+	if app.Endpoints != "" && app.Endpoints != "null" {
+		var endpoints map[string]interface{}
+		if err := json.Unmarshal([]byte(app.Endpoints), &endpoints); err == nil {
+			authConfig["endpoints"] = endpoints
+			logger.Info("从数据库加载端点配置",
+				zap.Uint("appID", appID),
+				zap.Any("endpoints", endpoints))
+		} else {
+			logger.Warn("解析端点配置失败，将使用适配器默认端点",
+				zap.Uint("appID", appID),
+				zap.String("endpoints", app.Endpoints),
+				zap.Error(err))
+		}
+	} else {
+		logger.Info("数据库中无端点配置，将使用适配器默认端点",
+			zap.Uint("appID", appID),
+			zap.String("endpoints", app.Endpoints))
 	}
 
-	// 添加可选字段
-	if email != "" {
-		reqData["email"] = email
-	}
-	if fullName != "" {
-		reqData["fullName"] = fullName
-		// 某些系统可能使用displayName
-		reqData["displayName"] = fullName
+	// 获取对应类型的适配器
+	adapter, err := s.adapterFactory.GetAdapter(app.Type)
+	if err != nil {
+		return fmt.Errorf("获取应用适配器失败: %w", err)
 	}
 
-	jsonData, _ := json.Marshal(reqData)
-
-	// 如果是 Jenkins，使用带会话的请求方式
-	if app.Type == "jenkins" {
-		return s.createJenkinsUser(app, authConfig, endpoints, jsonData, username, operator)
+	// 验证配置
+	if err := adapter.ValidateConfig(authConfig); err != nil {
+		return fmt.Errorf("配置验证失败: %w", err)
 	}
 
-	// 其他系统使用原有逻辑
-	return s.createOtherSystemUser(app, authConfig, endpoints, jsonData, username, operator)
+	// 构建用户创建请求
+	userReq := &UserCreateRequest{
+		Username:    username,
+		Password:    password,
+		FullName:    fullName,
+		Email:       email,
+		Description: "",
+	}
+
+	// 使用适配器创建用户
+	if err := adapter.CreateUser(app.BaseURL, authConfig, userReq); err != nil {
+		s.logOperation(appID, "create_user", username, "", "failed", err.Error(), operator)
+		return err
+	}
+
+	s.logOperation(appID, "create_user", username, "", "success", "", operator)
+	logger.Info("在外部系统创建用户成功",
+		zap.Uint("appID", appID),
+		zap.String("appName", app.Name),
+		zap.String("appType", app.Type),
+		zap.String("username", username))
+
+	return nil
 }
 
 // createJenkinsUser 在 Jenkins 中创建用户（使用会话保持 Cookie）
@@ -734,17 +851,11 @@ func (s *ApplicationPermissionService) createOtherSystemUser(app *models.Applica
 	return nil
 }
 
-// GrantRoleToUser 为用户授予外部系统角色
+// GrantRoleToUser 为用户授予应用角色（使用适配器模式）
 func (s *ApplicationPermissionService) GrantRoleToUser(appID uint, username, roleCode string, operator string) error {
 	app, err := s.GetApplicationByID(appID)
 	if err != nil {
 		return fmt.Errorf("获取应用失败: %w", err)
-	}
-
-	// 解析 API 配置
-	var endpoints map[string]string
-	if err := json.Unmarshal([]byte(app.Endpoints), &endpoints); err != nil {
-		return fmt.Errorf("解析 API 配置失败: %w", err)
 	}
 
 	// 解析认证配置
@@ -753,21 +864,52 @@ func (s *ApplicationPermissionService) GrantRoleToUser(appID uint, username, rol
 		return fmt.Errorf("解析认证配置失败: %w", err)
 	}
 
-	// 构建请求数据
-	reqData := map[string]interface{}{
-		"username": username,
-		"roleCode": roleCode,
+	// 解析端点配置并合并到 authConfig 中
+	if app.Endpoints != "" && app.Endpoints != "null" {
+		var endpoints map[string]interface{}
+		if err := json.Unmarshal([]byte(app.Endpoints), &endpoints); err == nil {
+			authConfig["endpoints"] = endpoints
+			logger.Info("从数据库加载端点配置",
+				zap.Uint("appID", appID),
+				zap.Any("endpoints", endpoints))
+		} else {
+			logger.Warn("解析端点配置失败，将使用适配器默认端点",
+				zap.Uint("appID", appID),
+				zap.String("endpoints", app.Endpoints),
+				zap.Error(err))
+		}
+	} else {
+		logger.Info("数据库中无端点配置，将使用适配器默认端点",
+			zap.Uint("appID", appID),
+			zap.String("endpoints", app.Endpoints))
 	}
 
-	jsonData, _ := json.Marshal(reqData)
-
-	// 如果是 Jenkins，使用带会话的请求方式
-	if app.Type == "jenkins" {
-		return s.grantJenkinsRole(app, authConfig, endpoints, jsonData, username, roleCode, operator)
+	// 获取对应类型的适配器
+	adapter, err := s.adapterFactory.GetAdapter(app.Type)
+	if err != nil {
+		return fmt.Errorf("获取应用适配器失败: %w", err)
 	}
 
-	// 其他系统使用原有逻辑
-	return s.grantOtherSystemRole(app, authConfig, endpoints, jsonData, username, roleCode, operator)
+	// 验证配置
+	if err := adapter.ValidateConfig(authConfig); err != nil {
+		return fmt.Errorf("配置验证失败: %w", err)
+	}
+
+	// 使用适配器分配角色
+	if err := adapter.AssignRole(app.BaseURL, authConfig, username, roleCode); err != nil {
+		s.logOperation(appID, "grant_role", fmt.Sprintf("%s -> %s", username, roleCode), "", "failed", err.Error(), operator)
+		return err
+	}
+
+	s.logOperation(appID, "grant_role", fmt.Sprintf("%s -> %s", username, roleCode), "", "success", "", operator)
+	logger.Info("为用户授予角色成功",
+		zap.Uint("appID", appID),
+		zap.String("appName", app.Name),
+		zap.String("appType", app.Type),
+		zap.String("username", username),
+		zap.String("roleCode", roleCode))
+
+	return nil
 }
 
 // grantJenkinsRole 在 Jenkins 中授予角色（使用会话保持 Cookie）
@@ -1040,7 +1182,7 @@ func (s *ApplicationPermissionService) CreateGroupBinding(binding *models.GroupB
 	// 2. 检查应用是否存在
 	var app models.Application
 	if err := db.First(&app, binding.AppID).Error; err != nil {
-		return fmt.Errorf("外部应用不存在 (ID: %d): %w", binding.AppID, err)
+		return fmt.Errorf("应用不存在 (ID: %d): %w", binding.AppID, err)
 	}
 
 	// 3. 检查应用角色是否存在
@@ -1205,7 +1347,8 @@ func (s *ApplicationPermissionService) GetAuthUsers(page, pageSize int, username
 	}
 
 	offset := (page - 1) * pageSize
-	if err := query.Offset(offset).Limit(pageSize).Find(&users).Error; err != nil {
+	// 预加载用户的组信息
+	if err := query.Preload("Groups").Offset(offset).Limit(pageSize).Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -1577,4 +1720,226 @@ func (s *ApplicationPermissionService) syncExistingMembersToExternalSystem(group
 		zap.Int("totalMembers", len(userGroups)),
 		zap.Int("successCount", successCount),
 		zap.Int("failCount", failCount))
+}
+
+// SyncGroups 同步应用用户组（使用适配器模式）
+func (s *ApplicationPermissionService) SyncGroups(appID uint, operator string) error {
+	app, err := s.GetApplicationByID(appID)
+	if err != nil {
+		return fmt.Errorf("获取应用失败: %w", err)
+	}
+
+	// 解析认证配置
+	var authConfig map[string]interface{}
+	if err := json.Unmarshal([]byte(app.AuthConfig), &authConfig); err != nil {
+		return fmt.Errorf("解析认证配置失败: %w", err)
+	}
+
+	// 解析端点配置并合并到 authConfig 中
+	if app.Endpoints != "" && app.Endpoints != "null" {
+		var endpoints map[string]interface{}
+		if err := json.Unmarshal([]byte(app.Endpoints), &endpoints); err == nil {
+			authConfig["endpoints"] = endpoints
+			logger.Info("从数据库加载端点配置",
+				zap.Uint("appID", appID),
+				zap.Any("endpoints", endpoints))
+		} else {
+			logger.Warn("解析端点配置失败，将使用适配器默认端点",
+				zap.Uint("appID", appID),
+				zap.String("endpoints", app.Endpoints),
+				zap.Error(err))
+		}
+	} else {
+		logger.Info("数据库中无端点配置，将使用适配器默认端点",
+			zap.Uint("appID", appID),
+			zap.String("endpoints", app.Endpoints))
+	}
+
+	// 获取对应类型的适配器
+	adapter, err := s.adapterFactory.GetAdapter(app.Type)
+	if err != nil {
+		errorMsg := fmt.Sprintf("获取应用适配器失败: %w", err)
+		s.logOperation(appID, "sync_groups", "", "", "failed", errorMsg, operator)
+		return fmt.Errorf("%s (应用: %s, 类型: %s)", err, app.Name, app.Type)
+	}
+
+	// 验证配置
+	if err := adapter.ValidateConfig(authConfig); err != nil {
+		errorMsg := fmt.Sprintf("配置验证失败: %w", err)
+		s.logOperation(appID, "sync_groups", "", "", "failed", errorMsg, operator)
+		return fmt.Errorf("配置验证失败: %w", err)
+	}
+
+	// 使用适配器获取用户组
+	groups, err := adapter.FetchGroups(app.BaseURL, authConfig)
+	if err != nil {
+		errorMsg := fmt.Sprintf("同步用户组失败: %w", err)
+		s.logOperation(appID, "sync_groups", "", "", "failed", errorMsg, operator)
+		return err
+	}
+
+	// 删除旧的同步数据
+	db.Where("app_id = ?", appID).Delete(&models.ApplicationGroup{})
+
+	// 保存新的用户组数据
+	for _, group := range groups {
+		group.AppID = appID
+		group.SyncTime = time.Now()
+		if err := db.Create(&group).Error; err != nil {
+			logger.Error("保存用户组数据失败",
+				zap.String("groupCode", group.GroupCode),
+				zap.Error(err))
+		}
+	}
+
+	// 更新最后同步时间
+	now := time.Now()
+	app.LastSyncTime = &now
+	db.Save(&app)
+
+	// 记录操作日志
+	s.logOperation(appID, "sync_groups", "", "", "success", 
+		fmt.Sprintf("成功同步 %d 个用户组", len(groups)), operator)
+
+	logger.Info("同步应用用户组成功",
+		zap.Uint("appID", appID),
+		zap.String("appName", app.Name),
+		zap.String("appType", app.Type),
+		zap.Int("groupCount", len(groups)))
+
+	return nil
+}
+
+// GetApplicationGroups 获取应用的用户组列表
+func (s *ApplicationPermissionService) GetApplicationGroups(appID uint) ([]models.ApplicationGroup, error) {
+	var groups []models.ApplicationGroup
+	if err := db.Where("app_id = ?", appID).Find(&groups).Error; err != nil {
+		return nil, fmt.Errorf("获取用户组列表失败: %w", err)
+	}
+	return groups, nil
+}
+
+// SyncAuthorizationRules 同步应用授权规则
+func (s *ApplicationPermissionService) SyncAuthorizationRules(appID uint, operator string) error {
+	app, err := s.GetApplicationByID(appID)
+	if err != nil {
+		return fmt.Errorf("获取应用失败: %w", err)
+	}
+
+	// 解析认证配置
+	var authConfig map[string]interface{}
+	if err := json.Unmarshal([]byte(app.AuthConfig), &authConfig); err != nil {
+		return fmt.Errorf("解析认证配置失败: %w", err)
+	}
+
+	// 解析端点配置并合并到 authConfig 中
+	if app.Endpoints != "" && app.Endpoints != "null" {
+		var endpoints map[string]interface{}
+		if err := json.Unmarshal([]byte(app.Endpoints), &endpoints); err == nil {
+			authConfig["endpoints"] = endpoints
+			logger.Info("从数据库加载端点配置",
+				zap.Uint("appID", appID),
+				zap.Any("endpoints", endpoints))
+		} else {
+			logger.Warn("解析端点配置失败，将使用适配器默认端点",
+				zap.Uint("appID", appID),
+				zap.String("endpoints", app.Endpoints),
+				zap.Error(err))
+		}
+	} else {
+		logger.Info("数据库中无端点配置，将使用适配器默认端点",
+			zap.Uint("appID", appID),
+			zap.String("endpoints", app.Endpoints))
+	}
+
+	// 获取对应类型的适配器
+	adapter, err := s.adapterFactory.GetAdapter(app.Type)
+	if err != nil {
+		errorMsg := fmt.Sprintf("获取应用适配器失败: %w", err)
+		s.logOperation(appID, "sync_rules", "", "", "failed", errorMsg, operator)
+		return fmt.Errorf("%s (应用: %s, 类型: %s)", err, app.Name, app.Type)
+	}
+
+	// 检查适配器是否支持授权规则
+	rulesAdapter, ok := adapter.(interface {
+		FetchAuthorizationRules(baseURL string, authConfig map[string]interface{}) ([]models.ApplicationAuthorizationRule, error)
+	})
+	if !ok {
+		warningMsg := fmt.Sprintf("应用类型 %s 不支持授权规则同步", app.Type)
+		s.logOperation(appID, "sync_rules", "", "", "failed", warningMsg, operator)
+		logger.Warn(warningMsg,
+			zap.Uint("appID", appID),
+			zap.String("appType", app.Type))
+		return fmt.Errorf(warningMsg)
+	}
+
+	// 验证配置
+	if err := adapter.ValidateConfig(authConfig); err != nil {
+		errorMsg := fmt.Sprintf("配置验证失败: %w", err)
+		s.logOperation(appID, "sync_rules", "", "", "failed", errorMsg, operator)
+		return fmt.Errorf("配置验证失败: %w", err)
+	}
+
+	// 使用适配器获取授权规则
+	rules, err := rulesAdapter.FetchAuthorizationRules(app.BaseURL, authConfig)
+	if err != nil {
+		errorMsg := fmt.Sprintf("同步授权规则失败: %w", err)
+		s.logOperation(appID, "sync_rules", "", "", "failed", errorMsg, operator)
+		return err
+	}
+
+	// 删除旧的同步数据
+	deleteResult := db.Where("app_id = ?", appID).Delete(&models.ApplicationAuthorizationRule{})
+	if deleteResult.Error != nil {
+		logger.Error("删除旧授权规则数据失败",
+			zap.Uint("appID", appID),
+			zap.Error(deleteResult.Error))
+		return fmt.Errorf("删除旧授权规则数据失败: %w", deleteResult.Error)
+	}
+
+	logger.Info("已删除旧授权规则数据",
+		zap.Uint("appID", appID),
+		zap.Int64("deletedCount", deleteResult.RowsAffected))
+
+	// 保存新的授权规则数据
+	successCount := 0
+	for _, rule := range rules {
+		rule.AppID = appID
+		rule.SyncTime = time.Now()
+		if err := db.Create(&rule).Error; err != nil {
+			logger.Error("保存授权规则数据失败",
+				zap.Uint("appID", appID),
+				zap.String("ruleId", rule.RuleID),
+				zap.Error(err))
+		} else {
+			successCount++
+		}
+	}
+
+	// 更新最后同步时间
+	now := time.Now()
+	app.LastSyncTime = &now
+	db.Save(&app)
+
+	// 记录操作日志
+	s.logOperation(appID, "sync_rules", "", "", "success",
+		fmt.Sprintf("成功同步 %d 条授权规则（成功保存 %d 条）", len(rules), successCount), operator)
+
+	logger.Info("同步应用授权规则成功",
+		zap.Uint("appID", appID),
+		zap.String("appName", app.Name),
+		zap.String("appType", app.Type),
+		zap.Int("totalFetched", len(rules)),
+		zap.Int("successSaved", successCount))
+
+	return nil
+}
+
+// GetApplicationAuthorizationRules 获取应用的授权规则列表
+func (s *ApplicationPermissionService) GetApplicationAuthorizationRules(appID uint) ([]models.ApplicationAuthorizationRule, error) {
+	var rules []models.ApplicationAuthorizationRule
+	if err := db.Where("app_id = ?", appID).Find(&rules).Error; err != nil {
+		return nil, fmt.Errorf("获取授权规则列表失败: %w", err)
+	}
+	return rules, nil
 }

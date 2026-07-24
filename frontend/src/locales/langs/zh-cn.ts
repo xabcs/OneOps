@@ -344,7 +344,7 @@ const local: App.I18n.Schema = {
     auth: '授权中心',
     auth_users: '用户',
     auth_roles: '用户组',
-    auth_applications: '外部应用',
+    auth_applications: '应用',
     auth_rolebindings: '权限映射',
     auth_userauthorization: '用户组分配',
     auth_operationlogs: '操作日志',
@@ -445,7 +445,7 @@ const local: App.I18n.Schema = {
     auth: '授权中心',
     auth_users: '用户',
     auth_roles: '用户组',
-    auth_applications: '外部应用',
+    auth_applications: '应用',
     auth_rolebindings: '权限映射',
     auth_userauthorization: '用户组分配',
     auth_operationlogs: '操作日志'

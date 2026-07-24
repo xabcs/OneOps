@@ -10,7 +10,7 @@ import (
 	"oneops/backend/utils"
 )
 
-// ApplicationPermissionController 外部应用权限控制器
+// ApplicationPermissionController 应用权限控制器
 type ApplicationPermissionController struct {
 	service *services.ApplicationPermissionService
 }
@@ -506,4 +506,130 @@ func (ctrl *ApplicationPermissionController) GetAllAuthGroups(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, utils.SuccessWithData(groups))
+}
+
+// === 应用类型配置 ===
+
+// GetSupportedAppTypes 获取支持的应用类型列表
+func (ctrl *ApplicationPermissionController) GetSupportedAppTypes(c *gin.Context) {
+	types := ctrl.service.GetSupportedAppTypes()
+	c.JSON(http.StatusOK, utils.SuccessWithData(types))
+}
+
+// GetAppTypeConfigTemplate 获取应用类型的配置模板
+func (ctrl *ApplicationPermissionController) GetAppTypeConfigTemplate(c *gin.Context) {
+	appType := c.Param("type")
+	if appType == "" {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("应用类型参数缺失"))
+		return
+	}
+
+	template, err := ctrl.service.GetAppTypeConfigTemplate(appType)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取配置模板失败: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(template))
+}
+
+// SyncApplicationGroups 同步应用用户组
+// @Summary 同步应用用户组
+// @Description 从外部应用同步用户组列表
+// @Tags 应用管理
+// @Accept json
+// @Produce json
+// @Param id path int true "应用ID"
+// @Success 200 {object} Response
+// @Failure 400 {object} Response
+// @Failure 500 {object} Response
+// @Router /applications/{id}/groups/sync [post]
+func (ctrl *ApplicationPermissionController) SyncApplicationGroups(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的应用ID"))
+		return
+	}
+
+	// 获取操作人
+	operator := c.GetString("username")
+	if operator == "" {
+		operator = "system"
+	}
+
+	// 同步用户组
+	if err := ctrl.service.SyncGroups(uint(id), operator); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(nil))
+}
+
+// GetApplicationGroups 获取应用用户组列表
+// @Summary 获取应用用户组列表
+// @Description 获取指定应用的用户组列表
+// @Tags 应用管理
+// @Accept json
+// @Produce json
+// @Param id path int true "应用ID"
+// @Success 200 {object} Response{data=[]models.ApplicationGroup}
+// @Failure 400 {object} Response
+// @Failure 500 {object} Response
+// @Router /applications/{id}/groups [get]
+func (ctrl *ApplicationPermissionController) GetApplicationGroups(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的应用ID"))
+		return
+	}
+
+	groups, err := ctrl.service.GetApplicationGroups(uint(id))
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(groups))
+}
+
+// === 授权规则管理 ===
+
+// SyncAuthorizationRules 同步应用授权规则
+func (ctrl *ApplicationPermissionController) SyncAuthorizationRules(c *gin.Context) {
+	idStr := c.Param("id")
+	id, _ := strconv.ParseUint(idStr, 10, 32)
+
+	// 获取操作人
+	operator := c.GetString("username")
+	if operator == "" {
+		operator = "system"
+	}
+
+	if err := ctrl.service.SyncAuthorizationRules(uint(id), operator); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(nil))
+}
+
+// GetApplicationAuthorizationRules 获取应用授权规则列表
+func (ctrl *ApplicationPermissionController) GetApplicationAuthorizationRules(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的应用ID"))
+		return
+	}
+
+	rules, err := ctrl.service.GetApplicationAuthorizationRules(uint(id))
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(rules))
 }

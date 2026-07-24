@@ -262,7 +262,7 @@ onMounted(() => {
                      :key="group.id"
                      type="primary"
                      size="small">
-                {{ group.groupName }}
+                {{ group.name }}
               </ElTag>
               <span v-else class="text-gray-400">未分配</span>
               <ElButton size="small" type="primary" link @click="handleManageGroups(row)">

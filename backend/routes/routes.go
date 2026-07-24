@@ -93,7 +93,7 @@ func SetupRoutes(r *gin.Engine) {
 			system.GET("/server-attributes/:serverId", attributeController.GetServerAttributes)
 			system.POST("/server-attributes/:serverId", attributeController.SaveServerAttributes)
 
-			// 外部应用权限管理
+			// 应用权限管理
 			system.GET("/applications", applicationPermissionController.GetApplications)
 			system.POST("/applications", applicationPermissionController.CreateApplication)
 			system.PUT("/applications/:id", applicationPermissionController.UpdateApplication)
@@ -102,7 +102,15 @@ func SetupRoutes(r *gin.Engine) {
 			system.GET("/applications/:id/roles", applicationPermissionController.GetApplicationRoles)
 			system.POST("/applications/:id/sync-users", applicationPermissionController.SyncUsers)
 			system.GET("/applications/:id/users", applicationPermissionController.GetApplicationUsers)
+			system.POST("/applications/:id/sync-groups", applicationPermissionController.SyncApplicationGroups)
+			system.GET("/applications/:id/groups", applicationPermissionController.GetApplicationGroups)
+			system.POST("/applications/:id/sync-rules", applicationPermissionController.SyncAuthorizationRules)
+			system.GET("/applications/:id/rules", applicationPermissionController.GetApplicationAuthorizationRules)
 			system.GET("/applications/:id/operation-logs", applicationPermissionController.GetOperationLogs)
+
+			// 应用类型配置
+			system.GET("/applications/types", applicationPermissionController.GetSupportedAppTypes)
+			system.GET("/applications/types/:type/config", applicationPermissionController.GetAppTypeConfigTemplate)
 
 			// 授权中心用户管理（使用 /auth-users 路径避免与系统管理的 /users 冲突）
 			system.GET("/auth-users", applicationPermissionController.GetAllAuthUsers)

@@ -14,7 +14,7 @@ const activeTab = ref('applications');
   <div class="h-full flex flex-col p-4">
     <NCard title="授权中心" :bordered="false" class="flex-1 rounded-16px shadow-sm">
       <NTabs v-model:value="activeTab" type="line" animated>
-        <NTabPane name="applications" tab="外部应用">
+        <NTabPane name="applications" tab="应用">
           <Applications />
         </NTabPane>
         <NTabPane name="role-bindings" tab="角色绑定">
