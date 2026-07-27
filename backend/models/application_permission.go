@@ -41,9 +41,9 @@ func (AuthGroup) TableName() string {
 // AuthUserGroup 授权中心用户组成员关联模型
 type AuthUserGroup struct {
 	ID          uint      `json:"id" gorm:"primaryKey"`
-	UserID      uint      `json:"userId" gorm:"not null;index;comment:授权中心用户ID"`
+	UserID      uint      `json:"userId" gorm:"not null;uniqueIndex:idx_user_group;comment:授权中心用户ID"`
 	UserIDField AuthUser  `json:"user,omitempty" gorm:"foreignKey:UserID"`
-	GroupID     uint      `json:"groupId" gorm:"not null;index;comment:授权中心用户组ID"`
+	GroupID     uint      `json:"groupId" gorm:"not null;uniqueIndex:idx_user_group;comment:授权中心用户组ID"`
 	GroupIDField AuthGroup `json:"group,omitempty" gorm:"foreignKey:GroupID"`
 	GrantedBy   string    `json:"grantedBy" gorm:"size:50"`
 	GrantedAt   time.Time `json:"grantedAt"`
@@ -184,4 +184,62 @@ type ApplicationOperationLog struct {
 
 func (ApplicationOperationLog) TableName() string {
 	return "application_operation_logs"
+}
+
+// UserIdentityMapping 用户身份映射表（授权中心用户 ↔ 外部应用用户）
+type UserIdentityMapping struct {
+	ID                uint      `json:"id" gorm:"primaryKey"`
+	AuthUserID       uint      `json:"authUserId" gorm:"not null;index;comment:授权中心用户ID"`
+	AuthUserField    AuthUser  `json:"authUser,omitempty" gorm:"foreignKey:AuthUserID"`
+	AppID            uint      `json:"appId" gorm:"not null;index;comment:应用ID"`
+	AppIDField       Application `json:"-" gorm:"foreignKey:AppID"`
+	ExternalUsername string    `json:"externalUsername" gorm:"size:100;not null;index;comment:外部应用用户名"`
+	ExternalUserID    string    `json:"externalUserId" gorm:"size:100;comment:外部系统用户ID（如果有的话）"`
+	MappingType      string    `json:"mappingType" gorm:"size:20;default:auto;comment:auto=自动创建,manual=手动创建"`
+	MappingStatus    string    `json:"mappingStatus" gorm:"size:20;default:active;comment:active=激活,inactive=禁用,deleted=已删除"`
+	LastSyncAt       *time.Time `json:"lastSyncAt" gorm:"comment:最后同步时间"`
+	CreatedAt        time.Time `json:"createdAt"`
+	UpdatedAt        time.Time `json:"updatedAt"`
+}
+
+func (UserIdentityMapping) TableName() string {
+	return "user_identity_mappings"
+}
+
+// GroupBindingExecution 角色绑定执行记录（记录权限分配的详细状态）
+type GroupBindingExecution struct {
+	ID               uint       `json:"id" gorm:"primaryKey"`
+	GroupBindingID   uint       `json:"groupBindingId" gorm:"not null;index;comment:GroupBinding的ID"`
+	GroupBinding     GroupBinding `json:"-" gorm:"foreignKey:GroupBindingID"`
+	AuthUserID       uint       `json:"authUserId" gorm:"not null;index;comment:处理的授权中心用户ID"`
+	AuthUserField    AuthUser   `json:"authUser,omitempty" gorm:"foreignKey:AuthUserID"`
+	ExternalUsername string     `json:"externalUsername" gorm:"size:100;comment:外部用户名"`
+	ActionType       string     `json:"actionType" gorm:"size:50;comment:操作类型:created=创建用户,granted=分配权限,removed=移除权限,failed=失败"`
+	Status           string     `json:"status" gorm:"size:20;comment:状态:success=成功,failed=失败,pending=待处理"`
+	Message          string     `json:"message" gorm:"type:text;comment:详细信息或错误信息"`
+	Operator         string     `json:"operator" gorm:"size:50;comment:操作人"`
+	CreatedAt        time.Time  `json:"createdAt"`
+}
+
+func (GroupBindingExecution) TableName() string {
+	return "group_binding_executions"
+}
+
+// PermissionAssignmentStatus 权限分配状态汇总（记录权限分配的整体状态）
+type PermissionAssignmentStatus struct {
+	ID               uint       `json:"id" gorm:"primaryKey"`
+	GroupBindingID   uint       `json:"groupBindingId" gorm:"not null;uniqueIndex;comment:GroupBinding的ID"`
+	TotalMembers     int        `json:"totalMembers" gorm:"default:0;comment:总成员数"`
+	ProcessedMembers int        `json:"processedMembers" gorm:"default:0;comment:已处理成员数"`
+	PendingMembers   int        `json:"pendingMembers" gorm:"default:0;comment:待处理成员数"`
+	CreatedIdentities int       `json:"createdIdentities" gorm:"default:0;comment:创建的外部账号数"`
+	FailedMembers    int        `json:"failedMembers" gorm:"default:0;comment:失败成员数"`
+	Status           string     `json:"status" gorm:"size:20;default:pending;comment:状态:pending=待处理,success=成功,partial=部分成功,failed=失败"`
+	LastProcessedAt  *time.Time `json:"lastProcessedAt" gorm:"comment:最后处理时间"`
+	CreatedAt        time.Time  `json:"createdAt"`
+	UpdatedAt        time.Time  `json:"updatedAt"`
+}
+
+func (PermissionAssignmentStatus) TableName() string {
+	return "permission_assignment_statuses"
 }

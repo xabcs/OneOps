@@ -50,6 +50,8 @@ declare module "@elegant-router/types" {
     "auth_operationlogs": "/auth/operationlogs";
     "auth_rolebindings": "/auth/rolebindings";
     "auth_roles": "/auth/roles";
+    "auth_user-identities": "/auth/user-identities";
+    "auth_user-permissions": "/auth/user-permissions";
     "auth_userauthorization": "/auth/userauthorization";
     "auth_users": "/auth/users";
     "cmdb": "/cmdb";
@@ -256,6 +258,8 @@ declare module "@elegant-router/types" {
     | "auth_operationlogs"
     | "auth_rolebindings"
     | "auth_roles"
+    | "auth_user-identities"
+    | "auth_user-permissions"
     | "auth_userauthorization"
     | "auth_users"
     | "cmdb_audit_changes"

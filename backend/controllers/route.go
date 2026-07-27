@@ -384,11 +384,9 @@ func (c *RouteController) generateRouteName(path string) string {
 	if len(name) > 0 && name[0] == '/' {
 		name = name[1:]
 	}
-	// 只替换路径分隔符 / 为下划线，保留连字符 -
-	// 这样 /auth/role-bindings 会变成 auth_role-bindings
-	// 但我们要的是 auth_rolebindings，所以还需要去掉连字符
+	// 将路径分隔符 / 替换为下划线，保留连字符 -
+	// 例如：/auth/user-identities -> auth_user-identities
 	name = strings.ReplaceAll(name, "/", "_")
-	name = strings.ReplaceAll(name, "-", "")
 	return name
 }
 

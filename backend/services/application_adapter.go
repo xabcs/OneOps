@@ -20,8 +20,8 @@ type ApplicationAdapter interface {
 	// FetchGroups 获取用户组列表（可选实现）
 	FetchGroups(baseURL string, authConfig map[string]interface{}) ([]models.ApplicationGroup, error)
 
-	// CreateUser 在外部系统中创建用户
-	CreateUser(baseURL string, authConfig map[string]interface{}, user *UserCreateRequest) error
+	// CreateUser 在外部系统中创建用户，返回创建的用户ID
+	CreateUser(baseURL string, authConfig map[string]interface{}, user *UserCreateRequest) (string, error)
 
 	// AssignRole 为用户分配角色
 	AssignRole(baseURL string, authConfig map[string]interface{}, username, roleCode string) error

@@ -633,3 +633,129 @@ func (ctrl *ApplicationPermissionController) GetApplicationAuthorizationRules(c 
 
 	c.JSON(http.StatusOK, utils.SuccessWithData(rules))
 }
+
+// === 用户身份映射管理 ===
+
+// GetUserIdentityMappings 获取用户身份映射列表
+func (ctrl *ApplicationPermissionController) GetUserIdentityMappings(c *gin.Context) {
+	username := c.Query("username")
+	appIDStr := c.Query("appId")
+	status := c.Query("status")
+	currentStr := c.DefaultQuery("current", "1")
+	sizeStr := c.DefaultQuery("size", "20")
+
+	current, _ := strconv.Atoi(currentStr)
+	size, _ := strconv.Atoi(sizeStr)
+
+	var appID uint
+	if appIDStr != "" {
+		id, _ := strconv.ParseUint(appIDStr, 10, 32)
+		appID = uint(id)
+	}
+
+	mappings, total, err := ctrl.service.GetUserIdentityMappings(current, size, username, appID, status)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户身份映射列表失败"))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"records": mappings,
+		"total":   total,
+		"current": current,
+		"size":    size,
+	}))
+}
+
+// DeleteUserIdentityMapping 删除用户身份映射
+func (ctrl *ApplicationPermissionController) DeleteUserIdentityMapping(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的身份映射ID"))
+		return
+	}
+
+	if err := ctrl.service.DeleteUserIdentityMapping(uint(id)); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("删除用户身份映射失败"))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(nil))
+}
+
+// === 用户有效权限查询 ===
+
+// GetUserEffectivePermissions 获取用户有效权限列表
+func (ctrl *ApplicationPermissionController) GetUserEffectivePermissions(c *gin.Context) {
+	username := c.Query("username")
+	appIDStr := c.Query("appId")
+	currentStr := c.DefaultQuery("current", "1")
+	sizeStr := c.DefaultQuery("size", "20")
+
+	current, _ := strconv.Atoi(currentStr)
+	size, _ := strconv.Atoi(sizeStr)
+
+	var appID uint
+	if appIDStr != "" {
+		id, _ := strconv.ParseUint(appIDStr, 10, 32)
+		appID = uint(id)
+	}
+
+	permissions, total, err := ctrl.service.GetUserEffectivePermissions(current, size, username, appID)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户有效权限列表失败"))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
+		"records": permissions,
+		"total":   total,
+		"current": current,
+		"size":    size,
+	}))
+}
+
+// GetUserEffectivePermissionsMatrix 获取用户有效权限矩阵视图
+func (ctrl *ApplicationPermissionController) GetUserEffectivePermissionsMatrix(c *gin.Context) {
+	appIDStr := c.Query("appId")
+	if appIDStr == "" {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("缺少应用ID参数"))
+		return
+	}
+
+	appID, err := strconv.ParseUint(appIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的应用ID"))
+		return
+	}
+
+	result, err := ctrl.service.GetUserEffectivePermissionsMatrix(uint(appID))
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取权限矩阵失败: " + err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(result))
+}
+
+// === 权限执行记录 ===
+
+// GetGroupBindingExecutions 获取权限绑定执行记录
+func (ctrl *ApplicationPermissionController) GetGroupBindingExecutions(c *gin.Context) {
+	bindingIDStr := c.Param("bindingId")
+	bindingID, err := strconv.ParseUint(bindingIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的绑定ID"))
+		return
+	}
+
+	executions, err := ctrl.service.GetGroupBindingExecutions(uint(bindingID))
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取执行记录失败"))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(executions))
+}
+

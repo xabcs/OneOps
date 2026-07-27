@@ -59,6 +59,10 @@ func (s *InitService) InitDatabase() error {
 		&models.AuthGroup{},
 		&models.AuthUserGroup{},
 		&models.ApplicationOperationLog{},
+		// 用户身份映射和权限执行记录表（新增）
+		&models.UserIdentityMapping{},
+		&models.GroupBindingExecution{},
+		&models.PermissionAssignmentStatus{},
 		// 有外键依赖的表（按依赖顺序）
 		&models.ServerRoom{},
 		&models.Cabinet{},
@@ -477,13 +481,16 @@ func (s *InitService) syncMenus() error {
 			{ID: 51, Name: "操作审计", Icon: "mdi:account-edit", Path: "/audit/operation", Permission: "audit:operation:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 4},
 			{ID: 52, Name: "系统事件", Icon: "mdi:information", Path: "/audit/system", Permission: "audit:system:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 4},
 
-			// ========== 授权中心二级菜单 (ID: 100-103) ==========
+			// ========== 授权中心二级菜单 (ID: 100-107) ==========
 
 			{ID: 100, Name: "用户", Icon: "mdi:account", Path: "/auth/users", Permission: "auth:user:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 7},
 			{ID: 101, Name: "用户组", Icon: "mdi:shield-account", Path: "/auth/roles", Permission: "auth:role:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 7},
 			{ID: 102, Name: "应用", Icon: "mdi:application", Path: "/auth/applications", Permission: "auth:app:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 7},
 			{ID: 103, Name: "权限映射", Icon: "mdi:link", Path: "/auth/rolebindings", Permission: "auth:binding:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 7},
-			{ID: 105, Name: "操作日志", Icon: "mdi:file-document", Path: "/auth/operationlogs", Permission: "auth:log:query", MenuType: "menu", Sort: 5, Status: 1, ParentID: 7},
+			{ID: 104, Name: "用户授权", Icon: "mdi:account-key", Path: "/auth/userauthorization", Permission: "auth:authorization:query", MenuType: "menu", Sort: 5, Status: 1, ParentID: 7},
+			{ID: 105, Name: "操作日志", Icon: "mdi:file-document", Path: "/auth/operationlogs", Permission: "auth:log:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 7},
+			{ID: 106, Name: "用户身份映射", Icon: "mdi:account-switch", Path: "/auth/user-identities", Permission: "auth:identity:query", MenuType: "menu", Sort: 7, Status: 1, ParentID: 7},
+			{ID: 107, Name: "用户有效权限", Icon: "mdi:shield-check", Path: "/auth/user-permissions", Permission: "auth:permission:query", MenuType: "menu", Sort: 8, Status: 1, ParentID: 7},
 
 			// （web终端 已移为一级菜单，见上方 ParentID: 0 的定义）
 
@@ -596,13 +603,13 @@ func (s *InitService) syncRoleMenus() error {
 	logger.Info("开始同步角色菜单权限...")
 
 	// 定义5个内置角色的菜单权限（动态路由模式）
-	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心, 50=审计中心, 60=web终端, 80=K8s管理, 90=诊断中心, 100-105=授权中心
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 6, 7, 13, 60, 80, 87, 88, 89, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105} // 超级管理员：所有权限（包含授权中心）
-	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 60, 80, 87, 88, 89, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105}               // 运维工程师：含授权中心权限
-	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105}                                                                                                    // 审计员：含监控查看和授权中心权限
+	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心, 50=审计中心, 60=web终端, 80=K8s管理, 90=诊断中心, 100-107=授权中心
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 6, 7, 13, 60, 80, 87, 88, 89, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105, 106, 107} // 超级管理员：所有权限（包含授权中心）
+	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 60, 80, 87, 88, 89, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105, 106, 107}               // 运维工程师：含授权中心权限
+	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105, 106, 107}                                                                                                    // 审计员：含监控查看和授权中心权限
 	userMenuIDs := []uint{1}                                                                                                                                                      // 普通用户：仅首页
-	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 45, 46, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105}                                                                                          // 测试角色：含授权中心权限
-	viewerMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105}                                                                                            // 查看者：含授权中心权限
+	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 45, 46, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105, 106, 107}                                                                                          // 测试角色：含授权中心权限
+	viewerMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105, 106, 107}                                                                                            // 查看者：含授权中心权限
 
 	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
 	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)
@@ -678,10 +685,10 @@ func (s *InitService) syncRoleMenus() error {
 // initRoles 初始化角色数据
 func (s *InitService) initRoles() error {
 	// 定义5个内置角色的菜单权限（动态路由模式）
-	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心, 50=审计中心, 60=web终端, 80=K8s管理, 90=诊断中心, 100-105=授权中心
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 6, 7, 13, 60, 80, 87, 88, 89, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105} // 超级管理员：所有权限（包含授权中心）
-	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 60, 80, 87, 88, 89, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105}               // 运维工程师：含授权中心权限
-	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105}                                                                                                    // 审计员：含监控查看和授权中心权限
+	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心, 50=审计中心, 60=web终端, 80=K8s管理, 90=诊断中心, 100-107=授权中心
+	adminMenuIDs := []uint{1, 2, 3, 4, 5, 6, 7, 13, 60, 80, 87, 88, 89, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105, 106, 107} // 超级管理员：所有权限（包含授权中心）
+	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 60, 80, 87, 88, 89, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105, 106, 107}               // 运维工程师：含授权中心权限
+	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105, 106, 107}                                                                                                    // 审计员：含监控查看和授权中心权限
 	userMenuIDs := []uint{1}                                                                                                                                                      // 普通用户：仅首页
 	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 45, 46, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105}                                                                                          // 测试角色：含授权中心权限
 

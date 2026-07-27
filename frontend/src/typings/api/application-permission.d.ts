@@ -231,5 +231,89 @@ declare namespace Api {
       records: ApplicationOperationLog[];
       total: number;
     };
+
+    /** user identity mapping (用户身份映射) */
+    type UserIdentityMapping = Common.CommonRecord<{
+      /** auth user id */
+      authUserId: number;
+      /** auth user */
+      authUser?: AuthUser;
+      /** application id */
+      appId: number;
+      /** application */
+      appIDField?: Application;
+      /** external username */
+      externalUsername: string;
+      /** external user id */
+      externalUserId?: string;
+      /** mapping type: auto, manual */
+      mappingType: 'auto' | 'manual';
+      /** mapping status: active, inactive, deleted */
+      mappingStatus: 'active' | 'inactive' | 'deleted';
+      /** last sync time */
+      lastSyncTime?: string;
+    }>;
+
+    /** identity mapping list */
+    type IdentityMappingList = {
+      records: UserIdentityMapping[];
+      total: number;
+    };
+
+    /** user effective permission (用户有效权限) */
+    type UserEffectivePermission = {
+      /** username */
+      username: string;
+      /** nickname */
+      nickname?: string;
+      /** application id */
+      appId: number;
+      /** application name */
+      appName: string;
+      /** role code */
+      roleCode: string;
+      /** role name */
+      roleName: string;
+      /** role type */
+      roleType: string;
+      /** status: active, inactive, expired, pending */
+      status: 'active' | 'inactive' | 'expired' | 'pending';
+      /** external username */
+      externalUsername?: string;
+      /** group id (if assigned via group) */
+      groupId?: number;
+      /** group name */
+      groupName?: string;
+      /** group code */
+      groupCode?: string;
+      /** assigned at */
+      assignedAt?: string;
+    };
+
+    /** user permission list */
+    type UserPermissionList = {
+      records: UserEffectivePermission[];
+      total: number;
+    };
+
+    /** group binding execution (权限绑定执行记录) */
+    type GroupBindingExecution = Common.CommonRecord<{
+      /** group binding id */
+      groupBindingId: number;
+      /** auth user id */
+      authUserId: number;
+      /** auth user */
+      authUser?: AuthUser;
+      /** external username */
+      externalUsername?: string;
+      /** action type: created, granted, removed, failed */
+      actionType: 'created' | 'granted' | 'removed' | 'failed';
+      /** status: success, failed, pending */
+      status: 'success' | 'failed' | 'pending';
+      /** message */
+      message?: string;
+      /** operator */
+      operator: string;
+    }>;
   }
 }

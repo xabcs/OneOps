@@ -387,8 +387,8 @@ func (j *JumpserverAdapter) FetchRoles(baseURL string, authConfig map[string]int
 	return []models.ApplicationRole{}, nil
 }
 
-// CreateUser 在 JumpServer 中创建用户
-func (j *JumpserverAdapter) CreateUser(baseURL string, authConfig map[string]interface{}, user *UserCreateRequest) error {
+// CreateUser 在 JumpServer 中创建用户，返回创建的用户ID
+func (j *JumpserverAdapter) CreateUser(baseURL string, authConfig map[string]interface{}, user *UserCreateRequest) (string, error) {
 	// 获取端点配置（支持多种类型）
 	var createUserURL string
 	if endpoints, ok := authConfig["endpoints"].(map[string]interface{}); ok && endpoints != nil {
@@ -426,18 +426,18 @@ func (j *JumpserverAdapter) CreateUser(baseURL string, authConfig map[string]int
 
 	jsonData, err := json.Marshal(reqData)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// 创建请求（必须先设置 URL，再进行签名认证）
 	req, err := http.NewRequest("POST", fullURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// 设置认证（支持 AccessKey、Token、BasicAuth 等多种方式）
 	if err := j.setAuthentication(req, authConfig); err != nil {
-		return err
+		return "", err
 	}
 
 	// 设置 Content-Type
@@ -447,19 +447,38 @@ func (j *JumpserverAdapter) CreateUser(baseURL string, authConfig map[string]int
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("请求失败: %w", err)
+		return "", fmt.Errorf("请求失败: %w", err)
 	}
 	defer resp.Body.Close()
 
+	// 读取响应体
+	body, _ := io.ReadAll(resp.Body)
+
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("创建用户失败 (状态码 %d): %s", resp.StatusCode, string(body))
+		return "", fmt.Errorf("创建用户失败 (状态码 %d): %s", resp.StatusCode, string(body))
+	}
+
+	// 解析响应以获取用户 ID
+	var createdUser struct {
+		ID       string `json:"id"`
+		Username string `json:"username"`
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+	}
+
+	if err := json.Unmarshal(body, &createdUser); err != nil {
+		logger.Warn("解析创建用户响应失败，无法获取用户ID",
+			zap.Error(err),
+			zap.String("responseBody", string(body)))
+		// 即使解析失败，用户可能已创建成功，返回空字符串
+		return "", nil
 	}
 
 	logger.Info("成功在 JumpServer 创建用户",
-		zap.String("username", user.Username))
+		zap.String("username", user.Username),
+		zap.String("userID", createdUser.ID))
 
-	return nil
+	return createdUser.ID, nil
 }
 
 // AssignRole 在 JumpServer 中为用户分配角色

@@ -322,6 +322,8 @@ const local: App.I18n.Schema = {
     auth_rolebindings: 'Permission Mapping',
     auth_userauthorization: 'User Group Assignment',
     auth_operationlogs: 'Operation Logs',
+    'auth_user-identities': 'User Identity Mappings',
+    'auth_user-permissions': 'User Effective Permissions',
     'multi-menu': 'Multi Menu',
     'multi-menu_first': 'Menu One',
     'multi-menu_first_child': 'Menu One Child',

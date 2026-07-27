@@ -159,7 +159,7 @@ func (g *GenericAdapter) FetchRoles(baseURL string, authConfig map[string]interf
 }
 
 // CreateUser 在通用 API 中创建用户
-func (g *GenericAdapter) CreateUser(baseURL string, authConfig map[string]interface{}, user *UserCreateRequest) error {
+func (g *GenericAdapter) CreateUser(baseURL string, authConfig map[string]interface{}, user *UserCreateRequest) (string, error) {
 	// 获取 endpoints 配置（支持多种类型）
 	var createUserURL string
 	if endpoints, ok := authConfig["endpoints"].(map[string]interface{}); ok && endpoints != nil {
@@ -174,7 +174,7 @@ func (g *GenericAdapter) CreateUser(baseURL string, authConfig map[string]interf
 	}
 
 	if createUserURL == "" {
-		return fmt.Errorf("缺少 createUser 端点配置")
+		return "", fmt.Errorf("缺少 createUser 端点配置")
 	}
 
 	// 构建完整 URL
@@ -200,13 +200,13 @@ func (g *GenericAdapter) CreateUser(baseURL string, authConfig map[string]interf
 
 	jsonData, err := json.Marshal(reqData)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// 创建请求
 	req, err := http.NewRequest("POST", fullURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -229,19 +229,36 @@ func (g *GenericAdapter) CreateUser(baseURL string, authConfig map[string]interf
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("创建用户失败 (状态码 %d): %s", resp.StatusCode, string(body))
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return "", fmt.Errorf("创建用户失败 (状态码 %d): %s", resp.StatusCode, string(body))
+	}
+
+	// 尝试解析响应以获取用户 ID
+	var result struct {
+		Data struct {
+			ID       interface{} `json:"id"`
+			Username string      `json:"username"`
+		} `json:"data"`
+	}
+
+	userID := ""
+	if err := json.Unmarshal(body, &result); err == nil {
+		if result.Data.ID != nil {
+			userID = fmt.Sprintf("%v", result.Data.ID)
+		}
 	}
 
 	logger.Info("在通用系统创建用户成功",
-		zap.String("username", user.Username))
+		zap.String("username", user.Username),
+		zap.String("userID", userID))
 
-	return nil
+	return userID, nil
 }
 
 // AssignRole 在通用 API 中为用户分配角色

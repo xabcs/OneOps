@@ -448,7 +448,9 @@ const local: App.I18n.Schema = {
     auth_applications: '应用',
     auth_rolebindings: '权限映射',
     auth_userauthorization: '用户组分配',
-    auth_operationlogs: '操作日志'
+    auth_operationlogs: '操作日志',
+    'auth_user-identities': '用户身份映射',
+    'auth_user-permissions': '用户有效权限'
   },
   page: {
     audit: {

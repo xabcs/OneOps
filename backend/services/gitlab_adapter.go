@@ -190,11 +190,11 @@ func (g *GitLabAdapter) FetchRoles(baseURL string, authConfig map[string]interfa
 }
 
 // CreateUser 在 GitLab 中创建用户
-func (g *GitLabAdapter) CreateUser(baseURL string, authConfig map[string]interface{}, user *UserCreateRequest) error {
+func (g *GitLabAdapter) CreateUser(baseURL string, authConfig map[string]interface{}, user *UserCreateRequest) (string, error) {
 	// 获取认证信息
 	token, ok := authConfig["token"].(string)
 	if !ok || token == "" {
-		return fmt.Errorf("GitLab 需要认证 token")
+		return "", fmt.Errorf("GitLab 需要认证 token")
 	}
 
 	// 获取端点配置（支持多种类型）
@@ -235,13 +235,13 @@ func (g *GitLabAdapter) CreateUser(baseURL string, authConfig map[string]interfa
 
 	jsonData, err := json.Marshal(reqData)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// 创建请求
 	req, err := http.NewRequest("POST", fullURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// 设置认证头
@@ -252,20 +252,38 @@ func (g *GitLabAdapter) CreateUser(baseURL string, authConfig map[string]interfa
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("请求失败: %w", err)
+		return "", fmt.Errorf("请求失败: %w", err)
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("创建用户失败 (状态码 %d): %s", resp.StatusCode, string(body))
+		return "", fmt.Errorf("创建用户失败 (状态码 %d): %s", resp.StatusCode, string(body))
+	}
+
+	// 解析响应以获取用户 ID
+	var createdUser struct {
+		ID       int    `json:"id"`
+		Username string `json:"username"`
+		Email    string `json:"email"`
+	}
+
+	if err := json.Unmarshal(body, &createdUser); err != nil {
+		logger.Warn("解析创建用户响应失败，无法获取用户ID",
+			zap.Error(err),
+			zap.String("responseBody", string(body)))
+		// 即使解析失败，用户可能已创建成功，返回空字符串
+		return "", nil
 	}
 
 	logger.Info("成功在 GitLab 创建用户",
 		zap.String("username", user.Username),
-		zap.String("email", user.Email))
+		zap.String("email", user.Email),
+		zap.Int("userID", createdUser.ID))
 
-	return nil
+	// 返回用户 ID（转换为字符串）
+	return fmt.Sprintf("%d", createdUser.ID), nil
 }
 
 // AssignRole 在 GitLab 中为用户分配角色

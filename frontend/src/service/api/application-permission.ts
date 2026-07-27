@@ -291,3 +291,63 @@ export function fetchApplicationAuthorizationRules(id: number) {
     method: 'get'
   });
 }
+
+// ========== 用户身份映射管理 API ==========
+
+/** 获取用户身份映射列表 */
+export function fetchUserIdentityMappings(params: {
+  current: number;
+  size: number;
+  username?: string;
+  appId?: number | null;
+  status?: string;
+}) {
+  return request<Api.ApplicationPermission.IdentityMappingList>({
+    url: '/system/user-identity-mappings',
+    method: 'get',
+    params
+  });
+}
+
+/** 删除用户身份映射 */
+export function deleteUserIdentityMapping(id: number) {
+  return request<boolean>({
+    url: `/system/user-identity-mappings/${id}`,
+    method: 'delete'
+  });
+}
+
+// ========== 用户有效权限查询 API ==========
+
+/** 获取用户有效权限列表 */
+export function fetchUserEffectivePermissions(params: {
+  current: number;
+  size: number;
+  username?: string;
+  appId?: number | null;
+}) {
+  return request<Api.ApplicationPermission.UserPermissionList>({
+    url: '/system/user-permissions',
+    method: 'get',
+    params
+  });
+}
+
+/** 获取用户有效权限矩阵视图 */
+export function fetchUserEffectivePermissionsMatrix(appId: number) {
+  return request<any>({
+    url: '/system/user-permissions/matrix',
+    method: 'get',
+    params: { appId }
+  });
+}
+
+// ========== 权限执行记录 API ==========
+
+/** 获取权限绑定执行记录 */
+export function fetchGroupBindingExecutions(bindingId: number) {
+  return request<any[]>({
+    url: `/system/group-bindings/${bindingId}/executions`,
+    method: 'get'
+  });
+}

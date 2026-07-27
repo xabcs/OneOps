@@ -167,6 +167,24 @@ export const generatedRoutes: GeneratedRoute[] = [
         }
       },
       {
+        name: 'auth_user-identities',
+        path: '/auth/user-identities',
+        component: 'view.auth_user-identities',
+        meta: {
+          title: 'auth_user-identities',
+          i18nKey: 'route.auth_user-identities'
+        }
+      },
+      {
+        name: 'auth_user-permissions',
+        path: '/auth/user-permissions',
+        component: 'view.auth_user-permissions',
+        meta: {
+          title: 'auth_user-permissions',
+          i18nKey: 'route.auth_user-permissions'
+        }
+      },
+      {
         name: 'auth_userauthorization',
         path: '/auth/userauthorization',
         component: 'view.auth_userauthorization',

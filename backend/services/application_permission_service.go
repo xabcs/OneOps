@@ -604,7 +604,7 @@ func (s *ApplicationPermissionService) getJenkinsCrumb(app *models.Application, 
 }
 
 // CreateExternalUser 在外部系统创建用户（使用适配器模式）
-func (s *ApplicationPermissionService) CreateExternalUser(appID uint, username, password, email, fullName string, operator string) error {
+func (s *ApplicationPermissionService) CreateExternalUser(appID uint, authUserID uint, username, password, email, fullName string, operator string) error {
 	app, err := s.GetApplicationByID(appID)
 	if err != nil {
 		return fmt.Errorf("获取应用失败: %w", err)
@@ -648,16 +648,29 @@ func (s *ApplicationPermissionService) CreateExternalUser(appID uint, username, 
 	}
 
 	// 构建用户创建请求
+	// 处理空字段：Jumpserver 要求 name 和 email 必填
+	displayName := fullName
+	if displayName == "" {
+		displayName = username // 如果没有全名，使用用户名作为默认值
+	}
+
+	userEmail := email
+	if userEmail == "" {
+		// 如果没有邮箱，构造一个默认邮箱
+		userEmail = fmt.Sprintf("%s@oneops.local", username)
+	}
+
 	userReq := &UserCreateRequest{
 		Username:    username,
 		Password:    password,
-		FullName:    fullName,
-		Email:       email,
+		FullName:    displayName,
+		Email:       userEmail,
 		Description: "",
 	}
 
-	// 使用适配器创建用户
-	if err := adapter.CreateUser(app.BaseURL, authConfig, userReq); err != nil {
+	// 使用适配器创建用户，获取返回的用户ID
+	externalUserID, err := adapter.CreateUser(app.BaseURL, authConfig, userReq)
+	if err != nil {
 		s.logOperation(appID, "create_user", username, "", "failed", err.Error(), operator)
 		return err
 	}
@@ -667,7 +680,35 @@ func (s *ApplicationPermissionService) CreateExternalUser(appID uint, username, 
 		zap.Uint("appID", appID),
 		zap.String("appName", app.Name),
 		zap.String("appType", app.Type),
-		zap.String("username", username))
+		zap.String("username", username),
+		zap.String("externalUserID", externalUserID))
+
+	// 记录用户身份映射
+	now := time.Now()
+	mapping := models.UserIdentityMapping{
+		AuthUserID:        authUserID,
+		AppID:             appID,
+		ExternalUsername:  username,
+		ExternalUserID:    externalUserID,
+		MappingType:       "auto",
+		MappingStatus:     "active",
+		LastSyncAt:        &now,
+	}
+
+	if err := db.Where("auth_user_id = ? AND app_id = ?", authUserID, appID).
+		FirstOrCreate(&mapping).Error; err != nil {
+		logger.Warn("记录用户身份映射失败",
+			zap.Uint("authUserID", authUserID),
+			zap.Uint("appID", appID),
+			zap.String("username", username),
+			zap.Error(err))
+	} else {
+		logger.Info("记录用户身份映射成功",
+			zap.Uint("authUserID", authUserID),
+			zap.Uint("appID", appID),
+			zap.String("externalUsername", username),
+			zap.String("externalUserID", externalUserID))
+	}
 
 	return nil
 }
@@ -852,7 +893,7 @@ func (s *ApplicationPermissionService) createOtherSystemUser(app *models.Applica
 }
 
 // GrantRoleToUser 为用户授予应用角色（使用适配器模式）
-func (s *ApplicationPermissionService) GrantRoleToUser(appID uint, username, roleCode string, operator string) error {
+func (s *ApplicationPermissionService) GrantRoleToUser(appID uint, authUserID uint, groupBindingID uint, username, roleCode string, operator string) error {
 	app, err := s.GetApplicationByID(appID)
 	if err != nil {
 		return fmt.Errorf("获取应用失败: %w", err)
@@ -898,6 +939,9 @@ func (s *ApplicationPermissionService) GrantRoleToUser(appID uint, username, rol
 	// 使用适配器分配角色
 	if err := adapter.AssignRole(app.BaseURL, authConfig, username, roleCode); err != nil {
 		s.logOperation(appID, "grant_role", fmt.Sprintf("%s -> %s", username, roleCode), "", "failed", err.Error(), operator)
+
+		// 记录失败执行
+		s.recordGroupBindingExecution(groupBindingID, authUserID, username, "granted", "failed", err.Error(), operator)
 		return err
 	}
 
@@ -908,6 +952,9 @@ func (s *ApplicationPermissionService) GrantRoleToUser(appID uint, username, rol
 		zap.String("appType", app.Type),
 		zap.String("username", username),
 		zap.String("roleCode", roleCode))
+
+	// 记录成功执行
+	s.recordGroupBindingExecution(groupBindingID, authUserID, username, "granted", "success", "角色分配成功", operator)
 
 	return nil
 }
@@ -1118,14 +1165,14 @@ func (s *ApplicationPermissionService) AssignUserToGroup(userID, groupID uint, o
 		}
 
 		// 1. 创建外部用户（如果不存在）
-		if err := s.CreateExternalUser(binding.AppID, user.Username, user.Password, user.Email, user.Nickname, operator); err != nil {
+		if err := s.CreateExternalUser(binding.AppID, user.ID, user.Username, user.Password, user.Email, user.Nickname, operator); err != nil {
 			logger.Warn("创建外部用户失败，继续授权", zap.Error(err))
 			result.CreateError = err.Error()
 			// 继续执行，用户可能已存在
 		}
 
 		// 2. 授予角色
-		if err := s.GrantRoleToUser(binding.AppID, user.Username, binding.ApplicationRole.RoleCode, operator); err != nil {
+		if err := s.GrantRoleToUser(binding.AppID, user.ID, binding.ID, user.Username, binding.ApplicationRole.RoleCode, operator); err != nil {
 			result.Success = false
 			result.GrantError = err.Error()
 			results = append(results, result)
@@ -1185,19 +1232,24 @@ func (s *ApplicationPermissionService) CreateGroupBinding(binding *models.GroupB
 		return fmt.Errorf("应用不存在 (ID: %d): %w", binding.AppID, err)
 	}
 
-	// 3. 检查应用角色是否存在
+	// 3. Jumpserver 特殊处理
+	if app.Type == "jumpserver" {
+		return s.createJumpserverGroupBinding(binding, &group, &app)
+	}
+
+	// 4. 其他应用类型 - 检查应用角色是否存在
 	var role models.ApplicationRole
 	if err := db.Where("id = ? AND app_id = ?", binding.ApplicationRoleID, binding.AppID).First(&role).Error; err != nil {
 		return fmt.Errorf("应用角色不存在 (RoleID: %d, AppID: %d): %w", binding.ApplicationRoleID, binding.AppID, err)
 	}
 
-	// 4. 创建绑定记录
+	// 5. 创建绑定记录
 	if err := db.Create(binding).Error; err != nil {
 		return fmt.Errorf("创建用户组绑定失败: %w", err)
 	}
 
-	// 5. 为该用户组的所有现有成员在外部系统中创建用户并授权
-	go s.syncExistingMembersToExternalSystem(binding.GroupID, binding.AppID, binding.ApplicationRoleID, role.RoleCode, role.RoleName, "system")
+	// 6. 为该用户组的所有现有成员在外部系统中创建用户并授权
+	go s.syncExistingMembersToExternalSystem(binding.GroupID, binding.AppID, binding.ApplicationRoleID, binding.ID, role.RoleCode, role.RoleName, "system")
 
 	logger.Info("创建用户组绑定成功，开始为现有成员同步外部系统权限",
 		zap.Uint("groupID", binding.GroupID),
@@ -1407,6 +1459,31 @@ func (s *ApplicationPermissionService) GetAuthGroups(page, pageSize int, name st
 	}
 
 	return groups, total, nil
+}
+
+// recordGroupBindingExecution 记录角色绑定执行状态
+func (s *ApplicationPermissionService) recordGroupBindingExecution(groupBindingID, authUserID uint, externalUsername, actionType, status, message, operator string) {
+	execution := models.GroupBindingExecution{
+		GroupBindingID:   groupBindingID,
+		AuthUserID:       authUserID,
+		ExternalUsername: externalUsername,
+		ActionType:       actionType,
+		Status:           status,
+		Message:          message,
+		Operator:         operator,
+	}
+
+	if err := db.Create(&execution).Error; err != nil {
+		logger.Warn("记录角色绑定执行状态失败",
+			zap.Uint("groupBindingID", groupBindingID),
+			zap.Uint("authUserID", authUserID),
+			zap.Error(err))
+	} else {
+		logger.Info("记录角色绑定执行状态成功",
+			zap.Uint("groupBindingID", groupBindingID),
+			zap.String("actionType", actionType),
+			zap.String("status", status))
+	}
 }
 
 // GetAuthGroupByID 根据ID获取授权中心用户组
@@ -1653,7 +1730,7 @@ if (rbas instanceof RoleBasedAuthorizationStrategy) {
 
 
 // syncExistingMembersToExternalSystem 为用户组的现有成员同步外部系统权限
-func (s *ApplicationPermissionService) syncExistingMembersToExternalSystem(groupID, appID, roleID uint, roleCode, roleName, operator string) {
+func (s *ApplicationPermissionService) syncExistingMembersToExternalSystem(groupID, appID, roleID, groupBindingID uint, roleCode, roleName, operator string) {
 	// 获取用户组的所有成员
 	var userGroups []*models.AuthUserGroup
 	if err := db.Where("group_id = ?", groupID).Preload("UserIDField").Find(&userGroups).Error; err != nil {
@@ -1685,7 +1762,7 @@ func (s *ApplicationPermissionService) syncExistingMembersToExternalSystem(group
 		}
 
 		// 1. 创建外部用户（如果不存在）
-		if err := s.CreateExternalUser(appID, user.Username, user.Password, user.Email, user.Nickname, operator); err != nil {
+		if err := s.CreateExternalUser(appID, user.ID, user.Username, user.Password, user.Email, user.Nickname, operator); err != nil {
 			logger.Warn("创建外部用户失败",
 				zap.Uint("userID", user.ID),
 				zap.String("username", user.Username),
@@ -1696,7 +1773,7 @@ func (s *ApplicationPermissionService) syncExistingMembersToExternalSystem(group
 		}
 
 		// 2. 授予角色
-		if err := s.GrantRoleToUser(appID, user.Username, roleCode, operator); err != nil {
+		if err := s.GrantRoleToUser(appID, user.ID, groupBindingID, user.Username, roleCode, operator); err != nil {
 			logger.Warn("授予外部角色失败",
 				zap.Uint("userID", user.ID),
 				zap.String("username", user.Username),
@@ -1943,3 +2020,681 @@ func (s *ApplicationPermissionService) GetApplicationAuthorizationRules(appID ui
 	}
 	return rules, nil
 }
+
+// === 用户身份映射管理 ===
+
+// GetUserIdentityMappings 获取用户身份映射列表
+func (s *ApplicationPermissionService) GetUserIdentityMappings(page, pageSize int, username string, appID uint, status string) ([]*models.UserIdentityMapping, int64, error) {
+	var mappings []*models.UserIdentityMapping
+	var total int64
+
+	query := db.Model(&models.UserIdentityMapping{}).Preload("AuthUserField").Preload("AppIDField")
+
+	if username != "" {
+		query = query.Joins("JOIN auth_users ON auth_users.id = user_identity_mappings.auth_user_id").
+			Where("auth_users.username LIKE ?", "%"+username+"%")
+	}
+
+	if appID > 0 {
+		query = query.Where("app_id = ?", appID)
+	}
+
+	if status != "" {
+		query = query.Where("mapping_status = ?", status)
+	}
+
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * pageSize
+	if err := query.Offset(offset).Limit(pageSize).Order("created_at DESC").Find(&mappings).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return mappings, total, nil
+}
+
+// DeleteUserIdentityMapping 删除用户身份映射
+func (s *ApplicationPermissionService) DeleteUserIdentityMapping(id uint) error {
+	return db.Delete(&models.UserIdentityMapping{}, id).Error
+}
+
+// === 用户有效权限查询 ===
+
+// GetUserEffectivePermissions 获取用户有效权限列表
+func (s *ApplicationPermissionService) GetUserEffectivePermissions(page, pageSize int, username string, appID uint) ([]map[string]interface{}, int64, error) {
+	var results []map[string]interface{}
+	var total int64
+
+	// 复杂查询：从多个表关联查询用户的有效权限
+	// 1. 用户 -> 用户组成员 -> 用户组 -> 用户组绑定 -> 应用角色
+	// 2. 同时需要关联用户身份映射表获取外部用户名
+
+	query := db.Table("auth_users").
+		Select(`
+			DISTINCT
+			auth_users.username,
+			auth_users.nickname,
+			applications.id as app_id,
+			applications.name as app_name,
+			application_roles.role_code,
+			application_roles.role_name,
+			application_roles.role_type,
+			CASE
+				WHEN user_identity_mappings.mapping_status = 'active' THEN 'active'
+				ELSE 'inactive'
+			END as status,
+			user_identity_mappings.external_username,
+			auth_groups.id as group_id,
+			auth_groups.name as group_name,
+			auth_groups.code as group_code,
+			MIN(auth_user_groups.created_at) as assigned_at
+		`).
+		Joins("JOIN auth_user_groups ON auth_user_groups.user_id = auth_users.id").
+		Joins("JOIN auth_groups ON auth_groups.id = auth_user_groups.group_id").
+		Joins("JOIN group_bindings ON group_bindings.group_id = auth_groups.id").
+		Joins("JOIN applications ON applications.id = group_bindings.app_id").
+		Joins("JOIN application_roles ON application_roles.id = group_bindings.application_role_id").
+		Joins("LEFT JOIN user_identity_mappings ON user_identity_mappings.auth_user_id = auth_users.id AND user_identity_mappings.app_id = applications.id").
+		Where("auth_users.status = ?", 1).
+		Where("auth_groups.status = ?", 1).
+		Group("auth_users.id, applications.id, application_roles.id")
+
+	if username != "" {
+		query = query.Where("auth_users.username LIKE ?", "%"+username+"%")
+	}
+
+	if appID > 0 {
+		query = query.Where("applications.id = ?", appID)
+	}
+
+	// 获取总数 - 使用单独的查询统计
+	countQuery := db.Table("auth_users").
+		Select("COUNT(DISTINCT CONCAT(auth_users.id, '-', applications.id, '-', application_roles.id))").
+		Joins("JOIN auth_user_groups ON auth_user_groups.user_id = auth_users.id").
+		Joins("JOIN auth_groups ON auth_groups.id = auth_user_groups.group_id").
+		Joins("JOIN group_bindings ON group_bindings.group_id = auth_groups.id").
+		Joins("JOIN applications ON applications.id = group_bindings.app_id").
+		Joins("JOIN application_roles ON application_roles.id = group_bindings.application_role_id").
+		Where("auth_users.status = ?", 1).
+		Where("auth_groups.status = ?", 1)
+
+	if username != "" {
+		countQuery = countQuery.Where("auth_users.username LIKE ?", "%"+username+"%")
+	}
+
+	if appID > 0 {
+		countQuery = countQuery.Where("applications.id = ?", appID)
+	}
+
+	if err := countQuery.Scan(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// 分页查询
+	offset := (page - 1) * pageSize
+	if err := query.Offset(offset).Limit(pageSize).Order("auth_users.username, applications.name").Find(&results).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return results, total, nil
+}
+
+// === 矩阵视图 ===
+
+// GetUserEffectivePermissionsMatrix 获取用户有效权限矩阵视图
+func (s *ApplicationPermissionService) GetUserEffectivePermissionsMatrix(appID uint) (map[string]interface{}, error) {
+	// 获取应用信息
+	var app models.Application
+	if err := db.First(&app, appID).Error; err != nil {
+		return nil, fmt.Errorf("应用不存在: %w", err)
+	}
+
+	// 根据应用类型返回不同的矩阵视图
+	switch app.Type {
+	case "jenkins", "gitlab":
+		return s.getRoleUserMatrix(appID, app.Name, app.Type)
+	case "jumpserver":
+		return s.getUserRuleMatrix(appID, app.Name)
+	default:
+		// 默认使用角色-用户矩阵
+		return s.getRoleUserMatrix(appID, app.Name, app.Type)
+	}
+}
+
+// getRoleUserMatrix 获取角色-用户矩阵（Jenkins/GitLab）
+func (s *ApplicationPermissionService) getRoleUserMatrix(appID uint, appName string, appType string) (map[string]interface{}, error) {
+	// 1. 获取所有角色
+	var roles []models.ApplicationRole
+	if err := db.Where("app_id = ?", appID).Order("role_type, role_name").Find(&roles).Error; err != nil {
+		return nil, fmt.Errorf("获取角色列表失败: %w", err)
+	}
+
+	// 2. 获取所有有权限的用户
+	var users []struct {
+		ID               uint   `json:"id"`
+		Username         string `json:"username"`
+		Nickname         string `json:"nickname"`
+		ExternalUsername string `json:"external_username"`
+	}
+	userQuery := `
+		SELECT DISTINCT
+			auth_users.id,
+			auth_users.username,
+			auth_users.nickname,
+			user_identity_mappings.external_username
+		FROM auth_users
+		INNER JOIN auth_user_groups ON auth_user_groups.user_id = auth_users.id
+		INNER JOIN auth_groups ON auth_groups.id = auth_user_groups.group_id
+		INNER JOIN group_bindings ON group_bindings.group_id = auth_groups.id
+		LEFT JOIN user_identity_mappings ON user_identity_mappings.auth_user_id = auth_users.id
+			AND user_identity_mappings.app_id = ?
+		WHERE group_bindings.app_id = ?
+			AND auth_users.status = 1
+			AND auth_groups.status = 1
+		ORDER BY auth_users.username
+	`
+	if err := db.Raw(userQuery, appID, appID).Scan(&users).Error; err != nil {
+		return nil, fmt.Errorf("获取用户列表失败: %w", err)
+	}
+
+	// 3. 获取权限矩阵数据
+	var permissions []struct {
+		UserID           uint
+		RoleID           uint
+		Username         string
+		RoleCode         string
+		Status           string
+		GroupName        string
+		AssignedAt       time.Time
+		ExternalUsername string
+	}
+	permQuery := `
+		SELECT
+			auth_users.id as user_id,
+			application_roles.id as role_id,
+			auth_users.username,
+			application_roles.role_code,
+			CASE
+				WHEN user_identity_mappings.mapping_status = 'active' THEN 'active'
+				ELSE 'inactive'
+			END as status,
+			auth_groups.name as group_name,
+			MIN(auth_user_groups.created_at) as assigned_at,
+			user_identity_mappings.external_username
+		FROM auth_users
+		INNER JOIN auth_user_groups ON auth_user_groups.user_id = auth_users.id
+		INNER JOIN auth_groups ON auth_groups.id = auth_user_groups.group_id
+		INNER JOIN group_bindings ON group_bindings.group_id = auth_groups.id
+		INNER JOIN application_roles ON application_roles.id = group_bindings.application_role_id
+		LEFT JOIN user_identity_mappings ON user_identity_mappings.auth_user_id = auth_users.id
+			AND user_identity_mappings.app_id = ?
+		WHERE group_bindings.app_id = ?
+			AND auth_users.status = 1
+			AND auth_groups.status = 1
+		GROUP BY auth_users.id, application_roles.id, auth_users.username, application_roles.role_code,
+			user_identity_mappings.mapping_status, auth_groups.name, user_identity_mappings.external_username
+	`
+	if err := db.Raw(permQuery, appID, appID).Scan(&permissions).Error; err != nil {
+		return nil, fmt.Errorf("获取权限数据失败: %w", err)
+	}
+
+	// 4. 构建矩阵和详情
+	matrix := make(map[uint]map[uint]bool)
+	permissionsDetail := make(map[string]map[string]interface{})
+
+	for _, perm := range permissions {
+		if matrix[perm.RoleID] == nil {
+			matrix[perm.RoleID] = make(map[uint]bool)
+		}
+		matrix[perm.RoleID][perm.UserID] = true
+
+		// 权限详情
+		key := fmt.Sprintf("%d_%d", perm.RoleID, perm.UserID)
+		permissionsDetail[key] = map[string]interface{}{
+			"status":            perm.Status,
+			"group_name":        perm.GroupName,
+			"assigned_at":       perm.AssignedAt.Format("2006-01-02T15:04:05Z07:00"),
+			"external_username": perm.ExternalUsername,
+		}
+	}
+
+	// 5. 构建返回数据
+	result := map[string]interface{}{
+		"view_type":          "role-user-matrix",
+		"app_id":             appID,
+		"app_name":           appName,
+		"app_type":           appType,
+		"roles":              roles,
+		"users":              users,
+		"matrix":             matrix,
+		"permissions_detail": permissionsDetail,
+	}
+
+	return result, nil
+}
+
+// getUserRuleMatrix 获取用户-授权规则矩阵（Jumpserver）
+func (s *ApplicationPermissionService) getUserRuleMatrix(appID uint, appName string) (map[string]interface{}, error) {
+	// 1. 获取所有授权规则（从 application_authorization_rules）
+	var rules []models.ApplicationAuthorizationRule
+	if err := db.Where("app_id = ?", appID).Order("rule_name").Find(&rules).Error; err != nil {
+		return nil, fmt.Errorf("获取授权规则列表失败: %w", err)
+	}
+
+	// 如果没有授权规则，返回空数据
+	if len(rules) == 0 {
+		return map[string]interface{}{
+			"view_type": "user-rule-matrix",
+			"app_id":    appID,
+			"app_name":  appName,
+			"rules":     []models.ApplicationAuthorizationRule{},
+			"users":     []interface{}{},
+			"matrix":    map[string]map[string]bool{},
+			"permissions_detail": map[string]map[string]interface{}{},
+			"message":   "暂无授权规则数据，请先同步授权规则",
+		}, nil
+	}
+
+	// 2. 获取所有有权限的用户（通过 user_identity_mappings）
+	var users []struct {
+		ID               uint   `json:"id"`
+		Username         string `json:"username"`
+		Nickname         string `json:"nickname"`
+		ExternalUsername string `json:"external_username"`
+		ExternalUserID   string `json:"external_user_id"`
+	}
+
+	userQuery := `
+		SELECT DISTINCT
+			auth_users.id,
+			auth_users.username,
+			auth_users.nickname,
+			user_identity_mappings.external_username,
+			user_identity_mappings.external_user_id
+		FROM auth_users
+		INNER JOIN auth_user_groups ON auth_user_groups.user_id = auth_users.id
+		INNER JOIN auth_groups ON auth_groups.id = auth_user_groups.group_id
+		INNER JOIN group_bindings ON group_bindings.group_id = auth_groups.id
+		LEFT JOIN user_identity_mappings ON user_identity_mappings.auth_user_id = auth_users.id
+			AND user_identity_mappings.app_id = ?
+		WHERE group_bindings.app_id = ?
+			AND auth_users.status = 1
+			AND auth_groups.status = 1
+		ORDER BY auth_users.username
+	`
+	if err := db.Raw(userQuery, appID, appID).Scan(&users).Error; err != nil {
+		return nil, fmt.Errorf("获取用户列表失败: %w", err)
+	}
+
+	// 确保 users 至少为空数组，避免 null
+	if users == nil {
+		users = []struct {
+			ID               uint   `json:"id"`
+			Username         string `json:"username"`
+			Nickname         string `json:"nickname"`
+			ExternalUsername string `json:"external_username"`
+			ExternalUserID   string `json:"external_user_id"`
+		}{}
+	}
+
+	// 3. 获取应用配置（用于调用 Jumpserver API）
+	app, err := s.GetApplicationByID(appID)
+	if err != nil {
+		return nil, fmt.Errorf("获取应用配置失败: %w", err)
+	}
+
+	var authConfig map[string]interface{}
+	if err := json.Unmarshal([]byte(app.AuthConfig), &authConfig); err != nil {
+		return nil, fmt.Errorf("解析认证配置失败: %w", err)
+	}
+
+	// 获取 Jumpserver 适配器
+	adapter, err := s.adapterFactory.GetAdapter("jumpserver")
+	if err != nil {
+		return nil, fmt.Errorf("获取 Jumpserver 适配器失败: %w", err)
+	}
+
+	jumpserverAdapter, ok := adapter.(*JumpserverAdapter)
+	if !ok {
+		return nil, fmt.Errorf("适配器类型转换失败")
+	}
+
+	// 4. 查询每个授权规则的用户列表
+	matrix := make(map[string]map[string]bool) // ruleID -> userID -> hasPermission
+	permissionsDetail := make(map[string]map[string]interface{})
+
+	// 构建 userID -> externalUserID 的映射
+	userExternalIDMap := make(map[uint]string)
+	for _, user := range users {
+		if user.ExternalUserID != "" {
+			userExternalIDMap[user.ID] = user.ExternalUserID
+		}
+	}
+
+	// 查询每个授权规则的详情
+	for _, rule := range rules {
+		ruleDetail, err := jumpserverAdapter.GetAuthorizationRuleDetail(app.BaseURL, authConfig, rule.RuleID)
+		if err != nil {
+			logger.Warn("获取授权规则详情失败",
+				zap.String("ruleID", rule.RuleID),
+				zap.String("ruleName", rule.RuleName),
+				zap.Error(err))
+			continue
+		}
+
+		logger.Info("Jumpserver 授权规则用户详情",
+			zap.String("ruleID", rule.RuleID),
+			zap.String("ruleName", rule.RuleName),
+			zap.Int("jumpserverUserCount", len(ruleDetail.Users)))
+
+		// 初始化该规则的矩阵
+		if matrix[rule.RuleID] == nil {
+			matrix[rule.RuleID] = make(map[string]bool)
+		}
+
+		// 遍历规则中的用户，标记权限
+		for _, ruleUser := range ruleDetail.Users {
+			logger.Debug("Jumpserver 规则用户",
+				zap.String("ruleID", rule.RuleID),
+				zap.String("jumpserverUserID", ruleUser.ID),
+				zap.String("jumpserverUsername", ruleUser.Username))
+
+			// 找到对应的授权中心用户
+			for _, user := range users {
+				logger.Debug("授权中心用户匹配",
+					zap.String("ruleID", rule.RuleID),
+					zap.String("jumpserverUserID", ruleUser.ID),
+					zap.Uint("authUserID", user.ID),
+					zap.String("externalUserID", user.ExternalUserID),
+					zap.Bool("isMatch", user.ExternalUserID == ruleUser.ID))
+
+				if user.ExternalUserID == ruleUser.ID {
+					matrix[rule.RuleID][fmt.Sprintf("%d", user.ID)] = true
+
+					logger.Info("权限匹配成功",
+						zap.String("ruleID", rule.RuleID),
+						zap.String("ruleName", rule.RuleName),
+						zap.Uint("authUserID", user.ID),
+						zap.String("username", user.Username),
+						zap.String("externalUserID", user.ExternalUserID),
+						zap.String("jumpserverUserID", ruleUser.ID))
+
+					// 添加权限详情
+					key := fmt.Sprintf("%s_%d", rule.RuleID, user.ID)
+					permissionsDetail[key] = map[string]interface{}{
+						"status":            "active",
+						"external_username": user.ExternalUsername,
+						"rule_name":         rule.RuleName,
+						"assets_count":      len(ruleDetail.Assets),
+						"nodes_count":       len(ruleDetail.Nodes),
+						"actions":           ruleDetail.Actions,
+					}
+				}
+			}
+		}
+	}
+
+	// 5. 为每个规则添加统计信息
+	rulesWithStats := make([]map[string]interface{}, 0, len(rules))
+	for _, rule := range rules {
+		ruleMap := map[string]interface{}{
+			"id":             rule.ID,
+			"rule_id":        rule.RuleID,
+			"rule_name":      rule.RuleName,
+			"rule_type":      rule.RuleType,
+			"subject_type":   rule.SubjectType,
+			"subject_name":   rule.SubjectName,
+			"object_type":    rule.ObjectType,
+			"object_name":    rule.ObjectName,
+			"is_enabled":     rule.IsEnabled,
+			"is_expired":     rule.IsExpired,
+		}
+
+		// 统计该规则的用户数量
+		userCount := 0
+		if matrix[rule.RuleID] != nil {
+			userCount = len(matrix[rule.RuleID])
+		}
+		ruleMap["user_count"] = userCount
+
+		rulesWithStats = append(rulesWithStats, ruleMap)
+	}
+
+	// 6. 构建返回数据
+	// 确保 users 不是 null
+	usersResult := make([]interface{}, 0, len(users))
+	for _, user := range users {
+		usersResult = append(usersResult, map[string]interface{}{
+			"id":                user.ID,
+			"username":          user.Username,
+			"nickname":          user.Nickname,
+			"external_username": user.ExternalUsername,
+			"external_user_id":  user.ExternalUserID,
+		})
+	}
+
+	result := map[string]interface{}{
+		"view_type":          "user-rule-matrix",
+		"app_id":             appID,
+		"app_name":           appName,
+		"app_type":           "jumpserver",
+		"rules":              rulesWithStats,
+		"users":              usersResult,
+		"matrix":             matrix,
+		"permissions_detail": permissionsDetail,
+	}
+
+	return result, nil
+}
+
+// === 权限执行记录 ===
+
+// GetGroupBindingExecutions 获取权限绑定执行记录
+func (s *ApplicationPermissionService) GetGroupBindingExecutions(bindingID uint) ([]models.GroupBindingExecution, error) {
+	var executions []models.GroupBindingExecution
+	err := db.Where("group_binding_id = ?", bindingID).
+		Preload("AuthUserField").
+		Order("created_at DESC").
+		Find(&executions).Error
+	if err != nil {
+		return nil, fmt.Errorf("获取执行记录失败: %w", err)
+	}
+	return executions, nil
+}
+
+// createJumpserverGroupBinding 创建 Jumpserver 用户组绑定
+func (s *ApplicationPermissionService) createJumpserverGroupBinding(binding *models.GroupBinding, group *models.AuthGroup, app *models.Application) error {
+	// Jumpserver 不使用 application_roles 表
+	// binding.ApplicationRoleID 字段用于存储授权规则 ID
+
+	// 1. 检查授权规则是否存在（从 application_authorization_rules 表）
+	var authRule models.ApplicationAuthorizationRule
+	ruleID := binding.ApplicationRoleID // 这里的 ApplicationRoleID 实际存储的是授权规则的数据库 ID
+
+	// 尝试从数据库 ID 获取授权规则
+	if err := db.First(&authRule, ruleID).Error; err != nil {
+		// 如果从数据库 ID 找不到，尝试从 binding 中获取 Jumpserver 规则 ID
+		// 可能前端直接传递了 Jumpserver 的规则 UUID
+		logger.Warn("从数据库ID获取授权规则失败，尝试从其他字段获取",
+			zap.Uint("ruleDatabaseID", ruleID),
+			zap.Error(err))
+
+		// 尝试查询是否有匹配的规则
+		var rules []models.ApplicationAuthorizationRule
+		if err := db.Where("app_id = ?", app.ID).Find(&rules).Error; err != nil {
+			return fmt.Errorf("获取授权规则列表失败: %w", err)
+		}
+
+		if len(rules) == 0 {
+			return fmt.Errorf("应用 %s 还没有同步授权规则，请先同步授权规则", app.Name)
+		}
+
+		// 使用第一个规则作为默认规则（实际应该让用户选择）
+		authRule = rules[0]
+		logger.Info("使用默认授权规则",
+			zap.String("ruleID", authRule.RuleID),
+			zap.String("ruleName", authRule.RuleName))
+	}
+
+	// 2. 创建绑定记录
+	// 注意：对于 Jumpserver，我们将授权规则的数据库 ID 存储在 ApplicationRoleID 字段
+	binding.ApplicationRoleID = authRule.ID
+	if err := db.Create(binding).Error; err != nil {
+		return fmt.Errorf("创建用户组绑定失败: %w", err)
+	}
+
+	// 3. 为该用户组的所有现有成员在 Jumpserver 中创建用户并添加到授权规则
+	go s.syncExistingMembersToJumpserver(binding.GroupID, binding.AppID, binding.ID, authRule.RuleID, authRule.RuleName, "system")
+
+	logger.Info("创建 Jumpserver 用户组绑定成功，开始为现有成员同步权限",
+		zap.Uint("groupID", binding.GroupID),
+		zap.String("groupName", group.Name),
+		zap.Uint("appID", binding.AppID),
+		zap.String("appName", app.Name),
+		zap.String("ruleID", authRule.RuleID),
+		zap.String("ruleName", authRule.RuleName))
+
+	return nil
+}
+
+// syncExistingMembersToJumpserver 为用户组的现有成员同步 Jumpserver 权限
+func (s *ApplicationPermissionService) syncExistingMembersToJumpserver(groupID, appID, groupBindingID uint, jumpserverRuleID, ruleName, operator string) {
+	// 获取用户组的所有成员
+	var userGroups []*models.AuthUserGroup
+	if err := db.Where("group_id = ?", groupID).Preload("UserIDField").Find(&userGroups).Error; err != nil {
+		logger.Error("获取用户组成员失败，无法同步 Jumpserver 权限",
+			zap.Uint("groupID", groupID),
+			zap.Error(err))
+		return
+	}
+
+	logger.Info("开始为用户组成员同步 Jumpserver 权限",
+		zap.Uint("groupID", groupID),
+		zap.Int("memberCount", len(userGroups)),
+		zap.Uint("appID", appID),
+		zap.String("ruleID", jumpserverRuleID))
+
+	// 获取应用配置
+	app, err := s.GetApplicationByID(appID)
+	if err != nil {
+		logger.Error("获取应用配置失败",
+			zap.Uint("appID", appID),
+			zap.Error(err))
+		return
+	}
+
+	// 解析认证配置
+	var authConfig map[string]interface{}
+	if err := json.Unmarshal([]byte(app.AuthConfig), &authConfig); err != nil {
+		logger.Error("解析认证配置失败",
+			zap.Uint("appID", appID),
+			zap.Error(err))
+		return
+	}
+
+	// 获取 Jumpserver 适配器
+	adapter, err := s.adapterFactory.GetAdapter("jumpserver")
+	if err != nil {
+		logger.Error("获取 Jumpserver 适配器失败",
+			zap.Error(err))
+		return
+	}
+
+	jumpserverAdapter, ok := adapter.(*JumpserverAdapter)
+	if !ok {
+		logger.Error("适配器类型转换失败")
+		return
+	}
+
+	// 收集需要添加的用户 ID（Jumpserver 的用户 ID）
+	var jumpserverUserIDs []string
+	userMapping := make(map[string]uint) // jumpserverUserID -> authUserID
+
+	successCount := 0
+	failCount := 0
+
+	// 为每个成员创建 Jumpserver 用户（如果不存在）
+	for _, userGroup := range userGroups {
+		user := userGroup.UserIDField
+
+		// 检查用户是否有密码
+		if user.Password == "" {
+			logger.Warn("用户未设置初始密码，跳过 Jumpserver 用户创建",
+				zap.Uint("userID", user.ID),
+				zap.String("username", user.Username))
+			failCount++
+			continue
+		}
+
+		// 1. 创建 Jumpserver 用户
+		if err := s.CreateExternalUser(appID, user.ID, user.Username, user.Password, user.Email, user.Nickname, operator); err != nil {
+			logger.Warn("创建 Jumpserver 用户失败",
+				zap.Uint("userID", user.ID),
+				zap.String("username", user.Username),
+				zap.Error(err))
+			// 继续执行，用户可能已存在
+		}
+
+		// 2. 获取 Jumpserver 用户 ID
+		var mapping models.UserIdentityMapping
+		if err := db.Where("auth_user_id = ? AND app_id = ?", user.ID, appID).First(&mapping).Error; err != nil {
+			logger.Warn("获取用户身份映射失败",
+				zap.Uint("userID", user.ID),
+				zap.String("username", user.Username),
+				zap.Error(err))
+			failCount++
+			continue
+		}
+
+		// 如果有外部用户 ID，添加到列表
+		if mapping.ExternalUserID != "" {
+			jumpserverUserIDs = append(jumpserverUserIDs, mapping.ExternalUserID)
+			userMapping[mapping.ExternalUserID] = user.ID
+		} else {
+			logger.Warn("用户身份映射中没有 Jumpserver 用户 ID",
+				zap.Uint("userID", user.ID),
+				zap.String("username", user.Username))
+			failCount++
+			continue
+		}
+
+		// 记录执行成功
+		s.recordGroupBindingExecution(groupBindingID, user.ID, user.Username, "created", "success", "Jumpserver 用户创建成功", operator)
+		successCount++
+	}
+
+	// 3. 批量添加用户到授权规则
+	if len(jumpserverUserIDs) > 0 {
+		if err := jumpserverAdapter.AddUsersToAuthorizationRule(app.BaseURL, authConfig, jumpserverRuleID, jumpserverUserIDs); err != nil {
+			logger.Error("批量添加用户到授权规则失败",
+				zap.String("ruleID", jumpserverRuleID),
+				zap.Any("userIDs", jumpserverUserIDs),
+				zap.Error(err))
+
+			// 记录失败
+			for _, jumpserverUserID := range jumpserverUserIDs {
+				if authUserID, ok := userMapping[jumpserverUserID]; ok {
+					s.recordGroupBindingExecution(groupBindingID, authUserID, "", "granted", "failed", fmt.Sprintf("添加到授权规则失败: %s", err.Error()), operator)
+				}
+			}
+			return
+		}
+
+		// 记录成功
+		for _, jumpserverUserID := range jumpserverUserIDs {
+			if authUserID, ok := userMapping[jumpserverUserID]; ok {
+				s.recordGroupBindingExecution(groupBindingID, authUserID, "", "granted", "success", "已添加到授权规则", operator)
+			}
+		}
+	}
+
+	logger.Info("用户组成员 Jumpserver 权限同步完成",
+		zap.Uint("groupID", groupID),
+		zap.Int("totalMembers", len(userGroups)),
+		zap.Int("successCount", successCount),
+		zap.Int("failCount", failCount),
+		zap.Int("addedToRule", len(jumpserverUserIDs)))
+}
+

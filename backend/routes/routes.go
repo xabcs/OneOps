@@ -136,6 +136,17 @@ func SetupRoutes(r *gin.Engine) {
 			system.GET("/users/:id/groups", applicationPermissionController.GetUserGroups)
 			system.POST("/users/assign-group", applicationPermissionController.AssignUserToGroup)
 			system.DELETE("/users/:id/groups/:groupId", applicationPermissionController.DeleteUserGroup)
+
+			// 用户身份映射管理
+			system.GET("/user-identity-mappings", applicationPermissionController.GetUserIdentityMappings)
+			system.DELETE("/user-identity-mappings/:id", applicationPermissionController.DeleteUserIdentityMapping)
+
+			// 用户有效权限查询
+			system.GET("/user-permissions", applicationPermissionController.GetUserEffectivePermissions)
+			system.GET("/user-permissions/matrix", applicationPermissionController.GetUserEffectivePermissionsMatrix)
+
+			// 权限绑定执行记录
+			system.GET("/group-bindings/:bindingId/executions", applicationPermissionController.GetGroupBindingExecutions)
 		}
 
 		// 审计管理路由（需要认证）

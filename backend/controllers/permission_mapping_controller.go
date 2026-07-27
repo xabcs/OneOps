@@ -3,7 +3,6 @@ package controllers
 import (
 	"net/http"
 	"oneops/backend/logger"
-	"oneops/backend/models"
 	"oneops/backend/services"
 	"strconv"
 

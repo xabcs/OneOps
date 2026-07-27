@@ -159,11 +159,11 @@ if (rbas instanceof RoleBasedAuthorizationStrategy) {
 }
 
 // CreateUser 在 Jenkins 中创建用户
-func (j *JenkinsAdapter) CreateUser(baseURL string, authConfig map[string]interface{}, user *UserCreateRequest) error {
+func (j *JenkinsAdapter) CreateUser(baseURL string, authConfig map[string]interface{}, user *UserCreateRequest) (string, error) {
 	// 创建 Jenkins 会话
 	session, err := j.createSession(baseURL, authConfig)
 	if err != nil {
-		return fmt.Errorf("创建 Jenkins 会话失败: %w", err)
+		return "", fmt.Errorf("创建 Jenkins 会话失败: %w", err)
 	}
 
 	// 构建 form 表单数据
@@ -198,7 +198,7 @@ func (j *JenkinsAdapter) CreateUser(baseURL string, authConfig map[string]interf
 
 	req, err := http.NewRequest("POST", createUserURL, strings.NewReader(formData.Encode()))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -212,7 +212,7 @@ func (j *JenkinsAdapter) CreateUser(baseURL string, authConfig map[string]interf
 
 	resp, err := session.Client.Do(req)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer resp.Body.Close()
 
@@ -221,7 +221,8 @@ func (j *JenkinsAdapter) CreateUser(baseURL string, authConfig map[string]interf
 		logger.Info("在 Jenkins 创建用户成功",
 			zap.String("username", user.Username),
 			zap.String("email", email))
-		return nil
+		// Jenkins 使用用户名作为用户 ID
+		return user.Username, nil
 	}
 
 	// 失败时解析错误信息
@@ -230,10 +231,10 @@ func (j *JenkinsAdapter) CreateUser(baseURL string, authConfig map[string]interf
 
 	// 尝试从 HTML 中提取错误信息
 	if strings.Contains(errorMsg, "无效的 e-mail 地址") {
-		return fmt.Errorf("无效的 e-mail 地址: %s", email)
+		return "", fmt.Errorf("无效的 e-mail 地址: %s", email)
 	}
 
-	return fmt.Errorf("创建用户失败 (状态码 %d): %s", resp.StatusCode, errorMsg)
+	return "", fmt.Errorf("创建用户失败 (状态码 %d): %s", resp.StatusCode, errorMsg)
 }
 
 // AssignRole 在 Jenkins 中为用户分配角色

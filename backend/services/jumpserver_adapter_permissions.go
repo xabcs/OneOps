@@ -129,46 +129,28 @@ func (j *JumpserverAdapter) assignAssetPermission(mapping *models.AuthGroupPermi
 	// 这里可以复用 createAuthorizationRule 的逻辑，但专门针对资产
 
 	// 提取资产列表
-	assets, _ := permissionDetail["assets"].([]interface{})
-	actions, _ := permissionDetail["actions"].([]interface{})
 
 	// 构建规则名称
 	ruleName := fmt.Sprintf("权限映射_%d_资产权限", mapping.ID)
 
-	// 调用创建授权规则
-	ruleData := map[string]interface{}{
-		"name":        ruleName,
-		"user_groups": []string{mapping.ExternalID},
-		"assets":      assets,
-		"nodes":       []string{}, // 空节点列表
-		"actions":     actions,
-		"priority":    50,
-		"is_active":   true,
-	}
+	// TODO: 实现实际的权限创建逻辑
+	logger.Info("为用户组分配资产权限",
+		zap.String("ruleName", ruleName),
+		zap.String("externalID", mapping.ExternalID))
 
-	// ... (类似 createAuthorizationRule 的实现)
 	return nil
 }
 
 // assignNodePermission 为用户组分配节点权限
 func (j *JumpserverAdapter) assignNodePermission(mapping *models.AuthGroupPermissionMapping, permissionDetail map[string]interface{}) error {
-	// 类似 assignAssetPermission，但针对节点
-	nodes, _ := permissionDetail["nodes"].([]interface{})
-	actions, _ := permissionDetail["actions"].([]interface{})
 
 	ruleName := fmt.Sprintf("权限映射_%d_节点权限", mapping.ID)
 
-	ruleData := map[string]interface{}{
-		"name":        ruleName,
-		"user_groups": []string{mapping.ExternalID},
-		"assets":      []string{}, // 空资产列表
-		"nodes":       nodes,
-		"actions":     actions,
-		"priority":    50,
-		"is_active":   true,
-	}
+	// TODO: 实现实际的权限创建逻辑
+	logger.Info("为用户组分配节点权限",
+		zap.String("ruleName", ruleName),
+		zap.String("externalID", mapping.ExternalID))
 
-	// ... (类似 createAuthorizationRule 的实现)
 	return nil
 }
 
@@ -242,4 +224,325 @@ func (j *JumpserverAdapter) CheckGroupPermission(authGroupID uint, mapping *mode
 	// 可以通过查询授权规则状态来验证
 
 	return true, nil
+}
+
+// AuthorizationRuleUser 授权规则用户
+type AuthorizationRuleUser struct {
+	ID       string `json:"id"`
+	Username string `json:"username"`
+	Name     string `json:"name"`
+}
+
+// AuthorizationRuleUserGroup 授权规则用户组
+type AuthorizationRuleUserGroup struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// AuthorizationRuleAsset 授权规则资产
+type AuthorizationRuleAsset struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Host  string `json:"hostname"`
+	IP    string `json:"ip"`
+}
+
+// AuthorizationRuleNode 授权规则节点
+type AuthorizationRuleNode struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// AuthorizationRuleDetail 授权规则详情
+type AuthorizationRuleDetail struct {
+	ID         string                      `json:"id"`
+	Name       string                      `json:"name"`
+	Users      []AuthorizationRuleUser     `json:"users"`
+	UserGroups []AuthorizationRuleUserGroup `json:"user_groups"`
+	Assets     []AuthorizationRuleAsset    `json:"assets"`
+	Nodes      []AuthorizationRuleNode     `json:"nodes"`
+	Actions    interface{}                 `json:"actions"` // 改为 interface{} 以支持不同格式
+	IsActive   bool                        `json:"is_active"`
+	IsExpired  bool                        `json:"is_expired"`
+}
+
+// GetAuthorizationRuleDetail 获取授权规则详情（包括用户列表）
+func (j *JumpserverAdapter) GetAuthorizationRuleDetail(baseURL string, authConfig map[string]interface{}, ruleID string) (*AuthorizationRuleDetail, error) {
+	// 构建 API URL
+	detailURL := strings.TrimSuffix(baseURL, "/") + "/api/v1/perms/asset-permissions/" + ruleID + "/"
+
+	logger.Info("获取 JumpServer 授权规则详情",
+		zap.String("ruleID", ruleID),
+		zap.String("url", detailURL))
+
+	// 创建请求
+	req, err := http.NewRequest("GET", detailURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %w", err)
+	}
+
+	// 设置认证
+	if err := j.setAuthentication(req, authConfig); err != nil {
+		return nil, fmt.Errorf("设置认证失败: %w", err)
+	}
+
+	// 发送请求
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("请求失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("获取授权规则详情失败 (状态码 %d): %s", resp.StatusCode, string(body))
+	}
+
+	// 解析响应
+	var ruleDetail AuthorizationRuleDetail
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("读取响应失败: %w", err)
+	}
+
+	if err := json.Unmarshal(body, &ruleDetail); err != nil {
+		return nil, fmt.Errorf("解析响应失败: %w", err)
+	}
+
+	logger.Info("成功获取 JumpServer 授权规则详情",
+		zap.String("ruleID", ruleID),
+		zap.String("ruleName", ruleDetail.Name),
+		zap.Int("userCount", len(ruleDetail.Users)),
+		zap.Int("userGroupCount", len(ruleDetail.UserGroups)),
+		zap.Int("assetCount", len(ruleDetail.Assets)),
+		zap.Int("nodeCount", len(ruleDetail.Nodes)))
+
+	return &ruleDetail, nil
+}
+
+// AddUsersToAuthorizationRule 添加用户到授权规则
+func (j *JumpserverAdapter) AddUsersToAuthorizationRule(baseURL string, authConfig map[string]interface{}, ruleID string, userIDs []string) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	// 先获取当前授权规则详情
+	detailURL := strings.TrimSuffix(baseURL, "/") + "/api/v1/perms/asset-permissions/" + ruleID + "/"
+
+	logger.Info("获取 JumpServer 授权规则详情以添加用户",
+		zap.String("ruleID", ruleID))
+
+	// 创建获取请求
+	getReq, err := http.NewRequest("GET", detailURL, nil)
+	if err != nil {
+		return fmt.Errorf("创建获取请求失败: %w", err)
+	}
+
+	// 设置认证
+	if err := j.setAuthentication(getReq, authConfig); err != nil {
+		return fmt.Errorf("设置认证失败: %w", err)
+	}
+
+	// 发送获取请求
+	client := &http.Client{}
+	getResp, err := client.Do(getReq)
+	if err != nil {
+		return fmt.Errorf("获取授权规则失败: %w", err)
+	}
+	defer getResp.Body.Close()
+
+	if getResp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(getResp.Body)
+		return fmt.Errorf("获取授权规则详情失败 (状态码 %d): %s", getResp.StatusCode, string(body))
+	}
+
+	// 解析当前规则详情
+	var currentRule AuthorizationRuleDetail
+	body, err := io.ReadAll(getResp.Body)
+	if err != nil {
+		return fmt.Errorf("读取响应失败: %w", err)
+	}
+
+	if err := json.Unmarshal(body, &currentRule); err != nil {
+		return fmt.Errorf("解析响应失败: %w", err)
+	}
+
+	// 提取现有用户ID列表
+	existingUserIDs := make([]string, len(currentRule.Users))
+	for i, user := range currentRule.Users {
+		existingUserIDs[i] = user.ID
+	}
+
+	// 合并新旧用户ID（去重）
+	allUserIDs := make(map[string]bool)
+	for _, id := range existingUserIDs {
+		allUserIDs[id] = true
+	}
+	for _, id := range userIDs {
+		allUserIDs[id] = true
+	}
+
+	// 构建新的用户ID列表
+	updatedUserIDs := make([]string, 0, len(allUserIDs))
+	for id := range allUserIDs {
+		updatedUserIDs = append(updatedUserIDs, id)
+	}
+
+	// 构建更新数据（使用与获取相同的结构）
+	updateData := map[string]interface{}{
+		"users": updatedUserIDs,
+	}
+
+	jsonData, err := json.Marshal(updateData)
+	if err != nil {
+		return fmt.Errorf("序列化更新数据失败: %w", err)
+	}
+
+	logger.Info("更新 JumpServer 授权规则用户列表",
+		zap.String("ruleID", ruleID),
+		zap.Int("previousUserCount", len(existingUserIDs)),
+		zap.Int("newUsersToAdd", len(userIDs)),
+		zap.Int("totalUserCount", len(updatedUserIDs)))
+
+	// 创建更新请求
+	updateReq, err := http.NewRequest("PATCH", detailURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("创建更新请求失败: %w", err)
+	}
+
+	// 设置认证和请求头
+	if err := j.setAuthentication(updateReq, authConfig); err != nil {
+		return fmt.Errorf("设置认证失败: %w", err)
+	}
+	updateReq.Header.Set("Content-Type", "application/json")
+
+	// 发送更新请求
+	updateResp, err := client.Do(updateReq)
+	if err != nil {
+		return fmt.Errorf("更新请求失败: %w", err)
+	}
+	defer updateResp.Body.Close()
+
+	if updateResp.StatusCode != http.StatusOK && updateResp.StatusCode != http.StatusAccepted {
+		body, _ := io.ReadAll(updateResp.Body)
+		return fmt.Errorf("添加用户到授权规则失败 (状态码 %d): %s", updateResp.StatusCode, string(body))
+	}
+
+	logger.Info("成功添加用户到 JumpServer 授权规则",
+		zap.String("ruleID", ruleID),
+		zap.Any("addedUserIDs", userIDs))
+
+	return nil
+}
+
+// RemoveUsersFromAuthorizationRule 从授权规则移除用户
+func (j *JumpserverAdapter) RemoveUsersFromAuthorizationRule(baseURL string, authConfig map[string]interface{}, ruleID string, userIDs []string) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	// 先获取当前授权规则详情
+	detailURL := strings.TrimSuffix(baseURL, "/") + "/api/v1/perms/asset-permissions/" + ruleID + "/"
+
+	logger.Info("获取 JumpServer 授权规则详情以移除用户",
+		zap.String("ruleID", ruleID))
+
+	// 创建获取请求
+	getReq, err := http.NewRequest("GET", detailURL, nil)
+	if err != nil {
+		return fmt.Errorf("创建获取请求失败: %w", err)
+	}
+
+	// 设置认证
+	if err := j.setAuthentication(getReq, authConfig); err != nil {
+		return fmt.Errorf("设置认证失败: %w", err)
+	}
+
+	// 发送获取请求
+	client := &http.Client{}
+	getResp, err := client.Do(getReq)
+	if err != nil {
+		return fmt.Errorf("获取授权规则失败: %w", err)
+	}
+	defer getResp.Body.Close()
+
+	if getResp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(getResp.Body)
+		return fmt.Errorf("获取授权规则详情失败 (状态码 %d): %s", getResp.StatusCode, string(body))
+	}
+
+	// 解析当前规则详情
+	var currentRule AuthorizationRuleDetail
+	body, err := io.ReadAll(getResp.Body)
+	if err != nil {
+		return fmt.Errorf("读取响应失败: %w", err)
+	}
+
+	if err := json.Unmarshal(body, &currentRule); err != nil {
+		return fmt.Errorf("解析响应失败: %w", err)
+	}
+
+	// 构建用户ID到用户的映射
+	userMap := make(map[string]*AuthorizationRuleUser)
+	for i := range currentRule.Users {
+		userMap[currentRule.Users[i].ID] = &currentRule.Users[i]
+	}
+
+	// 移除指定的用户
+	for _, userID := range userIDs {
+		delete(userMap, userID)
+	}
+
+	// 构建新的用户ID列表
+	updatedUserIDs := make([]string, 0, len(userMap))
+	for id := range userMap {
+		updatedUserIDs = append(updatedUserIDs, id)
+	}
+
+	// 构建更新数据
+	updateData := map[string]interface{}{
+		"users": updatedUserIDs,
+	}
+
+	jsonData, err := json.Marshal(updateData)
+	if err != nil {
+		return fmt.Errorf("序列化更新数据失败: %w", err)
+	}
+
+	logger.Info("从 JumpServer 授权规则移除用户",
+		zap.String("ruleID", ruleID),
+		zap.Int("previousUserCount", len(currentRule.Users)),
+		zap.Int("usersToRemove", len(userIDs)),
+		zap.Int("remainingUserCount", len(updatedUserIDs)))
+
+	// 创建更新请求
+	updateReq, err := http.NewRequest("PATCH", detailURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("创建更新请求失败: %w", err)
+	}
+
+	// 设置认证和请求头
+	if err := j.setAuthentication(updateReq, authConfig); err != nil {
+		return fmt.Errorf("设置认证失败: %w", err)
+	}
+	updateReq.Header.Set("Content-Type", "application/json")
+
+	// 发送更新请求
+	updateResp, err := client.Do(updateReq)
+	if err != nil {
+		return fmt.Errorf("更新请求失败: %w", err)
+	}
+	defer updateResp.Body.Close()
+
+	if updateResp.StatusCode != http.StatusOK && updateResp.StatusCode != http.StatusAccepted {
+		body, _ := io.ReadAll(updateResp.Body)
+		return fmt.Errorf("从授权规则移除用户失败 (状态码 %d): %s", updateResp.StatusCode, string(body))
+	}
+
+	logger.Info("成功从 JumpServer 授权规则移除用户",
+		zap.String("ruleID", ruleID),
+		zap.Any("removedUserIDs", userIDs))
+
+	return nil
 }
