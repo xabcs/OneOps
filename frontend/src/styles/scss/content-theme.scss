@@ -444,16 +444,45 @@
 /* ========== 面板 ========== */
 .el-collapse {
   border-radius: var(--sx-card-radius) !important;
-  border: 1px solid var(--sx-table-border) !important;
+  border: none !important; /* 移除边框 */
+  background-color: transparent !important; /* 无背景色 */
 }
 
 .el-collapse-item__header {
   border-radius: calc(var(--sx-card-radius) - 2px) !important;
-  background-color: var(--sx-table-header-bg) !important;
+  background-color: transparent !important; /* 无背景色 */
+  color: #475569 !important; /* 使用深灰色，不使用主色 */
+  font-weight: 500 !important;
+  border: none !important; /* 移除边框 */
+}
+
+.el-collapse-item__header:hover {
+  background-color: transparent !important; /* 悬停时也无背景色 */
+  color: #334155 !important; /* 悬停时文字颜色稍深 */
+}
+
+.el-collapse-item__header.is-active {
+  border: none !important; /* 激活状态无边框 */
+}
+
+.el-collapse-item__header.focusing {
+  border: none !important; /* 聚焦状态无边框 */
+  outline: none !important; /* 移除外边框 */
+}
+
+.el-collapse-item__arrow {
+  color: #94a3b8 !important; /* 箭头图标使用灰色 */
+}
+
+.el-collapse-item__wrap {
+  border-bottom: none !important; /* 移除底部边框 */
+  background-color: transparent !important; /* 无背景色 */
 }
 
 .el-collapse-item__content {
-  background-color: var(--sx-card-bg) !important;
+  background-color: transparent !important; /* 内容区域也无背景色 */
+  padding: 16px 20px !important;
+  border: none !important; /* 无边框 */
 }
 
 /* ========== 时间轴 ========== */

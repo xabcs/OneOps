@@ -12,13 +12,20 @@ import {
   getAuthUserPassword,
   updateAuthUser
 } from '@/service/api/application-permission';
+import UserSearch from './modules/user-search.vue';
 
 defineOptions({ name: 'AuthCenterUsers' });
 
 const loading = ref(false);
 const tableData = ref<Api.ApplicationPermission.AuthUser[]>([]);
 const total = ref(0);
-const searchUsername = ref('');
+
+const searchParams = ref({
+  username: '',
+  nickname: '',
+  email: '',
+  phone: ''
+});
 
 const pagination = ref({
   current: 1,
@@ -57,7 +64,10 @@ async function getData() {
     const { data, error } = await fetchAuthUsers({
       current: pagination.value.current,
       size: pagination.value.size,
-      username: searchUsername.value
+      username: searchParams.value.username || undefined,
+      nickname: searchParams.value.nickname || undefined,
+      email: searchParams.value.email || undefined,
+      phone: searchParams.value.phone || undefined
     });
     if (!error && data) {
       tableData.value = data.records || [];
@@ -74,7 +84,12 @@ function handleSearch() {
 }
 
 function handleReset() {
-  searchUsername.value = '';
+  searchParams.value = {
+    username: '',
+    nickname: '',
+    email: '',
+    phone: ''
+  };
   pagination.value.current = 1;
   getData();
 }
@@ -219,28 +234,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-500px flex-col gap-4">
-    <!-- 搜索栏 -->
-    <ElCard shadow="never">
-      <ElForm :inline="true">
-        <ElFormItem label="用户名">
-          <ElInput
-            v-model="searchUsername"
-            placeholder="请输入用户名"
-            clearable
-            class="w-200px"
-            @keyup.enter="handleSearch"
-          />
-        </ElFormItem>
-        <ElFormItem>
-          <ElButton type="primary" :icon="Search" @click="handleSearch">搜索</ElButton>
-          <ElButton :icon="Refresh" @click="handleReset">重置</ElButton>
-        </ElFormItem>
-      </ElForm>
-    </ElCard>
+  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
+    <!-- 搜索区域 -->
+    <UserSearch v-model:model="searchParams" @reset="handleReset" @search="handleSearch" />
 
-    <!-- 表格 -->
-    <ElCard shadow="never" class="flex-1">
+    <!-- 表格卡片 -->
+    <ElCard class="card-wrapper sm:flex-1-hidden">
       <template #header>
         <div class="flex items-center justify-between">
           <span class="text-lg font-medium">授权中心用户列表</span>
@@ -248,7 +247,14 @@ onMounted(() => {
         </div>
       </template>
 
-      <ElTable v-loading="loading" :data="tableData" :border="false">
+      <div class="h-[calc(100%-52px)]">
+        <ElTable
+          v-loading="loading"
+          height="100%"
+          :data="tableData"
+          :border="false"
+          class="sm:h-full"
+        >
         <ElTableColumn type="index" label="序号" width="60" align="center" />
         <ElTableColumn prop="username" label="用户名" align="center" min-width="120" />
         <ElTableColumn prop="nickname" label="昵称" align="center" min-width="120" />
@@ -296,7 +302,7 @@ onMounted(() => {
         </ElTableColumn>
       </ElTable>
 
-      <div class="mt-4 flex justify-end">
+      <div class="mt-20px flex justify-end">
         <ElPagination
           v-model:current-page="pagination.current"
           v-model:page-size="pagination.size"
@@ -307,6 +313,7 @@ onMounted(() => {
           @current-change="handlePageChange"
         />
       </div>
+    </div>
     </ElCard>
 
     <!-- 添加/编辑抽屉 -->

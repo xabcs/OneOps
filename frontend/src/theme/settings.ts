@@ -34,7 +34,7 @@ export const themeSettings: App.Theme.ThemeSetting = {
       visible: true
     },
     useCustomColor: false,
-    customColor: 'rgb(248, 251, 255)',
+    customColor: '#ffffff',
     useHeaderGradient: false, // 默认不使用渐变
     headerGradientStart: 'rgba(232, 237, 255, 0.98)', // SxDevOps 顶栏渐变起始
     headerGradientEnd: 'rgba(232, 240, 251, 0.94)' // SxDevOps 顶栏渐变结束
