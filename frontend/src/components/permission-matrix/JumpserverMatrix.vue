@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import PermissionMatrix from './PermissionMatrix.vue';
 import { computed } from 'vue';
+import PermissionMatrix from './PermissionMatrix.vue';
 
 interface Rule {
   id: number;
@@ -40,18 +40,20 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  permissionChange: [userId: number, ruleId: string, action: 'grant' | 'revoke']
+  permissionChange: [userId: number, ruleId: string, action: 'grant' | 'revoke'];
 }>();
 
 // 安全访问数据的辅助函数
 const safeData = computed(() => {
-  return props.data || {
-    rules: [],
-    users: [],
-    matrix: {},
-    permissions_detail: {},
-    message: ''
-  };
+  return (
+    props.data || {
+      rules: [],
+      users: [],
+      matrix: {},
+      permissions_detail: {},
+      message: ''
+    }
+  );
 });
 
 // 根据 ruleType 过滤规则
@@ -152,9 +154,7 @@ function getRuleMeta(rule: Rule): string {
     <div class="mb-4 flex items-center justify-between">
       <div class="flex items-center gap-2">
         <ElTag type="primary">Jumpserver 权限矩阵</ElTag>
-        <ElTag v-if="ruleType === 'all' || ruleType === 'user'" type="success">
-          用户规则: {{ userRulesCount }}
-        </ElTag>
+        <ElTag v-if="ruleType === 'all' || ruleType === 'user'" type="success">用户规则: {{ userRulesCount }}</ElTag>
         <ElTag v-if="ruleType === 'all' || ruleType === 'group'" type="warning">
           用户组规则: {{ groupRulesCount }}
         </ElTag>
@@ -167,30 +167,30 @@ function getRuleMeta(rule: Rule): string {
 
     <!-- 授权规则说明 -->
     <div v-if="ruleType === 'all'" class="rounded bg-blue-50 p-3 text-sm">
-      <p class="font-medium text-blue-900">授权规则类型说明：</p>
-      <ul class="ml-4 mt-2 space-y-1 text-blue-800">
-        <li>• <strong>用户规则</strong>：直接为特定用户授权的规则</li>
-        <li>• <strong>用户组规则</strong>：为用户组授权，组成员自动继承权限</li>
+      <p class="text-blue-900 font-medium">授权规则类型说明：</p>
+      <ul class="ml-4 mt-2 text-blue-800 space-y-1">
+        <li>
+          •
+          <strong>用户规则</strong>
+          ：直接为特定用户授权的规则
+        </li>
+        <li>
+          •
+          <strong>用户组规则</strong>
+          ：为用户组授权，组成员自动继承权限
+        </li>
       </ul>
-      <p class="mt-2 text-blue-700">
-        授权对象可以是：资产（单个服务器）、节点（资产分组）、或全部资产
-      </p>
+      <p class="mt-2 text-blue-700">授权对象可以是：资产（单个服务器）、节点（资产分组）、或全部资产</p>
     </div>
     <div v-else-if="ruleType === 'user'" class="rounded bg-green-50 p-3 text-sm">
-      <p class="font-medium text-green-900">用户规则：直接为特定用户授权访问资产</p>
+      <p class="text-green-900 font-medium">用户规则：直接为特定用户授权访问资产</p>
     </div>
     <div v-else-if="ruleType === 'group'" class="rounded bg-orange-50 p-3 text-sm">
-      <p class="font-medium text-orange-900">用户组规则：为用户组授权，组成员自动继承权限</p>
+      <p class="text-orange-900 font-medium">用户组规则：为用户组授权，组成员自动继承权限</p>
     </div>
 
     <!-- 消息提示（如果有） -->
-    <ElAlert
-      v-if="safeData.message"
-      type="info"
-      :closable="false"
-      show-icon
-      class="mb-4"
-    >
+    <ElAlert v-if="safeData.message" type="info" :closable="false" show-icon class="mb-4">
       {{ safeData.message }}
     </ElAlert>
 
@@ -209,19 +209,11 @@ function getRuleMeta(rule: Rule): string {
     />
 
     <!-- 空状态 -->
-    <ElEmpty
-      v-else-if="!safeData.rules || safeData.rules.length === 0"
-      description="暂无授权规则数据"
-    >
-      <ElButton type="primary" @click="$emit('refresh')">
-        同步授权规则
-      </ElButton>
+    <ElEmpty v-else-if="!safeData.rules || safeData.rules.length === 0" description="暂无授权规则数据">
+      <ElButton type="primary" @click="$emit('refresh')">同步授权规则</ElButton>
     </ElEmpty>
 
-    <ElEmpty
-      v-else-if="!safeData.users || safeData.users.length === 0"
-      description="暂无用户数据"
-    />
+    <ElEmpty v-else-if="!safeData.users || safeData.users.length === 0" description="暂无用户数据" />
 
     <!-- 提示信息 -->
     <div v-if="safeData.rules?.length > 0" class="mt-4 text-sm text-gray-500">

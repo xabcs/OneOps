@@ -4,7 +4,7 @@ export const themeSettings: App.Theme.ThemeSetting = {
   grayscale: false,
   colourWeakness: false,
   recommendColor: false,
-  themeColor: 'rgb(146, 173, 164)', // 主色默认值 rgb(146, 173, 164)
+  themeColor: 'rgb(255, 6, 6)', // 主色默认值 rgb(255, 6, 6) - 红色
   otherColor: {
     info: 'rgb(99, 102, 241)', // 与主色保持一致
     success: 'rgb(16, 185, 129)', // 绿色 #10b981
@@ -35,7 +35,7 @@ export const themeSettings: App.Theme.ThemeSetting = {
     },
     useCustomColor: false,
     customColor: 'rgb(248, 251, 255)',
-    useHeaderGradient: true, // SxDevOps 默认使用渐变
+    useHeaderGradient: false, // 默认不使用渐变
     headerGradientStart: 'rgba(232, 237, 255, 0.98)', // SxDevOps 顶栏渐变起始
     headerGradientEnd: 'rgba(232, 240, 251, 0.94)' // SxDevOps 顶栏渐变结束
   },
@@ -56,10 +56,10 @@ export const themeSettings: App.Theme.ThemeSetting = {
     useCustomColor: false,
     customColor: 'rgb(241, 246, 255)',
     showIcon: true,
-    useSiderGradient: true, // SxDevOps 默认开启菜单区域渐变
+    useSiderGradient: false, // 默认关闭菜单区域渐变
     siderGradientStart: 'rgba(241, 246, 255, 0.98)', // SxDevOps 浅蓝渐变起始
     siderGradientEnd: 'rgba(232, 240, 255, 0.9)', // SxDevOps 浅蓝渐变结束
-    useLogoGradient: true, // SxDevOps 默认开启Logo区域渐变
+    useLogoGradient: false, // 默认关闭Logo区域渐变
     logoGradientStart: 'rgba(210, 235, 255, 0.98)', // SxDevOps Logo渐变起始
     logoGradientEnd: 'rgba(221, 222, 222, 0.9)' // SxDevOps Logo渐变结束
   },
@@ -134,6 +134,7 @@ export const themeSettings: App.Theme.ThemeSetting = {
   contentTheme2: {
     // Hero 区域配置
     heroSection: {
+      visible: false,
       useGradient: true,
       gradientStart: 'rgba(208, 229, 253, 0.98)',
       gradientMiddle: 'rgb(161, 230, 253)',
@@ -198,8 +199,8 @@ export const themeSettings: App.Theme.ThemeSetting = {
     },
     // 数据表格配置
     dataTable: {
-      headerBg: '#525454',
-      headerTextColor: '#ffffff',
+      headerBg: '#fee3e3',
+      headerTextColor: '#000000',
       headerBorderColor: 'rgba(148, 163, 184, 0.16)',
       rowHoverBg: '#f8fbff',
       rowBorderColor: 'rgba(148, 163, 184, 0.16)',

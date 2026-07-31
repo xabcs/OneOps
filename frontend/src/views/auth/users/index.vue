@@ -257,11 +257,13 @@ onMounted(() => {
         <ElTableColumn label="用户组" align="center" min-width="200">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-2">
-              <ElTag v-if="row.groups && row.groups.length > 0"
-                     v-for="group in row.groups"
-                     :key="group.id"
-                     type="primary"
-                     size="small">
+              <ElTag
+                v-for="group in row.groups"
+                v-if="row.groups && row.groups.length > 0"
+                :key="group.id"
+                type="primary"
+                size="small"
+              >
                 {{ group.name }}
               </ElTag>
               <span v-else class="text-gray-400">未分配</span>
@@ -382,7 +384,7 @@ onMounted(() => {
     <!-- 用户组管理对话框 -->
     <ElDialog v-model="groupDialogVisible" :title="`${selectedUser?.username || ''} 的用户组管理`" width="600px">
       <div class="mb-4">
-        <div class="flex items-center gap-2 mb-4">
+        <div class="mb-4 flex items-center gap-2">
           <ElText type="primary">分配用户组：</ElText>
           <ElSelect v-model="groupFormData.groupId" placeholder="选择用户组" style="width: 200px">
             <ElOption

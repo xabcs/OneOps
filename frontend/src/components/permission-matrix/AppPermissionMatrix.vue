@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import PermissionMatrix from './PermissionMatrix.vue';
 import { computed } from 'vue';
+import PermissionMatrix from './PermissionMatrix.vue';
 
 interface Column {
   id: number | string;
@@ -99,13 +99,15 @@ const defaultConfig = computed(() => {
 
 // 安全访问数据
 const safeData = computed(() => {
-  return props.data || {
-    columns: [],
-    users: [],
-    matrix: {},
-    permissions_detail: {},
-    message: ''
-  };
+  return (
+    props.data || {
+      columns: [],
+      users: [],
+      matrix: {},
+      permissions_detail: {},
+      message: ''
+    }
+  );
 });
 
 // 根据 itemType 过滤列
@@ -188,11 +190,11 @@ const currentDescription = computed(() => {
 // 获取背景颜色样式
 const getBgClass = (type: string) => {
   const bgMap: Record<string, string> = {
-    'global': 'bg-green-50',
-    'project': 'bg-orange-50',
-    'user': 'bg-green-50',
-    'group': 'bg-orange-50',
-    'all': 'bg-blue-50'
+    global: 'bg-green-50',
+    project: 'bg-orange-50',
+    user: 'bg-green-50',
+    group: 'bg-orange-50',
+    all: 'bg-blue-50'
   };
   return bgMap[type] || 'bg-blue-50';
 };
@@ -200,22 +202,22 @@ const getBgClass = (type: string) => {
 // 获取文本颜色样式
 const getTextClass = (type: string) => {
   const textMap: Record<string, string> = {
-    'global': 'text-green-900',
-    'project': 'text-orange-900',
-    'user': 'text-green-900',
-    'group': 'text-orange-900',
-    'all': 'text-blue-900'
+    global: 'text-green-900',
+    project: 'text-orange-900',
+    user: 'text-green-900',
+    group: 'text-orange-900',
+    all: 'text-blue-900'
   };
   return textMap[type] || 'text-blue-900';
 };
 
 const getListTextClass = (type: string) => {
   const textMap: Record<string, string> = {
-    'global': 'text-green-800',
-    'project': 'text-orange-800',
-    'user': 'text-green-800',
-    'group': 'text-orange-800',
-    'all': 'text-blue-800'
+    global: 'text-green-800',
+    project: 'text-orange-800',
+    user: 'text-green-800',
+    group: 'text-orange-800',
+    all: 'text-blue-800'
   };
   return textMap[type] || 'text-blue-800';
 };
@@ -258,7 +260,8 @@ const getDefaultConfigTypeLabel = (type: string) => {
       </p>
       <ul v-if="itemType === 'all'" :class="`ml-4 mt-2 space-y-1 ${getListTextClass('all')}`">
         <li v-for="typeOption in defaultConfig.typeOptions" :key="typeOption.value">
-          <strong>{{ typeOption.label }}</strong>：{{ typeOption.description }}
+          <strong>{{ typeOption.label }}</strong>
+          ：{{ typeOption.description }}
         </li>
       </ul>
       <p v-else :class="`mt-2 ${getListTextClass(itemType)}`">
@@ -267,13 +270,7 @@ const getDefaultConfigTypeLabel = (type: string) => {
     </div>
 
     <!-- 消息提示 -->
-    <ElAlert
-      v-if="safeData.message"
-      type="info"
-      :closable="false"
-      show-icon
-      class="mb-4"
-    >
+    <ElAlert v-if="safeData.message" type="info" :closable="false" show-icon class="mb-4">
       {{ safeData.message }}
     </ElAlert>
 
@@ -311,17 +308,12 @@ const getDefaultConfigTypeLabel = (type: string) => {
       </ElButton>
     </ElEmpty>
 
-    <ElEmpty
-      v-else-if="!safeData.users || safeData.users.length === 0"
-      description="暂无用户数据"
-    />
+    <ElEmpty v-else-if="!safeData.users || safeData.users.length === 0" description="暂无用户数据" />
 
     <!-- 提示信息 -->
     <div v-if="safeData.columns?.length > 0" class="mt-4 text-sm text-gray-500">
       <p>提示：绿色 ✓ 表示有权限，灰色 ✗ 表示无权限</p>
-      <p v-if="appType === 'jumpserver'" class="mt-1">
-        授权规则来自 Jumpserver，通过用户组绑定自动管理用户权限
-      </p>
+      <p v-if="appType === 'jumpserver'" class="mt-1">授权规则来自 Jumpserver，通过用户组绑定自动管理用户权限</p>
     </div>
   </div>
 </template>

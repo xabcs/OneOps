@@ -1,7 +1,12 @@
 <script setup lang="tsx">
 import { onMounted, ref } from 'vue';
 import { Delete, Edit, Plus, Refresh, Search } from '@element-plus/icons-vue';
-import { createAuthGroup, deleteAuthGroup, fetchAuthGroups, updateAuthGroup } from '@/service/api/application-permission';
+import {
+  createAuthGroup,
+  deleteAuthGroup,
+  fetchAuthGroups,
+  updateAuthGroup
+} from '@/service/api/application-permission';
 
 defineOptions({ name: 'AuthCenterGroups' });
 

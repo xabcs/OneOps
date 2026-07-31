@@ -9,8 +9,14 @@ import {
   testK8sConnection,
   updateK8sCluster
 } from '@/service/api/k8s';
+import { useThemeStore } from '@/store/modules/theme';
 
 defineOptions({ name: 'ClusterManage' });
+
+const themeStore = useThemeStore();
+
+// Hero区域显示状态
+const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);
 
 const message = ElNotification;
 
@@ -365,6 +371,7 @@ onMounted(() => {
   <div class="page-container cluster-management-page">
     <!-- Hero 区域 -->
     <section
+      v-if="heroVisible"
       class="hero-section"
       :style="{
         background: 'var(--sx-hero-bg)',

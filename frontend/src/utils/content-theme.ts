@@ -155,6 +155,11 @@ export function applyContentTheme2(theme: ContentTheme2Settings) {
   // Hero section styles
   if (theme.heroSection) {
     const hero = theme.heroSection;
+
+    // 设置 Hero 区域的显示状态 CSS 变量
+    const isVisible = hero.visible !== false;
+    root.style.setProperty('--sx-hero-visible', isVisible ? '1' : '0');
+
     if (hero.useGradient && hero.gradientStart && hero.gradientEnd) {
       const angle = hero.gradientAngle || 135;
       if (hero.gradientMiddle) {
@@ -586,10 +591,19 @@ export function initContentTheme() {
 }
 
 /**
+ * Initialize hero section visibility
+ * @deprecated 使用组件内的 v-if="heroVisible" 条件渲染
+ */
+export function initHeroVisibility(theme?: ContentTheme2Settings) {
+  // 不再需要 DOM 操作，由组件自行处理显示逻辑
+}
+
+/**
  * Initialize content theme 2 with default settings
  */
 export function initContentTheme2() {
   applyContentTheme2(themeSettings.contentTheme2);
+  initHeroVisibility(themeSettings.contentTheme2);
 }
 
 /**

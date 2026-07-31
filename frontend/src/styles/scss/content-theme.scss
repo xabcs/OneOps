@@ -19,6 +19,7 @@
   --sx-content-card-padding: 20px;
 
   /* Hero Section 样式变量 */
+  --sx-hero-visible: 1;
   --sx-hero-bg: linear-gradient(135deg, #fbfdff 0%, #f7faff 52%, #f9fbfd 100%);
   --sx-hero-border: rgba(36, 91, 219, 0.09);
   --sx-hero-radius: 12px;
@@ -563,3 +564,14 @@ section.hero.panel .hero-actions .el-button:not(.is-link) {
   padding: 0 14px !important;
   border-radius: 10px !important;
 }
+
+/* ========== Hero Section 显示/隐藏控制 ========== */
+/*
+  Hero 区域的显示/隐藏现在由组件内的 v-if 条件渲染控制，
+  不再需要 CSS 类来处理。这种方式更加高效和可靠。
+
+  使用方式：
+  <section v-if="heroVisible" class="hero-section">
+    // Hero 内容
+  </section>
+*/

@@ -138,7 +138,9 @@ onMounted(() => {
             :value="user.id"
           />
         </ElSelect>
-        <ElButton type="primary" :icon="Plus" :disabled="!selectedUserId" @click="handleAssignGroup">分配用户组</ElButton>
+        <ElButton type="primary" :icon="Plus" :disabled="!selectedUserId" @click="handleAssignGroup">
+          分配用户组
+        </ElButton>
       </ElSpace>
     </ElCard>
 

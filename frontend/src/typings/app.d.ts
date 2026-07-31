@@ -261,6 +261,8 @@ declare namespace App {
       contentTheme2: {
         /** Hero section configuration */
         heroSection: {
+          /** Hero section visibility */
+          visible?: boolean;
           /** Enable hero gradient background */
           useGradient?: boolean;
           /** Gradient start color */

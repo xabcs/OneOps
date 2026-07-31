@@ -17,7 +17,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  cellClick: [row: any, col: any, hasPermission: boolean]
+  cellClick: [row: any, col: any, hasPermission: boolean];
 }>();
 
 // 安全的数据访问
@@ -73,11 +73,7 @@ function handleCellClick(row: any, col: any) {
         </tr>
       </thead>
       <tbody>
-        <tr
-          v-for="row in safeRows"
-          :key="row[rowKey]"
-          class="hover:bg-blue-50"
-        >
+        <tr v-for="row in safeRows" :key="row[rowKey]" class="hover:bg-blue-50">
           <td class="sticky left-0 z-10 border border-gray-200 bg-white px-4 py-3 font-medium">
             <div class="flex flex-col gap-1">
               <span>{{ row[rowLabel] || '-' }}</span>
@@ -92,10 +88,7 @@ function handleCellClick(row: any, col: any) {
             class="cursor-pointer border border-gray-200 px-4 py-3 text-center transition-colors hover:bg-blue-100"
             @click="handleCellClick(row, col)"
           >
-            <ElTag
-              :type="hasPermission(row[rowKey], col[colKey]) ? 'success' : 'info'"
-              size="large"
-            >
+            <ElTag :type="hasPermission(row[rowKey], col[colKey]) ? 'success' : 'info'" size="large">
               {{ hasPermission(row[rowKey], col[colKey]) ? '✓' : '✗' }}
             </ElTag>
           </td>

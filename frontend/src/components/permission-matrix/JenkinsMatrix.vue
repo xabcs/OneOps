@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import PermissionMatrix from './PermissionMatrix.vue';
 import { computed } from 'vue';
+import PermissionMatrix from './PermissionMatrix.vue';
 
 interface Props {
   data: {
@@ -17,17 +17,19 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  permissionChange: [userId: number, roleId: number, action: 'grant' | 'revoke']
+  permissionChange: [userId: number, roleId: number, action: 'grant' | 'revoke'];
 }>();
 
 // 安全访问数据的辅助函数
 const safeData = computed(() => {
-  return props.data || {
-    roles: [],
-    users: [],
-    matrix: {},
-    permissions_detail: {}
-  };
+  return (
+    props.data || {
+      roles: [],
+      users: [],
+      matrix: {},
+      permissions_detail: {}
+    }
+  );
 });
 
 // 根据 roleType 过滤角色
@@ -121,17 +123,25 @@ function getPermissionDetail(userId: number, roleId: number) {
 
     <!-- 角色类型说明 -->
     <div v-if="roleType === 'all'" class="rounded bg-blue-50 p-3 text-sm">
-      <p class="font-medium text-blue-900">角色类型说明：</p>
-      <ul class="ml-4 mt-2 space-y-1 text-blue-800">
-        <li>• <strong>Global 角色</strong>：全局角色，适用于整个 Jenkins 实例（如 admin、manager）</li>
-        <li>• <strong>Project 角色</strong>：项目角色，用于控制特定 Job/Folder 的访问权限</li>
+      <p class="text-blue-900 font-medium">角色类型说明：</p>
+      <ul class="ml-4 mt-2 text-blue-800 space-y-1">
+        <li>
+          •
+          <strong>Global 角色</strong>
+          ：全局角色，适用于整个 Jenkins 实例（如 admin、manager）
+        </li>
+        <li>
+          •
+          <strong>Project 角色</strong>
+          ：项目角色，用于控制特定 Job/Folder 的访问权限
+        </li>
       </ul>
     </div>
     <div v-else-if="roleType === 'global'" class="rounded bg-green-50 p-3 text-sm">
-      <p class="font-medium text-green-900">Global 角色：适用于整个 Jenkins 实例的管理权限</p>
+      <p class="text-green-900 font-medium">Global 角色：适用于整个 Jenkins 实例的管理权限</p>
     </div>
     <div v-else-if="roleType === 'project'" class="rounded bg-orange-50 p-3 text-sm">
-      <p class="font-medium text-orange-900">Project 角色：用于控制特定项目的构建和查看权限</p>
+      <p class="text-orange-900 font-medium">Project 角色：用于控制特定项目的构建和查看权限</p>
     </div>
 
     <!-- 权限矩阵 -->
@@ -149,15 +159,9 @@ function getPermissionDetail(userId: number, roleId: number) {
     />
 
     <!-- 空状态 -->
-    <ElEmpty
-      v-else-if="!safeData.roles || safeData.roles.length === 0"
-      description="暂无角色数据"
-    />
+    <ElEmpty v-else-if="!safeData.roles || safeData.roles.length === 0" description="暂无角色数据" />
 
-    <ElEmpty
-      v-else-if="!safeData.users || safeData.users.length === 0"
-      description="暂无用户数据"
-    />
+    <ElEmpty v-else-if="!safeData.users || safeData.users.length === 0" description="暂无用户数据" />
 
     <!-- 提示信息 -->
     <div v-if="safeData.roles?.length > 0" class="mt-4 text-sm text-gray-500">

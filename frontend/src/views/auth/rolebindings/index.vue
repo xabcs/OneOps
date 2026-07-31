@@ -4,11 +4,11 @@ import { Delete, Plus, View } from '@element-plus/icons-vue';
 import {
   createGroupBinding,
   deleteGroupBinding,
+  fetchApplicationAuthorizationRules,
   fetchApplicationRoles,
   fetchApplications,
-  fetchGroupBindings,
   fetchGroupBindingExecutions,
-  fetchApplicationAuthorizationRules
+  fetchGroupBindings
 } from '@/service/api/application-permission';
 import { fetchAllAuthGroups } from '@/service/api';
 
@@ -126,11 +126,9 @@ async function handleSubmit() {
       ElMessage.warning('请选择授权规则');
       return;
     }
-  } else {
-    if (!formData.value.applicationRoleId) {
-      ElMessage.warning('请选择角色');
-      return;
-    }
+  } else if (!formData.value.applicationRoleId) {
+    ElMessage.warning('请选择角色');
+    return;
   }
 
   loading.value = true;
@@ -139,9 +137,8 @@ async function handleSubmit() {
     const bindingData = {
       groupId: selectedGroupId.value,
       appId: formData.value.appId!,
-      applicationRoleId: app?.type === 'jumpserver'
-        ? formData.value.authorizationRuleId!
-        : formData.value.applicationRoleId!
+      applicationRoleId:
+        app?.type === 'jumpserver' ? formData.value.authorizationRuleId! : formData.value.applicationRoleId!
     };
 
     const { data, error } = await createGroupBinding(bindingData as any);
@@ -211,41 +208,65 @@ function showDetailedResult() {
         ${messages.map(m => `<p style="margin: 5px 0;">${m}</p>`).join('')}
       </div>
 
-      ${result.createdIdentities && result.createdIdentities.length > 0 ? `
+      ${
+        result.createdIdentities && result.createdIdentities.length > 0
+          ? `
         <div style="margin-bottom: 15px;">
           <h5 style="margin-bottom: 5px; color: #67C23A;">✓ 已创建的外部账号</h5>
           <ul style="margin: 0; padding-left: 20px;">
-            ${result.createdIdentities.map((item: any) => `
+            ${result.createdIdentities
+              .map(
+                (item: any) => `
               <li style="margin: 3px 0;">${item.username} - ${item.appName} - ${item.status}</li>
-            `).join('')}
+            `
+              )
+              .join('')}
           </ul>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
 
-      ${result.pendingMembers && result.pendingMembers.length > 0 ? `
+      ${
+        result.pendingMembers && result.pendingMembers.length > 0
+          ? `
         <div style="margin-bottom: 15px;">
           <h5 style="margin-bottom: 5px; color: #E6A23C;">⚠ 待处理成员</h5>
           <ul style="margin: 0; padding-left: 20px;">
-            ${result.pendingMembers.map((item: any) => `
+            ${result.pendingMembers
+              .map(
+                (item: any) => `
               <li style="margin: 3px 0;">${item.username} - ${item.reason}</li>
-            `).join('')}
+            `
+              )
+              .join('')}
           </ul>
           <p style="margin-top: 10px; color: #909399; font-size: 12px;">
             建议：可以为这些成员手动创建外部账号后重新分配
           </p>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
 
-      ${result.failedMembers && result.failedMembers.length > 0 ? `
+      ${
+        result.failedMembers && result.failedMembers.length > 0
+          ? `
         <div>
           <h5 style="margin-bottom: 5px; color: #F56C6C;">✗ 失败的成员</h5>
           <ul style="margin: 0; padding-left: 20px;">
-            ${result.failedMembers.map((item: any) => `
+            ${result.failedMembers
+              .map(
+                (item: any) => `
               <li style="margin: 3px 0;">${item.username} - ${item.error}</li>
-            `).join('')}
+            `
+              )
+              .join('')}
           </ul>
         </div>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
     `,
     '权限分配结果',
@@ -395,5 +416,4 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

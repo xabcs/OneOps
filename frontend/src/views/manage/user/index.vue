@@ -2,12 +2,18 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { Delete, Plus, Refresh, Search, User } from '@element-plus/icons-vue';
 import { fetchDeleteUser, fetchGetAllRoles, fetchGetUserList } from '@/service/api';
+import { useThemeStore } from '@/store/modules/theme';
 import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import UserOperateDrawer from './modules/user-operate-drawer.vue';
 import ResetPasswordModal from './modules/reset-password-modal.vue';
 
 defineOptions({ name: 'UserManage' });
+
+const themeStore = useThemeStore();
+
+// Hero区域显示状态
+const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);
 
 // 用户统计数据
 const userStats = ref({
@@ -370,6 +376,7 @@ onUnmounted(() => {
   <div class="page-container user-management-page">
     <!-- Hero 区域 -->
     <section
+      v-if="heroVisible"
       class="hero-section"
       :style="{
         background: 'var(--sx-hero-bg)',

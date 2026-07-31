@@ -1,21 +1,21 @@
 <script setup lang="tsx">
 import { onMounted, ref, watch } from 'vue';
-import { Delete, Edit, Plus, Refresh, Search, View, ArrowDown } from '@element-plus/icons-vue';
+import { ArrowDown, Delete, Edit, Plus, Refresh, Search, View } from '@element-plus/icons-vue';
 import {
   createApplication,
   deleteApplication,
-  fetchApplications,
+  fetchAppTypeConfigTemplate,
+  fetchApplicationAuthorizationRules,
+  fetchApplicationGroups,
   fetchApplicationRoles,
   fetchApplicationUsers,
-  fetchApplicationGroups,
-  fetchApplicationAuthorizationRules,
+  fetchApplications,
+  fetchSupportedAppTypes,
+  syncApplicationAuthorizationRules,
+  syncApplicationGroups,
   syncApplicationRoles,
   syncApplicationUsers,
-  syncApplicationGroups,
-  syncApplicationAuthorizationRules,
-  updateApplication,
-  fetchSupportedAppTypes,
-  fetchAppTypeConfigTemplate
+  updateApplication
 } from '@/service/api/application-permission';
 
 defineOptions({ name: 'AuthCenterApplications' });
@@ -98,11 +98,14 @@ async function getSupportedAppTypes() {
 }
 
 // 监听应用类型变化，加载配置模板
-watch(() => formData.value.type, async (newType) => {
-  if (newType) {
-    await loadConfigTemplate(newType);
+watch(
+  () => formData.value.type,
+  async newType => {
+    if (newType) {
+      await loadConfigTemplate(newType);
+    }
   }
-});
+);
 
 // 加载应用类型的配置模板
 async function loadConfigTemplate(appType: string) {
@@ -357,7 +360,6 @@ function handleCommand(command: string, row: any) {
   }
 }
 
-
 function handlePageChange(page: number) {
   pagination.value.current = page;
   getData();
@@ -447,27 +449,23 @@ onMounted(() => {
             <ElSpace wrap>
               <ElButton size="small" type="primary" @click="handleSyncUsers(row)">同步用户</ElButton>
               <ElButton size="small" type="success" @click="handleSyncGroups(row)">同步用户组</ElButton>
-              <ElButton
-                size="small"
-                type="warning"
-                v-if="row.type === 'jumpserver'"
-                @click="handleSyncRules(row)"
-              >
+              <ElButton v-if="row.type === 'jumpserver'" size="small" type="warning" @click="handleSyncRules(row)">
                 同步授权规则
               </ElButton>
               <ElDropdown @command="(cmd: string) => handleCommand(cmd, row)">
                 <ElButton size="small">
-                  更多<ElIcon class="el-icon--right"><arrow-down /></ElIcon>
+                  更多
+                  <ElIcon class="el-icon--right"><ArrowDown /></ElIcon>
                 </ElButton>
                 <template #dropdown>
                   <ElDropdownMenu>
                     <ElDropdownItem command="viewUsers">查看用户</ElDropdownItem>
                     <ElDropdownItem command="viewGroups">查看用户组</ElDropdownItem>
-                    <ElDropdownItem command="viewRules" v-if="row.type === 'jumpserver'">查看授权规则</ElDropdownItem>
-                    <ElDropdownItem command="viewRoles" v-if="row.type !== 'jumpserver'">查看角色</ElDropdownItem>
-                    <ElDropdownItem command="syncRoles" v-if="row.type !== 'jumpserver'">同步角色</ElDropdownItem>
+                    <ElDropdownItem v-if="row.type === 'jumpserver'" command="viewRules">查看授权规则</ElDropdownItem>
+                    <ElDropdownItem v-if="row.type !== 'jumpserver'" command="viewRoles">查看角色</ElDropdownItem>
+                    <ElDropdownItem v-if="row.type !== 'jumpserver'" command="syncRoles">同步角色</ElDropdownItem>
                     <ElDropdownItem divided command="edit">编辑</ElDropdownItem>
-                    <ElDropdownItem command="delete" style="color: #f56c6c;">删除</ElDropdownItem>
+                    <ElDropdownItem command="delete" style="color: #f56c6c">删除</ElDropdownItem>
                   </ElDropdownMenu>
                 </template>
               </ElDropdown>
@@ -506,12 +504,7 @@ onMounted(() => {
             :loading="loadingAppTypes"
             @change="loadConfigTemplate(formData.type)"
           >
-            <ElOption
-              v-for="item in supportedAppTypes"
-              :key="item.type"
-              :label="item.displayName"
-              :value="item.type"
-            />
+            <ElOption v-for="item in supportedAppTypes" :key="item.type" :label="item.displayName" :value="item.type" />
           </ElSelect>
         </ElFormItem>
         <ElFormItem label="Base URL" required>
@@ -526,7 +519,12 @@ onMounted(() => {
             <ElInput v-model="formData.authConfig.username" placeholder="请输入 Jenkins 用户名" />
           </ElFormItem>
           <ElFormItem label="密码" required>
-            <ElInput v-model="formData.authConfig.password" type="password" show-password placeholder="请输入 Jenkins 密码或 Token" />
+            <ElInput
+              v-model="formData.authConfig.password"
+              type="password"
+              show-password
+              placeholder="请输入 Jenkins 密码或 Token"
+            />
           </ElFormItem>
         </template>
 
@@ -546,7 +544,7 @@ onMounted(() => {
               <template #title>
                 <div class="text-sm">
                   <strong>AccessKey 签名认证说明：</strong>
-                  <ul class="list-disc ml-4 mt-2">
+                  <ul class="ml-4 mt-2 list-disc">
                     <li>需要在 JumpServer 中创建「服务账号」获取密钥</li>
                     <li>使用 HTTP Signature 签名算法，最安全可靠</li>
                     <li>长期有效，不会过期</li>
@@ -556,23 +554,36 @@ onMounted(() => {
             </ElAlert>
             <ElFormItem label="Access Key ID" required>
               <ElInput v-model="formData.authConfig.accessKey" placeholder="请输入 Access Key ID" />
-              <span class="text-gray-500 text-xs">在 JumpServer 系统设置 → 账号管理 → 服务账号中获取</span>
+              <span class="text-xs text-gray-500">在 JumpServer 系统设置 → 账号管理 → 服务账号中获取</span>
             </ElFormItem>
             <ElFormItem label="Access Key Secret" required>
-              <ElInput v-model="formData.authConfig.secret" type="password" show-password placeholder="请输入 Access Key Secret" />
-              <span class="text-gray-500 text-xs">密钥只显示一次，请妥善保管</span>
+              <ElInput
+                v-model="formData.authConfig.secret"
+                type="password"
+                show-password
+                placeholder="请输入 Access Key Secret"
+              />
+              <span class="text-xs text-gray-500">密钥只显示一次，请妥善保管</span>
             </ElFormItem>
             <ElFormItem label="组织ID（可选）">
-              <ElInput v-model="formData.authConfig.orgId" placeholder="默认组织: 00000000-00000000-00000000-000000000002" />
-              <span class="text-gray-500 text-xs">不填写则使用默认组织</span>
+              <ElInput
+                v-model="formData.authConfig.orgId"
+                placeholder="默认组织: 00000000-00000000-00000000-000000000002"
+              />
+              <span class="text-xs text-gray-500">不填写则使用默认组织</span>
             </ElFormItem>
           </template>
 
           <!-- Private Token 认证 -->
           <template v-if="formData.authConfig.authType === 'token'">
             <ElFormItem label="Private Token" required>
-              <ElInput v-model="formData.authConfig.token" type="password" show-password placeholder="请输入 Private Token" />
-              <span class="text-gray-500 text-xs">在 JumpServer 个人中心 → API Token 获取（长期有效）</span>
+              <ElInput
+                v-model="formData.authConfig.token"
+                type="password"
+                show-password
+                placeholder="请输入 Private Token"
+              />
+              <span class="text-xs text-gray-500">在 JumpServer 个人中心 → API Token 获取（长期有效）</span>
             </ElFormItem>
           </template>
 
@@ -625,7 +636,7 @@ onMounted(() => {
             <template #title>
               <div class="text-sm">
                 <strong>JumpServer 授权说明：</strong>
-                <ul class="list-disc ml-4 mt-2">
+                <ul class="ml-4 mt-2 list-disc">
                   <li>JumpServer 不需要同步角色，授权通过授权规则管理</li>
                   <li>用户授权需在 JumpServer 管理界面中配置授权规则（用户/用户组 → 资产/节点）</li>
                 </ul>
@@ -659,10 +670,14 @@ onMounted(() => {
           </ElFormItem>
 
           <!-- 添加隐藏字段确保所有必需字段都存在 -->
-          <input type="hidden" v-model="formData.endpoints.listUsers" value="/api/v1/users/users/" />
-          <input type="hidden" v-model="formData.endpoints.getUser" value="/api/v1/users/{username}" />
-          <input type="hidden" v-model="formData.endpoints.revokeRole" value="/api/v1/users/{username}/roles/{roleCode}" />
-          <input type="hidden" v-model="formData.endpoints.getUserRoles" value="/api/v1/users/{username}/roles/" />
+          <input v-model="formData.endpoints.listUsers" type="hidden" value="/api/v1/users/users/" />
+          <input v-model="formData.endpoints.getUser" type="hidden" value="/api/v1/users/{username}" />
+          <input
+            v-model="formData.endpoints.revokeRole"
+            type="hidden"
+            value="/api/v1/users/{username}/roles/{roleCode}"
+          />
+          <input v-model="formData.endpoints.getUserRoles" type="hidden" value="/api/v1/users/{username}/roles/" />
         </template>
 
         <!-- GitLab 特殊配置 -->
@@ -670,11 +685,11 @@ onMounted(() => {
           <ElDivider content-position="left">GitLab 特殊配置</ElDivider>
           <ElFormItem label="项目ID (可选)">
             <ElInput v-model="formData.endpoints.projectId" placeholder="用于项目级权限管理" />
-            <span class="text-gray-500 text-xs">填写项目ID可管理项目成员权限</span>
+            <span class="text-xs text-gray-500">填写项目ID可管理项目成员权限</span>
           </ElFormItem>
           <ElFormItem label="群组ID (可选)">
             <ElInput v-model="formData.endpoints.groupId" placeholder="用于群组级权限管理" />
-            <span class="text-gray-500 text-xs">填写群组ID可管理群组成员权限</span>
+            <span class="text-xs text-gray-500">填写群组ID可管理群组成员权限</span>
           </ElFormItem>
           <ElFormItem label="获取用户列表">
             <ElInput v-model="formData.endpoints.getUsers" placeholder="/api/v4/users" />
@@ -755,68 +770,72 @@ onMounted(() => {
 
     <!-- 授权规则列表对话框 -->
     <ElDialog v-model="rulesDialogVisible" :title="`${currentAppName} - 授权规则列表`" width="1200px">
-      <el-alert
-        title="授权规则说明"
-        type="info"
-        :closable="false"
-        style="margin-bottom: 16px"
-      >
+      <ElAlert title="授权规则说明" type="info" :closable="false" style="margin-bottom: 16px">
         <p>授权规则定义了用户/用户组对资产的访问权限，包括：</p>
-        <ul style="margin: 8px 0; padding-left: 20px;">
-          <li><strong>主体</strong>：谁可以访问（用户或用户组）</li>
-          <li><strong>对象</strong>：可以访问什么（具体资产或全部资产）</li>
-          <li><strong>权限</strong>：可以执行的操作（连接、上传、下载、命令等）</li>
+        <ul style="margin: 8px 0; padding-left: 20px">
+          <li>
+            <strong>主体</strong>
+            ：谁可以访问（用户或用户组）
+          </li>
+          <li>
+            <strong>对象</strong>
+            ：可以访问什么（具体资产或全部资产）
+          </li>
+          <li>
+            <strong>权限</strong>
+            ：可以执行的操作（连接、上传、下载、命令等）
+          </li>
         </ul>
-      </el-alert>
+      </ElAlert>
 
-      <ElTable :data="authorizationRules" :border="true" style="max-height: 500px; overflow-y: auto;">
+      <ElTable :data="authorizationRules" :border="true" style="max-height: 500px; overflow-y: auto">
         <ElTableColumn type="index" label="序号" width="60" align="center" />
         <ElTableColumn prop="ruleName" label="规则名称" align="center" min-width="150" />
         <ElTableColumn prop="subjectType" label="主体类型" align="center" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.subjectType === 'user' ? 'success' : 'warning'" size="small">
+            <ElTag :type="row.subjectType === 'user' ? 'success' : 'warning'" size="small">
               {{ row.subjectType === 'user' ? '用户' : '用户组' }}
-            </el-tag>
+            </ElTag>
           </template>
         </ElTableColumn>
         <ElTableColumn prop="subjectName" label="主体名称" align="center" min-width="120" />
         <ElTableColumn prop="objectType" label="对象类型" align="center" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.objectType === 'system' ? 'danger' : 'primary'" size="small">
+            <ElTag :type="row.objectType === 'system' ? 'danger' : 'primary'" size="small">
               {{ row.objectType === 'system' ? '全部资产' : '具体资产' }}
-            </el-tag>
+            </ElTag>
           </template>
         </ElTableColumn>
         <ElTableColumn prop="objectName" label="对象名称" align="center" min-width="150" />
         <ElTableColumn prop="actions" label="操作权限" align="center" min-width="200">
           <template #default="{ row }">
             <div v-if="row.actions">
-              <el-tag
+              <ElTag
                 v-for="action in JSON.parse(row.actions)"
                 :key="action"
                 size="small"
-                style="margin: 2px;"
+                style="margin: 2px"
                 :type="getActionType(action)"
               >
                 {{ getActionLabel(action) }}
-              </el-tag>
+              </ElTag>
             </div>
-            <span v-else style="color: #909399;">无权限数据</span>
+            <span v-else style="color: #909399">无权限数据</span>
           </template>
         </ElTableColumn>
         <ElTableColumn prop="priority" label="优先级" align="center" width="80" />
         <ElTableColumn prop="isEnabled" label="状态" align="center" width="80">
           <template #default="{ row }">
-            <el-tag :type="row.isEnabled ? 'success' : 'info'" size="small">
+            <ElTag :type="row.isEnabled ? 'success' : 'info'" size="small">
               {{ row.isEnabled ? '启用' : '禁用' }}
-            </el-tag>
+            </ElTag>
           </template>
         </ElTableColumn>
         <ElTableColumn prop="isExpired" label="是否过期" align="center" width="80">
           <template #default="{ row }">
-            <el-tag :type="row.isExpired ? 'danger' : 'success'" size="small">
+            <ElTag :type="row.isExpired ? 'danger' : 'success'" size="small">
               {{ row.isExpired ? '已过期' : '有效' }}
-            </el-tag>
+            </ElTag>
           </template>
         </ElTableColumn>
         <ElTableColumn prop="syncTime" label="同步时间" align="center" min-width="160" />

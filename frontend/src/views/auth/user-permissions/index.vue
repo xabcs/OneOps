@@ -1,9 +1,9 @@
 <script setup lang="tsx">
-import { onMounted, ref, computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { View } from '@element-plus/icons-vue';
 import {
-  fetchUserEffectivePermissions,
   fetchApplications,
+  fetchUserEffectivePermissions,
   fetchUserEffectivePermissionsMatrix
 } from '@/service/api/application-permission';
 import JenkinsMatrix from '@/components/permission-matrix/JenkinsMatrix.vue';
@@ -74,8 +74,8 @@ const adaptedMatrixData = computed(() => {
     case 'jumpserver':
       // Jumpserver: rules -> columns
       const adaptedRules = (data.rules || []).map((rule: any) => ({
-        ...rule,  // 先展开 rule，这样后续的字段会覆盖它
-        id: rule.rule_id,  // 覆盖 id 为 rule_id (UUID)，用于矩阵匹配
+        ...rule, // 先展开 rule，这样后续的字段会覆盖它
+        id: rule.rule_id, // 覆盖 id 为 rule_id (UUID)，用于矩阵匹配
         name: rule.rule_name,
         type: rule.subject_type,
         ruleType: rule.subject_type // 保持兼容性
@@ -246,7 +246,10 @@ onMounted(() => {
             type="button"
             class="permission-tab-btn"
             :class="{ active: selectedAppId === app.id }"
-            @click="selectedAppId = app.id; handleAppChange()"
+            @click="
+              selectedAppId = app.id;
+              handleAppChange();
+            "
           >
             {{ app.name }}
           </button>
@@ -257,7 +260,10 @@ onMounted(() => {
             type="button"
             class="permission-tab-btn"
             :class="{ active: viewMode === 'matrix' }"
-            @click="viewMode = 'matrix'; handleViewModeChange()"
+            @click="
+              viewMode = 'matrix';
+              handleViewModeChange();
+            "
           >
             矩阵视图
           </button>
@@ -265,7 +271,10 @@ onMounted(() => {
             type="button"
             class="permission-tab-btn"
             :class="{ active: viewMode === 'list' }"
-            @click="viewMode = 'list'; handleViewModeChange()"
+            @click="
+              viewMode = 'list';
+              handleViewModeChange();
+            "
           >
             列表视图
           </button>
@@ -282,7 +291,10 @@ onMounted(() => {
             type="button"
             class="permission-tab-btn"
             :class="{ active: selectedRoleType === type.value }"
-            @click="selectedRoleType = type.value; handleRoleTypeChange()"
+            @click="
+              selectedRoleType = type.value;
+              handleRoleTypeChange();
+            "
           >
             {{ type.label }}
           </button>
@@ -291,12 +303,19 @@ onMounted(() => {
         <!-- Jumpserver 的规则类型切换 -->
         <template v-else-if="selectedApp?.type === 'jumpserver'">
           <button
-            v-for="type in [{ value: 'all', label: '全部' }, { value: 'user', label: '用户规则' }, { value: 'group', label: '用户组规则' }]"
+            v-for="type in [
+              { value: 'all', label: '全部' },
+              { value: 'user', label: '用户规则' },
+              { value: 'group', label: '用户组规则' }
+            ]"
             :key="type.value"
             type="button"
             class="permission-tab-btn"
             :class="{ active: selectedRoleType === type.value }"
-            @click="selectedRoleType = type.value; handleRoleTypeChange()"
+            @click="
+              selectedRoleType = type.value;
+              handleRoleTypeChange();
+            "
           >
             {{ type.label }}
           </button>

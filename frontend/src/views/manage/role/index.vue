@@ -4,6 +4,7 @@ import { ElNotification } from 'element-plus';
 import { useBoolean } from '@sa/hooks';
 import { Delete, Management, Plus, Refresh, Search } from '@element-plus/icons-vue';
 import { fetchDeleteRole, fetchGetRoleList, fetchGetUserList, fetchUpdateRole } from '@/service/api';
+import { useThemeStore } from '@/store/modules/theme';
 import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import RoleSearch from './modules/role-search.vue';
@@ -11,6 +12,11 @@ import RoleOperateDrawer from './modules/role-operate-drawer.vue';
 import MenuAuthModal from './modules/menu-auth-modal.vue';
 
 defineOptions({ name: 'RoleManage' });
+
+const themeStore = useThemeStore();
+
+// Hero区域显示状态
+const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);
 
 // 用户列表和角色-用户映射
 const allUsers = ref<Api.SystemManage.User[]>([]);
@@ -433,6 +439,7 @@ onUnmounted(() => {
   <div class="page-container role-management-page">
     <!-- Hero 区域 -->
     <section
+      v-if="heroVisible"
       class="hero-section"
       :style="{
         background: 'var(--sx-hero-bg)',

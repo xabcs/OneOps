@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useThemeStore } from '@/store/modules/theme';
 import { applyContentTheme2 } from '@/utils/content-theme';
 import { $t } from '@/locales';
@@ -9,19 +9,8 @@ defineOptions({ name: 'ContentTheme2' });
 
 const themeStore = useThemeStore();
 
-// Hero区域设置
-const heroUseGradient = ref(themeStore.contentTheme2.heroSection.useGradient || false);
-const heroBackground = ref(themeStore.contentTheme2.heroSection.background || 'rgba(208, 229, 253, 0.98)');
-const heroGradientStart = ref(themeStore.contentTheme2.heroSection.gradientStart || 'rgba(208, 229, 253, 0.98)');
-const heroGradientMiddle = ref(themeStore.contentTheme2.heroSection.gradientMiddle || 'rgb(161, 230, 253)');
-const heroGradientEnd = ref(themeStore.contentTheme2.heroSection.gradientEnd || 'rgba(235, 216, 255, 0.96)');
-const heroGradientAngle = ref(themeStore.contentTheme2.heroSection.gradientAngle || 135);
-const heroBorderColor = ref(themeStore.contentTheme2.heroSection.borderColor || 'rgba(36, 91, 219, 0.09)');
-const heroBorderRadius = ref(themeStore.contentTheme2.heroSection.borderRadius || '20px');
-const iconGradientStart = ref(themeStore.contentTheme2.heroSection.iconGradientStart || 'rgba(243, 247, 255, 0.98)');
-const iconGradientEnd = ref(themeStore.contentTheme2.heroSection.iconGradientEnd || 'rgba(235, 242, 255, 0.96)');
-const iconBorderColor = ref(themeStore.contentTheme2.heroSection.iconBorderColor || 'rgba(36, 91, 219, 0.12)');
-const iconColor = ref(themeStore.contentTheme2.heroSection.iconColor || '#245bdb');
+// Hero区域设置 - 直接绑定到 store，不需要本地状态
+const heroSection = computed(() => themeStore.contentTheme2.heroSection);
 
 // 统计卡片设置
 const statUseGradient = ref(themeStore.contentTheme2.statCards.useGradient || false);
@@ -170,106 +159,12 @@ function updateTagSetting(key: string, value: any) {
   updateSetting('tags', key, value);
 }
 
-// 监听 store 变化
+// 监听 store 变化 - 简化为只监听必要的变化
 watch(
   () => themeStore.contentTheme2,
   newTheme => {
-    // Hero区域
-    if (newTheme.heroSection) {
-      heroUseGradient.value = newTheme.heroSection.useGradient;
-      heroBackground.value = newTheme.heroSection.background;
-      heroGradientStart.value = newTheme.heroSection.gradientStart;
-      heroGradientMiddle.value = newTheme.heroSection.gradientMiddle || '';
-      heroGradientEnd.value = newTheme.heroSection.gradientEnd;
-      heroGradientAngle.value = newTheme.heroSection.gradientAngle || 135;
-      heroBorderColor.value = newTheme.heroSection.borderColor;
-      heroBorderRadius.value = newTheme.heroSection.borderRadius;
-      iconGradientStart.value = newTheme.heroSection.iconGradientStart;
-      iconGradientEnd.value = newTheme.heroSection.iconGradientEnd;
-      iconBorderColor.value = newTheme.heroSection.iconBorderColor;
-      iconColor.value = newTheme.heroSection.iconColor;
-    }
-
-    // 统计卡片
-    if (newTheme.statCards) {
-      statUseGradient.value = newTheme.statCards.useGradient;
-      statDefaultBg.value = newTheme.statCards.defaultBg;
-      statDefaultBgStart.value = newTheme.statCards.defaultBgStart;
-      statDefaultBgEnd.value = newTheme.statCards.defaultBgEnd;
-      statDefaultBorder.value = newTheme.statCards.defaultBorder;
-      statSuccessBg.value = newTheme.statCards.successBg;
-      statSuccessBgStart.value = newTheme.statCards.successBgStart;
-      statSuccessBgEnd.value = newTheme.statCards.successBgEnd;
-      statWarningBg.value = newTheme.statCards.warningBg;
-      statWarningBgStart.value = newTheme.statCards.warningBgStart;
-      statWarningBgEnd.value = newTheme.statCards.warningBgEnd;
-      statDangerBg.value = newTheme.statCards.dangerBg;
-      statDangerBgStart.value = newTheme.statCards.dangerBgStart;
-      statDangerBgEnd.value = newTheme.statCards.dangerBgEnd;
-      statBorderRadius.value = newTheme.statCards.borderRadius;
-      statShadow.value = newTheme.statCards.shadow;
-    }
-
-    // 工具栏
-    if (newTheme.toolbar) {
-      toolbarGradientStart.value = newTheme.toolbar.gradientStart;
-      toolbarGradientMiddle.value = newTheme.toolbar.gradientMiddle || '';
-      toolbarGradientEnd.value = newTheme.toolbar.gradientEnd;
-      toolbarGradientAngle.value = newTheme.toolbar.gradientAngle || 180;
-      toolbarBorderColor.value = newTheme.toolbar.borderColor;
-      toolbarBorderRadius.value = newTheme.toolbar.borderRadius;
-    }
-
-    // 内容卡片
-    if (newTheme.contentCard) {
-      contentCardBg.value = newTheme.contentCard.background;
-      contentCardBgGradientStart.value = newTheme.contentCard.bgGradientStart;
-      contentCardBgGradientMiddle.value = newTheme.contentCard.bgGradientMiddle || '';
-      contentCardBgGradientEnd.value = newTheme.contentCard.bgGradientEnd;
-      contentCardUseGradient.value = newTheme.contentCard.useGradient;
-      contentCardGradientAngle.value = newTheme.contentCard.gradientAngle || 145;
-      contentCardBorderColor.value = newTheme.contentCard.borderColor;
-      contentCardBorderRadius.value = newTheme.contentCard.borderRadius;
-    }
-
-    // 数据表格
-    if (newTheme.dataTable) {
-      tableHeaderBg.value = newTheme.dataTable.headerBg;
-      tableHeaderTextColor.value = newTheme.dataTable.headerTextColor;
-      tableRowHoverBg.value = newTheme.dataTable.rowHoverBg;
-      tableStripedBg.value = newTheme.dataTable.stripedBg;
-      tableBorderColor.value = newTheme.dataTable.tableBorder;
-      tableBorderRadius.value = newTheme.dataTable.borderRadius;
-    }
-
-    // 搜索筛选
-    if (newTheme.searchFilters) {
-      searchInputBg.value = newTheme.searchFilters.inputBg;
-      searchInputBorder.value = newTheme.searchFilters.inputBorder;
-      searchInputHoverBorder.value = newTheme.searchFilters.inputHoverBorder;
-      searchInputFocusBorder.value = newTheme.searchFilters.inputFocusBorder;
-      searchInputBorderRadius.value = newTheme.searchFilters.inputBorderRadius;
-    }
-
-    // 分页
-    if (newTheme.pagination) {
-      paginationButtonBg.value = newTheme.pagination.buttonBg;
-      paginationButtonTextColor.value = newTheme.pagination.buttonTextColor;
-      paginationButtonHoverBg.value = newTheme.pagination.buttonHoverBg;
-      paginationActiveButtonBg.value = newTheme.pagination.activeButtonBg;
-      paginationActiveButtonTextColor.value = newTheme.pagination.activeButtonTextColor;
-      paginationBorderRadius.value = newTheme.pagination.borderRadius;
-    }
-
-    // 标签
-    if (newTheme.tags) {
-      tagDefaultBg.value = newTheme.tags.defaultBg;
-      tagSuccessBg.value = newTheme.tags.successBg;
-      tagWarningBg.value = newTheme.tags.warningBg;
-      tagDangerBg.value = newTheme.tags.dangerBg;
-      tagInfoBg.value = newTheme.tags.infoBg;
-      tagBorderRadius.value = newTheme.tags.borderRadius;
-    }
+    // 当主题设置变更时应用新主题
+    applyContentTheme2(newTheme);
   },
   { deep: true }
 );
@@ -285,113 +180,119 @@ watch(
         <span class="section-text">Hero 区域</span>
       </div>
 
-      <SettingItem label="自定义渐变">
-        <ElSwitch v-model="heroUseGradient" @change="updateHeroSetting('useGradient', $event)" />
+      <SettingItem label="显示 Hero 区域">
+        <ElSwitch :model-value="heroSection.visible !== false" @change="updateHeroSetting('visible', $event)" />
       </SettingItem>
 
-      <template v-if="heroUseGradient">
-        <SettingItem label="渐变起始颜色">
+      <template v-if="heroSection.visible !== false">
+        <SettingItem label="自定义渐变">
+          <ElSwitch :model-value="heroSection.useGradient" @change="updateHeroSetting('useGradient', $event)" />
+        </SettingItem>
+
+        <template v-if="heroSection.useGradient">
+          <SettingItem label="渐变起始颜色">
+            <ElColorPicker
+              :model-value="heroSection.gradientStart"
+              class="w-40px"
+              :show-alpha="true"
+              :predefine="colorSwatches"
+              @change="(color: string | null) => color && updateHeroSetting('gradientStart', color)"
+            />
+          </SettingItem>
+          <SettingItem label="渐变结束颜色">
+            <ElColorPicker
+              :model-value="heroSection.gradientEnd"
+              class="w-40px"
+              :show-alpha="true"
+              :predefine="colorSwatches"
+              @change="(color: string | null) => color && updateHeroSetting('gradientEnd', color)"
+            />
+          </SettingItem>
+          <SettingItem label="渐变中间颜色 (可选)">
+            <ElColorPicker
+              :model-value="heroSection.gradientMiddle"
+              class="w-40px"
+              :show-alpha="true"
+              :predefine="colorSwatches"
+              @change="(color: string | null) => color && updateHeroSetting('gradientMiddle', color)"
+            />
+          </SettingItem>
+          <SettingItem label="渐变角度">
+            <ElInputNumber
+              :model-value="heroSection.gradientAngle"
+              :min="0"
+              :max="360"
+              :step="5"
+              controls-position="right"
+              class="w-120px"
+              @change="updateHeroSetting('gradientAngle', $event)"
+            />
+          </SettingItem>
+        </template>
+
+        <SettingItem v-if="!heroSection.useGradient" label="背景颜色">
           <ElColorPicker
-            v-model="heroGradientStart"
+            :model-value="heroSection.background"
             class="w-40px"
             :show-alpha="true"
             :predefine="colorSwatches"
-            @change="(color: string | null) => color && updateHeroSetting('gradientStart', color)"
+            @change="(color: string | null) => color && updateHeroSetting('background', color)"
           />
         </SettingItem>
-        <SettingItem label="渐变结束颜色">
+
+        <SettingItem label="边框颜色">
           <ElColorPicker
-            v-model="heroGradientEnd"
+            :model-value="heroSection.borderColor"
             class="w-40px"
             :show-alpha="true"
             :predefine="colorSwatches"
-            @change="(color: string | null) => color && updateHeroSetting('gradientEnd', color)"
+            @change="(color: string | null) => color && updateHeroSetting('borderColor', color)"
           />
         </SettingItem>
-        <SettingItem label="渐变中间颜色 (可选)">
+
+        <SettingItem label="圆角大小">
+          <ElInput :model-value="heroSection.borderRadius" class="w-120px" @change="updateHeroSetting('borderRadius', $event)" />
+        </SettingItem>
+
+        <div class="sub-section-title">图标样式</div>
+
+        <SettingItem label="图标背景渐变起始">
           <ElColorPicker
-            v-model="heroGradientMiddle"
+            :model-value="heroSection.iconGradientStart"
             class="w-40px"
             :show-alpha="true"
             :predefine="colorSwatches"
-            @change="(color: string | null) => color && updateHeroSetting('gradientMiddle', color)"
+            @change="(color: string | null) => color && updateHeroSetting('iconGradientStart', color)"
           />
         </SettingItem>
-        <SettingItem label="渐变角度">
-          <ElInputNumber
-            v-model="heroGradientAngle"
-            :min="0"
-            :max="360"
-            :step="5"
-            controls-position="right"
-            class="w-120px"
-            @change="updateHeroSetting('gradientAngle', $event)"
+        <SettingItem label="图标背景渐变结束">
+          <ElColorPicker
+            :model-value="heroSection.iconGradientEnd"
+            class="w-40px"
+            :show-alpha="true"
+            :predefine="colorSwatches"
+            @change="(color: string | null) => color && updateHeroSetting('iconGradientEnd', color)"
+          />
+        </SettingItem>
+        <SettingItem label="图标边框颜色">
+          <ElColorPicker
+            :model-value="heroSection.iconBorderColor"
+            class="w-40px"
+            :show-alpha="true"
+            :predefine="colorSwatches"
+            @change="(color: string | null) => color && updateHeroSetting('iconBorderColor', color)"
+          />
+        </SettingItem>
+        <SettingItem label="图标文字颜色">
+          <ElColorPicker
+            :model-value="heroSection.iconColor"
+            class="w-40px"
+            :show-alpha="false"
+            :predefine="colorSwatches"
+            @change="(color: string | null) => color && updateHeroSetting('iconColor', color)"
           />
         </SettingItem>
       </template>
-
-      <SettingItem v-if="!heroUseGradient" label="背景颜色">
-        <ElColorPicker
-          v-model="heroBackground"
-          class="w-40px"
-          :show-alpha="true"
-          :predefine="colorSwatches"
-          @change="(color: string | null) => color && updateHeroSetting('background', color)"
-        />
-      </SettingItem>
-
-      <SettingItem label="边框颜色">
-        <ElColorPicker
-          v-model="heroBorderColor"
-          class="w-40px"
-          :show-alpha="true"
-          :predefine="colorSwatches"
-          @change="(color: string | null) => color && updateHeroSetting('borderColor', color)"
-        />
-      </SettingItem>
-
-      <SettingItem label="圆角大小">
-        <ElInput v-model="heroBorderRadius" class="w-120px" @change="updateHeroSetting('borderRadius', $event)" />
-      </SettingItem>
-
-      <div class="sub-section-title">图标样式</div>
-
-      <SettingItem label="图标背景渐变起始">
-        <ElColorPicker
-          v-model="iconGradientStart"
-          class="w-40px"
-          :show-alpha="true"
-          :predefine="colorSwatches"
-          @change="(color: string | null) => color && updateHeroSetting('iconGradientStart', color)"
-        />
-      </SettingItem>
-      <SettingItem label="图标背景渐变结束">
-        <ElColorPicker
-          v-model="iconGradientEnd"
-          class="w-40px"
-          :show-alpha="true"
-          :predefine="colorSwatches"
-          @change="(color: string | null) => color && updateHeroSetting('iconGradientEnd', color)"
-        />
-      </SettingItem>
-      <SettingItem label="图标边框颜色">
-        <ElColorPicker
-          v-model="iconBorderColor"
-          class="w-40px"
-          :show-alpha="true"
-          :predefine="colorSwatches"
-          @change="(color: string | null) => color && updateHeroSetting('iconBorderColor', color)"
-        />
-      </SettingItem>
-      <SettingItem label="图标文字颜色">
-        <ElColorPicker
-          v-model="iconColor"
-          class="w-40px"
-          :show-alpha="false"
-          :predefine="colorSwatches"
-          @change="(color: string | null) => color && updateHeroSetting('iconColor', color)"
-        />
-      </SettingItem>
     </div>
 
     <!-- 统计卡片设置 -->

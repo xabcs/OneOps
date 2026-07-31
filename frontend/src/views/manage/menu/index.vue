@@ -7,6 +7,7 @@ import { Bottom, Menu as MenuIcon, Plus, Refresh, Search, Top } from '@element-p
 import { fetchDeleteMenu, fetchGetMenuTree, fetchUpdateMenu } from '@/service/api';
 import { useAuthStore } from '@/store/modules/auth';
 import { useRouteStore } from '@/store/modules/route';
+import { useThemeStore } from '@/store/modules/theme';
 import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import MenuOperateDrawer from './modules/menu-operate-drawer.vue';
@@ -15,6 +16,10 @@ defineOptions({ name: 'MenuManage' });
 
 const authStore = useAuthStore();
 const routeStore = useRouteStore();
+const themeStore = useThemeStore();
+
+// Hero区域显示状态
+const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);
 
 const filterText = ref('');
 const flatMenuList = ref<Api.SystemManage.Menu[]>([]);
@@ -521,6 +526,7 @@ async function refreshData() {
   <div class="page-container menu-management-page">
     <!-- Hero 区域 -->
     <section
+      v-if="heroVisible"
       class="hero-section"
       :style="{
         background: 'var(--sx-hero-bg)',

@@ -2,9 +2,9 @@
 import { onMounted, ref } from 'vue';
 import { Delete, View } from '@element-plus/icons-vue';
 import {
-  fetchUserIdentityMappings,
   deleteUserIdentityMapping,
-  fetchApplications
+  fetchApplications,
+  fetchUserIdentityMappings
 } from '@/service/api/application-permission';
 
 defineOptions({ name: 'AuthUserIdentities' });
@@ -221,5 +221,4 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>
