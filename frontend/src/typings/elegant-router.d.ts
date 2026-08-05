@@ -107,7 +107,6 @@ declare module "@elegant-router/types" {
     "k8s_workloads": "/k8s/workloads";
     "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?";
     "manage": "/manage";
-    "manage_api-permission": "/manage/api-permission";
     "manage_menu": "/manage/menu";
     "manage_permission": "/manage/permission";
     "manage_role": "/manage/role";
@@ -304,7 +303,6 @@ declare module "@elegant-router/types" {
     | "k8s_resources_services"
     | "k8s_terminal"
     | "k8s_workloads"
-    | "manage_api-permission"
     | "manage_menu"
     | "manage_permission"
     | "manage_role"

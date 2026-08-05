@@ -44,6 +44,9 @@ func SetupRoutes(r *gin.Engine) {
 	k8sResourceController := controllers.NewK8sResourceController(cnt)
 	k8sTerminalHandler := handlers.NewK8sTerminalHandler(cnt)
 	diagnosticController := controllers.NewDiagnosticController(cnt)
+	applicationPermissionController := controllers.NewApplicationPermissionController()
+	// apiPermissionController 已废弃，使用层级权限代码管理
+	// 此控制器已重命名为 .deprecated 文件
 
 	// API 路由组
 	api := r.Group("/api")
@@ -62,24 +65,53 @@ func SetupRoutes(r *gin.Engine) {
 		system.Use(middlewares.Auth())
 		{
 			// 菜单管理
-			system.GET("/menus", menuController.GetMenus)
-			system.GET("/menus/tree", menuController.GetMenuTree)
-			system.POST("/menus", menuController.CreateMenu)
-			system.PUT("/menus/:id", menuController.UpdateMenu)
-			system.DELETE("/menus/:id", menuController.DeleteMenu)
+			system.GET("/menus",
+				middlewares.RequirePermission("system.menu.list"),
+				menuController.GetMenus)
+			system.GET("/menus/tree",
+				middlewares.RequirePermission("system.menu.list"),
+				menuController.GetMenuTree)
+			system.POST("/menus",
+				middlewares.RequirePermission("system.menu.create"),
+				menuController.CreateMenu)
+			system.PUT("/menus/:id",
+				middlewares.RequirePermission("system.menu.update"),
+				menuController.UpdateMenu)
+			system.DELETE("/menus/:id",
+				middlewares.RequirePermission("system.menu.delete"),
+				menuController.DeleteMenu)
 
 			// 角色管理
-			system.GET("/roles", roleController.GetRoles)
-			system.POST("/roles", roleController.CreateRole)
-			system.PUT("/roles/:id", roleController.UpdateRole)
-			system.DELETE("/roles/:id", roleController.DeleteRole)
+			system.GET("/roles",
+				middlewares.RequirePermission("system.role.list"),
+				roleController.GetRoles)
+			system.POST("/roles",
+				middlewares.RequirePermission("system.role.create"),
+				roleController.CreateRole)
+			system.PUT("/roles/:id",
+				middlewares.RequirePermission("system.role.update"),
+				roleController.UpdateRole)
+			system.DELETE("/roles/:id",
+				middlewares.RequirePermission("system.role.delete"),
+				roleController.DeleteRole)
 
 			// 用户管理
-			system.GET("/users", userController.GetUsers)
-			system.POST("/users", userController.CreateUser)
-			system.PUT("/users/:id", userController.UpdateUser)
-			system.DELETE("/users/:id", userController.DeleteUser)
-			system.PUT("/users/:id/password", userController.ResetPassword)
+			system.GET("/users",
+				middlewares.RequirePermission("system.user.list"),
+				userController.GetUsers)
+			system.POST("/users",
+				middlewares.RequirePermission("system.user.create"),
+				userController.CreateUser)
+			system.PUT("/users/:id",
+				middlewares.RequirePermission("system.user.update"),
+				userController.UpdateUser)
+			system.DELETE("/users/:id",
+				middlewares.RequirePermission("system.user.delete"),
+				userController.DeleteUser)
+			system.PUT("/users/:id/password",
+				middlewares.RequirePermission("system.user.reset_password"),
+				userController.ResetPassword)
+
 
 			// 属性管理
 			system.GET("/attributes", attributeController.GetAttributeDefinitions)
@@ -91,6 +123,65 @@ func SetupRoutes(r *gin.Engine) {
 			// 主机属性管理
 			system.GET("/server-attributes/:serverId", attributeController.GetServerAttributes)
 			system.POST("/server-attributes/:serverId", attributeController.SaveServerAttributes)
+
+			// 应用权限管理
+			system.GET("/applications", applicationPermissionController.GetApplications)
+			system.POST("/applications", applicationPermissionController.CreateApplication)
+			system.PUT("/applications/:id", applicationPermissionController.UpdateApplication)
+			system.DELETE("/applications/:id", applicationPermissionController.DeleteApplication)
+			system.POST("/applications/:id/sync-roles", applicationPermissionController.SyncRoles)
+			system.GET("/applications/:id/roles", applicationPermissionController.GetApplicationRoles)
+			system.POST("/applications/:id/sync-users", applicationPermissionController.SyncUsers)
+			system.GET("/applications/:id/users", applicationPermissionController.GetApplicationUsers)
+			system.POST("/applications/:id/sync-groups", applicationPermissionController.SyncApplicationGroups)
+			system.GET("/applications/:id/groups", applicationPermissionController.GetApplicationGroups)
+			system.POST("/applications/:id/sync-rules", applicationPermissionController.SyncAuthorizationRules)
+			system.GET("/applications/:id/rules", applicationPermissionController.GetApplicationAuthorizationRules)
+			system.GET("/applications/:id/operation-logs", applicationPermissionController.GetOperationLogs)
+
+			// 应用类型配置
+			system.GET("/applications/types", applicationPermissionController.GetSupportedAppTypes)
+			system.GET("/applications/types/:type/config", applicationPermissionController.GetAppTypeConfigTemplate)
+
+			// 授权中心用户管理（使用 /auth-users 路径避免与系统管理的 /users 冲突）
+			system.GET("/auth-users", applicationPermissionController.GetAllAuthUsers)
+			system.GET("/auth-users/list", applicationPermissionController.GetAuthUsers)
+			system.GET("/auth-users/:id/password", applicationPermissionController.GetAuthUserPassword)
+			system.POST("/auth-users", applicationPermissionController.CreateAuthUser)
+			system.PUT("/auth-users/:id", applicationPermissionController.UpdateAuthUser)
+			system.DELETE("/auth-users/:id", applicationPermissionController.DeleteAuthUser)
+
+			// 授权中心用户组管理（使用 /auth-groups 路径避免与系统管理的 /roles 冲突）
+			system.GET("/auth-groups", applicationPermissionController.GetAllAuthGroups)
+			system.GET("/auth-groups/list", applicationPermissionController.GetAuthGroups)
+			system.POST("/auth-groups", applicationPermissionController.CreateAuthGroup)
+			system.PUT("/auth-groups/:id", applicationPermissionController.UpdateAuthGroup)
+			system.DELETE("/auth-groups/:id", applicationPermissionController.DeleteAuthGroup)
+
+			// 用户组权限绑定管理
+			system.GET("/groups/:id/bindings", applicationPermissionController.GetGroupBindings)
+			system.POST("/groups/:id/bindings", applicationPermissionController.CreateGroupBinding)
+			system.DELETE("/groups/bindings/:id", applicationPermissionController.DeleteGroupBinding)
+
+			// 用户组成员管理
+			system.GET("/users/:id/groups", applicationPermissionController.GetUserGroups)
+			system.POST("/users/assign-group", applicationPermissionController.AssignUserToGroup)
+			system.DELETE("/users/:id/groups/:groupId", applicationPermissionController.DeleteUserGroup)
+
+			// 用户身份映射管理
+			system.GET("/user-identity-mappings", applicationPermissionController.GetUserIdentityMappings)
+			system.DELETE("/user-identity-mappings/:id", applicationPermissionController.DeleteUserIdentityMapping)
+
+			// 用户有效权限查询
+			system.GET("/user-permissions", applicationPermissionController.GetUserEffectivePermissions)
+			system.GET("/user-permissions/matrix", applicationPermissionController.GetUserEffectivePermissionsMatrix)
+
+			// 权限绑定执行记录
+			system.GET("/group-bindings/:bindingId/executions", applicationPermissionController.GetGroupBindingExecutions)
+
+
+			// 注册权限管理路由
+			RegisterPermissionRoutes(system)
 		}
 
 		// 审计管理路由（需要认证）
@@ -422,6 +513,13 @@ func SetupRoutes(r *gin.Engine) {
 					// K8s 终端管理（需要认证）
 					k8s.GET("/terminal/active", k8sTerminalHandler.GetActiveSessions)
 					k8s.POST("/terminal/sessions/:sessionId/terminate", k8sTerminalHandler.TerminateSession)
+
+					// K8s 诊断功能（需要认证）
+					k8s.GET("/diagnostic/commands", diagnosticController.GetDiagnosticCommands)
+					k8s.GET("/diagnostic/pods/:clusterId/:namespace", diagnosticController.GetJavaPods)
+					k8s.GET("/diagnostic/namespaces/:clusterId", diagnosticController.GetNamespaces)
+					k8s.POST("/diagnostic/execute", diagnosticController.ExecuteDiagnostic)
+					k8s.GET("/diagnostic/history", diagnosticController.GetDiagnosticHistory)
 
 			}
 

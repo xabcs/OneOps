@@ -82,47 +82,8 @@ func NewPermissionService() (*PermissionService, error) {
 // 权限检查相关方法
 // ======================================
 
-// HasAPIPermission 检查用户是否拥有指定API的访问权限（Level 4 API级权限）
-func (s *PermissionService) HasAPIPermission(userID uint, apiPath string, httpMethod string) (bool, error) {
-	// 获取用户信息
-	var user models.User
-	if err := s.db.First(&user, userID).Error; err != nil {
-		return false, err
-	}
-
-	// 超级管理员检查（admin用户名或admin角色）
-	if user.Username == "admin" {
-		return true, nil
-	}
-
-	// 获取用户角色
-	roles, err := s.getUserRoles(userID)
-	if err != nil {
-		return false, err
-	}
-
-	// 超级管理员角色检查
-	if s.isSuperAdmin(roles) {
-		return true, nil
-	}
-
-	// 检查任意一个角色是否有API权限
-	for _, role := range roles {
-		// 使用 Casbin 检查 API 级权限
-		// 策略格式：p, role_code, /api/system/users, GET
-		allowed, err := s.enforcer.Enforce(role.Code, apiPath, httpMethod)
-		if err != nil {
-			return false, err
-		}
-		if allowed {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
-// HasPermission 检查用户是否拥有指定权限（操作级权限，向后兼容）
+// HasPermission 检查用户是否拥有指定权限（统一的权限检查方法）
+// 权限代码格式：模块.资源.操作，例如 system.user.list
 func (s *PermissionService) HasPermission(userID uint, permissionCode string) (bool, error) {
 	// 获取用户信息
 	var user models.User
@@ -130,7 +91,7 @@ func (s *PermissionService) HasPermission(userID uint, permissionCode string) (b
 		return false, err
 	}
 
-	// 超级管理员检查（admin用户名或admin角色）
+	// 超级管理员检查（admin用户名）
 	if user.Username == "admin" {
 		return true, nil
 	}
@@ -147,6 +108,7 @@ func (s *PermissionService) HasPermission(userID uint, permissionCode string) (b
 	}
 
 	// 检查任意一个角色是否有权限
+	// Casbin 策略格式：p, role_code, system.user.list, *
 	for _, role := range roles {
 		allowed, err := s.enforcer.Enforce(role.Code, permissionCode, "*")
 		if err != nil {
@@ -662,6 +624,22 @@ func (s *PermissionService) SyncAllRolesToCasbin() error {
 		if err := s.syncRoleToCasbin(&role); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// InitializeCasbinPolicies 初始化 Casbin 策略
+// 清除所有旧的策略（包括API路径格式），并从权限表重新同步
+func (s *PermissionService) InitializeCasbinPolicies() error {
+	// 1. 清除所有现有策略
+	if err := s.ClearAllPolicies(); err != nil {
+		return fmt.Errorf("清除旧策略失败: %w", err)
+	}
+
+	// 2. 同步所有角色的权限到 Casbin
+	if err := s.SyncAllRolesToCasbin(); err != nil {
+		return fmt.Errorf("同步角色权限失败: %w", err)
 	}
 
 	return nil

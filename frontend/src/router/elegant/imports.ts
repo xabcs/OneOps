@@ -78,7 +78,6 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   k8s_resources_services: () => import("@/views/k8s/resources/services/index.vue"),
   k8s_terminal: () => import("@/views/k8s/terminal/index.vue"),
   k8s_workloads: () => import("@/views/k8s/workloads/index.vue"),
-  "manage_api-permission": () => import("@/views/manage/api-permission/index.vue"),
   manage_menu: () => import("@/views/manage/menu/index.vue"),
   manage_permission: () => import("@/views/manage/permission/index.vue"),
   manage_role: () => import("@/views/manage/role/index.vue"),

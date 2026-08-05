@@ -244,14 +244,11 @@ func (s *InitService) initData() error {
 		logger.Warn("内置角色同步失败，继续执行", zap.Error(err))
 	}
 
-	// 初始化权限数据（新增）
-	var permCount int64
-	db.Model(&models.Permission{}).Count(&permCount)
-	if permCount == 0 {
+		// 初始化权限数据
+		// 总是执行权限初始化以同步最新权限数据
 		if err := s.initPermissions(); err != nil {
-			logger.Warn("权限初始化失败，继续执行", zap.Error(err))
+		logger.Warn("权限初始化失败，继续执行", zap.Error(err))
 		}
-	}
 
 	// 为内置角色分配默认权限（新增）
 	if err := s.assignDefaultPermissions(); err != nil {
@@ -550,7 +547,7 @@ func (s *InitService) syncMenus() error {
 			{ID: 70, Name: "用户管理", Icon: "mdi:account-multiple", Path: "/manage/user", Permission: "system.user.view", MenuType: "menu", Sort: 1, Status: 1, ParentID: 6},
 			{ID: 71, Name: "角色管理", Icon: "mdi:shield-account", Path: "/manage/role", Permission: "system.role.view", MenuType: "menu", Sort: 2, Status: 1, ParentID: 6},
 			{ID: 72, Name: "菜单管理", Icon: "mdi:menu", Path: "/manage/menu", Permission: "system.menu.view", MenuType: "menu", Sort: 3, Status: 1, ParentID: 6},
-			{ID: 73, Name: "API权限管理", Icon: "mdi:key", Path: "/manage/api-permission", Permission: "", MenuType: "menu", Sort: 4, Status: 1, ParentID: 6, Resource: "api-permission"},
+			// {ID: 73, Name: "API权限管理", Icon: "mdi:key", Path: "/manage/api-permission", Permission: "", MenuType: "menu", Sort: 4, Status: 1, ParentID: 6, Resource: "api-permission"}, // 已废弃，使用层级权限代码管理
 		}
 
 	addedCount := 0
@@ -604,7 +601,6 @@ func (s *InitService) syncMenus() error {
 		{"/manage/user", "user"},
 		{"/manage/role", "role"},
 		{"/manage/menu", "menu"},
-		{"/manage/api-permission", "api-permission"},
 		{"/cmdb/servers", "server"},
 		{"/cmdb/business", "business"},
 		{"/cmdb/config/rooms", "rooms"},
@@ -1023,89 +1019,8 @@ func (s *InitService) initAgentVersions() error {
 func (s *InitService) initPermissions() error {
 	logger.Info("开始初始化权限数据...")
 
-	// 定义系统权限
-	permissions := []models.Permission{
-		// ========== 系统管理模块 ==========
-		// 用户管理
-		{Code: "system.user.view", Name: "查看用户", Module: "system", Resource: "user", Action: "view", Level: 2, Status: 1},
-		{Code: "system.user.create", Name: "创建用户", Module: "system", Resource: "user", Action: "create", Level: 3, Status: 1},
-		{Code: "system.user.update", Name: "更新用户", Module: "system", Resource: "user", Action: "update", Level: 3, Status: 1},
-		{Code: "system.user.delete", Name: "删除用户", Module: "system", Resource: "user", Action: "delete", Level: 3, Status: 1},
-		{Code: "system.user.reset_password", Name: "重置密码", Module: "system", Resource: "user", Action: "reset_password", Level: 3, Status: 1},
-
-		// 角色管理
-		{Code: "system.role.view", Name: "查看角色", Module: "system", Resource: "role", Action: "view", Level: 2, Status: 1},
-		{Code: "system.role.create", Name: "创建角色", Module: "system", Resource: "role", Action: "create", Level: 3, Status: 1},
-		{Code: "system.role.update", Name: "更新角色", Module: "system", Resource: "role", Action: "update", Level: 3, Status: 1},
-		{Code: "system.role.delete", Name: "删除角色", Module: "system", Resource: "role", Action: "delete", Level: 3, Status: 1},
-		{Code: "system.role.assign_permissions", Name: "分配权限", Module: "system", Resource: "role", Action: "assign_permissions", Level: 3, Status: 1},
-
-		// 菜单管理
-		{Code: "system.menu.view", Name: "查看菜单", Module: "system", Resource: "menu", Action: "view", Level: 2, Status: 1},
-		{Code: "system.menu.create", Name: "创建菜单", Module: "system", Resource: "menu", Action: "create", Level: 3, Status: 1},
-		{Code: "system.menu.update", Name: "更新菜单", Module: "system", Resource: "menu", Action: "update", Level: 3, Status: 1},
-		{Code: "system.menu.delete", Name: "删除菜单", Module: "system", Resource: "menu", Action: "delete", Level: 3, Status: 1},
-
-		// 权限管理
-		{Code: "system.permission.view", Name: "查看权限", Module: "system", Resource: "permission", Action: "view", Level: 2, Status: 1},
-		{Code: "system.permission.create", Name: "创建权限", Module: "system", Resource: "permission", Action: "create", Level: 3, Status: 1},
-		{Code: "system.permission.update", Name: "更新权限", Module: "system", Resource: "permission", Action: "update", Level: 3, Status: 1},
-		{Code: "system.permission.delete", Name: "删除权限", Module: "system", Resource: "permission", Action: "delete", Level: 3, Status: 1},
-
-		// ========== CMDB模块 ==========
-		{Code: "cmdb.server.query", Name: "查询主机", Module: "cmdb", Resource: "server", Action: "query", Level: 2, Status: 1},
-		{Code: "cmdb.server.create", Name: "创建主机", Module: "cmdb", Resource: "server", Action: "create", Level: 3, Status: 1},
-		{Code: "cmdb.server.update", Name: "更新主机", Module: "cmdb", Resource: "server", Action: "update", Level: 3, Status: 1},
-		{Code: "cmdb.server.delete", Name: "删除主机", Module: "cmdb", Resource: "server", Action: "delete", Level: 3, Status: 1},
-
-		{Code: "cmdb.business.query", Name: "查询业务", Module: "cmdb", Resource: "business", Action: "query", Level: 2, Status: 1},
-		{Code: "cmdb.rooms.query", Name: "查询机房", Module: "cmdb", Resource: "rooms", Action: "query", Level: 2, Status: 1},
-		{Code: "cmdb.tags.query", Name: "查询标签", Module: "cmdb", Resource: "tags", Action: "query", Level: 2, Status: 1},
-		{Code: "cmdb.credentials.access", Name: "访问凭证", Module: "cmdb", Resource: "credentials", Action: "access", Level: 2, Status: 1},
-		{Code: "cmdb.credentials.ssh", Name: "SSH密钥", Module: "cmdb", Resource: "credentials", Action: "ssh", Level: 2, Status: 1},
-		{Code: "cmdb.policies.query", Name: "访问策略", Module: "cmdb", Resource: "policies", Action: "query", Level: 2, Status: 1},
-		{Code: "cmdb.config.business", Name: "业务配置", Module: "cmdb", Resource: "config_business", Action: "business", Level: 2, Status: 1},
-		{Code: "cmdb.rooms.query", Name: "机房管理", Module: "cmdb", Resource: "rooms", Action: "query", Level: 2, Status: 1},
-		{Code: "cmdb.tags.query", Name: "标签管理", Module: "cmdb", Resource: "tags", Action: "query", Level: 2, Status: 1},
-		{Code: "cmdb.agents.query", Name: "代理配置", Module: "cmdb", Resource: "agents", Action: "query", Level: 2, Status: 1},
-		{Code: "cmdb.dashboard.query", Name: "资产总览", Module: "cmdb", Resource: "dashboard", Action: "query", Level: 2, Status: 1},
-		{Code: "cmdb.audit.changes", Name: "变更记录", Module: "cmdb", Resource: "audit", Action: "changes", Level: 2, Status: 1},
-		{Code: "cmdb.audit.command.history", Name: "命令历史", Module: "cmdb", Resource: "audit", Action: "command_history", Level: 2, Status: 1},
-		{Code: "cmdb.audit.online", Name: "在线会话", Module: "cmdb", Resource: "audit", Action: "online", Level: 2, Status: 1},
-		{Code: "cmdb.audit.sessions", Name: "历史会话", Module: "cmdb", Resource: "audit", Action: "sessions", Level: 2, Status: 1},
-		{Code: "cmdb.audit.commands", Name: "命令记录", Module: "cmdb", Resource: "audit", Action: "commands", Level: 2, Status: 1},
-
-		// ========== 监控模块 ==========
-		{Code: "monitoring.overview.query", Name: "监控概览", Module: "monitoring", Resource: "overview", Action: "query", Level: 2, Status: 1},
-		{Code: "monitoring.servers.query", Name: "主机监控", Module: "monitoring", Resource: "servers", Action: "query", Level: 2, Status: 1},
-		{Code: "monitoring.alerts.query", Name: "告警管理", Module: "monitoring", Resource: "alerts", Action: "query", Level: 2, Status: 1},
-		{Code: "monitoring.trends.query", Name: "趋势分析", Module: "monitoring", Resource: "trends", Action: "query", Level: 2, Status: 1},
-		{Code: "monitoring.reports.query", Name: "巡检报告", Module: "monitoring", Resource: "reports", Action: "query", Level: 2, Status: 1},
-		{Code: "monitoring.settings.query", Name: "监控设置", Module: "monitoring", Resource: "settings", Action: "query", Level: 2, Status: 1},
-
-		// ========== 审计模块 ==========
-		{Code: "audit.login.view", Name: "登录审计", Module: "audit", Resource: "login", Action: "view", Level: 2, Status: 1},
-		{Code: "audit.operation.view", Name: "操作审计", Module: "audit", Resource: "operation", Action: "view", Level: 2, Status: 1},
-		{Code: "audit.system.view", Name: "系统审计", Module: "audit", Resource: "system", Action: "view", Level: 2, Status: 1},
-
-		// ========== K8s模块 ==========
-		{Code: "k8s.cluster.query", Name: "查询集群", Module: "k8s", Resource: "cluster", Action: "query", Level: 2, Status: 1},
-		{Code: "k8s.workload.query", Name: "查询工作负载", Module: "k8s", Resource: "workload", Action: "query", Level: 2, Status: 1},
-		{Code: "k8s.diagnostic.execute", Name: "执行诊断", Module: "k8s", Resource: "diagnostic", Action: "execute", Level: 3, Status: 1},
-		{Code: "k8s.network.query", Name: "网络管理", Module: "k8s", Resource: "network", Action: "query", Level: 2, Status: 1},
-		{Code: "k8s.config.query", Name: "配置管理", Module: "k8s", Resource: "k8s_config", Action: "query", Level: 2, Status: 1},
-
-		// ========== 授权中心模块 ==========
-		{Code: "auth.user.query", Name: "查看用户", Module: "auth", Resource: "user", Action: "query", Level: 2, Status: 1},
-		{Code: "auth.role.query", Name: "查看用户组", Module: "auth", Resource: "role", Action: "query", Level: 2, Status: 1},
-		{Code: "auth.app.query", Name: "查看应用", Module: "auth", Resource: "app", Action: "query", Level: 2, Status: 1},
-		{Code: "auth.binding.query", Name: "查看权限映射", Module: "auth", Resource: "binding", Action: "query", Level: 2, Status: 1},
-		{Code: "auth.authorization.query", Name: "查看用户授权", Module: "auth", Resource: "authorization", Action: "query", Level: 2, Status: 1},
-		{Code: "auth.log.query", Name: "查看操作日志", Module: "auth", Resource: "log", Action: "query", Level: 2, Status: 1},
-		{Code: "auth.identity.query", Name: "查看用户身份映射", Module: "auth", Resource: "identity", Action: "query", Level: 2, Status: 1},
-		{Code: "auth.permission.query", Name: "查看用户有效权限", Module: "auth", Resource: "permission", Action: "query", Level: 2, Status: 1},
-	}
-
+	// 使用权限数据定义文件获取所有系统权限
+	permissions := GetAllSystemPermissions()
 	addedCount := 0
 	updatedCount := 0
 
@@ -1321,51 +1236,34 @@ func (s *InitService) assignDefaultPermissions() error {
 	return nil
 }
 
-// initAPIPermissions 初始化 Level 4 API级权限（Casbin策略）
+// initAPIPermissions 初始化层级权限代码到Casbin
 func (s *InitService) initAPIPermissions() error {
-	logger.Info("开始初始化API级权限（Casbin策略）...")
+	logger.Info("开始初始化层级权限代码到Casbin...")
 
 	// 获取 PermissionService 实例
 	permService, err := GetPermissionService()
 	if err != nil {
-		logger.Warn("获取PermissionService失败，跳过API权限初始化", zap.Error(err))
+		logger.Warn("获取PermissionService失败，跳过权限初始化", zap.Error(err))
 		return nil // 不阻塞启动
 	}
 
-	// 为超级管理员角色分配所有API权限
-	// 获取系统所有API端点
-	allEndpoints := GetSystemAPIEndpoints()
-
-	// 为admin角色分配所有API权限
-	adminRoleCode := "admin"
-	assignedCount := 0
-	skippedCount := 0
-
-	for _, endpoint := range allEndpoints {
-		for _, method := range endpoint.Methods {
-			// 添加策略到Casbin
-			if err := permService.AssignAPIPermission(adminRoleCode, endpoint.Path, method); err != nil {
-				logger.Debug("添加API权限策略（可能已存在）",
-					zap.String("role", adminRoleCode),
-					zap.String("path", endpoint.Path),
-					zap.String("method", method),
-					zap.Error(err))
-				skippedCount++
-			} else {
-				assignedCount++
-				logger.Debug("添加API权限策略",
-					zap.String("role", adminRoleCode),
-					zap.String("path", endpoint.Path),
-					zap.String("method", method))
-			}
-		}
+	// 清除所有旧的API路径格式的策略
+	logger.Info("清除旧的API路径格式策略...")
+	if err := permService.ClearAllPolicies(); err != nil {
+		logger.Error("清除旧策略失败", zap.Error(err))
+		return err
 	}
 
-	logger.Info("API级权限初始化完成",
-		zap.String("role", adminRoleCode),
-		zap.Int("已分配", assignedCount),
-		zap.Int("已存在/跳过", skippedCount),
-		zap.Int("总端点数", len(allEndpoints)))
+	// 同步所有角色的权限到Casbin（使用层级权限代码）
+	logger.Info("同步所有角色权限到Casbin...")
+	if err := permService.SyncAllRolesToCasbin(); err != nil {
+		logger.Error("同步角色权限失败", zap.Error(err))
+		return err
+	}
+
+	// 验证策略数量
+	policies := permService.GetAllPolicies()
+	logger.Info("层级权限代码初始化完成", zap.Int("总策略数", len(policies)))
 
 	return nil
 }

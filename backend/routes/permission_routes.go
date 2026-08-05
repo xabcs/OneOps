@@ -20,22 +20,22 @@ func RegisterPermissionRoutes(router *gin.RouterGroup) {
 	permGroup.Use(middlewares.Auth())
 	{
 		permGroup.GET("",
-			middlewares.APILevelPermissionMiddleware("/api/system/permissions", "GET"),
+			middlewares.RequirePermission("system.permission.list"),
 			permController.GetPermissionList) // 获取权限列表（分页）
 		permGroup.GET("/tree",
-			middlewares.APILevelPermissionMiddleware("/api/system/permissions/tree", "GET"),
+			middlewares.RequirePermission("system.permission.list"),
 			permController.GetPermissionTree) // 获取权限树
 
 		permGroup.POST("",
-			middlewares.APILevelPermissionMiddleware("/api/system/permissions", "POST"),
+			middlewares.RequirePermission("system.permission.create"),
 			permController.CreatePermission) // 创建权限
 
 		permGroup.PUT("/:id",
-			middlewares.APILevelPermissionMiddleware("/api/system/permissions/:id", "PUT"),
+			middlewares.RequirePermission("system.permission.update"),
 			permController.UpdatePermission) // 更新权限
 
 		permGroup.DELETE("/:id",
-			middlewares.APILevelPermissionMiddleware("/api/system/permissions/:id", "DELETE"),
+			middlewares.RequirePermission("system.permission.delete"),
 			permController.DeletePermission) // 删除权限
 
 		permGroup.POST("/check", permController.CheckPermission) // 检查权限（内部使用）
@@ -46,11 +46,11 @@ func RegisterPermissionRoutes(router *gin.RouterGroup) {
 	rolePermGroup.Use(middlewares.Auth())
 	{
 		rolePermGroup.GET("",
-			middlewares.APILevelPermissionMiddleware("/api/system/roles/:id/permissions", "GET"),
+			middlewares.RequirePermission("system.role.view"),
 			permController.GetRolePermissions) // 获取角色权限
 
 		rolePermGroup.POST("",
-			middlewares.APILevelPermissionMiddleware("/api/system/roles/:id/permissions", "POST"),
+			middlewares.RequirePermission("system.role.assign_permissions"),
 			permController.AssignRolePermissions) // 分配权限
 	}
 
@@ -59,7 +59,7 @@ func RegisterPermissionRoutes(router *gin.RouterGroup) {
 	userPermGroup.Use(middlewares.Auth())
 	{
 		userPermGroup.GET("/permissions",
-			middlewares.APILevelPermissionMiddleware("/api/system/user/permissions", "GET"),
+			middlewares.RequirePermission("auth.permission.query"),
 			permController.GetUserPermissions) // 获取当前用户权限
 	}
 }
