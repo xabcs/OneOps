@@ -7,6 +7,8 @@ import { setupRouter } from './router';
 import { setupI18n } from './locales';
 import { initContentTheme, initContentTheme2, initHeaderTheme } from './utils/content-theme';
 import App from './App.vue';
+import permission from './directives/permission';
+import PermissionButton from './components/PermissionButton.vue';
 
 async function setupApp() {
   setupLoading();
@@ -29,6 +31,12 @@ async function setupApp() {
   await setupRouter(app);
 
   setupI18n(app);
+
+  // 注册全局权限指令
+  app.directive('permission', permission);
+
+  // 注册全局权限按钮组件
+  app.component('PermissionButton', PermissionButton);
 
   setupAppVersionNotification();
 

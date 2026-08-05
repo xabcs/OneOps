@@ -34,7 +34,7 @@ const router = createRouter({
           meta: {
             title: '用户管理',
             requiresAuth: true,
-            permission: 'system:users:view'
+            permission: 'system.user.view'
           }
         },
         {
@@ -44,7 +44,7 @@ const router = createRouter({
           meta: {
             title: '角色管理',
             requiresAuth: true,
-            permission: 'system:roles:view'
+            permission: 'system.role.view'
           }
         },
         {
@@ -54,7 +54,7 @@ const router = createRouter({
           meta: {
             title: '菜单管理',
             requiresAuth: true,
-            permission: 'system:menus:view'
+            permission: 'system.menu.view'
           }
         }
       ]
@@ -102,7 +102,7 @@ const router = createRouter({
           meta: {
             title: '集群管理',
             requiresAuth: true,
-            permission: 'k8s:clusters:view'
+            permission: 'k8s.cluster.view'
           }
         },
         {
@@ -132,7 +132,7 @@ const router = createRouter({
           meta: {
             title: 'Pod管理',
             requiresAuth: true,
-            permission: 'k8s:pods:view'
+            permission: 'k8s.pod.view'
           }
         },
         {
@@ -184,7 +184,7 @@ const router = createRouter({
           meta: {
             title: '诊断中心',
             requiresAuth: true,
-            permission: 'k8s:diagnostic:execute'
+            permission: 'k8s.diagnostic.execute'
           }
         },
         // 工具子菜单

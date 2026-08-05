@@ -132,6 +132,27 @@ func (s *InitService) runMigrations() error {
 		logger.Debug("添加 menu_ids 字段（可能已存在）", zap.Error(err))
 	}
 
+	// 添加 resource 字段到 menus 表（用于权限码自动关联菜单）
+	menuResourceSQL := `
+		ALTER TABLE menus
+		ADD COLUMN IF NOT EXISTS resource VARCHAR(30) DEFAULT ''
+		COMMENT '对应的资源名称，用于权限码自动关联菜单'
+		AFTER permission;
+	`
+
+	if err := db.Exec(menuResourceSQL).Error; err != nil {
+		logger.Debug("添加 resource 字段（可能已存在）", zap.Error(err))
+	}
+
+	// 添加索引
+	createResourceIndex := `
+		CREATE INDEX IF NOT EXISTS idx_menus_resource ON menus(resource);
+	`
+
+	if err := db.Exec(createResourceIndex).Error; err != nil {
+		logger.Debug("创建 resource 索引（可能已存在）", zap.Error(err))
+	}
+
 	// 添加 disk_partitions 字段到 servers 表
 	migrationSQL := `
 		ALTER TABLE servers
@@ -219,8 +240,27 @@ func (s *InitService) initData() error {
 	}
 
 	// 先同步角色权限（确保角色包含所有新菜单）
-	if err := s.syncRoleMenus(); err != nil {
-		logger.Warn("角色菜单权限同步失败，继续执行", zap.Error(err))
+	if err := s.syncBuiltinRoles(); err != nil {
+		logger.Warn("内置角色同步失败，继续执行", zap.Error(err))
+	}
+
+	// 初始化权限数据（新增）
+	var permCount int64
+	db.Model(&models.Permission{}).Count(&permCount)
+	if permCount == 0 {
+		if err := s.initPermissions(); err != nil {
+			logger.Warn("权限初始化失败，继续执行", zap.Error(err))
+		}
+	}
+
+	// 为内置角色分配默认权限（新增）
+	if err := s.assignDefaultPermissions(); err != nil {
+		logger.Warn("默认权限分配失败，继续执行", zap.Error(err))
+	}
+
+	// 初始化 Level 4 API级权限（新增）
+	if err := s.initAPIPermissions(); err != nil {
+		logger.Warn("API级权限初始化失败，继续执行", zap.Error(err))
 	}
 
 	// 检查用户表是否为空
@@ -399,9 +439,9 @@ func (s *InitService) initMenus() error {
 		// 一级菜单
 		{ID: 1, Name: "首页", Icon: "mdi:monitor-dashboard", Path: "/home", Permission: "", Sort: 1, Status: 1, ParentID: 0},
 		{ID: 2, Name: "系统管理", Icon: "carbon:cloud-service-management", Path: "/manage", Permission: "", Sort: 2, Status: 1, ParentID: 0},
-		{ID: 3, Name: "用户管理", Icon: "ic:round-manage-accounts", Path: "/manage/user", Permission: "system:user:query", Sort: 1, Status: 1, ParentID: 2},
-		{ID: 4, Name: "角色管理", Icon: "carbon:user-role", Path: "/manage/role", Permission: "system:role:query", Sort: 2, Status: 1, ParentID: 2},
-		{ID: 5, Name: "菜单管理", Icon: "material-symbols:route", Path: "/manage/menu", Permission: "system:menu:query", Sort: 3, Status: 1, ParentID: 2},
+		{ID: 3, Name: "用户管理", Icon: "ic:round-manage-accounts", Path: "/manage/user", Permission: "system.user.view", Sort: 1, Status: 1, ParentID: 2},
+		{ID: 4, Name: "角色管理", Icon: "carbon:user-role", Path: "/manage/role", Permission: "system.role.view", Sort: 2, Status: 1, ParentID: 2},
+		{ID: 5, Name: "菜单管理", Icon: "material-symbols:route", Path: "/manage/menu", Permission: "system.menu.view", Sort: 3, Status: 1, ParentID: 2},
 		{ID: 13, Name: "关于", Icon: "fluent:book-information-24-regular", Path: "/about", Permission: "", Sort: 5, Status: 1, ParentID: 0},
 		{ID: 14, Name: "用户中心", Icon: "mdi:user-circle-outline", Path: "/user-center", Permission: "", Sort: 6, Status: 1, ParentID: 0},
 		{ID: 20, Name: "资产管理", Icon: "mdi:server-network", Path: "/cmdb", Permission: "", Sort: 3, Status: 1, ParentID: 0},
@@ -477,9 +517,9 @@ func (s *InitService) syncMenus() error {
 			{ID: 45, Name: "监控设置", Icon: "mdi:cog", Path: "/monitoring/settings", Permission: "monitoring:settings:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 3},
 
 			// ========== 审计中心二级菜单 (ID: 50-59) ==========
-			{ID: 50, Name: "登录审计", Icon: "mdi:login", Path: "/audit/login", Permission: "audit:login:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 4},
-			{ID: 51, Name: "操作审计", Icon: "mdi:account-edit", Path: "/audit/operation", Permission: "audit:operation:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 4},
-			{ID: 52, Name: "系统事件", Icon: "mdi:information", Path: "/audit/system", Permission: "audit:system:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 4},
+			{ID: 50, Name: "登录审计", Icon: "mdi:login", Path: "/audit/login", Permission: "audit.login.view", MenuType: "menu", Sort: 1, Status: 1, ParentID: 4},
+			{ID: 51, Name: "操作审计", Icon: "mdi:account-edit", Path: "/audit/operation", Permission: "audit.operation.view", MenuType: "menu", Sort: 2, Status: 1, ParentID: 4},
+			{ID: 52, Name: "系统事件", Icon: "mdi:information", Path: "/audit/system", Permission: "audit.system.view", MenuType: "menu", Sort: 3, Status: 1, ParentID: 4},
 
 			// ========== 授权中心二级菜单 (ID: 100-107) ==========
 
@@ -507,9 +547,10 @@ func (s *InitService) syncMenus() error {
 			// 注意：会话审计功能已移除，不再在 K8s 管理中显示
 			// 会话审计应使用堡垒机模块的功能
 			// ========== 系统管理二级菜单 (ID: 70-79) ==========
-			{ID: 70, Name: "用户管理", Icon: "mdi:account-multiple", Path: "/manage/user", Permission: "system:user:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 6},
-			{ID: 71, Name: "角色管理", Icon: "mdi:shield-account", Path: "/manage/role", Permission: "system:role:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 6},
-			{ID: 72, Name: "菜单管理", Icon: "mdi:menu", Path: "/manage/menu", Permission: "system:menu:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 6},
+			{ID: 70, Name: "用户管理", Icon: "mdi:account-multiple", Path: "/manage/user", Permission: "system.user.view", MenuType: "menu", Sort: 1, Status: 1, ParentID: 6},
+			{ID: 71, Name: "角色管理", Icon: "mdi:shield-account", Path: "/manage/role", Permission: "system.role.view", MenuType: "menu", Sort: 2, Status: 1, ParentID: 6},
+			{ID: 72, Name: "菜单管理", Icon: "mdi:menu", Path: "/manage/menu", Permission: "system.menu.view", MenuType: "menu", Sort: 3, Status: 1, ParentID: 6},
+			{ID: 73, Name: "API权限管理", Icon: "mdi:key", Path: "/manage/api-permission", Permission: "", MenuType: "menu", Sort: 4, Status: 1, ParentID: 6, Resource: "api-permission"},
 		}
 
 	addedCount := 0
@@ -527,6 +568,7 @@ func (s *InitService) syncMenus() error {
 				"icon":       menu.Icon,
 				"path":       menu.Path,
 				"permission": menu.Permission,
+					"resource":   menu.Resource,
 				"parent_id":  menu.ParentID,
 				// "sort":       menu.Sort, // 不覆盖用户修改的排序
 				"status":     menu.Status,
@@ -551,6 +593,55 @@ func (s *InitService) syncMenus() error {
 				zap.String("path", menu.Path))
 		}
 	}
+	// 更新菜单的 resource 字段（根据路径映射到权限码的 resource）
+	// 这样可以实现权限码自动关联菜单
+	logger.Info("开始更新菜单resource字段...")
+
+	resourceMappings := []struct {
+		path     string
+		resource string
+	}{
+		{"/manage/user", "user"},
+		{"/manage/role", "role"},
+		{"/manage/menu", "menu"},
+		{"/manage/api-permission", "api-permission"},
+		{"/cmdb/servers", "server"},
+		{"/cmdb/business", "business"},
+		{"/cmdb/config/rooms", "rooms"},
+		{"/cmdb/config/tags", "tags"},
+		{"/cmdb/config/agents", "agents"},
+		{"/cmdb/config/business", "config_business"},
+		{"/k8s/clusters", "cluster"},
+		{"/k8s/workloads", "workload"},
+		{"/k8s/network", "network"},
+		{"/k8s/config", "k8s_config"},
+		{"/k8s/diagnostic", "diagnostic"},
+		{"/monitoring/overview", "overview"},
+		{"/monitoring/servers", "monitoring_servers"},
+		{"/monitoring/alerts", "alerts"},
+		{"/monitoring/trends", "trends"},
+		{"/monitoring/reports", "reports"},
+		{"/monitoring/settings", "settings"},
+		{"/audit/login", "login_audit"},
+		{"/audit/operation", "operation_audit"},
+		{"/audit/system", "system_audit"},
+	}
+
+	for _, mapping := range resourceMappings {
+		result := db.Model(&models.Menu{}).Where("path = ?", mapping.path).Update("resource", mapping.resource)
+		if result.Error != nil {
+			logger.Warn("更新菜单resource字段失败",
+				zap.String("path", mapping.path),
+				zap.Error(result.Error))
+		} else if result.RowsAffected > 0 {
+			logger.Info("更新菜单resource字段",
+				zap.String("path", mapping.path),
+				zap.String("resource", mapping.resource))
+		}
+	}
+
+	logger.Info("菜单resource字段更新完成")
+
 
 	// 删除废弃的 K8s 会话审计菜单（如果存在）
 	deletedK8sAuditResult := db.Where("path = ?", "/k8s/audit/sessions").Delete(&models.Menu{})
@@ -587,8 +678,6 @@ func (s *InitService) syncMenus() error {
 		zap.Int("total", len(menus)))
 
 	// 清除RBAC缓存，确保新菜单权限立即生效
-	InvalidateRBACCache(0)
-	logger.Info("已清除所有用户RBAC缓存")
 
 	return nil
 }
@@ -598,40 +687,22 @@ func (s *InitService) SyncMenus() error {
 	return s.syncMenus()
 }
 
-// syncRoleMenus 同步角色菜单权限
-func (s *InitService) syncRoleMenus() error {
-	logger.Info("开始同步角色菜单权限...")
-
-	// 定义5个内置角色的菜单权限（动态路由模式）
-	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心, 50=审计中心, 60=web终端, 80=K8s管理, 90=诊断中心, 100-107=授权中心
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 6, 7, 13, 60, 80, 87, 88, 89, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105, 106, 107} // 超级管理员：所有权限（包含授权中心）
-	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 60, 80, 87, 88, 89, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105, 106, 107}               // 运维工程师：含授权中心权限
-	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105, 106, 107}                                                                                                    // 审计员：含监控查看和授权中心权限
-	userMenuIDs := []uint{1}                                                                                                                                                      // 普通用户：仅首页
-	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 45, 46, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105, 106, 107}                                                                                          // 测试角色：含授权中心权限
-	viewerMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105, 106, 107}                                                                                            // 查看者：含授权中心权限
-
-	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
-	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)
-	auditorMenuIDsJSON, _ := json.Marshal(auditorMenuIDs)
-	userMenuIDsJSON, _ := json.Marshal(userMenuIDs)
-	testMenuIDsJSON, _ := json.Marshal(testMenuIDs)
-	viewerMenuIDsJSON, _ := json.Marshal(viewerMenuIDs)
+// syncBuiltinRoles 同步内置角色（权限码推导模式）
+func (s *InitService) syncBuiltinRoles() error {
+	logger.Info("开始同步内置角色...")
 
 	// 定义需要同步的内置角色
 	builtinRoles := []struct {
 		code        string
 		name        string
 		description string
-		menuIDs     []uint
-		menuIDsJSON []byte
 	}{
-		{"admin", "超级管理员", "拥有系统所有权限", adminMenuIDs, adminMenuIDsJSON},
-		{"ops", "运维工程师", "负责主机和任务管理", opsMenuIDs, opsMenuIDsJSON},
-		{"auditor", "审计员", "仅拥有查看权限", auditorMenuIDs, auditorMenuIDsJSON},
-		{"viewer", "查看者", "仅拥有查看权限", viewerMenuIDs, viewerMenuIDsJSON},
-			{"user", "普通用户", "系统普通用户，拥有基础权限", userMenuIDs, userMenuIDsJSON},
-		{"test", "测试角色", "用于测试的角色，拥有部分权限", testMenuIDs, testMenuIDsJSON},
+		{"admin", "超级管理员", "拥有系统所有权限"},
+		{"ops", "运维工程师", "负责主机和任务管理"},
+		{"auditor", "审计员", "仅拥有查看权限"},
+		{"viewer", "查看者", "仅拥有查看权限"},
+		{"user", "普通用户", "系统普通用户，拥有基础权限"},
+		{"test", "测试角色", "用于测试的角色，拥有部分权限"},
 	}
 
 	// 同步或创建每个内置角色
@@ -640,23 +711,20 @@ func (s *InitService) syncRoleMenus() error {
 		err := db.Where("code = ?", builtinRole.code).First(&existingRole).Error
 
 		if err == nil {
-			// 角色存在，更新权限
+			// 角色已存在：只更新名称和描述
 			db.Model(&existingRole).Updates(map[string]interface{}{
 				"name":        builtinRole.name,
 				"description": builtinRole.description,
-				"menu_ids":    string(builtinRole.menuIDsJSON),
 			})
-			logger.Info("更新内置角色权限",
+			logger.Info("更新内置角色信息",
 				zap.String("name", builtinRole.name),
-				zap.String("code", builtinRole.code),
-				zap.Int("menus", len(builtinRole.menuIDs)))
+				zap.String("code", builtinRole.code))
 		} else {
 			// 角色不存在，创建新角色
 			newRole := models.Role{
 				Name:        builtinRole.name,
 				Code:        builtinRole.code,
 				Description: builtinRole.description,
-				MenuIDs:     string(builtinRole.menuIDsJSON),
 				Status:      1,
 			}
 			if err := db.Create(&newRole).Error; err != nil {
@@ -666,61 +734,16 @@ func (s *InitService) syncRoleMenus() error {
 					zap.Any("error", err))
 				return err
 			}
-			logger.Info("创建内置角色",
+			logger.Info("创建内置角色（权限通过权限码配置）",
 				zap.String("name", builtinRole.name),
 				zap.String("code", builtinRole.code),
 				zap.Uint("id", newRole.ID))
 		}
 	}
 
-	logger.Info("角色菜单权限同步完成")
+	logger.Info("内置角色同步完成")
 
-	// 清除RBAC缓存，确保新的角色权限立即生效
-	InvalidateRBACCache(0)
-	logger.Info("已清除所有用户RBAC缓存")
-
-	return nil
-}
-
-// initRoles 初始化角色数据
-func (s *InitService) initRoles() error {
-	// 定义5个内置角色的菜单权限（动态路由模式）
-	// 菜单ID映射：1=首页, 2=系统管理, 20=资产管理, 40=监控中心, 50=审计中心, 60=web终端, 80=K8s管理, 90=诊断中心, 100-107=授权中心
-	adminMenuIDs := []uint{1, 2, 3, 4, 5, 6, 7, 13, 60, 80, 87, 88, 89, 14, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105, 106, 107} // 超级管理员：所有权限（包含授权中心）
-	opsMenuIDs := []uint{1, 2, 3, 4, 5, 13, 14, 20, 21, 22, 23, 24, 60, 80, 87, 88, 89, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 50, 51, 52, 90, 100, 101, 102, 103, 104, 105, 106, 107}               // 运维工程师：含授权中心权限
-	auditorMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105, 106, 107}                                                                                                    // 审计员：含监控查看和授权中心权限
-	userMenuIDs := []uint{1}                                                                                                                                                      // 普通用户：仅首页
-	testMenuIDs := []uint{1, 13, 20, 21, 22, 26, 27, 28, 29, 34, 37, 38, 40, 41, 42, 43, 44, 45, 46, 80, 87, 88, 89, 100, 101, 102, 103, 104, 105}                                                                                          // 测试角色：含授权中心权限
-
-	adminMenuIDsJSON, _ := json.Marshal(adminMenuIDs)
-	opsMenuIDsJSON, _ := json.Marshal(opsMenuIDs)
-	auditorMenuIDsJSON, _ := json.Marshal(auditorMenuIDs)
-	userMenuIDsJSON, _ := json.Marshal(userMenuIDs)
-	testMenuIDsJSON, _ := json.Marshal(testMenuIDs)
-
-	// 5个系统内置角色
-	roles := []models.Role{
-		{Name: "超级管理员", Code: "admin", Description: "拥有系统所有权限", MenuIDs: string(adminMenuIDsJSON), Status: 1},
-		{Name: "运维工程师", Code: "ops", Description: "负责主机和任务管理", MenuIDs: string(opsMenuIDsJSON), Status: 1},
-		{Name: "审计员", Code: "auditor", Description: "仅拥有查看权限", MenuIDs: string(auditorMenuIDsJSON), Status: 1},
-		{Name: "普通用户", Code: "user", Description: "系统普通用户，拥有基础权限", MenuIDs: string(userMenuIDsJSON), Status: 1},
-		{Name: "测试角色", Code: "test", Description: "用于测试的角色，拥有部分权限", MenuIDs: string(testMenuIDsJSON), Status: 1},
-	}
-
-	for _, role := range roles {
-		if err := db.Create(&role).Error; err != nil {
-			logger.Error("创建角色失败",
-				zap.String("name", role.Name),
-				zap.String("code", role.Code),
-				zap.Any("error", err))
-			return err
-		}
-		logger.Info("创建内置角色",
-			zap.String("name", role.Name),
-			zap.String("code", role.Code),
-			zap.Uint("id", role.ID))
-	}
-
+	
 	return nil
 }
 
@@ -992,6 +1015,357 @@ func (s *InitService) initAgentVersions() error {
 	logger.Info("创建默认 Agent 版本",
 		zap.String("version", defaultVersion.Version),
 		zap.Uint("id", defaultVersion.ID))
+
+	return nil
+}
+
+// initPermissions 初始化权限数据
+func (s *InitService) initPermissions() error {
+	logger.Info("开始初始化权限数据...")
+
+	// 定义系统权限
+	permissions := []models.Permission{
+		// ========== 系统管理模块 ==========
+		// 用户管理
+		{Code: "system.user.view", Name: "查看用户", Module: "system", Resource: "user", Action: "view", Level: 2, Status: 1},
+		{Code: "system.user.create", Name: "创建用户", Module: "system", Resource: "user", Action: "create", Level: 3, Status: 1},
+		{Code: "system.user.update", Name: "更新用户", Module: "system", Resource: "user", Action: "update", Level: 3, Status: 1},
+		{Code: "system.user.delete", Name: "删除用户", Module: "system", Resource: "user", Action: "delete", Level: 3, Status: 1},
+		{Code: "system.user.reset_password", Name: "重置密码", Module: "system", Resource: "user", Action: "reset_password", Level: 3, Status: 1},
+
+		// 角色管理
+		{Code: "system.role.view", Name: "查看角色", Module: "system", Resource: "role", Action: "view", Level: 2, Status: 1},
+		{Code: "system.role.create", Name: "创建角色", Module: "system", Resource: "role", Action: "create", Level: 3, Status: 1},
+		{Code: "system.role.update", Name: "更新角色", Module: "system", Resource: "role", Action: "update", Level: 3, Status: 1},
+		{Code: "system.role.delete", Name: "删除角色", Module: "system", Resource: "role", Action: "delete", Level: 3, Status: 1},
+		{Code: "system.role.assign_permissions", Name: "分配权限", Module: "system", Resource: "role", Action: "assign_permissions", Level: 3, Status: 1},
+
+		// 菜单管理
+		{Code: "system.menu.view", Name: "查看菜单", Module: "system", Resource: "menu", Action: "view", Level: 2, Status: 1},
+		{Code: "system.menu.create", Name: "创建菜单", Module: "system", Resource: "menu", Action: "create", Level: 3, Status: 1},
+		{Code: "system.menu.update", Name: "更新菜单", Module: "system", Resource: "menu", Action: "update", Level: 3, Status: 1},
+		{Code: "system.menu.delete", Name: "删除菜单", Module: "system", Resource: "menu", Action: "delete", Level: 3, Status: 1},
+
+		// 权限管理
+		{Code: "system.permission.view", Name: "查看权限", Module: "system", Resource: "permission", Action: "view", Level: 2, Status: 1},
+		{Code: "system.permission.create", Name: "创建权限", Module: "system", Resource: "permission", Action: "create", Level: 3, Status: 1},
+		{Code: "system.permission.update", Name: "更新权限", Module: "system", Resource: "permission", Action: "update", Level: 3, Status: 1},
+		{Code: "system.permission.delete", Name: "删除权限", Module: "system", Resource: "permission", Action: "delete", Level: 3, Status: 1},
+
+		// ========== CMDB模块 ==========
+		{Code: "cmdb.server.query", Name: "查询主机", Module: "cmdb", Resource: "server", Action: "query", Level: 2, Status: 1},
+		{Code: "cmdb.server.create", Name: "创建主机", Module: "cmdb", Resource: "server", Action: "create", Level: 3, Status: 1},
+		{Code: "cmdb.server.update", Name: "更新主机", Module: "cmdb", Resource: "server", Action: "update", Level: 3, Status: 1},
+		{Code: "cmdb.server.delete", Name: "删除主机", Module: "cmdb", Resource: "server", Action: "delete", Level: 3, Status: 1},
+
+		{Code: "cmdb.business.query", Name: "查询业务", Module: "cmdb", Resource: "business", Action: "query", Level: 2, Status: 1},
+		{Code: "cmdb.rooms.query", Name: "查询机房", Module: "cmdb", Resource: "rooms", Action: "query", Level: 2, Status: 1},
+		{Code: "cmdb.tags.query", Name: "查询标签", Module: "cmdb", Resource: "tags", Action: "query", Level: 2, Status: 1},
+		{Code: "cmdb.credentials.access", Name: "访问凭证", Module: "cmdb", Resource: "credentials", Action: "access", Level: 2, Status: 1},
+		{Code: "cmdb.credentials.ssh", Name: "SSH密钥", Module: "cmdb", Resource: "credentials", Action: "ssh", Level: 2, Status: 1},
+		{Code: "cmdb.policies.query", Name: "访问策略", Module: "cmdb", Resource: "policies", Action: "query", Level: 2, Status: 1},
+		{Code: "cmdb.config.business", Name: "业务配置", Module: "cmdb", Resource: "config_business", Action: "business", Level: 2, Status: 1},
+		{Code: "cmdb.rooms.query", Name: "机房管理", Module: "cmdb", Resource: "rooms", Action: "query", Level: 2, Status: 1},
+		{Code: "cmdb.tags.query", Name: "标签管理", Module: "cmdb", Resource: "tags", Action: "query", Level: 2, Status: 1},
+		{Code: "cmdb.agents.query", Name: "代理配置", Module: "cmdb", Resource: "agents", Action: "query", Level: 2, Status: 1},
+		{Code: "cmdb.dashboard.query", Name: "资产总览", Module: "cmdb", Resource: "dashboard", Action: "query", Level: 2, Status: 1},
+		{Code: "cmdb.audit.changes", Name: "变更记录", Module: "cmdb", Resource: "audit", Action: "changes", Level: 2, Status: 1},
+		{Code: "cmdb.audit.command.history", Name: "命令历史", Module: "cmdb", Resource: "audit", Action: "command_history", Level: 2, Status: 1},
+		{Code: "cmdb.audit.online", Name: "在线会话", Module: "cmdb", Resource: "audit", Action: "online", Level: 2, Status: 1},
+		{Code: "cmdb.audit.sessions", Name: "历史会话", Module: "cmdb", Resource: "audit", Action: "sessions", Level: 2, Status: 1},
+		{Code: "cmdb.audit.commands", Name: "命令记录", Module: "cmdb", Resource: "audit", Action: "commands", Level: 2, Status: 1},
+
+		// ========== 监控模块 ==========
+		{Code: "monitoring.overview.query", Name: "监控概览", Module: "monitoring", Resource: "overview", Action: "query", Level: 2, Status: 1},
+		{Code: "monitoring.servers.query", Name: "主机监控", Module: "monitoring", Resource: "servers", Action: "query", Level: 2, Status: 1},
+		{Code: "monitoring.alerts.query", Name: "告警管理", Module: "monitoring", Resource: "alerts", Action: "query", Level: 2, Status: 1},
+		{Code: "monitoring.trends.query", Name: "趋势分析", Module: "monitoring", Resource: "trends", Action: "query", Level: 2, Status: 1},
+		{Code: "monitoring.reports.query", Name: "巡检报告", Module: "monitoring", Resource: "reports", Action: "query", Level: 2, Status: 1},
+		{Code: "monitoring.settings.query", Name: "监控设置", Module: "monitoring", Resource: "settings", Action: "query", Level: 2, Status: 1},
+
+		// ========== 审计模块 ==========
+		{Code: "audit.login.view", Name: "登录审计", Module: "audit", Resource: "login", Action: "view", Level: 2, Status: 1},
+		{Code: "audit.operation.view", Name: "操作审计", Module: "audit", Resource: "operation", Action: "view", Level: 2, Status: 1},
+		{Code: "audit.system.view", Name: "系统审计", Module: "audit", Resource: "system", Action: "view", Level: 2, Status: 1},
+
+		// ========== K8s模块 ==========
+		{Code: "k8s.cluster.query", Name: "查询集群", Module: "k8s", Resource: "cluster", Action: "query", Level: 2, Status: 1},
+		{Code: "k8s.workload.query", Name: "查询工作负载", Module: "k8s", Resource: "workload", Action: "query", Level: 2, Status: 1},
+		{Code: "k8s.diagnostic.execute", Name: "执行诊断", Module: "k8s", Resource: "diagnostic", Action: "execute", Level: 3, Status: 1},
+		{Code: "k8s.network.query", Name: "网络管理", Module: "k8s", Resource: "network", Action: "query", Level: 2, Status: 1},
+		{Code: "k8s.config.query", Name: "配置管理", Module: "k8s", Resource: "k8s_config", Action: "query", Level: 2, Status: 1},
+
+		// ========== 授权中心模块 ==========
+		{Code: "auth.user.query", Name: "查看用户", Module: "auth", Resource: "user", Action: "query", Level: 2, Status: 1},
+		{Code: "auth.role.query", Name: "查看用户组", Module: "auth", Resource: "role", Action: "query", Level: 2, Status: 1},
+		{Code: "auth.app.query", Name: "查看应用", Module: "auth", Resource: "app", Action: "query", Level: 2, Status: 1},
+		{Code: "auth.binding.query", Name: "查看权限映射", Module: "auth", Resource: "binding", Action: "query", Level: 2, Status: 1},
+		{Code: "auth.authorization.query", Name: "查看用户授权", Module: "auth", Resource: "authorization", Action: "query", Level: 2, Status: 1},
+		{Code: "auth.log.query", Name: "查看操作日志", Module: "auth", Resource: "log", Action: "query", Level: 2, Status: 1},
+		{Code: "auth.identity.query", Name: "查看用户身份映射", Module: "auth", Resource: "identity", Action: "query", Level: 2, Status: 1},
+		{Code: "auth.permission.query", Name: "查看用户有效权限", Module: "auth", Resource: "permission", Action: "query", Level: 2, Status: 1},
+	}
+
+	addedCount := 0
+	updatedCount := 0
+
+	for _, perm := range permissions {
+		var existingPerm models.Permission
+		err := db.Where("code = ?", perm.Code).First(&existingPerm).Error
+
+		if err == nil {
+			// 权限已存在，更新数据
+			db.Model(&existingPerm).Updates(map[string]interface{}{
+				"name":        perm.Name,
+				"description": perm.Description,
+				"module":      perm.Module,
+				"resource":    perm.Resource,
+				"action":      perm.Action,
+				"level":       perm.Level,
+				"status":      perm.Status,
+			})
+			updatedCount++
+			logger.Debug("更新权限", zap.String("name", perm.Name))
+		} else {
+			// 权限不存在，创建新权限
+			if err := db.Create(&perm).Error; err != nil {
+				logger.Error("创建权限失败",
+					zap.String("name", perm.Name),
+					zap.String("code", perm.Code),
+					zap.Error(err))
+				return err
+			}
+			addedCount++
+			logger.Info("创建权限",
+				zap.String("name", perm.Name),
+				zap.String("code", perm.Code),
+				zap.Uint("id", perm.ID))
+		}
+	}
+
+	logger.Info("权限初始化完成",
+		zap.Int("added", addedCount),
+		zap.Int("updated", updatedCount),
+		zap.Int("total", len(permissions)))
+
+	return nil
+}
+
+// assignDefaultPermissions 为内置角色分配默认权限
+func (s *InitService) assignDefaultPermissions() error {
+	logger.Info("开始为内置角色分配默认权限...")
+
+	// 定义角色默认权限映射
+	rolePermissions := map[string][]string{
+		"admin": {
+			"*.*.*", // 超级管理员拥有所有权限（通配符）
+		},
+		"ops": {
+			// 系统管理
+			"system.user.view", "system.user.create", "system.user.update", "system.user.delete",
+			"system.role.view", "system.role.update",
+			"system.menu.view",
+			// CMDB
+			"cmdb.server.query", "cmdb.server.create", "cmdb.server.update", "cmdb.server.delete",
+			"cmdb.business.query",
+			"cmdb.rooms.query",
+			"cmdb.tags.query",
+			"cmdb.credentials.access",
+			"cmdb.credentials.ssh",
+			"cmdb.policies.query",
+			"cmdb.config.business",
+			"cmdb.agents.query",
+			"cmdb.dashboard.query",
+			"cmdb.audit.changes",
+			"cmdb.audit.command.history",
+			"cmdb.audit.online",
+			"cmdb.audit.sessions",
+			"cmdb.audit.commands",
+			// 监控
+			"monitoring.overview.query",
+			"monitoring.servers.query",
+			"monitoring.alerts.query",
+			"monitoring.trends.query",
+			"monitoring.reports.query",
+			"monitoring.settings.query",
+			// K8s
+			"k8s.cluster.query",
+			"k8s.workload.query",
+			"k8s.diagnostic.execute",
+			"k8s.network.query",
+			"k8s.config.query",
+			// 审计
+			"audit.login.view",
+			"audit.operation.view",
+			"audit.system.view",
+			// 授权中心
+			"auth.user.query",
+			"auth.role.query",
+			"auth.app.query",
+			"auth.binding.query",
+			"auth.authorization.query",
+			"auth.log.query",
+			"auth.identity.query",
+			"auth.permission.query",
+		},
+		"auditor": {
+			// 只读权限
+			"cmdb.server.query",
+			"cmdb.business.query",
+			"cmdb.rooms.query",
+			"cmdb.tags.query",
+			"cmdb.credentials.access",
+			"cmdb.dashboard.query",
+			"cmdb.audit.command.history",
+			"cmdb.audit.sessions",
+			"cmdb.audit.commands",
+			"monitoring.overview.query",
+			"monitoring.servers.query",
+			"monitoring.alerts.query",
+			"audit.login.view",
+			"audit.operation.view",
+			"audit.system.view",
+			"k8s.cluster.query",
+			"k8s.workload.query",
+			"auth.user.query",
+			"auth.role.query",
+			"auth.app.query",
+			"auth.binding.query",
+			"auth.authorization.query",
+			"auth.log.query",
+			"auth.identity.query",
+			"auth.permission.query",
+		},
+		"viewer": {
+			// 最小权限
+			"cmdb.server.query",
+			"monitoring.overview.query",
+		},
+		"user": {
+			// 普通用户基础权限
+			"monitoring.overview.query",
+		},
+		"test": {
+			// 测试角色权限（用于测试）
+			"system.user.view",
+			"system.user.create",
+			"system.role.view",
+			"cmdb.server.query",
+			"cmdb.server.create",
+			"monitoring.overview.query",
+			"k8s.cluster.query",
+			"k8s.workload.query",
+			"auth.user.query",
+			"auth.role.query",
+			"auth.app.query",
+			"auth.binding.query",
+			"auth.authorization.query",
+			"auth.log.query",
+			"auth.identity.query",
+			"auth.permission.query",
+		},
+	}
+
+	for roleCode, permissionCodes := range rolePermissions {
+		// 获取角色
+		var role models.Role
+		if err := db.Where("code = ?", roleCode).First(&role).Error; err != nil {
+			logger.Warn("角色不存在，跳过权限分配",
+				zap.String("code", roleCode),
+				zap.Error(err))
+			continue
+		}
+
+		// 获取权限
+		var permissions []models.Permission
+		if err := db.Where("code IN ?", permissionCodes).Find(&permissions).Error; err != nil {
+			logger.Warn("查询权限失败",
+				zap.String("role", roleCode),
+				zap.Error(err))
+			continue
+		}
+
+		// 分配权限
+		assignedCount := 0
+		for _, perm := range permissions {
+			var rolePerm models.RolePermission
+			err := db.Where("role_id = ? AND permission_id = ?", role.ID, perm.ID).
+				First(&rolePerm).Error
+
+			if err != nil {
+				// 创建新的角色权限关联
+				rolePerm = models.RolePermission{
+					RoleID:       role.ID,
+					PermissionID: perm.ID,
+				}
+				if err := db.Create(&rolePerm).Error; err != nil {
+					logger.Error("分配权限失败",
+						zap.String("role", roleCode),
+						zap.String("permission", perm.Code),
+						zap.Error(err))
+				} else {
+					assignedCount++
+					logger.Debug("分配权限",
+						zap.String("role", roleCode),
+						zap.String("permission", perm.Code))
+				}
+			}
+		}
+
+		logger.Info("角色权限分配完成",
+			zap.String("role", roleCode),
+			zap.Int("总权限数", len(permissions)),
+			zap.Int("新分配", assignedCount))
+	}
+
+	return nil
+}
+
+// initAPIPermissions 初始化 Level 4 API级权限（Casbin策略）
+func (s *InitService) initAPIPermissions() error {
+	logger.Info("开始初始化API级权限（Casbin策略）...")
+
+	// 获取 PermissionService 实例
+	permService, err := GetPermissionService()
+	if err != nil {
+		logger.Warn("获取PermissionService失败，跳过API权限初始化", zap.Error(err))
+		return nil // 不阻塞启动
+	}
+
+	// 为超级管理员角色分配所有API权限
+	// 获取系统所有API端点
+	allEndpoints := GetSystemAPIEndpoints()
+
+	// 为admin角色分配所有API权限
+	adminRoleCode := "admin"
+	assignedCount := 0
+	skippedCount := 0
+
+	for _, endpoint := range allEndpoints {
+		for _, method := range endpoint.Methods {
+			// 添加策略到Casbin
+			if err := permService.AssignAPIPermission(adminRoleCode, endpoint.Path, method); err != nil {
+				logger.Debug("添加API权限策略（可能已存在）",
+					zap.String("role", adminRoleCode),
+					zap.String("path", endpoint.Path),
+					zap.String("method", method),
+					zap.Error(err))
+				skippedCount++
+			} else {
+				assignedCount++
+				logger.Debug("添加API权限策略",
+					zap.String("role", adminRoleCode),
+					zap.String("path", endpoint.Path),
+					zap.String("method", method))
+			}
+		}
+	}
+
+	logger.Info("API级权限初始化完成",
+		zap.String("role", adminRoleCode),
+		zap.Int("已分配", assignedCount),
+		zap.Int("已存在/跳过", skippedCount),
+		zap.Int("总端点数", len(allEndpoints)))
 
 	return nil
 }

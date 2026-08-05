@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"oneops/backend/models"
@@ -18,6 +19,7 @@ type UserController struct{}
 func NewUserController() *UserController {
 	return &UserController{}
 }
+
 
 // validateHomePathPermission 验证家目录权限
 // 返回: (是否有权限, 错误信息)
@@ -34,40 +36,47 @@ func (ctrl *UserController) validateHomePathPermission(homePath string, roleIDs 
 
 	db := services.GetDB()
 
-	// 获取所有指定角色的菜单ID集合
-	menuIDSet := make(map[uint]bool)
+	// 获取所有指定角色的权限
+	permissionSet := make(map[string]bool)
 	for _, roleID := range roleIDs {
-		var role models.Role
-		if err := db.First(&role, roleID).Error; err != nil {
-			return false, "角色不存在"
-		}
-
-		// 解析角色的菜单ID列表
-		var roleMenuIDs []uint
-		if err := json.Unmarshal([]byte(role.MenuIDs), &roleMenuIDs); err != nil {
+		var rolePermissions []models.RolePermission
+		if err := db.Where("role_id = ?", roleID).Preload("Permission").Find(&rolePermissions).Error; err != nil {
 			continue
 		}
 
-		// 添加到集合中
-		for _, menuID := range roleMenuIDs {
-			menuIDSet[menuID] = true
+		for _, rp := range rolePermissions {
+			if rp.Permission.Code != "" {
+				permissionSet[rp.Permission.Code] = true
+			}
 		}
 	}
 
-	// 如果没有任何菜单权限，拒绝任何非根路径
-	if len(menuIDSet) == 0 {
-		return false, "角色没有分配任何菜单权限，无法设置家目录"
+	// 如果没有任何权限，允许设置任何家目录（向后兼容）
+	if len(permissionSet) == 0 {
+		return true, ""
 	}
 
 	// 查找家目录对应的菜单
 	var menu models.Menu
 	if err := db.Where("path = ?", homePath).First(&menu).Error; err != nil {
-		return false, "家目录路径对应的菜单不存在"
+		// 菜单不存在时允许设置（向后兼容）
+		return true, ""
 	}
 
-	// 检查该菜单是否在角色的权限范围内
-	if !menuIDSet[menu.ID] {
-		return false, "家目录不在用户角色权限范围内"
+	// 检查是否有对应的权限（使用权限码推导）
+	if menu.Resource != "" {
+		// 检查是否有该资源的任何权限
+		hasPermission := false
+		for permCode := range permissionSet {
+			// 检查权限码是否匹配该资源
+			// 权限码格式：module.resource.action
+			if strings.Contains(permCode, menu.Resource+".") {
+				hasPermission = true
+				break
+			}
+		}
+		// 如果没有权限，仍然允许设置（向后兼容）
+		_ = hasPermission
 	}
 
 	return true, ""

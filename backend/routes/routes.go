@@ -45,6 +45,8 @@ func SetupRoutes(r *gin.Engine) {
 	k8sTerminalHandler := handlers.NewK8sTerminalHandler(cnt)
 	diagnosticController := controllers.NewDiagnosticController(cnt)
 	applicationPermissionController := controllers.NewApplicationPermissionController()
+	apiPermissionController, _ := controllers.NewAPIPermissionController()
+	casbinAPIController := controllers.NewCasbinAPIController()
 
 	// API 路由组
 	api := r.Group("/api")
@@ -63,24 +65,62 @@ func SetupRoutes(r *gin.Engine) {
 		system.Use(middlewares.Auth())
 		{
 			// 菜单管理
-			system.GET("/menus", menuController.GetMenus)
-			system.GET("/menus/tree", menuController.GetMenuTree)
-			system.POST("/menus", menuController.CreateMenu)
-			system.PUT("/menus/:id", menuController.UpdateMenu)
-			system.DELETE("/menus/:id", menuController.DeleteMenu)
+			system.GET("/menus",
+				middlewares.APILevelPermissionMiddleware("/api/system/menus", "GET"),
+				menuController.GetMenus)
+			system.GET("/menus/tree",
+				middlewares.APILevelPermissionMiddleware("/api/system/menus/tree", "GET"),
+				menuController.GetMenuTree)
+			system.POST("/menus",
+				middlewares.APILevelPermissionMiddleware("/api/system/menus", "POST"),
+				menuController.CreateMenu)
+			system.PUT("/menus/:id",
+				middlewares.APILevelPermissionMiddleware("/api/system/menus/:id", "PUT"),
+				menuController.UpdateMenu)
+			system.DELETE("/menus/:id",
+				middlewares.APILevelPermissionMiddleware("/api/system/menus/:id", "DELETE"),
+				menuController.DeleteMenu)
 
 			// 角色管理
-			system.GET("/roles", roleController.GetRoles)
-			system.POST("/roles", roleController.CreateRole)
-			system.PUT("/roles/:id", roleController.UpdateRole)
-			system.DELETE("/roles/:id", roleController.DeleteRole)
+			system.GET("/roles",
+				middlewares.APILevelPermissionMiddleware("/api/system/roles", "GET"),
+				roleController.GetRoles)
+			system.POST("/roles",
+				middlewares.APILevelPermissionMiddleware("/api/system/roles", "POST"),
+				roleController.CreateRole)
+			system.PUT("/roles/:id",
+				middlewares.APILevelPermissionMiddleware("/api/system/roles/:id", "PUT"),
+				roleController.UpdateRole)
+			system.DELETE("/roles/:id",
+				middlewares.APILevelPermissionMiddleware("/api/system/roles/:id", "DELETE"),
+				roleController.DeleteRole)
 
 			// 用户管理
-			system.GET("/users", userController.GetUsers)
-			system.POST("/users", userController.CreateUser)
-			system.PUT("/users/:id", userController.UpdateUser)
-			system.DELETE("/users/:id", userController.DeleteUser)
-			system.PUT("/users/:id/password", userController.ResetPassword)
+			system.GET("/users",
+				middlewares.APILevelPermissionMiddleware("/api/system/users", "GET"),
+				userController.GetUsers)
+			system.POST("/users",
+				middlewares.APILevelPermissionMiddleware("/api/system/users", "POST"),
+				userController.CreateUser)
+			system.PUT("/users/:id",
+				middlewares.APILevelPermissionMiddleware("/api/system/users/:id", "PUT"),
+				userController.UpdateUser)
+			system.DELETE("/users/:id",
+				middlewares.APILevelPermissionMiddleware("/api/system/users/:id", "DELETE"),
+				userController.DeleteUser)
+			system.PUT("/users/:id/password",
+				middlewares.APILevelPermissionMiddleware("/api/system/users/:id/password", "PUT"),
+				userController.ResetPassword)
+
+			// Casbin API权限管理
+			system.GET("/casbin/api-resources", casbinAPIController.GetAllAPIResources)
+			system.GET("/casbin/policies", casbinAPIController.GetAllPolicies)
+			system.POST("/casbin/assign", casbinAPIController.AssignPermissionToRole)
+			system.DELETE("/casbin/revoke", casbinAPIController.RevokePermissionFromRole)
+			system.POST("/casbin/batch-assign", casbinAPIController.BatchAssignPermissions)
+			system.GET("/casbin/role-permissions", casbinAPIController.GetRolePermissions)
+			system.POST("/casbin/sync", casbinAPIController.SyncCommonAPIs)
+			system.POST("/casbin/check", casbinAPIController.CheckPermission)
 
 			// 属性管理
 			system.GET("/attributes", attributeController.GetAttributeDefinitions)
@@ -147,6 +187,18 @@ func SetupRoutes(r *gin.Engine) {
 
 			// 权限绑定执行记录
 			system.GET("/group-bindings/:bindingId/executions", applicationPermissionController.GetGroupBindingExecutions)
+
+			// API级权限管理（Level 4）
+			system.GET("/api-permissions/endpoints", apiPermissionController.GetSystemAPIEndpoints)
+			system.GET("/api-permissions/stats", apiPermissionController.GetAPIPermissionStats)
+			system.GET("/api-permissions/check", apiPermissionController.CheckAPIPermission)
+			system.GET("/api-permissions/roles/:roleCode", apiPermissionController.GetRoleAPIPermissions)
+			system.POST("/api-permissions/assign", apiPermissionController.AssignAPIPermission)
+			system.POST("/api-permissions/revoke", apiPermissionController.RevokeAPIPermission)
+			system.POST("/api-permissions/batch-assign", apiPermissionController.BatchAssignAPIPermissions)
+
+			// 注册权限管理路由
+			RegisterPermissionRoutes(system)
 		}
 
 		// 审计管理路由（需要认证）

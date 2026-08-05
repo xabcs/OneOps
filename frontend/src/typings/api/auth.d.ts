@@ -10,6 +10,11 @@ declare namespace Api {
       user: UserInfo;
     }
 
+    interface PermissionInfo {
+      code: string;
+      name: string;
+    }
+
     interface UserInfo {
       id: number;
       username: string;
@@ -24,6 +29,7 @@ declare namespace Api {
       roleNames: string[];
       menuTree: any[];
       permissions: string[];
+      permissionInfo: PermissionInfo[];
     }
   }
 }

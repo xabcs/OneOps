@@ -313,7 +313,9 @@ const local: App.I18n.Schema = {
     manage_user: 'User Manage',
     'manage_user-detail': 'User Detail',
     manage_role: 'Role Manage',
+    'manage_api-permission': 'API Permission Manage',
     manage_menu: 'Menu Manage',
+    manage_permission: 'Permission Manage',
     auth_center: 'Auth Center',
     auth: 'Auth Center',
     auth_users: 'Users',
@@ -553,6 +555,8 @@ const local: App.I18n.Schema = {
       },
       role: {
         title: 'User Groups',
+        roleName: 'Role Name',
+        roleCode: 'Role Code',
         groupName: 'Group Name',
         groupCode: 'Group Code',
         roleStatus: 'Group Status',
@@ -560,6 +564,8 @@ const local: App.I18n.Schema = {
         menuAuth: 'Menu Auth',
         buttonAuth: 'Button Auth',
         form: {
+          roleName: 'Please enter role name',
+          roleCode: 'Please enter role code',
           groupName: 'Please enter group name',
           groupCode: 'Please enter group code',
           roleStatus: 'Please select group status',
@@ -567,6 +573,28 @@ const local: App.I18n.Schema = {
         },
         addGroup: 'Add Group',
         editGroup: 'Edit Group'
+      },
+      permission: {
+        title: 'Permission Management',
+        permissionName: 'Permission Name',
+        permissionCode: 'Permission Code',
+        module: 'Module',
+        resource: 'Resource',
+        action: 'Action',
+        level: 'Permission Level',
+        status: 'Status',
+        permissionDesc: 'Permission Description',
+        form: {
+          namePlaceholder: 'Please enter permission name',
+          codePlaceholder: 'Please enter permission code',
+          modulePlaceholder: 'Please select module',
+          resourcePlaceholder: 'Please enter resource name',
+          actionPlaceholder: 'Please select action',
+          levelPlaceholder: 'Please select permission level'
+        },
+        addPermission: 'Add Permission',
+        editPermission: 'Edit Permission',
+        assignRoles: 'Assign Roles'
       },
       user: {
         title: 'User List',

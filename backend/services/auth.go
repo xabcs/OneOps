@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 
 	"oneops/backend/logger"
@@ -118,20 +119,51 @@ func (s *AuthService) GetUserInfo(userID uint) (*UserInfo, error) {
 	logger.Debug("[登录调试-服务层] GetUserInfo方法完成",
 		zap.Duration("总耗时", time.Since(startTime)))
 
+	// 查询权限详细信息（用于前端显示权限名称）
+	var permissionInfos []PermissionInfo
+	if len(permissions) > 0 && !strings.Contains(permissions[0], "*.*.*") {
+		// 非管理员，查询权限详情
+		var perms []models.Permission
+		err := db.Where("code IN ?", permissions).Find(&perms).Error
+		if err == nil {
+			for _, perm := range perms {
+				permissionInfos = append(permissionInfos, PermissionInfo{
+					Code: perm.Code,
+					Name: perm.Name,
+				})
+			}
+		}
+	}
+
 	return &UserInfo{
-		User:        &user,
-		RoleNames:   roleCodes,
-		MenuTree:    menuTree,
-		Permissions: permissions,
+		User:           &user,
+		RoleNames:      roleCodes,
+		MenuTree:       menuTree,
+		Permissions:    permissions,
+		PermissionInfo: permissionInfos,
 	}, nil
 }
 
+
 // UserInfo 用户信息（包含权限）
+
+// PermissionInfo 权限详细信息（用于前端显示权限名称）
+type PermissionInfo struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
 type UserInfo struct {
+
 	User        *models.User `json:"-"`
-	RoleNames   []string     `json:"roleNames"`
-	MenuTree    []*models.Menu `json:"menuTree"`
+
+	RoleNames      []string           `json:"roleNames"`
+
+	MenuTree       []*models.Menu     `json:"menuTree"`
+
 	Permissions []string     `json:"permissions"`
+
+	PermissionInfo  []PermissionInfo   `json:"permissionInfo"` // 权限详细信息
+
 }
 
 // ToMap 转换为 map 格式（用于 JSON 响应）
@@ -154,6 +186,7 @@ func (ui *UserInfo) ToMap() map[string]interface{} {
 		"roleNames":  ui.RoleNames,
 		"menuTree":   ui.MenuTree,
 		"permissions": ui.Permissions,
+			"permissionInfo": ui.PermissionInfo,
 	}
 }
 

@@ -1,5 +1,123 @@
 import { request } from '../request';
 
+// ==================== API权限管理相关接口 ====================
+
+/**
+ * 获取系统所有API端点定义
+ */
+export function fetchGetAPIEndpoints() {
+  return request<{
+    category: string;
+    endpoints: Array<{
+      id: string;
+      path: string;
+      methods: string[];
+      name: string;
+      description: string;
+      category: string;
+    }>;
+  }>({
+    url: '/system/api-permissions/endpoints',
+    method: 'get'
+  });
+}
+
+/**
+ * 获取API权限统计信息
+ */
+export function fetchGetAPIPermissionStats() {
+  return request<{
+    totalAPIs: number;
+    roleStats: Array<{
+      roleCode: string;
+      permissionCount: number;
+      hasAllAPIs: boolean;
+    }>;
+    totalPolicies: number;
+  }>({
+    url: '/system/api-permissions/stats',
+    method: 'get'
+  });
+}
+
+/**
+ * 获取角色的API权限
+ */
+export function fetchGetRoleAPIPermissions(roleCode: string) {
+  return request<Array<{
+    path: string;
+    method: string;
+  }>>({
+    url: `/system/api-permissions/roles/${roleCode}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 为角色分配API权限
+ */
+export function fetchAssignAPIPermission(data: {
+  roleCode: string;
+  apiPath: string;
+  httpMethod: string;
+}) {
+  return request({
+    url: '/system/api-permissions/assign',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 撤销角色的API权限
+ */
+export function fetchRevokeAPIPermission(data: {
+  roleCode: string;
+  apiPath: string;
+  httpMethod: string;
+}) {
+  return request({
+    url: '/system/api-permissions/revoke',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 批量为角色分配API权限
+ */
+export function fetchBatchAssignAPIPermissions(data: {
+  roleCode: string;
+  permissions: Array<{
+    path: string;
+    method: string;
+  }>;
+}) {
+  return request({
+    url: '/system/api-permissions/batch-assign',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 检查当前用户是否有特定API权限
+ */
+export function fetchCheckAPIPermission(data: {
+  apiPath: string;
+  httpMethod: string;
+}) {
+  return request<{
+    hasPermission: boolean;
+  }>({
+    url: '/system/api-permissions/check',
+    method: 'get',
+    params: data
+  });
+}
+
+// ==================== 用户管理相关接口 ====================
+
 /**
  * 获取所有角色
  */
@@ -239,6 +357,218 @@ export function fetchDeleteAttribute(id: number) {
 export function fetchValidateServerAttribute(data: { attributeId: number; value: string }) {
   return request({
     url: '/system/attributes/validate',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 获取权限列表
+ */
+export function fetchGetPermissionList(params?: Api.SystemManage.PermissionSearchParams) {
+  return request<{
+    records: Api.SystemManage.Permission[];
+    total: number;
+    current: number;
+    size: number;
+  }>({
+    url: '/system/permissions',
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取权限详情
+ */
+export function fetchGetPermissionById(id: number) {
+  return request<Api.SystemManage.Permission>({
+    url: `/system/permissions/${id}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 新增权限
+ */
+export function fetchAddPermission(data: Api.SystemManage.Permission) {
+  return request({
+    url: '/system/permissions',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 更新权限
+ */
+export function fetchUpdatePermission(id: number, data: Partial<Api.SystemManage.Permission>) {
+  return request({
+    url: `/system/permissions/${id}`,
+    method: 'put',
+    data
+  });
+}
+
+/**
+ * 删除权限
+ */
+export function fetchDeletePermission(id: number) {
+  return request({
+    url: `/system/permissions/${id}`,
+    method: 'delete'
+  });
+}
+
+/**
+ * 获取角色权限列表
+ */
+export function fetchGetRolePermissions(roleId: number) {
+  return request<number[]>({
+    url: `/system/roles/${roleId}/permissions`,
+    method: 'get'
+  });
+}
+
+/**
+ * 为角色分配权限
+ */
+export function fetchAssignRolePermissions(roleId: number, data: { permissionIds: number[] }) {
+  return request({
+    url: `/system/roles/${roleId}/permissions`,
+    method: 'post',
+    data
+  });
+}
+
+// ==================== Casbin API权限管理相关接口 ====================
+
+/**
+ * 获取所有API资源
+ */
+export function fetchGetAllAPIResources() {
+  return request<Array<{
+    path: string;
+    method: string;
+    name: string;
+    description: string;
+    module: string;
+  }>>({
+    url: '/system/casbin/api-resources',
+    method: 'get'
+  });
+}
+
+/**
+ * 获取所有Casbin策略
+ */
+export function fetchGetAllPolicies() {
+  return request<Array<{
+    ptype: string;
+    subject: string;
+    object: string;
+    action: string;
+    name: string;
+    description: string;
+    module: string;
+  }>>({
+    url: '/system/casbin/policies',
+    method: 'get'
+  });
+}
+
+/**
+ * 为角色分配权限
+ */
+export function fetchAssignPermission(data: {
+  roleCode: string;
+  path: string;
+  method: string;
+  name?: string;
+  description?: string;
+  module?: string;
+}) {
+  return request({
+    url: '/system/casbin/assign',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 撤销角色权限
+ */
+export function fetchRevokePermission(data: {
+  roleCode: string;
+  path: string;
+  method: string;
+}) {
+  return request({
+    url: '/system/casbin/revoke',
+    method: 'delete',
+    data
+  });
+}
+
+/**
+ * 批量分配权限
+ */
+export function fetchBatchAssignPermissions(data: {
+  roleCode: string;
+  apis: Array<{
+    path: string;
+    method: string;
+    name?: string;
+    description?: string;
+    module?: string;
+  }>;
+}) {
+  return request({
+    url: '/system/casbin/batch-assign',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 获取角色权限列表
+ */
+export function fetchGetCasbinRolePermissions(roleCode: string) {
+  return request<Array<{
+    path: string;
+    method: string;
+    name: string;
+    description: string;
+    module: string;
+  }>>({
+    url: '/system/casbin/role-permissions',
+    method: 'get',
+    params: { roleCode }
+  });
+}
+
+/**
+ * 同步常用API
+ */
+export function fetchSyncCommonAPIs() {
+  return request({
+    url: '/system/casbin/sync',
+    method: 'post'
+  });
+}
+
+/**
+ * 检查权限
+ */
+export function fetchCheckPermission(data: {
+  roleCode: string;
+  path: string;
+  method: string;
+}) {
+  return request<{
+    allowed: boolean;
+  }>({
+    url: '/system/casbin/check',
     method: 'post',
     data
   });

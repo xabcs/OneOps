@@ -35,15 +35,23 @@ export function createRouteGuard(router: Router) {
     const isLogin = Boolean(localStg.get('token'));
     const needLogin = !to.meta.constant;
     const routeRoles = to.meta.roles || [];
+    const routePermissions = to.meta.permissions || [];
 
-    const hasRole = authStore.userInfo.roleNames.some(role => routeRoles.includes(role));
-    const hasAuth = authStore.isStaticSuper || !routeRoles.length || hasRole;
+    // 🔥 修复：同时支持角色名和权限码检查
+    const hasRole = routeRoles.length && authStore.userInfo.roleNames.some(role => routeRoles.includes(role));
+    const hasPermission = routePermissions.length && routePermissions.some(perm => authStore.hasPermission(perm));
+    const hasAuth = authStore.isStaticSuper || (!routeRoles.length && !routePermissions.length) || hasRole || hasPermission;
 
     console.log('🔐 [路由守卫] 认证状态检查:');
     console.log('  - isLogin:', isLogin);
     console.log('  - needLogin:', needLogin);
-    console.log('  - routeRoles:', routeRoles);
+    console.log('  - 用户角色名:', authStore.userInfo.roleNames);
+    console.log('  - 路由要求角色:', routeRoles);
+    console.log('  - 路由要求权限:', routePermissions);
+    console.log('  - hasRole:', hasRole);
+    console.log('  - hasPermission:', hasPermission);
     console.log('  - hasAuth:', hasAuth);
+    console.log('  - 用户权限码:', authStore.permissions);
 
     // if it is login route when logged in, then switch to the root page
     if (to.name === loginRoute && isLogin) {

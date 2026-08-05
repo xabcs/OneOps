@@ -18,7 +18,7 @@ const routes = [
         meta: {
           title: 'K8s集群管理',
           requiresAuth: true,
-          permission: 'k8s:clusters:view'
+          permission: 'k8s.cluster.view'
         }
       },
       {
@@ -28,7 +28,7 @@ const routes = [
         meta: {
           title: 'Pod管理',
           requiresAuth: true,
-          permission: 'k8s:pods:view'
+          permission: 'k8s.pod.view'
         }
       },
       {
@@ -38,7 +38,7 @@ const routes = [
         meta: {
           title: 'K8s诊断中心',
           requiresAuth: true,
-          permission: 'k8s:diagnostic:execute'
+          permission: 'k8s.diagnostic.execute'
         }
       }
     ]

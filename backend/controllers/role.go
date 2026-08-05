@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -95,7 +94,6 @@ type CreateRoleRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Code        string `json:"code" binding:"required"`
 	Description string `json:"description"`
-	MenuIDs     []uint `json:"menuIds"`
 	Status      int    `json:"status"`
 }
 
@@ -107,18 +105,12 @@ func (ctrl *RoleController) CreateRole(c *gin.Context) {
 		return
 	}
 
-	menuIDsJSON, err := json.Marshal(req.MenuIDs)
-	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("JSON 序列化失败"))
-		return
-	}
 
 	db := services.GetDB()
 	role := models.Role{
 		Name:        req.Name,
 		Code:        req.Code,
 		Description: req.Description,
-		MenuIDs:     string(menuIDsJSON),
 		Status:      req.Status,
 	}
 
@@ -135,7 +127,6 @@ type UpdateRoleRequest struct {
 	Name        string `json:"name"`
 	Code        string `json:"code"`
 	Description string `json:"description"`
-	MenuIDs     []uint `json:"menuIds"`
 	Status      int    `json:"status"`
 }
 
@@ -165,14 +156,6 @@ func (ctrl *RoleController) UpdateRole(c *gin.Context) {
 	}
 	if req.Description != "" {
 		updates["description"] = req.Description
-	}
-	if req.MenuIDs != nil {
-		menuIDsJSON, err := json.Marshal(req.MenuIDs)
-		if err != nil {
-			c.JSON(http.StatusOK, utils.ErrorInternal("JSON 序列化失败"))
-			return
-		}
-		updates["menu_ids"] = string(menuIDsJSON)
 	}
 	// 只有明确设置了 status 才更新（避免零值覆盖）
 	if req.Status != 0 {

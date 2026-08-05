@@ -339,7 +339,9 @@ const local: App.I18n.Schema = {
     manage_user: '用户管理',
     'manage_user-detail': '用户详情',
     manage_role: '角色管理',
+    'manage_api-permission': 'API权限管理',
     manage_menu: '菜单管理',
+    manage_permission: '权限管理',
     auth_center: '授权中心',
     auth: '授权中心',
     auth_users: '用户',
@@ -638,6 +640,8 @@ const local: App.I18n.Schema = {
       },
       role: {
         title: '用户组列表',
+        roleName: '角色名称',
+        roleCode: '角色编码',
         groupName: '用户组名称',
         groupCode: '用户组编码',
         roleStatus: '用户组状态',
@@ -645,6 +649,8 @@ const local: App.I18n.Schema = {
         menuAuth: '菜单权限',
         buttonAuth: '按钮权限',
         form: {
+          roleName: '请输入角色名称',
+          roleCode: '请输入角色编码',
           groupName: '请输入用户组名称',
           groupCode: '请输入用户组编码',
           roleStatus: '请选择用户组状态',
@@ -652,6 +658,28 @@ const local: App.I18n.Schema = {
         },
         addGroup: '新增用户组',
         editGroup: '编辑用户组'
+      },
+      permission: {
+        title: '权限管理',
+        permissionName: '权限名称',
+        permissionCode: '权限编码',
+        module: '所属模块',
+        resource: '资源名称',
+        action: '操作名称',
+        level: '权限级别',
+        status: '状态',
+        permissionDesc: '权限描述',
+        form: {
+          namePlaceholder: '请输入权限名称',
+          codePlaceholder: '请输入权限编码',
+          modulePlaceholder: '请选择所属模块',
+          resourcePlaceholder: '请输入资源名称',
+          actionPlaceholder: '请选择操作名称',
+          levelPlaceholder: '请选择权限级别'
+        },
+        addPermission: '新增权限',
+        editPermission: '编辑权限',
+        assignRoles: '分配角色'
       },
       user: {
         title: '用户列表',

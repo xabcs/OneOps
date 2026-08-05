@@ -5,12 +5,16 @@ import { fetchDeleteUser, fetchGetAllRoles, fetchGetUserList } from '@/service/a
 import { useThemeStore } from '@/store/modules/theme';
 import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
+import { useUnifiedPermission } from '@/composables/useUnifiedPermission';
 import UserOperateDrawer from './modules/user-operate-drawer.vue';
 import ResetPasswordModal from './modules/reset-password-modal.vue';
 
 defineOptions({ name: 'UserManage' });
 
 const themeStore = useThemeStore();
+
+// 使用统一权限检查
+const { executeWithPermission } = useUnifiedPermission();
 
 // Hero区域显示状态
 const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);
@@ -272,10 +276,12 @@ const resetPasswordVisible = ref(false);
 const resetPasswordUserId = ref(-1);
 const resetPasswordUsername = ref('');
 
-function openResetPassword(row: Api.SystemManage.User) {
-  resetPasswordUserId.value = row.id;
-  resetPasswordUsername.value = row.username || '';
-  resetPasswordVisible.value = true;
+async function openResetPassword(row: Api.SystemManage.User) {
+  await executeWithPermission('system.user.reset_password', async () => {
+    resetPasswordUserId.value = row.id;
+    resetPasswordUsername.value = row.username || '';
+    resetPasswordVisible.value = true;
+  });
 }
 
 function handleResetPasswordSubmitted() {
@@ -284,58 +290,70 @@ function handleResetPasswordSubmitted() {
 }
 
 async function handleBatchDelete() {
-  if (checkedRowKeys.value.length === 0) {
-    window.$message?.warning('请选择要删除的用户');
-    return;
-  }
-
-  // 批量删除（串行执行）
-  let successCount = 0;
-  let failCount = 0;
-
-  for (const id of checkedRowKeys.value) {
-    const { error } = await fetchDeleteUser(id as number);
-    if (!error) {
-      successCount++;
-    } else {
-      failCount++;
+  await executeWithPermission('system.user.batch_delete', async () => {
+    if (checkedRowKeys.value.length === 0) {
+      window.$message?.warning('请选择要删除的用户');
+      return;
     }
-  }
 
-  if (successCount > 0) {
-    window.$message?.success(`成功删除 ${successCount} 个用户`);
-  }
+    // 批量删除（串行执行）
+    let successCount = 0;
+    let failCount = 0;
 
-  if (failCount > 0) {
-    window.$message?.error(`${failCount} 个用户删除失败`);
-  }
+    for (const id of checkedRowKeys.value) {
+      const { error } = await fetchDeleteUser(id as number);
+      if (!error) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
 
-  onBatchDeleted();
-  // 刷新角色列表和统计数据
-  await getAllRoles();
-  await updateUserStats();
-}
+    if (successCount > 0) {
+      window.$message?.success(`成功删除 ${successCount} 个用户`);
+    }
 
-async function handleDelete(id: number) {
-  const { error } = await fetchDeleteUser(id);
+    if (failCount > 0) {
+      window.$message?.error(`${failCount} 个用户删除失败`);
+    }
 
-  if (!error) {
-    window.$message?.success($t('common.deleteSuccess'));
-    onDeleted();
+    onBatchDeleted();
     // 刷新角色列表和统计数据
     await getAllRoles();
     await updateUserStats();
-  } else {
-    window.$message?.error(error.msg || '删除失败');
-  }
+  });
+}
+
+async function handleDelete(id: number) {
+  await executeWithPermission('system.user.delete', async () => {
+    const { error } = await fetchDeleteUser(id);
+
+    if (!error) {
+      window.$message?.success($t('common.deleteSuccess'));
+      onDeleted();
+      // 刷新角色列表和统计数据
+      await getAllRoles();
+      await updateUserStats();
+    } else {
+      window.$message?.error(error.msg || '删除失败');
+    }
+  }, { type: 'error' });
 }
 
 function resetSearchParams() {
   searchParams.value = getInitSearchParams();
 }
 
-function edit(id: number) {
-  handleEdit(id);
+async function edit(id: number) {
+  await executeWithPermission('system.user.update', async () => {
+    handleEdit(id);
+  });
+}
+
+async function handleAddClick() {
+  await executeWithPermission('system.user.create', async () => {
+    handleAdd();
+  });
 }
 
 // 刷新数据（包括统计和表格）
@@ -440,7 +458,7 @@ onUnmounted(() => {
           <span class="toolbar-desc">管理系统用户账号、角色分配与状态控制</span>
         </div>
         <div class="toolbar-actions">
-          <ElButton type="primary" size="small" @click="handleAdd">
+          <ElButton type="primary" size="small" @click="handleAddClick">
             <ElIcon><Plus /></ElIcon>
             新增用户
           </ElButton>

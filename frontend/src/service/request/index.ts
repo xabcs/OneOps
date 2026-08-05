@@ -57,7 +57,7 @@ export const request = createFlatRequest(
         handleLogout();
         window.removeEventListener('beforeunload', handleLogout);
 
-        request.state.errMsgStack = request.state.errMsgStack.filter(msg => msg !== response.data.msg);
+        request.state.errMsgStack = request.state.errMsgStack.filter(msg => msg !== response.data.message);
       }
 
       // 处理业务错误码（4xxxx）- 构造错误并抛出
@@ -83,14 +83,14 @@ export const request = createFlatRequest(
 
       // when the backend response code is in `modalLogoutCodes`, it means the user will be logged out by displaying a modal
       const modalLogoutCodes = import.meta.env.VITE_SERVICE_MODAL_LOGOUT_CODES?.split(',') || [];
-      if (modalLogoutCodes.includes(responseCode) && !request.state.errMsgStack?.includes(response.data.msg)) {
-        request.state.errMsgStack = [...(request.state.errMsgStack || []), response.data.msg];
+      if (modalLogoutCodes.includes(responseCode) && !request.state.errMsgStack?.includes(response.data.message)) {
+        request.state.errMsgStack = [...(request.state.errMsgStack || []), response.data.message];
 
         // prevent the user from refreshing the page
         window.addEventListener('beforeunload', handleLogout);
 
         window.$messageBox
-          ?.confirm(response.data.msg, $t('common.error'), {
+          ?.confirm(response.data.message, $t('common.error'), {
             confirmButtonText: $t('common.confirm'),
             cancelButtonText: $t('common.cancel'),
             type: 'error',
@@ -127,7 +127,7 @@ export const request = createFlatRequest(
 
       // get backend error message and code
       if (error.code === BACKEND_ERROR_CODE) {
-        message = error.response?.data?.msg || message;
+        message = error.response?.data?.message || message;
         backendErrorCode = String(error.response?.data?.code || '');
       }
 

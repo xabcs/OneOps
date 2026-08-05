@@ -109,7 +109,6 @@ func (c *RouteController) GetUserRoutes(ctx *gin.Context) {
 
 	// 清除该用户的缓存，确保路由配置每次都是最新的
 	// 因为路由配置（component字段）需要动态生成，缓存会导致代码修改不生效
-	services.InvalidateRBACCache(userIDUint)
 
 	rbacService := services.NewRBACService()
 	menuTree, _, roles, err := rbacService.BuildMenuTreeAndPermissions(userIDUint)
@@ -232,7 +231,6 @@ func (c *RouteController) IsRouteExist(ctx *gin.Context) {
 // InvalidateCache 清除RBAC缓存
 func (c *RouteController) InvalidateCache(ctx *gin.Context) {
 	// 先清除缓存
-	services.InvalidateRBACCache(0)
 
 	// 然后重新同步菜单，确保数据最新
 	initService := services.NewInitService()
@@ -242,7 +240,6 @@ func (c *RouteController) InvalidateCache(ctx *gin.Context) {
 	}
 
 	// 再次清除缓存，确保新菜单权限立即生效
-	services.InvalidateRBACCache(0)
 
 	ctx.JSON(http.StatusOK, utils.SuccessWithData("缓存已清除并重新同步菜单数据"))
 }

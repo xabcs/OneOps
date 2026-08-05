@@ -34,7 +34,8 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     updatedAt: '',
     roleNames: [],
     menuTree: [],
-    permissions: []
+    permissions: [],
+    permissionInfo: []
   });
 
   /** is super role in static route */
@@ -46,6 +47,64 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
 
   /** Is login */
   const isLogin = computed(() => Boolean(token.value));
+
+  /** User permissions */
+  const permissions = computed(() => userInfo.permissions || []);
+
+  /** Check if user is super admin */
+  const isSuperAdmin = computed(() => {
+    // 用户名是 admin 直接认定为超级管理员
+    if (userInfo.username === 'admin') return true;
+    // 或者拥有通配符权限
+    return permissions.value.includes('*.*.*') || permissions.value.includes('admin');
+  });
+
+  /** Permission code to name mapping */
+
+  /**
+   * Get permission name by code
+   * @param code Permission code (e.g., 'system.user.create')
+   * @returns Permission name (e.g., '创建用户') or the code itself if not found
+   */
+  function getPermissionName(code: string): string {
+		// 从登录返回的 permissionInfo 中查找权限名称
+		if (userInfo.permissionInfo && userInfo.permissionInfo.length > 0) {
+			const perm = userInfo.permissionInfo.find((p: any) => p.code === code)
+			if (perm) return perm.name
+		}
+		// 回退到显示权限码
+		return code
+  }
+
+  /**
+   * Check if user has specific permission
+   * @param permissionCode Permission code (e.g., 'system.user.create')
+   */
+  function hasPermission(permissionCode: string): boolean {
+    if (!permissionCode) return true;
+    if (isSuperAdmin.value) return true;
+    return permissions.value.includes(permissionCode);
+  }
+
+  /**
+   * Check if user has any of the specified permissions
+   * @param permissionCodes Array of permission codes
+   */
+  function hasAnyPermission(permissionCodes: string[]): boolean {
+    if (!permissionCodes || permissionCodes.length === 0) return true;
+    if (isSuperAdmin.value) return true;
+    return permissionCodes.some(code => hasPermission(code));
+  }
+
+  /**
+   * Check if user has all of the specified permissions
+   * @param permissionCodes Array of permission codes
+   */
+  function hasAllPermissions(permissionCodes: string[]): boolean {
+    if (!permissionCodes || permissionCodes.length === 0) return true;
+    if (isSuperAdmin.value) return true;
+    return permissionCodes.every(code => hasPermission(code));
+  }
 
   /** Reset auth store */
   async function resetStore() {
@@ -154,7 +213,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
   async function handleUserInfo(info: Api.Auth.UserInfo) {
     // update store - 需要深度更新以触发响应式
     Object.keys(info).forEach(key => {
-      if (key === 'menuTree' || key === 'permissions') {
+      if (key === 'menuTree' || key === 'permissions' || key === 'permissionInfo') {
         // 对于数组类型，需要特殊处理
         (userInfo as any)[key] = info[key as keyof Api.Auth.UserInfo];
       } else {
@@ -202,10 +261,16 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     userInfo,
     isStaticSuper,
     isLogin,
+    permissions,
+    isSuperAdmin,
     loginLoading,
     resetStore,
     login,
     getUserInfo,
-    initUserInfo
+    initUserInfo,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    getPermissionName
   };
 });

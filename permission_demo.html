@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>统一权限检查系统测试</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        h2 {
+            color: #666;
+            margin-top: 0;
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        button {
+            padding: 12px 20px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary { background: #409eff; color: white; }
+        .btn-success { background: #67c23a; color: white; }
+        .btn-warning { background: #e6a23c; color: white; }
+        .btn-danger { background: #f56c6c; color: white; }
+        .btn-info { background: #909399; color: white; }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .status {
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .status-success { background: #f0f9ff; border-left: 4px solid #409eff; }
+        .status-error { background: #fef0f0; border-left: 4px solid #f56c6c; }
+
+        .permission-list {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+
+        .code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .code pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+
+        .alert-box {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+            min-width: 400px;
+        }
+        .alert-box.show {
+            display: block;
+        }
+        .alert-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        .alert-overlay.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 统一权限检查系统演示</h1>
+
+        <!-- 用户管理权限测试 -->
+        <div class="section">
+            <h2>用户管理权限测试</h2>
+            <div class="button-grid">
+                <button class="btn-primary" onclick="testPermission('system.user.create')">创建用户</button>
+                <button class="btn-success" onclick="testPermission('system.user.view')">查看用户</button>
+                <button class="btn-warning" onclick="testPermission('system.user.update')">编辑用户</button>
+                <button class="btn-danger" onclick="testPermission('system.user.delete')">删除用户</button>
+                <button class="btn-info" onclick="testPermission('system.user.export')">导出用户</button>
+                <button class="btn-info" onclick="testPermission('system.user.reset_password')">重置密码</button>
+            </div>
+        </div>
+
+        <!-- 角色管理权限测试 -->
+        <div class="section">
+            <h2>角色管理权限测试</h2>
+            <div class="button-grid">
+                <button class="btn-primary" onclick="testPermission('system.role.create')">创建角色</button>
+                <button class="btn-success" onclick="testPermission('system.role.view')">查看角色</button>
+                <button class="btn-warning" onclick="testPermission('system.role.update')">编辑角色</button>
+                <button class="btn-danger" onclick="testPermission('system.role.delete')">删除角色</button>
+                <button class="btn-info" onclick="testPermission('system.role.assign_permission')">分配权限</button>
+            </div>
+        </div>
+
+        <!-- 权限管理权限测试 -->
+        <div class="section">
+            <h2>权限管理权限测试</h2>
+            <div class="button-grid">
+                <button class="btn-primary" onclick="testPermission('system.permission.create')">创建权限</button>
+                <button class="btn-success" onclick="testPermission('system.permission.view')">查看权限</button>
+                <button class="btn-warning" onclick="testPermission('system.permission.update')">编辑权限</button>
+                <button class="btn-danger" onclick="testPermission('system.permission.delete')">删除权限</button>
+            </div>
+        </div>
+
+        <!-- 当前状态显示 -->
+        <div class="section">
+            <h2>当前权限状态</h2>
+            <div class="permission-list">
+                <h3>模拟用户权限：</h3>
+                <div id="currentPermissions">
+                    <p>system.user.view - ✅ 有权限</p>
+                    <p>system.user.create - ❌ 无权限</p>
+                    <p>system.role.* - ✅ 有权限 (通配符)</p>
+                </p>
+                <p>*:*:* - ✅ 超级管理员 (所有权限)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 使用说明 -->
+        <div class="section">
+            <h2>使用说明</h2>
+            <div class="code">
+<pre>// 1. 引入统一权限检查
+import { useUserActionExecutors } from '@/composables/useUnifiedPermission'
+
+// 2. 使用权限执行器
+const { executeCreate, executeUpdate, executeDelete } = useUserActionExecutors()
+
+// 3. 在操作中执行权限检查
+const handleCreate = async () => {
+  await executeCreate(async () => {
+    // 实际的业务逻辑
+    await createAPI(userData)
+    ElMessage.success('创建成功')
+  })
+}
+
+// 4. 无权限时会自动弹出提醒：
+// - 弹窗显示需要的权限
+// - 提供联系方式
+// - 用户确认后关闭</pre>
+            </div>
+        </div>
+
+        <!-- 测试结果 -->
+        <div id="testResult"></div>
+    </div>
+
+    <!-- 权限提醒弹窗 -->
+    <div class="alert-overlay" id="alertOverlay" onclick="closeAlert()"></div>
+    <div class="alert-box" id="alertBox">
+        <h3 style="color: #e6a23c; margin-top: 0;">⚠️ 权限不足</h3>
+        <p id="alertMessage"></p>
+        <div style="margin-top: 20px; text-align: right;">
+            <button onclick="closeAlert()" style="background: #909399; color: white;">我知道了</button>
+        </div>
+    </div>
+
+    <script>
+        // 模拟权限检查
+        const mockPermissions = [
+            'system.user.view',
+            'system.role.*',
+            'system.permission.view'
+        ];
+
+        function testPermission(permission) {
+            const hasPermission = mockPermissions.some(perm => {
+                if (perm.endsWith('*')) {
+                    return permission.startsWith(perm.replace('*', ''));
+                }
+                return perm === permission || perm === '*:*:*';
+            });
+
+            if (hasPermission) {
+                showSuccess(`✅ 权限检查通过：${permission}`);
+                executeOperation(permission);
+            } else {
+                showNoPermissionAlert(permission);
+            }
+        }
+
+        function showNoPermissionAlert(permission) {
+            const permissionNames = {
+                'system.user.create': '【创建用户】',
+                'system.user.view': '【查看用户】',
+                'system.user.update': '【编辑用户】',
+                'system.user.delete': '【删除用户】',
+                'system.user.export': '【导出用户】',
+                'system.user.reset_password': '【重置密码】',
+                'system.role.create': '【创建角色】',
+                'system.role.view': '【查看角色】',
+                'system.role.update': '【编辑角色】',
+                'system.role.delete': '【删除角色】',
+                'system.role.assign_permission': '【分配权限】',
+                'system.permission.create': '【创建权限】',
+                'system.permission.view': '【查看权限】',
+                'system.permission.update': '【编辑权限】',
+                'system.permission.delete': '【删除权限】'
+            };
+
+            const name = permissionNames[permission] || `【${permission}】`;
+            const message = `您需要${name}权限 (${permission}) 才能执行此操作\n\n如需使用此功能，请联系管理员申请权限\n📧 联系方式：admin@company.com`;
+
+            document.getElementById('alertMessage').innerText = message;
+            document.getElementById('alertOverlay').classList.add('show');
+            document.getElementById('alertBox').classList.add('show');
+        }
+
+        function closeAlert() {
+            document.getElementById('alertOverlay').classList.remove('show');
+            document.getElementById('alertBox').classList.remove('show');
+        }
+
+        function executeOperation(permission) {
+            console.log(`执行操作: ${permission}`);
+            // 这里会调用实际的API
+        }
+
+        function showSuccess(message) {
+            const result = document.getElementById('testResult');
+            result.innerHTML = `<div class="status status-success">${message}</div>`;
+            setTimeout(() => {
+                result.innerHTML = '';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

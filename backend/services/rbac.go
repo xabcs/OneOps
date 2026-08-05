@@ -51,17 +51,6 @@ func (s *RBACService) BuildMenuTreeAndPermissions(userID uint) ([]*models.Menu, 
 	startTime := time.Now()
 	logger.Debug("[登录调试-RBAC] BuildMenuTreeAndPermissions开始", zap.Uint("userID", userID))
 
-	// 先查缓存
-	logger.Debug("[登录调试-RBAC] 检查缓存")
-	rbacCache.mu.RLock()
-	if entry, ok := rbacCache.entries[userID]; ok && time.Now().Before(entry.expireAt) {
-		rbacCache.mu.RUnlock()
-		logger.Debug("[登录调试-RBAC] 命中缓存，直接返回")
-		return entry.menuTree, entry.permissions, entry.roles, nil
-	}
-	rbacCache.mu.RUnlock()
-	logger.Debug("[登录调试-RBAC] 缓存未命中，开始查询")
-
 	logger.Debug("[登录调试-RBAC] 开始获取用户角色")
 	roleStart := time.Now()
 	roles, err := s.GetUserRoles(userID)
@@ -76,18 +65,10 @@ func (s *RBACService) BuildMenuTreeAndPermissions(userID uint) ([]*models.Menu, 
 
 	// 检查是否是管理员
 	isAdmin := false
-	menuIDs := make(map[uint]bool)
 	for _, role := range roles {
 		if role.Code == "admin" {
 			isAdmin = true
-		}
-
-		// 解析 menuIds JSON 数组
-		var roleMenuIDs []uint
-		if err := json.Unmarshal([]byte(role.MenuIDs), &roleMenuIDs); err == nil {
-			for _, id := range roleMenuIDs {
-				menuIDs[id] = true
-			}
+			break
 		}
 	}
 
@@ -105,12 +86,82 @@ func (s *RBACService) BuildMenuTreeAndPermissions(userID uint) ([]*models.Menu, 
 		return nil, nil, nil, err
 	}
 
-	// 如果是管理员，拥有所有菜单
+	// 🚀 权限推导策略：统一从权限码推导菜单权限
+	menuIDs := make(map[uint]bool)
+	permissions := make([]string, 0)
+
 	if isAdmin {
-		menuIDs = make(map[uint]bool)
+		// 管理员：拥有所有菜单和通配符权限
 		for _, menu := range allMenus {
 			menuIDs[menu.ID] = true
 		}
+		permissions = append(permissions, "*:*:*")
+	} else {
+		// 非管理员：从权限码推导菜单（新逻辑）
+		logger.Debug("[登录调试-RBAC] 从权限码推导菜单")
+
+		// 1. 获取用户的所有权限码（从 role_permissions 表）
+		for _, role := range roles {
+			var rolePerms []models.RolePermission
+			db.Where("role_id = ?", role.ID).Preload("Permission").Find(&rolePerms)
+			for _, rp := range rolePerms {
+				if rp.Permission.Code != "" {
+					permissions = append(permissions, rp.Permission.Code)
+				}
+			}
+		}
+
+		logger.Debug("[登录调试-RBAC] 获取到的权限码",
+			zap.Int("权限码数量", len(permissions)),
+			zap.Any("权限码列表", permissions))
+
+		// 2. 从权限码提取 resource 列表
+		allowedResources := make(map[string]bool)
+		for _, permCode := range permissions {
+			// 权限码格式：module.resource.action (使用点号分隔)
+			parts := strings.Split(permCode, ".")
+			logger.Debug("[登录调试-RBAC] 解析权限码",
+				zap.String("权限码", permCode),
+				zap.Int("段数", len(parts)),
+				zap.Any("分段", parts))
+
+			if len(parts) >= 2 {
+				resource := parts[1]
+				allowedResources[resource] = true
+				logger.Debug("[登录调试-RBAC] 提取资源",
+					zap.String("权限码", permCode),
+					zap.String("资源", resource))
+			}
+		}
+
+		// 转换为切片以便日志显示
+		resourceList := make([]string, 0, len(allowedResources))
+		for resource := range allowedResources {
+			resourceList = append(resourceList, resource)
+		}
+
+		logger.Debug("[登录调试-RBAC] 权限码推导",
+			zap.Int("权限码数量", len(permissions)),
+			zap.Int("资源数量", len(allowedResources)),
+			zap.Any("资源列表", resourceList))
+
+		// 3. 根据 resource 匹配菜单
+		for _, menu := range allMenus {
+			if menu.Resource != "" && allowedResources[menu.Resource] {
+				menuIDs[menu.ID] = true
+				logger.Debug("[登录调试-RBAC] 菜单匹配",
+					zap.String("菜单", menu.Name),
+					zap.String("资源", menu.Resource))
+				// 标记父菜单
+				for _, m := range allMenus {
+					if m.ID == menu.ParentID {
+						menuIDs[m.ID] = true
+					}
+				}
+			}
+		}
+
+		logger.Debug("[登录调试-RBAC] 推导出的菜单数量", zap.Int("数量", len(menuIDs)))
 	}
 
 	logger.Debug("[登录调试-RBAC] 开始构建菜单树")
@@ -121,23 +172,6 @@ func (s *RBACService) BuildMenuTreeAndPermissions(userID uint) ([]*models.Menu, 
 		zap.Duration("耗时", time.Since(treeStart)),
 		zap.Int("菜单树节点数", len(menuTree)))
 
-	// 提取权限列表
-	permissions := s.extractPermissions(menuTree)
-	if isAdmin {
-		permissions = append(permissions, "*:*:*")
-	}
-
-	logger.Debug("[登录调试-RBAC] 开始写入缓存")
-	// 写入缓存
-	rbacCache.mu.Lock()
-	rbacCache.entries[userID] = &rbacCacheEntry{
-		menuTree:    menuTree,
-		permissions: permissions,
-		roles:       roles,
-		expireAt:    time.Now().Add(rbacCacheTTL),
-	}
-	rbacCache.mu.Unlock()
-	logger.Debug("[登录调试-RBAC] 缓存写入完成")
 
 	logger.Debug("[登录调试-RBAC] BuildMenuTreeAndPermissions完成",
 		zap.Duration("总耗时", time.Since(startTime)),

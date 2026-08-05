@@ -1,0 +1,162 @@
+/**
+ * 统一权限检查和提醒系统
+ * 所有用户看到相同界面，操作时才检查权限并提醒
+ */
+
+import { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
+import { useAuthStore } from '@/store/modules/auth'
+
+/**
+ * 权限检查和提醒配置
+ */
+export interface PermissionAlertConfig {
+  title?: string              // 弹窗标题
+  message?: string            // 提醒消息
+  showContact?: boolean        // 显示申请联系方式
+  contactInfo?: string        // 联系信息
+  type?: 'warning' | 'error' | 'info'  // 提醒类型
+  duration?: number           // 消息显示时长
+  useNotification?: boolean   // 使用通知而非弹窗
+}
+
+/**
+ * 统一权限检查Hook
+ */
+export const useUnifiedPermission = () => {
+  const authStore = useAuthStore()
+
+  /**
+   * 执行权限检查和操作
+   * @param permission 权限编码
+   * @param action 要执行的操作
+   * @param config 提醒配置
+   */
+  const executeWithPermission = async (
+    permission: string | string[],
+    action: () => void | Promise<void>,
+    config: PermissionAlertConfig = {}
+  ): Promise<boolean> => {
+    const {
+      title = '权限不足',
+      message,
+      showContact = true,
+      contactInfo = 'admin@company.com',
+      type = 'warning',
+      duration = 3000,
+      useNotification = false
+    } = config
+
+    // 检查权限
+    const hasPermission = Array.isArray(permission)
+      ? permission.some(p => authStore.hasPermission(p))
+      : authStore.hasPermission(permission)
+
+    // 有权限则执行操作
+    if (hasPermission) {
+      try {
+        await action()
+        return true
+      } catch (error) {
+        console.error('操作执行失败:', error)
+        ElMessage.error('操作执行失败，请重试')
+        return false
+      }
+    }
+
+    // 无权限时的提醒
+    return showPermissionAlert(permission, {
+      title,
+      message,
+      showContact,
+      contactInfo,
+      type,
+      useNotification
+    })
+  }
+
+  /**
+   * 显示权限提醒
+   */
+  const showPermissionAlert = (
+    permission: string | string[],
+    config: PermissionAlertConfig
+  ): boolean => {
+    const {
+      title = '权限不足',
+      message,
+      showContact = true,
+      contactInfo = 'admin@company.com',
+      type = 'warning',
+      useNotification = false
+    } = config
+
+    const permissionText = Array.isArray(permission)
+      ? `以下权限之一：${permission.join('、')}`
+      : `【${authStore.getPermissionName(permission)}】权限 (${permission})`
+
+    const defaultMessage = `您需要${permissionText}才能执行此操作`
+    const fullMessage = message || defaultMessage
+
+    const contactText = showContact
+      ? `\n\n如需使用此功能，请联系管理员申请权限\n📧 联系方式：${contactInfo}`
+      : ''
+
+    // 根据配置显示提醒
+    if (useNotification) {
+      ElNotification({
+        title,
+        message: fullMessage + contactText,
+        type,
+        duration: 5000,
+        showClose: true
+      })
+    } else {
+      ElMessageBox.alert(
+        fullMessage + contactText,
+        title,
+        {
+          type,
+          confirmButtonText: '我知道了',
+          dangerouslyUseHTMLString: false
+        }
+      )
+    }
+
+    return false
+  }
+
+  /**
+   * 创建带权限检查的操作执行器
+   */
+  const createPermissionExecutor = (
+    permission: string,
+    defaultConfig: PermissionAlertConfig = {}
+  ) => {
+    return (action: () => void | Promise<void>, config?: PermissionAlertConfig) => {
+      return executeWithPermission(
+        permission,
+        action,
+        { ...defaultConfig, ...config }
+      )
+    }
+  }
+
+  /**
+   * 批量权限检查（用于多个操作）
+   */
+  const checkBatchPermissions = (permissions: string[]): Record<string, boolean> => {
+    const result: Record<string, boolean> = {}
+    permissions.forEach(permission => {
+      result[permission] = authStore.hasPermission(permission)
+    })
+    return result
+  }
+
+  return {
+    executeWithPermission,
+    createPermissionExecutor,
+    showPermissionAlert,
+    checkBatchPermissions
+  }
+}
+

@@ -700,6 +700,16 @@ export const generatedRoutes: GeneratedRoute[] = [
     },
     children: [
       {
+        name: 'manage_api-permission',
+        path: '/manage/api-permission',
+        component: 'view.manage_api-permission',
+        meta: {
+          title: 'manage_api-permission',
+          i18nKey: 'route.manage_api-permission',
+          roles: ['超级管理员', 'R_SUPER']
+        }
+      },
+      {
         name: 'manage_menu',
         path: '/manage/menu',
         component: 'view.manage_menu',
@@ -707,6 +717,15 @@ export const generatedRoutes: GeneratedRoute[] = [
           title: 'manage_menu',
           i18nKey: 'route.manage_menu',
           roles: ['超级管理员', 'R_ADMIN', 'R_USER']
+        }
+      },
+      {
+        name: 'manage_permission',
+        path: '/manage/permission',
+        component: 'view.manage_permission',
+        meta: {
+          title: 'manage_permission',
+          i18nKey: 'route.manage_permission'
         }
       },
       {

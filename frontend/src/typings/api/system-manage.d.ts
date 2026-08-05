@@ -218,5 +218,166 @@ declare namespace Api {
       updatedAt: string;
       definition?: AttributeDefinition;
     };
+
+    /** 权限 */
+    type Permission = Common.CommonRecord<{
+      /** 权限名称 */
+      name: string;
+      /** 权限编码 */
+      code: string;
+      /** 权限描述 */
+      description: string;
+      /** 所属模块 */
+      module: string;
+      /** 资源名称 */
+      resource: string;
+      /** 操作名称 */
+      action: string;
+      /** 权限级别 */
+      level: number;
+      /** 父权限ID */
+      parentId?: number | null;
+      /** 排序 */
+      sortOrder: number;
+      /** 状态 */
+      status: number;
+      /** 子权限 */
+      children?: Permission[] | null;
+    }>;
+
+    /** 权限搜索参数 */
+    type PermissionSearchParams = CommonType.RecordNullable<
+      Pick<Api.SystemManage.Permission, 'name' | 'code' | 'module' | 'level' | 'status'> & CommonSearchParams
+    >;
+
+    /** 权限列表 */
+    type PermissionList = Common.PaginatingQueryRecord<Permission>;
+
+    /** 权限树 */
+    type PermissionTree = {
+      id: number;
+      name: string;
+      code: string;
+      parentId?: number | null;
+      level: number;
+      children: PermissionTree[];
+    };
+
+    /** 角色权限分配请求 */
+    type AssignRolePermissionsRequest = {
+      roleId: number;
+      permissionIds: number[];
+    };
+
+    /** 权限检查请求 */
+    type CheckPermissionRequest = {
+      userId: number;
+      permission: string;
+    };
+
+    /** 权限检查响应 */
+    type CheckPermissionResponse = {
+      allowed: boolean;
+      reason?: string;
+    };
+
+    // ==================== API权限管理相关类型 ====================
+
+    /** API端点定义 */
+    type APIEndpoint = {
+      /** API唯一标识 */
+      id: string;
+      /** API路径 */
+      path: string;
+      /** 支持的HTTP方法 */
+      methods: string[];
+      /** API名称（中文） */
+      name: string;
+      /** API描述 */
+      description: string;
+      /** API分类 */
+      category: string;
+    };
+
+    /** API端点分类响应 */
+    type APIEndpointCategory = {
+      /** 分类名称 */
+      category: string;
+      /** 该分类下的API端点 */
+      endpoints: APIEndpoint[];
+    };
+
+    /** 角色API权限 */
+    type RoleAPIPermission = {
+      /** API路径 */
+      path: string;
+      /** HTTP方法 */
+      method: string;
+    };
+
+    /** API权限统计 */
+    type APIPermissionStats = {
+      /** 系统API总数 */
+      totalAPIs: number;
+      /** 各角色权限统计 */
+      roleStats: RolePermissionStats[];
+      /** Casbin策略总数 */
+      totalPolicies: number;
+    };
+
+    /** 角色权限统计 */
+    type RolePermissionStats = {
+      /** 角色代码 */
+      roleCode: string;
+      /** 权限数量 */
+      permissionCount: number;
+      /** 是否拥有所有API权限 */
+      hasAllAPIs: boolean;
+    };
+
+    /** API权限分配请求 */
+    type AssignAPIPermissionRequest = {
+      /** 角色代码 */
+      roleCode: string;
+      /** API路径 */
+      apiPath: string;
+      /** HTTP方法 */
+      httpMethod: string;
+    };
+
+    /** API权限撤销请求 */
+    type RevokeAPIPermissionRequest = {
+      /** 角色代码 */
+      roleCode: string;
+      /** API路径 */
+      apiPath: string;
+      /** HTTP方法 */
+      httpMethod: string;
+    };
+
+    /** 批量分配API权限请求 */
+    type BatchAssignAPIPermissionsRequest = {
+      /** 角色代码 */
+      roleCode: string;
+      /** 权限列表 */
+      permissions: {
+        path: string;
+        method: string;
+      }[];
+    };
+
+    /** API权限检查请求 */
+    type CheckAPIPermissionRequest = {
+      /** API路径 */
+      apiPath: string;
+      /** HTTP方法 */
+      httpMethod: string;
+    };
+
+    /** API权限检查响应 */
+    type CheckAPIPermissionResponse = {
+      /** 是否有权限 */
+      hasPermission: boolean;
+    };
   }
 }

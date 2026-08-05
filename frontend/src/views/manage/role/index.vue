@@ -7,13 +7,17 @@ import { fetchDeleteRole, fetchGetRoleList, fetchGetUserList, fetchUpdateRole } 
 import { useThemeStore } from '@/store/modules/theme';
 import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
+import { useUnifiedPermission } from '@/composables/useUnifiedPermission';
 import RoleSearch from './modules/role-search.vue';
 import RoleOperateDrawer from './modules/role-operate-drawer.vue';
-import MenuAuthModal from './modules/menu-auth-modal.vue';
+import PermissionAssignModal from './modules/permission-assign-modal.vue';
 
 defineOptions({ name: 'RoleManage' });
 
 const themeStore = useThemeStore();
+
+// 使用统一权限检查
+const { executeWithPermission } = useUnifiedPermission();
 
 // Hero区域显示状态
 const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);
@@ -208,8 +212,11 @@ const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagi
           <ElButton type="primary" plain size="small" onClick={() => edit(row.id)}>
             {$t('common.edit')}
           </ElButton>
-          <ElButton type="info" plain size="small" onClick={() => handleAuth(row.id)}>
-            权限设置
+          <ElButton type="info" plain size="small" onClick={() => handleViewPermissions(row.id)}>
+            查看权限
+          </ElButton>
+          <ElButton type="success" plain size="small" onClick={() => handleAssignPermissions(row.id)}>
+            分配权限
           </ElButton>
           <ElPopconfirm title={$t('common.confirmDelete')} onConfirm={() => handleDelete(row.id)}>
             {{
@@ -235,170 +242,196 @@ async function handleRoleOperateSubmitted() {
   await getAllUsers();
 }
 
-// 权限设置相关
-const { bool: authModalVisible, setTrue: openAuthModal } = useBoolean();
+// 统一权限分配
+const { bool: permissionModalVisible, setTrue: openPermissionModal } = useBoolean();
 const currentRoleId = ref<number>(-1);
 const currentRoleData = ref<Api.SystemManage.Role | null>(null);
+const isViewMode = ref(false); // 是否为只读查看模式
 
-function handleAuth(id: number) {
+function handleAssignPermissions(id: number) {
   const role = data.value.find(r => r.id === id);
   if (role) {
     currentRoleId.value = id;
     currentRoleData.value = role;
-    openAuthModal();
+    isViewMode.value = false; // 编辑模式
+    openPermissionModal();
   }
 }
 
-async function handleAuthSubmitted() {
+function handleViewPermissions(id: number) {
+  const role = data.value.find(r => r.id === id);
+  if (role) {
+    currentRoleId.value = id;
+    currentRoleData.value = role;
+    isViewMode.value = true; // 只读查看模式
+    openPermissionModal();
+  }
+}
+
+async function handlePermissionSubmitted() {
   await getData();
   await getAllUsers();
 }
 
 async function handleBatchDelete() {
-  if (checkedRowKeys.value.length === 0) {
-    ElNotification({
-      title: '提示',
-      message: '请选择要删除的角色',
-      type: 'warning',
-      duration: 3000,
-      position: 'top-right'
-    });
-    return;
-  }
+  await executeWithPermission('system.role.batch_delete', async () => {
+    if (checkedRowKeys.value.length === 0) {
+      ElNotification({
+        title: '提示',
+        message: '请选择要删除的角色',
+        type: 'warning',
+        duration: 3000,
+        position: 'top-right'
+      });
+      return;
+    }
 
-  const cannotDeleteRoles: Array<{ id: number; name: string; reason: string }> = [];
-  const canDeleteIds: number[] = [];
+    const cannotDeleteRoles: Array<{ id: number; name: string; reason: string }> = [];
+    const canDeleteIds: number[] = [];
 
-  for (const id of checkedRowKeys.value) {
+    for (const id of checkedRowKeys.value) {
+      const role = data.value.find(r => r.id === id);
+      if (!role) {
+        cannotDeleteRoles.push({ id: id as number, name: `ID:${id}`, reason: '角色不存在' });
+        continue;
+      }
+
+      const { canDelete, reason } = canDeleteRole(role);
+      if (!canDelete) {
+        cannotDeleteRoles.push({
+          id: role.id,
+          name: role.name,
+          reason: reason || '不可删除'
+        });
+      } else {
+        canDeleteIds.push(role.id);
+      }
+    }
+
+    if (cannotDeleteRoles.length > 0) {
+      const message = cannotDeleteRoles.map(r => `• ${r.name}: ${r.reason}`).join('\n');
+
+      ElNotification({
+        title: `无法删除 ${cannotDeleteRoles.length} 个角色`,
+        message,
+        type: 'warning',
+        duration: 5000,
+        position: 'top-right'
+      });
+
+      if (canDeleteIds.length === 0) {
+        return;
+      }
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const id of canDeleteIds) {
+      const { error } = await fetchDeleteRole(id);
+      if (!error) {
+        successCount++;
+      } else {
+        failCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      ElNotification({
+        title: '批量删除完成',
+        message: `成功删除 ${successCount} 个角色`,
+        type: 'success',
+        duration: 3000,
+        position: 'top-right'
+      });
+    }
+
+    if (failCount > 0) {
+      ElNotification({
+        title: '部分删除失败',
+        message: `${failCount} 个角色删除失败`,
+        type: 'error',
+        duration: 5000,
+        position: 'top-right'
+      });
+    }
+
+    onBatchDeleted();
+    await getAllUsers();
+  });
+}
+
+async function handleDelete(id: number) {
+  await executeWithPermission('system.role.delete', async () => {
     const role = data.value.find(r => r.id === id);
     if (!role) {
-      cannotDeleteRoles.push({ id: id as number, name: `ID:${id}`, reason: '角色不存在' });
-      continue;
+      window.$message?.error('角色不存在');
+      return;
     }
 
     const { canDelete, reason } = canDeleteRole(role);
     if (!canDelete) {
-      cannotDeleteRoles.push({
-        id: role.id,
-        name: role.name,
-        reason: reason || '不可删除'
+      ElNotification({
+        title: '无法删除角色',
+        message: reason || '该角色不可删除',
+        type: 'warning',
+        duration: 3000,
+        position: 'top-right'
       });
-    } else {
-      canDeleteIds.push(role.id);
-    }
-  }
-
-  if (cannotDeleteRoles.length > 0) {
-    const message = cannotDeleteRoles.map(r => `• ${r.name}: ${r.reason}`).join('\n');
-
-    ElNotification({
-      title: `无法删除 ${cannotDeleteRoles.length} 个角色`,
-      message,
-      type: 'warning',
-      duration: 5000,
-      position: 'top-right'
-    });
-
-    if (canDeleteIds.length === 0) {
       return;
     }
-  }
 
-  let successCount = 0;
-  let failCount = 0;
-
-  for (const id of canDeleteIds) {
     const { error } = await fetchDeleteRole(id);
+
     if (!error) {
-      successCount++;
+      ElNotification({
+        title: '删除成功',
+        message: `角色 "${role.name}" 已成功删除`,
+        type: 'success',
+        duration: 3000,
+        position: 'top-right'
+      });
+      onDeleted();
+      await getAllUsers();
     } else {
-      failCount++;
+      ElNotification({
+        title: '删除失败',
+        message: error.msg || '删除角色失败',
+        type: 'error',
+        duration: 3000,
+        position: 'top-right'
+      });
     }
-  }
-
-  if (successCount > 0) {
-    ElNotification({
-      title: '批量删除完成',
-      message: `成功删除 ${successCount} 个角色`,
-      type: 'success',
-      duration: 3000,
-      position: 'top-right'
-    });
-  }
-
-  if (failCount > 0) {
-    ElNotification({
-      title: '部分删除失败',
-      message: `${failCount} 个角色删除失败`,
-      type: 'error',
-      duration: 5000,
-      position: 'top-right'
-    });
-  }
-
-  onBatchDeleted();
-  await getAllUsers();
-}
-
-async function handleDelete(id: number) {
-  const role = data.value.find(r => r.id === id);
-  if (!role) {
-    window.$message?.error('角色不存在');
-    return;
-  }
-
-  const { canDelete, reason } = canDeleteRole(role);
-  if (!canDelete) {
-    ElNotification({
-      title: '无法删除角色',
-      message: reason || '该角色不可删除',
-      type: 'warning',
-      duration: 3000,
-      position: 'top-right'
-    });
-    return;
-  }
-
-  const { error } = await fetchDeleteRole(id);
-
-  if (!error) {
-    ElNotification({
-      title: '删除成功',
-      message: `角色 "${role.name}" 已成功删除`,
-      type: 'success',
-      duration: 3000,
-      position: 'top-right'
-    });
-    onDeleted();
-    await getAllUsers();
-  } else {
-    ElNotification({
-      title: '删除失败',
-      message: error.msg || '删除角色失败',
-      type: 'error',
-      duration: 3000,
-      position: 'top-right'
-    });
-  }
+  });
 }
 
 async function handleStatusChange(row: Api.SystemManage.Role, val: number) {
-  const { error } = await fetchUpdateRole(row.id, { status: val });
+  await executeWithPermission('system.role.update', async () => {
+    const { error } = await fetchUpdateRole(row.id, { status: val });
 
-  if (!error) {
-    window.$message?.success(`${val === 1 ? '启用' : '禁用'}成功`);
-  } else {
-    row.status = val === 1 ? 0 : 1;
-    window.$message?.error('状态更新失败');
-  }
+    if (!error) {
+      window.$message?.success(`${val === 1 ? '启用' : '禁用'}成功`);
+    } else {
+      row.status = val === 1 ? 0 : 1;
+      window.$message?.error('状态更新失败');
+    }
+  });
 }
 
 function resetSearchParams() {
   searchParams.value = getInitSearchParams();
 }
 
-function edit(id: number) {
-  handleEdit(id);
+async function edit(id: number) {
+  await executeWithPermission('system.role.update', async () => {
+    handleEdit(id);
+  });
+}
+
+async function handleAddClick() {
+  await executeWithPermission('system.role.create', async () => {
+    handleAdd();
+  });
 }
 
 // 刷新数据
@@ -484,7 +517,7 @@ onUnmounted(() => {
           <span class="toolbar-desc">管理系统角色、分配菜单权限与用户关联</span>
         </div>
         <div class="toolbar-actions">
-          <ElButton type="primary" size="small" @click="handleAdd">
+          <ElButton type="primary" size="small" @click="handleAddClick">
             <ElIcon><Plus /></ElIcon>
             新增角色
           </ElButton>
@@ -559,11 +592,12 @@ onUnmounted(() => {
       :row-data="editingData"
       @submitted="handleRoleOperateSubmitted"
     />
-    <MenuAuthModal
-      v-model:visible="authModalVisible"
+    <PermissionAssignModal
+      v-model:visible="permissionModalVisible"
       :role-id="currentRoleId"
       :role-data="currentRoleData"
-      @submitted="handleAuthSubmitted"
+      :view-only="isViewMode"
+      @submitted="handlePermissionSubmitted"
     />
   </div>
 </template>

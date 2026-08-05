@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
-import { fetchCreateUser, fetchGetAllRoles, fetchGetMenuTree, fetchUpdateUser } from '@/service/api';
+import { fetchCreateUser, fetchGetMenuTree, fetchUpdateUser } from '@/service/api';
 import { useForm, useFormRules } from '@/hooks/common/form';
 import { $t } from '@/locales';
 
@@ -97,23 +97,19 @@ const rules = computed(() => {
 });
 
 /** the enabled role options */
-const roleOptions = ref<CommonType.Option<number>[]>([]);
+const roleOptions = computed<CommonType.Option<number>[]>(() => {
+  if (!props.allRoles || props.allRoles.length === 0) {
+    return [];
+  }
+
+  return props.allRoles.map(role => ({
+    label: role.name,
+    value: role.id
+  }));
+});
 
 /** the home directory options */
 const homePathOptions = ref<CommonType.Option<string>[]>([]);
-
-async function getRoleOptions() {
-  const { error, data } = await fetchGetAllRoles();
-
-  if (!error && data) {
-    const options = data.map(item => ({
-      label: item.name,
-      value: item.id
-    }));
-
-    roleOptions.value = options;
-  }
-}
 
 async function getHomePathOptions() {
   // 获取所有菜单
@@ -245,7 +241,11 @@ async function handleSubmit() {
     closeDrawer();
     emit('submitted');
   } else {
-    window.$message?.error(isEdit.value ? '更新失败' : '添加失败');
+    // 显示后端返回的具体错误信息
+    const backendMessage = error?.response?.data?.message
+      || error?.message
+      || (isEdit.value ? '更新失败' : '添加失败');
+    window.$message?.error(backendMessage);
   }
 }
 
@@ -266,7 +266,6 @@ watch(
 
       handleInitModel();
       restoreValidation();
-      getRoleOptions();
       getHomePathOptions();
     }
   }
