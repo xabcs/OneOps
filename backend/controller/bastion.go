@@ -1,8 +1,8 @@
-package controllers
+package controller
 
 import (
 	"net/http"
-	"oneops/backend/handlers"
+	"oneops/backend/handler"
 	"oneops/backend/models"
 	"oneops/backend/services"
 	"oneops/backend/utils"
@@ -16,14 +16,14 @@ import (
 // BastionController 堡垒机控制器
 type BastionController struct {
 	bastionService *services.BastionService
-	sessionManager *handlers.SessionManager
+	sessionManager *handler.SessionManager
 }
 
 // NewBastionController 创建堡垒机控制器
 func NewBastionController() *BastionController {
 	return &BastionController{
 		bastionService: services.NewBastionService(),
-		sessionManager: handlers.GetSessionManager(),
+		sessionManager: handler.GetSessionManager(),
 	}
 }
 
@@ -269,7 +269,7 @@ func (c *BastionController) TerminateSession(ctx *gin.Context) {
 	}
 
 	// 1. 先断开 WebSocket 连接（从内存中移除会话）
-	handlers.GetSessionManager().TerminateSession(uint(sessionID))
+	handler.GetSessionManager().TerminateSession(uint(sessionID))
 
 	// 2. 更新数据库状态
 	if err := c.bastionService.TerminateSession(uint(sessionID), operatorID); err != nil {

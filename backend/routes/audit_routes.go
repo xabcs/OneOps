@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"oneops/backend/controllers"
-	"oneops/backend/middlewares"
+	"oneops/backend/controller"
+	"oneops/backend/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -10,11 +10,11 @@ import (
 // SetupAuditRoutes 设置审计管理相关路由
 func SetupAuditRoutes(
 	r *gin.Engine,
-	auditController *controllers.AuditController,
+	auditController *controller.AuditController,
 ) {
 	api := r.Group("/api")
 	audit := api.Group("/audit")
-	audit.Use(middlewares.Auth())
+	audit.Use(middleware.Auth())
 	{
 		// 登录日志
 		audit.GET("/login-logs", auditController.GetLoginLogs)

@@ -9,7 +9,7 @@ import (
 	"oneops/backend/config"
 	"oneops/backend/container"
 	"oneops/backend/dto"
-	"oneops/backend/handlers"
+	"oneops/backend/handler"
 	"oneops/backend/logger"
 	"oneops/backend/routes"
 	"oneops/backend/services"
@@ -96,7 +96,7 @@ func main() {
 	services.CleanupOrphanedSessions()
 
 	// 初始化 SessionManager（必须在服务启动前初始化）
-	handlers.InitSessionManager()
+	handler.InitSessionManager()
 
 	// 启动 Agent 指标采集调度器（每 5 分钟 HTTP 拉取 agent_status=running 主机，每 1 分钟检测心跳超时）
 	go services.StartAgentMetricsScheduler()

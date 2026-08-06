@@ -1,4 +1,4 @@
-package controllers
+package controller
 
 import (
 	"net/http"
@@ -8,7 +8,7 @@ import (
 	"oneops/backend/container"
 	"oneops/backend/dto"
 	"oneops/backend/models"
-	"oneops/backend/middlewares"
+	"oneops/backend/middleware"
 	"oneops/backend/services"
 	"oneops/backend/utils"
 
@@ -72,7 +72,7 @@ func (c *CMDBController) GetServers(ctx *gin.Context) {
 
 	servers, total, err := c.container.CMDBService().GetServers(query, params.Page, params.PageSize)
 	if err != nil {
-		middlewares.HandleControllerError(ctx, err)
+		middleware.HandleControllerError(ctx, err)
 		return
 	}
 

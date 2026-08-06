@@ -1,9 +1,9 @@
 package routes
 
 import (
-	"oneops/backend/controllers"
-	"oneops/backend/handlers"
-	"oneops/backend/middlewares"
+	"oneops/backend/controller"
+	"oneops/backend/handler"
+	"oneops/backend/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,14 +11,14 @@ import (
 // SetupCMDBRoutes 设置CMDB资产管理相关路由
 func SetupCMDBRoutes(
 	r *gin.Engine,
-	cmdbController *controllers.CMDBController,
-	bastionController *controllers.BastionController,
-	attributeController *controllers.AttributeController,
-	sshHandler *handlers.SSHWebSocketHandler,
+	cmdbController *controller.CMDBController,
+	bastionController *controller.BastionController,
+	attributeController *controller.AttributeController,
+	sshHandler *handler.SSHWebSocketHandler,
 ) {
 	api := r.Group("/api")
 	cmdb := api.Group("/cmdb")
-	cmdb.Use(middlewares.Auth())
+	cmdb.Use(middleware.Auth())
 	{
 		// 服务器管理
 		cmdb.GET("/servers", cmdbController.GetServers)
