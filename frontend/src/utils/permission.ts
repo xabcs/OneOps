@@ -40,7 +40,7 @@ export function canAll(permissions: string[]): boolean {
  */
 export const PERMISSIONS = {
   // 用户管理
-  USER_VIEW: 'system.user.view',
+  USER_LIST: 'system.user.list',
   USER_CREATE: 'system.user.create',
   USER_UPDATE: 'system.user.update',
   USER_DELETE: 'system.user.delete',
@@ -51,7 +51,7 @@ export const PERMISSIONS = {
   USER_IMPORT: 'system.user.import',
 
   // 角色管理
-  ROLE_VIEW: 'system.role.view',
+  ROLE_LIST: 'system.role.list',
   ROLE_CREATE: 'system.role.create',
   ROLE_UPDATE: 'system.role.update',
   ROLE_DELETE: 'system.role.delete',
@@ -59,7 +59,7 @@ export const PERMISSIONS = {
   ROLE_VIEW_USERS: 'system.role.view_users',
 
   // 权限管理
-  PERMISSION_VIEW: 'system.permission.view',
+  PERMISSION_LIST: 'system.permission.list',
   PERMISSION_CREATE: 'system.permission.create',
   PERMISSION_UPDATE: 'system.permission.update',
   PERMISSION_DELETE: 'system.permission.delete',
@@ -67,7 +67,7 @@ export const PERMISSIONS = {
   PERMISSION_IMPORT: 'system.permission.import',
 
   // 菜单管理
-  MENU_VIEW: 'system.menu.view',
+  MENU_LIST: 'system.menu.list',
   MENU_CREATE: 'system.menu.create',
   MENU_UPDATE: 'system.menu.update',
   MENU_DELETE: 'system.menu.delete',
@@ -95,7 +95,7 @@ export const PERMISSION_GROUPS = {
   USER_MANAGEMENT: {
     name: '用户管理',
     permissions: [
-      PERMISSIONS.USER_VIEW,
+      PERMISSIONS.USER_LIST,
       PERMISSIONS.USER_CREATE,
       PERMISSIONS.USER_UPDATE,
       PERMISSIONS.USER_DELETE,
@@ -109,7 +109,7 @@ export const PERMISSION_GROUPS = {
   ROLE_MANAGEMENT: {
     name: '角色管理',
     permissions: [
-      PERMISSIONS.ROLE_VIEW,
+      PERMISSIONS.ROLE_LIST,
       PERMISSIONS.ROLE_CREATE,
       PERMISSIONS.ROLE_UPDATE,
       PERMISSIONS.ROLE_DELETE,
@@ -120,7 +120,7 @@ export const PERMISSION_GROUPS = {
   PERMISSION_MANAGEMENT: {
     name: '权限管理',
     permissions: [
-      PERMISSIONS.PERMISSION_VIEW,
+      PERMISSIONS.PERMISSION_LIST,
       PERMISSIONS.PERMISSION_CREATE,
       PERMISSIONS.PERMISSION_UPDATE,
       PERMISSIONS.PERMISSION_DELETE,

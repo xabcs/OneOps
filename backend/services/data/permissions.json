@@ -1,0 +1,812 @@
+{
+  "version": "1.0.0",
+  "description": "OneOps系统权限定义",
+  "modules": [
+    {
+      "code": "system",
+      "name": "系统管理",
+      "description": "系统管理模块权限",
+      "level": 1,
+      "status": 1,
+      "resources": [
+        {
+          "code": "user",
+          "name": "用户管理",
+          "description": "用户管理页面权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "用户列表",
+              "description": "查看用户列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "create",
+              "name": "创建用户",
+              "description": "创建新用户",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "update",
+              "name": "更新用户",
+              "description": "更新用户信息",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "delete",
+              "name": "删除用户",
+              "description": "删除用户",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "reset_password",
+              "name": "重置密码",
+              "description": "重置用户密码",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "role",
+          "name": "角色管理",
+          "description": "角色管理页面权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "角色列表",
+              "description": "查看角色列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "create",
+              "name": "创建角色",
+              "description": "创建新角色",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "update",
+              "name": "更新角色",
+              "description": "更新角色信息",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "delete",
+              "name": "删除角色",
+              "description": "删除角色",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "assign_permissions",
+              "name": "分配权限",
+              "description": "为角色分配权限",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "menu",
+          "name": "菜单管理",
+          "description": "菜单管理页面权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "菜单列表",
+              "description": "查看菜单列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "create",
+              "name": "创建菜单",
+              "description": "创建新菜单",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "update",
+              "name": "更新菜单",
+              "description": "更新菜单信息",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "delete",
+              "name": "删除菜单",
+              "description": "删除菜单",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "permission",
+          "name": "权限管理",
+          "description": "权限管理页面权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "权限列表",
+              "description": "查看权限列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "create",
+              "name": "创建权限",
+              "description": "创建新权限",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "update",
+              "name": "更新权限",
+              "description": "更新权限信息",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "delete",
+              "name": "删除权限",
+              "description": "删除权限",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "cmdb",
+      "name": "CMDB管理",
+      "description": "CMDB管理模块权限",
+      "level": 1,
+      "status": 1,
+      "resources": [
+        {
+          "code": "server",
+          "name": "服务器管理",
+          "description": "服务器管理权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "服务器列表",
+              "description": "查看服务器列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "view",
+              "name": "查看服务器",
+              "description": "查看服务器详情",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "create",
+              "name": "创建服务器",
+              "description": "创建新服务器",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "update",
+              "name": "更新服务器",
+              "description": "更新服务器信息",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "delete",
+              "name": "删除服务器",
+              "description": "删除服务器",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "connect",
+              "name": "连接服务器",
+              "description": "连接到服务器",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "group",
+          "name": "分组管理",
+          "description": "分组管理权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "分组列表",
+              "description": "查看分组列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "view",
+              "name": "查看分组",
+              "description": "查看分组详情",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "create",
+              "name": "创建分组",
+              "description": "创建新分组",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "update",
+              "name": "更新分组",
+              "description": "更新分组信息",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "delete",
+              "name": "删除分组",
+              "description": "删除分组",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "assign",
+              "name": "分配服务器",
+              "description": "分配服务器到分组",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "business",
+          "name": "业务管理",
+          "description": "业务管理权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "业务列表",
+              "description": "查看业务列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "view",
+              "name": "查看业务",
+              "description": "查看业务详情",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "create",
+              "name": "创建业务",
+              "description": "创建新业务",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "update",
+              "name": "更新业务",
+              "description": "更新业务信息",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "delete",
+              "name": "删除业务",
+              "description": "删除业务",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "rooms",
+          "name": "机房管理",
+          "description": "机房管理权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "机房列表",
+              "description": "查看机房列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "view",
+              "name": "查看机房",
+              "description": "查看机房详情",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "create",
+              "name": "创建机房",
+              "description": "创建新机房",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "update",
+              "name": "更新机房",
+              "description": "更新机房信息",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "delete",
+              "name": "删除机房",
+              "description": "删除机房",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "tags",
+          "name": "标签管理",
+          "description": "标签管理权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "标签列表",
+              "description": "查看标签列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "view",
+              "name": "查看标签",
+              "description": "查看标签详情",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "create",
+              "name": "创建标签",
+              "description": "创建新标签",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "update",
+              "name": "更新标签",
+              "description": "更新标签信息",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "delete",
+              "name": "删除标签",
+              "description": "删除标签",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "agents",
+          "name": "Agent管理",
+          "description": "Agent管理权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "Agent列表",
+              "description": "查看Agent列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "deploy",
+              "name": "部署Agent",
+              "description": "部署Agent到服务器",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "restart",
+              "name": "重启Agent",
+              "description": "重启Agent服务",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "uninstall",
+              "name": "卸载Agent",
+              "description": "卸载Agent",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "monitor",
+      "name": "监控管理",
+      "description": "监控管理模块权限",
+      "level": 1,
+      "status": 1,
+      "resources": [
+        {
+          "code": "data",
+          "name": "监控数据",
+          "description": "监控数据权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "view",
+              "name": "查看监控数据",
+              "description": "查看监控数据",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "export",
+              "name": "导出监控数据",
+              "description": "导出监控数据",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "alert",
+          "name": "告警管理",
+          "description": "告警管理权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "告警列表",
+              "description": "查看告警列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "view",
+              "name": "查看告警",
+              "description": "查看告警详情",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "ack",
+              "name": "确认告警",
+              "description": "确认告警",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "handle",
+              "name": "处理告警",
+              "description": "处理告警",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "task",
+          "name": "监控任务",
+          "description": "监控任务权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "任务列表",
+              "description": "查看任务列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "view",
+              "name": "查看任务",
+              "description": "查看任务详情",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "create",
+              "name": "创建任务",
+              "description": "创建新任务",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "update",
+              "name": "更新任务",
+              "description": "更新任务信息",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "delete",
+              "name": "删除任务",
+              "description": "删除任务",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "execute",
+              "name": "执行任务",
+              "description": "执行任务",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "k8s",
+      "name": "K8s管理",
+      "description": "K8s管理模块权限",
+      "level": 1,
+      "status": 1,
+      "resources": [
+        {
+          "code": "cluster",
+          "name": "集群管理",
+          "description": "集群管理权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "集群列表",
+              "description": "查看集群列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "view",
+              "name": "查看集群",
+              "description": "查看集群详情",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "create",
+              "name": "创建集群",
+              "description": "创建新集群",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "update",
+              "name": "更新集群",
+              "description": "更新集群信息",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "delete",
+              "name": "删除集群",
+              "description": "删除集群",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "connect",
+              "name": "连接集群",
+              "description": "连接到集群",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "resource",
+          "name": "资源管理",
+          "description": "资源管理权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "view",
+              "name": "查看资源",
+              "description": "查看资源详情",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "create",
+              "name": "创建资源",
+              "description": "创建新资源",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "update",
+              "name": "更新资源",
+              "description": "更新资源信息",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "delete",
+              "name": "删除资源",
+              "description": "删除资源",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "permission",
+          "name": "K8s权限",
+          "description": "K8s权限管理",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "权限列表",
+              "description": "查看权限列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "assign",
+              "name": "分配权限",
+              "description": "分配K8s权限",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "revoke",
+              "name": "撤销权限",
+              "description": "撤销K8s权限",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "audit",
+      "name": "审计管理",
+      "description": "审计管理模块权限",
+      "level": 1,
+      "status": 1,
+      "resources": [
+        {
+          "code": "login_log",
+          "name": "登录日志",
+          "description": "登录日志权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "登录日志列表",
+              "description": "查看登录日志列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "view",
+              "name": "查看登录日志",
+              "description": "查看登录日志详情",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "export",
+              "name": "导出登录日志",
+              "description": "导出登录日志",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "operation_log",
+          "name": "操作日志",
+          "description": "操作日志权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "操作日志列表",
+              "description": "查看操作日志列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "view",
+              "name": "查看操作日志",
+              "description": "查看操作日志详情",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "export",
+              "name": "导出操作日志",
+              "description": "导出操作日志",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "system_event",
+          "name": "系统事件日志",
+          "description": "系统事件日志权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "list",
+              "name": "事件日志列表",
+              "description": "查看事件日志列表",
+              "level": 3,
+              "status": 1
+            },
+            {
+              "code": "view",
+              "name": "查看事件日志",
+              "description": "查看事件日志详情",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        },
+        {
+          "code": "stats",
+          "name": "审计统计",
+          "description": "审计统计权限",
+          "level": 2,
+          "status": 1,
+          "actions": [
+            {
+              "code": "view",
+              "name": "查看统计",
+              "description": "查看审计统计",
+              "level": 3,
+              "status": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

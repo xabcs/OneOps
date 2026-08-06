@@ -79,7 +79,6 @@ declare module "@elegant-router/types" {
     "cmdb_tags": "/cmdb/tags";
     "demo-route": "/demo-route";
     "demo-route_child": "/demo-route/child/:id";
-    "design-system-demo": "/design-system-demo";
     "function": "/function";
     "function_hide-child": "/function/hide-child";
     "function_hide-child_one": "/function/hide-child/one";
@@ -210,7 +209,6 @@ declare module "@elegant-router/types" {
     | "auth"
     | "cmdb"
     | "demo-route"
-    | "design-system-demo"
     | "function"
     | "home"
     | "iframe-page"
@@ -282,7 +280,6 @@ declare module "@elegant-router/types" {
     | "cmdb_servers"
     | "cmdb_tags"
     | "demo-route_child"
-    | "design-system-demo"
     | "function_hide-child_one"
     | "function_hide-child_three"
     | "function_hide-child_two"

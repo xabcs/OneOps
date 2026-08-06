@@ -19,103 +19,11 @@ func NewInitService() *InitService {
 }
 
 // InitDatabase 初始化数据库（创建表和初始数据）
+// 使用新的初始化协调器，保持API兼容
 func (s *InitService) InitDatabase() error {
-	// 在底层 sql.DB 上关闭外键检查（确保与 AutoMigrate 使用同一连接池生效）
-	sqlDB, _ := db.DB()
-	sqlDB.Exec("SET FOREIGN_KEY_CHECKS=0")
-	defer sqlDB.Exec("SET FOREIGN_KEY_CHECKS=1")
-
-	// 清理历史遗留的外键约束（忽略错误，约束不存在时正常失败）
-	// MySQL 5.7+ 不支持 IF EXISTS 语法，需要忽略错误
-	db.Exec("ALTER TABLE cabinets DROP FOREIGN KEY cabinets_ibfk_1")
-	db.Exec("ALTER TABLE cabinets DROP FOREIGN KEY fk_server_rooms_cabinets")
-
-	migrateErr := db.AutoMigrate(
-		// 无外键依赖的基础表
-		&models.User{},
-		&models.Role{},
-		&models.Menu{},
-		&models.LoginLog{},
-		&models.OperationLog{},
-		&models.SystemEventLog{},
-		&models.BusinessUnit{},
-		&models.SSHCredential{},
-		&models.AttributeDefinition{},
-		// Agent 版本管理表
-		&models.AgentVersion{},
-		&models.AgentUpgradeTask{},
-		// 诊断功能相关表 (新增)
-		&models.DiagnosticHistory{},
-		&models.DiagnosticConfig{},
-		&models.DiagnosticPermission{},
-		// 应用权限管理表
-		&models.Application{},
-		&models.ApplicationRole{},
-		&models.ApplicationUser{},
-		&models.ApplicationGroup{},
-		&models.ApplicationAuthorizationRule{},
-		&models.GroupBinding{},
-		&models.AuthUser{},
-		&models.AuthGroup{},
-		&models.AuthUserGroup{},
-		&models.ApplicationOperationLog{},
-		// 用户身份映射和权限执行记录表（新增）
-		&models.UserIdentityMapping{},
-		&models.GroupBindingExecution{},
-		&models.PermissionAssignmentStatus{},
-		// 有外键依赖的表（按依赖顺序）
-		&models.ServerRoom{},
-		&models.Cabinet{},
-		&models.Server{},
-		&models.ServerTag{},
-		&models.ServerTagRelation{},
-		&models.ServerGroup{},
-		&models.ServerGroupRelation{},
-		&models.ServerCredential{},
-		&models.ServerAttribute{},
-		&models.CloudServer{},
-		&models.AssetChange{},
-		// 堡垒机相关表
-		&models.AssetAccessPolicy{},
-		&models.BastionSession{},
-		&models.BastionCommand{},
-		&models.BastionFileTransfer{},
-		&models.BastionApproval{},
-	)
-
-	// 第二阶段：K8s 相关表单独迁移，确保即使基础表失败，K8s 表也能创建
-	k8sMigrateErr := db.AutoMigrate(
-		&models.K8sCluster{},
-		&models.ClusterRoleBinding{},
-		&models.K8sSession{},
-		&models.K8sCommand{},
-	)
-
-	if k8sMigrateErr != nil {
-		logger.Warn("AutoMigrate K8s表迁移失败", zap.Error(k8sMigrateErr))
-	} else {
-		logger.Info("K8s 表迁移成功")
-	}
-
-	if migrateErr != nil {
-		// AutoMigrate 失败只记录警告，不阻止后续迁移
-		logger.Warn("AutoMigrate 部分失败，继续执行数据初始化", zap.Error(migrateErr))
-	}
-
-	// 执行 SQL 迁移脚本（添加磁盘分区字段等）
-	if err := s.runMigrations(); err != nil {
-		logger.Warn("SQL 迁移执行失败，继续执行数据初始化", zap.Error(err))
-	}
-
-	// 初始化诊断权限和配置
-	if err := s.initDiagnosticData(); err != nil {
-		logger.Warn("诊断数据初始化失败，继续执行", zap.Error(err))
-	}
-
-	// 无论 AutoMigrate 是否完全成功，都执行数据初始化
-	return s.initData()
+	initializer := NewInitializer()
+	return initializer.Initialize()
 }
-
 // runMigrations 执行 SQL 迁移脚本
 func (s *InitService) runMigrations() error {
 	logger.Info("开始执行 SQL 迁移...")
@@ -229,69 +137,6 @@ func (s *InitService) runMigrations() error {
 	}
 
 	logger.Info("SQL 迁移执行完成")
-	return nil
-}
-
-// initData 初始化和同步数据（自动检测并添加新菜单）
-func (s *InitService) initData() error {
-	// 同步菜单数据（增量更新，并清理已废弃菜单）
-	if err := s.syncMenus(); err != nil {
-		return err
-	}
-
-	// 先同步角色权限（确保角色包含所有新菜单）
-	if err := s.syncBuiltinRoles(); err != nil {
-		logger.Warn("内置角色同步失败，继续执行", zap.Error(err))
-	}
-
-		// 初始化权限数据
-		// 总是执行权限初始化以同步最新权限数据
-		if err := s.initPermissions(); err != nil {
-		logger.Warn("权限初始化失败，继续执行", zap.Error(err))
-		}
-
-	// 为内置角色分配默认权限（新增）
-	if err := s.assignDefaultPermissions(); err != nil {
-		logger.Warn("默认权限分配失败，继续执行", zap.Error(err))
-	}
-
-	// 初始化 Level 4 API级权限（新增）
-	if err := s.initAPIPermissions(); err != nil {
-		logger.Warn("API级权限初始化失败，继续执行", zap.Error(err))
-	}
-
-	// 检查用户表是否为空
-	var userCount int64
-	db.Model(&models.User{}).Count(&userCount)
-	if userCount == 0 {
-		if err := s.initUsers(); err != nil {
-			return err
-		}
-	}
-
-	// 检查属性定义表是否为空
-	var attrCount int64
-	db.Model(&models.AttributeDefinition{}).Count(&attrCount)
-	if attrCount == 0 {
-		if err := s.initAttributes(); err != nil {
-			return err
-		}
-	} else {
-		// 同步属性定义（确保包含所有预置属性）
-		if err := s.syncAttributes(); err != nil {
-			return err
-		}
-	}
-
-	// 检查 Agent 版本表是否为空，初始化默认版本
-	var versionCount int64
-	db.Model(&models.AgentVersion{}).Count(&versionCount)
-	if versionCount == 0 {
-		if err := s.initAgentVersions(); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -1015,169 +860,76 @@ func (s *InitService) initAgentVersions() error {
 	return nil
 }
 
-// initPermissions 初始化权限数据
-func (s *InitService) initPermissions() error {
-	logger.Info("开始初始化权限数据...")
-
-	// 使用权限数据定义文件获取所有系统权限
-	permissions := GetAllSystemPermissions()
-	addedCount := 0
-	updatedCount := 0
-
-	for _, perm := range permissions {
-		var existingPerm models.Permission
-		err := db.Where("code = ?", perm.Code).First(&existingPerm).Error
-
-		if err == nil {
-			// 权限已存在，更新数据
-			db.Model(&existingPerm).Updates(map[string]interface{}{
-				"name":        perm.Name,
-				"description": perm.Description,
-				"module":      perm.Module,
-				"resource":    perm.Resource,
-				"action":      perm.Action,
-				"level":       perm.Level,
-				"status":      perm.Status,
-			})
-			updatedCount++
-			logger.Debug("更新权限", zap.String("name", perm.Name))
-		} else {
-			// 权限不存在，创建新权限
-			if err := db.Create(&perm).Error; err != nil {
-				logger.Error("创建权限失败",
-					zap.String("name", perm.Name),
-					zap.String("code", perm.Code),
-					zap.Error(err))
-				return err
-			}
-			addedCount++
-			logger.Info("创建权限",
-				zap.String("name", perm.Name),
-				zap.String("code", perm.Code),
-				zap.Uint("id", perm.ID))
-		}
-	}
-
-	logger.Info("权限初始化完成",
-		zap.Int("added", addedCount),
-		zap.Int("updated", updatedCount),
-		zap.Int("total", len(permissions)))
-
-	return nil
-}
-
 // assignDefaultPermissions 为内置角色分配默认权限
 func (s *InitService) assignDefaultPermissions() error {
 	logger.Info("开始为内置角色分配默认权限...")
 
-	// 定义角色默认权限映射
+	// 定义角色默认权限映射（使用 permissions.json 中定义的权限代码）
 	rolePermissions := map[string][]string{
 		"admin": {
 			"*.*.*", // 超级管理员拥有所有权限（通配符）
 		},
 		"ops": {
 			// 系统管理
-			"system.user.view", "system.user.create", "system.user.update", "system.user.delete",
-			"system.role.view", "system.role.update",
-			"system.menu.view",
+			"system.user.list", "system.user.create", "system.user.update", "system.user.delete",
+			"system.role.list", "system.role.update",
+			"system.menu.list",
 			// CMDB
-			"cmdb.server.query", "cmdb.server.create", "cmdb.server.update", "cmdb.server.delete",
-			"cmdb.business.query",
-			"cmdb.rooms.query",
-			"cmdb.tags.query",
-			"cmdb.credentials.access",
-			"cmdb.credentials.ssh",
-			"cmdb.policies.query",
-			"cmdb.config.business",
-			"cmdb.agents.query",
-			"cmdb.dashboard.query",
-			"cmdb.audit.changes",
-			"cmdb.audit.command.history",
-			"cmdb.audit.online",
-			"cmdb.audit.sessions",
-			"cmdb.audit.commands",
+			"cmdb.server.list", "cmdb.server.view", "cmdb.server.create", "cmdb.server.update", "cmdb.server.delete", "cmdb.server.connect",
+			"cmdb.business.list", "cmdb.business.create", "cmdb.business.update", "cmdb.business.delete",
+			"cmdb.rooms.list", "cmdb.rooms.create", "cmdb.rooms.update", "cmdb.rooms.delete",
+			"cmdb.tags.list", "cmdb.tags.create", "cmdb.tags.update", "cmdb.tags.delete",
+			"cmdb.group.list", "cmdb.group.view", "cmdb.group.create", "cmdb.group.update", "cmdb.group.delete", "cmdb.group.assign",
+			"cmdb.agents.list", "cmdb.agents.deploy", "cmdb.agents.restart", "cmdb.agents.uninstall",
 			// 监控
-			"monitoring.overview.query",
-			"monitoring.servers.query",
-			"monitoring.alerts.query",
-			"monitoring.trends.query",
-			"monitoring.reports.query",
-			"monitoring.settings.query",
+			"monitor.data.view", "monitor.data.export",
+			"monitor.alert.list", "monitor.alert.ack", "monitor.alert.handle",
+			"monitor.task.list", "monitor.task.view", "monitor.task.create", "monitor.task.update", "monitor.task.delete", "monitor.task.execute",
 			// K8s
-			"k8s.cluster.query",
-			"k8s.workload.query",
-			"k8s.diagnostic.execute",
-			"k8s.network.query",
-			"k8s.config.query",
+			"k8s.cluster.list", "k8s.cluster.view", "k8s.cluster.create", "k8s.cluster.update", "k8s.cluster.delete", "k8s.cluster.connect",
+			"k8s.resource.view", "k8s.resource.create", "k8s.resource.update", "k8s.resource.delete",
+			"k8s.permission.list", "k8s.permission.assign", "k8s.permission.revoke",
 			// 审计
-			"audit.login.view",
-			"audit.operation.view",
-			"audit.system.view",
-			// 授权中心
-			"auth.user.query",
-			"auth.role.query",
-			"auth.app.query",
-			"auth.binding.query",
-			"auth.authorization.query",
-			"auth.log.query",
-			"auth.identity.query",
-			"auth.permission.query",
+			"audit.login_log.list", "audit.login_log.export",
+			"audit.operation_log.list", "audit.operation_log.export",
+			"audit.system_event.list",
+			"audit.stats.view",
 		},
 		"auditor": {
-			// 只读权限
-			"cmdb.server.query",
-			"cmdb.business.query",
-			"cmdb.rooms.query",
-			"cmdb.tags.query",
-			"cmdb.credentials.access",
-			"cmdb.dashboard.query",
-			"cmdb.audit.command.history",
-			"cmdb.audit.sessions",
-			"cmdb.audit.commands",
-			"monitoring.overview.query",
-			"monitoring.servers.query",
-			"monitoring.alerts.query",
-			"audit.login.view",
-			"audit.operation.view",
-			"audit.system.view",
-			"k8s.cluster.query",
-			"k8s.workload.query",
-			"auth.user.query",
-			"auth.role.query",
-			"auth.app.query",
-			"auth.binding.query",
-			"auth.authorization.query",
-			"auth.log.query",
-			"auth.identity.query",
-			"auth.permission.query",
+			// 只读权限（查看和列表）
+			"cmdb.server.list", "cmdb.server.view",
+			"cmdb.business.list",
+			"cmdb.rooms.list",
+			"cmdb.tags.list",
+			"cmdb.group.list", "cmdb.group.view",
+			"cmdb.agents.list",
+			"monitor.data.view",
+			"monitor.alert.list",
+			"monitor.task.list", "monitor.task.view",
+			"k8s.cluster.list", "k8s.cluster.view",
+			"k8s.resource.view",
+			"k8s.permission.list",
+			"audit.login_log.list",
+			"audit.operation_log.list",
+			"audit.system_event.list",
+			"audit.stats.view",
 		},
 		"viewer": {
-			// 最小权限
-			"cmdb.server.query",
-			"monitoring.overview.query",
+			// 最小只读权限
+			"cmdb.server.list",
+			"monitor.data.view",
 		},
 		"user": {
 			// 普通用户基础权限
-			"monitoring.overview.query",
+			"monitor.data.view",
 		},
 		"test": {
 			// 测试角色权限（用于测试）
-			"system.user.view",
-			"system.user.create",
-			"system.role.view",
-			"cmdb.server.query",
-			"cmdb.server.create",
-			"monitoring.overview.query",
-			"k8s.cluster.query",
-			"k8s.workload.query",
-			"auth.user.query",
-			"auth.role.query",
-			"auth.app.query",
-			"auth.binding.query",
-			"auth.authorization.query",
-			"auth.log.query",
-			"auth.identity.query",
-			"auth.permission.query",
+			"system.user.list", "system.user.create",
+			"system.role.list",
+			"cmdb.server.list", "cmdb.server.create",
+			"monitor.data.view",
+			"k8s.cluster.list",
 		},
 	}
 

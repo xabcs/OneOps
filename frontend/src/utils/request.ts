@@ -4,36 +4,6 @@ import { useAuthStore } from '@/store/modules/auth'
 
 const TOKEN_KEY = 'oneops_token'
 
-// 权限白名单（不需要权限检查的接口）
-const PERMISSION_WHITE_LIST = [
-  '/api/v1/auth/login',
-  '/api/v1/auth/logout',
-  '/api/v1/auth/me',
-  '/api/v1/public',
-  '/api/v1/menus' // 获取菜单列表
-]
-
-// 接口权限映射（可选：用于接口级权限控制）
-const API_PERMISSION_MAP: Record<string, string> = {
-  // 用户管理
-  'GET:/api/v1/users': 'system.user.view',
-  'POST:/api/v1/users': 'system.user.create',
-  'PUT:/api/v1/users': 'system.user.update',
-  'DELETE:/api/v1/users': 'system.user.delete',
-
-  // 角色管理
-  'GET:/api/v1/roles': 'system.role.view',
-  'POST:/api/v1/roles': 'system.role.create',
-  'PUT:/api/v1/roles': 'system.role.update',
-  'DELETE:/api/v1/roles': 'system.role.delete',
-
-  // 权限管理
-  'GET:/api/v1/permissions': 'system.permission.view',
-  'POST:/api/v1/permissions': 'system.permission.create',
-  'PUT:/api/v1/permissions': 'system.permission.update',
-  'DELETE:/api/v1/permissions': 'system.permission.delete',
-}
-
 const request = axios.create({
   baseURL: '/api',
   timeout: 15000,
@@ -97,33 +67,17 @@ function handleSessionExpired() {
 }
 
 /**
- * 请求拦截器：添加 token 并检查权限
+ * 请求拦截器：添加 token
  */
 request.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const authStore = useAuthStore() // 在每次请求时获取 store
+    const authStore = useAuthStore()
     const token = authStore.token || localStorage.getItem(TOKEN_KEY)
 
     // 添加认证 token
     if (token) {
       config.headers = config.headers || {}
       config.headers.Authorization = `Bearer ${token}`
-    }
-
-    // 权限检查逻辑
-    if (shouldCheckPermission(config)) {
-      const requiredPermission = getRequiredPermission(config)
-
-      if (requiredPermission && !authStore.hasPermission(requiredPermission)) {
-        const errorMsg = `权限不足：需要 ${requiredPermission} 权限`
-
-        // 方式1：直接拦截请求（推荐）
-        return Promise.reject(new Error(errorMsg))
-
-        // 方式2：静默失败，返回特殊标记
-        // config._permissionDenied = true
-        // return config
-      }
     }
 
     return config
@@ -172,54 +126,5 @@ request.interceptors.response.use(
     return Promise.reject(error)
   }
 )
-
-/**
- * 判断是否需要检查权限
- */
-function shouldCheckPermission(config: InternalAxiosRequestConfig): boolean {
-  const url = config.url || ''
-
-  // 检查白名单
-  if (PERMISSION_WHITE_LIST.some(path => url.startsWith(path))) {
-    return false
-  }
-
-  // 检查是否标记为跳过权限检查
-  if (config.skipPermissionCheck) {
-    return false
-  }
-
-  return true
-}
-
-/**
- * 获取接口所需的权限
- */
-function getRequiredPermission(config: InternalAxiosRequestConfig): string | null {
-  const method = config.method?.toUpperCase() || 'GET'
-  const url = config.url || ''
-  const key = `${method}:${url}`
-
-  // 如果有明确映射，使用映射的权限
-  if (API_PERMISSION_MAP[key]) {
-    return API_PERMISSION_MAP[key]
-  }
-
-  // 自动推断权限（基于 URL 路径）
-  const match = url.match(/\/api\/v1\/(\w+)/)
-  if (match) {
-    const resource = match[1]
-    const actionMap: Record<string, string> = {
-      'GET': 'view',
-      'POST': 'create',
-      'PUT': 'update',
-      'DELETE': 'delete'
-    }
-    const action = actionMap[method] || 'view'
-    return `system.${resource}.${action}`
-  }
-
-  return null
-}
 
 export default request
