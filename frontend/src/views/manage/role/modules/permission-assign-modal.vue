@@ -594,7 +594,7 @@ function findNodeLevel(nodes: PermissionNode[], targetId: number): number | null
   <ElDialog
     v-model="visible"
     :title="title"
-    width="700px"
+    width="900px"
     :close-on-click-modal="false"
   >
     <div v-loading="loading" class="permission-assign-container">

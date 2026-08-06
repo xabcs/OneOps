@@ -17,8 +17,42 @@ func SetupCMDBRoutes(
 	sshHandler *handler.SSHWebSocketHandler,
 ) {
 	api := r.Group("/api")
+
+	// WebSocket SSH 连接（不经过 Auth 中间件，handler 自行从 query param 验证 token）
+	api.GET("/cmdb/sessions/:id/ws", func(ctx *gin.Context) {
+		sshHandler.HandleWebSocket(ctx)
+	})
+
+	// Agent 心跳（不经过 Auth 中间件，由 Agent 直接上报）
+	api.POST("/cmdb/agent/heartbeat", cmdbController.ReceiveAgentHeartbeat)
+
+	// Agent 版本管理接口（需要认证）
+	agentVersionGroup := api.Group("/cmdb/agent-versions")
+	agentVersionGroup.Use(middleware.Auth())
+	agentVersionGroup.Use(middleware.RequirePermissionFromDB()) // ✅ 统一权限检查
+	{
+		agentVersionGroup.GET("", cmdbController.GetAgentVersions)
+		agentVersionGroup.GET("/latest", cmdbController.GetLatestAgentVersion)
+		agentVersionGroup.GET("/:id", cmdbController.GetAgentVersionByID)
+		agentVersionGroup.POST("", cmdbController.CreateAgentVersion)
+		agentVersionGroup.PUT("/:id", cmdbController.UpdateAgentVersion)
+		agentVersionGroup.DELETE("/:id", cmdbController.DeleteAgentVersion)
+	}
+
+	// Agent 升级管理接口（需要认证）
+	agentUpgradeGroup := api.Group("/cmdb")
+	agentUpgradeGroup.Use(middleware.Auth())
+	agentUpgradeGroup.Use(middleware.RequirePermissionFromDB()) // ✅ 统一权限检查
+	{
+		agentUpgradeGroup.POST("/servers/:id/agent/upgrade", cmdbController.UpgradeAgent)
+		agentUpgradeGroup.GET("/agent-upgrade-tasks", cmdbController.GetUpgradeTasks)
+		agentUpgradeGroup.GET("/agent-upgrade-tasks/:id", cmdbController.GetUpgradeTaskByID)
+	}
+
+	// CMDB 主路由组（需要认证）
 	cmdb := api.Group("/cmdb")
 	cmdb.Use(middleware.Auth())
+	cmdb.Use(middleware.RequirePermissionFromDB()) // ✅ 统一权限检查
 	{
 		// 服务器管理
 		cmdb.GET("/servers", cmdbController.GetServers)
@@ -46,15 +80,6 @@ func SetupCMDBRoutes(
 		cmdb.POST("/agents/batch-uninstall", cmdbController.BatchUninstallAgent)
 		cmdb.DELETE("/agents/:id", cmdbController.DeleteAgentRecord)
 
-		// Agent 监控增强 API (功能待实现)
-		// cmdb.GET("/servers/:id/extended-metrics", cmdbController.GetServerExtendedMetrics)
-		// cmdb.GET("/servers/:id/metrics/history", cmdbController.GetServerMetricsHistory)
-		// cmdb.GET("/servers/:id/hardware", cmdbController.GetServerHardware)
-		// cmdb.GET("/servers/:id/processes", cmdbController.GetServerProcesses)
-		// cmdb.GET("/servers/:id/services", cmdbController.GetServerServices)
-		// cmdb.GET("/servers/:id/network", cmdbController.GetServerNetwork)
-		// cmdb.GET("/servers/:id/security", cmdbController.GetServerSecurity)
-
 		// 主机分组管理
 		cmdb.GET("/groups", cmdbController.GetServerGroups)
 		cmdb.GET("/groups/:id", cmdbController.GetServerGroupByID)
@@ -63,7 +88,7 @@ func SetupCMDBRoutes(
 		cmdb.PUT("/groups/:id", cmdbController.UpdateServerGroup)
 		cmdb.DELETE("/groups/:id", cmdbController.DeleteServerGroup)
 		cmdb.POST("/groups/assign", cmdbController.AssignServerToGroup)
-		// cmdb.POST("/groups/assign-multi", cmdbController.AssignServerToServers) // 功能待实现
+		cmdb.POST("/groups/assign-multi", cmdbController.AssignServerToGroups)
 		cmdb.GET("/group-servers/:groupId", cmdbController.GetServersByGroup)
 
 		// 业务系统管理
@@ -98,15 +123,29 @@ func SetupCMDBRoutes(
 		// 资产变更记录
 		cmdb.GET("/asset-changes", cmdbController.GetAssetChanges)
 
-		// 堡垒机功能
-		// setupBastionRoutes(cmdb, bastionController, sshHandler) // 函数未定义，注释掉
+		// 堡垒机功能 - 会话管理
+		cmdb.GET("/sessions", bastionController.GetSessions)
+		cmdb.GET("/sessions/list", bastionController.GetSessionsList)
+		cmdb.GET("/sessions/active", bastionController.GetActiveSessions)
+		cmdb.GET("/sessions/active-memory", bastionController.GetActiveSessionsFromMemory)
+		cmdb.GET("/sessions/stats", bastionController.GetSessionStats)
+		cmdb.GET("/sessions/:id", bastionController.GetSessionByID)
+		cmdb.POST("/sessions/:id/terminate", bastionController.TerminateSession)
+		cmdb.GET("/sessions/:id/commands", bastionController.GetSessionCommands)
+		cmdb.GET("/sessions/:id/file-transfers", bastionController.GetSessionFileTransfers)
+		cmdb.POST("/sessions/:id/resize", sshHandler.ResizePTY)
+
+		// 命令审计
+		cmdb.GET("/commands", bastionController.GetCommands)
+
+		// 文件传输审计
+		cmdb.GET("/file-transfers", bastionController.GetFileTransfers)
+
+		// 访问策略管理
+		cmdb.GET("/access-policies", bastionController.GetAccessPolicies)
+		cmdb.GET("/access-policies/:id", bastionController.GetAccessPolicyByID)
+		cmdb.POST("/access-policies", bastionController.CreateAccessPolicy)
+		cmdb.PUT("/access-policies/:id", bastionController.UpdateAccessPolicy)
+		cmdb.DELETE("/access-policies/:id", bastionController.DeleteAccessPolicy)
 	}
-
-	// WebSocket SSH 连接（不经过 Auth 中间件）
-	api.GET("/cmdb/sessions/:id/ws", func(ctx *gin.Context) {
-		sshHandler.HandleWebSocket(ctx)
-	})
-
-	// Agent 心跳（不经过 Auth 中间件）
-	api.POST("/cmdb/agent/heartbeat", cmdbController.ReceiveAgentHeartbeat)
 }

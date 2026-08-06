@@ -8,13 +8,11 @@ import (
 )
 
 // SetupAuditRoutes 设置审计管理相关路由
-func SetupAuditRoutes(
-	r *gin.Engine,
-	auditController *controller.AuditController,
-) {
+func SetupAuditRoutes(r *gin.Engine, auditController *controller.AuditController) {
 	api := r.Group("/api")
 	audit := api.Group("/audit")
 	audit.Use(middleware.Auth())
+	audit.Use(middleware.RequirePermissionFromDB()) // ✅ 统一权限检查
 	{
 		// 登录日志
 		audit.GET("/login-logs", auditController.GetLoginLogs)

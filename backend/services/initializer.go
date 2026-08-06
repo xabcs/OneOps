@@ -1,26 +1,21 @@
 package services
 
 import (
-	"encoding/json"
 	"fmt"
 	"oneops/backend/models"
 	"os"
-	"path/filepath"
 
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 // Initializer 初始化协调器
 type Initializer struct {
-	dataLoader   *DataLoader
-	initService  *InitService
+	initService *InitService
 }
 
 // NewInitializer 创建初始化协调器
 func NewInitializer() *Initializer {
 	return &Initializer{
-		dataLoader:  NewDataLoader("services/data"),
 		initService: NewInitService(),
 	}
 }
@@ -168,7 +163,7 @@ func (i *Initializer) initModuleData() error {
 	zap.L().Info("阶段4：初始化模块数据...")
 
 	// 初始化权限数据
-	if err := i.initPermissionsFromJSON(); err != nil {
+	if err := i.initPermissionsFromSQL(); err != nil {
 		zap.L().Warn("权限数据初始化失败", zap.Error(err))
 	}
 
@@ -195,181 +190,31 @@ func (i *Initializer) initModuleData() error {
 	return nil
 }
 
-// initPermissionsFromJSON 从JSON文件初始化权限数据
-func (i *Initializer) initPermissionsFromJSON() error {
-	zap.L().Info("初始化权限数据...")
+// initPermissionsFromSQL 从 SQL 文件初始化权限数据
+func (i *Initializer) initPermissionsFromSQL() error {
+	zap.L().Info("从 SQL 文件初始化权限数据...")
 
-	// 从JSON文件加载权限数据
-	permissions, err := i.dataLoader.LoadPermissions()
+	// SQL 文件路径
+	sqlFile := "migrations/v2_permissions.sql"
+
+	// 读取 SQL 文件内容
+	content, err := os.ReadFile(sqlFile)
 	if err != nil {
-		return fmt.Errorf("加载权限数据失败: %w", err)
+		return fmt.Errorf("读取 SQL 文件失败: %w", err)
 	}
 
-	addedCount := 0
-	updatedCount := 0
-
-	for _, perm := range permissions {
-		var existingPerm models.Permission
-		err := db.Where("code = ?", perm.Code).First(&existingPerm).Error
-
-		if err == gorm.ErrRecordNotFound {
-			// 新权限，插入
-			if err := db.Create(&perm).Error; err != nil {
-				zap.L().Warn("创建权限失败",
-					zap.String("code", perm.Code),
-					zap.Error(err))
-				continue
-			}
-			addedCount++
-		} else if err == nil {
-			// 权限已存在，更新
-			updates := map[string]interface{}{
-				"name":        perm.Name,
-				"description": perm.Description,
-				"module":      perm.Module,
-				"resource":    perm.Resource,
-				"action":      perm.Action,
-				"level":       perm.Level,
-				"sort_order":  perm.SortOrder,
-				"status":      perm.Status,
-			}
-			if err := db.Model(&existingPerm).Updates(updates).Error; err != nil {
-				zap.L().Warn("更新权限失败",
-					zap.String("code", perm.Code),
-					zap.Error(err))
-				continue
-			}
-			updatedCount++
-		}
+	// 执行 SQL
+	if err := db.Exec(string(content)).Error; err != nil {
+		return fmt.Errorf("执行权限初始化 SQL 失败: %w", err)
 	}
 
-	zap.L().Info("权限数据初始化完成",
-		zap.Int("added", addedCount),
-		zap.Int("updated", updatedCount),
-		zap.Int("total", len(permissions)))
+	// 统计权限数量
+	var count int64
+	if err := db.Model(&models.Permission{}).Count(&count).Error; err != nil {
+		zap.L().Warn("统计权限数量失败", zap.Error(err))
+	} else {
+		zap.L().Info("权限数据初始化完成", zap.Int64("total_permissions", count))
+	}
 
 	return nil
-}
-
-// DataLoader 数据加载器
-type DataLoader struct {
-	dataDir string
-}
-
-// NewDataLoader 创建数据加载器
-func NewDataLoader(dataDir string) *DataLoader {
-	return &DataLoader{
-		dataDir: dataDir,
-	}
-}
-
-// PermissionData 权限数据结构
-type PermissionData struct {
-	Version     string               `json:"version"`
-	Description string               `json:"description"`
-	Modules     []PermissionModule   `json:"modules"`
-}
-
-// PermissionModule 权限模块结构
-type PermissionModule struct {
-	Code        string               `json:"code"`
-	Name        string               `json:"name"`
-	Description string               `json:"description"`
-	Level       int                  `json:"level"`
-	Status      int                  `json:"status"`
-	Resources   []PermissionResource `json:"resources"`
-}
-
-// PermissionResource 权限资源结构
-type PermissionResource struct {
-	Code        string               `json:"code"`
-	Name        string               `json:"name"`
-	Description string               `json:"description"`
-	Level       int                  `json:"level"`
-	Status      int                  `json:"status"`
-	Actions     []PermissionAction   `json:"actions"`
-}
-
-// PermissionAction 权限操作结构
-type PermissionAction struct {
-	Code        string `json:"code"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Level       int    `json:"level"`
-	Status      int    `json:"status"`
-}
-
-// LoadPermissions 加载权限数据
-func (d *DataLoader) LoadPermissions() ([]models.Permission, error) {
-	filePath := filepath.Join(d.dataDir, "permissions.json")
-
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("读取权限配置文件失败: %w", err)
-	}
-
-	var permData PermissionData
-	if err := json.Unmarshal(data, &permData); err != nil {
-		return nil, fmt.Errorf("解析权限配置文件失败: %w", err)
-	}
-
-	// 转换为Permission模型列表
-	permissions := make([]models.Permission, 0)
-	sortOrder := 1
-
-	for _, module := range permData.Modules {
-		// 添加模块级权限
-		permissions = append(permissions, models.Permission{
-			Code:        module.Code,
-			Name:        module.Name,
-			Description: module.Description,
-			Module:      module.Code,
-			Resource:    "",
-			Action:      "",
-			Level:       module.Level,
-			SortOrder:   sortOrder,
-			Status:      module.Status,
-		})
-		sortOrder++
-
-		for _, resource := range module.Resources {
-			// 添加资源级权限
-			resourceCode := fmt.Sprintf("%s.%s", module.Code, resource.Code)
-			permissions = append(permissions, models.Permission{
-				Code:        resourceCode,
-				Name:        resource.Name,
-				Description: resource.Description,
-				Module:      module.Code,
-				Resource:    resource.Code,
-				Action:      "",
-				Level:       resource.Level,
-				SortOrder:   sortOrder,
-				Status:      resource.Status,
-			})
-			sortOrder++
-
-			for _, action := range resource.Actions {
-				// 添加操作级权限
-				actionCode := fmt.Sprintf("%s.%s.%s", module.Code, resource.Code, action.Code)
-				permissions = append(permissions, models.Permission{
-					Code:        actionCode,
-					Name:        action.Name,
-					Description: action.Description,
-					Module:      module.Code,
-					Resource:    resource.Code,
-					Action:      action.Code,
-					Level:       action.Level,
-					SortOrder:   sortOrder,
-					Status:      action.Status,
-				})
-				sortOrder++
-			}
-		}
-	}
-
-	zap.L().Info("成功加载权限数据",
-		zap.Int("total", len(permissions)),
-		zap.Int("modules", len(permData.Modules)))
-
-	return permissions, nil
 }
