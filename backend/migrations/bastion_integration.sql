@@ -2,7 +2,7 @@
 -- 执行方式: mysql -u root -p nexops < backend/migrations/bastion_integration.sql
 
 -- 1. 创建访问策略表
-CREATE TABLE IF NOT EXISTS asset_access_policies (
+CREATE TABLE IF NOT EXISTS cmdb_access_policies (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL COMMENT '策略名称',
     subject_type ENUM('user', 'role', 'user_group') NOT NULL COMMENT '授权对象类型',
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS asset_access_policies (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='资产访问策略表';
 
 -- 2. 创建会话表
-CREATE TABLE IF NOT EXISTS bastion_sessions (
+CREATE TABLE IF NOT EXISTS cmdb_bastion_sessions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     server_id BIGINT UNSIGNED NOT NULL COMMENT '服务器ID',
     user_id BIGINT UNSIGNED NOT NULL COMMENT '用户ID',
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS bastion_sessions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='堡垒机会话表';
 
 -- 3. 创建命令审计表
-CREATE TABLE IF NOT EXISTS bastion_commands (
+CREATE TABLE IF NOT EXISTS cmdb_bastion_commands (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     session_id BIGINT UNSIGNED NOT NULL COMMENT '会话ID',
     command TEXT NOT NULL COMMENT '执行的命令',
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS bastion_commands (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='命令审计表';
 
 -- 4. 创建文件传输审计表
-CREATE TABLE IF NOT EXISTS bastion_file_transfers (
+CREATE TABLE IF NOT EXISTS cmdb_bastion_file_transfers (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     session_id BIGINT UNSIGNED NOT NULL COMMENT '会话ID',
     direction ENUM('upload', 'download') NOT NULL COMMENT '传输方向',
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS bastion_file_transfers (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文件传输审计表';
 
 -- 5. 创建审批表
-CREATE TABLE IF NOT EXISTS bastion_approvals (
+CREATE TABLE IF NOT EXISTS cmdb_bastion_approvals (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     requester_id BIGINT UNSIGNED NOT NULL COMMENT '申请人ID',
     approver_id BIGINT UNSIGNED COMMENT '审批人ID',
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS bastion_approvals (
 -- 6. 扩展服务器表
 -- 检查列是否存在，不存在则添加
 SET @dbname = DATABASE();
-SET @tablename = 'servers';
+SET @tablename = 'cmdb_servers';
 SET @columnname1 = 'ssh_credential_id';
 SET @columnname2 = 'last_connect_time';
 SET @columnname3 = 'connectivity_status';
@@ -167,7 +167,7 @@ DEALLOCATE PREPARE alterIfNotExists4;
 
 -- 7. 插入默认权限数据
 -- 检查权限是否已存在
-INSERT IGNORE INTO permissions (code, name, description, created_at, updated_at)
+INSERT IGNORE INTO sys_permissions (code, name, description, created_at, updated_at)
 VALUES
 ('cmdb:server:connect', '连接服务器', '允许通过堡垒机连接服务器', NOW(), NOW()),
 ('cmdb:session:query', '查看会话', '允许查看会话列表和详情', NOW(), NOW()),
@@ -184,20 +184,20 @@ VALUES
 
 -- 8. 为超级管理员角色添加新权限
 -- 获取超级管理员角色的ID
-SET @super_role_id = (SELECT id FROM roles WHERE code = 'admin' LIMIT 1);
+SET @super_role_id = (SELECT id FROM sys_roles WHERE code = 'admin' LIMIT 1);
 
 -- 如果存在超级管理员角色，为其添加所有新权限
--- 这部分需要根据实际的 role_permissions 表结构来调整
+-- 这部分需要根据实际的 sys_role_permissions 表结构来调整
 -- 如果是 JSON 格式存储在 permissions 字段中：
-UPDATE roles
+UPDATE sys_roles
 SET permissions = JSON_MERGE_PRESERVE(
     COALESCE(permissions, JSON_ARRAY()),
-    (SELECT JSON_ARRAYAGG(code) FROM permissions WHERE code LIKE 'cmdb:%' AND code NOT IN (SELECT JSON_UNQUOTE(JSON_EXTRACT(permissions, CONCAT('$[', seq, ']'))) FROM roles, (SELECT 0 AS seq UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5) seq WHERE JSON_EXTRACT(permissions, CONCAT('$[', seq, ']')) IS NOT NULL))
+    (SELECT JSON_ARRAYAGG(code) FROM sys_permissions WHERE code LIKE 'cmdb:%' AND code NOT IN (SELECT JSON_UNQUOTE(JSON_EXTRACT(permissions, CONCAT('$[', seq, ']'))) FROM sys_roles, (SELECT 0 AS seq UNION SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5) seq WHERE JSON_EXTRACT(permissions, CONCAT('$[', seq, ']')) IS NOT NULL))
 )
 WHERE id = @super_role_id;
 
 -- 9. 创建默认的访问策略示例（可选）
-INSERT INTO asset_access_policies (
+INSERT INTO cmdb_access_policies (
     name, subject_type, subject_id,
     asset_scope_type, asset_scope_id,
     login_accounts, protocols,
@@ -223,28 +223,28 @@ BEGIN
     SET cleanup_date = DATE_SUB(NOW(), INTERVAL cleanup_days DAY);
 
     -- 删除旧的已关闭会话的命令记录
-    DELETE FROM bastion_commands
+    DELETE FROM cmdb_bastion_commands
     WHERE session_id IN (
-        SELECT id FROM bastion_sessions
+        SELECT id FROM cmdb_bastion_sessions
         WHERE status IN ('closed', 'error', 'terminated')
         AND ended_at < cleanup_date
     );
 
     -- 删除旧的已关闭会话的文件传输记录
-    DELETE FROM bastion_file_transfers
+    DELETE FROM cmdb_bastion_file_transfers
     WHERE session_id IN (
-        SELECT id FROM bastion_sessions
+        SELECT id FROM cmdb_bastion_sessions
         WHERE status IN ('closed', 'error', 'terminated')
         AND ended_at < cleanup_date
     );
 
     -- 删除旧的已关闭会话
-    DELETE FROM bastion_sessions
+    DELETE FROM cmdb_bastion_sessions
     WHERE status IN ('closed', 'error', 'terminated')
     AND ended_at < cleanup_date;
 
     -- 删除过期的审批记录
-    DELETE FROM bastion_approvals
+    DELETE FROM cmdb_bastion_approvals
     WHERE expired_at < NOW()
     OR (status = 'approved' AND approved_at < DATE_SUB(NOW(), INTERVAL 30 DAY));
 
@@ -255,5 +255,5 @@ DELIMITER ;
 -- 执行迁移完成提示
 SELECT '堡垒机能力集成数据库迁移完成！' AS message;
 SELECT '新创建的表:' AS info;
-SHOW TABLES LIKE 'bastion_%';
-SHOW TABLES LIKE 'asset_access_policies';
+SHOW TABLES LIKE 'cmdb_bastion_%';
+SHOW TABLES LIKE 'cmdb_access_policies';

@@ -85,7 +85,7 @@ func (m *DataLifecycleManager) ArchiveOldMetrics() {
 
 	// 统计需要归档的数据量
 	var count int64
-	err := db.Table("agent_metrics").
+	err := db.Table("mon_agent_metrics").
 		Where("received_at < ?", thresholdTime).
 		Count(&count).Error
 	if err != nil {
@@ -115,7 +115,7 @@ func (m *DataLifecycleManager) ArchiveOldMetrics() {
 			ReceivedAt time.Time `gorm:"column:received_at"`
 		}
 
-		err := db.Table("agent_metrics").
+		err := db.Table("mon_agent_metrics").
 			Select("id, server_id, metric_type, metric_data, received_at").
 			Where("received_at < ?", thresholdTime).
 			Order("received_at ASC").
@@ -133,7 +133,7 @@ func (m *DataLifecycleManager) ArchiveOldMetrics() {
 
 		// 插入到归档表
 		for _, metric := range metrics {
-			insertSQL := `INSERT INTO agent_metrics_archive
+			insertSQL := `INSERT INTO mon_agent_metrics_archive
 				(server_id, metric_type, metric_data, received_at, archived_at)
 				VALUES (?, ?, ?, ?, ?)`
 			if err := db.Exec(insertSQL, metric.ServerID, metric.MetricType,
@@ -151,7 +151,7 @@ func (m *DataLifecycleManager) ArchiveOldMetrics() {
 			ids[i] = metric.ID
 		}
 
-		if err := db.Table("agent_metrics").Where("id IN ?", ids).Delete(nil).Error; err != nil {
+		if err := db.Table("mon_agent_metrics").Where("id IN ?", ids).Delete(nil).Error; err != nil {
 			logger.Error("删除已归档数据失败", zap.Error(err))
 			break
 		}
@@ -180,7 +180,7 @@ func (m *DataLifecycleManager) CleanupExpiredMetrics() {
 
 	// 统计需要删除的数据量
 	var count int64
-	err := db.Table("agent_metrics_archive").
+	err := db.Table("mon_agent_metrics_archive").
 		Where("received_at < ?", thresholdTime).
 		Count(&count).Error
 	if err != nil {
@@ -200,7 +200,7 @@ func (m *DataLifecycleManager) CleanupExpiredMetrics() {
 	totalDeleted := 0
 
 	for {
-		result := db.Table("agent_metrics_archive").
+		result := db.Table("mon_agent_metrics_archive").
 			Where("received_at < ?", thresholdTime).
 			Limit(batchSize).
 			Delete(nil)
@@ -235,18 +235,18 @@ func (m *DataLifecycleManager) GetDataStats() map[string]interface{} {
 
 	// 主表数据量
 	var hotCount int64
-	db.Table("agent_metrics").Count(&hotCount)
+	db.Table("mon_agent_metrics").Count(&hotCount)
 	stats["hot_data_count"] = hotCount
 
 	// 归档表数据量
 	var archiveCount int64
-	db.Table("agent_metrics_archive").Count(&archiveCount)
+	db.Table("mon_agent_metrics_archive").Count(&archiveCount)
 	stats["archive_data_count"] = archiveCount
 
 	// 30 天前数据量（待归档）
 	thresholdTime := time.Now().AddDate(0, 0, -30)
 	var pendingArchiveCount int64
-	db.Table("agent_metrics").
+	db.Table("mon_agent_metrics").
 		Where("received_at < ?", thresholdTime).
 		Count(&pendingArchiveCount)
 	stats["pending_archive_count"] = pendingArchiveCount
@@ -254,7 +254,7 @@ func (m *DataLifecycleManager) GetDataStats() map[string]interface{} {
 	// 365 天前归档数据量（待清理）
 	expiredTime := time.Now().AddDate(0, 0, -365)
 	var expiredArchiveCount int64
-	db.Table("agent_metrics_archive").
+	db.Table("mon_agent_metrics_archive").
 		Where("received_at < ?", expiredTime).
 		Count(&expiredArchiveCount)
 	stats["expired_archive_count"] = expiredArchiveCount
@@ -273,7 +273,7 @@ func (m *DataLifecycleManager) GetDataStats() map[string]interface{} {
 			ROUND((index_length / 1024 / 1024), 2) AS index_size
 		FROM information_schema.TABLES
 		WHERE table_schema = DATABASE()
-			AND table_name IN ('agent_metrics', 'agent_metrics_archive')
+			AND table_name IN ('mon_agent_metrics', 'mon_agent_metrics_archive')
 		ORDER BY (data_length + index_length) DESC
 	`).Scan(&tableSize)
 

@@ -35,7 +35,7 @@ type AttributeOptions []AttributeOption
 
 // TableName 指定表名
 func (AttributeDefinition) TableName() string {
-	return "attribute_definitions"
+	return "sys_attribute_definitions"
 }
 
 // ServerAttribute 主机属性值
@@ -57,7 +57,7 @@ type ServerAttribute struct {
 
 // TableName 指定表名
 func (ServerAttribute) TableName() string {
-	return "server_attributes"
+	return "cmdb_server_attributes"
 }
 
 // AttributeCategory 属性分类常量

@@ -21,7 +21,7 @@ func NewCasbinAPIManager() (*CasbinAPIManager, error) {
 	db := GetDB()
 
 	// 初始化 Casbin GORM 适配器
-	adapter, err := gormadapter.NewAdapterByDB(db)
+	adapter, err := gormadapter.NewAdapterByDBUsePrefix(db, "sys_")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create casbin adapter: %w", err)
 	}

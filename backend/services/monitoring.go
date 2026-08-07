@@ -385,7 +385,7 @@ func (s *MonitoringService) storeMetrics(serverID uint, metrics *AgentExtendedMe
 
 	// 存储性能指标
 	perfData, _ := json.Marshal(metrics.Performance)
-	perfQuery := `INSERT INTO agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
+	perfQuery := `INSERT INTO mon_agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
 	              VALUES (?, 'performance', ?, ?, NOW())`
 	if err := db.Exec(perfQuery, serverID, string(perfData), now).Error; err != nil {
 		logger.Warn("存储性能指标失败", zap.Error(err))
@@ -394,7 +394,7 @@ func (s *MonitoringService) storeMetrics(serverID uint, metrics *AgentExtendedMe
 	// 存储系统信息
 	if metrics.SystemInfo.Hostname != "" {
 		sysData, _ := json.Marshal(metrics.SystemInfo)
-		sysQuery := `INSERT INTO agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
+		sysQuery := `INSERT INTO mon_agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
 		             VALUES (?, 'system', ?, ?, NOW())`
 		if err := db.Exec(sysQuery, serverID, string(sysData), now).Error; err != nil {
 			logger.Warn("存储系统信息失败", zap.Error(err))
@@ -404,7 +404,7 @@ func (s *MonitoringService) storeMetrics(serverID uint, metrics *AgentExtendedMe
 	// 存储硬件信息（如果存在）
 	if metrics.HardwareInfo.CPU.Cores > 0 {
 		hwData, _ := json.Marshal(metrics.HardwareInfo)
-		hwQuery := `INSERT INTO agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
+		hwQuery := `INSERT INTO mon_agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
 		            VALUES (?, 'hardware', ?, ?, NOW())`
 		if err := db.Exec(hwQuery, serverID, string(hwData), now).Error; err != nil {
 			logger.Warn("存储硬件信息失败", zap.Error(err))
@@ -414,7 +414,7 @@ func (s *MonitoringService) storeMetrics(serverID uint, metrics *AgentExtendedMe
 	// 存储服务状态
 	if len(metrics.ServiceStatus.SystemdServices) > 0 || len(metrics.ServiceStatus.ListenPorts) > 0 {
 		svcData, _ := json.Marshal(metrics.ServiceStatus)
-		svcQuery := `INSERT INTO agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
+		svcQuery := `INSERT INTO mon_agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
 		             VALUES (?, 'service', ?, ?, NOW())`
 		if err := db.Exec(svcQuery, serverID, string(svcData), now).Error; err != nil {
 			logger.Warn("存储服务状态失败", zap.Error(err))
@@ -424,7 +424,7 @@ func (s *MonitoringService) storeMetrics(serverID uint, metrics *AgentExtendedMe
 	// 存储进程信息
 	if len(metrics.ProcessInfo.Top) > 0 {
 		procData, _ := json.Marshal(metrics.ProcessInfo)
-		procQuery := `INSERT INTO agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
+		procQuery := `INSERT INTO mon_agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
 		              VALUES (?, 'process', ?, ?, NOW())`
 		if err := db.Exec(procQuery, serverID, string(procData), now).Error; err != nil {
 			logger.Warn("存储进程信息失败", zap.Error(err))
@@ -434,7 +434,7 @@ func (s *MonitoringService) storeMetrics(serverID uint, metrics *AgentExtendedMe
 	// 存储网络配置
 	if len(metrics.NetworkConfig.Interfaces) > 0 {
 		netData, _ := json.Marshal(metrics.NetworkConfig)
-		netQuery := `INSERT INTO agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
+		netQuery := `INSERT INTO mon_agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
 		             VALUES (?, 'network', ?, ?, NOW())`
 		if err := db.Exec(netQuery, serverID, string(netData), now).Error; err != nil {
 			logger.Warn("存储网络配置失败", zap.Error(err))
@@ -444,7 +444,7 @@ func (s *MonitoringService) storeMetrics(serverID uint, metrics *AgentExtendedMe
 	// 存储安全信息
 	if metrics.SecurityInfo.SSH.Port > 0 {
 		secData, _ := json.Marshal(metrics.SecurityInfo)
-		secQuery := `INSERT INTO agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
+		secQuery := `INSERT INTO mon_agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
 		             VALUES (?, 'security', ?, ?, NOW())`
 		if err := db.Exec(secQuery, serverID, string(secData), now).Error; err != nil {
 			logger.Warn("存储安全信息失败", zap.Error(err))
@@ -472,7 +472,7 @@ func (s *MonitoringService) storeMetrics(serverID uint, metrics *AgentExtendedMe
 
 	// 存储完整的 extended 数据（包含所有指标）
 	extendedData, _ := json.Marshal(metrics)
-	extendedQuery := `INSERT INTO agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
+	extendedQuery := `INSERT INTO mon_agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
 		                  VALUES (?, 'extended', ?, ?, NOW())`
 	if err := db.Exec(extendedQuery, serverID, string(extendedData), now).Error; err != nil {
 		logger.Warn("存储扩展指标失败", zap.Error(err))
@@ -485,7 +485,7 @@ func (s *MonitoringService) storeMetrics(serverID uint, metrics *AgentExtendedMe
 	var srv struct {
 		IP string `gorm:"column:ip"`
 	}
-	if err := db.Table("servers").Select("ip").Where("id = ?", serverID).First(&srv).Error; err == nil {
+	if err := db.Table("cmdb_servers").Select("ip").Where("id = ?", serverID).First(&srv).Error; err == nil {
 		ip = srv.IP
 	}
 	if hostname == "" {
@@ -569,7 +569,7 @@ func (s *MonitoringService) checkAlertThresholds(serverID uint, hostname, ip str
 				cache := NewRedisCache()
 				if cache.IsAlertSuppressed(serverID, dbRule.ID) {
 					// 在抑制期内，只更新数据库中的 last_seen，不发送新告警通知
-					db.Exec(`UPDATE agent_alerts SET last_seen = ?, metric_value = ?, message = ?
+					db.Exec(`UPDATE mon_agent_alerts SET last_seen = ?, metric_value = ?, message = ?
 					         WHERE server_id = ? AND rule_id = ? AND resolved_at IS NULL`,
 						now, value, message, serverID, dbRule.ID)
 					logger.Debug("告警已被聚合抑制，仅更新时间戳",
@@ -582,13 +582,13 @@ func (s *MonitoringService) checkAlertThresholds(serverID uint, hostname, ip str
 			var existing struct {
 				ID uint `gorm:"column:id"`
 			}
-			err := db.Table("agent_alerts").
+			err := db.Table("mon_agent_alerts").
 				Select("id").
 				Where("server_id = ? AND rule_id = ? AND resolved_at IS NULL", serverID, dbRule.ID).
 				First(&existing).Error
 			if err != nil {
 				// 新增告警
-				insertSQL := `INSERT INTO agent_alerts
+				insertSQL := `INSERT INTO mon_agent_alerts
 					(server_id, hostname, ip, rule_id, level, message, metric_value, threshold, first_seen, last_seen)
 					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 				if err := db.Exec(insertSQL, serverID, hostname, ip, dbRule.ID, dbRule.Level,
@@ -626,12 +626,12 @@ func (s *MonitoringService) checkAlertThresholds(serverID uint, hostname, ip str
 				}
 			} else {
 				// 更新 last_seen 和当前值
-				db.Exec(`UPDATE agent_alerts SET last_seen = ?, metric_value = ?, message = ? WHERE id = ?`,
+				db.Exec(`UPDATE mon_agent_alerts SET last_seen = ?, metric_value = ?, message = ? WHERE id = ?`,
 					now, value, message, existing.ID)
 			}
 		} else {
 			// 未触发告警：将未解决的告警标记为已恢复
-			result := db.Exec(`UPDATE agent_alerts SET resolved_at = ? WHERE server_id = ? AND rule_id = ? AND resolved_at IS NULL`,
+			result := db.Exec(`UPDATE mon_agent_alerts SET resolved_at = ? WHERE server_id = ? AND rule_id = ? AND resolved_at IS NULL`,
 				now, serverID, dbRule.ID)
 			if result.RowsAffected > 0 {
 				logger.Info("告警已恢复",
@@ -661,7 +661,7 @@ func (s *MonitoringService) GetServerExtendedMetrics(serverID uint) (*AgentExten
 	}
 
 	// 查询5分钟内的完整扩展指标
-	err := db.Table("agent_metrics").
+	err := db.Table("mon_agent_metrics").
 		Select("metric_data, received_at").
 		Where("server_id = ? AND metric_type = 'extended' AND received_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)", serverID).
 		Order("received_at DESC").
@@ -686,7 +686,7 @@ func (s *MonitoringService) GetServerProcesses(serverID uint) (*ProcessInfo, err
 		MetricData string `json:"metric_data"`
 	}
 
-	err := db.Table("agent_metrics").
+	err := db.Table("mon_agent_metrics").
 		Select("metric_data").
 		Where("server_id = ? AND metric_type = 'process' AND received_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)", serverID).
 		Order("received_at DESC").
@@ -715,7 +715,7 @@ func (s *MonitoringService) GetServerServices(serverID uint) (*ServiceStatus, er
 		MetricData string `json:"metric_data"`
 	}
 
-	err := db.Table("agent_metrics").
+	err := db.Table("mon_agent_metrics").
 		Select("metric_data").
 		Where("server_id = ? AND metric_type = 'service' AND received_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)", serverID).
 		Order("received_at DESC").
@@ -744,7 +744,7 @@ func (s *MonitoringService) GetServerHardware(serverID uint) (*HardwareInfo, err
 		MetricData string `json:"metric_data"`
 	}
 
-	err := db.Table("agent_metrics").
+	err := db.Table("mon_agent_metrics").
 		Select("metric_data").
 		Where("server_id = ? AND metric_type = 'hardware' AND received_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)", serverID).
 		Order("received_at DESC").
@@ -773,7 +773,7 @@ func (s *MonitoringService) GetServerNetwork(serverID uint) (*NetworkConfig, err
 		MetricData string `json:"metric_data"`
 	}
 
-	err := db.Table("agent_metrics").
+	err := db.Table("mon_agent_metrics").
 		Select("metric_data").
 		Where("server_id = ? AND metric_type = 'network' AND received_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)", serverID).
 		Order("received_at DESC").
@@ -802,7 +802,7 @@ func (s *MonitoringService) GetServerSecurity(serverID uint) (*SecurityInfo, err
 		MetricData string `json:"metric_data"`
 	}
 
-	err := db.Table("agent_metrics").
+	err := db.Table("mon_agent_metrics").
 		Select("metric_data").
 		Where("server_id = ? AND metric_type = 'security' AND received_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)", serverID).
 		Order("received_at DESC").
@@ -834,7 +834,7 @@ func (s *MonitoringService) GetMetricsHistory(serverID uint, metricType string, 
 		SELECT
 			DATE_FORMAT(report_time, '%%Y-%%m-%%d %%H:%%i:%%s') as timestamp,
 			CAST(JSON_UNQUOTE(JSON_EXTRACT(metric_data, '%s')) AS DECIMAL(10,2)) as value
-		FROM agent_metrics
+		FROM mon_agent_metrics
 		WHERE server_id = ?
 			AND metric_type = 'performance'
 			AND report_time BETWEEN ? AND ?
@@ -966,16 +966,16 @@ func (s *MonitoringService) GetOverview() (*OverviewData, error) {
 	var summary OverviewSummary
 
 	// 统计主机总数
-	db.Table("servers").Count(&summary.TotalServers)
+	db.Table("cmdb_servers").Count(&summary.TotalServers)
 
 	// 统计在线主机（agent_status = running）
-	db.Table("servers").Where("agent_status = 'running'").Count(&summary.OnlineServers)
+	db.Table("cmdb_servers").Where("agent_status = 'running'").Count(&summary.OnlineServers)
 
 	// 统计离线主机（agent_status = offline 或 uninstalled 且没有心跳）
-	db.Table("servers").Where("agent_status IN ('offline', 'uninstalled')").Count(&summary.OfflineServers)
+	db.Table("cmdb_servers").Where("agent_status IN ('offline', 'uninstalled')").Count(&summary.OfflineServers)
 
 	// 告警主机：CPU > 90% 或内存 > 90% 或磁盘 > 90%
-	db.Table("servers").Where("cpu_usage > 90 OR memory_usage > 90 OR disk_usage > 90").Count(&summary.AlertServers)
+	db.Table("cmdb_servers").Where("cpu_usage > 90 OR memory_usage > 90 OR disk_usage > 90").Count(&summary.AlertServers)
 
 	// Top 10 CPU
 	var topCPU []struct {
@@ -984,7 +984,7 @@ func (s *MonitoringService) GetOverview() (*OverviewData, error) {
 		IP       string  `gorm:"column:ip"`
 		CPUUsage float64 `gorm:"column:cpu_usage"`
 	}
-	db.Table("servers").
+	db.Table("cmdb_servers").
 		Select("id, hostname, ip, cpu_usage").
 		Where("agent_status = 'running' AND cpu_usage > 0").
 		Order("cpu_usage DESC").
@@ -1003,7 +1003,7 @@ func (s *MonitoringService) GetOverview() (*OverviewData, error) {
 		IP          string  `gorm:"column:ip"`
 		MemoryUsage float64 `gorm:"column:memory_usage"`
 	}
-	db.Table("servers").
+	db.Table("cmdb_servers").
 		Select("id, hostname, ip, memory_usage").
 		Where("agent_status = 'running' AND memory_usage > 0").
 		Order("memory_usage DESC").
@@ -1022,7 +1022,7 @@ func (s *MonitoringService) GetOverview() (*OverviewData, error) {
 		IP        string  `gorm:"column:ip"`
 		DiskUsage float64 `gorm:"column:disk_usage"`
 	}
-	db.Table("servers").
+	db.Table("cmdb_servers").
 		Select("id, hostname, ip, disk_usage").
 		Where("agent_status = 'running' AND disk_usage > 0").
 		Order("disk_usage DESC").
@@ -1047,7 +1047,7 @@ func (s *MonitoringService) GetOverview() (*OverviewData, error) {
 	}, nil
 }
 
-// getActiveAlerts 获取活跃告警列表（基于 agent_alerts 表）
+// getActiveAlerts 获取活跃告警列表（基于 mon_agent_alerts 表）
 func (s *MonitoringService) getActiveAlerts(limit int) ([]AlertItem, error) {
 	query := `
 		SELECT a.id, a.server_id, a.hostname, a.ip, a.rule_id, a.level, a.message,
@@ -1057,7 +1057,7 @@ func (s *MonitoringService) getActiveAlerts(limit int) ([]AlertItem, error) {
 		       a.acknowledged, COALESCE(a.acknowledged_by, '') as acknowledged_by,
 		       COALESCE(DATE_FORMAT(a.acknowledged_at, '%Y-%m-%dT%H:%i:%s+08:00'), '') as acknowledged_at,
 		       COALESCE(DATE_FORMAT(a.resolved_at, '%Y-%m-%dT%H:%i:%s+08:00'), '') as resolved_at
-		FROM agent_alerts a
+		FROM mon_agent_alerts a
 		WHERE a.resolved_at IS NULL
 		ORDER BY
 		    CASE a.level
@@ -1092,7 +1092,7 @@ func (s *MonitoringService) getActiveAlerts(limit int) ([]AlertItem, error) {
 
 // GetAlerts 查询告警列表
 func (s *MonitoringService) GetAlerts(params AlertQueryParams) (*AlertListResult, error) {
-	baseQuery := `FROM agent_alerts WHERE 1=1`
+	baseQuery := `FROM mon_agent_alerts WHERE 1=1`
 	var args []interface{}
 
 	if params.ServerID != "" {
@@ -1168,7 +1168,7 @@ func (s *MonitoringService) GetAlerts(params AlertQueryParams) (*AlertListResult
 func (s *MonitoringService) AcknowledgeAlert(id uint64, acknowledgedBy, comment string) error {
 	now := time.Now()
 	result := db.Exec(
-		`UPDATE agent_alerts SET acknowledged = 1, acknowledged_by = ?, acknowledged_at = ? WHERE id = ?`,
+		`UPDATE mon_agent_alerts SET acknowledged = 1, acknowledged_by = ?, acknowledged_at = ? WHERE id = ?`,
 		acknowledgedBy, now, id,
 	)
 	if result.Error != nil {
@@ -1199,17 +1199,17 @@ func (s *MonitoringService) GetAlertStats() (*AlertStats, error) {
 		Count int64  `gorm:"column:count"`
 	}
 	var levelCounts []levelCount
-	db.Raw("SELECT level, COUNT(*) as count FROM agent_alerts GROUP BY level").Scan(&levelCounts)
+	db.Raw("SELECT level, COUNT(*) as count FROM mon_agent_alerts GROUP BY level").Scan(&levelCounts)
 	for _, lc := range levelCounts {
 		stats.ByLevel[lc.Level] = lc.Count
 		stats.Total += lc.Count
 	}
 
 	// 已确认/未确认/已解决/活跃
-	db.Raw("SELECT COUNT(*) FROM agent_alerts WHERE acknowledged = 1").Scan(&stats.Acknowledged)
-	db.Raw("SELECT COUNT(*) FROM agent_alerts WHERE acknowledged = 0").Scan(&stats.Unacknowledged)
-	db.Raw("SELECT COUNT(*) FROM agent_alerts WHERE resolved_at IS NOT NULL").Scan(&stats.Resolved)
-	db.Raw("SELECT COUNT(*) FROM agent_alerts WHERE resolved_at IS NULL").Scan(&stats.Active)
+	db.Raw("SELECT COUNT(*) FROM mon_agent_alerts WHERE acknowledged = 1").Scan(&stats.Acknowledged)
+	db.Raw("SELECT COUNT(*) FROM mon_agent_alerts WHERE acknowledged = 0").Scan(&stats.Unacknowledged)
+	db.Raw("SELECT COUNT(*) FROM mon_agent_alerts WHERE resolved_at IS NOT NULL").Scan(&stats.Resolved)
+	db.Raw("SELECT COUNT(*) FROM mon_agent_alerts WHERE resolved_at IS NULL").Scan(&stats.Active)
 
 	// 最近7天趋势
 	type trendRow struct {
@@ -1219,7 +1219,7 @@ func (s *MonitoringService) GetAlertStats() (*AlertStats, error) {
 	var trend []trendRow
 	db.Raw(`
 		SELECT DATE_FORMAT(first_seen, '%Y-%m-%d') as date, COUNT(*) as count
-		FROM agent_alerts
+		FROM mon_agent_alerts
 		WHERE first_seen >= DATE_SUB(NOW(), INTERVAL 7 DAY)
 		GROUP BY DATE_FORMAT(first_seen, '%Y-%m-%d')
 		ORDER BY date ASC
@@ -1310,7 +1310,7 @@ func (p *MetricsPersister) persistBatch(batch []*PersistMetric) {
 	// 使用事务批量写入
 	err := db.Transaction(func(tx *gorm.DB) error {
 		for _, metric := range batch {
-			query := `INSERT INTO agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
+			query := `INSERT INTO mon_agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
 			             VALUES (?, ?, ?, ?, NOW())`
 			if err := tx.Exec(query, metric.ServerID, metric.MetricType, string(metric.MetricData), metric.ReportTime).Error; err != nil {
 				logger.Warn("批量写入指标失败",

@@ -10,16 +10,16 @@
 -- ======================================
 -- 1. 清理现有权限数据（可选，用于重新初始化）
 -- ======================================
--- TRUNCATE TABLE permissions;
--- TRUNCATE TABLE role_permissions;
--- TRUNCATE TABLE user_permissions;
+-- TRUNCATE TABLE sys_permissions;
+-- TRUNCATE TABLE sys_role_permissions;
+-- TRUNCATE TABLE sys_user_permissions;
 
 -- ======================================
 -- 2. 插入系统管理模块权限
 -- ======================================
 
 -- 2.1 用户管理权限
-INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
+INSERT INTO `sys_permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
 -- 用户管理菜单权限
 ('system.user.menu', '用户管理', '用户管理菜单权限', 'system', 'user', 'view', 'menu', NULL, 1),
 
@@ -35,7 +35,7 @@ INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, 
 ('system.user.import', '导入用户', '导入用户数据权限', 'system', 'user', 'import', 'button', LAST_INSERT_ID(), 9);
 
 -- 2.2 角色管理权限
-INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
+INSERT INTO `sys_permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
 -- 角色管理菜单权限
 ('system.role.menu', '角色管理', '角色管理菜单权限', 'system', 'role', 'view', 'menu', NULL, 2),
 
@@ -48,7 +48,7 @@ INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, 
 ('system.role.view_users', '查看角色用户', '查看角色下的用户列表', 'system', 'role', 'view_users', 'button', LAST_INSERT_ID(), 6);
 
 -- 2.3 权限管理权限
-INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
+INSERT INTO `sys_permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
 -- 权限管理菜单权限
 ('system.permission.menu', '权限管理', '权限管理菜单权限', 'system', 'permission', 'view', 'menu', NULL, 3),
 
@@ -61,7 +61,7 @@ INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, 
 ('system.permission.import', '导入权限', '导入权限配置权限', 'system', 'permission', 'import', 'button', LAST_INSERT_ID(), 6);
 
 -- 2.4 菜单管理权限
-INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
+INSERT INTO `sys_permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
 -- 菜单管理菜单权限
 ('system.menu.menu', '菜单管理', '菜单管理菜单权限', 'system', 'menu', 'view', 'menu', NULL, 4),
 
@@ -77,7 +77,7 @@ INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, 
 -- ======================================
 
 -- 3.1 登录日志权限
-INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
+INSERT INTO `sys_permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
 -- 登录日志菜单权限
 ('audit.login_log.menu', '登录日志', '登录日志查看权限', 'audit', 'login_log', 'view', 'menu', NULL, 10),
 
@@ -86,7 +86,7 @@ INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, 
 ('audit.login_log.export', '导出登录日志', '导出登录日志权限', 'audit', 'login_log', 'export', 'button', LAST_INSERT_ID(), 2);
 
 -- 3.2 操作日志权限
-INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
+INSERT INTO `sys_permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
 -- 操作日志菜单权限
 ('audit.operation_log.menu', '操作日志', '操作日志查看权限', 'audit', 'operation_log', 'view', 'menu', NULL, 11),
 
@@ -98,7 +98,7 @@ INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, 
 -- 4. 插入系统配置权限
 -- ======================================
 
-INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
+INSERT INTO `sys_permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
 -- 系统设置菜单权限
 ('system.settings.menu', '系统设置', '系统设置菜单权限', 'system', 'settings', 'view', 'menu', NULL, 20),
 
@@ -110,7 +110,7 @@ INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, 
 -- ======================================
 -- 5. 插入超级管理员权限（通配符权限）
 -- ======================================
-INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
+INSERT INTO `sys_permissions` (`code`, `name`, `description`, `module`, `resource`, `action`, `level`, `parent_id`, `sort_order`) VALUES
 ('*.*.*', '超级管理员', '拥有所有权限的超级管理员', '*', '*', '*', 'menu', NULL, 0),
 ('system.*.*', '系统管理所有权限', '系统模块的所有权限', 'system', '*', '*', 'menu', NULL, 1);
 
@@ -119,8 +119,8 @@ INSERT INTO `permissions` (`code`, `name`, `description`, `module`, `resource`, 
 -- ======================================
 -- 假设默认管理员角色ID为1，如果没有请先创建角色
 -- 为超级管理员角色分配所有权限
-INSERT INTO `role_permissions` (`role_id`, `permission_id`)
-SELECT 1, `id` FROM `permissions` WHERE `code` IN ('*.*.*', 'system.*.*');
+INSERT INTO `sys_role_permissions` (`role_id`, `permission_id`)
+SELECT 1, `id` FROM `sys_permissions` WHERE `code` IN ('*.*.*', 'system.*.*');
 
 -- ======================================
 -- 7. 创建权限模板（常用权限组合）
@@ -136,7 +136,7 @@ SELECT
     module,
     level,
     COUNT(*) as count
-FROM permissions
+FROM sys_permissions
 GROUP BY module, level
 ORDER BY module, level;
 
@@ -147,8 +147,8 @@ SELECT
     p1.level,
     p2.code as parent_code,
     p2.name as parent_name
-FROM permissions p1
-LEFT JOIN permissions p2 ON p1.parent_id = p2.id
+FROM sys_permissions p1
+LEFT JOIN sys_permissions p2 ON p1.parent_id = p2.id
 ORDER BY p1.sort_order;
 
 -- ======================================
@@ -158,44 +158,44 @@ ORDER BY p1.sort_order;
 -- 注意：这个部分需要根据实际插入的ID进行调整
 
 -- 更新用户管理按钮权限的parent_id
-UPDATE permissions p
-JOIN permissions parent ON parent.code = 'system.user.menu'
+UPDATE sys_permissions p
+JOIN sys_permissions parent ON parent.code = 'system.user.menu'
 SET p.parent_id = parent.id
 WHERE p.code LIKE 'system.user.%' AND p.code != 'system.user.menu';
 
 -- 更新角色管理按钮权限的parent_id
-UPDATE permissions p
-JOIN permissions parent ON parent.code = 'system.role.menu'
+UPDATE sys_permissions p
+JOIN sys_permissions parent ON parent.code = 'system.role.menu'
 SET p.parent_id = parent.id
 WHERE p.code LIKE 'system.role.%' AND p.code != 'system.role.menu';
 
 -- 更新权限管理按钮权限的parent_id
-UPDATE permissions p
-JOIN permissions parent ON parent.code = 'system.permission.menu'
+UPDATE sys_permissions p
+JOIN sys_permissions parent ON parent.code = 'system.permission.menu'
 SET p.parent_id = parent.id
 WHERE p.code LIKE 'system.permission.%' AND p.code != 'system.permission.menu';
 
 -- 更新菜单管理按钮权限的parent_id
-UPDATE permissions p
-JOIN permissions parent ON parent.code = 'system.menu.menu'
+UPDATE sys_permissions p
+JOIN sys_permissions parent ON parent.code = 'system.menu.menu'
 SET p.parent_id = parent.id
 WHERE p.code LIKE 'system.menu.%' AND p.code != 'system.menu.menu';
 
 -- 更新登录日志按钮权限的parent_id
-UPDATE permissions p
-JOIN permissions parent ON parent.code = 'audit.login_log.menu'
+UPDATE sys_permissions p
+JOIN sys_permissions parent ON parent.code = 'audit.login_log.menu'
 SET p.parent_id = parent.id
 WHERE p.code LIKE 'audit.login_log.%' AND p.code != 'audit.login_log.menu';
 
 -- 更新操作日志按钮权限的parent_id
-UPDATE permissions p
-JOIN permissions parent ON parent.code = 'audit.operation_log.menu'
+UPDATE sys_permissions p
+JOIN sys_permissions parent ON parent.code = 'audit.operation_log.menu'
 SET p.parent_id = parent.id
 WHERE p.code LIKE 'audit.operation_log.%' AND p.code != 'audit.operation_log.menu';
 
 -- 更新系统设置按钮权限的parent_id
-UPDATE permissions p
-JOIN permissions parent ON parent.code = 'system.settings.menu'
+UPDATE sys_permissions p
+JOIN sys_permissions parent ON parent.code = 'system.settings.menu'
 SET p.parent_id = parent.id
 WHERE p.code LIKE 'system.settings.%' AND p.code != 'system.settings.menu';
 
@@ -203,9 +203,9 @@ WHERE p.code LIKE 'system.settings.%' AND p.code != 'system.settings.menu';
 -- 10. 完成提示
 -- ======================================
 -- 权限数据初始化完成！
--- 总权限数量：SELECT COUNT(*) FROM permissions;
--- 菜单权限数量：SELECT COUNT(*) FROM permissions WHERE level = 'menu';
--- 按钮权限数量：SELECT COUNT(*) FROM permissions WHERE level = 'button';
+-- 总权限数量：SELECT COUNT(*) FROM sys_permissions;
+-- 菜单权限数量：SELECT COUNT(*) FROM sys_permissions WHERE level = 'menu';
+-- 按钮权限数量：SELECT COUNT(*) FROM sys_permissions WHERE level = 'button';
 
 -- 下一步：
 -- 1. 执行数据库迁移脚本

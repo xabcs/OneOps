@@ -53,13 +53,13 @@ type DiagnosticPermission struct {
 
 // TableName 指定表名
 func (DiagnosticHistory) TableName() string {
-	return "diagnostic_history"
+	return "k8s_diagnostic_history"
 }
 
 func (DiagnosticConfig) TableName() string {
-	return "diagnostic_config"
+	return "k8s_diagnostic_config"
 }
 
 func (DiagnosticPermission) TableName() string {
-	return "diagnostic_permissions"
+	return "k8s_diagnostic_permissions"
 }

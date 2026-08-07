@@ -51,38 +51,6 @@ func (AuthGroupPermissionMapping) TableName() string {
 	return "auth_group_permission_mappings"
 }
 
-// ApplicationPermissionTemplate 外部应用权限定义模板
-// 用于快速分配常用权限组合
-type ApplicationPermissionTemplate struct {
-	ID    uint   `json:"id" gorm:"primaryKey"`
-
-	// ========== 关联应用 ==========
-	AppID      uint       `json:"appId" gorm:"not null;index;comment:外部应用ID"`
-	AppIDField Application `json:"-" gorm:"foreignKey:AppID"`
-
-	// ========== 权限定义 ==========
-	PermissionCode  string `json:"permissionCode" gorm:"size:100;not null;index;comment:权限代码"`
-	PermissionName  string `json:"permissionName" gorm:"size:100;not null;comment:权限名称"`
-	PermissionType  string `json:"permissionType" gorm:"size:50;not null;comment:权限类型:role,rule,preset"`
-	Description     string `json:"description" gorm:"size:200;comment:描述"`
-
-	// ========== 权限内容模板 ==========
-	// JumpServer示例: {"mapping_type":"rule","actions":["connect","upload"],"objects":["assets:all","nodes:all"]}
-	// Jenkins示例: {"mapping_type":"role","role_name":"developer","permissions":["build","read"]}
-	Template string `json:"template" gorm:"type:json;comment:权限内容模板(JSON)"`
-
-	// ========== 系统预设 ==========
-	IsSystemPreset bool `json:"isSystemPreset" gorm:"default:false;comment:是否系统预设"`
-	SortOrder     int  `json:"sortOrder" gorm:"default:0;comment:排序"`
-
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
-}
-
-func (ApplicationPermissionTemplate) TableName() string {
-	return "application_permission_templates"
-}
-
 // AuthGroupEffectivePermission 用户组有效权限视图
 // 用于查询和展示用户组的实际权限
 type AuthGroupEffectivePermission struct {

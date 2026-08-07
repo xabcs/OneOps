@@ -35,7 +35,7 @@ func (s *MonitoringService) GetNotificationChannels() ([]NotificationChannel, er
 		UpdatedAt   time.Time      `gorm:"column:updated_at"`
 	}
 
-	err := db.Table("notification_channels").Find(&channels).Error
+	err := db.Table("mon_notification_channels").Find(&channels).Error
 	if err != nil {
 		return nil, fmt.Errorf("查询通知渠道失败: %w", err)
 	}
@@ -62,7 +62,7 @@ func (s *MonitoringService) CreateNotificationChannel(channel *NotificationChann
 	channel.CreatedAt = now.Format("2006-01-02 15:04:05")
 	channel.UpdatedAt = channel.CreatedAt
 
-	result := db.Exec("INSERT INTO notification_channels (channel_type, channel_name, config, enabled) VALUES (?, ?, ?, ?)",
+	result := db.Exec("INSERT INTO mon_notification_channels (channel_type, channel_name, config, enabled) VALUES (?, ?, ?, ?)",
 		channel.ChannelType, channel.ChannelName, channel.Config, channel.Enabled)
 	if result.Error != nil {
 		return 0, result.Error
@@ -76,7 +76,7 @@ func (s *MonitoringService) CreateNotificationChannel(channel *NotificationChann
 
 // UpdateNotificationChannel 更新通知渠道
 func (s *MonitoringService) UpdateNotificationChannel(channel *NotificationChannel) error {
-	query := `UPDATE notification_channels
+	query := `UPDATE mon_notification_channels
 	          SET channel_type = ?, channel_name = ?, config = ?, enabled = ?
 	          WHERE id = ?`
 
@@ -85,7 +85,7 @@ func (s *MonitoringService) UpdateNotificationChannel(channel *NotificationChann
 
 // DeleteNotificationChannel 删除通知渠道
 func (s *MonitoringService) DeleteNotificationChannel(id uint) error {
-	return db.Exec("DELETE FROM notification_channels WHERE id = ?", id).Error
+	return db.Exec("DELETE FROM mon_notification_channels WHERE id = ?", id).Error
 }
 
 // TestNotificationChannel 测试通知渠道
@@ -96,7 +96,7 @@ func (s *MonitoringService) TestNotificationChannel(id uint) error {
 		Config      json.RawMessage `gorm:"column:config"`
 	}
 
-	err := db.Table("notification_channels").Select("channel_type, config").
+	err := db.Table("mon_notification_channels").Select("channel_type, config").
 		Where("id = ?", id).First(&channel).Error
 	if err != nil {
 		return fmt.Errorf("获取通知渠道失败: %w", err)
@@ -155,7 +155,7 @@ type CreateReportRequest struct {
 
 // GetReports 获取巡检报告列表
 func (s *MonitoringService) GetReports(params ReportQueryParams) (*ReportListResult, error) {
-	baseQuery := "FROM inspection_reports WHERE 1=1"
+	baseQuery := "FROM mon_inspection_reports WHERE 1=1"
 	var args []interface{}
 
 	if params.ReportType != "" {
@@ -213,7 +213,7 @@ func (s *MonitoringService) CreateReport(req *CreateReportRequest, createdBy str
 	// 将 serverIds 转换为 JSON
 	serverIDsJSON, _ := json.Marshal(req.ServerIDs)
 
-	query := `INSERT INTO inspection_reports (report_type, title, server_ids, status, created_by, created_at)
+	query := `INSERT INTO mon_inspection_reports (report_type, title, server_ids, status, created_by, created_at)
 	          VALUES (?, ?, ?, 'pending', ?, ?)`
 
 	result := db.Exec(query, req.ReportType, req.Title, string(serverIDsJSON), createdBy, now)
@@ -254,7 +254,7 @@ func (s *MonitoringService) GetReportDetail(id uint64) (*ReportDetail, error) {
 		CompletedAt *time.Time     `gorm:"column:completed_at"`
 	}
 
-	err := db.Table("inspection_reports").Where("id = ?", id).First(&report).Error
+	err := db.Table("mon_inspection_reports").Where("id = ?", id).First(&report).Error
 	if err != nil {
 		return nil, fmt.Errorf("查询报告详情失败: %w", err)
 	}
@@ -296,5 +296,5 @@ func (s *MonitoringService) ExportReport(id uint64, format string) (string, erro
 
 // DeleteReport 删除巡检报告
 func (s *MonitoringService) DeleteReport(id uint64) error {
-	return db.Exec("DELETE FROM inspection_reports WHERE id = ?", id).Error
+	return db.Exec("DELETE FROM mon_inspection_reports WHERE id = ?", id).Error
 }

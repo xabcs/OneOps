@@ -62,7 +62,7 @@ func (s *DataBackfillService) CheckAndBackfill(server *models.Server) error {
 	var lastMetric struct {
 		ReportTime time.Time `gorm:"column:report_time"`
 	}
-	err := db.Table("agent_metrics").
+	err := db.Table("mon_agent_metrics").
 		Select("report_time").
 		Where("server_id = ?", server.ID).
 		Order("report_time DESC").
@@ -141,7 +141,7 @@ func (s *DataBackfillService) BackfillData(serverID uint, startTime, endTime tim
 			var existing struct {
 				ID uint `gorm:"column:id"`
 			}
-			err := db.Table("agent_metrics").
+			err := db.Table("mon_agent_metrics").
 				Select("id").
 				Where("server_id = ? AND metric_type = ? AND report_time = ?",
 					serverID, metric.Type, metric.Timestamp).
@@ -162,7 +162,7 @@ func (s *DataBackfillService) BackfillData(serverID uint, startTime, endTime tim
 			}
 
 			// 插入数据
-			insertSQL := `INSERT INTO agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
+			insertSQL := `INSERT INTO mon_agent_metrics (server_id, metric_type, metric_data, report_time, received_at)
 			              VALUES (?, ?, ?, ?, NOW())`
 			if err := db.Exec(insertSQL, serverID, metric.Type, string(metric.Data), reportTime).Error; err != nil {
 				logger.Warn("插入回填数据失败",

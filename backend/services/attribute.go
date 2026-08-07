@@ -171,26 +171,26 @@ func (s *AttributeService) ValidateAttributeValue(attrID uint, value string) err
 func (s *AttributeService) GetServerAttributes(serverID uint) ([]models.ServerAttribute, error) {
 	// 性能优化：使用JOIN代替Preload，避免N+1查询
 	// 先查询属性和定义信息
-	rows, err := db.Table("server_attributes").
+	rows, err := db.Table("cmdb_server_attributes").
 		Select(`
-			server_attributes.id,
-			server_attributes.server_id,
-			server_attributes.attribute_id,
-			server_attributes.attribute_key,
-			server_attributes.attribute_value,
-			server_attributes.value_type,
-			server_attributes.category,
-			server_attributes.created_at,
-			server_attributes.updated_at,
-			attribute_definitions.id as def_id,
-			attribute_definitions.name as def_name,
-			attribute_definitions.type as def_type,
-			attribute_definitions.category as def_category,
-			attribute_definitions.description as def_description
+			cmdb_server_attributes.id,
+			cmdb_server_attributes.server_id,
+			cmdb_server_attributes.attribute_id,
+			cmdb_server_attributes.attribute_key,
+			cmdb_server_attributes.attribute_value,
+			cmdb_server_attributes.value_type,
+			cmdb_server_attributes.category,
+			cmdb_server_attributes.created_at,
+			cmdb_server_attributes.updated_at,
+			sys_attribute_definitions.id as def_id,
+			sys_attribute_definitions.name as def_name,
+			sys_attribute_definitions.type as def_type,
+			sys_attribute_definitions.category as def_category,
+			sys_attribute_definitions.description as def_description
 		`).
-		Joins("LEFT JOIN attribute_definitions ON attribute_definitions.id = server_attributes.attribute_id").
-		Where("server_attributes.server_id = ?", serverID).
-		Order("server_attributes.attribute_id ASC").
+		Joins("LEFT JOIN sys_attribute_definitions ON sys_attribute_definitions.id = cmdb_server_attributes.attribute_id").
+		Where("cmdb_server_attributes.server_id = ?", serverID).
+		Order("cmdb_server_attributes.attribute_id ASC").
 		Rows()
 
 	if err != nil {
@@ -289,7 +289,7 @@ func (s *AttributeService) GetServersByAttributes(filters map[string]string, pag
 	for key, value := range filters {
 		alias := fmt.Sprintf("sa%d", index)
 		query = query.Joins(
-			fmt.Sprintf("JOIN server_attributes %s ON servers.id = %s.server_id", alias, alias),
+			fmt.Sprintf("JOIN cmdb_server_attributes %s ON cmdb_servers.id = %s.server_id", alias, alias),
 		).Where(fmt.Sprintf("%s.attribute_key = ? AND %s.attribute_value = ?", alias, alias), key, value)
 		index++
 	}
@@ -302,7 +302,7 @@ func (s *AttributeService) GetServersByAttributes(filters map[string]string, pag
 	// 获取数据
 	err := query.
 		Preload("Attributes.Definition").
-		Order("servers.id DESC").
+		Order("cmdb_servers.id DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&servers).Error

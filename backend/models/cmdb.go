@@ -29,7 +29,7 @@ type BusinessUnit struct {
 
 // TableName 指定表名
 func (BusinessUnit) TableName() string {
-	return "business_units"
+	return "cmdb_business_units"
 }
 
 // ServerRoom 机房模型
@@ -53,7 +53,7 @@ type ServerRoom struct {
 
 // TableName 指定表名
 func (ServerRoom) TableName() string {
-	return "server_rooms"
+	return "cmdb_server_rooms"
 }
 
 // Cabinet 机柜模型
@@ -79,7 +79,7 @@ type Cabinet struct {
 
 // TableName 指定表名
 func (Cabinet) TableName() string {
-	return "cabinets"
+	return "cmdb_cabinets"
 }
 
 // DiskPartition 磁盘分区信息
@@ -194,10 +194,10 @@ type Server struct {
 	SSHCredential    *SSHCredential  `json:"sshCredential,omitempty" gorm:"foreignKey:SSHCredentialID;constraint:OnDelete:SET NULL"`
 	SystemCredential *SSHCredential  `json:"systemCredential,omitempty" gorm:"foreignKey:SystemCredentialID;constraint:OnDelete:SET NULL"`
 	Cabinet          *Cabinet        `json:"cabinet,omitempty" gorm:"foreignKey:CabinetID;constraint:OnDelete:SET NULL"`
-	Tags          []ServerTag     `json:"tags,omitempty" gorm:"many2many:server_tag_relations;constraint:OnDelete:CASCADE"`
-	Groups        []ServerGroup   `json:"groups,omitempty" gorm:"many2many:server_group_relations;constraint:OnDelete:CASCADE"`
+	Tags          []ServerTag     `json:"tags,omitempty" gorm:"many2many:cmdb_server_tag_relations;constraint:OnDelete:CASCADE"`
+	Groups        []ServerGroup   `json:"groups,omitempty" gorm:"many2many:cmdb_server_group_relations;constraint:OnDelete:CASCADE"`
 	CloudInfo     *CloudServer    `json:"cloudInfo,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:SET NULL"`
-	Credentials   []SSHCredential `json:"credentials,omitempty" gorm:"many2many:server_credentials;joinForeignKey:ServerID;joinReferences:CredentialID"`
+	Credentials   []SSHCredential `json:"credentials,omitempty" gorm:"many2many:cmdb_server_credentials;joinForeignKey:ServerID;joinReferences:CredentialID"`
 	Attributes    []ServerAttribute `json:"attributes,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:CASCADE"`
 	GroupIDs      []uint          `json:"groupIds,omitempty" gorm:"-"`
 	CredentialIDs []uint          `json:"credentialIds,omitempty" gorm:"-"`
@@ -205,7 +205,7 @@ type Server struct {
 
 // TableName 指定表名
 func (Server) TableName() string {
-	return "servers"
+	return "cmdb_servers"
 }
 
 // ServerTag 服务器标签模型
@@ -219,12 +219,12 @@ type ServerTag struct {
 	CreatedAt   time.Time `json:"createdAt" gorm:"autoCreateTime"`
 
 	// 关联
-	Servers []Server `json:"servers,omitempty" gorm:"many2many:server_tag_relations;joinForeignKey:TagID;joinReferences:ServerID"`
+	Servers []Server `json:"servers,omitempty" gorm:"many2many:cmdb_server_tag_relations;joinForeignKey:TagID;joinReferences:ServerID"`
 }
 
 // TableName 指定表名
 func (ServerTag) TableName() string {
-	return "server_tags"
+	return "cmdb_server_tags"
 }
 
 // AssetChange 资产变更记录模型
@@ -245,7 +245,7 @@ type AssetChange struct {
 
 // TableName 指定表名
 func (AssetChange) TableName() string {
-	return "asset_changes"
+	return "cmdb_asset_changes"
 }
 
 // ServerTagRelation 服务器标签关联模型
@@ -262,7 +262,7 @@ type ServerTagRelation struct {
 
 // TableName 指定表名
 func (ServerTagRelation) TableName() string {
-	return "server_tag_relations"
+	return "cmdb_server_tag_relations"
 }
 
 // ServerGroup 主机分组模型
@@ -283,12 +283,12 @@ type ServerGroup struct {
 	// 关联
 	Parent   *ServerGroup  `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
 	Children []ServerGroup `json:"children,omitempty" gorm:"foreignKey:ParentID"`
-	Servers  []Server      `json:"servers,omitempty" gorm:"many2many:server_group_relations;joinForeignKey:GroupID;joinReferences:ServerID"`
+	Servers  []Server      `json:"servers,omitempty" gorm:"many2many:cmdb_server_group_relations;joinForeignKey:GroupID;joinReferences:ServerID"`
 }
 
 // TableName 指定表名
 func (ServerGroup) TableName() string {
-	return "server_groups"
+	return "cmdb_server_groups"
 }
 
 // ServerGroupRelation 服务器分组关联模型
@@ -305,7 +305,7 @@ type ServerGroupRelation struct {
 
 // TableName 指定表名
 func (ServerGroupRelation) TableName() string {
-	return "server_group_relations"
+	return "cmdb_server_group_relations"
 }
 
 // SSHPublicKeyAuth 公钥认证类型
@@ -342,12 +342,12 @@ type SSHCredential struct {
 	UpdatedAt      time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 
 	// 关联
-	Servers []Server `json:"servers,omitempty" gorm:"many2many:server_credentials;joinForeignKey:CredentialID;joinReferences:ServerID"`
+	Servers []Server `json:"servers,omitempty" gorm:"many2many:cmdb_server_credentials;joinForeignKey:CredentialID;joinReferences:ServerID"`
 }
 
 // TableName 指定表名
 func (SSHCredential) TableName() string {
-	return "ssh_credentials"
+	return "cmdb_ssh_credentials"
 }
 
 // CloudServer 云主机信息
@@ -375,7 +375,7 @@ type CloudServer struct {
 
 // TableName 指定表名
 func (CloudServer) TableName() string {
-	return "cloud_servers"
+	return "cmdb_cloud_servers"
 }
 
 // ServerCredential 服务器-凭证多对多关联表
@@ -386,7 +386,7 @@ type ServerCredential struct {
 
 // TableName 指定表名
 func (ServerCredential) TableName() string {
-	return "server_credentials"
+	return "cmdb_server_credentials"
 }
 
 // ========================================
@@ -428,7 +428,7 @@ type AgentVersion struct {
 
 // TableName 指定表名
 func (AgentVersion) TableName() string {
-	return "agent_versions"
+	return "cmdb_agent_versions"
 }
 
 // AgentUpgradeTask Agent 升级任务模型
@@ -466,7 +466,7 @@ type AgentUpgradeTask struct {
 
 // TableName 指定表名
 func (AgentUpgradeTask) TableName() string {
-	return "agent_upgrade_tasks"
+	return "cmdb_agent_upgrade_tasks"
 }
 
 // AgentVersionFeature 版本功能支持结构

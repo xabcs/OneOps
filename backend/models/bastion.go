@@ -26,6 +26,11 @@ type AssetAccessPolicy struct {
 	UpdatedAt        time.Time `json:"updatedAt"`
 }
 
+// TableName 指定表名
+func (AssetAccessPolicy) TableName() string {
+	return "cmdb_access_policies"
+}
+
 // TimeWindow 时间窗口
 type TimeWindow struct {
 	Start string `json:"start"` // HH:mm格式
@@ -99,6 +104,10 @@ type BastionSession struct {
 	FileTransfers  []BastionFileTransfer  `gorm:"-" json:"fileTransfers,omitempty"`
 }
 
+func (BastionSession) TableName() string {
+	return "cmdb_bastion_sessions"
+}
+
 // BastionCommand 命令审计
 type BastionCommand struct {
 	ID           uint       `gorm:"primaryKey" json:"id"`
@@ -111,6 +120,11 @@ type BastionCommand struct {
 	Blocked      bool       `gorm:"default:false" json:"blocked"`
 	OutputSummary string    `gorm:"type:text" json:"outputSummary"`
 	CreatedAt    time.Time  `json:"createdAt"`
+}
+
+// TableName 指定表名
+func (BastionCommand) TableName() string {
+	return "cmdb_bastion_commands"
 }
 
 // BastionFileTransfer 文件传输审计
@@ -127,6 +141,10 @@ type BastionFileTransfer struct {
 	StartedAt    *time.Time `json:"startedAt"`
 	CompletedAt  *time.Time `json:"completedAt"`
 	CreatedAt    time.Time  `json:"createdAt"`
+}
+
+func (BastionFileTransfer) TableName() string {
+	return "cmdb_bastion_file_transfers"
 }
 
 // BastionApproval 连接审批
@@ -146,6 +164,10 @@ type BastionApproval struct {
 	ExpiredAt    *time.Time `json:"expiredAt"`
 	Comment      string     `gorm:"type:text" json:"comment"`
 	CreatedAt    time.Time  `json:"createdAt"`
+}
+
+func (BastionApproval) TableName() string {
+	return "cmdb_bastion_approvals"
 }
 
 // ConnectRequest 连接请求

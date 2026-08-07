@@ -4,7 +4,7 @@
 -- ======================================
 
 -- 权限表
-CREATE TABLE IF NOT EXISTS permissions (
+CREATE TABLE IF NOT EXISTS sys_permissions (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   code VARCHAR(100) UNIQUE NOT NULL COMMENT '权限编码：module.resource.action',
   name VARCHAR(50) NOT NULL COMMENT '权限名称',
@@ -25,25 +25,25 @@ CREATE TABLE IF NOT EXISTS permissions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='权限表';
 
 -- 角色权限关联表
-CREATE TABLE IF NOT EXISTS role_permissions (
+CREATE TABLE IF NOT EXISTS sys_role_permissions (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   role_id BIGINT NOT NULL COMMENT '角色ID',
   permission_id BIGINT NOT NULL COMMENT '权限ID',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uk_role_permission (role_id, permission_id),
-  FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
-  FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+  FOREIGN KEY (role_id) REFERENCES sys_roles(id) ON DELETE CASCADE,
+  FOREIGN KEY (permission_id) REFERENCES sys_permissions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色权限关联表';
 
 -- 用户权限关联表（直接分配给用户的权限）
-CREATE TABLE IF NOT EXISTS user_permissions (
+CREATE TABLE IF NOT EXISTS sys_user_permissions (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   user_id BIGINT NOT NULL COMMENT '用户ID',
   permission_id BIGINT NOT NULL COMMENT '权限ID',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uk_user_permission (user_id, permission_id),
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+  FOREIGN KEY (user_id) REFERENCES sys_users(id) ON DELETE CASCADE,
+  FOREIGN KEY (permission_id) REFERENCES sys_permissions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户权限关联表';
 
 -- API权限映射表（自动将API映射到按钮权限）
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS api_permission_mappings (
 -- ======================================
 
 -- 1. 用户管理模块和页面权限
-INSERT INTO permissions (code, name, description, module, resource, action, level, parent_id, sort_order) VALUES
+INSERT INTO sys_permissions (code, name, description, module, resource, action, level, parent_id, sort_order) VALUES
 -- 模块级权限
 ('system', '系统管理', '系统管理模块', 'system', '', '', 'module', NULL, 1),
 
@@ -74,7 +74,7 @@ INSERT INTO permissions (code, name, description, module, resource, action, leve
 
 -- 2. 用户管理按钮级权限
 SET @user_page_id = LAST_INSERT_ID();
-INSERT INTO permissions (code, name, description, module, resource, action, level, parent_id, sort_order) VALUES
+INSERT INTO sys_permissions (code, name, description, module, resource, action, level, parent_id, sort_order) VALUES
 -- 基础CRUD按钮
 ('system.user.view', '查看用户', '查看用户列表和详情', 'system', 'user', 'view', 'button', @user_page_id, 1),
 ('system.user.create', '新增用户', '创建新用户', 'system', 'user', 'create', 'button', @user_page_id, 2),
@@ -114,48 +114,48 @@ INSERT INTO permissions (code, name, description, module, resource, action, leve
 -- 3. API权限映射（自动关联按钮权限到API）
 INSERT INTO api_permission_mappings (method, path, permission_code, description) VALUES
 -- 用户查看相关API
-('GET', '/api/system/users', 'system.user.view', '获取用户列表'),
-('GET', '/api/system/users/:id', 'system.user.view', '获取用户详情'),
-('GET', '/api/system/users/:id/roles', 'system.user.view_roles', '获取用户角色'),
-('GET', '/api/system/users/:id/history', 'system.user.view_history', '获取用户操作历史'),
+('GET', '/api/system/sys_users', 'system.user.view', '获取用户列表'),
+('GET', '/api/system/sys_users/:id', 'system.user.view', '获取用户详情'),
+('GET', '/api/system/sys_users/:id/sys_roles', 'system.user.view_roles', '获取用户角色'),
+('GET', '/api/system/sys_users/:id/history', 'system.user.view_history', '获取用户操作历史'),
 
 -- 用户创建相关API
-('POST', '/api/system/users', 'system.user.create', '创建用户'),
-('POST', '/api/system/users/:id/approve', 'system.user.approve', '审批用户'),
-('POST', '/api/system/users/:id/reject', 'system.user.reject', '拒绝用户'),
+('POST', '/api/system/sys_users', 'system.user.create', '创建用户'),
+('POST', '/api/system/sys_users/:id/approve', 'system.user.approve', '审批用户'),
+('POST', '/api/system/sys_users/:id/reject', 'system.user.reject', '拒绝用户'),
 
 -- 用户更新相关API
-('PUT', '/api/system/users/:id', 'system.user.update', '更新用户信息'),
-('PUT', '/api/system/users/:id/profile', 'system.user.update_profile', '更新个人资料'),
-('PUT', '/api/system/users/:id/avatar', 'system.user.update_avatar', '更新用户头像'),
-('PUT', '/api/system/users/:id/password', 'system.user.reset_password', '重置用户密码'),
-('PUT', '/api/system/users/:id/enable', 'system.user.enable', '启用用户'),
-('PUT', '/api/system/users/:id/disable', 'system.user.disable', '禁用用户'),
-('PUT', '/api/system/users/:id/lock', 'system.user.lock', '锁定用户'),
-('PUT', '/api/system/users/:id/unlock', 'system.user.unlock', '解锁用户'),
+('PUT', '/api/system/sys_users/:id', 'system.user.update', '更新用户信息'),
+('PUT', '/api/system/sys_users/:id/profile', 'system.user.update_profile', '更新个人资料'),
+('PUT', '/api/system/sys_users/:id/avatar', 'system.user.update_avatar', '更新用户头像'),
+('PUT', '/api/system/sys_users/:id/password', 'system.user.reset_password', '重置用户密码'),
+('PUT', '/api/system/sys_users/:id/enable', 'system.user.enable', '启用用户'),
+('PUT', '/api/system/sys_users/:id/disable', 'system.user.disable', '禁用用户'),
+('PUT', '/api/system/sys_users/:id/lock', 'system.user.lock', '锁定用户'),
+('PUT', '/api/system/sys_users/:id/unlock', 'system.user.unlock', '解锁用户'),
 
 -- 用户删除相关API
-('DELETE', '/api/system/users/:id', 'system.user.delete', '删除用户'),
-('DELETE', '/api/system/users/batch', 'system.user.batch_delete', '批量删除用户'),
-('DELETE', '/api/system/users/:id/roles/:role_id', 'system.user.remove_role', '移除用户角色'),
+('DELETE', '/api/system/sys_users/:id', 'system.user.delete', '删除用户'),
+('DELETE', '/api/system/sys_users/batch', 'system.user.batch_delete', '批量删除用户'),
+('DELETE', '/api/system/sys_users/:id/sys_roles/:role_id', 'system.user.remove_role', '移除用户角色'),
 
 -- 用户角色管理API
-('POST', '/api/system/users/:id/roles', 'system.user.assign_role', '为用户分配角色'),
+('POST', '/api/system/sys_users/:id/sys_roles', 'system.user.assign_role', '为用户分配角色'),
 
 -- 用户导入导出API
-('GET', '/api/system/users/export', 'system.user.export', '导出用户数据'),
-('POST', '/api/system/users/import', 'system.user.import', '导入用户数据'),
-('GET', '/api/system/users/import/template', 'system.user.download_template', '下载导入模板'),
+('GET', '/api/system/sys_users/export', 'system.user.export', '导出用户数据'),
+('POST', '/api/system/sys_users/import', 'system.user.import', '导入用户数据'),
+('GET', '/api/system/sys_users/import/template', 'system.user.download_template', '下载导入模板'),
 
 -- 用户复制API
-('POST', '/api/system/users/:id/copy', 'system.user.copy', '复制用户');
+('POST', '/api/system/sys_users/:id/copy', 'system.user.copy', '复制用户');
 
 -- ======================================
 -- 角色管理完整按钮级权限示例
 -- ======================================
-SET @role_page_id = (SELECT id FROM permissions WHERE code = 'system.role');
+SET @role_page_id = (SELECT id FROM sys_permissions WHERE code = 'system.role');
 
-INSERT INTO permissions (code, name, description, module, resource, action, level, parent_id, sort_order) VALUES
+INSERT INTO sys_permissions (code, name, description, module, resource, action, level, parent_id, sort_order) VALUES
 -- 基础CRUD按钮
 ('system.role.view', '查看角色', '查看角色列表和详情', 'system', 'role', 'view', 'button', @role_page_id, 1),
 ('system.role.create', '新增角色', '创建新角色', 'system', 'role', 'create', 'button', @role_page_id, 2),
@@ -183,9 +183,9 @@ INSERT INTO permissions (code, name, description, module, resource, action, leve
 -- ======================================
 -- 权限管理完整按钮级权限示例
 -- ======================================
-SET @permission_page_id = (SELECT id FROM permissions WHERE code = 'system.permission');
+SET @permission_page_id = (SELECT id FROM sys_permissions WHERE code = 'system.permission');
 
-INSERT INTO permissions (code, name, description, module, resource, action, level, parent_id, sort_order) VALUES
+INSERT INTO sys_permissions (code, name, description, module, resource, action, level, parent_id, sort_order) VALUES
 -- 基础CRUD按钮
 ('system.permission.view', '查看权限', '查看权限列表和详情', 'system', 'permission', 'view', 'button', @permission_page_id, 1),
 ('system.permission.create', '新增权限', '创建新权限', 'system', 'permission', 'create', 'button', @permission_page_id, 2),
@@ -205,49 +205,49 @@ INSERT INTO permissions (code, name, description, module, resource, action, leve
 -- ======================================
 
 -- 超级管理员（所有权限）
-INSERT INTO roles (name, code, description, status) VALUES
+INSERT INTO sys_roles (name, code, description, status) VALUES
 ('超级管理员', 'super_admin', '拥有所有权限', 1);
 
 SET @super_admin_role_id = LAST_INSERT_ID();
 
 -- 为超级管理员分配所有权限
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT @super_admin_role_id, id FROM permissions WHERE module = 'system';
+INSERT INTO sys_role_permissions (role_id, permission_id)
+SELECT @super_admin_role_id, id FROM sys_permissions WHERE module = 'system';
 
 -- 用户查看员（只能查看）
-INSERT INTO roles (name, code, description, status) VALUES
+INSERT INTO sys_roles (name, code, description, status) VALUES
 ('用户查看员', 'user_viewer', '只能查看用户，不能操作', 1);
 
 SET @user_viewer_role_id = LAST_INSERT_ID();
 
 -- 为用户查看员分配查看权限
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT @user_viewer_role_id, id FROM permissions
+INSERT INTO sys_role_permissions (role_id, permission_id)
+SELECT @user_viewer_role_id, id FROM sys_permissions
 WHERE code IN (
   'system', 'system.user', 'system.user.view',
   'system.user.view_roles', 'system.user.view_history'
 );
 
 -- 用户管理员（完整用户管理权限）
-INSERT INTO roles (name, code, description, status) VALUES
+INSERT INTO sys_roles (name, code, description, status) VALUES
 ('用户管理员', 'user_manager', '可以管理用户，但不能管理系统其他部分', 1);
 
 SET @user_manager_role_id = LAST_INSERT_ID();
 
 -- 为用户管理员分配所有用户相关权限
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT @user_manager_role_id, id FROM permissions
+INSERT INTO sys_role_permissions (role_id, permission_id)
+SELECT @user_manager_role_id, id FROM sys_permissions
 WHERE resource = 'user' AND level = 'button';
 
 -- 数据导入导出专员（特定权限）
-INSERT INTO roles (name, code, description, status) VALUES
+INSERT INTO sys_roles (name, code, description, status) VALUES
 ('数据导入导出专员', 'data_import_export', '负责用户数据的导入导出', 1);
 
 SET @data_role_id = LAST_INSERT_ID();
 
 -- 为数据导入导出专员分配特定权限
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT @data_role_id, id FROM permissions
+INSERT INTO sys_role_permissions (role_id, permission_id)
+SELECT @data_role_id, id FROM sys_permissions
 WHERE code IN (
   'system', 'system.user', 'system.user.view',
   'system.user.export', 'system.user.import',
@@ -255,14 +255,14 @@ WHERE code IN (
 );
 
 -- 用户审批员（审批权限）
-INSERT INTO roles (name, code, description, status) VALUES
+INSERT INTO sys_roles (name, code, description, status) VALUES
 ('用户审批员', 'user_approver', '负责审批用户注册和变更', 1);
 
 SET @approver_role_id = LAST_INSERT_ID();
 
 -- 为审批员分配审批权限
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT @approver_role_id, id FROM permissions
+INSERT INTO sys_role_permissions (role_id, permission_id)
+SELECT @approver_role_id, id FROM sys_permissions
 WHERE code IN (
   'system', 'system.user', 'system.user.view',
   'system.user.approve', 'system.user.reject',
@@ -274,14 +274,14 @@ WHERE code IN (
 -- ======================================
 
 -- 为权限查询添加复合索引
-CREATE INDEX idx_permission_lookup ON permissions(module, resource, action);
-CREATE INDEX idx_button_permissions ON permissions(level, parent_id, status);
+CREATE INDEX idx_permission_lookup ON sys_permissions(module, resource, action);
+CREATE INDEX idx_button_permissions ON sys_permissions(level, parent_id, status);
 
 -- 为角色权限查询优化
-CREATE INDEX idx_role_permissions_lookup ON role_permissions(role_id, permission_id);
+CREATE INDEX idx_role_permissions_lookup ON sys_role_permissions(role_id, permission_id);
 
 -- 为用户权限查询优化
-CREATE INDEX idx_user_permissions_lookup ON user_permissions(user_id, permission_id);
+CREATE INDEX idx_user_permissions_lookup ON sys_user_permissions(user_id, permission_id);
 
 -- 为API权限映射查询优化
 CREATE INDEX idx_api_permission_lookup ON api_permission_mappings(method, path);

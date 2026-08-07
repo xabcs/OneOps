@@ -291,52 +291,52 @@ func (s *BastionService) GetSessionsList(filter models.SessionFilter, page int, 
 	var total int64
 
 	// 构建基础查询
-	tx := s.db.Table("bastion_sessions").
+	tx := s.db.Table("cmdb_bastion_sessions").
 		Select(`
-			bastion_sessions.id,
-			bastion_sessions.server_id,
-			bastion_sessions.user_id,
-			bastion_sessions.login_account,
-			bastion_sessions.protocol,
-			bastion_sessions.client_ip,
-			bastion_sessions.status,
-			bastion_sessions.started_at,
-			bastion_sessions.ended_at,
-			bastion_sessions.duration,
-			bastion_sessions.close_reason,
-			servers.id as server_id,
-			servers.hostname,
-			servers.ip,
-			users.id as user_id,
-			users.username
+			cmdb_bastion_sessions.id,
+			cmdb_bastion_sessions.server_id,
+			cmdb_bastion_sessions.user_id,
+			cmdb_bastion_sessions.login_account,
+			cmdb_bastion_sessions.protocol,
+			cmdb_bastion_sessions.client_ip,
+			cmdb_bastion_sessions.status,
+			cmdb_bastion_sessions.started_at,
+			cmdb_bastion_sessions.ended_at,
+			cmdb_bastion_sessions.duration,
+			cmdb_bastion_sessions.close_reason,
+			cmdb_servers.id as server_id,
+			cmdb_servers.hostname,
+			cmdb_servers.ip,
+			sys_users.id as user_id,
+			sys_users.username
 		`).
-		Joins("LEFT JOIN servers ON bastion_sessions.server_id = servers.id").
-		Joins("LEFT JOIN users ON bastion_sessions.user_id = users.id")
+		Joins("LEFT JOIN cmdb_servers ON cmdb_bastion_sessions.server_id = cmdb_servers.id").
+		Joins("LEFT JOIN sys_users ON cmdb_bastion_sessions.user_id = sys_users.id")
 
 	// 应用筛选条件
 	if filter.ServerID != nil {
-		tx = tx.Where("bastion_sessions.server_id = ?", *filter.ServerID)
+		tx = tx.Where("cmdb_bastion_sessions.server_id = ?", *filter.ServerID)
 	}
 	if filter.UserID != nil {
-		tx = tx.Where("bastion_sessions.user_id = ?", *filter.UserID)
+		tx = tx.Where("cmdb_bastion_sessions.user_id = ?", *filter.UserID)
 	}
 	if filter.Status != nil {
-		tx = tx.Where("bastion_sessions.status = ?", *filter.Status)
+		tx = tx.Where("cmdb_bastion_sessions.status = ?", *filter.Status)
 	}
 	if filter.Protocol != nil {
-		tx = tx.Where("bastion_sessions.protocol = ?", *filter.Protocol)
+		tx = tx.Where("cmdb_bastion_sessions.protocol = ?", *filter.Protocol)
 	}
 	if filter.ClientIP != nil {
-		tx = tx.Where("bastion_sessions.client_ip LIKE ?", "%"+*filter.ClientIP+"%")
+		tx = tx.Where("cmdb_bastion_sessions.client_ip LIKE ?", "%"+*filter.ClientIP+"%")
 	}
 	if filter.LoginAccount != nil {
-		tx = tx.Where("bastion_sessions.login_account = ?", *filter.LoginAccount)
+		tx = tx.Where("cmdb_bastion_sessions.login_account = ?", *filter.LoginAccount)
 	}
 	if filter.StartDate != nil {
-		tx = tx.Where("bastion_sessions.started_at >= ?", *filter.StartDate)
+		tx = tx.Where("cmdb_bastion_sessions.started_at >= ?", *filter.StartDate)
 	}
 	if filter.EndDate != nil {
-		tx = tx.Where("bastion_sessions.started_at <= ?", *filter.EndDate)
+		tx = tx.Where("cmdb_bastion_sessions.started_at <= ?", *filter.EndDate)
 	}
 
 	// 获取总数
@@ -372,7 +372,7 @@ func (s *BastionService) GetSessionsList(filter models.SessionFilter, page int, 
 
 	// 查询数据（使用结构体映射）
 	err := tx.
-		Order("bastion_sessions.started_at DESC").
+		Order("cmdb_bastion_sessions.started_at DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Scan(&sessions).Error

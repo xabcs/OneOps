@@ -24,7 +24,7 @@ type LoginLog struct {
 
 // TableName 指定表名
 func (LoginLog) TableName() string {
-	return "login_logs"
+	return "audit_login_logs"
 }
 
 // OperationLog 操作日志模型
@@ -53,7 +53,7 @@ type OperationLog struct {
 
 // TableName 指定表名
 func (OperationLog) TableName() string {
-	return "operation_logs"
+	return "audit_operation_logs"
 }
 
 // SystemEventLog 系统事件日志模型
@@ -72,5 +72,5 @@ type SystemEventLog struct {
 
 // TableName 指定表名
 func (SystemEventLog) TableName() string {
-	return "system_event_logs"
+	return "audit_system_event_logs"
 }

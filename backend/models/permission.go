@@ -29,7 +29,7 @@ type Permission struct {
 
 // TableName 指定表名
 func (Permission) TableName() string {
-	return "permissions"
+	return "sys_permissions"
 }
 
 // RolePermission 角色-权限关联模型
@@ -46,7 +46,7 @@ type RolePermission struct {
 
 // TableName 指定表名
 func (RolePermission) TableName() string {
-	return "role_permissions"
+	return "sys_role_permissions"
 }
 
 // UserPermission 用户-权限关联模型（可选，用于用户级权限覆盖）
@@ -66,7 +66,7 @@ type UserPermission struct {
 
 // TableName 指定表名
 func (UserPermission) TableName() string {
-	return "user_permissions"
+	return "sys_user_permissions"
 }
 
 // PermissionLog 权限操作日志模型（审计用途）
@@ -88,7 +88,7 @@ type PermissionLog struct {
 
 // TableName 指定表名
 func (PermissionLog) TableName() string {
-	return "permission_logs"
+	return "sys_permission_logs"
 }
 
 // IsExpired 检查用户权限是否过期

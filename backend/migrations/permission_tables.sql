@@ -10,7 +10,7 @@
 -- ======================================
 -- 1. 权限定义表
 -- ======================================
-CREATE TABLE IF NOT EXISTS `permissions` (
+CREATE TABLE IF NOT EXISTS `sys_permissions` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '权限ID',
   `code` varchar(100) NOT NULL COMMENT '权限编码，格式：module.resource.action',
   `name` varchar(50) NOT NULL COMMENT '权限名称',
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS `permissions` (
 -- ======================================
 -- 2. 角色-权限关联表
 -- ======================================
-CREATE TABLE IF NOT EXISTS `role_permissions` (
+CREATE TABLE IF NOT EXISTS `sys_role_permissions` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '关联ID',
   `role_id` bigint unsigned NOT NULL COMMENT '角色ID',
   `permission_id` bigint unsigned NOT NULL COMMENT '权限ID',
@@ -44,14 +44,14 @@ CREATE TABLE IF NOT EXISTS `role_permissions` (
   UNIQUE KEY `uk_role_permission` (`role_id`, `permission_id`),
   KEY `idx_role_id` (`role_id`),
   KEY `idx_permission_id` (`permission_id`),
-  CONSTRAINT `fk_role_permissions_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_role_permissions_permission` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_role_permissions_role` FOREIGN KEY (`role_id`) REFERENCES `sys_roles` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_role_permissions_permission` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色权限关联表';
 
 -- ======================================
 -- 3. 用户-权限关联表 (可选，用于用户级权限覆盖)
 -- ======================================
-CREATE TABLE IF NOT EXISTS `user_permissions` (
+CREATE TABLE IF NOT EXISTS `sys_user_permissions` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '关联ID',
   `user_id` bigint unsigned NOT NULL COMMENT '用户ID',
   `permission_id` bigint unsigned NOT NULL COMMENT '权限ID',
@@ -63,21 +63,21 @@ CREATE TABLE IF NOT EXISTS `user_permissions` (
   KEY `idx_user_id` (`user_id`),
   KEY `idx_permission_id` (`permission_id`),
   KEY `idx_expire_time` (`expire_time`),
-  CONSTRAINT `fk_user_permissions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_user_permissions_permission` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE
+  CONSTRAINT `fk_user_permissions_user` FOREIGN KEY (`user_id`) REFERENCES `sys_users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_user_permissions_permission` FOREIGN KEY (`permission_id`) REFERENCES `sys_permissions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户权限关联表（可选）';
 
 -- ======================================
 -- 4. 修改现有角色表（添加新字段，保留兼容性）
 -- ======================================
 -- 添加新字段用于权限管理（保留 menu_ids 字段以保持向后兼容）
-ALTER TABLE `roles`
+ALTER TABLE `sys_roles`
 ADD COLUMN IF NOT EXISTS `permission_ids` TEXT DEFAULT NULL COMMENT '权限ID列表（JSON格式）' AFTER `menu_ids`;
 
 -- ======================================
 -- 5. 创建权限日志表（审计用途）
 -- ======================================
-CREATE TABLE IF NOT EXISTS `permission_logs` (
+CREATE TABLE IF NOT EXISTS `sys_permission_logs` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '日志ID',
   `user_id` bigint unsigned NOT NULL COMMENT '用户ID',
   `permission_code` varchar(100) NOT NULL COMMENT '权限编码',
@@ -99,10 +99,10 @@ CREATE TABLE IF NOT EXISTS `permission_logs` (
 -- 索引优化
 -- ======================================
 -- 为权限表的常用查询添加复合索引
-CREATE INDEX IF NOT EXISTS `idx_permissions_lookup` ON `permissions` (`module`, `resource`, `action`, `status`);
+CREATE INDEX IF NOT EXISTS `idx_permissions_lookup` ON `sys_permissions` (`module`, `resource`, `action`, `status`);
 
 -- 为角色权限关联表添加查询优化索引
-CREATE INDEX IF NOT EXISTS `idx_role_permissions_query` ON `role_permissions` (`role_id`, `permission_id`);
+CREATE INDEX IF NOT EXISTS `idx_role_permissions_query` ON `sys_role_permissions` (`role_id`, `permission_id`);
 
 -- ======================================
 -- 兼容性说明
@@ -116,12 +116,12 @@ CREATE INDEX IF NOT EXISTS `idx_role_permissions_query` ON `role_permissions` (`
 -- 迁移完成后验证
 -- ======================================
 -- 验证表是否创建成功
--- SELECT COUNT(*) FROM permissions;
--- SELECT COUNT(*) FROM role_permissions;
--- SELECT COUNT(*) FROM user_permissions;
--- SELECT COUNT(*) FROM permission_logs;
+-- SELECT COUNT(*) FROM sys_permissions;
+-- SELECT COUNT(*) FROM sys_role_permissions;
+-- SELECT COUNT(*) FROM sys_user_permissions;
+-- SELECT COUNT(*) FROM sys_permission_logs;
 
 -- 验证外键约束是否生效
 -- SELECT * FROM information_schema.KEY_COLUMN_USAGE
 -- WHERE TABLE_SCHEMA = 'msre'
--- AND TABLE_NAME IN ('role_permissions', 'user_permissions');
+-- AND TABLE_NAME IN ('sys_role_permissions', 'sys_user_permissions');

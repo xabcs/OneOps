@@ -26,5 +26,5 @@ type APIResource struct {
 
 // TableName 指定表名
 func (APIResource) TableName() string {
-	return "api_resources"
+	return "sys_api_resources"
 }

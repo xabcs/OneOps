@@ -34,8 +34,8 @@ type AlertRule struct {
 // GetAlertRules 获取告警规则列表
 func (s *AlertRuleService) GetAlertRules() ([]AlertRule, error) {
 	var rules []AlertRule
-	err := db.Table("agent_alert_rules").
-		Select("id, name, level, metric, `condition`, threshold, duration, description, enabled, created_at, updated_at").
+	err := db.Table("mon_agent_alert_rules").
+		Select("id, name, level, `condition`, threshold, duration, description, enabled, created_at, updated_at").
 		Order("level, created_at DESC").
 		Find(&rules).Error
 
@@ -119,7 +119,7 @@ func (s *AlertRuleService) CreateAlertRule(rule *AlertRule) error {
 	rule.UpdatedAt = time.Now()
 
 	// 插入数据库
-	result := db.Table("agent_alert_rules").Create(rule)
+	result := db.Table("mon_agent_alert_rules").Create(rule)
 	if result.Error != nil {
 		return fmt.Errorf("创建告警规则失败: %w", result.Error)
 	}
@@ -137,7 +137,7 @@ func (s *AlertRuleService) UpdateAlertRule(id string, rule *AlertRule) error {
 
 	// 检查规则是否存在
 	var existing AlertRule
-	err := db.Table("agent_alert_rules").Where("id = ?", id).First(&existing).Error
+	err := db.Table("mon_agent_alert_rules").Where("id = ?", id).First(&existing).Error
 	if err != nil {
 		return fmt.Errorf("告警规则不存在: %s", id)
 	}
@@ -170,7 +170,7 @@ func (s *AlertRuleService) UpdateAlertRule(id string, rule *AlertRule) error {
 	}
 
 	// 更新数据库
-	result := db.Table("agent_alert_rules").Where("id = ?", id).Updates(updates)
+	result := db.Table("mon_agent_alert_rules").Where("id = ?", id).Updates(updates)
 	if result.Error != nil {
 		return fmt.Errorf("更新告警规则失败: %w", result.Error)
 	}
@@ -185,13 +185,13 @@ func (s *AlertRuleService) DeleteAlertRule(id string) error {
 
 	// 检查规则是否存在
 	var existing AlertRule
-	err := db.Table("agent_alert_rules").Where("id = ?", id).First(&existing).Error
+	err := db.Table("mon_agent_alert_rules").Where("id = ?", id).First(&existing).Error
 	if err != nil {
 		return fmt.Errorf("告警规则不存在: %s", id)
 	}
 
 	// 删除规则
-	result := db.Table("agent_alert_rules").Where("id = ?", id).Delete(nil)
+	result := db.Table("mon_agent_alert_rules").Where("id = ?", id).Delete(nil)
 	if result.Error != nil {
 		return fmt.Errorf("删除告警规则失败: %w", result.Error)
 	}
@@ -206,13 +206,13 @@ func (s *AlertRuleService) UpdateAlertRuleStatus(id string, enabled bool) error 
 
 	// 检查规则是否存在
 	var existing AlertRule
-	err := db.Table("agent_alert_rules").Where("id = ?", id).First(&existing).Error
+	err := db.Table("mon_agent_alert_rules").Where("id = ?", id).First(&existing).Error
 	if err != nil {
 		return fmt.Errorf("告警规则不存在: %s", id)
 	}
 
 	// 更新状态
-	result := db.Table("agent_alert_rules").Where("id = ?", id).Updates(map[string]interface{}{
+	result := db.Table("mon_agent_alert_rules").Where("id = ?", id).Updates(map[string]interface{}{
 		"enabled":   enabled,
 		"updated_at": time.Now(),
 	})
@@ -230,7 +230,7 @@ func (s *AlertRuleService) UpdateAlertRuleStatus(id string, enabled bool) error 
 // LoadActiveAlertRules 加载启用的告警规则（用于告警检测）
 func (s *AlertRuleService) LoadActiveAlertRules() ([]AlertRule, error) {
 	var rules []AlertRule
-	err := db.Table("agent_alert_rules").
+	err := db.Table("mon_agent_alert_rules").
 		Where("enabled = 1").
 		Find(&rules).Error
 
@@ -245,7 +245,7 @@ func (s *AlertRuleService) LoadActiveAlertRules() ([]AlertRule, error) {
 func (s *AlertRuleService) InitDefaultAlertRules() error {
 	// 检查是否已有规则
 	var count int64
-	db.Table("agent_alert_rules").Count(&count)
+	db.Table("mon_agent_alert_rules").Count(&count)
 	if count > 0 {
 		logger.Info("告警规则已存在，跳过初始化")
 		return nil

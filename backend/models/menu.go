@@ -23,5 +23,5 @@ type Menu struct {
 
 // TableName 指定表名
 func (Menu) TableName() string {
-	return "menus"
+	return "sys_menus"
 }

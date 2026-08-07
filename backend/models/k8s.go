@@ -42,7 +42,7 @@ type ClusterRoleBinding struct {
 
 // TableName 指定表名
 func (ClusterRoleBinding) TableName() string {
-	return "cluster_role_bindings"
+	return "k8s_cluster_role_bindings"
 }
 
 // K8sSession K8s终端会话

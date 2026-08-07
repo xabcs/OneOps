@@ -73,7 +73,7 @@ func (s *CMDBService) GetServersLight(query map[string]interface{}, page, pageSi
 			}
 		}
 		if groupIDUint > 0 {
-			tx = tx.Where("id IN (SELECT server_id FROM server_group_relations WHERE group_id = ?)", groupIDUint)
+			tx = tx.Where("id IN (SELECT server_id FROM cmdb_server_group_relations WHERE group_id = ?)", groupIDUint)
 		}
 	}
 
@@ -126,7 +126,7 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 	if groupID, ok := query["groupId"]; ok && groupID != nil {
 		groupIDUint := parseUint(groupID)
 		if groupIDUint > 0 {
-			qb.Where("id IN (SELECT server_id FROM server_group_relations WHERE group_id = ?)", groupIDUint)
+			qb.Where("id IN (SELECT server_id FROM cmdb_server_group_relations WHERE group_id = ?)", groupIDUint)
 		}
 	}
 
@@ -148,12 +148,12 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 
 	// 设置查询字段（性能优化）
 	qb.Select(`
-		servers.id, servers.hostname, servers.ip, servers.inner_ip, servers.ssh_port, servers.env, servers.status,
-		servers.provider, servers.agent_status, servers.agent_version, servers.cpu,
-		servers.memory, servers.os, servers.arch, servers.created_at, servers.updated_at,
-		servers.group_names, servers.credential_names, servers.system_credential_id,
-		servers.cpu_usage, servers.memory_usage, servers.disk_usage,
-		servers.load1, servers.load5, servers.load15, servers.metrics_updated_at
+		cmdb_servers.id, cmdb_servers.hostname, cmdb_servers.ip, cmdb_servers.inner_ip, cmdb_servers.ssh_port, cmdb_servers.env, cmdb_servers.status,
+		cmdb_servers.provider, cmdb_servers.agent_status, cmdb_servers.agent_version, cmdb_servers.cpu,
+		cmdb_servers.memory, cmdb_servers.os, cmdb_servers.arch, cmdb_servers.created_at, cmdb_servers.updated_at,
+		cmdb_servers.group_names, cmdb_servers.credential_names, cmdb_servers.system_credential_id,
+		cmdb_servers.cpu_usage, cmdb_servers.memory_usage, cmdb_servers.disk_usage,
+		cmdb_servers.load1, cmdb_servers.load5, cmdb_servers.load15, cmdb_servers.metrics_updated_at
 	`)
 
 	// 执行查询并获取总数
@@ -300,18 +300,18 @@ func (s *CMDBService) CreateServer(server *models.Server, operator string) error
 func (s *CMDBService) updateServerRedundantFields(serverID uint) error {
 	// 查询分组ID和名称
 	var groupData []map[string]interface{}
-	db.Table("server_group_relations").
+	db.Table("cmdb_server_group_relations").
 		Select("g.id, g.name").
-		Joins("JOIN server_groups g ON g.id = server_group_relations.group_id").
-		Where("server_group_relations.server_id = ?", serverID).
+		Joins("JOIN cmdb_server_groups g ON g.id = cmdb_server_group_relations.group_id").
+		Where("cmdb_server_group_relations.server_id = ?", serverID).
 		Scan(&groupData)
 
 	// 查询凭证ID、名称和类型
 	var credData []map[string]interface{}
-	db.Table("server_credentials").
+	db.Table("cmdb_server_credentials").
 		Select("c.id, c.name, c.credential_type").
-		Joins("JOIN ssh_credentials c ON c.id = server_credentials.credential_id").
-		Where("server_credentials.server_id = ?", serverID).
+		Joins("JOIN cmdb_ssh_credentials c ON c.id = cmdb_server_credentials.credential_id").
+		Where("cmdb_server_credentials.server_id = ?", serverID).
 		Scan(&credData)
 
 	// 构建JSON数组（包含ID和名称）
@@ -1038,9 +1038,9 @@ func (s *CMDBService) RemoveServerFromGroup(serverID, groupID uint) error {
 // GetServersByGroup 获取指定分组下的服务器列表
 func (s *CMDBService) GetServersByGroup(groupID uint) ([]models.Server, error) {
 	var servers []models.Server
-	err := db.Joins("JOIN server_group_relations ON servers.id = server_group_relations.server_id").
+	err := db.Joins("JOIN cmdb_server_group_relations ON cmdb_servers.id = cmdb_server_group_relations.server_id").
 		Preload("Credentials").
-		Where("server_group_relations.group_id = ?", groupID).
+		Where("cmdb_server_group_relations.group_id = ?", groupID).
 		Find(&servers).Error
 	return servers, err
 }

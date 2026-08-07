@@ -39,5 +39,5 @@ type ApplicationAuthorizationRule struct {
 }
 
 func (ApplicationAuthorizationRule) TableName() string {
-	return "application_authorization_rules"
+	return "auth_authorization_rules"
 }

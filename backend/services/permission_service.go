@@ -56,7 +56,7 @@ func NewPermissionService() (*PermissionService, error) {
 	db := GetDB()
 
 	// 初始化 Casbin GORM 适配器
-	adapter, err := gormadapter.NewAdapterByDB(db)
+	adapter, err := gormadapter.NewAdapterByDBUsePrefix(db, "sys_")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create casbin adapter: %w", err)
 	}
@@ -235,10 +235,10 @@ func (s *PermissionService) getAllPermissionCodes() []string {
 func (s *PermissionService) GetRolePermissions(roleID uint) ([]models.Permission, error) {
 	var permissions []models.Permission
 
-	err := s.db.Table("permissions").
-		Joins("INNER JOIN role_permissions ON permissions.id = role_permissions.permission_id").
-		Where("role_permissions.role_id = ? AND permissions.status = 1", roleID).
-		Order("permissions.level ASC, permissions.sort_order ASC").
+	err := s.db.Table("sys_permissions").
+		Joins("INNER JOIN sys_role_permissions ON sys_permissions.id = sys_role_permissions.permission_id").
+		Where("sys_role_permissions.role_id = ? AND sys_permissions.status = 1", roleID).
+		Order("sys_permissions.level ASC, sys_permissions.sort_order ASC").
 		Find(&permissions).Error
 
 	if err != nil {

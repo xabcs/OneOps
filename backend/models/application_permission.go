@@ -92,7 +92,7 @@ type Application struct {
 }
 
 func (Application) TableName() string {
-	return "applications"
+	return "auth_applications"
 }
 
 // ApplicationRole 应用角色模型（同步过来的）
@@ -110,7 +110,7 @@ type ApplicationRole struct {
 }
 
 func (ApplicationRole) TableName() string {
-	return "application_roles"
+	return "auth_application_roles"
 }
 
 // ApplicationUser 应用用户模型（同步过来的）
@@ -128,7 +128,7 @@ type ApplicationUser struct {
 }
 
 func (ApplicationUser) TableName() string {
-	return "application_users"
+	return "auth_application_users"
 }
 
 // ApplicationGroup 应用用户组模型（同步过来的）
@@ -145,7 +145,7 @@ type ApplicationGroup struct {
 }
 
 func (ApplicationGroup) TableName() string {
-	return "application_groups"
+	return "auth_application_groups"
 }
 
 
@@ -164,7 +164,7 @@ type GroupBinding struct {
 }
 
 func (GroupBinding) TableName() string {
-	return "group_bindings"
+	return "auth_group_bindings"
 }
 
 // ApplicationOperationLog 应用操作日志
@@ -183,7 +183,7 @@ type ApplicationOperationLog struct {
 }
 
 func (ApplicationOperationLog) TableName() string {
-	return "application_operation_logs"
+	return "auth_operation_logs"
 }
 
 // UserIdentityMapping 用户身份映射表（授权中心用户 ↔ 外部应用用户）
@@ -203,7 +203,7 @@ type UserIdentityMapping struct {
 }
 
 func (UserIdentityMapping) TableName() string {
-	return "user_identity_mappings"
+	return "auth_user_identity_mappings"
 }
 
 // GroupBindingExecution 角色绑定执行记录（记录权限分配的详细状态）
@@ -222,7 +222,7 @@ type GroupBindingExecution struct {
 }
 
 func (GroupBindingExecution) TableName() string {
-	return "group_binding_executions"
+	return "auth_group_binding_executions"
 }
 
 // PermissionAssignmentStatus 权限分配状态汇总（记录权限分配的整体状态）
@@ -241,5 +241,5 @@ type PermissionAssignmentStatus struct {
 }
 
 func (PermissionAssignmentStatus) TableName() string {
-	return "permission_assignment_statuses"
+	return "auth_permission_assignment_statuses"
 }

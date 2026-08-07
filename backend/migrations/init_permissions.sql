@@ -4,11 +4,11 @@
 -- ======================================
 
 -- 清理现有数据
-TRUNCATE TABLE permissions;
-TRUNCATE TABLE role_permissions;
+TRUNCATE TABLE sys_permissions;
+TRUNCATE TABLE sys_role_permissions;
 
 -- 插入系统管理权限
-INSERT INTO permissions (code, name, description, module, resource, action, level, status, sort_order, created_at, updated_at) VALUES
+INSERT INTO sys_permissions (code, name, description, module, resource, action, level, status, sort_order, created_at, updated_at) VALUES
 -- 用户管理
 ('system.user.view', '查看用户', '查看用户列表和详情', 'system', 'user', 'view', 3, 1, 1, NOW(), NOW()),
 ('system.user.create', '创建用户', '创建新用户', 'system', 'user', 'create', 3, 1, 2, NOW(), NOW()),
@@ -30,5 +30,5 @@ INSERT INTO permissions (code, name, description, module, resource, action, leve
 ('system.permission.delete', '删除权限', '删除权限', 'system', 'permission', 'delete', 3, 1, 4, NOW(), NOW());
 
 -- 为admin角色分配所有权限
-INSERT INTO role_permissions (role_id, permission_id, created_at)
-SELECT 1, id, NOW() FROM permissions;
+INSERT INTO sys_role_permissions (role_id, permission_id, created_at)
+SELECT 1, id, NOW() FROM sys_permissions;
