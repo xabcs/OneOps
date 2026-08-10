@@ -8,45 +8,244 @@ import (
 	"go.uber.org/zap"
 )
 
-// assignDefaultPermissions 为内置角色分配默认权限
-func (i *Initializer) assignDefaultPermissions() error {
+// syncPermissions 同步系统权限数据（129个权限，6个模块）
+func (i *Initializer) syncPermissions() error {
+	logger.Info("开始同步权限数据...")
+
+	db := database.GetDB()
+
+	permissions := []modelsystem.Permission{
+		// ========== 系统管理模块（27个） ==========
+		// 菜单管理
+		{Code: "system.menu.list", Name: "菜单列表", Description: "查看菜单列表", Module: "system", Resource: "menu", Action: "list", Level: 3, SortOrder: 1, Status: 1},
+		{Code: "system.menu.create", Name: "创建菜单", Description: "创建新菜单", Module: "system", Resource: "menu", Action: "create", Level: 3, SortOrder: 2, Status: 1},
+		{Code: "system.menu.update", Name: "更新菜单", Description: "更新菜单信息", Module: "system", Resource: "menu", Action: "update", Level: 3, SortOrder: 3, Status: 1},
+		{Code: "system.menu.delete", Name: "删除菜单", Description: "删除菜单", Module: "system", Resource: "menu", Action: "delete", Level: 3, SortOrder: 4, Status: 1},
+		// 角色管理
+		{Code: "system.role.list", Name: "角色列表", Description: "查看角色列表", Module: "system", Resource: "role", Action: "list", Level: 3, SortOrder: 5, Status: 1},
+		{Code: "system.role.view", Name: "查看角色", Description: "查看角色详情", Module: "system", Resource: "role", Action: "view", Level: 3, SortOrder: 6, Status: 1},
+		{Code: "system.role.create", Name: "创建角色", Description: "创建新角色", Module: "system", Resource: "role", Action: "create", Level: 3, SortOrder: 7, Status: 1},
+		{Code: "system.role.update", Name: "更新角色", Description: "更新角色信息", Module: "system", Resource: "role", Action: "update", Level: 3, SortOrder: 8, Status: 1},
+		{Code: "system.role.delete", Name: "删除角色", Description: "删除角色", Module: "system", Resource: "role", Action: "delete", Level: 3, SortOrder: 9, Status: 1},
+		{Code: "system.role.assign_permissions", Name: "分配权限", Description: "为角色分配权限", Module: "system", Resource: "role", Action: "assign_permissions", Level: 3, SortOrder: 10, Status: 1},
+		// 用户管理
+		{Code: "system.user.list", Name: "用户列表", Description: "查看用户列表", Module: "system", Resource: "user", Action: "list", Level: 3, SortOrder: 11, Status: 1},
+		{Code: "system.user.create", Name: "创建用户", Description: "创建新用户", Module: "system", Resource: "user", Action: "create", Level: 3, SortOrder: 12, Status: 1},
+		{Code: "system.user.update", Name: "更新用户", Description: "更新用户信息", Module: "system", Resource: "user", Action: "update", Level: 3, SortOrder: 13, Status: 1},
+		{Code: "system.user.delete", Name: "删除用户", Description: "删除用户", Module: "system", Resource: "user", Action: "delete", Level: 3, SortOrder: 14, Status: 1},
+		{Code: "system.user.reset_password", Name: "重置密码", Description: "重置用户密码", Module: "system", Resource: "user", Action: "reset_password", Level: 3, SortOrder: 15, Status: 1},
+		// 权限管理
+		{Code: "system.permission.list", Name: "权限列表", Description: "查看权限列表", Module: "system", Resource: "permission", Action: "list", Level: 3, SortOrder: 16, Status: 1},
+		{Code: "system.permission.create", Name: "创建权限", Description: "创建新权限", Module: "system", Resource: "permission", Action: "create", Level: 3, SortOrder: 17, Status: 1},
+		{Code: "system.permission.update", Name: "更新权限", Description: "更新权限信息", Module: "system", Resource: "permission", Action: "update", Level: 3, SortOrder: 18, Status: 1},
+		{Code: "system.permission.delete", Name: "删除权限", Description: "删除权限", Module: "system", Resource: "permission", Action: "delete", Level: 3, SortOrder: 19, Status: 1},
+		// 属性管理
+		{Code: "system.attribute.list", Name: "属性列表", Description: "查看属性定义列表", Module: "system", Resource: "attribute", Action: "list", Level: 3, SortOrder: 20, Status: 1},
+		{Code: "system.attribute.view", Name: "查看属性", Description: "查看属性详细信息", Module: "system", Resource: "attribute", Action: "view", Level: 3, SortOrder: 21, Status: 1},
+		{Code: "system.attribute.create", Name: "创建属性", Description: "创建新的属性定义", Module: "system", Resource: "attribute", Action: "create", Level: 3, SortOrder: 22, Status: 1},
+		{Code: "system.attribute.update", Name: "更新属性", Description: "更新属性定义", Module: "system", Resource: "attribute", Action: "update", Level: 3, SortOrder: 23, Status: 1},
+		{Code: "system.attribute.delete", Name: "删除属性", Description: "删除属性定义", Module: "system", Resource: "attribute", Action: "delete", Level: 3, SortOrder: 24, Status: 1},
+		// 路由管理
+		{Code: "system.route.list", Name: "查看路由列表", Description: "查看系统路由列表", Module: "system", Resource: "route", Action: "list", Level: 3, SortOrder: 25, Status: 1},
+		{Code: "system.route.invalidate", Name: "刷新路由缓存", Description: "刷新系统路由缓存", Module: "system", Resource: "route", Action: "invalidate", Level: 3, SortOrder: 26, Status: 1},
+		{Code: "system.route.debug", Name: "调试路由", Description: "调试系统路由信息", Module: "system", Resource: "route", Action: "debug", Level: 3, SortOrder: 27, Status: 1},
+
+		// ========== 审计中心模块（6个） ==========
+		{Code: "audit.login_log.list", Name: "登录日志列表", Description: "查看登录日志列表", Module: "audit", Resource: "login_log", Action: "list", Level: 3, SortOrder: 28, Status: 1},
+		{Code: "audit.login_log.export", Name: "导出登录日志", Description: "导出登录日志", Module: "audit", Resource: "login_log", Action: "export", Level: 3, SortOrder: 29, Status: 1},
+		{Code: "audit.operation_log.list", Name: "操作日志列表", Description: "查看操作日志列表", Module: "audit", Resource: "operation_log", Action: "list", Level: 3, SortOrder: 30, Status: 1},
+		{Code: "audit.operation_log.export", Name: "导出操作日志", Description: "导出操作日志", Module: "audit", Resource: "operation_log", Action: "export", Level: 3, SortOrder: 31, Status: 1},
+		{Code: "audit.system_event.list", Name: "系统事件列表", Description: "查看系统事件列表", Module: "audit", Resource: "system_event", Action: "list", Level: 3, SortOrder: 32, Status: 1},
+		{Code: "audit.stats.view", Name: "查看审计统计", Description: "查看审计统计数据", Module: "audit", Resource: "stats", Action: "view", Level: 3, SortOrder: 33, Status: 1},
+
+		// ========== 授权中心模块（28个） ==========
+		// 应用管理
+		{Code: "auth.application.list", Name: "查看应用列表", Description: "查看应用权限列表", Module: "auth", Resource: "application", Action: "list", Level: 3, SortOrder: 34, Status: 1},
+		{Code: "auth.application.view", Name: "查看应用详情", Description: "查看应用权限详细信息", Module: "auth", Resource: "application", Action: "view", Level: 3, SortOrder: 35, Status: 1},
+		{Code: "auth.application.create", Name: "创建应用", Description: "创建新的应用权限", Module: "auth", Resource: "application", Action: "create", Level: 3, SortOrder: 36, Status: 1},
+		{Code: "auth.application.update", Name: "更新应用", Description: "更新应用权限信息", Module: "auth", Resource: "application", Action: "update", Level: 3, SortOrder: 37, Status: 1},
+		{Code: "auth.application.delete", Name: "删除应用", Description: "删除应用权限", Module: "auth", Resource: "application", Action: "delete", Level: 3, SortOrder: 38, Status: 1},
+		{Code: "auth.application.sync", Name: "同步应用数据", Description: "同步应用权限数据", Module: "auth", Resource: "application", Action: "sync", Level: 3, SortOrder: 39, Status: 1},
+		// 授权用户管理
+		{Code: "auth.user.list", Name: "查看授权用户列表", Description: "查看授权中心用户列表", Module: "auth", Resource: "user", Action: "list", Level: 3, SortOrder: 40, Status: 1},
+		{Code: "auth.user.view", Name: "查看授权用户详情", Description: "查看授权用户详细信息", Module: "auth", Resource: "user", Action: "view", Level: 3, SortOrder: 41, Status: 1},
+		{Code: "auth.user.create", Name: "创建授权用户", Description: "创建新的授权用户", Module: "auth", Resource: "user", Action: "create", Level: 3, SortOrder: 42, Status: 1},
+		{Code: "auth.user.update", Name: "更新授权用户", Description: "更新授权用户信息", Module: "auth", Resource: "user", Action: "update", Level: 3, SortOrder: 43, Status: 1},
+		{Code: "auth.user.delete", Name: "删除授权用户", Description: "删除授权用户", Module: "auth", Resource: "user", Action: "delete", Level: 3, SortOrder: 44, Status: 1},
+		// 授权用户组管理
+		{Code: "auth.group.list", Name: "查看用户组列表", Description: "查看授权用户组列表", Module: "auth", Resource: "group", Action: "list", Level: 3, SortOrder: 45, Status: 1},
+		{Code: "auth.group.view", Name: "查看用户组详情", Description: "查看授权用户组详细信息", Module: "auth", Resource: "group", Action: "view", Level: 3, SortOrder: 46, Status: 1},
+		{Code: "auth.group.create", Name: "创建用户组", Description: "创建新的授权用户组", Module: "auth", Resource: "group", Action: "create", Level: 3, SortOrder: 47, Status: 1},
+		{Code: "auth.group.update", Name: "更新用户组", Description: "更新授权用户组信息", Module: "auth", Resource: "group", Action: "update", Level: 3, SortOrder: 48, Status: 1},
+		{Code: "auth.group.delete", Name: "删除用户组", Description: "删除授权用户组", Module: "auth", Resource: "group", Action: "delete", Level: 3, SortOrder: 49, Status: 1},
+		// 用户组绑定管理
+		{Code: "auth.group_binding.list", Name: "查看用户组绑定", Description: "查看用户组权限绑定列表", Module: "auth", Resource: "group_binding", Action: "list", Level: 3, SortOrder: 50, Status: 1},
+		{Code: "auth.group_binding.view", Name: "查看用户组绑定详情", Description: "查看用户组权限绑定详情", Module: "auth", Resource: "group_binding", Action: "view", Level: 3, SortOrder: 51, Status: 1},
+		{Code: "auth.group_binding.create", Name: "创建用户组绑定", Description: "创建用户组权限绑定", Module: "auth", Resource: "group_binding", Action: "create", Level: 3, SortOrder: 52, Status: 1},
+		{Code: "auth.group_binding.delete", Name: "删除用户组绑定", Description: "删除用户组权限绑定", Module: "auth", Resource: "group_binding", Action: "delete", Level: 3, SortOrder: 53, Status: 1},
+		// 用户组成员管理
+		{Code: "auth.user_group.list", Name: "查看用户组成员", Description: "查看用户组成员列表", Module: "auth", Resource: "user_group", Action: "list", Level: 3, SortOrder: 54, Status: 1},
+		{Code: "auth.user_group.assign", Name: "分配用户到组", Description: "将用户分配到用户组", Module: "auth", Resource: "user_group", Action: "assign", Level: 3, SortOrder: 55, Status: 1},
+		{Code: "auth.user_group.delete", Name: "移除用户组成员", Description: "移除用户组成员", Module: "auth", Resource: "user_group", Action: "delete", Level: 3, SortOrder: 56, Status: 1},
+		// 用户身份映射
+		{Code: "auth.identity_mapping.list", Name: "查看身份映射", Description: "查看用户身份映射列表", Module: "auth", Resource: "identity_mapping", Action: "list", Level: 3, SortOrder: 57, Status: 1},
+		{Code: "auth.identity_mapping.delete", Name: "删除身份映射", Description: "删除用户身份映射", Module: "auth", Resource: "identity_mapping", Action: "delete", Level: 3, SortOrder: 58, Status: 1},
+		// 用户权限查询
+		{Code: "auth.permission.query", Name: "查询用户权限", Description: "查询用户有效权限", Module: "auth", Resource: "permission", Action: "query", Level: 3, SortOrder: 59, Status: 1},
+		{Code: "auth.permission.view", Name: "查看权限矩阵", Description: "查看用户权限矩阵", Module: "auth", Resource: "permission", Action: "view", Level: 3, SortOrder: 60, Status: 1},
+		// 执行记录
+		{Code: "auth.binding_execution.list", Name: "查看执行记录", Description: "查看权限绑定执行记录", Module: "auth", Resource: "binding_execution", Action: "list", Level: 3, SortOrder: 61, Status: 1},
+
+		// ========== 资产管理 CMDB 模块（33个） ==========
+		// 服务器管理
+		{Code: "cmdb.server.list", Name: "服务器列表", Description: "查看服务器列表", Module: "cmdb", Resource: "server", Action: "list", Level: 3, SortOrder: 62, Status: 1},
+		{Code: "cmdb.server.view", Name: "查看服务器", Description: "查看服务器详情", Module: "cmdb", Resource: "server", Action: "view", Level: 3, SortOrder: 63, Status: 1},
+		{Code: "cmdb.server.create", Name: "创建服务器", Description: "创建新服务器", Module: "cmdb", Resource: "server", Action: "create", Level: 3, SortOrder: 64, Status: 1},
+		{Code: "cmdb.server.update", Name: "更新服务器", Description: "更新服务器信息", Module: "cmdb", Resource: "server", Action: "update", Level: 3, SortOrder: 65, Status: 1},
+		{Code: "cmdb.server.delete", Name: "删除服务器", Description: "删除服务器", Module: "cmdb", Resource: "server", Action: "delete", Level: 3, SortOrder: 66, Status: 1},
+		{Code: "cmdb.server.connect", Name: "连接服务器", Description: "连接到服务器", Module: "cmdb", Resource: "server", Action: "connect", Level: 3, SortOrder: 67, Status: 1},
+		// Agent管理
+		{Code: "cmdb.agents.list", Name: "Agent列表", Description: "查看Agent列表", Module: "cmdb", Resource: "agents", Action: "list", Level: 3, SortOrder: 68, Status: 1},
+		{Code: "cmdb.agents.view", Name: "查看Agent", Description: "查看Agent详细信息", Module: "cmdb", Resource: "agents", Action: "view", Level: 3, SortOrder: 69, Status: 1},
+		{Code: "cmdb.agents.deploy", Name: "部署Agent", Description: "部署Agent到服务器", Module: "cmdb", Resource: "agents", Action: "deploy", Level: 3, SortOrder: 70, Status: 1},
+		{Code: "cmdb.agents.restart", Name: "重启Agent", Description: "重启Agent服务", Module: "cmdb", Resource: "agents", Action: "restart", Level: 3, SortOrder: 71, Status: 1},
+		{Code: "cmdb.agents.uninstall", Name: "卸载Agent", Description: "卸载Agent", Module: "cmdb", Resource: "agents", Action: "uninstall", Level: 3, SortOrder: 72, Status: 1},
+		{Code: "cmdb.agents.upgrade", Name: "升级Agent", Description: "升级Agent版本", Module: "cmdb", Resource: "agents", Action: "upgrade", Level: 3, SortOrder: 73, Status: 1},
+		// 主机分组管理
+		{Code: "cmdb.group.list", Name: "分组列表", Description: "查看分组列表", Module: "cmdb", Resource: "group", Action: "list", Level: 3, SortOrder: 74, Status: 1},
+		{Code: "cmdb.group.view", Name: "查看分组", Description: "查看分组详情", Module: "cmdb", Resource: "group", Action: "view", Level: 3, SortOrder: 75, Status: 1},
+		{Code: "cmdb.group.create", Name: "创建分组", Description: "创建新分组", Module: "cmdb", Resource: "group", Action: "create", Level: 3, SortOrder: 76, Status: 1},
+		{Code: "cmdb.group.update", Name: "更新分组", Description: "更新分组信息", Module: "cmdb", Resource: "group", Action: "update", Level: 3, SortOrder: 77, Status: 1},
+		{Code: "cmdb.group.delete", Name: "删除分组", Description: "删除分组", Module: "cmdb", Resource: "group", Action: "delete", Level: 3, SortOrder: 78, Status: 1},
+		{Code: "cmdb.group.assign", Name: "分配服务器", Description: "分配服务器到分组", Module: "cmdb", Resource: "group", Action: "assign", Level: 3, SortOrder: 79, Status: 1},
+		// 业务系统管理
+		{Code: "cmdb.business.list", Name: "业务列表", Description: "查看业务列表", Module: "cmdb", Resource: "business", Action: "list", Level: 3, SortOrder: 80, Status: 1},
+		{Code: "cmdb.business.create", Name: "创建业务", Description: "创建新业务", Module: "cmdb", Resource: "business", Action: "create", Level: 3, SortOrder: 81, Status: 1},
+		{Code: "cmdb.business.update", Name: "更新业务", Description: "更新业务信息", Module: "cmdb", Resource: "business", Action: "update", Level: 3, SortOrder: 82, Status: 1},
+		{Code: "cmdb.business.delete", Name: "删除业务", Description: "删除业务", Module: "cmdb", Resource: "business", Action: "delete", Level: 3, SortOrder: 83, Status: 1},
+		// 机房管理
+		{Code: "cmdb.rooms.list", Name: "机房列表", Description: "查看机房列表", Module: "cmdb", Resource: "rooms", Action: "list", Level: 3, SortOrder: 84, Status: 1},
+		{Code: "cmdb.rooms.create", Name: "创建机房", Description: "创建新机房", Module: "cmdb", Resource: "rooms", Action: "create", Level: 3, SortOrder: 85, Status: 1},
+		{Code: "cmdb.rooms.update", Name: "更新机房", Description: "更新机房信息", Module: "cmdb", Resource: "rooms", Action: "update", Level: 3, SortOrder: 86, Status: 1},
+		{Code: "cmdb.rooms.delete", Name: "删除机房", Description: "删除机房", Module: "cmdb", Resource: "rooms", Action: "delete", Level: 3, SortOrder: 87, Status: 1},
+		// 标签管理
+		{Code: "cmdb.tags.list", Name: "标签列表", Description: "查看标签列表", Module: "cmdb", Resource: "tags", Action: "list", Level: 3, SortOrder: 88, Status: 1},
+		{Code: "cmdb.tags.create", Name: "创建标签", Description: "创建新标签", Module: "cmdb", Resource: "tags", Action: "create", Level: 3, SortOrder: 89, Status: 1},
+		{Code: "cmdb.tags.update", Name: "更新标签", Description: "更新标签信息", Module: "cmdb", Resource: "tags", Action: "update", Level: 3, SortOrder: 90, Status: 1},
+		{Code: "cmdb.tags.delete", Name: "删除标签", Description: "删除标签", Module: "cmdb", Resource: "tags", Action: "delete", Level: 3, SortOrder: 91, Status: 1},
+		// 会话管理
+		{Code: "cmdb.session.list", Name: "会话列表", Description: "查看堡垒机会话列表", Module: "cmdb", Resource: "session", Action: "list", Level: 3, SortOrder: 92, Status: 1},
+		{Code: "cmdb.session.view", Name: "查看会话", Description: "查看会话详细信息", Module: "cmdb", Resource: "session", Action: "view", Level: 3, SortOrder: 93, Status: 1},
+		{Code: "cmdb.session.terminate", Name: "终止会话", Description: "终止堡垒机会话", Module: "cmdb", Resource: "session", Action: "terminate", Level: 3, SortOrder: 94, Status: 1},
+		// 访问策略管理
+		{Code: "cmdb.access_policy.list", Name: "访问策略列表", Description: "查看访问策略列表", Module: "cmdb", Resource: "access_policy", Action: "list", Level: 3, SortOrder: 95, Status: 1},
+		{Code: "cmdb.access_policy.create", Name: "创建访问策略", Description: "创建新的访问策略", Module: "cmdb", Resource: "access_policy", Action: "create", Level: 3, SortOrder: 96, Status: 1},
+		{Code: "cmdb.access_policy.update", Name: "更新访问策略", Description: "更新访问策略信息", Module: "cmdb", Resource: "access_policy", Action: "update", Level: 3, SortOrder: 97, Status: 1},
+		{Code: "cmdb.access_policy.delete", Name: "删除访问策略", Description: "删除访问策略", Module: "cmdb", Resource: "access_policy", Action: "delete", Level: 3, SortOrder: 98, Status: 1},
+
+		// ========== 监控中心模块（16个） ==========
+		// 监控数据
+		{Code: "monitor.data.view", Name: "查看监控数据", Description: "查看监控中心数据", Module: "monitor", Resource: "data", Action: "view", Level: 3, SortOrder: 99, Status: 1},
+		{Code: "monitor.data.refresh", Name: "刷新监控数据", Description: "刷新监控中心数据", Module: "monitor", Resource: "data", Action: "refresh", Level: 3, SortOrder: 100, Status: 1},
+		{Code: "monitor.data.export", Name: "导出监控数据", Description: "导出监控中心数据", Module: "monitor", Resource: "data", Action: "export", Level: 3, SortOrder: 101, Status: 1},
+		// 告警管理
+		{Code: "monitor.alert.list", Name: "告警列表", Description: "查看告警列表", Module: "monitor", Resource: "alert", Action: "list", Level: 3, SortOrder: 102, Status: 1},
+		{Code: "monitor.alert.view", Name: "查看告警", Description: "查看告警详情", Module: "monitor", Resource: "alert", Action: "view", Level: 3, SortOrder: 103, Status: 1},
+		{Code: "monitor.alert.ack", Name: "确认告警", Description: "确认告警事件", Module: "monitor", Resource: "alert", Action: "ack", Level: 3, SortOrder: 104, Status: 1},
+		{Code: "monitor.alert.handle", Name: "处理告警", Description: "处理告警事件", Module: "monitor", Resource: "alert", Action: "handle", Level: 3, SortOrder: 105, Status: 1},
+		// 监控任务
+		{Code: "monitor.task.list", Name: "任务列表", Description: "查看任务列表", Module: "monitor", Resource: "task", Action: "list", Level: 3, SortOrder: 106, Status: 1},
+		{Code: "monitor.task.create", Name: "创建任务", Description: "创建新任务", Module: "monitor", Resource: "task", Action: "create", Level: 3, SortOrder: 107, Status: 1},
+		{Code: "monitor.task.update", Name: "更新任务", Description: "更新任务信息", Module: "monitor", Resource: "task", Action: "update", Level: 3, SortOrder: 108, Status: 1},
+		{Code: "monitor.task.delete", Name: "删除任务", Description: "删除任务", Module: "monitor", Resource: "task", Action: "delete", Level: 3, SortOrder: 109, Status: 1},
+		{Code: "monitor.task.execute", Name: "执行任务", Description: "执行监控任务", Module: "monitor", Resource: "task", Action: "execute", Level: 3, SortOrder: 110, Status: 1},
+		// 巡检报告
+		{Code: "monitor.report.list", Name: "报告列表", Description: "查看巡检报告列表", Module: "monitor", Resource: "report", Action: "list", Level: 3, SortOrder: 111, Status: 1},
+		{Code: "monitor.report.view", Name: "查看报告", Description: "查看巡检报告详情", Module: "monitor", Resource: "report", Action: "view", Level: 3, SortOrder: 112, Status: 1},
+		{Code: "monitor.report.create", Name: "创建报告", Description: "创建新的巡检报告", Module: "monitor", Resource: "report", Action: "create", Level: 3, SortOrder: 113, Status: 1},
+		{Code: "monitor.report.delete", Name: "删除报告", Description: "删除巡检报告", Module: "monitor", Resource: "report", Action: "delete", Level: 3, SortOrder: 114, Status: 1},
+
+		// ========== K8s管理模块（15个） ==========
+		// 集群管理
+		{Code: "k8s.cluster.list", Name: "集群列表", Description: "查看集群列表", Module: "k8s", Resource: "cluster", Action: "list", Level: 3, SortOrder: 115, Status: 1},
+		{Code: "k8s.cluster.view", Name: "查看集群", Description: "查看集群详情", Module: "k8s", Resource: "cluster", Action: "view", Level: 3, SortOrder: 116, Status: 1},
+		{Code: "k8s.cluster.create", Name: "创建集群", Description: "创建新集群", Module: "k8s", Resource: "cluster", Action: "create", Level: 3, SortOrder: 117, Status: 1},
+		{Code: "k8s.cluster.update", Name: "更新集群", Description: "更新集群信息", Module: "k8s", Resource: "cluster", Action: "update", Level: 3, SortOrder: 118, Status: 1},
+		{Code: "k8s.cluster.delete", Name: "删除集群", Description: "删除集群", Module: "k8s", Resource: "cluster", Action: "delete", Level: 3, SortOrder: 119, Status: 1},
+		{Code: "k8s.cluster.connect", Name: "连接集群", Description: "连接到集群", Module: "k8s", Resource: "cluster", Action: "connect", Level: 3, SortOrder: 120, Status: 1},
+		// K8s权限管理
+		{Code: "k8s.permission.list", Name: "权限列表", Description: "查看K8s权限列表", Module: "k8s", Resource: "permission", Action: "list", Level: 3, SortOrder: 121, Status: 1},
+		{Code: "k8s.permission.assign", Name: "分配权限", Description: "分配K8s权限给用户", Module: "k8s", Resource: "permission", Action: "assign", Level: 3, SortOrder: 122, Status: 1},
+		{Code: "k8s.permission.revoke", Name: "撤销权限", Description: "撤销用户的K8s权限", Module: "k8s", Resource: "permission", Action: "revoke", Level: 3, SortOrder: 123, Status: 1},
+		// K8s资源管理
+		{Code: "k8s.resource.view", Name: "查看资源", Description: "查看K8s资源详情", Module: "k8s", Resource: "resource", Action: "view", Level: 3, SortOrder: 124, Status: 1},
+		{Code: "k8s.resource.create", Name: "创建资源", Description: "创建新的K8s资源", Module: "k8s", Resource: "resource", Action: "create", Level: 3, SortOrder: 125, Status: 1},
+		{Code: "k8s.resource.update", Name: "更新资源", Description: "更新K8s资源信息", Module: "k8s", Resource: "resource", Action: "update", Level: 3, SortOrder: 126, Status: 1},
+		{Code: "k8s.resource.delete", Name: "删除资源", Description: "删除K8s资源", Module: "k8s", Resource: "resource", Action: "delete", Level: 3, SortOrder: 127, Status: 1},
+		// K8s诊断
+		{Code: "k8s.diagnostic.execute", Name: "执行诊断", Description: "执行K8s诊断命令", Module: "k8s", Resource: "diagnostic", Action: "execute", Level: 3, SortOrder: 128, Status: 1},
+		{Code: "k8s.diagnostic.view", Name: "查看诊断结果", Description: "查看K8s诊断结果和历史", Module: "k8s", Resource: "diagnostic", Action: "view", Level: 3, SortOrder: 129, Status: 1},
+	}
+
+	for _, perm := range permissions {
+		var existing modelsystem.Permission
+		err := db.Where("code = ?", perm.Code).First(&existing).Error
+
+		if err == nil {
+			db.Model(&existing).Updates(map[string]interface{}{
+				"name":        perm.Name,
+				"description": perm.Description,
+				"module":      perm.Module,
+				"resource":    perm.Resource,
+				"action":      perm.Action,
+				"level":       perm.Level,
+				"sort_order":  perm.SortOrder,
+				"status":      perm.Status,
+			})
+		} else {
+			if err := db.Create(&perm).Error; err != nil {
+				logger.Error("创建权限失败", zap.String("code", perm.Code), zap.Error(err))
+			}
+		}
+	}
+
+	var count int64
+	db.Model(&modelsystem.Permission{}).Count(&count)
+	logger.Info("权限数据同步完成", zap.Int64("total_permissions", count))
+
+	return nil
+}
+
+// syncDefaultPermissions 为内置角色分配默认权限
+func (i *Initializer) syncDefaultPermissions() error {
 	logger.Info("开始为内置角色分配默认权限...")
 
 	db := database.GetDB()
 
-	// 定义角色默认权限映射（使用权限代码）
 	rolePermissions := map[string][]string{
-		"admin": {
-			"*.*.*", // 超级管理员拥有所有权限（通配符）
-		},
+		"admin": {"*.*.*"},
 		"ops": {
-			// 系统管理
 			"system.user.list", "system.user.create", "system.user.update", "system.user.delete",
 			"system.role.list", "system.role.update",
 			"system.menu.list",
-			// CMDB
 			"cmdb.server.list", "cmdb.server.view", "cmdb.server.create", "cmdb.server.update", "cmdb.server.delete", "cmdb.server.connect",
 			"cmdb.business.list", "cmdb.business.create", "cmdb.business.update", "cmdb.business.delete",
 			"cmdb.rooms.list", "cmdb.rooms.create", "cmdb.rooms.update", "cmdb.rooms.delete",
 			"cmdb.tags.list", "cmdb.tags.create", "cmdb.tags.update", "cmdb.tags.delete",
 			"cmdb.group.list", "cmdb.group.view", "cmdb.group.create", "cmdb.group.update", "cmdb.group.delete", "cmdb.group.assign",
 			"cmdb.agents.list", "cmdb.agents.deploy", "cmdb.agents.restart", "cmdb.agents.uninstall",
-			// 监控
 			"monitor.data.view", "monitor.data.export",
 			"monitor.alert.list", "monitor.alert.ack", "monitor.alert.handle",
 			"monitor.task.list", "monitor.task.view", "monitor.task.create", "monitor.task.update", "monitor.task.delete", "monitor.task.execute",
-			// K8s
 			"k8s.cluster.list", "k8s.cluster.view", "k8s.cluster.create", "k8s.cluster.update", "k8s.cluster.delete", "k8s.cluster.connect",
 			"k8s.resource.view", "k8s.resource.create", "k8s.resource.update", "k8s.resource.delete",
 			"k8s.permission.list", "k8s.permission.assign", "k8s.permission.revoke",
-			// 审计
 			"audit.login_log.list", "audit.login_log.export",
 			"audit.operation_log.list", "audit.operation_log.export",
 			"audit.system_event.list",
 			"audit.stats.view",
 		},
 		"auditor": {
-			// 只读权限（查看和列表）
 			"cmdb.server.list", "cmdb.server.view",
 			"cmdb.business.list",
 			"cmdb.rooms.list",
@@ -65,16 +264,13 @@ func (i *Initializer) assignDefaultPermissions() error {
 			"audit.stats.view",
 		},
 		"viewer": {
-			// 最小只读权限
 			"cmdb.server.list",
 			"monitor.data.view",
 		},
 		"user": {
-			// 普通用户基础权限
 			"monitor.data.view",
 		},
 		"test": {
-			// 测试角色权限（用于测试）
 			"system.user.list", "system.user.create",
 			"system.role.list",
 			"cmdb.server.list", "cmdb.server.create",
@@ -84,47 +280,28 @@ func (i *Initializer) assignDefaultPermissions() error {
 	}
 
 	for roleCode, permissionCodes := range rolePermissions {
-		// 获取角色
 		var role modelsystem.Role
 		if err := db.Where("code = ?", roleCode).First(&role).Error; err != nil {
-			logger.Warn("角色不存在，跳过权限分配",
-				zap.String("code", roleCode),
-				zap.Error(err))
+			logger.Warn("角色不存在，跳过权限分配", zap.String("code", roleCode), zap.Error(err))
 			continue
 		}
 
-		// 获取权限
 		var permissions []modelsystem.Permission
 		if err := db.Where("code IN ?", permissionCodes).Find(&permissions).Error; err != nil {
-			logger.Warn("查询权限失败",
-				zap.String("role", roleCode),
-				zap.Error(err))
+			logger.Warn("查询权限失败", zap.String("role", roleCode), zap.Error(err))
 			continue
 		}
 
-		// 分配权限
 		assignedCount := 0
 		for _, perm := range permissions {
 			var rolePerm modelsystem.RolePermission
-			err := db.Where("role_id = ? AND permission_id = ?", role.ID, perm.ID).
-				First(&rolePerm).Error
-
+			err := db.Where("role_id = ? AND permission_id = ?", role.ID, perm.ID).First(&rolePerm).Error
 			if err != nil {
-				// 创建新的角色权限关联
-				rolePerm = modelsystem.RolePermission{
-					RoleID:       role.ID,
-					PermissionID: perm.ID,
-				}
+				rolePerm = modelsystem.RolePermission{RoleID: role.ID, PermissionID: perm.ID}
 				if err := db.Create(&rolePerm).Error; err != nil {
-					logger.Error("分配权限失败",
-						zap.String("role", roleCode),
-						zap.String("permission", perm.Code),
-						zap.Error(err))
+					logger.Error("分配权限失败", zap.String("role", roleCode), zap.String("permission", perm.Code), zap.Error(err))
 				} else {
 					assignedCount++
-					logger.Debug("分配权限",
-						zap.String("role", roleCode),
-						zap.String("permission", perm.Code))
 				}
 			}
 		}
@@ -138,34 +315,28 @@ func (i *Initializer) assignDefaultPermissions() error {
 	return nil
 }
 
-// initAPIPermissions 初始化层级权限代码到Casbin
-func (i *Initializer) initAPIPermissions() error {
-	logger.Info("开始初始化层级权限代码到Casbin...")
+// syncAPIPermissions 同步层级权限代码到Casbin
+func (i *Initializer) syncAPIPermissions() error {
+	logger.Info("开始同步权限代码到Casbin...")
 
-	// 获取 PermissionService 实例
 	permService, err := GetPermissionService()
 	if err != nil {
 		logger.Warn("获取PermissionService失败，跳过权限初始化", zap.Error(err))
-		return nil // 不阻塞启动
+		return nil
 	}
 
-	// 清除所有旧的API路径格式的策略
-	logger.Info("清除旧的API路径格式策略...")
 	if err := permService.ClearAllPolicies(); err != nil {
 		logger.Error("清除旧策略失败", zap.Error(err))
 		return err
 	}
 
-	// 同步所有角色的权限到Casbin（使用层级权限代码）
-	logger.Info("同步所有角色权限到Casbin...")
 	if err := permService.SyncAllRolesToCasbin(); err != nil {
 		logger.Error("同步角色权限失败", zap.Error(err))
 		return err
 	}
 
-	// 验证策略数量
 	policies := permService.GetAllPolicies()
-	logger.Info("层级权限代码初始化完成", zap.Int("总策略数", len(policies)))
+	logger.Info("Casbin权限初始化完成", zap.Int("总策略数", len(policies)))
 
 	return nil
 }

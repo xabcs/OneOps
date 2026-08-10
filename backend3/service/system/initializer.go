@@ -2,7 +2,6 @@ package system
 
 import (
 	"fmt"
-	"os"
 
 	modelaudit "oneops/backend3/model/audit"
 	modelauth "oneops/backend3/model/authorization"
@@ -32,19 +31,14 @@ func (i *Initializer) Initialize() error {
 		return fmt.Errorf("模式迁移失败: %w", err)
 	}
 
-	// 阶段2：执行SQL迁移脚本
+	// 阶段2：创建监控表
 	if err := i.runMigrations(); err != nil {
-		zap.L().Warn("SQL迁移执行失败，继续执行", zap.Error(err))
+		zap.L().Warn("监控表创建失败，继续执行", zap.Error(err))
 	}
 
-	// 阶段3：基础数据初始化
-	if err := i.initSeedData(); err != nil {
-		return fmt.Errorf("基础数据初始化失败: %w", err)
-	}
-
-	// 阶段4：模块数据初始化
-	if err := i.initModuleData(); err != nil {
-		return fmt.Errorf("模块数据初始化失败: %w", err)
+	// 阶段3：初始化系统数据（菜单、角色、用户、权限等）
+	if err := i.initSystemData(); err != nil {
+		return fmt.Errorf("系统数据初始化失败: %w", err)
 	}
 
 	zap.L().Info("数据库初始化流程完成")
@@ -141,56 +135,11 @@ func (i *Initializer) migrateSchema() error {
 	return nil
 }
 
-// runMigrations 执行 SQL 迁移脚本
+// runMigrations 创建无 GORM model 的监控表（原生 SQL 访问）
 func (i *Initializer) runMigrations() error {
-	logger.Info("开始执行 SQL 迁移...")
+	logger.Info("开始创建监控表...")
 
 	db := database.GetDB()
-
-	// 添加 menu_ids 字段到 roles 表
-	menuIDsSQL := `
-		ALTER TABLE sys_roles
-		ADD COLUMN IF NOT EXISTS menu_ids JSON NULL
-		COMMENT '菜单ID列表(JSON数组)，如 [1,2,3]'
-		AFTER description;
-	`
-
-	if err := db.Exec(menuIDsSQL).Error; err != nil {
-		logger.Debug("添加 menu_ids 字段（可能已存在）", zap.Error(err))
-	}
-
-	// 添加 resource 字段到 menus 表（用于权限码自动关联菜单）
-	menuResourceSQL := `
-		ALTER TABLE sys_menus
-		ADD COLUMN IF NOT EXISTS resource VARCHAR(30) DEFAULT ''
-		COMMENT '对应的资源名称，用于权限码自动关联菜单'
-		AFTER permission;
-	`
-
-	if err := db.Exec(menuResourceSQL).Error; err != nil {
-		logger.Debug("添加 resource 字段（可能已存在）", zap.Error(err))
-	}
-
-	// 添加索引
-	createResourceIndex := `
-		CREATE INDEX IF NOT EXISTS idx_menus_resource ON sys_menus(resource);
-	`
-
-	if err := db.Exec(createResourceIndex).Error; err != nil {
-		logger.Debug("创建 resource 索引（可能已存在）", zap.Error(err))
-	}
-
-	// 添加 disk_partitions 字段到 servers 表
-	migrationSQL := `
-		ALTER TABLE cmdb_servers
-		ADD COLUMN IF NOT EXISTS disk_partitions JSON NULL
-		COMMENT '磁盘分区信息 [{"mount":"/","usage":80.5},{"mount":"/var","usage":90.2}]'
-		AFTER disk_usage;
-	`
-
-	if err := db.Exec(migrationSQL).Error; err != nil {
-		logger.Debug("添加 disk_partitions 字段（可能已存在）", zap.Error(err))
-	}
 
 	// 创建 agent_metrics 表（监控指标存储）
 	createMetricsTable := `
@@ -308,32 +257,13 @@ func (i *Initializer) runMigrations() error {
 		logger.Warn("创建 inspection_reports 表失败", zap.Error(err))
 	}
 
-	// 修复 group_bindings 表的 application_permission_id 字段
-	fixGroupBindingsTable := `
-		ALTER TABLE auth_group_bindings
-		ADD COLUMN IF NOT EXISTS application_permission_id BIGINT UNSIGNED NULL COMMENT '关联的权限ID（可选）'
-		AFTER application_role_id;
-	`
-	if err := db.Exec(fixGroupBindingsTable).Error; err != nil {
-		logger.Debug("修复 group_bindings 表字段（可能已存在）", zap.Error(err))
-	}
-
-	// 如果字段已存在但不允许 NULL，则修改它
-	fixGroupBindingsNull := `
-		ALTER TABLE auth_group_bindings
-		MODIFY COLUMN application_permission_id BIGINT UNSIGNED NULL COMMENT '关联的权限ID（可选）';
-	`
-	if err := db.Exec(fixGroupBindingsNull).Error; err != nil {
-		logger.Debug("修改 group_bindings 表字段允许 NULL（可能已正确）", zap.Error(err))
-	}
-
-	logger.Info("SQL 迁移执行完成")
+	logger.Info("监控表创建完成")
 	return nil
 }
 
-// initSeedData 初始化基础数据
-func (i *Initializer) initSeedData() error {
-	zap.L().Info("阶段3：初始化基础数据...")
+// initSystemData 初始化系统数据（菜单、角色、用户、权限、诊断、Agent等）
+func (i *Initializer) initSystemData() error {
+	zap.L().Info("初始化系统数据...")
 
 	// 同步菜单
 	if err := i.syncMenus(); err != nil {
@@ -345,9 +275,9 @@ func (i *Initializer) initSeedData() error {
 		zap.L().Warn("内置角色同步失败", zap.Error(err))
 	}
 
-	// 初始化管理员用户
-	if err := i.initUsers(); err != nil {
-		zap.L().Warn("管理员用户初始化失败", zap.Error(err))
+	// 同步管理员用户
+	if err := i.syncUsers(); err != nil {
+		zap.L().Warn("管理员用户同步失败", zap.Error(err))
 	}
 
 	// 同步属性定义
@@ -355,67 +285,29 @@ func (i *Initializer) initSeedData() error {
 		zap.L().Warn("属性定义同步失败", zap.Error(err))
 	}
 
-	return nil
-}
-
-// initModuleData 初始化模块数据
-func (i *Initializer) initModuleData() error {
-	zap.L().Info("阶段4：初始化模块数据...")
-
-	// 初始化权限数据
-	if err := i.initPermissionsFromSQL(); err != nil {
-		zap.L().Warn("权限数据初始化失败", zap.Error(err))
+	// 同步权限数据
+	if err := i.syncPermissions(); err != nil {
+		zap.L().Warn("权限数据同步失败", zap.Error(err))
 	}
 
-	// 分配默认权限
-	if err := i.assignDefaultPermissions(); err != nil {
+	// 同步默认角色权限分配
+	if err := i.syncDefaultPermissions(); err != nil {
 		zap.L().Warn("默认权限分配失败", zap.Error(err))
 	}
 
-	// 初始化诊断数据
-	if err := i.initDiagnosticData(); err != nil {
-		zap.L().Warn("诊断数据初始化失败", zap.Error(err))
+	// 同步诊断数据
+	if err := i.syncDiagnosticData(); err != nil {
+		zap.L().Warn("诊断数据同步失败", zap.Error(err))
 	}
 
-	// 初始化Agent版本
-	if err := i.initAgentVersions(); err != nil {
-		zap.L().Warn("Agent版本初始化失败", zap.Error(err))
+	// 同步 Agent 版本
+	if err := i.syncAgentVersions(); err != nil {
+		zap.L().Warn("Agent版本同步失败", zap.Error(err))
 	}
 
-	// 初始化API权限
-	if err := i.initAPIPermissions(); err != nil {
-		zap.L().Warn("API权限初始化失败", zap.Error(err))
-	}
-
-	return nil
-}
-
-// initPermissionsFromSQL 从 SQL 文件初始化权限数据
-func (i *Initializer) initPermissionsFromSQL() error {
-	zap.L().Info("从 SQL 文件初始化权限数据...")
-
-	db := database.GetDB()
-
-	// SQL 文件路径
-	sqlFile := "migrations/v2_permissions.sql"
-
-	// 读取 SQL 文件内容
-	content, err := os.ReadFile(sqlFile)
-	if err != nil {
-		return fmt.Errorf("读取 SQL 文件失败: %w", err)
-	}
-
-	// 执行 SQL
-	if err := db.Exec(string(content)).Error; err != nil {
-		return fmt.Errorf("执行权限初始化 SQL 失败: %w", err)
-	}
-
-	// 统计权限数量
-	var count int64
-	if err := db.Model(&modelsystem.Permission{}).Count(&count).Error; err != nil {
-		zap.L().Warn("统计权限数量失败", zap.Error(err))
-	} else {
-		zap.L().Info("权限数据初始化完成", zap.Int64("total_permissions", count))
+	// 同步 Casbin 策略
+	if err := i.syncAPIPermissions(); err != nil {
+		zap.L().Warn("Casbin策略同步失败", zap.Error(err))
 	}
 
 	return nil

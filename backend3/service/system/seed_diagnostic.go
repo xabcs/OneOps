@@ -11,9 +11,9 @@ import (
 	"go.uber.org/zap"
 )
 
-// initDiagnosticData 初始化诊断相关数据
-func (i *Initializer) initDiagnosticData() error {
-	logger.Info("开始初始化诊断功能数据...")
+// syncDiagnosticData 同步诊断相关数据
+func (i *Initializer) syncDiagnosticData() error {
+	logger.Info("开始同步诊断功能数据...")
 
 	// 1. 初始化诊断权限
 	if err := i.initDiagnosticPermissions(); err != nil {
@@ -150,32 +150,38 @@ func (i *Initializer) initDiagnosticConfig() error {
 	return nil
 }
 
-// initAgentVersions 初始化 Agent 版本数据
-func (i *Initializer) initAgentVersions() error {
-	logger.Info("开始初始化 Agent 版本数据...")
+// syncAgentVersions 同步 Agent 版本数据
+func (i *Initializer) syncAgentVersions() error {
+	logger.Info("开始同步 Agent 版本数据...")
 
 	db := database.GetDB()
 
-	defaultVersion := modelcmdb.AgentVersion{
-		Version:       "1.0.0",
-		ReleaseNotes:  "Agent 初始版本，支持基础监控指标采集",
-		Changelog:     "- 支持基础监控指标采集\n- 支持心跳上报\n- 支持 /metrics 端点",
-		ReleasedAt:    time.Now(),
-		IsLatest:      true,
-		IsDeprecated:  false,
-		Features:      `{"extended_metrics":false,"custom_configs":false}`,
-		DownloadCount: 0,
-		DeployCount:   0,
+	var existing modelcmdb.AgentVersion
+	if err := db.Where("version = ? AND is_latest = ?", "1.0.0", true).First(&existing).Error; err == nil {
+		db.Model(&existing).Updates(map[string]interface{}{
+			"release_notes": "Agent 初始版本，支持基础监控指标采集",
+			"changelog":     "- 支持基础监控指标采集\n- 支持心跳上报\n- 支持 /metrics 端点",
+			"is_latest":     true,
+		})
+		logger.Debug("Agent 版本已存在，已更新")
+	} else {
+		defaultVersion := modelcmdb.AgentVersion{
+			Version:       "1.0.0",
+			ReleaseNotes:  "Agent 初始版本，支持基础监控指标采集",
+			Changelog:     "- 支持基础监控指标采集\n- 支持心跳上报\n- 支持 /metrics 端点",
+			ReleasedAt:    time.Now(),
+			IsLatest:      true,
+			IsDeprecated:  false,
+			Features:      `{"extended_metrics":false,"custom_configs":false}`,
+			DownloadCount: 0,
+			DeployCount:   0,
+		}
+		if err := db.Create(&defaultVersion).Error; err != nil {
+			logger.Error("创建默认 Agent 版本失败", zap.Error(err))
+			return err
+		}
+		logger.Info("创建默认 Agent 版本", zap.String("version", defaultVersion.Version))
 	}
-
-	if err := db.Create(&defaultVersion).Error; err != nil {
-		logger.Error("创建默认 Agent 版本失败", zap.Error(err))
-		return err
-	}
-
-	logger.Info("创建默认 Agent 版本",
-		zap.String("version", defaultVersion.Version),
-		zap.Uint("id", defaultVersion.ID))
 
 	return nil
 }

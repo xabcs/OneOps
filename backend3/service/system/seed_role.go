@@ -72,11 +72,12 @@ func (i *Initializer) syncBuiltinRoles() error {
 	return nil
 }
 
-// initUsers 初始化用户数据
-func (i *Initializer) initUsers() error {
+// syncUsers 同步管理员用户数据
+func (i *Initializer) syncUsers() error {
+	logger.Info("开始同步用户数据...")
+
 	db := database.GetDB()
 
-	// 加密密码
 	hashedPassword, err := utils.HashPassword("123456")
 	if err != nil {
 		return err
@@ -85,15 +86,32 @@ func (i *Initializer) initUsers() error {
 	adminRoleIDs := []uint{1}
 	adminRoleIDsJSON, _ := json.Marshal(adminRoleIDs)
 
-	user := modelsystem.User{
-		Username: "admin",
-		Password: hashedPassword,
-		Nickname: "超级管理员",
-		Email:    "admin@example.com",
-		RoleIDs:  string(adminRoleIDsJSON),
-		Status:   "active",
-		HomePath: "/home",
+	var existingUser modelsystem.User
+	if err := db.Where("username = ?", "admin").First(&existingUser).Error; err == nil {
+		db.Model(&existingUser).Updates(map[string]interface{}{
+			"password":  hashedPassword,
+			"nickname":  "超级管理员",
+			"email":     "admin@example.com",
+			"role_ids":  string(adminRoleIDsJSON),
+			"status":    "active",
+			"home_path": "/home",
+		})
+		logger.Info("管理员用户已更新")
+	} else {
+		user := modelsystem.User{
+			Username: "admin",
+			Password: hashedPassword,
+			Nickname: "超级管理员",
+			Email:    "admin@example.com",
+			RoleIDs:  string(adminRoleIDsJSON),
+			Status:   "active",
+			HomePath: "/home",
+		}
+		if err := db.Create(&user).Error; err != nil {
+			return err
+		}
+		logger.Info("管理员用户已创建", zap.Uint("id", user.ID))
 	}
 
-	return db.Create(&user).Error
+	return nil
 }
