@@ -28,11 +28,7 @@ func NewDiagnosticController(svc *k8ssvc.DiagnosticService) *DiagnosticControlle
 func (ctrl *DiagnosticController) GetDiagnosticCommands(c *gin.Context) {
 	commands := ctrl.svc.GetDiagnosticCommands()
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"data":    gin.H{"commands": commands},
-	})
+	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{"commands": commands}))
 }
 
 // GetJavaPods 获取Java应用Pod列表
@@ -42,7 +38,7 @@ func (ctrl *DiagnosticController) GetJavaPods(c *gin.Context) {
 
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"code": 400, "message": "无效的集群ID"})
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
 	}
 
@@ -52,11 +48,7 @@ func (ctrl *DiagnosticController) GetJavaPods(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"data":    javaPods,
-	})
+	c.JSON(http.StatusOK, utils.SuccessWithData(javaPods))
 }
 
 // GetNamespaces 获取命名空间列表
@@ -65,7 +57,7 @@ func (ctrl *DiagnosticController) GetNamespaces(c *gin.Context) {
 
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"code": 400, "message": "无效的集群ID"})
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
 	}
 
@@ -75,11 +67,7 @@ func (ctrl *DiagnosticController) GetNamespaces(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"data":    namespaces,
-	})
+	c.JSON(http.StatusOK, utils.SuccessWithData(namespaces))
 }
 
 // ExecuteDiagnostic 执行诊断
@@ -110,7 +98,7 @@ func (ctrl *DiagnosticController) ExecuteDiagnostic(c *gin.Context) {
 
 	clusterID, err := strconv.ParseUint(request.ClusterID, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"code": 400, "message": "无效的集群ID"})
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
 	}
 
@@ -131,30 +119,17 @@ func (ctrl *DiagnosticController) ExecuteDiagnostic(c *gin.Context) {
 	}
 
 	if result.Status == "error" {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    500,
-			"message": "诊断执行失败: " + result.ErrMsg,
-			"data": map[string]interface{}{
-				"status":    "error",
-				"error":     result.ErrMsg,
-				"timestamp": time.Now().Unix(),
-				"duration":  result.Duration,
-			},
-		})
+		c.JSON(http.StatusOK, utils.ErrorInternal("诊断执行失败: "+result.ErrMsg))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "诊断执行成功",
-		"data": map[string]interface{}{
-			"status":    "success",
-			"output":    result.Output,
-			"timestamp": time.Now().Unix(),
-			"duration":  result.Duration,
-			"method":    "daemonset",
-		},
-	})
+	c.JSON(http.StatusOK, utils.SuccessWithData(map[string]interface{}{
+		"status":    "success",
+		"output":    result.Output,
+		"timestamp": time.Now().Unix(),
+		"duration":  result.Duration,
+		"method":    "daemonset",
+	}))
 }
 
 // GetDiagnosticHistory 获取诊断历史
@@ -162,18 +137,13 @@ func (ctrl *DiagnosticController) GetDiagnosticHistory(c *gin.Context) {
 	clusterID := c.Query("clusterId")
 	namespace := c.Query("namespace")
 	podName := c.Query("podName")
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+	pagination := utils.ParsePagination(c)
 
-	histories, total, err := ctrl.svc.GetDiagnosticHistory(clusterID, namespace, podName, page, pageSize)
+	histories, total, err := ctrl.svc.GetDiagnosticHistory(clusterID, namespace, podName, pagination.Page, pagination.PageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"data":    gin.H{"list": histories, "total": total},
-	})
+	c.JSON(http.StatusOK, utils.SuccessWithData(utils.BuildPaginatedResponse(histories, total, pagination)))
 }

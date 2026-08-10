@@ -62,10 +62,8 @@ func (c *CMDBController) GetServers(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":  servers,
-		"total": total,
-	}))
+	pagination := utils.PaginationParams{Page: params.Page, PageSize: params.PageSize}
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(utils.BuildPaginatedResponse(servers, total, pagination)))
 }
 
 // GetServerByID 获取服务器详情

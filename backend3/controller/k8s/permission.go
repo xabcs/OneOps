@@ -51,12 +51,12 @@ func (ctrl *K8sPermissionController) AssignClusterRole(c *gin.Context) {
 
 	var req AssignClusterRoleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
 		return
 	}
 
 	if err := ctrl.svc.AssignClusterRole(req.UserID, uint(clusterID), req.RoleID, operatorID); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("分配角色失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("分配角色失败: "+err.Error()))
 		return
 	}
 
@@ -89,7 +89,7 @@ func (ctrl *K8sPermissionController) RevokeClusterRole(c *gin.Context) {
 	}
 
 	if err := ctrl.svc.RevokeClusterRole(uint(userID), uint(clusterID), operatorID); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("撤销角色失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("撤销角色失败: "+err.Error()))
 		return
 	}
 
@@ -108,12 +108,11 @@ func (ctrl *K8sPermissionController) GetUserClusters(c *gin.Context) {
 		return
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+	pagination := utils.ParsePagination(c)
 
-	clusters, total, err := ctrl.svc.GetClusters(userID, page, pageSize, nil)
+	clusters, total, err := ctrl.svc.GetClusters(userID, pagination.Page, pagination.PageSize, nil)
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群列表失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群列表失败: "+err.Error()))
 		return
 	}
 
@@ -134,15 +133,7 @@ func (ctrl *K8sPermissionController) GetUserClusters(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":     200,
-		"success":  true,
-		"data":     result,
-		"message":  "success",
-		"total":    total,
-		"page":     page,
-		"pageSize": pageSize,
-	})
+	c.JSON(http.StatusOK, utils.SuccessWithData(utils.BuildPaginatedResponse(result, total, pagination)))
 }
 
 // GetClusterUsers 获取集群用户列表（权限详情）
@@ -166,7 +157,7 @@ func (ctrl *K8sPermissionController) GetClusterUsers(c *gin.Context) {
 
 	users, err := ctrl.svc.GetClusterUsers(uint(clusterID))
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群用户列表失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群用户列表失败: "+err.Error()))
 		return
 	}
 
@@ -198,7 +189,7 @@ func (ctrl *K8sPermissionController) GetUserRoleInCluster(c *gin.Context) {
 		First(&binding).Error
 
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户角色失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户角色失败: "+err.Error()))
 		return
 	}
 
@@ -232,13 +223,13 @@ func (ctrl *K8sPermissionController) BatchAssignClusterRoles(c *gin.Context) {
 	}
 
 	var req struct {
-		ClusterID uint    `json:"clusterId" binding:"required"`
-		UserIDs   []uint  `json:"userIds" binding:"required"`
-		RoleID    uint    `json:"roleId" binding:"required"`
+		ClusterID uint   `json:"clusterId" binding:"required"`
+		UserIDs   []uint `json:"userIds" binding:"required"`
+		RoleID    uint   `json:"roleId" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
 		return
 	}
 
@@ -260,14 +251,9 @@ func (ctrl *K8sPermissionController) BatchAssignClusterRoles(c *gin.Context) {
 		zap.Int("total", len(req.UserIDs)),
 		zap.Int("success", successCount))
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"success": true,
-		"data": gin.H{
-			"total":   len(req.UserIDs),
-			"success": successCount,
-			"failed":  len(req.UserIDs) - successCount,
-		},
-		"message": fmt.Sprintf("批量分配完成，成功 %d/%d", successCount, len(req.UserIDs)),
-	})
+	c.JSON(http.StatusOK, utils.SuccessResponse(map[string]interface{}{
+		"total":   len(req.UserIDs),
+		"success": successCount,
+		"failed":  len(req.UserIDs) - successCount,
+	}, fmt.Sprintf("批量分配完成，成功 %d/%d", successCount, len(req.UserIDs))))
 }

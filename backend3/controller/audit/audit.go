@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	. "oneops/backend3/service/audit"
 	"oneops/backend3/pkg/utils"
+	. "oneops/backend3/service/audit"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,28 +39,15 @@ func (ctrl *AuditController) GetLoginLogs(c *gin.Context) {
 		query["endTime"] = v
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	pagination := utils.ParsePagination(c)
 
-	logs, total, err := ctrl.svc.GetLoginLogs(query, page, pageSize)
+	logs, total, err := ctrl.svc.GetLoginLogs(query, pagination.Page, pagination.PageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取登录日志失败"))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":     logs,
-		"total":    total,
-		"page":     page,
-		"pageSize": pageSize,
-		"pages":    (int(total) + pageSize - 1) / pageSize,
-	}))
+	c.JSON(http.StatusOK, utils.SuccessWithData(utils.BuildPaginatedResponse(logs, total, pagination)))
 }
 
 // GetOperationLogs 获取操作日志列表
@@ -97,28 +84,15 @@ func (ctrl *AuditController) GetOperationLogs(c *gin.Context) {
 		query["endTime"] = v
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	pagination := utils.ParsePagination(c)
 
-	logs, total, err := ctrl.svc.GetOperationLogs(query, page, pageSize)
+	logs, total, err := ctrl.svc.GetOperationLogs(query, pagination.Page, pagination.PageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取操作日志失败"))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":     logs,
-		"total":    total,
-		"page":     page,
-		"pageSize": pageSize,
-		"pages":    (int(total) + pageSize - 1) / pageSize,
-	}))
+	c.JSON(http.StatusOK, utils.SuccessWithData(utils.BuildPaginatedResponse(logs, total, pagination)))
 }
 
 // GetSystemEventLogs 获取系统事件日志列表
@@ -140,28 +114,15 @@ func (ctrl *AuditController) GetSystemEventLogs(c *gin.Context) {
 		query["endTime"] = v
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
+	pagination := utils.ParsePagination(c)
 
-	logs, total, err := ctrl.svc.GetSystemEventLogs(query, page, pageSize)
+	logs, total, err := ctrl.svc.GetSystemEventLogs(query, pagination.Page, pagination.PageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取系统事件日志失败"))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":     logs,
-		"total":    total,
-		"page":     page,
-		"pageSize": pageSize,
-		"pages":    (int(total) + pageSize - 1) / pageSize,
-	}))
+	c.JSON(http.StatusOK, utils.SuccessWithData(utils.BuildPaginatedResponse(logs, total, pagination)))
 }
 
 // GetAuditStats 获取审计统计信息

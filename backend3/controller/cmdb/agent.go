@@ -228,11 +228,11 @@ func (c *AgentController) TestSSHConnection(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, utils.SuccessWithData(result))
 	} else {
 		// 连接失败，返回200状态码但success为false，前端可以显示详细信息
-		ctx.JSON(http.StatusOK, gin.H{
-			"code":    200,
-			"success": false,
-			"message": result.Message,
-			"data":    result,
+		ctx.JSON(http.StatusOK, utils.Response{
+			Code:    200,
+			Success: false,
+			Message: result.Message,
+			Data:    result,
 		})
 	}
 }

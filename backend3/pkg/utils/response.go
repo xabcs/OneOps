@@ -4,29 +4,11 @@ import (
 	apperrors "oneops/backend3/pkg/errors"
 )
 
-// 业务错误码定义（保留向后兼容）
-const (
-	ErrCodeDuplicateHostname = 40001 // 主机名重复
-	ErrCodeDuplicateIP       = 40002 // IP地址重复
-	ErrCodeServerNotFound    = 40003 // 服务器不存在
-	ErrCodeInvalidCredential = 40004 // 无效的SSH凭证
-)
-
-// ErrorResponseFromAppError 从 AppError 生成响应
-func ErrorResponseFromAppError(err *apperrors.AppError) Response {
-	return Response{
-		Code:    err.Code,
-		Success: false,
-		Message: err.Message,
-	}
-}
-
-// HandleError 统一错误处理
+// HandleError 统一错误处理，将 error 转为标准 Response
 func HandleError(err error) Response {
 	if appErr, ok := err.(*apperrors.AppError); ok {
-		return ErrorResponseFromAppError(appErr)
+		return Response{Code: appErr.Code, Success: false, Message: appErr.Message}
 	}
-	// 未知错误，返回内部错误
 	return ErrorInternal("服务器内部错误")
 }
 
@@ -96,22 +78,22 @@ func ErrorInternal(message string) Response {
 
 // ErrorDuplicateHostname 主机名重复错误
 func ErrorDuplicateHostname() Response {
-	return ErrorResponse(ErrCodeDuplicateHostname, "主机名已存在，请使用其他主机名")
+	return ErrorResponse(400, "主机名已存在，请使用其他主机名")
 }
 
 // ErrorDuplicateIP IP地址重复错误
 func ErrorDuplicateIP() Response {
-	return ErrorResponse(ErrCodeDuplicateIP, "IP地址已存在，请使用其他IP地址")
+	return ErrorResponse(400, "IP地址已存在，请使用其他IP地址")
 }
 
 // ErrorServerNotFound 服务器不存在错误
 func ErrorServerNotFound() Response {
-	return ErrorResponse(ErrCodeServerNotFound, "服务器不存在")
+	return ErrorResponse(404, "服务器不存在")
 }
 
 // ErrorInvalidCredential 无效的SSH凭证错误
 func ErrorInvalidCredential() Response {
-	return ErrorResponse(ErrCodeInvalidCredential, "无效的SSH凭证")
+	return ErrorResponse(400, "无效的SSH凭证")
 }
 
 // ErrorForbidden 403 禁止访问

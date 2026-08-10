@@ -17,12 +17,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
-	"gorm.io/gorm"
 )
 
 // TerminalController K8s Pod 终端 WebSocket 处理器
@@ -107,13 +107,13 @@ func (q *k8sTerminalSizeQueue) Stop() {
 func (ctrl *TerminalController) HandleWebSocket(c *gin.Context) {
 	token := c.Query("token")
 	if token == "" {
-		c.JSON(http.StatusOK, gin.H{"code": 401, "success": false, "message": "缺少认证token"})
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("缺少认证token"))
 		return
 	}
 
 	userID, err := ctrl.validateToken(token)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"code": 401, "success": false, "message": "token验证失败"})
+		c.JSON(http.StatusOK, utils.ErrorUnauthorized("token验证失败"))
 		return
 	}
 
@@ -125,25 +125,25 @@ func (ctrl *TerminalController) HandleWebSocket(c *gin.Context) {
 	containerName := c.Query("containerName")
 
 	if clusterIDStr == "" || namespace == "" || podName == "" {
-		c.JSON(http.StatusOK, gin.H{"code": 400, "success": false, "message": "缺少必要参数"})
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("缺少必要参数"))
 		return
 	}
 
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"code": 400, "success": false, "message": "无效的集群ID"})
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
 	}
 
 	hasAccess, err := ctrl.svc.CheckUserClusterAccess(userID, uint(clusterID))
 	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, gin.H{"code": 403, "success": false, "message": "无权访问该集群"})
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
 		return
 	}
 
 	clientset, _, err := ctrl.svc.GetClientWithConfig(uint(clusterID))
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"code": 500, "success": false, "message": "获取集群连接失败"})
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群连接失败"))
 		return
 	}
 
@@ -151,9 +151,9 @@ func (ctrl *TerminalController) HandleWebSocket(c *gin.Context) {
 	pod, err := clientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			c.JSON(http.StatusOK, gin.H{"code": 404, "success": false, "message": "Pod 不存在"})
+			c.JSON(http.StatusOK, utils.ErrorResponse(404, "Pod 不存在"))
 		} else {
-			c.JSON(http.StatusOK, gin.H{"code": 500, "success": false, "message": fmt.Sprintf("获取 Pod 失败: %v", err)})
+			c.JSON(http.StatusOK, utils.ErrorInternal(fmt.Sprintf("获取 Pod 失败: %v", err)))
 		}
 		return
 	}
@@ -162,7 +162,7 @@ func (ctrl *TerminalController) HandleWebSocket(c *gin.Context) {
 		if len(pod.Spec.Containers) > 0 {
 			containerName = pod.Spec.Containers[0].Name
 		} else {
-			c.JSON(http.StatusOK, gin.H{"code": 400, "success": false, "message": "Pod 没有可连接的容器"})
+			c.JSON(http.StatusOK, utils.ErrorBadRequest("Pod 没有可连接的容器"))
 			return
 		}
 	}
@@ -360,7 +360,7 @@ func (ctrl *TerminalController) GetActiveSessions(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 200, "success": true, "data": sessions})
+	c.JSON(http.StatusOK, utils.SuccessWithData(sessions))
 }
 
 // TerminateSession 终止 K8s 终端会话
@@ -372,7 +372,7 @@ func (ctrl *TerminalController) TerminateSession(c *gin.Context) {
 
 	sessionID, err := strconv.ParseUint(c.Param("sessionId"), 10, 32)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"code": 400, "success": false, "message": "无效的会话ID"})
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的会话ID"))
 		return
 	}
 
@@ -381,19 +381,19 @@ func (ctrl *TerminalController) TerminateSession(c *gin.Context) {
 	ctrl.sessionsMutex.RUnlock()
 
 	if !exists {
-		c.JSON(http.StatusOK, gin.H{"code": 404, "success": false, "message": "会话不存在或已关闭"})
+		c.JSON(http.StatusOK, utils.ErrorResponse(404, "会话不存在或已关闭"))
 		return
 	}
 
 	if session.userID != userID {
-		c.JSON(http.StatusOK, gin.H{"code": 403, "success": false, "message": "无权操作该会话"})
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权操作该会话"))
 		return
 	}
 
 	session.cancel()
 	session.wsConn.Close()
 
-	c.JSON(http.StatusOK, gin.H{"code": 200, "success": true, "message": "会话已终止"})
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("会话已终止"))
 }
 
 // k8sTerminalStreamer 实现 remotecommand.Streamer 接口
