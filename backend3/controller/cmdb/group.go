@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	modelcmdb "oneops/backend3/model/cmdb"
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
 
 	"github.com/gin-gonic/gin"
@@ -56,7 +57,7 @@ func (c *CMDBController) GetServerGroupByID(ctx *gin.Context) {
 func (c *CMDBController) CreateServerGroup(ctx *gin.Context) {
 	var group modelcmdb.ServerGroup
 	if err := ctx.ShouldBindJSON(&group); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -79,7 +80,7 @@ func (c *CMDBController) UpdateServerGroup(ctx *gin.Context) {
 
 	var updates map[string]interface{}
 	if err := ctx.ShouldBindJSON(&updates); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -116,7 +117,7 @@ func (c *CMDBController) AssignServerToGroup(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -136,7 +137,7 @@ func (c *CMDBController) AssignServerToGroups(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -157,8 +158,11 @@ func (c *CMDBController) GetServersByGroup(ctx *gin.Context) {
 		return
 	}
 
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+	var params dto.BasePageQuery
+	if err := ctx.ShouldBindQuery(&params); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 
 	servers, err := c.svc.GetServersByGroup(uint(groupID))
 	if err != nil {
@@ -168,8 +172,8 @@ func (c *CMDBController) GetServersByGroup(ctx *gin.Context) {
 
 	// 手动分页
 	total := int64(len(servers))
-	start := (page - 1) * pageSize
-	end := start + pageSize
+	start := (params.GetPage() - 1) * params.GetPageSize()
+	end := start + params.GetPageSize()
 
 	if start >= len(servers) {
 		servers = []modelcmdb.Server{}
@@ -179,8 +183,5 @@ func (c *CMDBController) GetServersByGroup(ctx *gin.Context) {
 		servers = servers[start:end]
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":  servers,
-		"total": total,
-	}))
+	ctx.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(servers, total, params)))
 }

@@ -1,0 +1,6 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <title>MSRE</title>
+  <rect x="12" y="12" width="176" height="176" rx="40" fill="none" stroke="#4f46e5" stroke-width="2.5"/>
+  <text x="100" y="100" text-anchor="middle" dominant-baseline="central"
+        font-family="system-ui, -apple-system, Helvetica, sans-serif" font-size="50" font-weight="700" fill="none" stroke="#4f46e5" stroke-width="1.8" letter-spacing="2">MSRE</text>
+</svg>

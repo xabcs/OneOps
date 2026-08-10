@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	modelcmdb "oneops/backend3/model/cmdb"
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
 
 	"github.com/gin-gonic/gin"
@@ -46,7 +47,7 @@ func (c *CMDBController) GetSSHCredentialByID(ctx *gin.Context) {
 func (c *CMDBController) CreateSSHCredential(ctx *gin.Context) {
 	var credential modelcmdb.SSHCredential
 	if err := ctx.ShouldBindJSON(&credential); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -69,7 +70,7 @@ func (c *CMDBController) UpdateSSHCredential(ctx *gin.Context) {
 
 	var updates map[string]interface{}
 	if err := ctx.ShouldBindJSON(&updates); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -112,7 +113,7 @@ func (c *CMDBController) TestSSHCredential(ctx *gin.Context) {
 		TestPort int    `json:"testPort"`
 	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 

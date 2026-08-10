@@ -8,6 +8,7 @@ import (
 
 	modelcmdb "oneops/backend3/model/cmdb"
 	modelsystem "oneops/backend3/model/system"
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
 
 	"github.com/gin-gonic/gin"
@@ -60,7 +61,7 @@ func (c *AttributeController) GetAttributeDefinitionByID(ctx *gin.Context) {
 func (c *AttributeController) CreateAttributeDefinition(ctx *gin.Context) {
 	var attr modelsystem.AttributeDefinition
 	if err := ctx.ShouldBindJSON(&attr); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -89,7 +90,7 @@ func (c *AttributeController) UpdateAttributeDefinition(ctx *gin.Context) {
 
 	var updates map[string]interface{}
 	if err := ctx.ShouldBindJSON(&updates); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -156,7 +157,7 @@ func (c *AttributeController) ValidateServerAttribute(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -179,7 +180,7 @@ func (c *AttributeController) SaveServerAttributes(ctx *gin.Context) {
 
 	var attributes []modelcmdb.ServerAttribute
 	if err := ctx.ShouldBindJSON(&attributes); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 

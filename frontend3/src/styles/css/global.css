@@ -1,0 +1,34 @@
+@import './reset.css';
+@import './nprogress.css';
+@import './transition.css';
+
+html,
+body,
+#app {
+  height: 100%;
+  font-size: 14px;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+/* OneOps 风格：数据专用字体 */
+:root {
+  --font-data: 'TCloudNumber', 'Monaco', 'Consolas', 'Monaco', 'Courier New', monospace;
+  --color-primary: rgb(232, 26, 101);
+  --color-success: rgb(38, 187, 23);
+  --color-warning: rgb(255, 168, 0);
+  --color-error: rgb(245, 34, 46);
+}
+
+/* 数据展示类 - 使用 TCloudNumber 字体 */
+.font-data {
+  font-family: var(--font-data);
+}
+
+/* 数字强调类 */
+.number-emphasis {
+  font-family: var(--font-data);
+  font-weight: 500;
+}

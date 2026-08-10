@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+  <head>
+    <title>调试页面</title>
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+      }
+      .log {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ccc;
+      }
+      .error {
+        background: #fee;
+        color: red;
+      }
+      .success {
+        background: #efe;
+        color: green;
+      }
+      .info {
+        background: #eef;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>OneOps 前端调试页面</h1>
+    <div id="logs"></div>
+
+    <script>
+      const logs = document.getElementById('logs');
+
+      function log(message, type = 'info') {
+        const div = document.createElement('div');
+        div.className = `log ${type}`;
+        div.textContent = message;
+        logs.appendChild(div);
+      }
+
+      async function testSystem() {
+        log('开始测试系统...', 'info');
+
+        // 测试API代理
+        try {
+          log('测试1: 检查API代理', 'info');
+          const response = await fetch('/api/route/getConstantRoutes');
+          const data = await response.json();
+          log(`✓ API代理正常工作: ${data.success ? '成功' : '失败'}`, 'success');
+          log(`常量路由数量: ${data.data?.length || 0}`, 'info');
+        } catch (error) {
+          log(`✗ API代理失败: ${error.message}`, 'error');
+        }
+
+        // 测试登录接口
+        try {
+          log('测试2: 检查登录接口', 'info');
+          const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: 'admin', password: '123456' })
+          });
+          const data = await response.json();
+          log(`✓ 登录接口正常: ${data.success ? '成功' : '失败'}`, 'success');
+          if (data.success) {
+            log(`获得Token: ${data.data.token.substring(0, 20)}...`, 'info');
+          }
+        } catch (error) {
+          log(`✗ 登录接口失败: ${error.message}`, 'error');
+        }
+
+        // 检查关键文件
+        try {
+          log('测试3: 检查关键文件加载', 'info');
+          const files = ['/src/main.ts', '/src/App.vue', '/src/router/index.ts', '/src/store/index.ts'];
+
+          for (const file of files) {
+            const response = await fetch(file);
+            log(`✓ ${file}: ${response.status}`, response.ok ? 'success' : 'error');
+          }
+        } catch (error) {
+          log(`✗ 文件检查失败: ${error.message}`, 'error');
+        }
+
+        log('测试完成！请检查上述日志', 'info');
+      }
+
+      // 运行测试
+      testSystem();
+    </script>
+  </body>
+</html>

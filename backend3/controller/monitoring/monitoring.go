@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
 	. "oneops/backend3/service/monitoring"
 
@@ -176,30 +177,27 @@ func (ctrl *MonitoringController) GetServerMetricsHistory(c *gin.Context) {
 
 // GetAlerts 查询告警列表
 func (ctrl *MonitoringController) GetAlerts(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
+	var params dto.BasePageQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
 	}
 
-	params := AlertQueryParams{
+	queryParams := AlertQueryParams{
 		ServerID:     c.Query("serverId"),
 		Level:        c.Query("level"),
 		Acknowledged: c.Query("acknowledged"),
-		Page:         page,
-		PageSize:     pageSize,
+		Page:         params.GetPage(),
+		PageSize:     params.GetPageSize(),
 	}
 
-	result, err := ctrl.svc.GetAlerts(params)
+	result, err := ctrl.svc.GetAlerts(queryParams)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(result))
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(result.Items, result.Total, params)))
 }
 
 // AcknowledgeAlert 确认告警
@@ -425,29 +423,26 @@ func (ctrl *MonitoringController) TestNotificationChannel(c *gin.Context) {
 
 // GetReports 获取巡检报告列表
 func (ctrl *MonitoringController) GetReports(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
+	var params dto.BasePageQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
 	}
 
-	params := ReportQueryParams{
+	queryParams := ReportQueryParams{
 		ReportType: c.Query("reportType"),
 		Status:     c.Query("status"),
-		Page:       page,
-		PageSize:   pageSize,
+		Page:       params.GetPage(),
+		PageSize:   params.GetPageSize(),
 	}
 
-	result, err := ctrl.svc.GetReports(params)
+	result, err := ctrl.svc.GetReports(queryParams)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(result))
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(result.Items, result.Total, params)))
 }
 
 // CreateReport 创建巡检报告

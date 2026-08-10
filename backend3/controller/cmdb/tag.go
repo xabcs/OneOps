@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	modelcmdb "oneops/backend3/model/cmdb"
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
 
 	"github.com/gin-gonic/gin"
@@ -27,7 +28,7 @@ func (c *CMDBController) GetServerTags(ctx *gin.Context) {
 func (c *CMDBController) CreateServerTag(ctx *gin.Context) {
 	var tag modelcmdb.ServerTag
 	if err := ctx.ShouldBindJSON(&tag); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -50,7 +51,7 @@ func (c *CMDBController) UpdateServerTag(ctx *gin.Context) {
 
 	var updates map[string]interface{}
 	if err := ctx.ShouldBindJSON(&updates); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -87,7 +88,7 @@ func (c *CMDBController) AssignServerTag(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 

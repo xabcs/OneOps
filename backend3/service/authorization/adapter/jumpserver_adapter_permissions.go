@@ -78,8 +78,8 @@ func (j *JumpserverAdapter) createAuthorizationRule(mapping *modelauth.AuthGroup
 	}
 
 	// 获取应用的认证配置（需要从服务中传入，这里简化处理）
-	baseURL := ""                              // 需要从服务中获取
-	authConfig := map[string]interface{}{}     // 需要从服务中获取
+	baseURL := ""                          // 需要从服务中获取
+	authConfig := map[string]interface{}{} // 需要从服务中获取
 
 	// 构建 API URL
 	createRuleURL := "/api/v1/perms/asset-permissions/"

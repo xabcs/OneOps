@@ -3,6 +3,7 @@ package cmdb
 import (
 	"net/http"
 
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
 
 	"github.com/gin-gonic/gin"
@@ -31,7 +32,7 @@ func (c *CMDBController) GetServerConfig(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 

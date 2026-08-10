@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>完整诊断页面</title>
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .section {
+        background: white;
+        margin: 10px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+      }
+      .error {
+        background: #fee;
+        color: red;
+      }
+      .success {
+        background: #efe;
+        color: green;
+      }
+      .warning {
+        background: #ffe;
+        color: orange;
+      }
+      .info {
+        background: #eef;
+      }
+      pre {
+        background: #f9f9f9;
+        padding: 10px;
+        border: 1px solid #eee;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>OneOps 前端诊断工具</h1>
+    <div id="diagnostics"></div>
+
+    <script>
+      const diagnostics = document.getElementById('diagnostics');
+
+      function addSection(title, content, type = 'info') {
+        const section = document.createElement('div');
+        section.className = `section ${type}`;
+        section.innerHTML = `<h3>${title}</h3><pre>${content}</pre>`;
+        diagnostics.appendChild(section);
+      }
+
+      async function runDiagnostics() {
+        try {
+          // 1. 检查基础环境
+          addSection(
+            '1. 基础环境检查',
+            `
+                    用户代理: ${navigator.userAgent}
+                    当前URL: ${window.location.href}
+                    时间: ${new Date().toLocaleString()}
+                `
+          );
+
+          // 2. 检查DOM结构
+          const appDiv = document.getElementById('app');
+          addSection(
+            '2. DOM检查',
+            appDiv ? `✓ 找到 #app 元素\n内容: ${appDiv.innerHTML || '空（Vue还未挂载）'}` : '✗ 未找到 #app 元素',
+            appDiv ? 'success' : 'error'
+          );
+
+          // 3. 检查API连接
+          try {
+            const response = await fetch('/api/route/getConstantRoutes');
+            const data = await response.json();
+            addSection(
+              '3. API连接检查',
+              `
+                        ✓ API代理正常工作
+                        状态码: ${response.status}
+                        响应成功: ${data.success}
+                        路由数量: ${data.data?.length || 0}
+                    `,
+              'success'
+            );
+          } catch (error) {
+            addSection('3. API连接检查', `✗ API连接失败: ${error.message}`, 'error');
+          }
+
+          // 4. 检查关键资源
+          const resources = [
+            '/src/main.ts',
+            '/src/App.vue',
+            '/src/router/index.ts',
+            '/src/store/index.ts',
+            '/src/styles/scss/global.scss'
+          ];
+
+          let resourceResults = '';
+          for (const resource of resources) {
+            try {
+              const response = await fetch(resource);
+              resourceResults += `${response.status === 200 ? '✓' : '✗'} ${resource}: ${response.status}\n`;
+            } catch (error) {
+              resourceResults += `✗ ${resource}: ${error.message}\n`;
+            }
+          }
+          addSection('4. 关键资源检查', resourceResults);
+
+          // 5. 尝试加载Vue应用
+          try {
+            addSection('5. Vue应用加载', '正在尝试加载Vue应用...', 'warning');
+            await import('/src/main.ts');
+            addSection('5. Vue应用加载', '✓ Vue应用加载成功（如果页面仍然空白，请检查浏览器控制台错误）', 'success');
+          } catch (error) {
+            addSection('5. Vue应用加载', `✗ Vue应用加载失败:\n${error.message}\n\n${error.stack}`, 'error');
+          }
+
+          // 6. 检查localStorage
+          addSection(
+            '6. 本地存储检查',
+            `
+                    Token存在: ${localStorage.getItem('SOY_token') ? '是' : '否'}
+                    语言设置: ${localStorage.getItem('SOY_lang') || '未设置'}
+                    主题设置: ${localStorage.getItem('SOY_themeMode') || '未设置'}
+                `,
+            'info'
+          );
+
+          addSection('诊断完成', '请检查浏览器开发者工具的Console标签，查看是否有JavaScript错误。', 'info');
+        } catch (error) {
+          addSection('诊断错误', `诊断过程中出现错误:\n${error.message}\n\n${error.stack}`, 'error');
+        }
+      }
+
+      // 运行诊断
+      runDiagnostics();
+    </script>
+  </body>
+</html>

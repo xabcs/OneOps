@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>代理测试</title>
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+      }
+      .test {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ccc;
+      }
+      .success {
+        background: #efe;
+      }
+      .error {
+        background: #fee;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>代理配置测试</h1>
+    <div id="results"></div>
+
+    <script>
+      const results = document.getElementById('results');
+
+      async function testProxy() {
+        // 测试不同的API路径
+        const paths = ['/api/route/getConstantRoutes', '/login', '/user/info'];
+
+        for (const path of paths) {
+          try {
+            const response = await fetch(path);
+            const data = await response.json();
+            results.innerHTML += `<div class="test success">✓ ${path}: ${response.status} - ${data.success ? '成功' : '失败'}</div>`;
+          } catch (error) {
+            results.innerHTML += `<div class="test error">✗ ${path}: ${error.message}</div>`;
+          }
+        }
+
+        // 测试直接访问后端
+        try {
+          const response = await fetch('http://localhost:8082/api/route/getConstantRoutes');
+          const data = await response.json();
+          results.innerHTML += `<div class="test success">✓ 直接访问后端: ${data.success ? '成功' : '失败'}</div>`;
+        } catch (error) {
+          results.innerHTML += `<div class="test error">✗ 直接访问后端: ${error.message}</div>`;
+        }
+      }
+
+      testProxy();
+    </script>
+  </body>
+</html>

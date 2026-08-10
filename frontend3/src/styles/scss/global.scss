@@ -1,0 +1,22 @@
+// 这个文件被 Vite 的 additionalData 自动注入到每个组件中
+// 所以不需要在这里 self-import，避免循环依赖
+@forward 'element-plus';
+@forward 'scrollbar';
+
+// ========== 导入 SxDevOps 配色系统 ==========
+@use './sxdevops-theme.scss';
+@use './layout-theme.scss';
+@use './interaction-states.scss';
+@use './sidebar-enhanced.scss';
+
+// ========== 导入内容区主题 ==========
+@use './content-theme.scss';
+
+// ========== 导入 Header 主题 ==========
+@use './header-theme.scss';
+
+// ========== 导入项目现有样式 ==========
+// @forward './design-system.scss'; // 暂时禁用以避免循环依赖 - 这些样式将在其他地方引入
+@use './element-plus.scss';
+@use './compact-theme.scss';
+@use './terminal-workbench.scss';

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
 
 	"github.com/gin-gonic/gin"
@@ -13,22 +14,22 @@ import (
 
 // GetAssetChanges 获取资产变更记录
 func (c *CMDBController) GetAssetChanges(ctx *gin.Context) {
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+	var params dto.BasePageQuery
+	if err := ctx.ShouldBindQuery(&params); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 
 	assetType := ctx.Query("assetType")
 	assetID, _ := strconv.ParseUint(ctx.Query("assetId"), 10, 32)
 
-	changes, total, err := c.svc.GetAssetChanges(assetType, uint(assetID), page, pageSize)
+	changes, total, err := c.svc.GetAssetChanges(assetType, uint(assetID), params.GetPage(), params.GetPageSize())
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":  changes,
-		"total": total,
-	}))
+	ctx.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(changes, total, params)))
 }
 
 // SyncServerMetrics 手动触发单台主机指标采集（仅通过 Agent HTTP 拉取）

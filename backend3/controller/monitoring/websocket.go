@@ -75,10 +75,10 @@ func (ctrl *MonitoringController) HandleWebSocket(c *gin.Context) {
 	hub := GetMonitoringHub()
 
 	client := &WebSocketClient{
-		ID:     clientID,
-		Conn:   conn,
-		Send:   make(chan *WebSocketMessage, 256),
-		Hub:    hub,
+		ID:   clientID,
+		Conn: conn,
+		Send: make(chan *WebSocketMessage, 256),
+		Hub:  hub,
 		Topics: map[string]bool{
 			"overview": true,
 			"alerts":   true,

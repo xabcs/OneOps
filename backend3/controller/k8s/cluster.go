@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	modelk8s "oneops/backend3/model/k8s"
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/logger"
 	"oneops/backend3/pkg/utils"
 	. "oneops/backend3/service/k8s"
@@ -25,8 +26,11 @@ func NewK8sClusterController(svc *K8sClusterService) *K8sClusterController {
 
 // GetClusters 获取集群列表
 func (ctrl *K8sClusterController) GetClusters(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+	var params dto.BasePageQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 	name := c.Query("name")
 	status := c.Query("status")
 	clusterType := c.Query("clusterType")
@@ -51,7 +55,7 @@ func (ctrl *K8sClusterController) GetClusters(c *gin.Context) {
 		return
 	}
 
-	clusters, total, err := ctrl.svc.GetClusters(userID, page, pageSize, filter)
+	clusters, total, err := ctrl.svc.GetClusters(userID, params.GetPage(), params.GetPageSize(), filter)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群列表失败: "+err.Error()))
 		return
@@ -74,15 +78,7 @@ func (ctrl *K8sClusterController) GetClusters(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":     200,
-		"success":  true,
-		"data":     result,
-		"message":  "success",
-		"total":    total,
-		"page":     page,
-		"pageSize": pageSize,
-	})
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(result, total, params)))
 }
 
 // GetClusterByID 获取集群详情
@@ -141,7 +137,7 @@ func (ctrl *K8sClusterController) CreateCluster(c *gin.Context) {
 
 	var req CreateClusterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -196,7 +192,7 @@ func (ctrl *K8sClusterController) UpdateCluster(c *gin.Context) {
 
 	var req UpdateClusterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -258,7 +254,7 @@ func (ctrl *K8sClusterController) DeleteCluster(c *gin.Context) {
 
 	var req DeleteClusterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 

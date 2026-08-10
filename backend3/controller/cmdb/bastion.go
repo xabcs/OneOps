@@ -9,6 +9,7 @@ import (
 	. "oneops/backend3/service/cmdb"
 
 	modelcmdb "oneops/backend3/model/cmdb"
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
 
 	"github.com/gin-gonic/gin"
@@ -41,7 +42,7 @@ func (c *BastionController) ConnectServer(ctx *gin.Context) {
 	// 解析连接请求
 	var req modelcmdb.ConnectRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -89,32 +90,35 @@ func (c *BastionController) GetServerSessions(ctx *gin.Context) {
 		return
 	}
 
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+	var params dto.BasePageQuery
+	if err := ctx.ShouldBindQuery(&params); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 
 	serverIDUint := uint(serverID)
 	filter := modelcmdb.SessionFilter{
 		ServerID: &serverIDUint,
 	}
 
-	sessions, total, err := c.svc.GetSessions(filter, page, pageSize)
+	sessions, total, err := c.svc.GetSessions(filter, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":  sessions,
-		"total": total,
-	}))
+	ctx.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(sessions, total, params)))
 }
 
 // ========== 会话管理 ==========
 
 // GetSessions 获取会话列表
 func (c *BastionController) GetSessions(ctx *gin.Context) {
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+	var params dto.BasePageQuery
+	if err := ctx.ShouldBindQuery(&params); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 
 	// 构建筛选条件
 	filter := modelcmdb.SessionFilter{}
@@ -157,23 +161,23 @@ func (c *BastionController) GetSessions(ctx *gin.Context) {
 		filter.EndDate = &endDate
 	}
 
-	sessions, total, err := c.svc.GetSessions(filter, page, pageSize)
+	sessions, total, err := c.svc.GetSessions(filter, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":  sessions,
-		"total": total,
-	}))
+	ctx.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(sessions, total, params)))
 }
 
 // GetSessionsList 获取会话列表（轻量级，只返回列表展示需要的字段）
 // 优化性能，避免加载敏感信息和冗余数据
 func (c *BastionController) GetSessionsList(ctx *gin.Context) {
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+	var params dto.BasePageQuery
+	if err := ctx.ShouldBindQuery(&params); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 
 	// 构建筛选条件
 	filter := modelcmdb.SessionFilter{}
@@ -216,16 +220,13 @@ func (c *BastionController) GetSessionsList(ctx *gin.Context) {
 		filter.EndDate = &endDate
 	}
 
-	sessions, total, err := c.svc.GetSessionsList(filter, page, pageSize)
+	sessions, total, err := c.svc.GetSessionsList(filter, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":  sessions,
-		"total": total,
-	}))
+	ctx.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(sessions, total, params)))
 }
 
 // GetSessionByID 获取会话详情
@@ -323,8 +324,11 @@ func (c *BastionController) GetSessionCommands(ctx *gin.Context) {
 
 // GetCommands 获取命令列表（分页）
 func (c *BastionController) GetCommands(ctx *gin.Context) {
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+	var params dto.BasePageQuery
+	if err := ctx.ShouldBindQuery(&params); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 
 	// 构建筛选条件
 	filter := modelcmdb.CommandFilter{}
@@ -355,16 +359,13 @@ func (c *BastionController) GetCommands(ctx *gin.Context) {
 		filter.EndDate = &endDate
 	}
 
-	commands, total, err := c.svc.GetCommands(filter, page, pageSize)
+	commands, total, err := c.svc.GetCommands(filter, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":  commands,
-		"total": total,
-	}))
+	ctx.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(commands, total, params)))
 }
 
 // GetSessionFileTransfers 获取会话的文件传输记录
@@ -387,8 +388,11 @@ func (c *BastionController) GetSessionFileTransfers(ctx *gin.Context) {
 
 // GetFileTransfers 获取文件传输列表（分页）
 func (c *BastionController) GetFileTransfers(ctx *gin.Context) {
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+	var params dto.BasePageQuery
+	if err := ctx.ShouldBindQuery(&params); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 
 	// 构建筛选条件
 	filter := modelcmdb.FileTransferFilter{}
@@ -416,16 +420,13 @@ func (c *BastionController) GetFileTransfers(ctx *gin.Context) {
 		filter.EndDate = &endDate
 	}
 
-	transfers, total, err := c.svc.GetFileTransfers(filter, page, pageSize)
+	transfers, total, err := c.svc.GetFileTransfers(filter, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":  transfers,
-		"total": total,
-	}))
+	ctx.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(transfers, total, params)))
 }
 
 // ResizeTerminalPTY 调整终端大小
@@ -438,26 +439,26 @@ func (c *BastionController) ResizeTerminalPTY(ctx *gin.Context) {
 
 // GetAccessPolicies 获取访问策略列表
 func (c *BastionController) GetAccessPolicies(ctx *gin.Context) {
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+	var params dto.BasePageQuery
+	if err := ctx.ShouldBindQuery(&params); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 
-	policies, total, err := c.svc.GetAccessPolicies(page, pageSize)
+	policies, total, err := c.svc.GetAccessPolicies(params.GetPage(), params.GetPageSize())
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":  policies,
-		"total": total,
-	}))
+	ctx.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(policies, total, params)))
 }
 
 // CreateAccessPolicy 创建访问策略
 func (c *BastionController) CreateAccessPolicy(ctx *gin.Context) {
 	var policy modelcmdb.AssetAccessPolicy
 	if err := ctx.ShouldBindJSON(&policy); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -480,7 +481,7 @@ func (c *BastionController) UpdateAccessPolicy(ctx *gin.Context) {
 
 	var updates map[string]interface{}
 	if err := ctx.ShouldBindJSON(&updates); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 

@@ -7,6 +7,7 @@ import (
 
 	k8ssvc "oneops/backend3/service/k8s"
 
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
 
 	"github.com/gin-gonic/gin"
@@ -94,7 +95,7 @@ func (ctrl *DiagnosticController) ExecuteDiagnostic(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -159,21 +160,20 @@ func (ctrl *DiagnosticController) ExecuteDiagnostic(c *gin.Context) {
 
 // GetDiagnosticHistory 获取诊断历史
 func (ctrl *DiagnosticController) GetDiagnosticHistory(c *gin.Context) {
+	var params dto.BasePageQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 	clusterID := c.Query("clusterId")
 	namespace := c.Query("namespace")
 	podName := c.Query("podName")
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
 
-	histories, total, err := ctrl.svc.GetDiagnosticHistory(clusterID, namespace, podName, page, pageSize)
+	histories, total, err := ctrl.svc.GetDiagnosticHistory(clusterID, namespace, podName, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"data":    gin.H{"list": histories, "total": total},
-	})
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(histories, total, params)))
 }

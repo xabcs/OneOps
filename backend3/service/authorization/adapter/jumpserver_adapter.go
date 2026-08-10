@@ -623,13 +623,13 @@ func (j *JumpserverAdapter) parseAuthorizationRules(body []byte, url string) ([]
 		zap.String("response_body", string(body)))
 
 	type apiRule struct {
-		ID               string `json:"id"`
-		Name             string `json:"name"`
+		ID               string   `json:"id"`
+		Name             string   `json:"name"`
 		Labels           []string `json:"labels"`
-		UsersAmount      int    `json:"users_amount"`
-		UserGroupsAmount int    `json:"user_groups_amount"`
-		AssetsAmount     int    `json:"assets_amount"`
-		NodesAmount      int    `json:"nodes_amount"`
+		UsersAmount      int      `json:"users_amount"`
+		UserGroupsAmount int      `json:"user_groups_amount"`
+		AssetsAmount     int      `json:"assets_amount"`
+		NodesAmount      int      `json:"nodes_amount"`
 		Accounts         []string `json:"accounts"`
 		Protocols        []string `json:"protocols"`
 		Actions          []struct {
@@ -663,9 +663,9 @@ func (j *JumpserverAdapter) parseAuthorizationRules(body []byte, url string) ([]
 		if err := json.Unmarshal(body, &wrappedResult); err != nil {
 			// 尝试3: 检查是否是分页响应（使用统计格式）
 			var paginatedResult struct {
-				Count   int      `json:"count"`
-				Next    string   `json:"next"`
-				Previous string  `json:"previous"`
+				Count    int       `json:"count"`
+				Next     string    `json:"next"`
+				Previous string    `json:"previous"`
 				Results  []apiRule `json:"results"`
 			}
 

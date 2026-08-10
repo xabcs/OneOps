@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	modelcmdb "oneops/backend3/model/cmdb"
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
 
 	"github.com/gin-gonic/gin"
@@ -27,7 +28,7 @@ func (c *CMDBController) GetBusinessUnits(ctx *gin.Context) {
 func (c *CMDBController) CreateBusinessUnit(ctx *gin.Context) {
 	var unit modelcmdb.BusinessUnit
 	if err := ctx.ShouldBindJSON(&unit); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -56,7 +57,7 @@ func (c *CMDBController) UpdateBusinessUnit(ctx *gin.Context) {
 
 	var updates map[string]interface{}
 	if err := ctx.ShouldBindJSON(&updates); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 

@@ -19,7 +19,7 @@ import (
 func (c *CMDBController) GetServers(ctx *gin.Context) {
 	var params dto.ServerQueryParams
 	if err := ctx.ShouldBindQuery(&params); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -56,16 +56,13 @@ func (c *CMDBController) GetServers(ctx *gin.Context) {
 		query["tags"] = params.Tags
 	}
 
-	servers, total, err := c.svc.GetServers(query, params.Page, params.PageSize)
+	servers, total, err := c.svc.GetServers(query, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		middleware.HandleControllerError(ctx, err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":  servers,
-		"total": total,
-	}))
+	ctx.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(servers, total, params.BasePageQuery)))
 }
 
 // GetServerByID 获取服务器详情
@@ -108,7 +105,7 @@ func (c *CMDBController) GetServerForConnect(ctx *gin.Context) {
 func (c *CMDBController) CreateServer(ctx *gin.Context) {
 	var server modelcmdb.Server
 	if err := ctx.ShouldBindJSON(&server); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -147,7 +144,7 @@ func (c *CMDBController) UpdateServer(ctx *gin.Context) {
 
 	var updates map[string]interface{}
 	if err := ctx.ShouldBindJSON(&updates); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 

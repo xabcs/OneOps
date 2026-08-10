@@ -1,0 +1,606 @@
+/**
+ * Content area theme styles
+ * Applies SxDevOps style to content area components
+ */
+
+/* ========== 全局 CSS 变量默认值 ========== */
+:root {
+  /* 卡片样式 - SxDevOps 风格 */
+  --sx-card-bg: #ffffff;
+  --sx-card-radius: 12px;
+  --sx-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --sx-card-padding: 20px;
+
+  /* contentTheme2 专用变量（会被动态设置） */
+  --sx-content-card-bg: #ffffff;
+  --sx-content-card-border: rgba(148, 163, 184, 0.16);
+  --sx-content-card-radius: 12px;
+  --sx-content-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --sx-content-card-padding: 20px;
+
+  /* Hero Section 样式变量 */
+  --sx-hero-visible: 1;
+  --sx-hero-bg: linear-gradient(135deg, #fbfdff 0%, #f7faff 52%, #f9fbfd 100%);
+  --sx-hero-border: rgba(36, 91, 219, 0.09);
+  --sx-hero-radius: 12px;
+  --sx-hero-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  --sx-hero-padding: 12px 14px;
+  --sx-hero-icon-bg: linear-gradient(180deg, #f3f7ff 0%, #ebf2ff 100%);
+  --sx-hero-icon-border: rgba(36, 91, 219, 0.12);
+  --sx-hero-icon-color: #245bdb;
+
+  /* 表格样式 - SxDevOps 风格 */
+  --sx-table-border: rgba(148, 163, 184, 0.16);
+  --sx-table-header-bg: rgba(208, 229, 253, 0.98);
+  --sx-table-header-text: #334155;
+  --sx-table-hover-bg: #f8fbff;
+  --sx-table-row-hover: #f1f5f9;
+  --sx-table-striped-bg: #fbfaff;
+  --sx-table-radius: 12px;
+
+  /* 按钮样式 - SxDevOps 风格 */
+  --sx-button-radius: 10px;
+  --sx-button-default-bg: rgba(255, 255, 255, 0.9);
+  --sx-button-default-color: #475569;
+  --sx-button-default-border: rgba(148, 163, 184, 0.12);
+  --sx-button-hover-bg: #f8fbff;
+  --sx-button-hover-color: #1d4ed8;
+  --sx-button-hover-border: rgba(59, 130, 246, 0.18);
+
+  /* 输入框样式 - SxDevOps 风格 */
+  --sx-input-radius: 12px;
+  --sx-input-bg: rgba(255, 255, 255, 0.92);
+  --sx-input-border-shadow: rgba(148, 163, 184, 0.16);
+  --sx-input-hover-shadow: rgba(59, 130, 246, 0.18);
+  --sx-input-focus-shadow: rgba(37, 99, 235, 0.22);
+
+  /* 工具栏样式 - SxDevOps 风格 */
+  --sx-toolbar-bg: linear-gradient(180deg, rgba(248, 250, 252, 0.92) 0%, rgba(255, 255, 255, 0.96) 100%);
+  --sx-toolbar-radius: 12px;
+  --sx-toolbar-padding: 12px 16px;
+  --sx-toolbar-border: rgba(148, 163, 184, 0.12);
+}
+
+/* ========== 卡片容器类 ========== */
+/* 注意：这些是全局默认样式，具体的contentTheme2配置会覆盖 */
+.content-card,
+.sx-card {
+  background: var(--sx-content-card-bg, var(--sx-card-bg)) !important;
+  border-radius: var(--sx-content-card-radius, var(--sx-card-radius)) !important;
+  box-shadow: var(--sx-content-card-shadow, var(--sx-card-shadow)) !important;
+  border: 1px solid var(--sx-content-card-border, var(--sx-card-border, none)) !important;
+  padding: var(--sx-content-card-padding, var(--sx-card-padding)) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.content-card:hover,
+.sx-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1) !important;
+  transform: translateY(-2px);
+}
+
+/* 卡片内部元素统一配色 - 排除表格元素 */
+.content-card button *,
+.content-card input *,
+.content-card select *,
+.content-card textarea *,
+.sx-card button *,
+.sx-card input *,
+.sx-card select *,
+.sx-card textarea * {
+  border-radius: var(--sx-button-radius) !important;
+}
+
+/* ========== Element Plus 组件覆盖 ========== */
+
+/* 卡片组件 */
+.el-card {
+  background-color: var(--sx-card-bg) !important;
+  border-radius: var(--sx-card-radius) !important;
+  box-shadow: var(--sx-card-shadow) !important;
+  border: none !important;
+}
+
+.el-card__body {
+  padding: var(--sx-card-padding) !important;
+}
+
+/* 表格组件 */
+.el-table {
+  --el-table-border-color: var(--sx-table-border) !important;
+  --el-table-header-bg-color: var(--sx-table-header-bg) !important;
+  --el-table-header-text-color: var(--sx-table-header-text) !important;
+  --el-table-row-hover-bg-color: var(--sx-table-hover-bg) !important;
+  border-radius: var(--sx-table-radius) !important;
+  border: 1px solid var(--sx-table-border) !important;
+  overflow: hidden;
+}
+
+/* 表格内部单元格 - 强制移除所有圆角 */
+.el-table th.el-table__cell,
+.el-table td.el-table__cell {
+  border-radius: 0 !important;
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+/* 特别针对第一列和最后一列的表头单元格 - 确保下角无圆角 */
+.el-table th.el-table__cell:first-child {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+}
+
+.el-table th.el-table__cell:last-child {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+/* 表格内部其他元素可以保持圆角 */
+.el-table .el-checkbox__inner {
+  border-radius: 2px !important;
+}
+
+/* 斑马纹间隔行 */
+.el-table--striped .el-table__body tr.el-table__row--striped td {
+  background-color: var(--sx-table-striped-bg) !important;
+}
+
+/* 表格内部按钮和输入框 */
+.el-table .el-button {
+  border-radius: var(--sx-button-radius) !important;
+}
+
+.el-table .el-input .el-input__wrapper {
+  border-radius: calc(var(--sx-button-radius) - 2px) !important;
+}
+
+.el-table .el-input .el-input__wrapper {
+  border-radius: calc(var(--sx-button-radius) - 2px) !important;
+}
+
+/* 按钮组件 */
+.el-button {
+  border-radius: var(--sx-button-radius) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.el-button:not(.is-link):not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(
+    .el-button--danger
+  ):not(.el-button--info) {
+  background-color: var(--sx-button-default-bg) !important;
+  color: var(--sx-button-default-color) !important;
+  border-color: var(--sx-button-default-border) !important;
+}
+
+.el-button:not(.is-link):not(.el-button--primary):not(.el-button--success):not(.el-button--warning):not(
+    .el-button--danger
+  ):not(.el-button--info):hover {
+  background-color: var(--sx-button-hover-bg) !important;
+  color: var(--sx-button-hover-color) !important;
+  border-color: var(--sx-button-hover-border) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 输入框组件 */
+.el-input .el-input__wrapper {
+  border-radius: var(--sx-input-radius) !important;
+  background-color: var(--sx-input-bg) !important;
+  box-shadow: 0 0 0 1px var(--sx-input-border-shadow) inset !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.el-input .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--sx-input-hover-shadow) inset !important;
+}
+
+.el-input.is-focus .el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--sx-input-focus-shadow) inset !important;
+}
+
+/* 文本域 */
+.el-textarea .el-textarea__inner {
+  border-radius: var(--sx-input-radius) !important;
+  background-color: var(--sx-input-bg) !important;
+  box-shadow: 0 0 0 1px var(--sx-input-border-shadow) inset !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.el-textarea .el-textarea__inner:hover {
+  box-shadow: 0 0 0 1px var(--sx-input-hover-shadow) inset !important;
+}
+
+.el-textarea .el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--sx-input-focus-shadow) inset !important;
+}
+
+/* 选择器 */
+.el-select .el-input__wrapper {
+  border-radius: var(--sx-input-radius) !important;
+  background-color: var(--sx-input-bg) !important;
+  box-shadow: 0 0 0 1px var(--sx-input-border-shadow) inset !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.el-select .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--sx-input-hover-shadow) inset !important;
+}
+
+.el-select.is-focus .el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--sx-input-focus-shadow) inset !important;
+}
+
+/* 日期选择器 */
+.el-date-editor .el-input__wrapper {
+  border-radius: var(--sx-input-radius) !important;
+  background-color: var(--sx-input-bg) !important;
+  box-shadow: 0 0 0 1px var(--sx-input-border-shadow) inset !important;
+}
+
+/* 数字输入框 */
+.el-input-number .el-input__wrapper {
+  border-radius: var(--sx-input-radius) !important;
+  background-color: var(--sx-input-bg) !important;
+  box-shadow: 0 0 0 1px var(--sx-input-border-shadow) inset !important;
+}
+
+/* 对话框 */
+.el-dialog {
+  border-radius: var(--sx-card-radius) !important;
+}
+
+.el-dialog__body {
+  padding: 20px 24px !important;
+}
+
+/* 抽屉 */
+.el-drawer {
+  border-radius: var(--sx-card-radius) !important;
+}
+
+/* 消息提示 */
+.el-message {
+  border-radius: var(--sx-button-radius) !important;
+}
+
+/* 通知 */
+.el-notification {
+  border-radius: var(--sx-card-radius) !important;
+}
+
+/* 标签 */
+.el-tag {
+  border-radius: var(--sx-button-radius) !important;
+}
+
+/* 进度条 */
+.el-progress-bar__outer {
+  border-radius: var(--sx-button-radius) !important;
+}
+
+/* 分页 */
+.el-pagination .btn-next,
+.el-pagination .btn-prev,
+.el-pagination .el-pager li {
+  border-radius: var(--sx-button-radius) !important;
+}
+
+/* 开关 */
+.el-switch {
+  border-radius: var(--sx-button-radius) !important;
+}
+
+/* 单选框和复选框 */
+.el-radio-button__inner {
+  border-radius: var(--sx-button-radius) !important;
+}
+
+.el-checkbox-button__inner {
+  border-radius: var(--sx-button-radius) !important;
+}
+
+/* ========== 工具栏样式 ========== */
+.toolbar,
+.filter-bar,
+.workbench-toolbar {
+  background: var(--sx-toolbar-bg) !important;
+  border-radius: var(--sx-toolbar-radius) !important;
+  border: 1px solid var(--sx-toolbar-border) !important;
+  padding: var(--sx-toolbar-padding) !important;
+  box-shadow: var(--sx-card-shadow) !important;
+}
+
+/* 工具栏内部元素统一 - 排除表格元素 */
+.toolbar button *,
+.toolbar input *,
+.toolbar select *,
+.toolbar textarea *,
+.filter-bar button *,
+.filter-bar input *,
+.filter-bar select *,
+.filter-bar textarea *,
+.workbench-toolbar button *,
+.workbench-toolbar input *,
+.workbench-toolbar select *,
+.workbench-toolbar textarea * {
+  border-radius: var(--sx-button-radius) !important;
+}
+
+.toolbar .el-button,
+.filter-bar .el-button,
+.workbench-toolbar .el-button {
+  border-radius: calc(var(--sx-button-radius) - 1px) !important;
+}
+
+.toolbar .el-input,
+.filter-bar .el-input,
+.workbench-toolbar .el-input {
+  border-radius: calc(var(--sx-input-radius) - 1px) !important;
+}
+
+/* ========== Workbench Toolbar 左右侧区域 ========== */
+.workbench-toolbar-left,
+.workbench-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ========== Workbench Toolbar --history 样式 ========== */
+.workbench-toolbar.workbench-toolbar--history {
+  padding: 6px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.92) 0%, rgba(255, 255, 255, 0.96) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.workbench-toolbar--history .workbench-toolbar-left,
+.workbench-toolbar--history .workbench-toolbar-right {
+  gap: 5px; /* 搜索框之间有 5px 间距 */
+}
+
+.workbench-toolbar--history .el-input__wrapper,
+.workbench-toolbar--history .el-select__wrapper {
+  min-height: 28px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.12) inset;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.workbench-toolbar--history .el-input__wrapper:hover,
+.workbench-toolbar--history .el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.16) inset;
+}
+
+.workbench-toolbar--history .el-button:not(.is-link) {
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.workbench-toolbar--history .el-button:not(.el-button--primary):not(.is-link) {
+  border-color: rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  color: #475569;
+}
+
+.workbench-toolbar--history .el-button:not(.is-link):hover {
+  border-color: rgba(59, 130, 246, 0.18);
+  color: #1d4ed8;
+  background: #f8fbff;
+}
+
+/* ========== 状态卡片样式 ========== */
+.status-card.success-card {
+  background: linear-gradient(145deg, #f0fdf4 0%, #ffffff 100%) !important;
+  border-radius: var(--sx-card-radius) !important;
+}
+
+.status-card.warning-card {
+  background: linear-gradient(145deg, #fffbeb 0%, #ffffff 100%) !important;
+  border-radius: var(--sx-card-radius) !important;
+}
+
+.status-card.danger-card {
+  background: linear-gradient(145deg, #fef2f2 0%, #ffffff 100%) !important;
+  border-radius: var(--sx-card-radius) !important;
+}
+
+/* ========== 表单样式统一 ========== */
+.el-form {
+  --el-form-label-color: #475569 !important;
+}
+
+.el-form-item__label {
+  color: #475569 !important;
+  font-weight: 500 !important;
+}
+
+.el-form-item {
+  margin-bottom: 18px !important;
+}
+
+/* ========== 面板和标签页 ========== */
+.el-tabs {
+  --el-tabs-item-height: 36px !important;
+}
+
+.el-tabs__item {
+  border-radius: calc(var(--sx-button-radius) - 2px) var(--sx-button-radius) 0 0 !important;
+}
+
+.el-tabs__active-bar {
+  border-radius: 2px 2px 0 0 !important;
+}
+
+/* ========== 面板 ========== */
+.el-collapse {
+  border-radius: var(--sx-card-radius) !important;
+  border: none !important; /* 移除边框 */
+  background-color: transparent !important; /* 无背景色 */
+}
+
+.el-collapse-item__header {
+  border-radius: calc(var(--sx-card-radius) - 2px) !important;
+  background-color: transparent !important; /* 无背景色 */
+  color: #475569 !important; /* 使用深灰色，不使用主色 */
+  font-weight: 500 !important;
+  border: none !important; /* 移除边框 */
+}
+
+.el-collapse-item__header:hover {
+  background-color: transparent !important; /* 悬停时也无背景色 */
+  color: #334155 !important; /* 悬停时文字颜色稍深 */
+}
+
+.el-collapse-item__header.is-active {
+  border: none !important; /* 激活状态无边框 */
+}
+
+.el-collapse-item__header.focusing {
+  border: none !important; /* 聚焦状态无边框 */
+  outline: none !important; /* 移除外边框 */
+}
+
+.el-collapse-item__arrow {
+  color: #94a3b8 !important; /* 箭头图标使用灰色 */
+}
+
+.el-collapse-item__wrap {
+  border-bottom: none !important; /* 移除底部边框 */
+  background-color: transparent !important; /* 无背景色 */
+}
+
+.el-collapse-item__content {
+  background-color: transparent !important; /* 内容区域也无背景色 */
+  padding: 16px 20px !important;
+  border: none !important; /* 无边框 */
+}
+
+/* ========== 时间轴 ========== */
+.el-timeline-item__node {
+  border-radius: var(--sx-button-radius) !important;
+}
+
+/* ========== 分组 ========== */
+.el-divider {
+  --el-divider-border-color: var(--sx-table-border) !important;
+}
+
+/* ========== 树形控件 ========== */
+.el-tree-node__content {
+  border-radius: calc(var(--sx-button-radius) - 2px) !important;
+}
+
+.el-tree-node__content:hover {
+  background-color: var(--sx-table-hover-bg) !important;
+}
+
+/* ========== 面包屑 ========== */
+.el-breadcrumb {
+  font-size: 14px;
+}
+
+.el-breadcrumb__item {
+  border-radius: calc(var(--sx-button-radius) - 2px) !important;
+}
+
+.el-breadcrumb__item:last-child {
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+
+/* ========== 徽章 ========== */
+.el-badge__content {
+  border-radius: calc(var(--sx-button-radius) - 2px) !important;
+}
+
+/* ========== 警告 ========== */
+.el-alert {
+  border-radius: var(--sx-card-radius) !important;
+  border: 1px solid var(--sx-table-border) !important;
+}
+
+/* ========== 加载 ========== */
+.el-loading-mask {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-radius: var(--sx-card-radius) !important;
+}
+
+/* ========== 下拉菜单 ========== */
+.el-dropdown-menu {
+  border-radius: var(--sx-card-radius) !important;
+  border: 1px solid var(--sx-table-border) !important;
+  box-shadow: var(--sx-card-shadow) !important;
+}
+
+.el-dropdown-menu__item {
+  border-radius: calc(var(--sx-button-radius) - 2px) !important;
+}
+
+.el-dropdown-menu__item:hover {
+  background-color: var(--sx-table-hover-bg) !important;
+}
+
+/* ========== 气泡确认框 ========== */
+.el-popconfirm {
+  border-radius: var(--sx-card-radius) !important;
+}
+
+/* ========== 菜单 ========== */
+.el-menu {
+  border-radius: var(--sx-card-radius) !important;
+}
+
+/* ========== 滑块 ========== */
+.el-slider__runway {
+  border-radius: calc(var(--sx-button-radius) - 4px) !important;
+}
+
+.el-slider__button {
+  border-radius: 50% !important;
+}
+
+/* ========== Hero Section 主题支持 ========== */
+section.hero.panel {
+  background: var(--sx-hero-bg, linear-gradient(135deg, #fbfdff 0%, #f7faff 52%, #f9fbfd 100%)) !important;
+  border-color: var(--sx-hero-border, rgba(36, 91, 219, 0.09)) !important;
+  border-radius: var(--sx-hero-radius, 12px) !important;
+  box-shadow: var(--sx-hero-shadow, 0 8px 24px rgba(15, 23, 42, 0.04)) !important;
+  padding: var(--sx-hero-padding, 12px 14px) !important;
+}
+
+section.hero.panel .release-header-icon,
+section.hero.panel .hero-icon,
+section.hero.panel .host-header-icon,
+section.hero.panel .title-icon,
+section.hero.panel .ticket-header-icon {
+  background: var(--sx-hero-icon-bg, linear-gradient(180deg, #f3f7ff 0%, #ebf2ff 100%)) !important;
+  border-color: var(--sx-hero-icon-border, rgba(36, 91, 219, 0.12)) !important;
+  color: var(--sx-hero-icon-color, #245bdb) !important;
+}
+
+section.hero.panel .hero-actions .el-button:not(.is-link) {
+  min-height: 32px !important;
+  padding: 0 14px !important;
+  border-radius: 10px !important;
+}
+
+/* ========== Hero Section 显示/隐藏控制 ========== */
+/*
+  Hero 区域的显示/隐藏现在由组件内的 v-if 条件渲染控制，
+  不再需要 CSS 类来处理。这种方式更加高效和可靠。
+
+  使用方式：
+  <section v-if="heroVisible" class="hero-section">
+    // Hero 内容
+  </section>
+*/

@@ -9,7 +9,7 @@
 ### 1.1 基础信息
 
 | 项目 | 值 |
-|---|---|
+| --- | --- |
 | Base URL | `/api` |
 | 协议 | HTTP/HTTPS |
 | 认证方式 | JWT Bearer Token |
@@ -45,7 +45,7 @@ Authorization: Bearer <token>
 ```
 
 | 字段 | 类型 | 必返回 | 说明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `code` | int | 是 | 业务状态码 |
 | `success` | bool | 是 | 是否成功 |
 | `data` | any | 否 | 业务数据，失败时可能不存在 |
@@ -54,7 +54,7 @@ Authorization: Bearer <token>
 ### 2.2 状态码定义
 
 | code | 含义 | 场景 |
-|---|---|---|
+| --- | --- | --- |
 | 200 | 成功 | 请求处理成功 |
 | 400 | 参数错误 | 请求参数校验失败 |
 | 401 | 未授权 | Token 缺失、过期或无效 |
@@ -69,6 +69,7 @@ Authorization: Bearer <token>
 ### 2.3 成功响应示例
 
 **单条数据**：
+
 ```json
 {
   "code": 200,
@@ -83,6 +84,7 @@ Authorization: Bearer <token>
 ```
 
 **操作确认**：
+
 ```json
 {
   "code": 200,
@@ -111,11 +113,12 @@ Authorization: Bearer <token>
 所有分页查询接口统一接受以下 Query 参数：
 
 | 参数 | 类型 | 默认值 | 约束 | 说明 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `page` | int | 1 | ≥ 1 | 页码，从1开始 |
 | `pageSize` | int | 10 | 1 ~ 100 | 每页条数 |
 
 **请求示例**：
+
 ```
 GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 ```
@@ -144,7 +147,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 ```
 
 | 字段 | 类型 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | `list` | array | 当前页数据列表 |
 | `total` | int64 | 总记录数 |
 | `page` | int | 当前页码 |
@@ -171,7 +174,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 ### 4.2 常见校验提示
 
 | 校验规则 | 提示格式 | 示例 |
-|---|---|---|
+| --- | --- | --- |
 | required | {字段}不能为空 | 用户名不能为空 |
 | min | {字段}不能小于{值} | 密码不能小于6 |
 | max | {字段}不能大于{值} | 主机名不能大于100 |
@@ -183,7 +186,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 ### 4.3 字段名中文映射
 
 | 英文字段名 | 中文名 |
-|---|---|
+| --- | --- |
 | Username | 用户名 |
 | Password | 密码 |
 | Email | 邮箱 |
@@ -206,7 +209,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 ### 5.1 认证模块 — `/api`
 
 | 方法 | 路径 | 说明 | 认证 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | POST | `/auth/login` | 用户登录 | 公开 | — |
 | POST | `/auth/logout` | 退出登录 | 需要 | — |
 | GET | `/auth/captcha` | 获取验证码 | 公开 | — |
@@ -218,7 +221,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 ### 5.2 系统管理 — `/api/system`
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/menus` | 菜单列表 | system.menu.list | — |
 | GET | `/menus/tree` | 菜单树 | system.menu.list | — |
 | POST | `/menus` | 创建菜单 | system.menu.create | — |
@@ -257,7 +260,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 #### 5.3.1 服务器管理
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/servers` | 服务器列表 | cmdb.server.list | ✅ |
 | POST | `/servers` | 创建服务器 | cmdb.server.create | — |
 | PUT | `/servers/:id` | 更新服务器 | cmdb.server.update | — |
@@ -273,7 +276,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 #### 5.3.2 Agent 管理
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | POST | `/agent/heartbeat` | Agent心跳 | **公开** | — |
 | GET | `/agents` | Agent列表 | cmdb.agents.list | ✅ |
 | POST | `/agents/batch-deploy` | 批量部署 | cmdb.agents.deploy | — |
@@ -288,7 +291,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 #### 5.3.3 Agent 版本管理
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/agent-versions` | 版本列表 | cmdb.agents.list | ✅ |
 | GET | `/agent-versions/latest` | 最新版本 | cmdb.agents.list | — |
 | GET | `/agent-versions/:id` | 版本详情 | cmdb.agents.view | — |
@@ -302,7 +305,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 #### 5.3.4 主机分组
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/groups` | 分组列表 | cmdb.group.list | — |
 | GET | `/groups/:id` | 分组详情 | cmdb.group.view | — |
 | GET | `/asset-tree` | 资产树 | cmdb.group.list | — |
@@ -316,7 +319,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 #### 5.3.5 业务系统
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/business-units` | 业务列表 | cmdb.business.list | — |
 | POST | `/business-units` | 创建业务 | cmdb.business.create | — |
 | PUT | `/business-units/:id` | 更新业务 | cmdb.business.update | — |
@@ -325,7 +328,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 #### 5.3.6 机房机柜
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/rooms` | 机房列表 | cmdb.rooms.list | — |
 | POST | `/rooms` | 创建机房 | cmdb.rooms.create | — |
 | PUT | `/rooms/:id` | 更新机房 | cmdb.rooms.update | — |
@@ -335,7 +338,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 #### 5.3.7 标签管理
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/tags` | 标签列表 | cmdb.tags.list | — |
 | POST | `/tags` | 创建标签 | cmdb.tags.create | — |
 | PUT | `/tags/:id` | 更新标签 | cmdb.tags.update | — |
@@ -346,7 +349,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 #### 5.3.8 SSH凭证
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/ssh-credentials` | 凭证列表 | cmdb.server.list | — |
 | GET | `/ssh-credentials/:id` | 凭证详情 | cmdb.server.view | — |
 | POST | `/ssh-credentials` | 创建凭证 | cmdb.server.create | — |
@@ -357,7 +360,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 #### 5.3.9 堡垒机会话
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/sessions` | 会话列表 | cmdb.session.list | ✅ |
 | GET | `/sessions/list` | 会话列表(轻量) | cmdb.session.list | ✅ |
 | GET | `/sessions/active` | 活跃会话 | cmdb.session.list | — |
@@ -372,14 +375,14 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 #### 5.3.10 命令与文件审计
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/commands` | 命令记录 | cmdb.session.list | ✅ |
 | GET | `/file-transfers` | 文件传输记录 | cmdb.session.list | ✅ |
 
 #### 5.3.11 访问策略
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/access-policies` | 策略列表 | cmdb.access_policy.list | ✅ |
 | GET | `/access-policies/:id` | 策略详情 | cmdb.access_policy.list | — |
 | POST | `/access-policies` | 创建策略 | cmdb.access_policy.create | — |
@@ -399,7 +402,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 #### 5.4.1 集群管理
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/clusters` | 集群列表 | k8s.cluster.list | ✅ |
 | POST | `/clusters` | 创建集群 | k8s.cluster.create | — |
 | PUT | `/clusters/:id` | 更新集群 | k8s.cluster.update | — |
@@ -410,7 +413,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 #### 5.4.2 K8s权限
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/clusters/:clusterId/permissions` | 权限列表 | k8s.permission.list | — |
 | POST | `/clusters/:clusterId/permissions` | 分配权限 | k8s.permission.assign | — |
 | DELETE | `/clusters/:clusterId/permissions/:id` | 撤销权限 | k8s.permission.revoke | — |
@@ -418,7 +421,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 #### 5.4.3 K8s资源操作
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/clusters/:clusterId/namespaces/:namespace/deployments` | Deployment列表 | k8s.resource.view | — |
 | GET | `/clusters/:clusterId/namespaces/:namespace/deployments/:name` | Deployment详情 | k8s.resource.view | — |
 | POST | `/clusters/:clusterId/namespaces/:namespace/deployments` | 创建Deployment | k8s.resource.create | — |
@@ -469,7 +472,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 #### 5.4.4 K8s诊断
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/clusters/:clusterId/diagnostic/commands` | 诊断命令 | k8s.diagnostic.execute | — |
 | GET | `/clusters/:clusterId/diagnostic/namespaces` | 诊断命名空间 | k8s.diagnostic.execute | — |
 | GET | `/clusters/:clusterId/diagnostic/java-pods` | Java Pod列表 | k8s.diagnostic.execute | — |
@@ -487,7 +490,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 ### 5.5 审计中心 — `/api/audit`
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/login-logs` | 登录日志 | audit.login_log.list | ✅ |
 | GET | `/login-logs/export` | 导出登录日志 | audit.login_log.export | — |
 | GET | `/operation-logs` | 操作日志 | audit.operation_log.list | ✅ |
@@ -500,7 +503,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 ### 5.6 监控中心 — `/api/monitoring`
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/overview` | 监控概览 | monitor.data.view | — |
 | GET | `/servers` | 主机监控列表 | monitor.data.view | — |
 | GET | `/servers/:id` | 主机监控详情 | monitor.data.view | — |
@@ -527,7 +530,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 ### 5.7 授权中心 — `/api/auth`
 
 | 方法 | 路径 | 说明 | 权限码 | 分页 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | GET | `/applications` | 应用列表 | auth.application.list | ✅ |
 | POST | `/applications` | 创建应用 | auth.application.create | — |
 | PUT | `/applications/:id` | 更新应用 | auth.application.update | — |
@@ -561,7 +564,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 ### 6.1 Content-Type
 
 | 场景 | Content-Type |
-|---|---|
+| --- | --- |
 | 创建/更新资源 | `application/json` |
 | 文件上传 | `multipart/form-data` |
 | 查询参数 | Query String（GET 请求） |
@@ -569,7 +572,7 @@ GET /api/cmdb/servers?page=2&pageSize=20&hostname=web01&env=prod
 ### 6.2 通用字段约定
 
 | 规则 | 说明 | 示例 |
-|---|---|---|
+| --- | --- | --- |
 | ID使用 uint | 所有资源ID为正整数 | `"id": 1` |
 | 时间使用 ISO 8601 | 创建/更新时间 | `"created_at": "2026-08-10T16:30:00+08:00"` |
 | 状态使用枚举字符串 | 不使用数字编码 | `"status": "active"` |
@@ -634,7 +637,7 @@ if (response.data.success) {
 ### 8.2 常见错误码处理
 
 | code | 处理方式 |
-|---|---|
+| --- | --- |
 | 401 | 跳转登录页，清除本地 Token |
 | 403 | 提示"权限不足"，显示联系管理员信息 |
 | 40001 | 提示"主机名已存在"，让用户修改主机名 |

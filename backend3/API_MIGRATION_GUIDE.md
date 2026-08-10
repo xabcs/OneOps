@@ -16,7 +16,7 @@
 ```
 
 | 字段 | 类型 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | `code` | int | 业务状态码（200=成功, 400=参数错误, 401=未授权, 403=禁止, 500=内部错误） |
 | `success` | bool | 是否成功 |
 | `data` | any | 业务数据（成功时存在） |
@@ -25,6 +25,7 @@
 ### 1.2 成功响应示例
 
 **普通数据**：
+
 ```json
 {
   "code": 200,
@@ -35,6 +36,7 @@
 ```
 
 **仅提示**：
+
 ```json
 {
   "code": 200,
@@ -61,6 +63,7 @@
 ### 2.1 改造前（3种格式并存）
 
 **格式A** — 部分接口：
+
 ```json
 {
   "code": 200,
@@ -77,6 +80,7 @@
 ```
 
 **格式B** — 部分接口：
+
 ```json
 {
   "code": 200,
@@ -93,6 +97,7 @@
 ```
 
 **格式C** — 部分接口（缺少总页数）：
+
 ```json
 {
   "code": 200,
@@ -130,7 +135,7 @@
 ### 2.3 字段变更对照表
 
 | 改造前字段 | 改造后字段 | 说明 | 兼容性 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `records` | `list` | 数据列表字段名统一 | **破坏性变更**：原使用 `records` 的前端需改为 `list` |
 | `current` | `page` | 当前页码字段名统一 | **破坏性变更**：原使用 `current` 的前端需改为 `page` |
 | `size` | `pageSize` | 每页大小字段名统一 | **破坏性变更**：原使用 `size` 的前端需改为 `pageSize` |
@@ -163,14 +168,14 @@ const pages = response.data.pages       // 推荐（与 pageCount 相同）
 #### 系统管理模块
 
 | 接口 | 方法 | 路径 | 变化说明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 用户列表 | GET | `/api/v1/users` | 分页格式统一 |
 | 角色列表 | GET | `/api/v1/roles` | 分页格式统一 |
 
 #### CMDB 模块
 
 | 接口 | 方法 | 路径 | 变化说明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 服务器列表 | GET | `/api/v1/cmdb/servers` | 分页格式统一 |
 | Agent列表 | GET | `/api/v1/cmdb/agents` | 分页格式统一 |
 | 会话列表 | GET | `/api/v1/cmdb/sessions` | 分页格式统一 |
@@ -181,14 +186,14 @@ const pages = response.data.pages       // 推荐（与 pageCount 相同）
 #### K8s 模块
 
 | 接口 | 方法 | 路径 | 变化说明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 集群列表 | GET | `/api/v1/k8s/clusters` | 分页格式统一 |
 | 诊断历史 | GET | `/api/v1/k8s/diagnostic/history` | 分页格式统一 |
 
 #### 授权中心模块
 
 | 接口 | 方法 | 路径 | 变化说明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 应用列表 | GET | `/api/v1/auth/applications` | 分页格式统一 |
 | 授权用户列表 | GET | `/api/v1/auth/users` | 分页格式统一 |
 | 用户组列表 | GET | `/api/v1/auth/groups` | 分页格式统一 |
@@ -200,7 +205,7 @@ const pages = response.data.pages       // 推荐（与 pageCount 相同）
 #### 审计模块
 
 | 接口 | 方法 | 路径 | 变化说明 |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | 登录日志 | GET | `/api/v1/audit/login-logs` | 分页格式统一 |
 | 操作日志 | GET | `/api/v1/audit/operation-logs` | 分页格式统一 |
 
@@ -213,11 +218,12 @@ const pages = response.data.pages       // 推荐（与 pageCount 相同）
 所有分页查询接口统一接受以下参数（Query String）：
 
 | 参数 | 类型 | 默认值 | 最大值 | 说明 |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | `page` | int | 1 | — | 页码，从1开始 |
 | `pageSize` | int | 10 | 100 | 每页条数 |
 
 **示例**：
+
 ```
 GET /api/v1/cmdb/servers?page=2&pageSize=20&hostname=web
 ```
@@ -225,7 +231,7 @@ GET /api/v1/cmdb/servers?page=2&pageSize=20&hostname=web
 ### 3.2 废弃的参数名
 
 | 废弃参数 | 替换为 | 说明 |
-|---|---|---|
+| --- | --- | --- |
 | `current` | `page` | 页码参数统一为 `page` |
 | `size` | `pageSize` | 每页大小统一为 `pageSize` |
 
@@ -260,7 +266,7 @@ GET /api/v1/cmdb/servers?page=2&pageSize=20&hostname=web
 返回中文友好提示，常见校验提示：
 
 | 校验规则 | 提示示例 |
-|---|---|
+| --- | --- |
 | required | 用户名不能为空 |
 | min | 密码不能小于6 |
 | max | 主机名不能大于100 |

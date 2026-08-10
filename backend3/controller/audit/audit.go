@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	. "oneops/backend3/service/audit"
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
+	. "oneops/backend3/service/audit"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,6 +23,11 @@ func NewAuditController(svc *AuditService) *AuditController {
 
 // GetLoginLogs 获取登录日志列表
 func (ctrl *AuditController) GetLoginLogs(c *gin.Context) {
+	var params dto.BasePageQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 	query := make(map[string]interface{})
 	if v := c.Query("username"); v != "" {
 		query["username"] = v
@@ -39,32 +45,22 @@ func (ctrl *AuditController) GetLoginLogs(c *gin.Context) {
 		query["endTime"] = v
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-
-	logs, total, err := ctrl.svc.GetLoginLogs(query, page, pageSize)
+	logs, total, err := ctrl.svc.GetLoginLogs(query, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取登录日志失败"))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":     logs,
-		"total":    total,
-		"page":     page,
-		"pageSize": pageSize,
-		"pages":    (int(total) + pageSize - 1) / pageSize,
-	}))
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(logs, total, params)))
 }
 
 // GetOperationLogs 获取操作日志列表
 func (ctrl *AuditController) GetOperationLogs(c *gin.Context) {
+	var params dto.BasePageQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 	query := make(map[string]interface{})
 	if v := c.Query("username"); v != "" {
 		query["username"] = v
@@ -97,32 +93,22 @@ func (ctrl *AuditController) GetOperationLogs(c *gin.Context) {
 		query["endTime"] = v
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-
-	logs, total, err := ctrl.svc.GetOperationLogs(query, page, pageSize)
+	logs, total, err := ctrl.svc.GetOperationLogs(query, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取操作日志失败"))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":     logs,
-		"total":    total,
-		"page":     page,
-		"pageSize": pageSize,
-		"pages":    (int(total) + pageSize - 1) / pageSize,
-	}))
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(logs, total, params)))
 }
 
 // GetSystemEventLogs 获取系统事件日志列表
 func (ctrl *AuditController) GetSystemEventLogs(c *gin.Context) {
+	var params dto.BasePageQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 	query := make(map[string]interface{})
 	if v := c.Query("level"); v != "" {
 		query["level"] = v
@@ -140,28 +126,13 @@ func (ctrl *AuditController) GetSystemEventLogs(c *gin.Context) {
 		query["endTime"] = v
 	}
 
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "20"))
-	if page < 1 {
-		page = 1
-	}
-	if pageSize < 1 || pageSize > 100 {
-		pageSize = 20
-	}
-
-	logs, total, err := ctrl.svc.GetSystemEventLogs(query, page, pageSize)
+	logs, total, err := ctrl.svc.GetSystemEventLogs(query, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取系统事件日志失败"))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":     logs,
-		"total":    total,
-		"page":     page,
-		"pageSize": pageSize,
-		"pages":    (int(total) + pageSize - 1) / pageSize,
-	}))
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(logs, total, params)))
 }
 
 // GetAuditStats 获取审计统计信息

@@ -1,0 +1,195 @@
+/**
+ * 紧凑型主题样式
+ * 用于统一管理需要更紧凑布局的页面组件样式
+ */
+
+/* ==================== 紧凑型表单组件 ==================== */
+.compact-form {
+  :deep(.el-select__wrapper),
+  :deep(.el-input__wrapper) {
+    height: 30px !important;
+  }
+
+  :deep(.el-input__inner) {
+    height: 30px !important;
+    font-size: 12px !important;
+  }
+
+  :deep(.el-select .el-input__wrapper) {
+    height: 30px !important;
+    font-size: 12px !important;
+  }
+
+  :deep(.el-select .el-input__inner) {
+    height: 30px !important;
+    font-size: 12px !important;
+  }
+
+  // 下拉选项样式
+  :deep(.el-select-dropdown__item) {
+    height: 30px;
+    line-height: 30px;
+    font-size: 12px;
+  }
+}
+
+/* ==================== 紧凑型标签页 ==================== */
+.compact-tabs {
+  .tab-item {
+    padding: 6px 16px;
+    font-size: 14px;
+    color: #606266;
+    border-top: 2px solid transparent;
+    border-bottom: 1px solid #e8e8e8;
+    cursor: pointer;
+    transition:
+      color 0.2s,
+      border-color 0.2s;
+
+    &:hover {
+      color: #0052d9;
+    }
+
+    &.active {
+      color: #0052d9;
+      border-top-color: #0052d9;
+      border-bottom-color: transparent;
+      margin-bottom: -1px;
+    }
+  }
+}
+
+/* ==================== 紧凑型表格 ==================== */
+.compact-table {
+  :deep(.el-table__cell) {
+    font-size: 12px;
+  }
+
+  :deep(.el-table__header .cell) {
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  :deep(.el-tag) {
+    font-size: 12px;
+  }
+}
+
+/* ==================== 统一卡片样式 ==================== */
+.info-card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 2px;
+  margin-bottom: 16px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .card-head {
+    padding: 16px 16px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #303133;
+    }
+  }
+
+  .card-body {
+    padding: 16px;
+  }
+}
+
+/* ==================== 腾讯蓝按钮样式 ==================== */
+.btn-tencent {
+  background-color: #0052d9 !important;
+  border-color: #0052d9 !important;
+  color: #fff !important;
+  border-radius: 0 !important;
+  font-size: 12px;
+  height: 30px;
+}
+
+.btn-compact {
+  font-size: 12px;
+  height: 30px;
+  border-radius: 0;
+}
+
+/* ==================== 描述列表样式 ==================== */
+.desc-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.desc-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.desc-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &.desc-item-full {
+    grid-column: 1 / -1;
+  }
+
+  .item-label {
+    font-size: 12px;
+    color: #909399;
+    line-height: 1.5;
+  }
+
+  .item-content {
+    font-size: 14px;
+    color: #303133;
+    line-height: 1.5;
+
+    .value-text {
+      color: #303133;
+    }
+  }
+}
+
+/* ==================== 状态指示器 ==================== */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  &.status-online .status-dot {
+    background-color: #52c41a;
+  }
+
+  &.status-offline .status-dot {
+    background-color: #d9d9d9;
+  }
+
+  &.status-unknown .status-dot {
+    background-color: #faad14;
+  }
+}
+
+/* ==================== 环境标签 ==================== */
+.env-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: #f0f0f0;
+  border-radius: 2px;
+  font-size: 12px;
+  color: #606266;
+}

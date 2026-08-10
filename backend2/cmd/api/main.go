@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"oneops/backend2/internal/authorization"
 	"oneops/backend2/internal/cmdb"
 	"oneops/backend2/internal/system"
 	"oneops/backend2/pkg/config"

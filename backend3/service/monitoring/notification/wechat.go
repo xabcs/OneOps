@@ -53,7 +53,7 @@ type WeChatMessage struct {
 // WeChatText 文本消息
 type WeChatText struct {
 	Content             string   `json:"content"`
-	MentionedList       []string `json:"mentioned_list,omitempty"`       // @的用户
+	MentionedList       []string `json:"mentioned_list,omitempty"`        // @的用户
 	MentionedMobileList []string `json:"mentioned_mobile_list,omitempty"` // @的手机号
 }
 

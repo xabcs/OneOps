@@ -1,0 +1,139 @@
+/* ============================================
+   SxDevOps 颜色方案 - CSS 变量定义
+   ============================================ */
+
+:root {
+  /* ========== SxDevOps 主色调 ========== */
+  --sxdevops-primary: #6366f1;
+  --sxdevops-primary-light: #818cf8;
+  --sxdevops-primary-dark: #4f46e5;
+
+  /* ========== SxDevOps 品牌渐变 ========== */
+  --sxdevops-brand-gradient: linear-gradient(135deg, #67b7ab 0%, #5586b6 58%, #49639a 100%);
+  --sxdevops-brand-gradient-short: linear-gradient(135deg, #67b7ab 0%, #49639a 100%);
+
+  /* ========== SxDevOps 侧边栏 ========== */
+  --sxdevops-sidebar-bg: linear-gradient(180deg, rgba(241, 246, 255, 0.98) 0%, rgba(232, 240, 255, 0.9) 100%);
+  --sxdevops-sidebar-hover: #e8f0ff;
+  --sxdevops-sidebar-active: linear-gradient(180deg, #eaf2ff 0%, #deebff 100%);
+  --sxdevops-sidebar-text: #5f6b7a;
+  --sxdevops-sidebar-text-active: #2563eb;
+  --sxdevops-sidebar-text-hover: #334155;
+  --sxdevops-sidebar-icon: #7b8794;
+  --sxdevops-sidebar-icon-active: #2563eb;
+
+  /* ========== SxDevOps Logo区域 ========== */
+  --sxdevops-logo-bg: linear-gradient(180deg, rgba(210, 235, 255, 0.98) 0%, rgba(221, 222, 222, 0.9) 100%);
+  --sxdevops-logo-icon-bg: linear-gradient(145deg, #eef4ff 0%, #f8fbff 100%);
+  --sxdevops-logo-icon-border: rgba(96, 165, 250, 0.24);
+  --sxdevops-logo-icon-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+
+  /* ========== SxDevOps 顶栏 ========== */
+  --sxdevops-header-height: 60px;
+  --sxdevops-header-bg: linear-gradient(180deg, rgba(248, 251, 255, 0.98) 0%, rgba(243, 247, 255, 0.94) 100%);
+  --sxdevops-header-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+
+  /* ========== SxDevOps 内容区 ========== */
+  --sxdevops-content-bg: #f1f5f9;
+
+  /* ========== SxDevOps 卡片 ========== */
+  --sxdevops-card-bg: #ffffff;
+  --sxdevops-card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --sxdevops-card-radius: 12px;
+
+  /* ========== SxDevOps 文字 ========== */
+  --sxdevops-text-primary: #1e293b;
+  --sxdevops-text-secondary: #64748b;
+  --sxdevops-text-muted: #94a3b8;
+
+  /* ========== SxDevOps 状态色 ========== */
+  --sxdevops-success: #10b981;
+  --sxdevops-warning: #f59e0b;
+  --sxdevops-danger: #ef4444;
+  --sxdevops-info: #3b82f6;
+
+  /* ========== SxDevOps 圆角系统 ========== */
+  --sxdevops-radius-small: 8px;
+  --sxdevops-radius-medium: 10px;
+  --sxdevops-radius-large: 12px;
+  --sxdevops-radius-logo-icon: 11px;
+  --sxdevops-radius-menu: 10px;
+  --sxdevops-radius-card: 12px;
+
+  /* ========== SxDevOps 过渡效果 ========== */
+  --sxdevops-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --sxdevops-transition-fast: all 0.18s ease;
+}
+
+/* ========== 深色模式适配 ========== */
+.dark {
+  --sxdevops-sidebar-bg: linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.95) 100%);
+  --sxdevops-sidebar-hover: rgba(255, 255, 255, 0.08);
+  --sxdevops-sidebar-active: linear-gradient(180deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.15) 100%);
+  --sxdevops-logo-bg: linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.95) 100%);
+  --sxdevops-content-bg: #0f172a;
+  --sxdevops-text-primary: #f1f5f9;
+  --sxdevops-text-secondary: #94a3b8;
+  --sxdevops-text-muted: #64748b;
+}
+
+/* ========== 品牌渐变文字效果 ========== */
+.sxdevops-brand-text {
+  background: var(--sxdevops-brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ========== 3D球体状态指示效果 ========== */
+.sxdevops-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.98) 0 20%, rgba(255, 255, 255, 0) 22%),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(103, 183, 171, 0.92) 0%,
+      rgba(85, 134, 182, 0.96) 72%,
+      rgba(85, 134, 182, 0.72) 100%
+    );
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.24),
+    0 0 0 3px rgba(96, 165, 250, 0.08),
+    0 2px 8px rgba(85, 134, 182, 0.16);
+  position: relative;
+}
+
+/* ========== SxDevOps风格按钮 ========== */
+.sxdevops-btn-primary {
+  background: var(--sxdevops-primary);
+  color: white;
+  border: none;
+  border-radius: var(--sxdevops-radius-medium);
+  padding: 8px 16px;
+  font-weight: 500;
+  transition: var(--sxdevops-transition-fast);
+  cursor: pointer;
+}
+
+.sxdevops-btn-primary:hover {
+  background: var(--sxdevops-primary-light);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+/* ========== SxDevOps风格卡片 ========== */
+.sxdevops-card {
+  background: var(--sxdevops-card-bg);
+  border-radius: var(--sxdevops-radius-card);
+  box-shadow: var(--sxdevops-card-shadow);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  transition: var(--sxdevops-transition);
+}
+
+.sxdevops-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}

@@ -5,8 +5,9 @@ import (
 	"strconv"
 
 	modelauth "oneops/backend3/model/authorization"
-	. "oneops/backend3/service/authorization"
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
+	. "oneops/backend3/service/authorization"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,22 +26,20 @@ func NewApplicationPermissionController(svc *ApplicationPermissionService) *Appl
 
 // GetApplications 获取应用列表
 func (ctrl *ApplicationPermissionController) GetApplications(c *gin.Context) {
+	var params dto.BasePageQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 	name := c.Query("name")
-	current, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "10"))
 
-	apps, total, err := ctrl.svc.GetApplications(current, size, name)
+	apps, total, err := ctrl.svc.GetApplications(params.GetPage(), params.GetPageSize(), name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取应用列表失败"))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"records": apps,
-		"total":   total,
-		"current": current,
-		"size":    size,
-	}))
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(apps, total, params)))
 }
 
 // CreateApplication 创建应用
@@ -258,44 +257,40 @@ func (ctrl *ApplicationPermissionController) DeleteUserGroup(c *gin.Context) {
 
 // GetOperationLogs 获取操作日志
 func (ctrl *ApplicationPermissionController) GetOperationLogs(c *gin.Context) {
+	var params dto.BasePageQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 	id, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-	current, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "10"))
 
-	logs, total, err := ctrl.svc.GetOperationLogs(uint(id), current, size)
+	logs, total, err := ctrl.svc.GetOperationLogs(uint(id), params.GetPage(), params.GetPageSize())
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取操作日志失败"))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"records": logs,
-		"total":   total,
-		"current": current,
-		"size":    size,
-	}))
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(logs, total, params)))
 }
 
 // ========== 授权中心用户管理 ==========
 
 // GetAuthUsers 获取授权中心用户列表
 func (ctrl *ApplicationPermissionController) GetAuthUsers(c *gin.Context) {
+	var params dto.BasePageQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 	username := c.Query("username")
-	current, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "10"))
 
-	users, total, err := ctrl.svc.GetAuthUsers(current, size, username)
+	users, total, err := ctrl.svc.GetAuthUsers(params.GetPage(), params.GetPageSize(), username)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户列表失败"))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"records": users,
-		"total":   total,
-		"current": current,
-		"size":    size,
-	}))
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(users, total, params)))
 }
 
 // GetAuthUserPassword 获取用户初始密码
@@ -393,22 +388,20 @@ func (ctrl *ApplicationPermissionController) GetAllAuthUsers(c *gin.Context) {
 
 // GetAuthGroups 获取授权中心用户组列表
 func (ctrl *ApplicationPermissionController) GetAuthGroups(c *gin.Context) {
+	var params dto.BasePageQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 	name := c.Query("name")
-	current, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "10"))
 
-	groups, total, err := ctrl.svc.GetAuthGroups(current, size, name)
+	groups, total, err := ctrl.svc.GetAuthGroups(params.GetPage(), params.GetPageSize(), name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户组列表失败"))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"records": groups,
-		"total":   total,
-		"current": current,
-		"size":    size,
-	}))
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(groups, total, params)))
 }
 
 // CreateAuthGroup 创建授权中心用户组
@@ -488,7 +481,7 @@ func (ctrl *ApplicationPermissionController) GetAppTypeConfigTemplate(c *gin.Con
 
 	template, err := ctrl.svc.GetAppTypeConfigTemplate(appType)
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取配置模板失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取配置模板失败: "+err.Error()))
 		return
 	}
 
@@ -573,11 +566,14 @@ func (ctrl *ApplicationPermissionController) GetApplicationAuthorizationRules(c 
 
 // GetUserIdentityMappings 获取用户身份映射列表
 func (ctrl *ApplicationPermissionController) GetUserIdentityMappings(c *gin.Context) {
+	var params dto.BasePageQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 	username := c.Query("username")
 	appIDStr := c.Query("appId")
 	status := c.Query("status")
-	current, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
 
 	var appID uint
 	if appIDStr != "" {
@@ -585,18 +581,13 @@ func (ctrl *ApplicationPermissionController) GetUserIdentityMappings(c *gin.Cont
 		appID = uint(id)
 	}
 
-	mappings, total, err := ctrl.svc.GetUserIdentityMappings(current, size, username, appID, status)
+	mappings, total, err := ctrl.svc.GetUserIdentityMappings(params.GetPage(), params.GetPageSize(), username, appID, status)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户身份映射列表失败"))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"records": mappings,
-		"total":   total,
-		"current": current,
-		"size":    size,
-	}))
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(mappings, total, params)))
 }
 
 // DeleteUserIdentityMapping 删除用户身份映射
@@ -619,10 +610,13 @@ func (ctrl *ApplicationPermissionController) DeleteUserIdentityMapping(c *gin.Co
 
 // GetUserEffectivePermissions 获取用户有效权限列表
 func (ctrl *ApplicationPermissionController) GetUserEffectivePermissions(c *gin.Context) {
+	var params dto.BasePageQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 	username := c.Query("username")
 	appIDStr := c.Query("appId")
-	current, _ := strconv.Atoi(c.DefaultQuery("current", "1"))
-	size, _ := strconv.Atoi(c.DefaultQuery("size", "20"))
 
 	var appID uint
 	if appIDStr != "" {
@@ -630,18 +624,13 @@ func (ctrl *ApplicationPermissionController) GetUserEffectivePermissions(c *gin.
 		appID = uint(id)
 	}
 
-	permissions, total, err := ctrl.svc.GetUserEffectivePermissions(current, size, username, appID)
+	permissions, total, err := ctrl.svc.GetUserEffectivePermissions(params.GetPage(), params.GetPageSize(), username, appID)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户有效权限列表失败"))
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"records": permissions,
-		"total":   total,
-		"current": current,
-		"size":    size,
-	}))
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(permissions, total, params)))
 }
 
 // GetUserEffectivePermissionsMatrix 获取用户有效权限矩阵视图
@@ -660,7 +649,7 @@ func (ctrl *ApplicationPermissionController) GetUserEffectivePermissionsMatrix(c
 
 	result, err := ctrl.svc.GetUserEffectivePermissionsMatrix(uint(appID))
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取权限矩阵失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取权限矩阵失败: "+err.Error()))
 		return
 	}
 

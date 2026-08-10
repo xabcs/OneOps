@@ -1,0 +1,13 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <title>MSRE</title>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" width="180" height="180" rx="40" fill="url(#g)"/>
+  <text x="100" y="100" text-anchor="middle" dominant-baseline="central"
+        font-family="system-ui, -apple-system, Helvetica, sans-serif" font-size="50" font-weight="700" fill="#ffffff" letter-spacing="2">MSRE</text>
+  <rect x="65" y="130" width="70" height="3.5" rx="1.75" fill="#ffffff" opacity="0.55"/>
+</svg>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>强制执行测试</title>
+  </head>
+  <body>
+    <h1>强制执行测试</h1>
+    <div id="test-output"></div>
+    <div id="app"></div>
+
+    <script>
+      // 同步执行，不应该被阻塞
+      const output = document.getElementById('test-output');
+      output.innerHTML = '<p>✓ JavaScript基础执行正常</p>';
+
+      // 测试fetch
+      fetch('/proxy-default/route/getConstantRoutes')
+        .then(response => response.json())
+        .then(data => {
+          output.innerHTML += '<p>✓ API代理正常: ' + data.success + '</p>';
+        })
+        .catch(error => {
+          output.innerHTML += '<p>✗ API代理失败: ' + error.message + '</p>';
+        });
+
+      // 尝试动态加载main.ts
+      output.innerHTML += '<p>正在尝试加载main.ts...</p>';
+
+      // 使用setTimeout确保不阻塞
+      setTimeout(() => {
+        import('/src/main.ts')
+          .then(() => {
+            output.innerHTML += '<p style="color: green;">✓ main.ts加载成功！</p>';
+
+            // 5秒后检查结果
+            setTimeout(() => {
+              const app = document.getElementById('app');
+              if (app && app.innerHTML.length > 100) {
+                output.innerHTML += '<p>✓ Vue应用已挂载，内容长度: ' + app.innerHTML.length + '</p>';
+              } else {
+                output.innerHTML += '<p style="color: red;">✗ Vue应用未挂载或内容过少</p>';
+                output.innerHTML += '<p>当前app内容: ' + (app?.innerHTML || 'null') + '</p>';
+              }
+            }, 5000);
+          })
+          .catch(error => {
+            output.innerHTML += '<p style="color: red;">✗ main.ts加载失败: ' + error.message + '</p>';
+            console.error('Main.ts错误:', error);
+          });
+      }, 100);
+    </script>
+  </body>
+</html>

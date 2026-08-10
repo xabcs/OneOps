@@ -7,6 +7,7 @@ import (
 	. "oneops/backend3/service/cmdb"
 
 	modelcmdb "oneops/backend3/model/cmdb"
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
 
 	"github.com/gin-gonic/gin"
@@ -118,31 +119,31 @@ func (c *AgentController) ReceiveAgentHeartbeat(ctx *gin.Context) {
 
 // GetAgentList 获取 Agent 管理列表（带筛选分页）
 func (c *AgentController) GetAgentList(ctx *gin.Context) {
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+	var params dto.ServerQueryParams
+	if err := ctx.ShouldBindQuery(&params); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 
 	query := make(map[string]interface{})
-	if hostname := ctx.Query("hostname"); hostname != "" {
-		query["hostname"] = hostname
+	if params.Hostname != "" {
+		query["hostname"] = params.Hostname
 	}
-	if ip := ctx.Query("ip"); ip != "" {
-		query["ip"] = ip
+	if params.IP != "" {
+		query["ip"] = params.IP
 	}
-	if status := ctx.Query("agentStatus"); status != "" {
-		query["agentStatus"] = status
+	if params.AgentStatus != "" {
+		query["agentStatus"] = params.AgentStatus
 	}
 
 	cmdbSvc := c.cmdbSvc
-	servers, total, err := cmdbSvc.GetServers(query, page, pageSize)
+	servers, total, err := cmdbSvc.GetServers(query, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":  servers,
-		"total": total,
-	}))
+	ctx.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(servers, total, params.BasePageQuery)))
 }
 
 // BatchDeployAgent 批量部署 Agent
@@ -285,7 +286,7 @@ func (c *AgentController) GetAgentVersionByID(ctx *gin.Context) {
 func (c *AgentController) CreateAgentVersion(ctx *gin.Context) {
 	var version modelcmdb.AgentVersion
 	if err := ctx.ShouldBindJSON(&version); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -313,7 +314,7 @@ func (c *AgentController) UpdateAgentVersion(ctx *gin.Context) {
 
 	var updates map[string]interface{}
 	if err := ctx.ShouldBindJSON(&updates); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -359,7 +360,7 @@ func (c *AgentController) UpgradeAgent(ctx *gin.Context) {
 		TargetVersion string `json:"targetVersion" binding:"required"`
 	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
 
@@ -373,20 +374,20 @@ func (c *AgentController) UpgradeAgent(ctx *gin.Context) {
 
 // GetUpgradeTasks 获取升级任务列表
 func (c *AgentController) GetUpgradeTasks(ctx *gin.Context) {
-	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+	var params dto.BasePageQuery
+	if err := ctx.ShouldBindQuery(&params); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
 	status := ctx.Query("status")
 
-	tasks, total, err := c.svc.GetUpgradeTasks(page, pageSize, status)
+	tasks, total, err := c.svc.GetUpgradeTasks(params.GetPage(), params.GetPageSize(), status)
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(gin.H{
-		"list":  tasks,
-		"total": total,
-	}))
+	ctx.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(tasks, total, params)))
 }
 
 // GetUpgradeTaskByID 获取升级任务详情

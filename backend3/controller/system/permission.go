@@ -83,7 +83,7 @@ func (ctrl *PermissionController) GetPermissionList(ctx *gin.Context) {
 func (ctrl *PermissionController) CreatePermission(ctx *gin.Context) {
 	var req modelsystem.CreatePermissionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.ErrorBadRequest("参数错误: " + err.Error()))
+		ctx.JSON(http.StatusBadRequest, utils.ErrorBadRequest("参数错误: "+err.Error()))
 		return
 	}
 
@@ -120,7 +120,7 @@ func (ctrl *PermissionController) UpdatePermission(ctx *gin.Context) {
 
 	var req modelsystem.UpdatePermissionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.ErrorBadRequest("参数错误: " + err.Error()))
+		ctx.JSON(http.StatusBadRequest, utils.ErrorBadRequest("参数错误: "+err.Error()))
 		return
 	}
 

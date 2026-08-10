@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	modelsystem "oneops/backend3/model/system"
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
 	syssvc "oneops/backend3/service/system"
 )
@@ -24,47 +25,31 @@ func NewRoleController(svc *syssvc.RoleService) *RoleController {
 
 // GetRoles 获取所有角色（支持搜索和分页）
 func (ctrl *RoleController) GetRoles(c *gin.Context) {
+	var params dto.BasePageQuery
+	if err := c.ShouldBindQuery(&params); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
+
 	name := c.Query("name")
 	code := c.Query("code")
 	status := c.Query("status")
 	description := c.Query("description")
-	currentStr := c.Query("current")
-	sizeStr := c.Query("size")
-
-	current := 1
-	size := 10
-	if currentStr != "" {
-		if page, err := strconv.Atoi(currentStr); err == nil && page > 0 {
-			current = page
-		}
-	}
-	if sizeStr != "" {
-		if limit, err := strconv.Atoi(sizeStr); err == nil && limit > 0 {
-			size = limit
-		}
-	}
 
 	result, err := ctrl.svc.Search(syssvc.RoleSearchQuery{
 		Name:        name,
 		Code:        code,
 		Description: description,
 		Status:      status,
-		Offset:      (current - 1) * size,
-		Limit:       size,
+		Offset:      params.GetOffset(),
+		Limit:       params.GetPageSize(),
 	})
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取角色列表失败"))
 		return
 	}
 
-	responseData := map[string]interface{}{
-		"records": result.Records,
-		"current": current,
-		"size":    size,
-		"total":   result.Total,
-	}
-
-	c.JSON(http.StatusOK, utils.SuccessWithData(responseData))
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(result.Records, result.Total, params)))
 }
 
 // CreateRoleRequest 创建角色请求

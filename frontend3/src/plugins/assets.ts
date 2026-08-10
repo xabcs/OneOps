@@ -1,0 +1,14 @@
+import 'virtual:svg-icons-register';
+import 'element-plus/dist/index.css';
+import 'element-plus/theme-chalk/dark/css-vars.css';
+import 'uno.css';
+import '../styles/css/reset.css';
+import '../styles/css/nprogress.css';
+import '../styles/css/transition.css';
+import '../styles/css/global.css';
+import '../styles/css/border-radius.css';
+import '../styles/scss/design-system.scss';
+import '../styles/scss/sxdevops-colors.scss'; // SxDevOps 颜色方案
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';

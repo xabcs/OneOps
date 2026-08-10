@@ -1,0 +1,143 @@
+/**
+ * 全局圆角样式
+ *
+ * 设计思路：
+ * 1. 主要通过覆盖 Element Plus 的 --el-border-radius-* 变量实现全局圆角控制
+ * 2. 对于需要特殊圆角的组件（如卡片、对话框、菜单等），使用单独的 CSS 变量
+ * 3. 这些变量会在运行时通过 JavaScript 动态注入到 :root 中
+ * 4. 使用 !important 确保优先级最高
+ */
+
+/* ==================== 调试：验证 CSS 变量 ==================== */
+/* 可以在浏览器控制台运行: getComputedStyle(document.documentElement).getPropertyValue('--el-border-radius-base') */
+
+/* ==================== 按钮 - 强制覆盖 ==================== */
+/* Element Plus 按钮使用 --el-border-radius-base，但为了确保生效，添加显式规则 */
+.el-button,
+.el-button.el-button--default,
+.el-button.el-button--primary,
+.el-button.el-button--success,
+.el-button.el-button--warning,
+.el-button.el-button--danger,
+.el-button.el-button--info,
+.el-button.is-plain,
+.el-button.is-circle,
+.el-button.is-round,
+.el-button.el-button--large,
+.el-button.el-button--small,
+.el-button.el-button--large.is-plain,
+.el-button.el-button--small.is-plain {
+  border-radius: var(--el-border-radius-base) !important;
+}
+
+/* 小按钮特殊处理 - Element Plus 使用 calc(var(--el-border-radius-base) - 1px) */
+.el-button--small {
+  border-radius: var(--el-border-radius-base) !important;
+}
+
+/* ==================== 需要特殊圆角处理的组件 ==================== */
+
+/* 卡片 - 通常需要较大的圆角 */
+.el-card,
+.card-wrapper {
+  border-radius: var(--border-radius-card, var(--el-border-radius-base, 8px)) !important;
+}
+
+/* 表格 - 只给整个表格容器设置圆角，不影响内部单元格 */
+.el-table {
+  border-radius: var(--border-radius-table, var(--el-border-radius-base, 8px)) !important;
+}
+
+/* 表头单元格不应该有圆角 - 只有整个表格容器的顶部有圆角 */
+.el-table th.el-table__cell,
+.el-table td.el-table__cell {
+  border-radius: 0 !important;
+}
+
+/* 对话框 */
+.el-dialog {
+  border-radius: var(--border-radius-modal, 8px) !important;
+}
+
+.el-dialog__header {
+  border-radius: var(--border-radius-modal, 8px) var(--border-radius-modal, 8px) 0 0 !important;
+}
+
+/* 标签 - 使用 Element Plus 的 round 变量，或自定义 */
+.el-tag,
+.el-tag--large,
+.el-tag--small {
+  border-radius: var(--border-radius-tag, var(--el-border-radius-round, 20px)) !important;
+}
+
+/* 开关 - 需要特殊的椭圆形状 */
+.el-switch,
+.el-switch__core {
+  border-radius: var(--border-radius-switch, 12px) !important;
+}
+
+.el-switch__action {
+  border-radius: 50% !important;
+}
+
+/* 复选框 - 方形但有小圆角 */
+.el-checkbox__inner {
+  border-radius: var(--border-radius-checkbox, 8px) !important;
+}
+
+/* 单选框 - 必须是圆形 */
+.el-radio__inner {
+  border-radius: var(--border-radius-radio, 50%) !important;
+}
+
+/* 菜单项 - 使用自定义圆角 */
+.el-menu .el-sub-menu__title:hover::before,
+.el-menu li.el-menu-item:not(.is-disabled):hover::before,
+.el-menu li.el-menu-item.is-active::before {
+  border-radius: var(--border-radius-menu, var(--el-border-radius-base, 8px)) !important;
+}
+
+.el-menu-item,
+.el-menu-item.is-active,
+.el-menu-item:hover,
+.el-sub-menu__title,
+.el-sub-menu__title:hover {
+  border-radius: var(--border-radius-menu, var(--el-border-radius-base, 8px)) !important;
+}
+
+/* 下拉菜单 */
+.el-dropdown-menu {
+  border-radius: var(--border-radius-medium, var(--el-border-radius-base, 8px)) !important;
+}
+
+/* 分页按钮 */
+.el-pagination .el-pager li,
+.el-pagination button {
+  border-radius: var(--border-radius-small, var(--el-border-radius-small, 2px)) !important;
+}
+
+/* 通知消息 */
+.el-notification,
+.el-message,
+.el-alert {
+  border-radius: var(--border-radius-medium, var(--el-border-radius-base, 8px)) !important;
+}
+
+/* 徽章 */
+.el-badge__content {
+  border-radius: 10px !important;
+}
+
+/* 时间选择器、日期选择器弹出层 */
+.el-picker__popper,
+.el-dropdown,
+.el-popconfirm,
+.el-tooltip__popper {
+  border-radius: var(--border-radius-medium, var(--el-border-radius-base, 8px)) !important;
+}
+
+/* 进度条 - 保持方形 */
+.el-progress-bar__inner,
+.el-progress__text {
+  border-radius: 0 !important;
+}
