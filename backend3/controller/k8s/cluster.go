@@ -53,7 +53,7 @@ func (ctrl *K8sClusterController) GetClusters(c *gin.Context) {
 
 	clusters, total, err := ctrl.svc.GetClusters(userID, page, pageSize, filter)
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群列表失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群列表失败: "+err.Error()))
 		return
 	}
 
@@ -100,7 +100,7 @@ func (ctrl *K8sClusterController) GetClusterByID(c *gin.Context) {
 
 	cluster, err := ctrl.svc.GetClusterByID(uint(clusterID), userID)
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群详情失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群详情失败: "+err.Error()))
 		return
 	}
 
@@ -141,7 +141,7 @@ func (ctrl *K8sClusterController) CreateCluster(c *gin.Context) {
 
 	var req CreateClusterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
 		return
 	}
 
@@ -157,7 +157,7 @@ func (ctrl *K8sClusterController) CreateCluster(c *gin.Context) {
 	}
 
 	if err := ctrl.svc.CreateCluster(cluster, req.Kubeconfig, userID); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("创建集群失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("创建集群失败: "+err.Error()))
 		return
 	}
 
@@ -196,7 +196,7 @@ func (ctrl *K8sClusterController) UpdateCluster(c *gin.Context) {
 
 	var req UpdateClusterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
 		return
 	}
 
@@ -227,7 +227,7 @@ func (ctrl *K8sClusterController) UpdateCluster(c *gin.Context) {
 	}
 
 	if err := ctrl.svc.UpdateCluster(uint(clusterID), updates, userID); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("更新集群失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("更新集群失败: "+err.Error()))
 		return
 	}
 
@@ -258,12 +258,12 @@ func (ctrl *K8sClusterController) DeleteCluster(c *gin.Context) {
 
 	var req DeleteClusterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
 		return
 	}
 
 	if err := ctrl.svc.DeleteCluster(uint(clusterID), req.ConfirmName, userID); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("删除集群失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("删除集群失败: "+err.Error()))
 		return
 	}
 
@@ -295,7 +295,7 @@ func (ctrl *K8sClusterController) TestConnection(c *gin.Context) {
 	}
 
 	if err := ctrl.svc.TestConnection(uint(clusterID)); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("连接测试失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("连接测试失败: "+err.Error()))
 		return
 	}
 
@@ -323,7 +323,7 @@ func (ctrl *K8sClusterController) GetClusterNodes(c *gin.Context) {
 
 	nodes, err := ctrl.svc.GetClusterNodes(uint(clusterID))
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取节点列表失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取节点列表失败: "+err.Error()))
 		return
 	}
 
@@ -351,7 +351,7 @@ func (ctrl *K8sClusterController) GetClusterNamespaces(c *gin.Context) {
 
 	namespaces, err := ctrl.svc.GetClusterNamespaces(uint(clusterID))
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取命名空间列表失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取命名空间列表失败: "+err.Error()))
 		return
 	}
 
@@ -379,7 +379,7 @@ func (ctrl *K8sClusterController) GetClusterUsers(c *gin.Context) {
 
 	users, err := ctrl.svc.GetClusterUsers(uint(clusterID))
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群用户列表失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群用户列表失败: "+err.Error()))
 		return
 	}
 

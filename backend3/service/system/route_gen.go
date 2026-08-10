@@ -185,8 +185,8 @@ func (s *RouteGenService) IsRouteExist(userID uint, routeName string) (bool, err
 // InvalidateCache 清除RBAC缓存并重新同步菜单
 func (s *RouteGenService) InvalidateCache() error {
 	// 重新同步菜单，确保数据最新
-	initService := NewInitService()
-	return initService.SyncMenus()
+	initializer := NewInitializer()
+	return initializer.SyncMenus()
 }
 
 // DebugCache 调试当前缓存内容
