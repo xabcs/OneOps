@@ -2,7 +2,6 @@ package system
 
 import (
 	"fmt"
-	"os"
 
 	modelaudit "oneops/backend3/model/audit"
 	modelauth "oneops/backend3/model/authorization"
@@ -15,15 +14,11 @@ import (
 )
 
 // Initializer 初始化协调器
-type Initializer struct {
-	initService *InitService
-}
+type Initializer struct{}
 
 // NewInitializer 创建初始化协调器
 func NewInitializer() *Initializer {
-	return &Initializer{
-		initService: NewInitService(),
-	}
+	return &Initializer{}
 }
 
 // Initialize 执行初始化
@@ -36,7 +31,7 @@ func (i *Initializer) Initialize() error {
 	}
 
 	// 阶段2：执行SQL迁移脚本
-	if err := i.initService.runMigrations(); err != nil {
+	if err := i.runMigrations(); err != nil {
 		zap.L().Warn("SQL迁移执行失败，继续执行", zap.Error(err))
 	}
 
@@ -149,22 +144,22 @@ func (i *Initializer) initSeedData() error {
 	zap.L().Info("阶段3：初始化基础数据...")
 
 	// 同步菜单
-	if err := i.initService.syncMenus(); err != nil {
+	if err := i.syncMenus(); err != nil {
 		zap.L().Warn("菜单同步失败", zap.Error(err))
 	}
 
 	// 同步内置角色
-	if err := i.initService.syncBuiltinRoles(); err != nil {
+	if err := i.syncBuiltinRoles(); err != nil {
 		zap.L().Warn("内置角色同步失败", zap.Error(err))
 	}
 
 	// 初始化管理员用户
-	if err := i.initService.initUsers(); err != nil {
+	if err := i.initUsers(); err != nil {
 		zap.L().Warn("管理员用户初始化失败", zap.Error(err))
 	}
 
 	// 同步属性定义
-	if err := i.initService.syncAttributes(); err != nil {
+	if err := i.syncAttributes(); err != nil {
 		zap.L().Warn("属性定义同步失败", zap.Error(err))
 	}
 
@@ -181,54 +176,23 @@ func (i *Initializer) initModuleData() error {
 	}
 
 	// 分配默认权限
-	if err := i.initService.assignDefaultPermissions(); err != nil {
+	if err := i.assignDefaultPermissions(); err != nil {
 		zap.L().Warn("默认权限分配失败", zap.Error(err))
 	}
 
 	// 初始化诊断数据
-	if err := i.initService.initDiagnosticData(); err != nil {
+	if err := i.initDiagnosticData(); err != nil {
 		zap.L().Warn("诊断数据初始化失败", zap.Error(err))
 	}
 
 	// 初始化Agent版本
-	if err := i.initService.initAgentVersions(); err != nil {
+	if err := i.initAgentVersions(); err != nil {
 		zap.L().Warn("Agent版本初始化失败", zap.Error(err))
 	}
 
 	// 初始化API权限
-	if err := i.initService.initAPIPermissions(); err != nil {
+	if err := i.initAPIPermissions(); err != nil {
 		zap.L().Warn("API权限初始化失败", zap.Error(err))
-	}
-
-	return nil
-}
-
-// initPermissionsFromSQL 从 SQL 文件初始化权限数据
-func (i *Initializer) initPermissionsFromSQL() error {
-	zap.L().Info("从 SQL 文件初始化权限数据...")
-
-	db := database.GetDB()
-
-	// SQL 文件路径
-	sqlFile := "migrations/v2_permissions.sql"
-
-	// 读取 SQL 文件内容
-	content, err := os.ReadFile(sqlFile)
-	if err != nil {
-		return fmt.Errorf("读取 SQL 文件失败: %w", err)
-	}
-
-	// 执行 SQL
-	if err := db.Exec(string(content)).Error; err != nil {
-		return fmt.Errorf("执行权限初始化 SQL 失败: %w", err)
-	}
-
-	// 统计权限数量
-	var count int64
-	if err := db.Model(&modelsystem.Permission{}).Count(&count).Error; err != nil {
-		zap.L().Warn("统计权限数量失败", zap.Error(err))
-	} else {
-		zap.L().Info("权限数据初始化完成", zap.Int64("total_permissions", count))
 	}
 
 	return nil

@@ -77,8 +77,8 @@ func main() {
 	}
 
 	// 9. 初始化数据库表和数据
-	initService := syssvc.NewInitService()
-	if err := initService.InitDatabase(); err != nil {
+	initializer := syssvc.NewInitializer()
+	if err := initializer.InitDatabase(); err != nil {
 		logger.Warn("初始化数据库数据失败", zap.Error(err))
 	} else {
 		logger.Info("数据库初始化完成")
