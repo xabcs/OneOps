@@ -49,7 +49,7 @@ func (ctrl *MonitoringController) HandleWebSocket(c *gin.Context) {
 
 	logger.Info("WebSocket 连接请求",
 		zap.String("token", tokenMask(token)),
-		zap.String("rawURL", c.Request.URL.String()))
+		zap.String("raw_url", c.Request.URL.String()))
 
 	if token == "" {
 		logger.Warn("WebSocket Token 为空")
@@ -101,8 +101,8 @@ func (ctrl *MonitoringController) HandleWebSocket(c *gin.Context) {
 	client.Send <- welcomeMsg
 
 	logger.Info("WebSocket 连接已建立",
-		zap.String("clientID", clientID),
-		zap.String("remoteAddr", c.Request.RemoteAddr))
+		zap.String("client_id", clientID),
+		zap.String("remote_addr", c.Request.RemoteAddr))
 }
 
 // BroadcastOverview 广播监控概览数据
@@ -123,7 +123,7 @@ func (ctrl *MonitoringController) BroadcastOverview() {
 
 	hub.Broadcast(message)
 	logger.Debug("已广播监控概览数据",
-		zap.Int("clientCount", hub.GetClientCount()))
+		zap.Int("client_count", hub.GetClientCount()))
 }
 
 // BroadcastAlert 广播告警事件
@@ -138,7 +138,7 @@ func (ctrl *MonitoringController) BroadcastAlert(alert interface{}) {
 
 	hub.Broadcast(message)
 	logger.Debug("已广播告警事件",
-		zap.Int("clientCount", hub.GetClientCount()))
+		zap.Int("client_count", hub.GetClientCount()))
 }
 
 // GetConnectedClients 获取已连接的客户端列表

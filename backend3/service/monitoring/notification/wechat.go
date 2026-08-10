@@ -117,7 +117,7 @@ func (s *WeChatService) Send(message *WeChatMessage) error {
 		if i > 0 {
 			logger.Warn("企业微信消息发送失败，重试中",
 				zap.Int("attempt", i+1),
-				zap.Int("maxRetries", maxRetries),
+				zap.Int("max_retries", maxRetries),
 				zap.Error(lastErr))
 			time.Sleep(time.Duration(i) * time.Second)
 		}

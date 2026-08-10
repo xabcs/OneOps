@@ -97,7 +97,7 @@ func (s *RouteGenService) GetUserRoutes(userID uint) ([]map[string]interface{}, 
 	// 清除该用户的缓存，确保路由配置每次都是最新的
 	// 因为路由配置（component字段）需要动态生成，缓存会导致代码修改不生效
 
-	logger.Info("[GetUserRoutes] 开始生成路由", zap.Uint("userID", userID))
+	logger.Info("[GetUserRoutes] 开始生成路由", zap.Uint("user_id", userID))
 
 	rbacService := NewRBACService()
 	menuTree, _, roles, err := rbacService.BuildMenuTreeAndPermissions(userID)
@@ -314,9 +314,9 @@ func (s *RouteGenService) generateComponent(path string, parentID uint, hasChild
 
 	logger.Debug("[路由组件生成]",
 		zap.String("path", path),
-		zap.String("routeName", routeName),
-		zap.Uint("parentID", parentID),
-		zap.Bool("hasChildren", hasChildren))
+		zap.String("route_name", routeName),
+		zap.Uint("parent_id", parentID),
+		zap.Bool("has_children", hasChildren))
 
 	// 特殊处理：web终端使用独立布局（无导航栏）
 	if path == "/webterminal" {

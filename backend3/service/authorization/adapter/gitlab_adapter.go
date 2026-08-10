@@ -117,7 +117,7 @@ func (g *GitLabAdapter) FetchUsers(baseURL string, authConfig map[string]interfa
 	}
 
 	logger.Info("成功获取 GitLab 用户列表",
-		zap.Int("userCount", len(users)))
+		zap.Int("user_count", len(users)))
 
 	return users, nil
 }
@@ -185,7 +185,7 @@ func (g *GitLabAdapter) FetchRoles(baseURL string, authConfig map[string]interfa
 	}
 
 	logger.Info("成功获取 GitLab 角色列表",
-		zap.Int("roleCount", len(roles)))
+		zap.Int("role_count", len(roles)))
 
 	return roles, nil
 }
@@ -273,7 +273,7 @@ func (g *GitLabAdapter) CreateUser(baseURL string, authConfig map[string]interfa
 	if err := json.Unmarshal(body, &createdUser); err != nil {
 		logger.Warn("解析创建用户响应失败，无法获取用户ID",
 			zap.Error(err),
-			zap.String("responseBody", string(body)))
+			zap.String("response_body", string(body)))
 		// 即使解析失败，用户可能已创建成功，返回空字符串
 		return "", nil
 	}
@@ -281,7 +281,7 @@ func (g *GitLabAdapter) CreateUser(baseURL string, authConfig map[string]interfa
 	logger.Info("成功在 GitLab 创建用户",
 		zap.String("username", user.Username),
 		zap.String("email", user.Email),
-		zap.Int("userID", createdUser.ID))
+		zap.Int("user_id", createdUser.ID))
 
 	// 返回用户 ID（转换为字符串）
 	return fmt.Sprintf("%d", createdUser.ID), nil
@@ -414,7 +414,7 @@ func (g *GitLabAdapter) AssignRole(baseURL string, authConfig map[string]interfa
 
 	logger.Info("成功在 GitLab 为用户分配角色",
 		zap.String("username", username),
-		zap.String("roleCode", roleCode))
+		zap.String("role_code", roleCode))
 
 	return nil
 }
@@ -555,7 +555,7 @@ func (g *GitLabAdapter) FetchGroups(baseURL string, authConfig map[string]interf
 	}
 
 	logger.Info("成功获取 GitLab 用户组列表",
-		zap.Int("groupCount", len(result)))
+		zap.Int("group_count", len(result)))
 
 	return result, nil
 }

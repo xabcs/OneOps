@@ -1,12 +1,12 @@
 package middleware
 
 import (
-	"fmt"
-
+	"oneops/backend3/pkg/logger"
 	"oneops/backend3/pkg/utils"
 	"oneops/backend3/service/system"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // RequirePermissionFromDB 权限检查中间件（数据库驱动，无缓存）
@@ -50,8 +50,11 @@ func RequirePermissionFromDB() gin.HandlerFunc {
 		if !hasPermission {
 			// 记录权限不足的详细信息
 			username, _ := c.Get("username")
-			fmt.Printf("[权限不足] user_id=%v, username=%v, route=%s %s, required_permission=%s\n",
-				userID, username, method, path, perm.Code)
+			logger.Warn("权限不足",
+				zap.Any("user_id", userID),
+				zap.Any("username", username),
+				zap.String("route", method+" "+path),
+				zap.String("required_permission", perm.Code))
 
 			c.JSON(403, utils.ErrorForbidden("权限不足: 需要 "+perm.Code+" 权限"))
 			c.Abort()

@@ -266,7 +266,7 @@ func (g *GenericAdapter) CreateUser(baseURL string, authConfig map[string]interf
 
 	logger.Info("在通用系统创建用户成功",
 		zap.String("username", user.Username),
-		zap.String("userID", userID))
+		zap.String("user_id", userID))
 
 	return userID, nil
 }
@@ -342,7 +342,7 @@ func (g *GenericAdapter) AssignRole(baseURL string, authConfig map[string]interf
 
 	logger.Info("在通用系统为用户分配角色成功",
 		zap.String("username", username),
-		zap.String("roleCode", roleCode))
+		zap.String("role_code", roleCode))
 
 	return nil
 }

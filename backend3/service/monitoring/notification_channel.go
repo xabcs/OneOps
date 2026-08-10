@@ -100,11 +100,11 @@ func (s *MonitoringService) TestNotificationChannel(id uint) error {
 
 	switch channel.ChannelType {
 	case "email":
-		logger.Info("发送邮件测试通知", zap.Uint("channelId", id))
+		logger.Info("发送邮件测试通知", zap.Uint("channel_id", id))
 	case "wechat":
-		logger.Info("发送企业微信测试通知", zap.Uint("channelId", id))
+		logger.Info("发送企业微信测试通知", zap.Uint("channel_id", id))
 	case "dingtalk":
-		logger.Info("发送钉钉测试通知", zap.Uint("channelId", id))
+		logger.Info("发送钉钉测试通知", zap.Uint("channel_id", id))
 	default:
 		return fmt.Errorf("不支持的通知渠道类型: %s", channel.ChannelType)
 	}

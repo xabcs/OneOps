@@ -16,7 +16,7 @@ func (s *MonitoringService) GetServerExtendedMetrics(serverID uint) (*AgentExten
 	cache := database.NewRedisCache()
 	var cachedMetrics AgentExtendedMetricsResponse
 	if err := cache.GetServerMetrics(serverID, &cachedMetrics); err == nil {
-		logger.Debug("从 Redis 缓存获取主机指标", zap.Uint("serverID", serverID))
+		logger.Debug("从 Redis 缓存获取主机指标", zap.Uint("server_id", serverID))
 		return &cachedMetrics, nil
 	}
 

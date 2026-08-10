@@ -48,7 +48,7 @@ func (s *ApplicationPermissionService) CreateExternalUser(appID uint, authUserID
 			authConfig["endpoints"] = endpoints
 		} else {
 			logger.Warn("解析端点配置失败，将使用适配器默认端点",
-				zap.Uint("appID", appID),
+				zap.Uint("app_id", appID),
 				zap.Error(err))
 		}
 	}
@@ -92,11 +92,11 @@ func (s *ApplicationPermissionService) CreateExternalUser(appID uint, authUserID
 
 	s.logOperation(appID, "create_user", username, "", "success", "", operator)
 	logger.Info("在外部系统创建用户成功",
-		zap.Uint("appID", appID),
-		zap.String("appName", app.Name),
-		zap.String("appType", app.Type),
+		zap.Uint("app_id", appID),
+		zap.String("app_name", app.Name),
+		zap.String("app_type", app.Type),
 		zap.String("username", username),
-		zap.String("externalUserID", externalUserID))
+		zap.String("external_user_id", externalUserID))
 
 	// 记录用户身份映射
 	now := time.Now()
@@ -112,16 +112,16 @@ func (s *ApplicationPermissionService) CreateExternalUser(appID uint, authUserID
 
 	if err := s.repo.FirstOrCreateUserIdentityMapping(&mapping, authUserID, appID); err != nil {
 		logger.Warn("记录用户身份映射失败",
-			zap.Uint("authUserID", authUserID),
-			zap.Uint("appID", appID),
+			zap.Uint("auth_user_id", authUserID),
+			zap.Uint("app_id", appID),
 			zap.String("username", username),
 			zap.Error(err))
 	} else {
 		logger.Info("记录用户身份映射成功",
-			zap.Uint("authUserID", authUserID),
-			zap.Uint("appID", appID),
-			zap.String("externalUsername", username),
-			zap.String("externalUserID", externalUserID))
+			zap.Uint("auth_user_id", authUserID),
+			zap.Uint("app_id", appID),
+			zap.String("external_username", username),
+			zap.String("external_user_id", externalUserID))
 	}
 
 	return nil
@@ -405,7 +405,7 @@ func (s *ApplicationPermissionService) syncExistingMembersToExternalSystem(group
 	userGroups, err := s.repo.FindUserGroupsByGroupID(groupID)
 	if err != nil {
 		logger.Error("获取用户组成员失败，无法同步外部系统权限",
-			zap.Uint("groupID", groupID),
+			zap.Uint("group_id", groupID),
 			zap.Error(err))
 		return
 	}
@@ -435,8 +435,8 @@ func (s *ApplicationPermissionService) syncExistingMembersToExternalSystem(group
 	}
 
 	logger.Info("用户组成员外部系统权限同步完成",
-		zap.Uint("groupID", groupID),
-		zap.Int("totalMembers", len(userGroups)),
-		zap.Int("successCount", successCount),
-		zap.Int("failCount", failCount))
+		zap.Uint("group_id", groupID),
+		zap.Int("total_members", len(userGroups)),
+		zap.Int("success_count", successCount),
+		zap.Int("fail_count", failCount))
 }

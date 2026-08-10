@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"oneops/backend3/pkg/dto"
 	apperrors "oneops/backend3/pkg/errors"
 )
 
@@ -120,4 +121,9 @@ func ErrorForbidden(message string) Response {
 		message = "禁止访问"
 	}
 	return ErrorResponse(403, message)
+}
+
+// PageSuccess 分页成功响应
+func PageSuccess(result dto.PageResult) Response {
+	return Response{Code: 200, Success: true, Data: result, Message: "success"}
 }

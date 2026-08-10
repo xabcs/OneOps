@@ -172,16 +172,16 @@ func (s *ApplicationPermissionService) getUserRuleMatrix(appID uint, appName str
 		ruleDetail, err := jumpserverAdapter.GetAuthorizationRuleDetail(app.BaseURL, authConfig, rule.RuleID)
 		if err != nil {
 			logger.Warn("获取授权规则详情失败",
-				zap.String("ruleID", rule.RuleID),
-				zap.String("ruleName", rule.RuleName),
+				zap.String("rule_id", rule.RuleID),
+				zap.String("rule_name", rule.RuleName),
 				zap.Error(err))
 			continue
 		}
 
 		logger.Info("Jumpserver 授权规则用户详情",
-			zap.String("ruleID", rule.RuleID),
-			zap.String("ruleName", rule.RuleName),
-			zap.Int("jumpserverUserCount", len(ruleDetail.Users)))
+			zap.String("rule_id", rule.RuleID),
+			zap.String("rule_name", rule.RuleName),
+			zap.Int("jumpserver_user_count", len(ruleDetail.Users)))
 
 		// 初始化该规则的矩阵
 		if matrix[rule.RuleID] == nil {
@@ -191,29 +191,29 @@ func (s *ApplicationPermissionService) getUserRuleMatrix(appID uint, appName str
 		// 遍历规则中的用户，标记权限
 		for _, ruleUser := range ruleDetail.Users {
 			logger.Debug("Jumpserver 规则用户",
-				zap.String("ruleID", rule.RuleID),
-				zap.String("jumpserverUserID", ruleUser.ID),
-				zap.String("jumpserverUsername", ruleUser.Username))
+				zap.String("rule_id", rule.RuleID),
+				zap.String("jumpserver_user_id", ruleUser.ID),
+				zap.String("jumpserver_username", ruleUser.Username))
 
 			// 找到对应的授权中心用户
 			for _, user := range users {
 				logger.Debug("授权中心用户匹配",
-					zap.String("ruleID", rule.RuleID),
-					zap.String("jumpserverUserID", ruleUser.ID),
-					zap.Uint("authUserID", user.ID),
-					zap.String("externalUserID", user.ExternalUserID),
-					zap.Bool("isMatch", user.ExternalUserID == ruleUser.ID))
+					zap.String("rule_id", rule.RuleID),
+					zap.String("jumpserver_user_id", ruleUser.ID),
+					zap.Uint("auth_user_id", user.ID),
+					zap.String("external_user_id", user.ExternalUserID),
+					zap.Bool("is_match", user.ExternalUserID == ruleUser.ID))
 
 				if user.ExternalUserID == ruleUser.ID {
 					matrix[rule.RuleID][fmt.Sprintf("%d", user.ID)] = true
 
 					logger.Info("权限匹配成功",
-						zap.String("ruleID", rule.RuleID),
-						zap.String("ruleName", rule.RuleName),
-						zap.Uint("authUserID", user.ID),
+						zap.String("rule_id", rule.RuleID),
+						zap.String("rule_name", rule.RuleName),
+						zap.Uint("auth_user_id", user.ID),
 						zap.String("username", user.Username),
-						zap.String("externalUserID", user.ExternalUserID),
-						zap.String("jumpserverUserID", ruleUser.ID))
+						zap.String("external_user_id", user.ExternalUserID),
+						zap.String("jumpserver_user_id", ruleUser.ID))
 
 					// 添加权限详情
 					key := fmt.Sprintf("%s_%d", rule.RuleID, user.ID)

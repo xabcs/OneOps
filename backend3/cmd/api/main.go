@@ -28,7 +28,15 @@ func main() {
 	fmt.Printf("配置加载成功，运行环境: %s\n", cfg.App.Environment)
 
 	// 2. 初始化日志系统
-	if err := logger.InitLogger(cfg.Log); err != nil {
+	logCfg := logger.LogConfig{
+		Level:      cfg.Log.Level,
+		Filename:   cfg.Log.Filename,
+		MaxSize:    cfg.Log.MaxSize,
+		MaxBackups: cfg.Log.MaxBackups,
+		MaxAge:     cfg.Log.MaxAge,
+		Compress:   cfg.Log.Compress,
+	}
+	if err := logger.InitLogger(logCfg); err != nil {
 		log.Fatalf("日志初始化失败: %v", err)
 	}
 	defer logger.Sync()

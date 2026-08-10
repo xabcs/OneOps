@@ -191,8 +191,8 @@ func (j *JenkinsAdapter) CreateUser(baseURL string, authConfig map[string]interf
 	email := user.Email
 	if email == "" || !strings.Contains(email, "@") || !strings.Contains(email, ".") {
 		logger.Warn("邮箱格式无效或为空，使用默认邮箱",
-			zap.String("originalEmail", user.Email),
-			zap.String("defaultEmail", user.Username+"@example.com"))
+			zap.String("original_email", user.Email),
+			zap.String("default_email", user.Username+"@example.com"))
 		email = user.Username + "@example.com"
 	}
 	formData.Set("email", email)
@@ -201,7 +201,7 @@ func (j *JenkinsAdapter) CreateUser(baseURL string, authConfig map[string]interf
 	if session.Crumb != nil {
 		for key, value := range session.Crumb {
 			formData.Set(key, value)
-			logger.Info("已添加 crumb 到表单字段", zap.String("fieldName", key))
+			logger.Info("已添加 crumb 到表单字段", zap.String("field_name", key))
 		}
 	}
 
@@ -280,7 +280,7 @@ func (j *JenkinsAdapter) AssignRole(baseURL string, authConfig map[string]interf
 	if session.Crumb != nil {
 		for key, value := range session.Crumb {
 			formData.Set(key, value)
-			logger.Info("已添加 crumb 到表单字段", zap.String("fieldName", key))
+			logger.Info("已添加 crumb 到表单字段", zap.String("field_name", key))
 		}
 	}
 
@@ -288,8 +288,8 @@ func (j *JenkinsAdapter) AssignRole(baseURL string, authConfig map[string]interf
 	logger.Info("发送角色分配请求到 Jenkins",
 		zap.String("url", assignRoleURL),
 		zap.String("username", username),
-		zap.String("roleCode", roleCode),
-		zap.String("roleType", roleType))
+		zap.String("role_code", roleCode),
+		zap.String("role_type", roleType))
 
 	req, err := http.NewRequest("POST", assignRoleURL, strings.NewReader(formData.Encode()))
 	if err != nil {
@@ -314,8 +314,8 @@ func (j *JenkinsAdapter) AssignRole(baseURL string, authConfig map[string]interf
 	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusFound {
 		logger.Info("在 Jenkins 为用户授予角色成功",
 			zap.String("username", username),
-			zap.String("roleCode", roleCode),
-			zap.String("roleType", roleType))
+			zap.String("role_code", roleCode),
+			zap.String("role_type", roleType))
 		return nil
 	}
 
@@ -360,7 +360,7 @@ func (j *JenkinsAdapter) createSession(baseURL string, authConfig map[string]int
 
 	// 获取 crumb
 	crumbURL := session.BaseURL + "/crumbIssuer/api/json"
-	logger.Info("尝试获取 Jenkins crumb", zap.String("crumbURL", crumbURL))
+	logger.Info("尝试获取 Jenkins crumb", zap.String("crumb_url", crumbURL))
 
 	req, err := http.NewRequest("GET", crumbURL, nil)
 	if err != nil {
@@ -392,7 +392,7 @@ func (j *JenkinsAdapter) createSession(baseURL string, authConfig map[string]int
 
 	if crumbResponse.CrumbRequestField == "" || crumbResponse.Crumb == "" {
 		logger.Warn("Jenkins crumb 字段为空，可能 CSRF 保护已禁用",
-			zap.String("crumbRequestField", crumbResponse.CrumbRequestField),
+			zap.String("crumb_request_field", crumbResponse.CrumbRequestField),
 			zap.String("crumb", crumbResponse.Crumb))
 		// CSRF 保护可能已禁用，返回空 crumb
 		session.Crumb = nil
@@ -401,8 +401,8 @@ func (j *JenkinsAdapter) createSession(baseURL string, authConfig map[string]int
 			crumbResponse.CrumbRequestField: crumbResponse.Crumb,
 		}
 		logger.Info("成功获取 Jenkins crumb",
-			zap.String("crumbField", crumbResponse.CrumbRequestField),
-			zap.String("crumbValue", crumbResponse.Crumb))
+			zap.String("crumb_field", crumbResponse.CrumbRequestField),
+			zap.String("crumb_value", crumbResponse.Crumb))
 	}
 
 	return session, nil

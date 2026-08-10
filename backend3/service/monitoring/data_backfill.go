@@ -69,7 +69,7 @@ func (s *DataBackfillService) CheckAndBackfill(server *modelcmdb.Server) error {
 		First(&lastMetric).Error
 
 	if err != nil {
-		logger.Debug("主机无历史指标数据，跳过回填", zap.Uint("serverID", server.ID))
+		logger.Debug("主机无历史指标数据，跳过回填", zap.Uint("server_id", server.ID))
 		return nil
 	}
 
@@ -78,7 +78,7 @@ func (s *DataBackfillService) CheckAndBackfill(server *modelcmdb.Server) error {
 
 	if gapDuration < 5*time.Minute {
 		logger.Debug("数据缺失时长过短，无需回填",
-			zap.Uint("serverID", server.ID),
+			zap.Uint("server_id", server.ID),
 			zap.Duration("gap", gapDuration))
 		return nil
 	}
@@ -87,13 +87,13 @@ func (s *DataBackfillService) CheckAndBackfill(server *modelcmdb.Server) error {
 	if gapDuration.Hours() > MaxBackfillHours {
 		backfillStart = now.Add(-time.Duration(MaxBackfillHours) * time.Hour)
 		logger.Info("数据缺失时长超过最大回填时长，仅回填最近部分",
-			zap.Uint("serverID", server.ID),
+			zap.Uint("server_id", server.ID),
 			zap.Duration("gap", gapDuration),
-			zap.Duration("backfillWindow", time.Duration(MaxBackfillHours)*time.Hour))
+			zap.Duration("backfill_window", time.Duration(MaxBackfillHours)*time.Hour))
 	}
 
 	logger.Info("开始回填主机缺失数据",
-		zap.Uint("serverID", server.ID),
+		zap.Uint("server_id", server.ID),
 		zap.String("hostname", server.Hostname),
 		zap.Time("from", backfillStart),
 		zap.Time("to", now))
@@ -118,7 +118,7 @@ func (s *DataBackfillService) BackfillData(serverID uint, startTime, endTime tim
 		metrics, err := s.fetchHistoricalMetrics(&server, currentStart, currentEnd)
 		if err != nil {
 			logger.Warn("获取历史数据失败",
-				zap.Uint("serverID", serverID),
+				zap.Uint("server_id", serverID),
 				zap.Time("from", currentStart),
 				zap.Time("to", currentEnd),
 				zap.Error(err))
@@ -153,7 +153,7 @@ func (s *DataBackfillService) BackfillData(serverID uint, startTime, endTime tim
 			              VALUES (?, ?, ?, ?, NOW())`
 			if err := getDB().Exec(insertSQL, serverID, metric.Type, string(metric.Data), reportTime).Error; err != nil {
 				logger.Warn("插入回填数据失败",
-					zap.Uint("serverID", serverID),
+					zap.Uint("server_id", serverID),
 					zap.String("type", metric.Type),
 					zap.String("timestamp", metric.Timestamp),
 					zap.Error(err))
@@ -163,7 +163,7 @@ func (s *DataBackfillService) BackfillData(serverID uint, startTime, endTime tim
 		}
 
 		logger.Debug("批次回填完成",
-			zap.Uint("serverID", serverID),
+			zap.Uint("server_id", serverID),
 			zap.Time("from", currentStart),
 			zap.Time("to", currentEnd),
 			zap.Int("count", insertCount))
@@ -177,7 +177,7 @@ func (s *DataBackfillService) BackfillData(serverID uint, startTime, endTime tim
 	cache.InvalidateServerCache(serverID)
 
 	logger.Info("数据回填完成",
-		zap.Uint("serverID", serverID),
+		zap.Uint("server_id", serverID),
 		zap.String("hostname", server.Hostname))
 
 	return nil
@@ -253,14 +253,14 @@ func ScheduleBackfillOnAgentRecovery(serverID uint) {
 		var server modelcmdb.Server
 		if err := getDB().First(&server, serverID).Error; err != nil {
 			logger.Error("查询主机失败，无法执行回填",
-				zap.Uint("serverID", serverID),
+				zap.Uint("server_id", serverID),
 				zap.Error(err))
 			return
 		}
 
 		if err := service.CheckAndBackfill(&server); err != nil {
 			logger.Error("数据回填失败",
-				zap.Uint("serverID", serverID),
+				zap.Uint("server_id", serverID),
 				zap.Error(err))
 		}
 	}()

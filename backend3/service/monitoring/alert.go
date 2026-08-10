@@ -129,8 +129,8 @@ func (s *MonitoringService) checkAlertThresholds(serverID uint, hostname, ip str
 					         WHERE server_id = ? AND rule_id = ? AND resolved_at IS NULL`,
 					now, value, message, serverID, dbRule.ID)
 				logger.Debug("告警已被聚合抑制，仅更新时间戳",
-					zap.Uint("serverID", serverID),
-					zap.String("ruleId", dbRule.ID))
+					zap.Uint("server_id", serverID),
+					zap.String("rule_id", dbRule.ID))
 				continue
 			}
 
@@ -147,12 +147,12 @@ func (s *MonitoringService) checkAlertThresholds(serverID uint, hostname, ip str
 					VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 				if err := getDB().Exec(insertSQL, serverID, hostname, ip, dbRule.ID, dbRule.Level,
 					message, value, dbRule.Threshold, now, now).Error; err != nil {
-					logger.Warn("插入告警失败", zap.String("ruleId", dbRule.ID), zap.Error(err))
+					logger.Warn("插入告警失败", zap.String("rule_id", dbRule.ID), zap.Error(err))
 				} else {
 					logger.Info("触发告警",
-						zap.Uint("serverID", serverID),
+						zap.Uint("server_id", serverID),
 						zap.String("hostname", hostname),
-						zap.String("ruleId", dbRule.ID),
+						zap.String("rule_id", dbRule.ID),
 						zap.String("level", dbRule.Level),
 						zap.Float64("value", value))
 
@@ -185,9 +185,9 @@ func (s *MonitoringService) checkAlertThresholds(serverID uint, hostname, ip str
 				now, serverID, dbRule.ID)
 			if result.RowsAffected > 0 {
 				logger.Info("告警已恢复",
-					zap.Uint("serverID", serverID),
+					zap.Uint("server_id", serverID),
 					zap.String("hostname", hostname),
-					zap.String("ruleId", dbRule.ID))
+					zap.String("rule_id", dbRule.ID))
 			}
 		}
 	}

@@ -7,11 +7,19 @@ import (
 	"path/filepath"
 	"time"
 
-	"oneops/backend3/config"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+// LogConfig 日志配置（独立定义，避免循环依赖 config 包）
+type LogConfig struct {
+	Level      string `yaml:"level"`       // 日志级别: debug, info, warn, error, fatal
+	Filename   string `yaml:"filename"`    // 日志文件路径
+	MaxSize    int    `yaml:"max_size"`    // 单个日志文件最大大小(MB)
+	MaxBackups int    `yaml:"max_backups"` // 保留的旧日志文件最大数量
+	MaxAge     int    `yaml:"max_age"`     // 保留旧日志文件的最大天数
+	Compress   bool   `yaml:"compress"`    // 是否压缩旧日志文件
+}
 
 var Logger *zap.Logger
 
@@ -28,7 +36,7 @@ const (
 )
 
 // InitLogger 初始化日志系统
-func InitLogger(cfg config.LogConfig) error {
+func InitLogger(cfg LogConfig) error {
 	// 确保日志目录存在
 	logDir := filepath.Dir(cfg.Filename)
 	if err := os.MkdirAll(logDir, 0755); err != nil {
@@ -85,7 +93,7 @@ func InitLogger(cfg config.LogConfig) error {
 	consoleCore := zapcore.NewCore(
 		zapcore.NewConsoleEncoder(consoleEncoderConfig),
 		zapcore.AddSync(os.Stdout),
-		level,
+		atomicLevel,
 	)
 
 	// 组合核心（同时输出到文件和控制台）
@@ -348,12 +356,20 @@ func GetLogLevel() string {
 	if Logger == nil {
 		return "info"
 	}
-	return "info"
+	return Logger.Level().String()
 }
 
-// SetLogLevel 动态设置日志级别（开发时有用）
+// atomicLevel 全局原子级别，用于动态切换（必须用 NewAtomicLevel 初始化）
+var atomicLevel = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+
+// SetLogLevel 动态设置日志级别
 func SetLogLevel(level string) error {
-	return fmt.Errorf("动态日志级别切换尚未实现")
+	if atomicLevel.Level() == zapcore.DebugLevel && level == "debug" {
+		return nil // 已经是目标级别
+	}
+	l := getLogLevel(level)
+	atomicLevel.SetLevel(l)
+	return nil
 }
 
 // Flush 刷新日志缓冲区

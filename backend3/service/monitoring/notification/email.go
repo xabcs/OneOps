@@ -87,7 +87,7 @@ func (s *EmailService) Send(to []string, subject, body string, isHTML bool) erro
 		if i > 0 {
 			logger.Warn("邮件发送失败，重试中",
 				zap.Int("attempt", i+1),
-				zap.Int("maxRetries", maxRetries),
+				zap.Int("max_retries", maxRetries),
 				zap.Error(lastErr))
 			time.Sleep(time.Duration(i) * time.Second)
 		}

@@ -315,7 +315,7 @@ func (s *MonitoringService) PullExtendedMetrics(serverID uint) (*AgentExtendedMe
 
 	if resp.StatusCode == http.StatusNotFound {
 		logger.Warn("Agent不支持扩展指标端点（可能是旧版本），返回空数据",
-			zap.Uint("serverID", serverID),
+			zap.Uint("server_id", serverID),
 			zap.String("url", url))
 		return &AgentExtendedMetricsResponse{
 			Performance: PerformanceMetrics{
@@ -347,7 +347,7 @@ func (s *MonitoringService) PullExtendedMetrics(serverID uint) (*AgentExtendedMe
 	}
 
 	if err := s.storeMetrics(serverID, &metrics); err != nil {
-		logger.Error("存储扩展指标失败", zap.Uint("serverID", serverID), zap.Error(err))
+		logger.Error("存储扩展指标失败", zap.Uint("server_id", serverID), zap.Error(err))
 	}
 
 	now := time.Now()
@@ -355,18 +355,18 @@ func (s *MonitoringService) PullExtendedMetrics(serverID uint) (*AgentExtendedMe
 		"last_heartbeat_at": now,
 		"agent_status":      "running",
 	}).Error; err != nil {
-		logger.Warn("更新主机心跳时间失败", zap.Uint("serverID", serverID), zap.Error(err))
+		logger.Warn("更新主机心跳时间失败", zap.Uint("server_id", serverID), zap.Error(err))
 	}
 
 	cache := database.NewRedisCache()
 	if err := cache.CacheServerMetricsWithTTL(serverID, metrics, 2*time.Minute); err != nil {
-		logger.Warn("缓存主机指标到 Redis 失败", zap.Uint("serverID", serverID), zap.Error(err))
+		logger.Warn("缓存主机指标到 Redis 失败", zap.Uint("server_id", serverID), zap.Error(err))
 	} else {
-		logger.Debug("主机指标已缓存到 Redis (TTL: 2分钟)", zap.Uint("serverID", serverID))
+		logger.Debug("主机指标已缓存到 Redis (TTL: 2分钟)", zap.Uint("server_id", serverID))
 	}
 
 	logger.Debug("Agent 扩展指标拉取成功",
-		zap.Uint("serverID", serverID),
+		zap.Uint("server_id", serverID),
 		zap.Float64("cpu", metrics.Performance.CPU.UsagePercent),
 		zap.Float64("memory", metrics.Performance.Memory.UsedPercent))
 

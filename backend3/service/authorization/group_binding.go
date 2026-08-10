@@ -229,8 +229,8 @@ func (s *ApplicationPermissionService) recordGroupBindingExecution(groupBindingI
 
 	if err := s.repo.CreateGroupBindingExecution(&execution); err != nil {
 		logger.Warn("记录角色绑定执行状态失败",
-			zap.Uint("groupBindingID", groupBindingID),
-			zap.Uint("authUserID", authUserID),
+			zap.Uint("group_binding_id", groupBindingID),
+			zap.Uint("auth_user_id", authUserID),
 			zap.Error(err))
 	}
 }
@@ -260,7 +260,7 @@ func (s *ApplicationPermissionService) createJumpserverGroupBinding(binding *mod
 		// 如果从数据库 ID 找不到，尝试从 binding 中获取 Jumpserver 规则 ID
 		// 可能前端直接传递了 Jumpserver 的规则 UUID
 		logger.Warn("从数据库ID获取授权规则失败，尝试从其他字段获取",
-			zap.Uint("ruleDatabaseID", ruleID),
+			zap.Uint("rule_database_id", ruleID),
 			zap.Error(err))
 
 		// 尝试查询是否有匹配的规则
@@ -276,8 +276,8 @@ func (s *ApplicationPermissionService) createJumpserverGroupBinding(binding *mod
 		// 使用第一个规则作为默认规则（实际应该让用户选择）
 		authRule = rules[0]
 		logger.Info("使用默认授权规则",
-			zap.String("ruleID", authRule.RuleID),
-			zap.String("ruleName", authRule.RuleName))
+			zap.String("rule_id", authRule.RuleID),
+			zap.String("rule_name", authRule.RuleName))
 	} else {
 		authRule = *found
 	}
@@ -293,12 +293,12 @@ func (s *ApplicationPermissionService) createJumpserverGroupBinding(binding *mod
 	go s.syncExistingMembersToJumpserver(binding.GroupID, binding.AppID, binding.ID, authRule.RuleID, authRule.RuleName, "system")
 
 	logger.Info("创建 Jumpserver 用户组绑定成功，开始为现有成员同步权限",
-		zap.Uint("groupID", binding.GroupID),
-		zap.String("groupName", group.Name),
-		zap.Uint("appID", binding.AppID),
-		zap.String("appName", app.Name),
-		zap.String("ruleID", authRule.RuleID),
-		zap.String("ruleName", authRule.RuleName))
+		zap.Uint("group_id", binding.GroupID),
+		zap.String("group_name", group.Name),
+		zap.Uint("app_id", binding.AppID),
+		zap.String("app_name", app.Name),
+		zap.String("rule_id", authRule.RuleID),
+		zap.String("rule_name", authRule.RuleName))
 
 	return nil
 }
@@ -309,22 +309,22 @@ func (s *ApplicationPermissionService) syncExistingMembersToJumpserver(groupID, 
 	userGroups, err := s.repo.FindUserGroupsByGroupID(groupID)
 	if err != nil {
 		logger.Error("获取用户组成员失败，无法同步 Jumpserver 权限",
-			zap.Uint("groupID", groupID),
+			zap.Uint("group_id", groupID),
 			zap.Error(err))
 		return
 	}
 
 	logger.Info("开始为用户组成员同步 Jumpserver 权限",
-		zap.Uint("groupID", groupID),
-		zap.Int("memberCount", len(userGroups)),
-		zap.Uint("appID", appID),
-		zap.String("ruleID", jumpserverRuleID))
+		zap.Uint("group_id", groupID),
+		zap.Int("member_count", len(userGroups)),
+		zap.Uint("app_id", appID),
+		zap.String("rule_id", jumpserverRuleID))
 
 	// 获取应用配置
 	app, err := s.GetApplicationByID(appID)
 	if err != nil {
 		logger.Error("获取应用配置失败",
-			zap.Uint("appID", appID),
+			zap.Uint("app_id", appID),
 			zap.Error(err))
 		return
 	}
@@ -333,7 +333,7 @@ func (s *ApplicationPermissionService) syncExistingMembersToJumpserver(groupID, 
 	var authConfig map[string]interface{}
 	if err := json.Unmarshal([]byte(app.AuthConfig), &authConfig); err != nil {
 		logger.Error("解析认证配置失败",
-			zap.Uint("appID", appID),
+			zap.Uint("app_id", appID),
 			zap.Error(err))
 		return
 	}
@@ -366,7 +366,7 @@ func (s *ApplicationPermissionService) syncExistingMembersToJumpserver(groupID, 
 		// 检查用户是否有密码
 		if user.Password == "" {
 			logger.Warn("用户未设置初始密码，跳过 Jumpserver 用户创建",
-				zap.Uint("userID", user.ID),
+				zap.Uint("user_id", user.ID),
 				zap.String("username", user.Username))
 			failCount++
 			continue
@@ -375,7 +375,7 @@ func (s *ApplicationPermissionService) syncExistingMembersToJumpserver(groupID, 
 		// 1. 创建 Jumpserver 用户
 		if err := s.CreateExternalUser(appID, user.ID, user.Username, user.Password, user.Email, user.Nickname, operator); err != nil {
 			logger.Warn("创建 Jumpserver 用户失败",
-				zap.Uint("userID", user.ID),
+				zap.Uint("user_id", user.ID),
 				zap.String("username", user.Username),
 				zap.Error(err))
 			// 继续执行，用户可能已存在
@@ -385,7 +385,7 @@ func (s *ApplicationPermissionService) syncExistingMembersToJumpserver(groupID, 
 		mapping, err := s.repo.FindUserIdentityMappingByUserAndApp(user.ID, appID)
 		if err != nil {
 			logger.Warn("获取用户身份映射失败",
-				zap.Uint("userID", user.ID),
+				zap.Uint("user_id", user.ID),
 				zap.String("username", user.Username),
 				zap.Error(err))
 			failCount++
@@ -398,7 +398,7 @@ func (s *ApplicationPermissionService) syncExistingMembersToJumpserver(groupID, 
 			userMapping[mapping.ExternalUserID] = user.ID
 		} else {
 			logger.Warn("用户身份映射中没有 Jumpserver 用户 ID",
-				zap.Uint("userID", user.ID),
+				zap.Uint("user_id", user.ID),
 				zap.String("username", user.Username))
 			failCount++
 			continue
@@ -413,8 +413,8 @@ func (s *ApplicationPermissionService) syncExistingMembersToJumpserver(groupID, 
 	if len(jumpserverUserIDs) > 0 {
 		if err := jumpserverAdapter.AddUsersToAuthorizationRule(app.BaseURL, authConfig, jumpserverRuleID, jumpserverUserIDs); err != nil {
 			logger.Error("批量添加用户到授权规则失败",
-				zap.String("ruleID", jumpserverRuleID),
-				zap.Any("userIDs", jumpserverUserIDs),
+				zap.String("rule_id", jumpserverRuleID),
+				zap.Any("user_i_ds", jumpserverUserIDs),
 				zap.Error(err))
 
 			// 记录失败
@@ -435,9 +435,9 @@ func (s *ApplicationPermissionService) syncExistingMembersToJumpserver(groupID, 
 	}
 
 	logger.Info("用户组成员 Jumpserver 权限同步完成",
-		zap.Uint("groupID", groupID),
-		zap.Int("totalMembers", len(userGroups)),
-		zap.Int("successCount", successCount),
-		zap.Int("failCount", failCount),
-		zap.Int("addedToRule", len(jumpserverUserIDs)))
+		zap.Uint("group_id", groupID),
+		zap.Int("total_members", len(userGroups)),
+		zap.Int("success_count", successCount),
+		zap.Int("fail_count", failCount),
+		zap.Int("added_to_rule", len(jumpserverUserIDs)))
 }

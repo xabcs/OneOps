@@ -158,7 +158,7 @@ WantedBy=multi-user.target
 		"agent_version": "1.0.0",
 	})
 
-	logger.Info("Agent 部署成功", zap.Uint("serverID", serverID), zap.String("arch", binaryArch))
+	logger.Info("Agent 部署成功", zap.Uint("server_id", serverID), zap.String("arch", binaryArch))
 	return nil
 }
 
@@ -184,7 +184,7 @@ func (s *AgentService) RestartAgent(serverID uint) error {
 		updates["agent_version"] = "1.0.0"
 	}
 	s.repo.UpdateServerFields(serverID, updates)
-	logger.Info("Agent 重启成功", zap.Uint("serverID", serverID))
+	logger.Info("Agent 重启成功", zap.Uint("server_id", serverID))
 	return nil
 }
 
@@ -206,7 +206,7 @@ func (s *AgentService) UninstallAgent(serverID uint) error {
 		agentServiceName, agentServiceName, agentServiceName, agentInstallDir,
 	)
 	if err := runSSHCommand2(sshClient, cmds); err != nil {
-		logger.Error("卸载 Agent SSH命令执行失败", zap.Uint("serverID", serverID), zap.Error(err))
+		logger.Error("卸载 Agent SSH命令执行失败", zap.Uint("server_id", serverID), zap.Error(err))
 		return fmt.Errorf("卸载 Agent 失败: %w", err)
 	}
 
@@ -223,7 +223,7 @@ func (s *AgentService) UninstallAgent(serverID uint) error {
 		"load15":             0,
 	})
 
-	logger.Info("Agent 卸载成功", zap.Uint("serverID", serverID))
+	logger.Info("Agent 卸载成功", zap.Uint("server_id", serverID))
 	return nil
 }
 
@@ -289,7 +289,7 @@ func (s *AgentService) PullMetrics(serverID uint) error {
 		return fmt.Errorf("写入数据库失败: %w", err)
 	}
 
-	logger.Debug("Agent 指标拉取成功", zap.Uint("serverID", serverID),
+	logger.Debug("Agent 指标拉取成功", zap.Uint("server_id", serverID),
 		zap.Float64("cpu", metrics.CPUUsage),
 		zap.Float64("mem", metrics.MemoryUsage),
 		zap.Float64("disk", metrics.DiskUsage))
@@ -325,9 +325,9 @@ func (s *AgentService) ReceiveHeartbeat(data AgentHeartbeatData) error {
 
 	if shouldBackfill {
 		logger.Info("Agent 从离线恢复，触发数据回填",
-			zap.Uint("serverID", server.ID),
+			zap.Uint("server_id", server.ID),
 			zap.String("hostname", server.Hostname),
-			zap.String("previousStatus", server.AgentStatus))
+			zap.String("previous_status", server.AgentStatus))
 		// TODO: ScheduleBackfillOnAgentRecovery — 监控模块完成后实现
 	}
 
@@ -390,7 +390,7 @@ func collectAllAgentServers() {
 			defer wg.Done()
 			defer func() { <-sem }()
 			if err := svc.PullMetrics(sid); err != nil {
-				logger.Debug("Agent 指标拉取失败", zap.Uint("serverID", sid), zap.Error(err))
+				logger.Debug("Agent 指标拉取失败", zap.Uint("server_id", sid), zap.Error(err))
 			}
 		}(id)
 	}
@@ -440,7 +440,7 @@ func collectRegularMetrics() {
 			defer wg.Done()
 			defer func() { <-sem }()
 			if err := svc.PullMetrics(sid); err != nil {
-				logger.Debug("常规指标拉取失败", zap.Uint("serverID", sid), zap.Error(err))
+				logger.Debug("常规指标拉取失败", zap.Uint("server_id", sid), zap.Error(err))
 			}
 		}(id)
 	}
@@ -490,7 +490,7 @@ func runSSHCommand2(client *ssh.Client, cmd string) error {
 // MarkAgentFailed 将指定主机的 agent_status 置为 failed
 func (s *AgentService) MarkAgentFailed(serverID uint, reason string) {
 	logger.Error("Agent 部署失败",
-		zap.Uint("serverID", serverID),
+		zap.Uint("server_id", serverID),
 		zap.String("reason", reason))
 	s.repo.UpdateServerFields(serverID, map[string]interface{}{
 		"agent_status":       "failed",
@@ -638,7 +638,7 @@ func (s *AgentService) UpdateVersion(versionID uint, updates map[string]interfac
 		return fmt.Errorf("更新版本失败: %w", err)
 	}
 
-	logger.Info("更新 Agent 版本成功", zap.Uint("versionID", versionID))
+	logger.Info("更新 Agent 版本成功", zap.Uint("version_id", versionID))
 	return nil
 }
 
@@ -666,7 +666,7 @@ func (s *AgentService) DeleteVersion(versionID uint) error {
 	}
 
 	logger.Info("删除 Agent 版本成功",
-		zap.Uint("versionID", versionID),
+		zap.Uint("version_id", versionID),
 		zap.String("version", version.Version))
 	return nil
 }
@@ -842,21 +842,21 @@ func (s *AgentService) UpgradeAgent(serverID uint, targetVersion string) error {
 				agentRepo.IncrementDeployCount(targetVersion)
 				markTaskSuccess(task.ID)
 				logger.Info("Agent 升级成功",
-					zap.Uint("serverID", serverID),
+					zap.Uint("server_id", serverID),
 					zap.String("version", targetVersion))
 				return
 			}
 		}
 		markTaskFailed(task.ID, "升级超时，未收到新版本心跳")
 		logger.Error("Agent 升级超时",
-			zap.Uint("serverID", serverID),
-			zap.String("targetVersion", targetVersion))
+			zap.Uint("server_id", serverID),
+			zap.String("target_version", targetVersion))
 	}()
 
 	logger.Info("Agent 升级任务已提交",
-		zap.Uint("serverID", serverID),
+		zap.Uint("server_id", serverID),
 		zap.String("version", targetVersion),
-		zap.Uint("taskID", task.ID))
+		zap.Uint("task_id", task.ID))
 	return nil
 }
 

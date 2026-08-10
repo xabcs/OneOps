@@ -170,9 +170,9 @@ func (s *MonitoringService) ExportReport(id uint64, format string) (string, erro
 	filePath := fmt.Sprintf("/tmp/report_%d.%s", id, format)
 
 	logger.Info("导出巡检报告",
-		zap.Uint64("reportId", id),
+		zap.Uint64("report_id", id),
 		zap.String("format", format),
-		zap.String("filePath", filePath))
+		zap.String("file_path", filePath))
 
 	return filePath, nil
 }

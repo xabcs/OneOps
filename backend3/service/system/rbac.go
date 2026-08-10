@@ -50,7 +50,7 @@ func (s *RBACService) GetUserRoles(userID uint) ([]*modelsystem.Role, error) {
 // BuildMenuTreeAndPermissions 构建菜单树和权限列表，同时返回角色（避免调用方重复查询）
 func (s *RBACService) BuildMenuTreeAndPermissions(userID uint) ([]*modelsystem.Menu, []string, []*modelsystem.Role, error) {
 	startTime := time.Now()
-	logger.Debug("[登录调试-RBAC] BuildMenuTreeAndPermissions开始", zap.Uint("userID", userID))
+	logger.Debug("[登录调试-RBAC] BuildMenuTreeAndPermissions开始", zap.Uint("user_id", userID))
 
 	logger.Debug("[登录调试-RBAC] 开始获取用户角色")
 	roleStart := time.Now()

@@ -1,9 +1,12 @@
 package dto
 
+// ═══════════════════════════════════════════
+// 服务器相关参数
+// ═══════════════════════════════════════════
+
 // ServerQueryParams 服务器查询参数
 type ServerQueryParams struct {
-	Page           int    `form:"page" binding:"min=1"`
-	PageSize       int    `form:"pageSize" binding:"min=1,max=100"`
+	BasePageQuery
 	Hostname       string `form:"hostname" binding:"omitempty,max=100"`
 	IP             string `form:"ip" binding:"omitempty,ip"`
 	InnerIP        string `form:"innerIp" binding:"omitempty,ip"`
@@ -14,21 +17,6 @@ type ServerQueryParams struct {
 	AgentStatus    string `form:"agentStatus" binding:"omitempty,oneof=running stopped unavailable"`
 	BusinessUnitID *uint  `form:"businessUnitId" binding:"omitempty,min=1"`
 	Tags           string `form:"tags" binding:"omitempty"`
-}
-
-// K8sResourceQueryParams K8s资源查询参数（复用分页参数）
-type K8sResourceQueryParams struct {
-	Page      int    `form:"page" binding:"min=1"`
-	PageSize  int    `form:"pageSize" binding:"min=1,max=100"`
-	Namespace string `form:"namespace" binding:"required,max=255"`
-}
-
-// K8sPodQueryParams K8s Pod查询参数（支持labelSelector）
-type K8sPodQueryParams struct {
-	Page          int    `form:"page" binding:"min=1"`
-	PageSize      int    `form:"pageSize" binding:"min=1,max=100"`
-	Namespace     string `form:"namespace" binding:"required,max=255"`
-	LabelSelector string `form:"labelSelector" binding:"omitempty"`
 }
 
 // ServerCreateParams 创建服务器参数
@@ -69,6 +57,10 @@ type ServerUpdateParams struct {
 	Remarks  *string `json:"remarks" binding:"omitempty,max=500"`
 }
 
+// ═══════════════════════════════════════════
+// 用户相关参数
+// ═══════════════════════════════════════════
+
 // UserCreateParams 创建用户参数
 type UserCreateParams struct {
 	Username string `json:"username" binding:"required,min=3,max=50,alphanum"`
@@ -89,6 +81,10 @@ type UserUpdateParams struct {
 	RoleIDs  *[]uint `json:"roleIds" binding:"omitempty,min=1,dive"`
 	Status   *int    `json:"status" binding:"omitempty,oneof=0 1"`
 }
+
+// ═══════════════════════════════════════════
+// 菜单相关参数
+// ═══════════════════════════════════════════
 
 // MenuCreateParams 创建菜单参数
 type MenuCreateParams struct {
@@ -114,6 +110,10 @@ type MenuUpdateParams struct {
 	Status     *int    `json:"status" binding:"omitempty,oneof=0 1"`
 }
 
+// ═══════════════════════════════════════════
+// 角色相关参数
+// ═══════════════════════════════════════════
+
 // RoleCreateParams 创建角色参数
 type RoleCreateParams struct {
 	Name        string `json:"name" binding:"required,min=1,max=50"`
@@ -132,14 +132,38 @@ type RoleUpdateParams struct {
 	Status      *int    `json:"status" binding:"omitempty,oneof=0 1"`
 }
 
+// ═══════════════════════════════════════════
+// 认证相关参数
+// ═══════════════════════════════════════════
+
 // LoginParams 登录参数
 type LoginParams struct {
 	Username string `json:"username" binding:"required,min=1,max=50"`
 	Password string `json:"password" binding:"required,min=1,max=100"`
 }
 
-// ValidateCustom 自定义验证
+// ═══════════════════════════════════════════
+// K8s 相关参数
+// ═══════════════════════════════════════════
+
+// K8sResourceQueryParams K8s资源查询参数
+type K8sResourceQueryParams struct {
+	BasePageQuery
+	Namespace string `form:"namespace" binding:"required,max=255"`
+}
+
+// K8sPodQueryParams K8s Pod查询参数
+type K8sPodQueryParams struct {
+	BasePageQuery
+	Namespace     string `form:"namespace" binding:"required,max=255"`
+	LabelSelector string `form:"labelSelector" binding:"omitempty"`
+}
+
+// ═══════════════════════════════════════════
+// 兼容方法（逐步废弃）
+// ═══════════════════════════════════════════
+
+// ValidateCustom 自定义验证（兼容旧代码）
 func (s ServerQueryParams) ValidateCustom() error {
-	// 可以添加自定义验证逻辑
 	return nil
 }

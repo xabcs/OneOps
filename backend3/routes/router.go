@@ -20,7 +20,7 @@ import (
 func SetupRoutes(r *gin.Engine) {
 	// 应用中间件
 	r.Use(gin.Recovery())
-	r.Use(middleware.Response())
+	r.Use(middleware.RequestLogger())
 	r.Use(middleware.ErrorHandler())
 	r.Use(cors.New(middleware.CORS()))
 

@@ -24,7 +24,7 @@ func NewInitializer() *Initializer {
 
 // Initialize 执行初始化
 func (i *Initializer) Initialize() error {
-	zap.L().Info("开始数据库初始化流程...")
+	logger.Info("开始数据库初始化流程...")
 
 	// 阶段1：数据库模式迁移
 	if err := i.migrateSchema(); err != nil {
@@ -33,7 +33,7 @@ func (i *Initializer) Initialize() error {
 
 	// 阶段2：创建监控表
 	if err := i.runMigrations(); err != nil {
-		zap.L().Warn("监控表创建失败，继续执行", zap.Error(err))
+		logger.Warn("监控表创建失败，继续执行", zap.Error(err))
 	}
 
 	// 阶段3：初始化系统数据（菜单、角色、用户、权限等）
@@ -41,13 +41,13 @@ func (i *Initializer) Initialize() error {
 		return fmt.Errorf("系统数据初始化失败: %w", err)
 	}
 
-	zap.L().Info("数据库初始化流程完成")
+	logger.Info("数据库初始化流程完成")
 	return nil
 }
 
 // migrateSchema 迁移数据库模式
 func (i *Initializer) migrateSchema() error {
-	zap.L().Info("阶段1：开始数据库模式迁移...")
+	logger.Info("阶段1：开始数据库模式迁移...")
 
 	db := database.GetDB()
 
@@ -128,10 +128,10 @@ func (i *Initializer) migrateSchema() error {
 		&modelk8s.K8sSession{},
 		&modelk8s.K8sCommand{},
 	); err != nil {
-		zap.L().Warn("K8s表迁移失败", zap.Error(err))
+		logger.Warn("K8s表迁移失败", zap.Error(err))
 	}
 
-	zap.L().Info("数据库模式迁移完成")
+	logger.Info("数据库模式迁移完成")
 	return nil
 }
 
@@ -263,51 +263,51 @@ func (i *Initializer) runMigrations() error {
 
 // initSystemData 初始化系统数据（菜单、角色、用户、权限、诊断、Agent等）
 func (i *Initializer) initSystemData() error {
-	zap.L().Info("初始化系统数据...")
+	logger.Info("初始化系统数据...")
 
 	// 同步菜单
 	if err := i.syncMenus(); err != nil {
-		zap.L().Warn("菜单同步失败", zap.Error(err))
+		logger.Warn("菜单同步失败", zap.Error(err))
 	}
 
 	// 同步内置角色
 	if err := i.syncBuiltinRoles(); err != nil {
-		zap.L().Warn("内置角色同步失败", zap.Error(err))
+		logger.Warn("内置角色同步失败", zap.Error(err))
 	}
 
 	// 同步管理员用户
 	if err := i.syncUsers(); err != nil {
-		zap.L().Warn("管理员用户同步失败", zap.Error(err))
+		logger.Warn("管理员用户同步失败", zap.Error(err))
 	}
 
 	// 同步属性定义
 	if err := i.syncAttributes(); err != nil {
-		zap.L().Warn("属性定义同步失败", zap.Error(err))
+		logger.Warn("属性定义同步失败", zap.Error(err))
 	}
 
 	// 同步权限数据
 	if err := i.syncPermissions(); err != nil {
-		zap.L().Warn("权限数据同步失败", zap.Error(err))
+		logger.Warn("权限数据同步失败", zap.Error(err))
 	}
 
 	// 同步默认角色权限分配
 	if err := i.syncDefaultPermissions(); err != nil {
-		zap.L().Warn("默认权限分配失败", zap.Error(err))
+		logger.Warn("默认权限分配失败", zap.Error(err))
 	}
 
 	// 同步诊断数据
 	if err := i.syncDiagnosticData(); err != nil {
-		zap.L().Warn("诊断数据同步失败", zap.Error(err))
+		logger.Warn("诊断数据同步失败", zap.Error(err))
 	}
 
 	// 同步 Agent 版本
 	if err := i.syncAgentVersions(); err != nil {
-		zap.L().Warn("Agent版本同步失败", zap.Error(err))
+		logger.Warn("Agent版本同步失败", zap.Error(err))
 	}
 
 	// 同步 Casbin 策略
 	if err := i.syncAPIPermissions(); err != nil {
-		zap.L().Warn("Casbin策略同步失败", zap.Error(err))
+		logger.Warn("Casbin策略同步失败", zap.Error(err))
 	}
 
 	return nil

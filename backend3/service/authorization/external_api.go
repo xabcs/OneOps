@@ -190,7 +190,7 @@ func (s *ApplicationPermissionService) createJenkinsSession(app *modelauth.Appli
 
 	// 获取 crumb
 	crumbURL := session.BaseURL + "/crumbIssuer/api/json"
-	logger.Info("尝试获取 Jenkins crumb", zap.String("crumbURL", crumbURL))
+	logger.Info("尝试获取 Jenkins crumb", zap.String("crumb_url", crumbURL))
 
 	req, err := http.NewRequest("GET", crumbURL, nil)
 	if err != nil {
@@ -213,7 +213,7 @@ func (s *ApplicationPermissionService) createJenkinsSession(app *modelauth.Appli
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
-	logger.Info("Jenkins crumb 响应", zap.Int("statusCode", resp.StatusCode), zap.String("body", string(body)))
+	logger.Info("Jenkins crumb 响应", zap.Int("status_code", resp.StatusCode), zap.String("body", string(body)))
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("获取 crumb 失败 (状态码 %d): %s", resp.StatusCode, string(body))
@@ -231,7 +231,7 @@ func (s *ApplicationPermissionService) createJenkinsSession(app *modelauth.Appli
 
 	if crumbResponse.CrumbRequestField == "" || crumbResponse.Crumb == "" {
 		logger.Warn("Jenkins crumb 字段为空，可能 CSRF 保护已禁用",
-			zap.String("crumbRequestField", crumbResponse.CrumbRequestField),
+			zap.String("crumb_request_field", crumbResponse.CrumbRequestField),
 			zap.String("crumb", crumbResponse.Crumb))
 		session.Crumb = nil
 	} else {
@@ -239,8 +239,8 @@ func (s *ApplicationPermissionService) createJenkinsSession(app *modelauth.Appli
 			crumbResponse.CrumbRequestField: crumbResponse.Crumb,
 		}
 		logger.Info("成功获取 Jenkins crumb",
-			zap.String("crumbField", crumbResponse.CrumbRequestField),
-			zap.String("crumbValue", crumbResponse.Crumb))
+			zap.String("crumb_field", crumbResponse.CrumbRequestField),
+			zap.String("crumb_value", crumbResponse.Crumb))
 	}
 
 	return session, nil
@@ -251,7 +251,7 @@ func (s *ApplicationPermissionService) getJenkinsCrumb(app *modelauth.Applicatio
 	baseURL := strings.TrimSuffix(app.BaseURL, "/")
 	crumbURL := baseURL + "/crumbIssuer/api/json"
 
-	logger.Info("尝试获取 Jenkins crumb", zap.String("crumbURL", crumbURL))
+	logger.Info("尝试获取 Jenkins crumb", zap.String("crumb_url", crumbURL))
 
 	req, err := http.NewRequest("GET", crumbURL, nil)
 	if err != nil {
@@ -274,7 +274,7 @@ func (s *ApplicationPermissionService) getJenkinsCrumb(app *modelauth.Applicatio
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
-	logger.Info("Jenkins crumb 响应", zap.Int("statusCode", resp.StatusCode), zap.String("body", string(body)))
+	logger.Info("Jenkins crumb 响应", zap.Int("status_code", resp.StatusCode), zap.String("body", string(body)))
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("获取 crumb 失败 (状态码 %d): %s", resp.StatusCode, string(body))

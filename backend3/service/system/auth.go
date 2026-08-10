@@ -59,7 +59,7 @@ func (s *AuthService) Login(username, password string) (string, *modelsystem.Use
 
 	logger.Debug("[登录调试-服务层] Login方法完成",
 		zap.Duration("总耗时", time.Since(startTime)),
-		zap.Uint("userID", user.ID))
+		zap.Uint("user_id", user.ID))
 
 	return token, &user, nil
 }
@@ -67,7 +67,7 @@ func (s *AuthService) Login(username, password string) (string, *modelsystem.Use
 // GetUserInfo 获取用户信息（包含权限和菜单）
 func (s *AuthService) GetUserInfo(userID uint) (*UserInfo, error) {
 	startTime := time.Now()
-	logger.Debug("[登录调试-服务层] GetUserInfo方法开始", zap.Uint("userID", userID))
+	logger.Debug("[登录调试-服务层] GetUserInfo方法开始", zap.Uint("user_id", userID))
 
 	var user modelsystem.User
 	logger.Debug("[登录调试-服务层] 开始查询用户详情")

@@ -50,7 +50,7 @@ func (s *AuditService) LogLogin(userID uint, username, nickname, ip, userAgent, 
 func (s *AuditService) LogLogout(userID uint) error {
 	loginLog, err := s.repo.FindLastSuccessLoginLog(userID)
 	if err != nil {
-		logger.Error("查找登录记录失败", zap.Uint("userID", userID), zap.Error(err))
+		logger.Error("查找登录记录失败", zap.Uint("user_id", userID), zap.Error(err))
 		return err
 	}
 
@@ -61,7 +61,7 @@ func (s *AuditService) LogLogout(userID uint) error {
 		"logout_time": &now,
 		"duration":    duration,
 	}); err != nil {
-		logger.Error("更新登出记录失败", zap.Uint("userID", userID), zap.Error(err))
+		logger.Error("更新登出记录失败", zap.Uint("user_id", userID), zap.Error(err))
 		return err
 	}
 	return nil

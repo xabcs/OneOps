@@ -85,17 +85,17 @@ func (s *ApplicationPermissionService) SyncRoles(appID uint, operator string) er
 		if err := json.Unmarshal([]byte(app.Endpoints), &endpoints); err == nil {
 			authConfig["endpoints"] = endpoints
 			logger.Info("从数据库加载端点配置",
-				zap.Uint("appID", appID),
+				zap.Uint("app_id", appID),
 				zap.Any("endpoints", endpoints))
 		} else {
 			logger.Warn("解析端点配置失败，将使用适配器默认端点",
-				zap.Uint("appID", appID),
+				zap.Uint("app_id", appID),
 				zap.String("endpoints", app.Endpoints),
 				zap.Error(err))
 		}
 	} else {
 		logger.Info("数据库中无端点配置，将使用适配器默认端点",
-			zap.Uint("appID", appID),
+			zap.Uint("app_id", appID),
 			zap.String("endpoints", app.Endpoints))
 	}
 
@@ -140,10 +140,10 @@ func (s *ApplicationPermissionService) SyncRoles(appID uint, operator string) er
 	s.logOperation(appID, "sync_roles", "", fmt.Sprintf("同步了 %d 个角色", len(roles)), "success", "", operator)
 
 	logger.Info("同步应用角色成功",
-		zap.Uint("appID", appID),
-		zap.String("appName", app.Name),
-		zap.String("appType", app.Type),
-		zap.Int("roleCount", len(roles)))
+		zap.Uint("app_id", appID),
+		zap.String("app_name", app.Name),
+		zap.String("app_type", app.Type),
+		zap.Int("role_count", len(roles)))
 
 	return nil
 }
@@ -167,17 +167,17 @@ func (s *ApplicationPermissionService) SyncUsers(appID uint, operator string) er
 		if err := json.Unmarshal([]byte(app.Endpoints), &endpoints); err == nil {
 			authConfig["endpoints"] = endpoints
 			logger.Info("从数据库加载端点配置",
-				zap.Uint("appID", appID),
+				zap.Uint("app_id", appID),
 				zap.Any("endpoints", endpoints))
 		} else {
 			logger.Warn("解析端点配置失败，将使用适配器默认端点",
-				zap.Uint("appID", appID),
+				zap.Uint("app_id", appID),
 				zap.String("endpoints", app.Endpoints),
 				zap.Error(err))
 		}
 	} else {
 		logger.Info("数据库中无端点配置，将使用适配器默认端点",
-			zap.Uint("appID", appID),
+			zap.Uint("app_id", appID),
 			zap.String("endpoints", app.Endpoints))
 	}
 
@@ -205,22 +205,22 @@ func (s *ApplicationPermissionService) SyncUsers(appID uint, operator string) er
 	}
 
 	logger.Info("从外部应用获取到用户数据",
-		zap.Uint("appID", appID),
-		zap.String("appName", app.Name),
-		zap.Int("userCount", len(users)))
+		zap.Uint("app_id", appID),
+		zap.String("app_name", app.Name),
+		zap.Int("user_count", len(users)))
 
 	// 删除旧的同步数据
 	deletedCount, err := s.repo.DeleteUsersByAppID(appID)
 	if err != nil {
 		logger.Error("删除旧用户数据失败",
-			zap.Uint("appID", appID),
+			zap.Uint("app_id", appID),
 			zap.Error(err))
 		return fmt.Errorf("删除旧用户数据失败: %w", err)
 	}
 
 	logger.Info("已删除旧用户数据",
-		zap.Uint("appID", appID),
-		zap.Int64("deletedCount", deletedCount))
+		zap.Uint("app_id", appID),
+		zap.Int64("deleted_count", deletedCount))
 
 	// 保存新的用户数据
 	successCount := 0
@@ -229,7 +229,7 @@ func (s *ApplicationPermissionService) SyncUsers(appID uint, operator string) er
 		user.SyncTime = time.Now()
 		if err := s.repo.CreateUser(&user); err != nil {
 			logger.Error("保存用户数据失败",
-				zap.Uint("appID", appID),
+				zap.Uint("app_id", appID),
 				zap.String("username", user.Username),
 				zap.Error(err))
 		} else {
@@ -240,11 +240,11 @@ func (s *ApplicationPermissionService) SyncUsers(appID uint, operator string) er
 	s.logOperation(appID, "sync_users", "", fmt.Sprintf("同步了 %d 个用户（成功保存 %d 个）", len(users), successCount), "success", "", operator)
 
 	logger.Info("同步应用用户完成",
-		zap.Uint("appID", appID),
-		zap.String("appName", app.Name),
-		zap.String("appType", app.Type),
-		zap.Int("totalFetched", len(users)),
-		zap.Int("successSaved", successCount))
+		zap.Uint("app_id", appID),
+		zap.String("app_name", app.Name),
+		zap.String("app_type", app.Type),
+		zap.Int("total_fetched", len(users)),
+		zap.Int("success_saved", successCount))
 
 	return nil
 }
@@ -295,7 +295,7 @@ func (s *ApplicationPermissionService) SyncGroups(appID uint, operator string) e
 		group.SyncTime = time.Now()
 		if err := s.repo.CreateGroup(&group); err != nil {
 			logger.Error("保存用户组数据失败",
-				zap.String("groupCode", group.GroupCode),
+				zap.String("group_code", group.GroupCode),
 				zap.Error(err))
 		}
 	}
@@ -377,8 +377,8 @@ func (s *ApplicationPermissionService) SyncAuthorizationRules(appID uint, operat
 		rule.SyncTime = time.Now()
 		if err := s.repo.CreateAuthRule(&rule); err != nil {
 			logger.Error("保存授权规则数据失败",
-				zap.Uint("appID", appID),
-				zap.String("ruleId", rule.RuleID),
+				zap.Uint("app_id", appID),
+				zap.String("rule_id", rule.RuleID),
 				zap.Error(err))
 		} else {
 			successCount++

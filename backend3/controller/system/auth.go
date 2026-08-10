@@ -46,7 +46,7 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 	startTime := time.Now()
 	logger.Debug("[登录调试] 登录请求开始",
 		zap.String("username", c.PostForm("username")),
-		zap.String("clientIP", c.ClientIP()))
+		zap.String("client_ip", c.ClientIP()))
 
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -92,7 +92,7 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 	}
 
 	logger.Debug("[登录调试] 登录成功，开始获取用户信息",
-		zap.Uint("userID", user.ID))
+		zap.Uint("user_id", user.ID))
 
 	// 获取用户信息（包含权限和菜单）
 	userInfoStart := time.Now()

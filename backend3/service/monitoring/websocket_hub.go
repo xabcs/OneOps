@@ -68,8 +68,8 @@ func (h *MonitoringHub) run() {
 			h.clientIDs[client.ID] = client
 			h.mu.Unlock()
 			logger.Info("WebSocket 客户端已连接",
-				zap.String("clientID", client.ID),
-				zap.Int("totalClients", len(h.clients)))
+				zap.String("client_id", client.ID),
+				zap.Int("total_clients", len(h.clients)))
 
 		case client := <-h.unregister:
 			h.mu.Lock()
@@ -83,8 +83,8 @@ func (h *MonitoringHub) run() {
 			}
 			h.mu.Unlock()
 			logger.Info("WebSocket 客户端已断开",
-				zap.String("clientID", client.ID),
-				zap.Int("totalClients", len(h.clients)))
+				zap.String("client_id", client.ID),
+				zap.Int("total_clients", len(h.clients)))
 
 		case message := <-h.broadcast:
 			h.mu.RLock()
@@ -163,7 +163,7 @@ func (h *MonitoringHub) Subscribe(client *WebSocketClient, topic string) {
 	client.mu.Unlock()
 
 	logger.Debug("客户端订阅主题",
-		zap.String("clientID", client.ID),
+		zap.String("client_id", client.ID),
 		zap.String("topic", topic))
 }
 
@@ -184,7 +184,7 @@ func (h *MonitoringHub) Unsubscribe(client *WebSocketClient, topic string) {
 	client.mu.Unlock()
 
 	logger.Debug("客户端取消订阅主题",
-		zap.String("clientID", client.ID),
+		zap.String("client_id", client.ID),
 		zap.String("topic", topic))
 }
 
@@ -237,7 +237,7 @@ func (c *WebSocketClient) WritePump() {
 			c.Conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err := c.Conn.WriteJSON(message); err != nil {
 				logger.Warn("WebSocket 写入消息失败",
-					zap.String("clientID", c.ID),
+					zap.String("client_id", c.ID),
 					zap.Error(err))
 				return
 			}
@@ -269,7 +269,7 @@ func (c *WebSocketClient) ReadPump() {
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				logger.Warn("WebSocket 读取错误",
-					zap.String("clientID", c.ID),
+					zap.String("client_id", c.ID),
 					zap.Error(err))
 			}
 			break

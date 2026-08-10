@@ -88,8 +88,8 @@ func (p *MetricsPersister) persistBatch(batch []*PersistMetric) {
 			             VALUES (?, ?, ?, ?, NOW())`
 			if err := tx.Exec(query, metric.ServerID, metric.MetricType, string(metric.MetricData), metric.ReportTime).Error; err != nil {
 				logger.Warn("批量写入指标失败",
-					zap.Uint("serverID", metric.ServerID),
-					zap.String("metricType", metric.MetricType),
+					zap.Uint("server_id", metric.ServerID),
+					zap.String("metric_type", metric.MetricType),
 					zap.Error(err))
 			}
 		}
@@ -120,7 +120,7 @@ func (p *MetricsPersister) EnqueueMetric(serverID uint, metricType string, metri
 	case p.persistQueue <- metric:
 	default:
 		logger.Warn("持久化队列已满，丢弃指标数据",
-			zap.Uint("serverID", serverID),
-			zap.String("metricType", metricType))
+			zap.Uint("server_id", serverID),
+			zap.String("metric_type", metricType))
 	}
 }

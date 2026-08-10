@@ -19,9 +19,9 @@ import (
 // 实现 PermissionOperable 接口
 func (j *JumpserverAdapter) AssignPermissionToGroup(authGroupID uint, mapping *modelauth.AuthGroupPermissionMapping) error {
 	logger.Info("开始为 JumpServer 用户组分配权限",
-		zap.Uint("authGroupId", authGroupID),
-		zap.String("mappingType", mapping.MappingType),
-		zap.String("externalId", mapping.ExternalID))
+		zap.Uint("auth_group_id", authGroupID),
+		zap.String("mapping_type", mapping.MappingType),
+		zap.String("external_id", mapping.ExternalID))
 
 	// JumpServer 不支持直接通过API为用户组分配权限
 	// JumpServer 的授权规则是通过管理界面手动配置的
@@ -118,8 +118,8 @@ func (j *JumpserverAdapter) createAuthorizationRule(mapping *modelauth.AuthGroup
 	}
 
 	logger.Info("成功创建 JumpServer 授权规则",
-		zap.String("ruleName", ruleName),
-		zap.String("userGroup", mapping.ExternalID))
+		zap.String("rule_name", ruleName),
+		zap.String("user_group", mapping.ExternalID))
 
 	return nil
 }
@@ -136,8 +136,8 @@ func (j *JumpserverAdapter) assignAssetPermission(mapping *modelauth.AuthGroupPe
 
 	// TODO: 实现实际的权限创建逻辑
 	logger.Info("为用户组分配资产权限",
-		zap.String("ruleName", ruleName),
-		zap.String("externalID", mapping.ExternalID))
+		zap.String("rule_name", ruleName),
+		zap.String("external_id", mapping.ExternalID))
 
 	return nil
 }
@@ -149,8 +149,8 @@ func (j *JumpserverAdapter) assignNodePermission(mapping *modelauth.AuthGroupPer
 
 	// TODO: 实现实际的权限创建逻辑
 	logger.Info("为用户组分配节点权限",
-		zap.String("ruleName", ruleName),
-		zap.String("externalID", mapping.ExternalID))
+		zap.String("rule_name", ruleName),
+		zap.String("external_id", mapping.ExternalID))
 
 	return nil
 }
@@ -159,8 +159,8 @@ func (j *JumpserverAdapter) assignNodePermission(mapping *modelauth.AuthGroupPer
 // 实现 PermissionOperable 接口
 func (j *JumpserverAdapter) RevokePermissionFromGroup(authGroupID uint, mapping *modelauth.AuthGroupPermissionMapping) error {
 	logger.Info("开始撤销 JumpServer 用户组权限",
-		zap.Uint("authGroupId", authGroupID),
-		zap.String("externalId", mapping.ExternalID))
+		zap.Uint("auth_group_id", authGroupID),
+		zap.String("external_id", mapping.ExternalID))
 
 	// JumpServer 撤销权限需要删除对应的授权规则
 	// 从 externalId 中获取规则ID，然后调用删除API
@@ -197,7 +197,7 @@ func (j *JumpserverAdapter) RevokePermissionFromGroup(authGroupID uint, mapping 
 	}
 
 	logger.Info("成功删除 JumpServer 授权规则",
-		zap.String("ruleId", ruleID))
+		zap.String("rule_id", ruleID))
 
 	return nil
 }
@@ -273,7 +273,7 @@ func (j *JumpserverAdapter) GetAuthorizationRuleDetail(baseURL string, authConfi
 	detailURL := strings.TrimSuffix(baseURL, "/") + "/api/v1/perms/asset-permissions/" + ruleID + "/"
 
 	logger.Info("获取 JumpServer 授权规则详情",
-		zap.String("ruleID", ruleID),
+		zap.String("rule_id", ruleID),
 		zap.String("url", detailURL))
 
 	// 创建请求
@@ -312,12 +312,12 @@ func (j *JumpserverAdapter) GetAuthorizationRuleDetail(baseURL string, authConfi
 	}
 
 	logger.Info("成功获取 JumpServer 授权规则详情",
-		zap.String("ruleID", ruleID),
-		zap.String("ruleName", ruleDetail.Name),
-		zap.Int("userCount", len(ruleDetail.Users)),
-		zap.Int("userGroupCount", len(ruleDetail.UserGroups)),
-		zap.Int("assetCount", len(ruleDetail.Assets)),
-		zap.Int("nodeCount", len(ruleDetail.Nodes)))
+		zap.String("rule_id", ruleID),
+		zap.String("rule_name", ruleDetail.Name),
+		zap.Int("user_count", len(ruleDetail.Users)),
+		zap.Int("user_group_count", len(ruleDetail.UserGroups)),
+		zap.Int("asset_count", len(ruleDetail.Assets)),
+		zap.Int("node_count", len(ruleDetail.Nodes)))
 
 	return &ruleDetail, nil
 }
@@ -332,7 +332,7 @@ func (j *JumpserverAdapter) AddUsersToAuthorizationRule(baseURL string, authConf
 	detailURL := strings.TrimSuffix(baseURL, "/") + "/api/v1/perms/asset-permissions/" + ruleID + "/"
 
 	logger.Info("获取 JumpServer 授权规则详情以添加用户",
-		zap.String("ruleID", ruleID))
+		zap.String("rule_id", ruleID))
 
 	// 创建获取请求
 	getReq, err := http.NewRequest("GET", detailURL, nil)
@@ -401,10 +401,10 @@ func (j *JumpserverAdapter) AddUsersToAuthorizationRule(baseURL string, authConf
 	}
 
 	logger.Info("更新 JumpServer 授权规则用户列表",
-		zap.String("ruleID", ruleID),
-		zap.Int("previousUserCount", len(existingUserIDs)),
-		zap.Int("newUsersToAdd", len(userIDs)),
-		zap.Int("totalUserCount", len(updatedUserIDs)))
+		zap.String("rule_id", ruleID),
+		zap.Int("previous_user_count", len(existingUserIDs)),
+		zap.Int("new_users_to_add", len(userIDs)),
+		zap.Int("total_user_count", len(updatedUserIDs)))
 
 	// 创建更新请求
 	updateReq, err := http.NewRequest("PATCH", detailURL, bytes.NewBuffer(jsonData))
@@ -431,8 +431,8 @@ func (j *JumpserverAdapter) AddUsersToAuthorizationRule(baseURL string, authConf
 	}
 
 	logger.Info("成功添加用户到 JumpServer 授权规则",
-		zap.String("ruleID", ruleID),
-		zap.Any("addedUserIDs", userIDs))
+		zap.String("rule_id", ruleID),
+		zap.Any("added_user_i_ds", userIDs))
 
 	return nil
 }
@@ -447,7 +447,7 @@ func (j *JumpserverAdapter) RemoveUsersFromAuthorizationRule(baseURL string, aut
 	detailURL := strings.TrimSuffix(baseURL, "/") + "/api/v1/perms/asset-permissions/" + ruleID + "/"
 
 	logger.Info("获取 JumpServer 授权规则详情以移除用户",
-		zap.String("ruleID", ruleID))
+		zap.String("rule_id", ruleID))
 
 	// 创建获取请求
 	getReq, err := http.NewRequest("GET", detailURL, nil)
@@ -512,10 +512,10 @@ func (j *JumpserverAdapter) RemoveUsersFromAuthorizationRule(baseURL string, aut
 	}
 
 	logger.Info("从 JumpServer 授权规则移除用户",
-		zap.String("ruleID", ruleID),
-		zap.Int("previousUserCount", len(currentRule.Users)),
-		zap.Int("usersToRemove", len(userIDs)),
-		zap.Int("remainingUserCount", len(updatedUserIDs)))
+		zap.String("rule_id", ruleID),
+		zap.Int("previous_user_count", len(currentRule.Users)),
+		zap.Int("users_to_remove", len(userIDs)),
+		zap.Int("remaining_user_count", len(updatedUserIDs)))
 
 	// 创建更新请求
 	updateReq, err := http.NewRequest("PATCH", detailURL, bytes.NewBuffer(jsonData))
@@ -542,8 +542,8 @@ func (j *JumpserverAdapter) RemoveUsersFromAuthorizationRule(baseURL string, aut
 	}
 
 	logger.Info("成功从 JumpServer 授权规则移除用户",
-		zap.String("ruleID", ruleID),
-		zap.Any("removedUserIDs", userIDs))
+		zap.String("rule_id", ruleID),
+		zap.Any("removed_user_i_ds", userIDs))
 
 	return nil
 }

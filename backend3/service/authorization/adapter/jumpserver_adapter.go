@@ -93,7 +93,7 @@ func (j *JumpserverAdapter) setAuthentication(req *http.Request, authConfig map[
 			return fmt.Errorf("签名失败: %w", err)
 		}
 
-		logger.Info("使用 AccessKey 签名认证", zap.String("accessKey", accessKey))
+		logger.Info("使用 AccessKey 签名认证", zap.String("access_key", accessKey))
 		return nil
 	}
 
@@ -138,7 +138,7 @@ func (j *JumpserverAdapter) signRequest(req *http.Request, keyID, secret string)
 
 	// 调试日志：打印签名结果
 	logger.Info("JumpServer 签名完成",
-		zap.String("keyId", keyID),
+		zap.String("key_id", keyID),
 		zap.String("authorization", req.Header.Get("Authorization")))
 
 	return nil
@@ -181,9 +181,9 @@ func (j *JumpserverAdapter) FetchUsers(baseURL string, authConfig map[string]int
 
 	// 记录详细的请求信息
 	logger.Info("准备请求 JumpServer 用户列表 API",
-		zap.String("baseURL", baseURL),
+		zap.String("base_url", baseURL),
 		zap.String("endpoint", getUsersURL),
-		zap.String("fullURL", fullURL))
+		zap.String("full_url", fullURL))
 
 	// 发送请求
 	client := &http.Client{}
@@ -196,14 +196,14 @@ func (j *JumpserverAdapter) FetchUsers(baseURL string, authConfig map[string]int
 	// 记录响应详情
 	logger.Info("JumpServer API 响应",
 		zap.String("url", fullURL),
-		zap.Int("statusCode", resp.StatusCode),
+		zap.Int("status_code", resp.StatusCode),
 		zap.String("status", resp.Status))
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		logger.Error("JumpServer API 请求失败",
 			zap.String("url", fullURL),
-			zap.Int("statusCode", resp.StatusCode),
+			zap.Int("status_code", resp.StatusCode),
 			zap.String("response", string(body)))
 		return nil, fmt.Errorf("获取用户列表失败 (状态码 %d): %s", resp.StatusCode, string(body))
 	}
@@ -221,8 +221,8 @@ func (j *JumpserverAdapter) FetchUsers(baseURL string, authConfig map[string]int
 	body, _ := io.ReadAll(resp.Body)
 	logger.Info("JumpServer API 响应体",
 		zap.String("url", fullURL),
-		zap.Int("bodyLength", len(body)),
-		zap.String("responseBody", string(body)))
+		zap.Int("body_length", len(body)),
+		zap.String("response_body", string(body)))
 
 	if err := json.Unmarshal(body, &apiUsers); err != nil {
 		return nil, fmt.Errorf("解析响应失败: %w", err)
@@ -248,7 +248,7 @@ func (j *JumpserverAdapter) FetchUsers(baseURL string, authConfig map[string]int
 	}
 
 	logger.Info("成功获取 JumpServer 用户列表",
-		zap.Int("userCount", len(users)))
+		zap.Int("user_count", len(users)))
 
 	return users, nil
 }
@@ -326,8 +326,8 @@ func (j *JumpserverAdapter) FetchGroups(baseURL string, authConfig map[string]in
 	body, _ := io.ReadAll(resp.Body)
 	logger.Info("JumpServer 用户组 API 响应体",
 		zap.String("url", fullURL),
-		zap.Int("bodyLength", len(body)),
-		zap.String("responseBody", string(body)))
+		zap.Int("body_length", len(body)),
+		zap.String("response_body", string(body)))
 
 	if err := json.Unmarshal(body, &apiGroups); err != nil {
 		// 如果直接解析数组失败，尝试解析包装对象
@@ -359,7 +359,7 @@ func (j *JumpserverAdapter) FetchGroups(baseURL string, authConfig map[string]in
 	}
 
 	logger.Info("JumpServer 用户组解析结果",
-		zap.Int("groupCount", len(apiGroups)))
+		zap.Int("group_count", len(apiGroups)))
 
 	// 转换为 ApplicationGroup
 	groups := make([]modelauth.ApplicationGroup, 0, len(apiGroups))
@@ -372,7 +372,7 @@ func (j *JumpserverAdapter) FetchGroups(baseURL string, authConfig map[string]in
 	}
 
 	logger.Info("成功获取 JumpServer 用户组列表",
-		zap.Int("groupCount", len(groups)))
+		zap.Int("group_count", len(groups)))
 
 	return groups, nil
 }
@@ -470,14 +470,14 @@ func (j *JumpserverAdapter) CreateUser(baseURL string, authConfig map[string]int
 	if err := json.Unmarshal(body, &createdUser); err != nil {
 		logger.Warn("解析创建用户响应失败，无法获取用户ID",
 			zap.Error(err),
-			zap.String("responseBody", string(body)))
+			zap.String("response_body", string(body)))
 		// 即使解析失败，用户可能已创建成功，返回空字符串
 		return "", nil
 	}
 
 	logger.Info("成功在 JumpServer 创建用户",
 		zap.String("username", user.Username),
-		zap.String("userID", createdUser.ID))
+		zap.String("user_id", createdUser.ID))
 
 	return createdUser.ID, nil
 }
@@ -551,7 +551,7 @@ func (j *JumpserverAdapter) FetchAuthorizationRules(baseURL string, authConfig m
 		logger.Info("正在请求 JumpServer 授权规则 API",
 			zap.String("url", fullURL),
 			zap.String("endpoint", getRulesURL),
-			zap.String("configuredEndpoint", configuredEndpoint))
+			zap.String("configured_endpoint", configuredEndpoint))
 
 		// 创建请求（必须先设置 URL，再进行签名认证）
 		req, err := http.NewRequest("GET", fullURL, nil)
@@ -580,9 +580,9 @@ func (j *JumpserverAdapter) FetchAuthorizationRules(baseURL string, authConfig m
 
 		logger.Info("JumpServer 授权规则 API 响应",
 			zap.String("url", fullURL),
-			zap.Int("statusCode", resp.StatusCode),
-			zap.Int("bodyLength", len(body)),
-			zap.String("responseBody", string(body)[:min(len(body), 2000)]))
+			zap.Int("status_code", resp.StatusCode),
+			zap.Int("body_length", len(body)),
+			zap.String("response_body", string(body)[:min(len(body), 2000)]))
 
 		if resp.StatusCode == http.StatusOK {
 			// 找到有效的端点，开始解析数据
@@ -595,8 +595,8 @@ func (j *JumpserverAdapter) FetchAuthorizationRules(baseURL string, authConfig m
 			}
 
 			logger.Info("成功获取 JumpServer 授权规则",
-				zap.String("workingEndpoint", getRulesURL),
-				zap.Int("ruleCount", len(rules)))
+				zap.String("working_endpoint", getRulesURL),
+				zap.Int("rule_count", len(rules)))
 
 			return rules, nil
 		}
@@ -605,7 +605,7 @@ func (j *JumpserverAdapter) FetchAuthorizationRules(baseURL string, authConfig m
 		if resp.StatusCode != http.StatusNotFound {
 			logger.Warn("端点返回非200状态码",
 				zap.String("url", fullURL),
-				zap.Int("statusCode", resp.StatusCode),
+				zap.Int("status_code", resp.StatusCode),
 				zap.String("response", string(body)))
 		}
 	}
@@ -619,8 +619,8 @@ func (j *JumpserverAdapter) FetchAuthorizationRules(baseURL string, authConfig m
 func (j *JumpserverAdapter) parseAuthorizationRules(body []byte, url string) ([]modelauth.ApplicationAuthorizationRule, error) {
 	logger.Info("开始解析授权规则响应",
 		zap.String("url", url),
-		zap.Int("bodyLength", len(body)),
-		zap.String("responseBody", string(body)))
+		zap.Int("body_length", len(body)),
+		zap.String("response_body", string(body)))
 
 	type apiRule struct {
 		ID               string `json:"id"`
@@ -674,7 +674,7 @@ func (j *JumpserverAdapter) parseAuthorizationRules(body []byte, url string) ([]
 			}
 
 			logger.Info("检测到分页响应",
-				zap.Int("totalCount", paginatedResult.Count))
+				zap.Int("total_count", paginatedResult.Count))
 
 			apiRules = make([]apiRule, 0, len(paginatedResult.Results))
 			apiRules = append(apiRules, paginatedResult.Results...)
@@ -692,10 +692,10 @@ func (j *JumpserverAdapter) parseAuthorizationRules(body []byte, url string) ([]
 	for i, apiRule := range apiRules {
 		logger.Info("开始转换授权规则",
 			zap.Int("index", i),
-			zap.String("ruleId", apiRule.ID),
-			zap.String("ruleName", apiRule.Name),
-			zap.Int("usersAmount", apiRule.UsersAmount),
-			zap.Int("userGroupsAmount", apiRule.UserGroupsAmount))
+			zap.String("rule_id", apiRule.ID),
+			zap.String("rule_name", apiRule.Name),
+			zap.Int("users_amount", apiRule.UsersAmount),
+			zap.Int("user_groups_amount", apiRule.UserGroupsAmount))
 		// JumpServer 返回的是统计信息，不是具体的用户-资产映射
 		// 因此为每个授权规则创建一条通用记录
 
@@ -780,7 +780,7 @@ func (j *JumpserverAdapter) parseAuthorizationRules(body []byte, url string) ([]
 	}
 
 	logger.Info("授权规则解析完成",
-		zap.Int("ruleCount", len(rules)))
+		zap.Int("rule_count", len(rules)))
 
 	return rules, nil
 }
