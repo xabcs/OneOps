@@ -7,16 +7,16 @@ import (
 // AttributeDefinition 属性定义
 type AttributeDefinition struct {
 	ID           uint      `json:"id" gorm:"primaryKey"`
-	Name         string    `json:"name" gorm:"size:100;not null"`              // 属性名称
-	Key          string    `json:"key" gorm:"size:50;not null;uniqueIndex;column:key"`     // 属性键
-	Category     string    `json:"category" gorm:"size:50;not null;index"`      // 分类
-	Type         string    `json:"type" gorm:"size:20;not null;default:'text'"` // 类型
-	Options      string    `json:"options" gorm:"type:text"`                    // 选项JSON
-	Required     bool      `json:"required" gorm:"default:false"`               // 是否必填
-	DefaultValue string    `json:"defaultValue" gorm:"size:255"`               // 默认值
-	SortOrder    int       `json:"sortOrder" gorm:"default:0"`                  // 排序
-	Status       int       `json:"status" gorm:"default:1"`                     // 状态
-	Description  string    `json:"description" gorm:"type:text"`                 // 说明
+	Name         string    `json:"name" gorm:"size:100;not null"`                      // 属性名称
+	Key          string    `json:"key" gorm:"size:50;not null;uniqueIndex;column:key"` // 属性键
+	Category     string    `json:"category" gorm:"size:50;not null;index"`             // 分类
+	Type         string    `json:"type" gorm:"size:20;not null;default:'text'"`        // 类型
+	Options      string    `json:"options" gorm:"type:text"`                           // 选项JSON
+	Required     bool      `json:"required" gorm:"default:false"`                      // 是否必填
+	DefaultValue string    `json:"defaultValue" gorm:"size:255"`                       // 默认值
+	SortOrder    int       `json:"sortOrder" gorm:"default:0"`                         // 排序
+	Status       int       `json:"status" gorm:"default:1"`                            // 状态
+	Description  string    `json:"description" gorm:"type:text"`                       // 说明
 	CreatedAt    time.Time `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt    time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
 
@@ -40,18 +40,18 @@ func (AttributeDefinition) TableName() string {
 
 // ServerAttribute 主机属性值
 type ServerAttribute struct {
-	ID              uint                `json:"id" gorm:"primaryKey"`
-	ServerID        uint                `json:"serverId" gorm:"not null;index"`
-	AttributeID     uint                `json:"attributeId" gorm:"not null;index"`
-	AttributeKey    string              `json:"attributeKey" gorm:"size:50;not null;index"`
-	AttributeValue string              `json:"attributeValue" gorm:"type:text"`
-	ValueType       string              `json:"valueType" gorm:"size:20;default:'string'"`
-	Category        string              `json:"category" gorm:"size:50"`
-	CreatedAt       time.Time           `json:"createdAt" gorm:"autoCreateTime"`
-	UpdatedAt       time.Time           `json:"updatedAt" gorm:"autoUpdateTime"`
+	ID             uint      `json:"id" gorm:"primaryKey"`
+	ServerID       uint      `json:"serverId" gorm:"not null;index"`
+	AttributeID    uint      `json:"attributeId" gorm:"not null;index"`
+	AttributeKey   string    `json:"attributeKey" gorm:"size:50;not null;index"`
+	AttributeValue string    `json:"attributeValue" gorm:"type:text"`
+	ValueType      string    `json:"valueType" gorm:"size:20;default:'string'"`
+	Category       string    `json:"category" gorm:"size:50"`
+	CreatedAt      time.Time `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt      time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
 
 	// 关联
-	Server     *Server             `json:"server,omitempty" gorm:"foreignKey:ServerID"`
+	Server     *Server              `json:"server,omitempty" gorm:"foreignKey:ServerID"`
 	Definition *AttributeDefinition `json:"definition,omitempty" gorm:"foreignKey:AttributeID"`
 }
 

@@ -196,13 +196,13 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 			}
 		}
 
-			// 处理系统运维凭证（单个凭证，通过ID查询）
-			if servers[i].SystemCredentialID > 0 {
+		// 处理系统运维凭证（单个凭证，通过ID查询）
+		if servers[i].SystemCredentialID > 0 {
 			var systemCred models.SSHCredential
 			if err := db.Select("id, name, credential_type").First(&systemCred, servers[i].SystemCredentialID).Error; err == nil {
-			servers[i].SystemCredential = &systemCred
+				servers[i].SystemCredential = &systemCred
 			}
-			}
+		}
 	}
 
 	return servers, total, err
@@ -322,8 +322,8 @@ func (s *CMDBService) updateServerRedundantFields(serverID uint) error {
 	return db.Model(&models.Server{}).
 		Where("id = ?", serverID).
 		Updates(map[string]interface{}{
-			"group_names":       string(groupJSON),
-			"credential_names":  string(credJSON),
+			"group_names":      string(groupJSON),
+			"credential_names": string(credJSON),
 		}).Error
 }
 
@@ -425,19 +425,19 @@ func (s *CMDBService) UpdateServer(id uint, updates map[string]interface{}, oper
 func filterServerColumns(updates map[string]interface{}) map[string]interface{} {
 	// 这些键是关联对象或 gorm:"-" 虚拟字段，不能直接作为 SQL 列名
 	skipKeys := map[string]bool{
-		"cloudInfo":    true,
-		"credential":   true,
-		"credentials":  true,
+		"cloudInfo":     true,
+		"credential":    true,
+		"credentials":   true,
 		"credentialIds": true,
-		"cabinet":      true,
-		"tags":         true,
-		"groups":       true,
-		"groupIds":     true,
+		"cabinet":       true,
+		"tags":          true,
+		"groups":        true,
+		"groupIds":      true,
 		"sshCredential": true,
-		"business":     true,
+		"business":      true,
 		"cloudInfoData": true,
-		"id":           true, // 主键不允许更新
-		"createdAt":    true,
+		"id":            true, // 主键不允许更新
+		"createdAt":     true,
 	}
 	result := make(map[string]interface{}, len(updates))
 	for k, v := range updates {
@@ -581,7 +581,6 @@ func (s *CMDBService) DeleteBusinessUnit(id uint) error {
 	if count > 0 {
 		return fmt.Errorf("该业务下有子业务，无法删除")
 	}
-
 
 	return db.Delete(&models.BusinessUnit{}, id).Error
 }
@@ -864,11 +863,11 @@ func (s *CMDBService) GetAssetTree() (map[string]interface{}, error) {
 
 	// 3. 查询所有服务器（只查询必要字段，不包含 credentials 和 metrics）
 	type ServerBasicInfo struct {
-		ID           uint    `json:"id"`
-		Hostname     string  `json:"hostname"`
-		IP           string  `json:"ip"`
-		AgentStatus  string  `json:"agentStatus"`
-		Env          string  `json:"env"`
+		ID          uint   `json:"id"`
+		Hostname    string `json:"hostname"`
+		IP          string `json:"ip"`
+		AgentStatus string `json:"agentStatus"`
+		Env         string `json:"env"`
 	}
 
 	var allServers []ServerBasicInfo
@@ -900,13 +899,13 @@ func (s *CMDBService) GetAssetTree() (map[string]interface{}, error) {
 
 	// 5. 构建带服务器的分组树
 	type GroupWithServers struct {
-		ID          uint                     `json:"id"`
-		ParentID    uint                     `json:"parentId"`
-		Name        string                   `json:"name"`
-		SortOrder   int                      `json:"sortOrder"`
-		Children    []GroupWithServers      `json:"children"`
-		Servers     []ServerBasicInfo        `json:"servers"`
-		ServerCount int                      `json:"serverCount"`
+		ID          uint               `json:"id"`
+		ParentID    uint               `json:"parentId"`
+		Name        string             `json:"name"`
+		SortOrder   int                `json:"sortOrder"`
+		Children    []GroupWithServers `json:"children"`
+		Servers     []ServerBasicInfo  `json:"servers"`
+		ServerCount int                `json:"serverCount"`
 	}
 
 	// sumServerCounts 递归计算服务器的总数
@@ -988,7 +987,7 @@ func (s *CMDBService) AssignServerToGroup(serverID, groupID uint) error {
 	// 创建新的分组关联
 	if err := db.Create(&models.ServerGroupRelation{
 		ServerID: serverID,
-		GroupID:   groupID,
+		GroupID:  groupID,
 	}).Error; err != nil {
 		return err
 	}

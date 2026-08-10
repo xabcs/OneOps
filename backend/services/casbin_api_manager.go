@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"oneops/backend/models"
+
 	"github.com/casbin/casbin/v2"
 	gormadapter "github.com/casbin/gorm-adapter/v3"
 	"gorm.io/gorm"
-	"oneops/backend/models"
 )
 
 // CasbinAPIManager 基于Casbin的API管理器
@@ -54,12 +55,12 @@ type APIResource struct {
 
 // PolicyEntry Casbin策略条目
 type PolicyEntry struct {
-	PType       string `json:"ptype"`        // p
-	Subject     string `json:"subject"`      // v0: 角色
-	Object      string `json:"object"`       // v1: API路径
-	Action      string `json:"action"`       // v2: HTTP方法
+	PType       string `json:"ptype"`       // p
+	Subject     string `json:"subject"`     // v0: 角色
+	Object      string `json:"object"`      // v1: API路径
+	Action      string `json:"action"`      // v2: HTTP方法
 	Name        string `json:"name"`        // v3: API名称
-	Description string `json:"description"`  // v4: 描述
+	Description string `json:"description"` // v4: 描述
 	Module      string `json:"module"`      // v5: 模块
 }
 
@@ -108,7 +109,7 @@ func (m *CasbinAPIManager) GetUniqueAPIResources() ([]APIResource, error) {
 
 	for _, policy := range policies {
 		if len(policy) >= 4 && policy[0] == "p" {
-			path := policy[2] // v1
+			path := policy[2]   // v1
 			method := policy[3] // v2
 			key := fmt.Sprintf("%s:%s", path, method)
 
@@ -176,7 +177,7 @@ func (m *CasbinAPIManager) GetRolePermissions(roleCode string) ([]APIResource, e
 	for _, policy := range policies {
 		if len(policy) >= 3 {
 			api := APIResource{
-				Path:  policy[1], // v1: 路径
+				Path:   policy[1], // v1: 路径
 				Method: policy[2], // v2: 方法
 			}
 

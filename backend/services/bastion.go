@@ -257,19 +257,19 @@ func (s *BastionService) TerminateSession(sessionID uint, operatorID uint) error
 
 // SessionListItem 会话列表项（轻量级，只包含列表展示需要的字段）
 type SessionListItem struct {
-	ID           uint   `json:"id"`
-	ServerID     uint   `json:"serverId"`
+	ID           uint            `json:"id"`
+	ServerID     uint            `json:"serverId"`
 	Server       ServerBasicInfo `json:"server"`
-	UserID       uint   `json:"userId"`
+	UserID       uint            `json:"userId"`
 	User         UserBasicInfo   `json:"user"`
-	LoginAccount string `json:"loginAccount"`
-	Protocol     string `json:"protocol"`
-	ClientIP     string `json:"clientIp"`
-	Status       string `json:"status"`
-	StartedAt    time.Time `json:"startedAt"`
-	EndedAt      *time.Time `json:"endedAt"`
-	Duration     int    `json:"duration"`
-	CloseReason  string `json:"closeReason"`
+	LoginAccount string          `json:"loginAccount"`
+	Protocol     string          `json:"protocol"`
+	ClientIP     string          `json:"clientIp"`
+	Status       string          `json:"status"`
+	StartedAt    time.Time       `json:"startedAt"`
+	EndedAt      *time.Time      `json:"endedAt"`
+	Duration     int             `json:"duration"`
+	CloseReason  string          `json:"closeReason"`
 }
 
 // ServerBasicInfo 服务器基本信息
@@ -479,11 +479,11 @@ func (s *BastionService) RecordCommand(sessionID uint, command string, exitCode 
 	blocked := s.isCommandBlocked(command, sessionID)
 
 	cmd := &models.BastionCommand{
-		SessionID:    sessionID,
-		Command:      command,
-		ExitCode:     &exitCode,
-		RiskLevel:    riskLevel,
-		Blocked:      blocked,
+		SessionID:     sessionID,
+		Command:       command,
+		ExitCode:      &exitCode,
+		RiskLevel:     riskLevel,
+		Blocked:       blocked,
 		OutputSummary: truncateString(output, 1000),
 	}
 

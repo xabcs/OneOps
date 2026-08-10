@@ -1,0 +1,427 @@
+package audit
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"oneops/backend2/pkg/utils"
+	"strings"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+// AuditMiddleware 审计中间件
+type AuditMiddleware struct {
+	auditService *AuditService
+}
+
+// NewAuditMiddleware 创建审计中间件
+func NewAuditMiddleware() *AuditMiddleware {
+	return &AuditMiddleware{
+		auditService: NewAuditService(),
+	}
+}
+
+// OperationLog 操作日志记录中间件
+func (m *AuditMiddleware) OperationLog() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 跳过静态文件和健康检查等不需要审计的请求
+		if m.shouldSkipAudit(c) {
+			c.Next()
+			return
+		}
+
+		// 记录请求开始时间
+		startTime := time.Now()
+
+		// 复制请求体以便后续读取
+		var requestBody []byte
+		if c.Request.Body != nil {
+			requestBody, _ = io.ReadAll(c.Request.Body)
+			c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
+		}
+
+		// 创建响应写入器来捕获响应
+		writer := &responseWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+		c.Writer = writer
+
+		// 处理请求
+		c.Next()
+
+		// 计算请求耗时
+		duration := int(time.Since(startTime).Milliseconds())
+
+		// 获取用户信息
+		userID, username, nickname := m.getUserInfo(c)
+
+		// 异步写审计日志，不阻塞响应
+		method := c.Request.Method
+		path := c.Request.URL.Path
+		statusCode := c.Writer.Status()
+		ip := c.ClientIP()
+		userAgent := c.Request.UserAgent()
+		respBody := append([]byte(nil), writer.body.Bytes()...)
+		reqBody := append([]byte(nil), requestBody...)
+		go m.recordOperationLog2(userID, username, nickname, method, path, statusCode, ip, userAgent, reqBody, respBody, duration)
+	}
+}
+
+// shouldSkipAudit 判断是否跳过审计
+func (m *AuditMiddleware) shouldSkipAudit(c *gin.Context) bool {
+	path := c.Request.URL.Path
+
+	// 跳过静态文件请求
+	if strings.HasPrefix(path, "/static/") ||
+		strings.HasPrefix(path, "/assets/") ||
+		strings.HasPrefix(path, "/favicon.ico") {
+		return true
+	}
+
+	// 跳过健康检查和其他不需要审计的API
+	if path == "/api/health" || path == "/api/metrics" {
+		return true
+	}
+
+	// 跳过登录请求（有专门的登录日志记录）
+	if path == "/api/login" {
+		return true
+	}
+
+	// 跳过所有 WebSocket 请求（无论是否有Upgrade头）
+	// WebSocket路径列表
+	wsPaths := []string{
+		"/api/k8s/terminal/ws",
+		"/api/cmdb/sessions", // SSH WebSocket路径
+		"/api/monitoring/ws",
+	}
+	for _, wsPath := range wsPaths {
+		if strings.HasPrefix(path, wsPath) {
+			return true
+		}
+	}
+
+	// 也跳过带有 Upgrade: websocket 头的请求
+	if strings.EqualFold(c.GetHeader("Upgrade"), "websocket") {
+		return true
+	}
+
+	return false
+}
+
+// getUserInfo 从上下文中获取用户信息
+func (m *AuditMiddleware) getUserInfo(c *gin.Context) (uint, string, string) {
+	// 优先从JWT claims中获取用户信息
+	if claims, exists := c.Get("claims"); exists {
+		if userClaims, ok := claims.(*utils.Claims); ok {
+			return userClaims.UserID, userClaims.Username, ""
+		}
+	}
+
+	// 备用方案：从单独的user_id和username字段获取
+	if userID, exists := c.Get("user_id"); exists {
+		if uid, ok := userID.(uint); ok {
+			if username, exists := c.Get("username"); exists {
+				if uname, ok := username.(string); ok {
+					return uid, uname, ""
+				}
+			}
+			return uid, "", ""
+		}
+	}
+
+	return 0, "", ""
+}
+
+// recordOperationLog2 不依赖 gin.Context 的审计写入（用于 goroutine 异步调用）
+func (m *AuditMiddleware) recordOperationLog2(userID uint, username, nickname, method, path string,
+	statusCode int, ip, userAgent string, requestBody, responseBody []byte, duration int) {
+
+	module := m.getModuleFromPath(path)
+	action := m.getActionFromMethodAndPath(method, path)
+	description := m.generateDescription(module, action, path)
+
+	var params interface{}
+	if len(requestBody) > 0 {
+		json.Unmarshal(requestBody, &params)
+	}
+
+	var response interface{}
+	if len(responseBody) > 0 && statusCode < 400 {
+		json.Unmarshal(responseBody, &response)
+	}
+
+	status := "success"
+	errorMsg := ""
+	if statusCode >= 400 {
+		status = "failed"
+		var errResp struct {
+			Message string `json:"message"`
+		}
+		if json.Unmarshal(responseBody, &errResp) == nil && errResp.Message != "" {
+			errorMsg = errResp.Message
+		}
+	}
+
+	m.auditService.LogOperation(
+		userID, username, nickname,
+		module, action, description,
+		method, path,
+		params, response,
+		statusCode, ip, userAgent,
+		duration, status, errorMsg,
+	)
+}
+
+// getModuleFromPath 从路径解析模块名称（智能识别）
+func (m *AuditMiddleware) getModuleFromPath(path string) string {
+	// 如果不是API路径，直接返回
+	if !strings.HasPrefix(path, "/api/") {
+		return "其他"
+	}
+
+	// 去掉/api前缀
+	apiPath := strings.TrimPrefix(path, "/api")
+
+	// K8s 集群管理模块
+	if strings.HasPrefix(apiPath, "/k8s") {
+		// 进一步细分 K8s 操作类型
+		if strings.Contains(path, "/clusters") {
+			return "K8s集群管理"
+		}
+		if strings.Contains(path, "/deployments") {
+			return "K8s Deployment管理"
+		}
+		if strings.Contains(path, "/statefulsets") {
+			return "K8s StatefulSet管理"
+		}
+		if strings.Contains(path, "/daemonsets") {
+			return "K8s DaemonSet管理"
+		}
+		if strings.Contains(path, "/services") {
+			return "K8s Service管理"
+		}
+		if strings.Contains(path, "/pods") {
+			return "K8s Pod管理"
+		}
+		if strings.Contains(path, "/configmaps") {
+			return "K8s ConfigMap管理"
+		}
+		if strings.Contains(path, "/secrets") {
+			return "K8s Secret管理"
+		}
+		if strings.Contains(path, "/terminal") {
+			return "K8s终端管理"
+		}
+		if strings.Contains(path, "/permissions") {
+			return "K8s权限管理"
+		}
+		return "K8s资源管理"
+	}
+
+	// 基于 API 路径前缀智能识别模块
+	if strings.HasPrefix(apiPath, "/login") || strings.HasPrefix(apiPath, "/logout") || strings.HasPrefix(apiPath, "/user") {
+		return "认证管理"
+	}
+	if strings.HasPrefix(apiPath, "/system/menus") {
+		return "菜单管理"
+	}
+	if strings.HasPrefix(apiPath, "/system/roles") {
+		return "角色管理"
+	}
+	if strings.HasPrefix(apiPath, "/system/users") {
+		return "用户管理"
+	}
+	if strings.HasPrefix(apiPath, "/audit") {
+		return "审计管理"
+	}
+	if strings.HasPrefix(apiPath, "/monitoring") {
+		return "监控中心"
+	}
+	if strings.HasPrefix(apiPath, "/tasks") {
+		return "任务管理"
+	}
+	if strings.HasPrefix(apiPath, "/servers") {
+		return "服务器管理"
+	}
+	if strings.HasPrefix(apiPath, "/containers") {
+		return "容器管理"
+	}
+	if strings.HasPrefix(apiPath, "/certificates") {
+		return "证书管理"
+	}
+	if strings.HasPrefix(apiPath, "/system") {
+		return "系统管理"
+	}
+
+	// 从路径中提取第一级作为模块名
+	parts := strings.Split(strings.Trim(apiPath, "/"), "/")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+
+	return "其他"
+}
+
+// getActionFromMethodAndPath 从方法和路径智能识别操作
+func (m *AuditMiddleware) getActionFromMethodAndPath(method, path string) string {
+	// 特殊路径优先处理
+	if strings.Contains(path, "/refresh") {
+		return "刷新"
+	}
+	if strings.Contains(path, "/handle") {
+		return "处理"
+	}
+	if strings.Contains(path, "/ignore") {
+		return "忽略"
+	}
+	if strings.Contains(path, "/export") {
+		return "导出"
+	}
+	if strings.Contains(path, "/import") {
+		return "导入"
+	}
+	if strings.Contains(path, "/visit") {
+		return "访问"
+	}
+	if strings.Contains(path, "/statistics") || strings.Contains(path, "/stats") {
+		return "统计"
+	}
+
+	// 基于 HTTP 方法
+	switch method {
+	case "GET":
+		return "查询"
+	case "POST":
+		if strings.HasSuffix(path, "/login") {
+			return "登录"
+		}
+		if strings.HasSuffix(path, "/logout") {
+			return "登出"
+		}
+		return "新增"
+	case "PUT":
+		return "更新"
+	case "DELETE":
+		return "删除"
+	case "PATCH":
+		return "修改"
+	default:
+		return method
+	}
+}
+
+// generateDescription 生成操作描述
+func (m *AuditMiddleware) generateDescription(module, action, path string) string {
+	// 特殊处理
+	if action == "刷新" {
+		return fmt.Sprintf("刷新%s数据", module)
+	}
+	if action == "访问" {
+		return fmt.Sprintf("访问%s", module)
+	}
+	if action == "处理" && strings.Contains(path, "alert") {
+		return "处理告警"
+	}
+	if action == "统计" {
+		return fmt.Sprintf("查询%s统计数据", module)
+	}
+
+	// K8s 操作的特殊处理
+	if strings.HasPrefix(module, "K8s") {
+		// 从路径中提取资源信息
+		resourceType := ""
+		if strings.Contains(path, "/clusters") {
+			resourceType = "集群"
+		} else if strings.Contains(path, "/deployments") {
+			resourceType = "Deployment"
+		} else if strings.Contains(path, "/statefulsets") {
+			resourceType = "StatefulSet"
+		} else if strings.Contains(path, "/daemonsets") {
+			resourceType = "DaemonSet"
+		} else if strings.Contains(path, "/services") {
+			resourceType = "Service"
+		} else if strings.Contains(path, "/pods") {
+			resourceType = "Pod"
+		} else if strings.Contains(path, "/configmaps") {
+			resourceType = "ConfigMap"
+		} else if strings.Contains(path, "/secrets") {
+			resourceType = "Secret"
+		} else if strings.Contains(path, "/terminal") {
+			resourceType = "终端"
+		}
+
+		// 提取操作类型
+		operationType := ""
+		if strings.Contains(path, "/scale") {
+			operationType = "扩缩容"
+		} else if strings.Contains(path, "/restart") {
+			operationType = "重启"
+		} else if strings.Contains(path, "/logs") {
+			operationType = "查看日志"
+		} else if strings.Contains(path, "/test") {
+			operationType = "测试连接"
+		} else if strings.Contains(path, "/permissions") {
+			operationType = "权限"
+		}
+
+		if operationType != "" {
+			return fmt.Sprintf("%s%s", operationType, resourceType)
+		}
+
+		return fmt.Sprintf("%s%s", action, resourceType)
+	}
+
+	// 根据模块和动作生成描述
+	switch module {
+	case "监控中心":
+		if action == "查询" {
+			return "查询监控数据"
+		}
+		return fmt.Sprintf("%s监控", action)
+	case "用户管理":
+		return fmt.Sprintf("%s用户", action)
+	case "角色管理":
+		return fmt.Sprintf("%s角色", action)
+	case "菜单管理":
+		return fmt.Sprintf("%s菜单", action)
+	case "审计管理":
+		return fmt.Sprintf("%s审计日志", action)
+	case "任务管理":
+		return fmt.Sprintf("%s任务", action)
+	case "服务器管理":
+		return fmt.Sprintf("%s服务器", action)
+	case "容器管理":
+		return fmt.Sprintf("%s容器", action)
+	case "证书管理":
+		return fmt.Sprintf("%s证书", action)
+	case "认证管理":
+		if action == "登录" {
+			return "用户登录"
+		}
+		if action == "登出" {
+			return "用户登出"
+		}
+		return fmt.Sprintf("%s认证", action)
+	default:
+		// 通用格式
+		return fmt.Sprintf("%s%s", action, module)
+	}
+}
+
+// responseWriter 自定义响应写入器用于捕获响应体
+type responseWriter struct {
+	gin.ResponseWriter
+	body *bytes.Buffer
+}
+
+func (w *responseWriter) Write(b []byte) (int, error) {
+	w.body.Write(b)
+	return w.ResponseWriter.Write(b)
+}
+
+func (w *responseWriter) WriteString(s string) (int, error) {
+	w.body.WriteString(s)
+	return w.ResponseWriter.WriteString(s)
+}

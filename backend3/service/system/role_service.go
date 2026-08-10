@@ -1,0 +1,103 @@
+package system
+
+import (
+	"errors"
+	"fmt"
+
+	modelsystem "oneops/backend3/model/system"
+	reposystem "oneops/backend3/repository/system"
+)
+
+// 角色业务错误
+var (
+	ErrRoleNotFound       = errors.New("角色不存在")
+	ErrRoleHasUsers       = errors.New("该角色已绑定用户，请先解除绑定")
+	ErrAdminRoleProtected = errors.New("系统管理员角色不能删除")
+)
+
+// RoleService 角色业务逻辑层
+type RoleService struct {
+	repo *reposystem.RoleRepository
+}
+
+// NewRoleService 创建角色服务
+func NewRoleService(repo *reposystem.RoleRepository) *RoleService {
+	return &RoleService{repo: repo}
+}
+
+// RoleSearchResult 角色搜索结果
+type RoleSearchResult struct {
+	Records []modelsystem.Role
+	Total   int64
+}
+
+// RoleSearchQuery 角色搜索条件
+type RoleSearchQuery struct {
+	Name        string
+	Code        string
+	Description string
+	Status      string
+	Offset      int
+	Limit       int
+}
+
+// Search 分页搜索角色
+func (s *RoleService) Search(q RoleSearchQuery) (*RoleSearchResult, error) {
+	roles, total, err := s.repo.FindWithPagination(reposystem.RoleQuery{
+		Name:        q.Name,
+		Code:        q.Code,
+		Description: q.Description,
+		Status:      q.Status,
+		Offset:      q.Offset,
+		Limit:       q.Limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &RoleSearchResult{Records: roles, Total: total}, nil
+}
+
+// Create 创建角色
+func (s *RoleService) Create(role *modelsystem.Role) error {
+	return s.repo.Create(role)
+}
+
+// Update 根据ID更新指定字段
+func (s *RoleService) Update(id uint64, updates map[string]interface{}) error {
+	return s.repo.UpdateByID(id, updates)
+}
+
+// Delete 删除角色（含业务校验）
+func (s *RoleService) Delete(id uint) error {
+	role, err := s.repo.FindByID(uint64(id))
+	if err != nil {
+		return ErrRoleNotFound
+	}
+
+	// 检查是否有用户使用该角色
+	count, err := s.repo.CountUsersByRoleID(id)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		users, _ := s.repo.FindUsersByRoleID(id)
+		userList := ""
+		for i, user := range users {
+			if i > 0 {
+				userList += "、"
+			}
+			userList += user.Username
+			if user.Nickname != "" {
+				userList += "(" + user.Nickname + ")"
+			}
+		}
+		return fmt.Errorf("该角色已绑定 %d 个用户：%s。请先在用户管理中解除该角色与用户的绑定关系后再删除", count, userList)
+	}
+
+	// 检查是否为管理员角色
+	if role.Code == "admin" {
+		return ErrAdminRoleProtected
+	}
+
+	return s.repo.Delete(uint64(id))
+}

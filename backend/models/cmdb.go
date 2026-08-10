@@ -136,71 +136,71 @@ func (dp DiskPartitions) Value() (driver.Value, error) {
 
 // Server 服务器模型
 type Server struct {
-	ID                uint       `json:"id" gorm:"primaryKey"`
-	Hostname          string     `json:"hostname" gorm:"size:100;not null;uniqueIndex"` // 主机名
-	IP                string     `json:"ip" gorm:"size:50;not null;index"`              // 外网IP
-	InnerIP           string     `json:"innerIp" gorm:"size:50;index"`                  // 内网IP
-	CPU               int        `json:"cpu" gorm:"default:0"`                          // CPU核心数
-	Memory            int        `json:"memory" gorm:"default:0"`                       // 内存(GB)
-	Disk              int        `json:"disk" gorm:"default:0"`                         // 磁盘(GB)
-	OS                string     `json:"os" gorm:"size:50"`                             // 操作系统
-	OSVersion         string     `json:"osVersion" gorm:"size:50"`                      // 系统版本
-	Arch              string     `json:"arch" gorm:"size:20;default:'x86_64'"`          // 系统架构
-	Env               string     `json:"env" gorm:"type:varchar(20);default:'test';index"`       // 环境
-	Status            string     `json:"status" gorm:"type:varchar(20);default:'unknown';index"` // 状态
-	SSHPort           int        `json:"sshPort" gorm:"default:22"`                     // SSH端口
-	CredentialID      uint       `json:"credentialId" gorm:"index"`                     // SSH凭证ID（兼容旧字段）
-	SSHCredentialID   uint       `json:"sshCredentialId" gorm:"index"`                  // SSH凭证ID
-	CabinetID         uint       `json:"cabinetId" gorm:"index"`                        // 所在机柜ID
-	UPosition         int        `json:"uPosition"`                                     // 机柜位置(U)
-	SN                string     `json:"sn" gorm:"size:100"`                            // 序列号
-	Manufacturer     string     `json:"manufacturer" gorm:"size:100"`                  // 厂商
-	Model             string     `json:"model" gorm:"size:100"`                         // 型号
-	PurchaseDate      *time.Time `json:"purchaseDate"`                                  // 购买日期
-	ExpireWarranty    *time.Time `json:"expireWarranty"`                                // 保修到期
-	AssetNumber       string     `json:"assetNumber" gorm:"size:100"`                   // 资产编号
-	InstanceID        string     `json:"instanceId" gorm:"size:100"`                    // 云主机实例ID
-	InstanceType      string     `json:"instanceType" gorm:"size:50"`                   // 云主机类型
-	Region            string     `json:"region" gorm:"size:50"`                         // 区域
-	Zone              string     `json:"zone" gorm:"size:50"`                           // 可用区
-	Provider          string     `json:"provider" gorm:"size:50;index"`                 // 服务商
-	ServerType        string     `json:"serverType" gorm:"size:20;default:'vm'"`        // 类型
-	Remarks           string     `json:"remarks" gorm:"type:text"`                      // 备注
-	LastCheckTime     *time.Time `json:"lastCheckTime"`                                 // 最后连通性检查时间
-	LastConnectTime   *time.Time `json:"lastConnectTime"`                               // 最后连接时间
-	ConnectivityStatus string     `json:"connectivityStatus" gorm:"type:enum('online','offline','unknown');default:'unknown'"` // 连通性状态
-	BusinessID         uint       `json:"businessId" gorm:"index"`
-	Business           *BusinessUnit `json:"business,omitempty" gorm:"foreignKey:BusinessID;constraint:OnDelete:SET NULL"`
-	CPUUsage           float64    `json:"cpuUsage" gorm:"default:0"`
-	MemoryUsage        float64    `json:"memoryUsage" gorm:"default:0"`
-	DiskUsage          float64    `json:"diskUsage" gorm:"default:0"`
-	Load1              float64    `json:"load1" gorm:"default:0"`
-	Load5              float64    `json:"load5" gorm:"default:0"`
-	Load15             float64    `json:"load15" gorm:"default:0"`
+	ID                 uint           `json:"id" gorm:"primaryKey"`
+	Hostname           string         `json:"hostname" gorm:"size:100;not null;uniqueIndex"`                                       // 主机名
+	IP                 string         `json:"ip" gorm:"size:50;not null;index"`                                                    // 外网IP
+	InnerIP            string         `json:"innerIp" gorm:"size:50;index"`                                                        // 内网IP
+	CPU                int            `json:"cpu" gorm:"default:0"`                                                                // CPU核心数
+	Memory             int            `json:"memory" gorm:"default:0"`                                                             // 内存(GB)
+	Disk               int            `json:"disk" gorm:"default:0"`                                                               // 磁盘(GB)
+	OS                 string         `json:"os" gorm:"size:50"`                                                                   // 操作系统
+	OSVersion          string         `json:"osVersion" gorm:"size:50"`                                                            // 系统版本
+	Arch               string         `json:"arch" gorm:"size:20;default:'x86_64'"`                                                // 系统架构
+	Env                string         `json:"env" gorm:"type:varchar(20);default:'test';index"`                                    // 环境
+	Status             string         `json:"status" gorm:"type:varchar(20);default:'unknown';index"`                              // 状态
+	SSHPort            int            `json:"sshPort" gorm:"default:22"`                                                           // SSH端口
+	CredentialID       uint           `json:"credentialId" gorm:"index"`                                                           // SSH凭证ID（兼容旧字段）
+	SSHCredentialID    uint           `json:"sshCredentialId" gorm:"index"`                                                        // SSH凭证ID
+	CabinetID          uint           `json:"cabinetId" gorm:"index"`                                                              // 所在机柜ID
+	UPosition          int            `json:"uPosition"`                                                                           // 机柜位置(U)
+	SN                 string         `json:"sn" gorm:"size:100"`                                                                  // 序列号
+	Manufacturer       string         `json:"manufacturer" gorm:"size:100"`                                                        // 厂商
+	Model              string         `json:"model" gorm:"size:100"`                                                               // 型号
+	PurchaseDate       *time.Time     `json:"purchaseDate"`                                                                        // 购买日期
+	ExpireWarranty     *time.Time     `json:"expireWarranty"`                                                                      // 保修到期
+	AssetNumber        string         `json:"assetNumber" gorm:"size:100"`                                                         // 资产编号
+	InstanceID         string         `json:"instanceId" gorm:"size:100"`                                                          // 云主机实例ID
+	InstanceType       string         `json:"instanceType" gorm:"size:50"`                                                         // 云主机类型
+	Region             string         `json:"region" gorm:"size:50"`                                                               // 区域
+	Zone               string         `json:"zone" gorm:"size:50"`                                                                 // 可用区
+	Provider           string         `json:"provider" gorm:"size:50;index"`                                                       // 服务商
+	ServerType         string         `json:"serverType" gorm:"size:20;default:'vm'"`                                              // 类型
+	Remarks            string         `json:"remarks" gorm:"type:text"`                                                            // 备注
+	LastCheckTime      *time.Time     `json:"lastCheckTime"`                                                                       // 最后连通性检查时间
+	LastConnectTime    *time.Time     `json:"lastConnectTime"`                                                                     // 最后连接时间
+	ConnectivityStatus string         `json:"connectivityStatus" gorm:"type:enum('online','offline','unknown');default:'unknown'"` // 连通性状态
+	BusinessID         uint           `json:"businessId" gorm:"index"`
+	Business           *BusinessUnit  `json:"business,omitempty" gorm:"foreignKey:BusinessID;constraint:OnDelete:SET NULL"`
+	CPUUsage           float64        `json:"cpuUsage" gorm:"default:0"`
+	MemoryUsage        float64        `json:"memoryUsage" gorm:"default:0"`
+	DiskUsage          float64        `json:"diskUsage" gorm:"default:0"`
+	Load1              float64        `json:"load1" gorm:"default:0"`
+	Load5              float64        `json:"load5" gorm:"default:0"`
+	Load15             float64        `json:"load15" gorm:"default:0"`
 	DiskPartitions     DiskPartitions `json:"diskPartitions,omitempty" gorm:"type:json"`
-	MetricsUpdatedAt   *time.Time `json:"metricsUpdatedAt"`
-	AgentStatus        string     `json:"agentStatus" gorm:"type:varchar(20);default:'uninstalled';index"` // uninstalled | running | offline
-	AgentPort          int        `json:"agentPort" gorm:"default:9100"`
-	AgentVersion       string     `json:"agentVersion" gorm:"size:50"`
-	LastHeartbeatAt    *time.Time `json:"lastHeartbeatAt"`
-	SystemCredentialID uint       `json:"systemCredentialId" gorm:"index"` // 系统运维凭证（Agent部署/采集专用）
+	MetricsUpdatedAt   *time.Time     `json:"metricsUpdatedAt"`
+	AgentStatus        string         `json:"agentStatus" gorm:"type:varchar(20);default:'uninstalled';index"` // uninstalled | running | offline
+	AgentPort          int            `json:"agentPort" gorm:"default:9100"`
+	AgentVersion       string         `json:"agentVersion" gorm:"size:50"`
+	LastHeartbeatAt    *time.Time     `json:"lastHeartbeatAt"`
+	SystemCredentialID uint           `json:"systemCredentialId" gorm:"index"` // 系统运维凭证（Agent部署/采集专用）
 	// 冗余字段：优化列表查询性能（避免关联查询）
-	GroupNames        string     `json:"groupNames" gorm:"type:varchar(500);default:'[]'"`         // 分组名称JSON数组
-	CredentialNames   string     `json:"credentialNames" gorm:"type:varchar(500);default:'[]'"`   // 凭证名称JSON数组
-	CreatedAt          time.Time  `json:"createdAt" gorm:"autoCreateTime"`
-	UpdatedAt          time.Time  `json:"updatedAt" gorm:"autoUpdateTime"`
+	GroupNames      string    `json:"groupNames" gorm:"type:varchar(500);default:'[]'"`      // 分组名称JSON数组
+	CredentialNames string    `json:"credentialNames" gorm:"type:varchar(500);default:'[]'"` // 凭证名称JSON数组
+	CreatedAt       time.Time `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt       time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
 
 	// 关联
-	SSHCredential    *SSHCredential  `json:"sshCredential,omitempty" gorm:"foreignKey:SSHCredentialID;constraint:OnDelete:SET NULL"`
-	SystemCredential *SSHCredential  `json:"systemCredential,omitempty" gorm:"foreignKey:SystemCredentialID;constraint:OnDelete:SET NULL"`
-	Cabinet          *Cabinet        `json:"cabinet,omitempty" gorm:"foreignKey:CabinetID;constraint:OnDelete:SET NULL"`
-	Tags          []ServerTag     `json:"tags,omitempty" gorm:"many2many:cmdb_server_tag_relations;constraint:OnDelete:CASCADE"`
-	Groups        []ServerGroup   `json:"groups,omitempty" gorm:"many2many:cmdb_server_group_relations;constraint:OnDelete:CASCADE"`
-	CloudInfo     *CloudServer    `json:"cloudInfo,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:SET NULL"`
-	Credentials   []SSHCredential `json:"credentials,omitempty" gorm:"many2many:cmdb_server_credentials;joinForeignKey:ServerID;joinReferences:CredentialID"`
-	Attributes    []ServerAttribute `json:"attributes,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:CASCADE"`
-	GroupIDs      []uint          `json:"groupIds,omitempty" gorm:"-"`
-	CredentialIDs []uint          `json:"credentialIds,omitempty" gorm:"-"`
+	SSHCredential    *SSHCredential    `json:"sshCredential,omitempty" gorm:"foreignKey:SSHCredentialID;constraint:OnDelete:SET NULL"`
+	SystemCredential *SSHCredential    `json:"systemCredential,omitempty" gorm:"foreignKey:SystemCredentialID;constraint:OnDelete:SET NULL"`
+	Cabinet          *Cabinet          `json:"cabinet,omitempty" gorm:"foreignKey:CabinetID;constraint:OnDelete:SET NULL"`
+	Tags             []ServerTag       `json:"tags,omitempty" gorm:"many2many:cmdb_server_tag_relations;constraint:OnDelete:CASCADE"`
+	Groups           []ServerGroup     `json:"groups,omitempty" gorm:"many2many:cmdb_server_group_relations;constraint:OnDelete:CASCADE"`
+	CloudInfo        *CloudServer      `json:"cloudInfo,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:SET NULL"`
+	Credentials      []SSHCredential   `json:"credentials,omitempty" gorm:"many2many:cmdb_server_credentials;joinForeignKey:ServerID;joinReferences:CredentialID"`
+	Attributes       []ServerAttribute `json:"attributes,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:CASCADE"`
+	GroupIDs         []uint            `json:"groupIds,omitempty" gorm:"-"`
+	CredentialIDs    []uint            `json:"credentialIds,omitempty" gorm:"-"`
 }
 
 // TableName 指定表名
@@ -326,20 +326,20 @@ const (
 
 // SSHCredential SSH认证凭证
 type SSHCredential struct {
-	ID             uint           `json:"id" gorm:"primaryKey"`
-	Name           string         `json:"name" gorm:"size:100;not null"`
-	Description    string         `json:"description" gorm:"type:text"`
-	Username       string         `json:"username" gorm:"size:50;not null"`
+	ID             uint             `json:"id" gorm:"primaryKey"`
+	Name           string           `json:"name" gorm:"size:100;not null"`
+	Description    string           `json:"description" gorm:"type:text"`
+	Username       string           `json:"username" gorm:"size:50;not null"`
 	AuthType       SSHPublicKeyAuth `json:"authType" gorm:"size:20;default:'password'"`
-	Password       string         `json:"password,omitempty" gorm:"size:255"`    // 加密存储
-	PrivateKey     string         `json:"privateKey,omitempty" gorm:"type:text"` // 加密存储
-	Passphrase     string         `json:"passphrase,omitempty" gorm:"size:255"`  // 加密存储
-	Port           int            `json:"port" gorm:"default:22"`
-	CredentialType CredentialType `json:"credentialType" gorm:"type:varchar(10);not null;default:'user'"` // user | system
-	SortOrder      int            `json:"sortOrder" gorm:"default:0"`
-	Status         int            `json:"status" gorm:"default:1"`
-	CreatedAt      time.Time      `json:"createdAt" gorm:"autoCreateTime"`
-	UpdatedAt      time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
+	Password       string           `json:"password,omitempty" gorm:"size:255"`    // 加密存储
+	PrivateKey     string           `json:"privateKey,omitempty" gorm:"type:text"` // 加密存储
+	Passphrase     string           `json:"passphrase,omitempty" gorm:"size:255"`  // 加密存储
+	Port           int              `json:"port" gorm:"default:22"`
+	CredentialType CredentialType   `json:"credentialType" gorm:"type:varchar(10);not null;default:'user'"` // user | system
+	SortOrder      int              `json:"sortOrder" gorm:"default:0"`
+	Status         int              `json:"status" gorm:"default:1"`
+	CreatedAt      time.Time        `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt      time.Time        `json:"updatedAt" gorm:"autoUpdateTime"`
 
 	// 关联
 	Servers []Server `json:"servers,omitempty" gorm:"many2many:cmdb_server_credentials;joinForeignKey:CredentialID;joinReferences:ServerID"`
@@ -395,35 +395,35 @@ func (ServerCredential) TableName() string {
 
 // AgentVersion Agent 版本模型
 type AgentVersion struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	Version   string    `json:"version" gorm:"size:50;not null;uniqueIndex"` // 版本号
-	ReleaseNotes string  `json:"releaseNotes" gorm:"type:text"`                // 发布说明
-	Changelog  string    `json:"changelog" gorm:"type:text"`                  // 更新日志
-	ReleasedAt time.Time `json:"releasedAt"`                                  // 发布时间
+	ID           uint      `json:"id" gorm:"primaryKey"`
+	Version      string    `json:"version" gorm:"size:50;not null;uniqueIndex"` // 版本号
+	ReleaseNotes string    `json:"releaseNotes" gorm:"type:text"`               // 发布说明
+	Changelog    string    `json:"changelog" gorm:"type:text"`                  // 更新日志
+	ReleasedAt   time.Time `json:"releasedAt"`                                  // 发布时间
 
 	// 二进制文件信息
-	AMD64BinaryPath string `json:"amd64BinaryPath" gorm:"size:255"`           // AMD64 二进制路径
-	AMD64BinaryHash string `json:"amd64BinaryHash" gorm:"size:64"`           // AMD64 文件哈希
-	AMD64BinarySize int64  `json:"amd64BinarySize"`                          // AMD64 文件大小
-	ARM64BinaryPath string `json:"arm64BinaryPath" gorm:"size:255"`           // ARM64 二进制路径
-	ARM64BinaryHash string `json:"arm64BinaryHash" gorm:"size:64"`           // ARM64 文件哈希
-	ARM64BinarySize int64  `json:"arm64BinarySize"`                          // ARM64 文件大小
+	AMD64BinaryPath string `json:"amd64BinaryPath" gorm:"size:255"` // AMD64 二进制路径
+	AMD64BinaryHash string `json:"amd64BinaryHash" gorm:"size:64"`  // AMD64 文件哈希
+	AMD64BinarySize int64  `json:"amd64BinarySize"`                 // AMD64 文件大小
+	ARM64BinaryPath string `json:"arm64BinaryPath" gorm:"size:255"` // ARM64 二进制路径
+	ARM64BinaryHash string `json:"arm64BinaryHash" gorm:"size:64"`  // ARM64 文件哈希
+	ARM64BinarySize int64  `json:"arm64BinarySize"`                 // ARM64 文件大小
 
 	// 版本状态
-	IsLatest     bool   `json:"isLatest" gorm:"default:0"`                   // 是否最新版本
-	IsDeprecated bool   `json:"isDeprecated" gorm:"default:0"`               // 是否弃用
+	IsLatest     bool `json:"isLatest" gorm:"default:0"`     // 是否最新版本
+	IsDeprecated bool `json:"isDeprecated" gorm:"default:0"` // 是否弃用
 
 	// 功能支持
-	Features             string `json:"features" gorm:"type:json"`             // 功能列表 JSON
-	MinCompatibleVersion string `json:"minCompatibleVersion" gorm:"size:50"`  // 最小兼容版本
-	MaxCompatibleVersion string `json:"maxCompatibleVersion" gorm:"size:50"`  // 最大兼容版本
+	Features             string `json:"features" gorm:"type:json"`           // 功能列表 JSON
+	MinCompatibleVersion string `json:"minCompatibleVersion" gorm:"size:50"` // 最小兼容版本
+	MaxCompatibleVersion string `json:"maxCompatibleVersion" gorm:"size:50"` // 最大兼容版本
 
 	// 统计信息
-	DownloadCount int     `json:"downloadCount" gorm:"default:0"`             // 下载次数
-	DeployCount   int     `json:"deployCount" gorm:"default:0"`               // 部署次数
+	DownloadCount int `json:"downloadCount" gorm:"default:0"` // 下载次数
+	DeployCount   int `json:"deployCount" gorm:"default:0"`   // 部署次数
 
-	CreatedAt     time.Time `json:"createdAt" gorm:"autoCreateTime"`
-	UpdatedAt     time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
+	CreatedAt time.Time `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
 }
 
 // TableName 指定表名
@@ -433,12 +433,12 @@ func (AgentVersion) TableName() string {
 
 // AgentUpgradeTask Agent 升级任务模型
 type AgentUpgradeTask struct {
-	ID          uint      `json:"id" gorm:"primaryKey"`
-	TaskName    string    `json:"taskName" gorm:"size:100"`
+	ID       uint   `json:"id" gorm:"primaryKey"`
+	TaskName string `json:"taskName" gorm:"size:100"`
 
 	// 升级目标信息
-	TargetVersion   string `json:"targetVersion" gorm:"size:50;not null"`   // 目标版本
-	TargetServerIDs string `json:"targetServerIds" gorm:"type:json"`         // 目标主机ID列表
+	TargetVersion   string `json:"targetVersion" gorm:"size:50;not null"` // 目标版本
+	TargetServerIDs string `json:"targetServerIds" gorm:"type:json"`      // 目标主机ID列表
 
 	// 任务状态
 	Status      string `json:"status" gorm:"type:varchar(20);default:'pending';index"` // pending|running|completed|failed|cancelled
@@ -459,7 +459,7 @@ type AgentUpgradeTask struct {
 	ErrorMessage string `json:"errorMessage" gorm:"type:text"`
 	OperationLog string `json:"operationLog" gorm:"type:json"`
 
-	CreatedBy string `json:"createdBy" gorm:"size:50"`
+	CreatedBy string    `json:"createdBy" gorm:"size:50"`
 	CreatedAt time.Time `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
 }
@@ -472,5 +472,5 @@ func (AgentUpgradeTask) TableName() string {
 // AgentVersionFeature 版本功能支持结构
 type AgentVersionFeature struct {
 	ExtendedMetrics bool `json:"extendedMetrics"` // 支持扩展指标
-	CustomConfigs   bool `json:"customConfigs"`  // 支持自定义配置
+	CustomConfigs   bool `json:"customConfigs"`   // 支持自定义配置
 }

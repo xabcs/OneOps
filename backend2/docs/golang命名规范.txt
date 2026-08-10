@@ -1,0 +1,54 @@
+包命名
+在 Go 中，每个目录都对应一个包。包名应当简短、清晰且富有描述性。以下是一些关于包命名的基本规则：
+
+简短且有描述性：包名应当简短且具有描述性。例如，一个处理 HTTP 请求的包可以命名为 http 而不是 httphandlers。
+全小写：Go 的约定是使用全小写字母来命名包。避免使用大写字母，因为在某些文件系统中可能会导致问题。
+无下划线或混合大小写：包名应避免使用下划线或混合大小写。这些命名方式通常是为了避免命名冲突，但在 Go 中，我们通常通过更好的包组织来解决这个问题。
+不要使用 Go 的保留字：例如 func，chan，map 等。
+避免使用 util, common 或 misc：这些名称对包的内容没有任何描述性。如果你有很多这样的包，可能意味着你需要重构你的代码以更好地组织。
+文件命名
+在 Go 中，文件名通常是包内容的反映。以下是一些关于文件命名的基本规则：
+
+小写字母和下划线：Go 的约定是使用小写字母和下划线来命名文件。例如，http_server.go。
+描述性名称：文件名应当描述文件中代码的功能。例如，如果文件包含的是 HTTP 服务的代码，可以命名为 http_server.go。
+测试文件：对于测试文件，文件名应该以 _test.go 结尾。例如，http_server_test.go。
+平台特定文件：如果文件是特定平台的，应该在文件名后加上平台名。例如，http_server_windows.go。
+Golang项目目录和文件命名实例
+以下是一个 Golang 项目的典型目录和文件结构实例，展示了包命名和文件命名的规范和实践。
+
+代码语言：javascript
+AI代码解释
+/myapp
+├── cmd
+│   ├── server
+│   │   ├── main.go
+│   │   ├── server_test.go
+│   └── client
+│       ├── main.go
+│       └── client_test.go
+├── pkg
+│   ├── http
+│   │   ├── server.go
+│   │   ├── server_test.go
+│   │   ├── client.go
+│   │   └── client_test.go
+│   ├── database
+│   │   ├── connection.go
+│   │   └── connection_test.go
+│   └── utils
+│       ├── converter.go
+│       └── converter_test.go
+└── internal
+    ├── config
+    │   ├── config.go
+    │   └── config_test.go
+    └── model
+        ├── user.go
+        └── user_test.go
+在这个项目中，我们遵循以下几点：
+
+cmd 目录用于存放应用程序的主要入口（main）代码。我们可以看到两个子目录：server 和 client，各自包含自己的 main.go 文件，这是 Go 项目的常见结构，允许我们构建多个独立的可执行文件。
+pkg 目录用于存放可以被其他应用程序重用的代码。在这个示例中，我们有 http、database 和 utils 三个包，各自包含相关的 Go 代码。
+internal 目录用于存放只能被当前应用程序使用的代码。在这里，我们有 config 和 model 两个包。
+文件名全部小写，使用下划线（_）分隔单词，如 server.go 和 connection_test.go。
+测试文件以 _test.go 结尾，对应于它们要测试的文件，如 server_test.go 和 config_test.go。

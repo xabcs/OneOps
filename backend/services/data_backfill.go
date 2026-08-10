@@ -38,18 +38,18 @@ type BackfillRequest struct {
 
 // BackfillResponse Agent 回填响应
 type BackfillResponse struct {
-	Success   bool                   `json:"success"`
-	Message   string                 `json:"message,omitempty"`
-	Data      []HistoricalMetric     `json:"data,omitempty"`
-	StartTime string                 `json:"startTime"`
-	EndTime   string                 `json:"endTime"`
+	Success   bool               `json:"success"`
+	Message   string             `json:"message,omitempty"`
+	Data      []HistoricalMetric `json:"data,omitempty"`
+	StartTime string             `json:"startTime"`
+	EndTime   string             `json:"endTime"`
 }
 
 // HistoricalMetric 历史指标数据
 type HistoricalMetric struct {
-	Timestamp string             `json:"timestamp"`
-	Type      string             `json:"type"` // performance, system, hardware, etc.
-	Data      json.RawMessage    `json:"data"`
+	Timestamp string          `json:"timestamp"`
+	Type      string          `json:"type"` // performance, system, hardware, etc.
+	Data      json.RawMessage `json:"data"`
 }
 
 // CheckAndBackfill 检查并回填缺失数据（当 Agent 重新上线时调用）

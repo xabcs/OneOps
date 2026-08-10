@@ -12,16 +12,16 @@ type DiagnosticHistory struct {
 	Namespace      string    `json:"namespace" gorm:"size:100;not null;index:idx_diagnostic_pod"`
 	PodName        string    `json:"podName" gorm:"size:100;not null;index:idx_diagnostic_pod"`
 	ContainerName  string    `json:"containerName" gorm:"size:100"`
-	Command         string    `json:"command" gorm:"size:50;not null;index:idx_diagnostic_command"`
+	Command        string    `json:"command" gorm:"size:50;not null;index:idx_diagnostic_command"`
 	Args           string    `json:"args" gorm:"type:text"`
-	ResultStatus    string    `json:"resultStatus" gorm:"size:20;not null"` // success, error
-	ResultOutput    string    `json:"resultOutput" gorm:"type:longtext"`
-	ResultError     string    `json:"resultError" gorm:"type:text"`
-	ResultMethod    string    `json:"resultMethod" gorm:"size:20"` // sidecar, daemonset
-	ResultDuration  int       `json:"resultDuration"` // milliseconds
+	ResultStatus   string    `json:"resultStatus" gorm:"size:20;not null"` // success, error
+	ResultOutput   string    `json:"resultOutput" gorm:"type:longtext"`
+	ResultError    string    `json:"resultError" gorm:"type:text"`
+	ResultMethod   string    `json:"resultMethod" gorm:"size:20"` // sidecar, daemonset
+	ResultDuration int       `json:"resultDuration"`              // milliseconds
 	UserID         uint      `json:"userId" gorm:"not null;index:idx_diagnostic_user"`
 	Username       string    `json:"username" gorm:"size:50;not null"`
-	Timestamp       time.Time `json:"timestamp" gorm:"not null;index:idx_diagnostic_timestamp"`
+	Timestamp      time.Time `json:"timestamp" gorm:"not null;index:idx_diagnostic_timestamp"`
 	CreatedAt      time.Time `json:"createdAt" gorm:"autoUpdateTime"`
 	UpdatedAt      time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
 }

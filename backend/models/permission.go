@@ -13,8 +13,8 @@ type Permission struct {
 	Module      string    `json:"module" gorm:"type:varchar(30);not null;index"`
 	Resource    string    `json:"resource" gorm:"type:varchar(30);not null;index"`
 	Action      string    `json:"action" gorm:"type:varchar(20);not null"`
-	RouteMethod string    `json:"routeMethod" gorm:"type:varchar(10)"`      // HTTP方法: GET/POST/PUT/DELETE
-	RoutePath   string    `json:"routePath" gorm:"type:varchar(255)"`      // 路由路径
+	RouteMethod string    `json:"routeMethod" gorm:"type:varchar(10)"`                // HTTP方法: GET/POST/PUT/DELETE
+	RoutePath   string    `json:"routePath" gorm:"type:varchar(255)"`                 // 路由路径
 	Level       int       `json:"level" gorm:"type:tinyint;not null;default:3;index"` // 权限级别：1-模块级，2-页面级，3-按钮级，4-API级
 	ParentID    *uint     `json:"parentId,omitempty" gorm:"index"`
 	SortOrder   int       `json:"sortOrder" gorm:"default:0"`
@@ -34,10 +34,10 @@ func (Permission) TableName() string {
 
 // RolePermission 角色-权限关联模型
 type RolePermission struct {
-	ID           uint       `json:"id" gorm:"primaryKey"`
-	RoleID       uint       `json:"roleId" gorm:"not null;uniqueIndex:uk_role_permission;index"`
-	PermissionID uint       `json:"permissionId" gorm:"not null;uniqueIndex:uk_role_permission;index"`
-	CreatedAt    time.Time  `json:"createdAt" gorm:"autoCreateTime"`
+	ID           uint      `json:"id" gorm:"primaryKey"`
+	RoleID       uint      `json:"roleId" gorm:"not null;uniqueIndex:uk_role_permission;index"`
+	PermissionID uint      `json:"permissionId" gorm:"not null;uniqueIndex:uk_role_permission;index"`
+	CreatedAt    time.Time `json:"createdAt" gorm:"autoCreateTime"`
 
 	// 关联关系
 	Role       Role       `json:"role,omitempty" gorm:"foreignKey:RoleID"`
@@ -54,8 +54,8 @@ type UserPermission struct {
 	ID           uint       `json:"id" gorm:"primaryKey"`
 	UserID       uint       `json:"userId" gorm:"not null;uniqueIndex:uk_user_permission;index"`
 	PermissionID uint       `json:"permissionId" gorm:"not null;uniqueIndex:uk_user_permission;index"`
-	GrantedBy    *uint      `json:"grantedBy,omitempty" gorm:"index"`                  // 授权人ID
-	ExpireTime   *time.Time `json:"expireTime,omitempty" gorm:"index"`               // 权限过期时间
+	GrantedBy    *uint      `json:"grantedBy,omitempty" gorm:"index"`  // 授权人ID
+	ExpireTime   *time.Time `json:"expireTime,omitempty" gorm:"index"` // 权限过期时间
 	CreatedAt    time.Time  `json:"createdAt" gorm:"autoCreateTime"`
 
 	// 关联关系
@@ -71,16 +71,16 @@ func (UserPermission) TableName() string {
 
 // PermissionLog 权限操作日志模型（审计用途）
 type PermissionLog struct {
-	ID             uint       `json:"id" gorm:"primaryKey"`
-	UserID         uint       `json:"userId" gorm:"not null;index"`
-	PermissionCode string     `json:"permissionCode" gorm:"type:varchar(100);not null;index"`
-	ResourceType   string     `json:"resourceType,omitempty" gorm:"type:varchar(50)"`
-	ResourceID     *uint      `json:"resourceId,omitempty"`
-	Action         string     `json:"action" gorm:"type:varchar(50);not null"`
-	Result         string     `json:"result" gorm:"type:varchar(20);not null;index"` // allowed, denied
-	IPAddress      string     `json:"ipAddress,omitempty" gorm:"type:varchar(50)"`
-	UserAgent      string     `json:"userAgent,omitempty" gorm:"type:varchar(500)"`
-	CreatedAt      time.Time  `json:"createdAt" gorm:"autoCreateTime;index"`
+	ID             uint      `json:"id" gorm:"primaryKey"`
+	UserID         uint      `json:"userId" gorm:"not null;index"`
+	PermissionCode string    `json:"permissionCode" gorm:"type:varchar(100);not null;index"`
+	ResourceType   string    `json:"resourceType,omitempty" gorm:"type:varchar(50)"`
+	ResourceID     *uint     `json:"resourceId,omitempty"`
+	Action         string    `json:"action" gorm:"type:varchar(50);not null"`
+	Result         string    `json:"result" gorm:"type:varchar(20);not null;index"` // allowed, denied
+	IPAddress      string    `json:"ipAddress,omitempty" gorm:"type:varchar(50)"`
+	UserAgent      string    `json:"userAgent,omitempty" gorm:"type:varchar(500)"`
+	CreatedAt      time.Time `json:"createdAt" gorm:"autoCreateTime;index"`
 
 	// 关联关系
 	User User `json:"user,omitempty" gorm:"foreignKey:UserID"`
@@ -147,10 +147,10 @@ type CheckPermissionResponse struct {
 
 // GetUserPermissionsResponse 获取用户权限响应
 type GetUserPermissionsResponse struct {
-	UserID     uint     `json:"userId"`
-	Username   string   `json:"username"`
+	UserID      uint     `json:"userId"`
+	Username    string   `json:"username"`
 	Permissions []string `json:"permissions"`
-	Roles      []string `json:"roles"`
+	Roles       []string `json:"roles"`
 }
 
 // PermissionTreeNode 权限树节点（用于前端展示）

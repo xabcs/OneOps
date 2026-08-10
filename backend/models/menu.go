@@ -11,7 +11,7 @@ type Menu struct {
 	Icon       string    `json:"icon" gorm:"size:50"`
 	Path       string    `json:"path" gorm:"size:200"`
 	Permission string    `json:"permission" gorm:"size:100"`
-	Resource   string    `json:"resource" gorm:"size:30;index"`       // 对应的资源名称，用于权限码自动关联
+	Resource   string    `json:"resource" gorm:"size:30;index"`        // 对应的资源名称，用于权限码自动关联
 	MenuType   string    `json:"menuType" gorm:"size:20;default:menu"` // 菜单类型：menu(菜单) 或 directory(目录)
 	ParentID   uint      `json:"parentId" gorm:"default:0"`
 	Sort       int       `json:"sort" gorm:"default:0"`

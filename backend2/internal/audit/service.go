@@ -1,0 +1,486 @@
+package audit
+
+import (
+	"encoding/json"
+	"fmt"
+	"oneops/backend2/pkg/database"
+	"oneops/backend2/pkg/utils"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+// AuditService 审计服务
+type AuditService struct{}
+
+// NewAuditService 创建审计服务
+func NewAuditService() *AuditService {
+	return &AuditService{}
+}
+
+// LogLogin 记录登录日志
+func (s *AuditService) LogLogin(userID uint, username, nickname, ip, userAgent, location, status, failReason string) error {
+	log := LoginLog{
+		UserID:     userID,
+		Username:   username,
+		Nickname:   nickname,
+		IP:         ip,
+		UserAgent:  userAgent,
+		Location:   location,
+		Status:     status,
+		FailReason: failReason,
+		LoginTime:  time.Now(),
+	}
+
+	return database.GetDB().Create(&log).Error
+}
+
+// LogLogout 记录登出日志
+func (s *AuditService) LogLogout(userID uint) error {
+	var loginLog LoginLog
+	err := database.GetDB().Where("user_id = ? AND status = ?", userID, "success").
+		Order("login_time DESC").
+		First(&loginLog).Error
+
+	if err != nil {
+		return err
+	}
+
+	duration := int(time.Since(loginLog.LoginTime).Seconds())
+	now := time.Now()
+	return database.GetDB().Model(&loginLog).
+		Updates(map[string]interface{}{
+			"logout_time": &now,
+			"duration":    duration,
+		}).Error
+}
+
+// LogOperation 记录操作日志
+func (s *AuditService) LogOperation(userID uint, username, nickname, module, action, description, method, path string,
+	params, response interface{}, statusCode int, ip, userAgent string, duration int, status, errorMsg string) error {
+
+	paramsJSON, _ := json.Marshal(params)
+	responseJSON, _ := json.Marshal(response)
+
+	log := OperationLog{
+		UserID:      userID,
+		Username:    username,
+		Nickname:    nickname,
+		Module:      module,
+		Action:      action,
+		Description: description,
+		Method:      method,
+		Path:        path,
+		Params:      string(paramsJSON),
+		Response:    string(responseJSON),
+		StatusCode:  statusCode,
+		IP:          ip,
+		UserAgent:   userAgent,
+		Duration:    duration,
+		Status:      status,
+		ErrorMsg:    errorMsg,
+		OperateTime: time.Now(),
+	}
+
+	return database.GetDB().Create(&log).Error
+}
+
+// LogSystemEvent 记录系统事件日志
+func (s *AuditService) LogSystemEvent(level, source, category, message, details, ip string) error {
+	log := SystemEventLog{
+		Level:     level,
+		Source:    source,
+		Category:  category,
+		Message:   message,
+		Details:   details,
+		IP:        ip,
+		EventTime: time.Now(),
+	}
+
+	return database.GetDB().Create(&log).Error
+}
+
+// LoginLogResponse 登录日志响应结构
+type LoginLogResponse struct {
+	ID         uint   `json:"id"`
+	UserID     uint   `json:"userId"`
+	Username   string `json:"username"`
+	Nickname   string `json:"nickname"`
+	IP         string `json:"ip"`
+	UserAgent  string `json:"userAgent"`
+	Location   string `json:"location"`
+	Status     string `json:"status"`
+	FailReason string `json:"failReason"`
+	LoginTime  string `json:"loginTime"`
+	LogoutTime string `json:"logoutTime,omitempty"`
+	Duration   int    `json:"duration"`
+	Browser    string `json:"browser"`
+	OS         string `json:"os"`
+}
+
+// GetLoginLogs 获取登录日志列表（用于前端显示）
+func (s *AuditService) GetLoginLogs(query map[string]interface{}, page, pageSize int) ([]LoginLogResponse, int64, error) {
+	var logs []LoginLog
+	var total int64
+
+	tx := database.GetDB().Model(&LoginLog{})
+
+	if username, ok := query["username"].(string); ok && username != "" {
+		tx = tx.Where("username LIKE ?", "%"+username+"%")
+	}
+	if status, ok := query["status"].(string); ok && status != "" {
+		tx = tx.Where("status = ?", status)
+	}
+	if location, ok := query["location"].(string); ok && location != "" {
+		tx = tx.Where("location LIKE ?", "%"+location+"%")
+	}
+	if startTime, ok := query["startTime"].(string); ok && startTime != "" {
+		tx = tx.Where("login_time >= ?", startTime)
+	}
+	if endTime, ok := query["endTime"].(string); ok && endTime != "" {
+		tx = tx.Where("login_time <= ?", endTime)
+	}
+
+	if err := tx.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := tx.Order("login_time DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&logs).Error
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	response := make([]LoginLogResponse, 0, len(logs))
+	for _, log := range logs {
+		userAgentInfo := utils.ParseUserAgent(log.UserAgent)
+
+		duration := 0
+		if log.LogoutTime != nil {
+			duration = int(log.LogoutTime.Sub(log.LoginTime).Seconds())
+		} else if log.Duration > 0 {
+			duration = log.Duration
+		}
+
+		var logoutTimeStr string
+		if log.LogoutTime != nil {
+			logoutTimeStr = log.LogoutTime.Format("2006-01-02 15:04:05")
+		}
+
+		logResponse := LoginLogResponse{
+			ID:         log.ID,
+			UserID:     log.UserID,
+			Username:   log.Username,
+			Nickname:   log.Nickname,
+			IP:         log.IP,
+			UserAgent:  log.UserAgent,
+			Location:   log.Location,
+			Status:     log.Status,
+			FailReason: log.FailReason,
+			LoginTime:  log.LoginTime.Format("2006-01-02 15:04:05"),
+			LogoutTime: logoutTimeStr,
+			Duration:   duration,
+			Browser:    userAgentInfo.Browser,
+			OS:         userAgentInfo.OS,
+		}
+
+		if browser, ok := query["browser"].(string); ok && browser != "" {
+			if userAgentInfo.Browser != browser {
+				continue
+			}
+		}
+		if os, ok := query["os"].(string); ok && os != "" {
+			if userAgentInfo.OS != os {
+				continue
+			}
+		}
+
+		response = append(response, logResponse)
+	}
+
+	total = int64(len(response))
+
+	start := (page - 1) * pageSize
+	end := start + pageSize
+	if start > int(total) {
+		start = int(total)
+	}
+	if end > int(total) {
+		end = int(total)
+	}
+
+	return response[start:end], total, nil
+}
+
+// GetLoginLogsForExport 获取登录日志列表（用于导出）
+func (s *AuditService) GetLoginLogsForExport(query map[string]interface{}, page, pageSize int) ([]LoginLog, int64, error) {
+	var logs []LoginLog
+	var total int64
+
+	tx := database.GetDB().Model(&LoginLog{})
+
+	if username, ok := query["username"].(string); ok && username != "" {
+		tx = tx.Where("username LIKE ?", "%"+username+"%")
+	}
+	if status, ok := query["status"].(string); ok && status != "" {
+		tx = tx.Where("status = ?", status)
+	}
+	if location, ok := query["location"].(string); ok && location != "" {
+		tx = tx.Where("location LIKE ?", "%"+location+"%")
+	}
+	if startTime, ok := query["startTime"].(string); ok && startTime != "" {
+		tx = tx.Where("login_time >= ?", startTime)
+	}
+	if endTime, ok := query["endTime"].(string); ok && endTime != "" {
+		tx = tx.Where("login_time <= ?", endTime)
+	}
+
+	if err := tx.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := tx.Order("login_time DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&logs).Error
+
+	return logs, total, err
+}
+
+// GetOperationLogs 获取操作日志列表
+func (s *AuditService) GetOperationLogs(query map[string]interface{}, page, pageSize int) ([]OperationLog, int64, error) {
+	var logs []OperationLog
+	var total int64
+
+	tx := database.GetDB().Model(&OperationLog{})
+
+	if username, ok := query["username"].(string); ok && username != "" {
+		tx = tx.Where("username LIKE ?", "%"+username+"%")
+	}
+	if module, ok := query["module"].(string); ok && module != "" {
+		tx = tx.Where("module = ?", module)
+	}
+	if status, ok := query["status"].(string); ok && status != "" {
+		tx = tx.Where("status = ?", status)
+	}
+	if action, ok := query["action"].(string); ok && action != "" {
+		tx = tx.Where("action LIKE ?", "%"+action+"%")
+	}
+	if method, ok := query["method"].(string); ok && method != "" {
+		tx = tx.Where("method = ?", method)
+	}
+	if statusCode, ok := query["statusCode"].(int); ok && statusCode > 0 {
+		tx = tx.Where("status_code = ?", statusCode)
+	}
+	if statusCodeStr, ok := query["statusCode"].(string); ok && statusCodeStr != "" {
+		var code int
+		if _, err := fmt.Sscanf(statusCodeStr, "%d", &code); err == nil {
+			tx = tx.Where("status_code = ?", code)
+		}
+	}
+	if path, ok := query["path"].(string); ok && path != "" {
+		tx = tx.Where("path LIKE ?", "%"+path+"%")
+	}
+	if durationRange, ok := query["durationRange"].(string); ok && durationRange != "" {
+		switch durationRange {
+		case "fast":
+			tx = tx.Where("duration < 100")
+		case "normal":
+			tx = tx.Where("duration >= 100 AND duration < 500")
+		case "slow":
+			tx = tx.Where("duration >= 500 AND duration < 1000")
+		case "very-slow":
+			tx = tx.Where("duration >= 1000")
+		}
+	}
+	if startTime, ok := query["startTime"].(string); ok && startTime != "" {
+		tx = tx.Where("operate_time >= ?", startTime)
+	}
+	if endTime, ok := query["endTime"].(string); ok && endTime != "" {
+		tx = tx.Where("operate_time <= ?", endTime)
+	}
+
+	if err := tx.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := tx.Order("operate_time DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&logs).Error
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	for i := range logs {
+		logs[i].Time = logs[i].OperateTime.Format("2006-01-02 15:04:05")
+	}
+
+	return logs, total, nil
+}
+
+// GetSystemEventLogs 获取系统事件日志列表
+func (s *AuditService) GetSystemEventLogs(query map[string]interface{}, page, pageSize int) ([]SystemEventLog, int64, error) {
+	var logs []SystemEventLog
+	var total int64
+
+	tx := database.GetDB().Model(&SystemEventLog{})
+
+	if level, ok := query["level"].(string); ok && level != "" {
+		tx = tx.Where("level = ?", level)
+	}
+	if source, ok := query["source"].(string); ok && source != "" {
+		tx = tx.Where("source LIKE ?", "%"+source+"%")
+	}
+	if category, ok := query["category"].(string); ok && category != "" {
+		tx = tx.Where("category = ?", category)
+	}
+	if startTime, ok := query["startTime"].(string); ok && startTime != "" {
+		tx = tx.Where("event_time >= ?", startTime)
+	}
+	if endTime, ok := query["endTime"].(string); ok && endTime != "" {
+		tx = tx.Where("event_time <= ?", endTime)
+	}
+
+	if err := tx.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	err := tx.Order("event_time DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&logs).Error
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	for i := range logs {
+		logs[i].Time = logs[i].EventTime.Format("2006-01-02 15:04:05")
+	}
+
+	return logs, total, nil
+}
+
+// GetAuditStats 获取审计统计信息
+func (s *AuditService) GetAuditStats() (gin.H, error) {
+	var stats gin.H = make(gin.H)
+
+	var loginStats []struct {
+		Status string
+		Count  int64
+	}
+	database.GetDB().Model(&LoginLog{}).
+		Select("status, count(*) as count").
+		Group("status").
+		Scan(&loginStats)
+
+	stats["login"] = gin.H{
+		"total": 0, "success": 0, "failed": 0,
+		"today": 0, "thisWeek": 0, "thisMonth": 0,
+	}
+
+	for _, stat := range loginStats {
+		stats["login"].(gin.H)["total"] = stats["login"].(gin.H)["total"].(int) + int(stat.Count)
+		if stat.Status == "success" {
+			stats["login"].(gin.H)["success"] = stat.Count
+		} else {
+			stats["login"].(gin.H)["failed"] = stat.Count
+		}
+	}
+
+	var opStats []struct {
+		Status string
+		Count  int64
+	}
+	database.GetDB().Model(&OperationLog{}).
+		Select("status, count(*) as count").
+		Group("status").
+		Scan(&opStats)
+
+	stats["operation"] = gin.H{"total": 0, "success": 0, "failed": 0}
+
+	for _, stat := range opStats {
+		stats["operation"].(gin.H)["total"] = stats["operation"].(gin.H)["total"].(int) + int(stat.Count)
+		if stat.Status == "success" {
+			stats["operation"].(gin.H)["success"] = stat.Count
+		} else {
+			stats["operation"].(gin.H)["failed"] = stat.Count
+		}
+	}
+
+	var todayLoginCount int64
+	today := time.Now().Format("2006-01-02")
+	database.GetDB().Model(&LoginLog{}).
+		Where("DATE(created_at) = ?", today).
+		Count(&todayLoginCount)
+	stats["login"].(gin.H)["today"] = todayLoginCount
+
+	var weekLoginCount int64
+	weekStart := time.Now().AddDate(0, 0, -int(time.Now().Weekday()))
+	if time.Now().Weekday() == 0 {
+		weekStart = time.Now().AddDate(0, 0, -6)
+	}
+	weekStartStr := weekStart.Format("2006-01-02")
+	database.GetDB().Model(&LoginLog{}).
+		Where("DATE(created_at) >= ?", weekStartStr).
+		Count(&weekLoginCount)
+	stats["login"].(gin.H)["thisWeek"] = weekLoginCount
+
+	var monthLoginCount int64
+	monthStart := time.Now().Format("2006-01-01")
+	database.GetDB().Model(&LoginLog{}).
+		Where("DATE(created_at) >= ?", monthStart).
+		Count(&monthLoginCount)
+	stats["login"].(gin.H)["thisMonth"] = monthLoginCount
+
+	var eventStats []struct {
+		Level string
+		Count int64
+	}
+	database.GetDB().Model(&SystemEventLog{}).
+		Select("level, count(*) as count").
+		Group("level").
+		Scan(&eventStats)
+
+	stats["system"] = gin.H{
+		"total": 0, "info": 0, "warning": 0, "error": 0, "critical": 0,
+	}
+
+	for _, stat := range eventStats {
+		stats["system"].(gin.H)["total"] = stats["system"].(gin.H)["total"].(int) + int(stat.Count)
+		switch stat.Level {
+		case "info":
+			stats["system"].(gin.H)["info"] = stat.Count
+		case "warning":
+			stats["system"].(gin.H)["warning"] = stat.Count
+		case "error":
+			stats["system"].(gin.H)["error"] = stat.Count
+		case "critical":
+			stats["system"].(gin.H)["critical"] = stat.Count
+		}
+	}
+
+	return stats, nil
+}
+
+// GetModules 获取可用的审计模块列表（从menu表获取一级菜单，使用原始SQL避免跨包依赖）
+func (s *AuditService) GetModules() []string {
+	var modules []string
+
+	err := database.GetDB().Table("sys_menus").
+		Where("parent_id = 0").
+		Where("status = 1").
+		Order("sort ASC").
+		Pluck("name", &modules).Error
+
+	if err != nil {
+		return []string{}
+	}
+
+	return modules
+}

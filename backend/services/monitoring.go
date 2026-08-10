@@ -25,13 +25,13 @@ const (
 
 // AgentExtendedMetricsResponse Agent 扩展指标响应结构
 type AgentExtendedMetricsResponse struct {
-	Performance  PerformanceMetrics  `json:"performance"`
-	SystemInfo   SystemInfo          `json:"systemInfo,omitempty"`
-	HardwareInfo HardwareInfo        `json:"hardwareInfo,omitempty"`
+	Performance   PerformanceMetrics `json:"performance"`
+	SystemInfo    SystemInfo         `json:"systemInfo,omitempty"`
+	HardwareInfo  HardwareInfo       `json:"hardwareInfo,omitempty"`
 	ServiceStatus ServiceStatus      `json:"serviceStatus,omitempty"`
-	ProcessInfo  ProcessInfo         `json:"processInfo,omitempty"`
+	ProcessInfo   ProcessInfo        `json:"processInfo,omitempty"`
 	NetworkConfig NetworkConfig      `json:"networkConfig,omitempty"`
-	SecurityInfo SecurityInfo        `json:"securityInfo,omitempty"`
+	SecurityInfo  SecurityInfo       `json:"securityInfo,omitempty"`
 	ConfigChanges []ConfigChange     `json:"configChanges,omitempty"`
 	CollectedAt   string             `json:"collectedAt"`
 	Version       string             `json:"version"`
@@ -44,7 +44,7 @@ type PerformanceMetrics struct {
 	Disk    DiskMetrics    `json:"disk"`
 	Network NetworkMetrics `json:"network"`
 	Load    LoadMetrics    `json:"load"`
-		IO      IOStats        `json:"io,omitempty"` // P1: IO 统计
+	IO      IOStats        `json:"io,omitempty"` // P1: IO 统计
 }
 
 // CPUMetrics CPU 指标
@@ -69,11 +69,11 @@ type MemoryMetrics struct {
 
 // DiskMetrics 磁盘指标
 type DiskMetrics struct {
-	Total       uint64            `json:"total"`
-	Used        uint64            `json:"used"`
-	Free        uint64            `json:"free"`
-	UsedPercent float64           `json:"usedPercent"`
-	Partitions  []PartitionInfo   `json:"partitions,omitempty"`
+	Total       uint64          `json:"total"`
+	Used        uint64          `json:"used"`
+	Free        uint64          `json:"free"`
+	UsedPercent float64         `json:"usedPercent"`
+	Partitions  []PartitionInfo `json:"partitions,omitempty"`
 }
 
 // PartitionInfo 分区信息
@@ -89,7 +89,7 @@ type PartitionInfo struct {
 
 // NetworkMetrics 网络指标
 type NetworkMetrics struct {
-	Interfaces []InterfaceStats `json:"interfaces,omitempty"`
+	Interfaces  []InterfaceStats `json:"interfaces,omitempty"`
 	Connections ConnectionStats  `json:"connections"`
 }
 
@@ -124,9 +124,6 @@ type IOStats struct {
 	QueueDepth      float64 `json:"queueDepth,omitempty"`      // 队列深度
 }
 
-
-
-
 // SystemInfo 系统信息
 type SystemInfo struct {
 	Hostname string `json:"hostname"`
@@ -144,34 +141,34 @@ type OSInfo struct {
 
 // HardwareInfo 硬件信息
 type HardwareInfo struct {
-	CPU     CPUInfo        `json:"cpu"`
-	Memory  MemoryHardware `json:"memory"`
-	Disk    []DiskDevice   `json:"disk,omitempty"`
+	CPU    CPUInfo        `json:"cpu"`
+	Memory MemoryHardware `json:"memory"`
+	Disk   []DiskDevice   `json:"disk,omitempty"`
 }
 
 // CPUInfo CPU 信息
 type CPUInfo struct {
-	Vendor  string `json:"vendor,omitempty"`
-	Model   string `json:"model,omitempty"`
-	Cores   int    `json:"cores"`
-	Threads int    `json:"threads"`
+	Vendor  string  `json:"vendor,omitempty"`
+	Model   string  `json:"model,omitempty"`
+	Cores   int     `json:"cores"`
+	Threads int     `json:"threads"`
 	Mhz     float64 `json:"mhz"`
 }
 
 // MemoryHardware 内存硬件信息
 type MemoryHardware struct {
-		Total uint64 `json:"total"`
-		Slots []MemorySlot `json:"slots,omitempty"` // P1: 内存插槽信息
+	Total uint64       `json:"total"`
+	Slots []MemorySlot `json:"slots,omitempty"` // P1: 内存插槽信息
 }
 
 // MemorySlot 内存插槽信息 (P1)
 type MemorySlot struct {
 	SlotNumber int    `json:"slotNumber"` // 插槽号
-	Capacity   uint64 `json:"capacity"`    // 容量 (字节)
-	Type       string `json:"type"`        // 类型 (DDR3, DDR4, etc.)
-	Vendor     string `json:"vendor"`      // 厂商
-	Speed      string `json:"speed"`       // 速度
-	HasECC     bool   `json:"hasECC"`      // 是否支持 ECC
+	Capacity   uint64 `json:"capacity"`   // 容量 (字节)
+	Type       string `json:"type"`       // 类型 (DDR3, DDR4, etc.)
+	Vendor     string `json:"vendor"`     // 厂商
+	Speed      string `json:"speed"`      // 速度
+	HasECC     bool   `json:"hasECC"`     // 是否支持 ECC
 }
 
 // DiskDevice 磁盘设备
@@ -210,7 +207,7 @@ type ListenPort struct {
 
 // ProcessInfo 进程信息
 type ProcessInfo struct {
-	Total int         `json:"total"`
+	Total int          `json:"total"`
 	Top   []TopProcess `json:"top"`
 }
 
@@ -234,10 +231,10 @@ type NetworkConfig struct {
 
 // NetworkInterface 网络接口
 type NetworkInterface struct {
-	Name         string            `json:"name"`
-	HardwareAddr string            `json:"hardwareAddr,omitempty"`
-	MTU          int               `json:"mtu,omitempty"`
-	Addrs        []InterfaceAddr   `json:"addrs,omitempty"`
+	Name         string          `json:"name"`
+	HardwareAddr string          `json:"hardwareAddr,omitempty"`
+	MTU          int             `json:"mtu,omitempty"`
+	Addrs        []InterfaceAddr `json:"addrs,omitempty"`
 }
 
 // InterfaceAddr 接口地址
@@ -321,16 +318,16 @@ func (s *MonitoringService) PullExtendedMetrics(serverID uint) (*AgentExtendedMe
 			zap.String("url", url))
 		return &AgentExtendedMetricsResponse{
 			Performance: PerformanceMetrics{
-				CPU:    CPUMetrics{UsagePercent: 0, Cores: 0},
-				Memory: MemoryMetrics{Total: 0, Used: 0, Free: 0, UsedPercent: 0},
-				Disk:   DiskMetrics{Total: 0, Used: 0, Free: 0, UsedPercent: 0},
+				CPU:     CPUMetrics{UsagePercent: 0, Cores: 0},
+				Memory:  MemoryMetrics{Total: 0, Used: 0, Free: 0, UsedPercent: 0},
+				Disk:    DiskMetrics{Total: 0, Used: 0, Free: 0, UsedPercent: 0},
 				Network: NetworkMetrics{Connections: ConnectionStats{}},
-				Load: LoadMetrics{Load1: 0, Load5: 0, Load15: 0},
+				Load:    LoadMetrics{Load1: 0, Load5: 0, Load15: 0},
 			},
-			ProcessInfo:  ProcessInfo{Total: 0, Top: []TopProcess{}},
+			ProcessInfo:   ProcessInfo{Total: 0, Top: []TopProcess{}},
 			ServiceStatus: ServiceStatus{SystemdServices: []SystemdService{}, ListenPorts: []ListenPort{}},
-			CollectedAt: time.Now().Format(time.RFC3339),
-			Version: "unknown",
+			CollectedAt:   time.Now().Format(time.RFC3339),
+			Version:       "unknown",
 		}, nil
 	}
 
@@ -358,7 +355,7 @@ func (s *MonitoringService) PullExtendedMetrics(serverID uint) (*AgentExtendedMe
 	now := time.Now()
 	if err := db.Model(&models.Server{}).Where("id = ?", serverID).Updates(map[string]interface{}{
 		"last_heartbeat_at": now,
-		"agent_status":       "running",
+		"agent_status":      "running",
 	}).Error; err != nil {
 		logger.Warn("更新主机心跳时间失败", zap.Uint("serverID", serverID), zap.Error(err))
 	}
@@ -525,12 +522,12 @@ func (s *MonitoringService) checkAlertThresholds(serverID uint, hostname, ip str
 
 	// 构建指标值映射
 	metricValues := map[string]float64{
-		"cpu_usage":     metrics.Performance.CPU.UsagePercent,
-		"memory_usage":  metrics.Performance.Memory.UsedPercent,
-		"disk_usage":    metrics.Performance.Disk.UsedPercent,
-		"load1":         float64(metrics.Performance.Load.Load1),
-		"load5":         float64(metrics.Performance.Load.Load5),
-		"load15":        float64(metrics.Performance.Load.Load15),
+		"cpu_usage":    metrics.Performance.CPU.UsagePercent,
+		"memory_usage": metrics.Performance.Memory.UsedPercent,
+		"disk_usage":   metrics.Performance.Disk.UsedPercent,
+		"load1":        float64(metrics.Performance.Load.Load1),
+		"load5":        float64(metrics.Performance.Load.Load5),
+		"load15":       float64(metrics.Performance.Load.Load15),
 	}
 
 	now := time.Now()
@@ -565,18 +562,18 @@ func (s *MonitoringService) checkAlertThresholds(serverID uint, hostname, ip str
 				message = dbRule.Description
 			}
 
-				// 告警聚合：检查是否在抑制期内（防止告警风暴）
-				cache := NewRedisCache()
-				if cache.IsAlertSuppressed(serverID, dbRule.ID) {
-					// 在抑制期内，只更新数据库中的 last_seen，不发送新告警通知
-					db.Exec(`UPDATE mon_agent_alerts SET last_seen = ?, metric_value = ?, message = ?
+			// 告警聚合：检查是否在抑制期内（防止告警风暴）
+			cache := NewRedisCache()
+			if cache.IsAlertSuppressed(serverID, dbRule.ID) {
+				// 在抑制期内，只更新数据库中的 last_seen，不发送新告警通知
+				db.Exec(`UPDATE mon_agent_alerts SET last_seen = ?, metric_value = ?, message = ?
 					         WHERE server_id = ? AND rule_id = ? AND resolved_at IS NULL`,
-						now, value, message, serverID, dbRule.ID)
-					logger.Debug("告警已被聚合抑制，仅更新时间戳",
-						zap.Uint("serverID", serverID),
-						zap.String("ruleId", dbRule.ID))
-					continue
-				}
+					now, value, message, serverID, dbRule.ID)
+				logger.Debug("告警已被聚合抑制，仅更新时间戳",
+					zap.Uint("serverID", serverID),
+					zap.String("ruleId", dbRule.ID))
+				continue
+			}
 
 			// 检查是否已存在未解决的告警
 			var existing struct {
@@ -642,7 +639,6 @@ func (s *MonitoringService) checkAlertThresholds(serverID uint, hostname, ip str
 		}
 	}
 }
-
 
 // GetServerExtendedMetrics 获取主机扩展指标（优先从 Redis 缓存，未命中则从数据库查询）
 func (s *MonitoringService) GetServerExtendedMetrics(serverID uint) (*AgentExtendedMetricsResponse, error) {
@@ -884,12 +880,12 @@ func metricTypeToJSONPath(metricType string) string {
 
 // OverviewData 监控概览数据
 type OverviewData struct {
-	Summary      OverviewSummary  `json:"summary"`
-	TopCPU       []ServerMetric   `json:"topCpu"`
-	TopMemory    []ServerMetric   `json:"topMemory"`
-	TopDisk      []ServerMetric   `json:"topDisk"`
-	ActiveAlerts []AlertItem      `json:"activeAlerts"`
-	RefreshTime  string           `json:"refreshTime"`
+	Summary      OverviewSummary `json:"summary"`
+	TopCPU       []ServerMetric  `json:"topCpu"`
+	TopMemory    []ServerMetric  `json:"topMemory"`
+	TopDisk      []ServerMetric  `json:"topDisk"`
+	ActiveAlerts []AlertItem     `json:"activeAlerts"`
+	RefreshTime  string          `json:"refreshTime"`
 }
 
 // OverviewSummary 概览统计
@@ -946,13 +942,13 @@ type AlertListResult struct {
 
 // AlertStats 告警统计
 type AlertStats struct {
-	Total          int64              `json:"total"`
-	ByLevel        map[string]int64   `json:"byLevel"`
-	Acknowledged   int64              `json:"acknowledged"`
-	Unacknowledged int64              `json:"unacknowledged"`
-	Resolved       int64              `json:"resolved"`
-	Active         int64              `json:"active"`
-	Trend          []AlertTrendPoint  `json:"trend"`
+	Total          int64             `json:"total"`
+	ByLevel        map[string]int64  `json:"byLevel"`
+	Acknowledged   int64             `json:"acknowledged"`
+	Unacknowledged int64             `json:"unacknowledged"`
+	Resolved       int64             `json:"resolved"`
+	Active         int64             `json:"active"`
+	Trend          []AlertTrendPoint `json:"trend"`
 }
 
 // AlertTrendPoint 告警趋势点

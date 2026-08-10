@@ -8,22 +8,22 @@ import (
 
 // AssetAccessPolicy 资产访问策略
 type AssetAccessPolicy struct {
-	ID               uint      `gorm:"primaryKey" json:"id"`
-	Name             string    `gorm:"size:100;not null" json:"name"`
-	SubjectType      string    `gorm:"type:enum('user','role','user_group');not null" json:"subjectType"`
-	SubjectID        uint      `gorm:"not null" json:"subjectId"`
-	AssetScopeType   string    `gorm:"type:enum('server','group','business','tag','all');not null" json:"assetScopeType"`
-	AssetScopeID     uint      `gorm:"default:0" json:"assetScopeId"`
-	LoginAccounts    StringArray `gorm:"type:json" json:"loginAccounts"`
-	Protocols        StringArray `gorm:"type:json" json:"protocols"`
-	AllowFileTransfer bool      `gorm:"default:true" json:"allowFileTransfer"`
-	AllowSudo        bool      `gorm:"default:false" json:"allowSudo"`
-	RequireApproval  bool      `gorm:"default:false" json:"requireApproval"`
-	TimeWindow       TimeWindow `gorm:"type:json" json:"timeWindow"`
-	HighRiskCommands StringArray `gorm:"type:json" json:"highRiskCommands"`
-	Status           int       `gorm:"default:1" json:"status"`
-	CreatedAt        time.Time `json:"createdAt"`
-	UpdatedAt        time.Time `json:"updatedAt"`
+	ID                uint        `gorm:"primaryKey" json:"id"`
+	Name              string      `gorm:"size:100;not null" json:"name"`
+	SubjectType       string      `gorm:"type:enum('user','role','user_group');not null" json:"subjectType"`
+	SubjectID         uint        `gorm:"not null" json:"subjectId"`
+	AssetScopeType    string      `gorm:"type:enum('server','group','business','tag','all');not null" json:"assetScopeType"`
+	AssetScopeID      uint        `gorm:"default:0" json:"assetScopeId"`
+	LoginAccounts     StringArray `gorm:"type:json" json:"loginAccounts"`
+	Protocols         StringArray `gorm:"type:json" json:"protocols"`
+	AllowFileTransfer bool        `gorm:"default:true" json:"allowFileTransfer"`
+	AllowSudo         bool        `gorm:"default:false" json:"allowSudo"`
+	RequireApproval   bool        `gorm:"default:false" json:"requireApproval"`
+	TimeWindow        TimeWindow  `gorm:"type:json" json:"timeWindow"`
+	HighRiskCommands  StringArray `gorm:"type:json" json:"highRiskCommands"`
+	Status            int         `gorm:"default:1" json:"status"`
+	CreatedAt         time.Time   `json:"createdAt"`
+	UpdatedAt         time.Time   `json:"updatedAt"`
 }
 
 // TableName 指定表名
@@ -100,8 +100,8 @@ type BastionSession struct {
 	CreatedAt       time.Time      `json:"createdAt"`
 
 	// 关联数据（不存储在数据库）
-	Commands       []BastionCommand       `gorm:"-" json:"commands,omitempty"`
-	FileTransfers  []BastionFileTransfer  `gorm:"-" json:"fileTransfers,omitempty"`
+	Commands      []BastionCommand      `gorm:"-" json:"commands,omitempty"`
+	FileTransfers []BastionFileTransfer `gorm:"-" json:"fileTransfers,omitempty"`
 }
 
 func (BastionSession) TableName() string {
@@ -110,16 +110,16 @@ func (BastionSession) TableName() string {
 
 // BastionCommand 命令审计
 type BastionCommand struct {
-	ID           uint       `gorm:"primaryKey" json:"id"`
-	SessionID    uint       `gorm:"not null" json:"sessionId"`
-	Session      *BastionSession `gorm:"foreignKey:SessionID" json:"session,omitempty"`
-	Command      string     `gorm:"type:text;not null" json:"command"`
-	ExecutedAt   *time.Time `json:"executedAt"`
-	ExitCode     *int       `json:"exitCode"`
-	RiskLevel    string     `gorm:"type:enum('safe','low','medium','high','critical');default:'safe'" json:"riskLevel"`
-	Blocked      bool       `gorm:"default:false" json:"blocked"`
-	OutputSummary string    `gorm:"type:text" json:"outputSummary"`
-	CreatedAt    time.Time  `json:"createdAt"`
+	ID            uint            `gorm:"primaryKey" json:"id"`
+	SessionID     uint            `gorm:"not null" json:"sessionId"`
+	Session       *BastionSession `gorm:"foreignKey:SessionID" json:"session,omitempty"`
+	Command       string          `gorm:"type:text;not null" json:"command"`
+	ExecutedAt    *time.Time      `json:"executedAt"`
+	ExitCode      *int            `json:"exitCode"`
+	RiskLevel     string          `gorm:"type:enum('safe','low','medium','high','critical');default:'safe'" json:"riskLevel"`
+	Blocked       bool            `gorm:"default:false" json:"blocked"`
+	OutputSummary string          `gorm:"type:text" json:"outputSummary"`
+	CreatedAt     time.Time       `json:"createdAt"`
 }
 
 // TableName 指定表名
@@ -129,18 +129,18 @@ func (BastionCommand) TableName() string {
 
 // BastionFileTransfer 文件传输审计
 type BastionFileTransfer struct {
-	ID           uint       `gorm:"primaryKey" json:"id"`
-	SessionID    uint       `gorm:"not null" json:"sessionId"`
+	ID           uint            `gorm:"primaryKey" json:"id"`
+	SessionID    uint            `gorm:"not null" json:"sessionId"`
 	Session      *BastionSession `gorm:"foreignKey:SessionID" json:"session,omitempty"`
-	Direction    string     `gorm:"type:enum('upload','download');not null" json:"direction"`
-	RemotePath   string     `gorm:"size:500;not null" json:"remotePath"`
-	LocalPath    string     `gorm:"size:500" json:"localPath"`
-	FileSize     int64      `gorm:"default:0" json:"fileSize"`
-	Status       string     `gorm:"type:enum('pending','transferring','success','failed');default:'pending'" json:"status"`
-	ErrorMessage string     `gorm:"size:500" json:"errorMessage"`
-	StartedAt    *time.Time `json:"startedAt"`
-	CompletedAt  *time.Time `json:"completedAt"`
-	CreatedAt    time.Time  `json:"createdAt"`
+	Direction    string          `gorm:"type:enum('upload','download');not null" json:"direction"`
+	RemotePath   string          `gorm:"size:500;not null" json:"remotePath"`
+	LocalPath    string          `gorm:"size:500" json:"localPath"`
+	FileSize     int64           `gorm:"default:0" json:"fileSize"`
+	Status       string          `gorm:"type:enum('pending','transferring','success','failed');default:'pending'" json:"status"`
+	ErrorMessage string          `gorm:"size:500" json:"errorMessage"`
+	StartedAt    *time.Time      `json:"startedAt"`
+	CompletedAt  *time.Time      `json:"completedAt"`
+	CreatedAt    time.Time       `json:"createdAt"`
 }
 
 func (BastionFileTransfer) TableName() string {
@@ -186,14 +186,14 @@ type ConnectResponse struct {
 
 // SessionFilter 会话筛选条件
 type SessionFilter struct {
-	ServerID     *uint    `json:"serverId"`
-	UserID       *uint    `json:"userId"`
-	Status       *string  `json:"status"`
-	Protocol     *string  `json:"protocol"`
-	StartDate    *string  `json:"startDate"`
-	EndDate      *string  `json:"endDate"`
-	ClientIP     *string  `json:"clientIp"`
-	LoginAccount *string  `json:"loginAccount"`
+	ServerID     *uint   `json:"serverId"`
+	UserID       *uint   `json:"userId"`
+	Status       *string `json:"status"`
+	Protocol     *string `json:"protocol"`
+	StartDate    *string `json:"startDate"`
+	EndDate      *string `json:"endDate"`
+	ClientIP     *string `json:"clientIp"`
+	LoginAccount *string `json:"loginAccount"`
 }
 
 // CommandFilter 命令筛选条件

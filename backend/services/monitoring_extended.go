@@ -8,31 +8,32 @@ import (
 
 	"go.uber.org/zap"
 )
+
 // ============================================
 // 通知渠道管理 (P2)
 // ============================================
 
 // NotificationChannel 通知渠道
 type NotificationChannel struct {
-	ID        uint              `json:"id"`
+	ID          uint            `json:"id"`
 	ChannelType string          `json:"channelType"`
 	ChannelName string          `json:"channelName"`
-	Config     json.RawMessage  `json:"config"`
-	Enabled    bool             `json:"enabled"`
-	CreatedAt  string           `json:"createdAt"`
-	UpdatedAt  string           `json:"updatedAt"`
+	Config      json.RawMessage `json:"config"`
+	Enabled     bool            `json:"enabled"`
+	CreatedAt   string          `json:"createdAt"`
+	UpdatedAt   string          `json:"updatedAt"`
 }
 
 // GetNotificationChannels 获取通知渠道列表
 func (s *MonitoringService) GetNotificationChannels() ([]NotificationChannel, error) {
 	var channels []struct {
-		ID          uint           `gorm:"column:id"`
-		ChannelType string         `gorm:"column:channel_type"`
-		ChannelName string         `gorm:"column:channel_name"`
+		ID          uint            `gorm:"column:id"`
+		ChannelType string          `gorm:"column:channel_type"`
+		ChannelName string          `gorm:"column:channel_name"`
 		Config      json.RawMessage `gorm:"column:config"`
-		Enabled     bool           `gorm:"column:enabled"`
-		CreatedAt   time.Time      `gorm:"column:created_at"`
-		UpdatedAt   time.Time      `gorm:"column:updated_at"`
+		Enabled     bool            `gorm:"column:enabled"`
+		CreatedAt   time.Time       `gorm:"column:created_at"`
+		UpdatedAt   time.Time       `gorm:"column:updated_at"`
 	}
 
 	err := db.Table("mon_notification_channels").Find(&channels).Error
@@ -92,7 +93,7 @@ func (s *MonitoringService) DeleteNotificationChannel(id uint) error {
 func (s *MonitoringService) TestNotificationChannel(id uint) error {
 	// 获取渠道配置
 	var channel struct {
-		ChannelType string         `gorm:"column:channel_type"`
+		ChannelType string          `gorm:"column:channel_type"`
 		Config      json.RawMessage `gorm:"column:config"`
 	}
 
@@ -131,26 +132,26 @@ type ReportQueryParams struct {
 
 // ReportListResult 报告列表结果
 type ReportListResult struct {
-	Total int64          `json:"total"`
-	Items []ReportItem   `json:"items"`
+	Total int64        `json:"total"`
+	Items []ReportItem `json:"items"`
 }
 
 // ReportItem 报告项
 type ReportItem struct {
-	ID         uint64   `json:"id"`
-	ReportType string   `json:"reportType"`
-	Title      string   `json:"title"`
-	Status     string   `json:"status"`
-	CreatedBy  string   `json:"createdBy"`
-	CreatedAt  string   `json:"createdAt"`
-	CompletedAt string  `json:"completedAt,omitempty"`
+	ID          uint64 `json:"id"`
+	ReportType  string `json:"reportType"`
+	Title       string `json:"title"`
+	Status      string `json:"status"`
+	CreatedBy   string `json:"createdBy"`
+	CreatedAt   string `json:"createdAt"`
+	CompletedAt string `json:"completedAt,omitempty"`
 }
 
 // CreateReportRequest 创建报告请求
 type CreateReportRequest struct {
-	ReportType string   `json:"reportType" binding:"required"`
-	Title      string   `json:"title"`
-	ServerIDs  []uint   `json:"serverIds"`
+	ReportType string `json:"reportType" binding:"required"`
+	Title      string `json:"title"`
+	ServerIDs  []uint `json:"serverIds"`
 }
 
 // GetReports 获取巡检报告列表
@@ -229,29 +230,29 @@ func (s *MonitoringService) CreateReport(req *CreateReportRequest, createdBy str
 
 // ReportDetail 报告详情
 type ReportDetail struct {
-	ID         uint64          `json:"id"`
-	ReportType string          `json:"reportType"`
-	Title      string          `json:"title"`
-	ServerIDs  []uint          `json:"serverIds"`
-	ReportData json.RawMessage `json:"reportData"`
-	Status     string          `json:"status"`
-	CreatedBy  string          `json:"createdBy"`
-	CreatedAt  string          `json:"createdAt"`
-	CompletedAt string         `json:"completedAt,omitempty"`
+	ID          uint64          `json:"id"`
+	ReportType  string          `json:"reportType"`
+	Title       string          `json:"title"`
+	ServerIDs   []uint          `json:"serverIds"`
+	ReportData  json.RawMessage `json:"reportData"`
+	Status      string          `json:"status"`
+	CreatedBy   string          `json:"createdBy"`
+	CreatedAt   string          `json:"createdAt"`
+	CompletedAt string          `json:"completedAt,omitempty"`
 }
 
 // GetReportDetail 获取巡检报告详情
 func (s *MonitoringService) GetReportDetail(id uint64) (*ReportDetail, error) {
 	var report struct {
-		ID         uint64          `gorm:"column:id"`
-		ReportType string          `gorm:"column:report_type"`
-		Title      string          `gorm:"column:title"`
-		ServerIDs  string          `gorm:"column:server_ids"`
-		ReportData json.RawMessage `gorm:"column:report_data"`
-		Status     string          `gorm:"column:status"`
-		CreatedBy  string          `gorm:"column:created_by"`
-		CreatedAt  time.Time       `gorm:"column:created_at"`
-		CompletedAt *time.Time     `gorm:"column:completed_at"`
+		ID          uint64          `gorm:"column:id"`
+		ReportType  string          `gorm:"column:report_type"`
+		Title       string          `gorm:"column:title"`
+		ServerIDs   string          `gorm:"column:server_ids"`
+		ReportData  json.RawMessage `gorm:"column:report_data"`
+		Status      string          `gorm:"column:status"`
+		CreatedBy   string          `gorm:"column:created_by"`
+		CreatedAt   time.Time       `gorm:"column:created_at"`
+		CompletedAt *time.Time      `gorm:"column:completed_at"`
 	}
 
 	err := db.Table("mon_inspection_reports").Where("id = ?", id).First(&report).Error

@@ -1,0 +1,77 @@
+# OneOps 后端配置文件（本地开发环境）
+
+# 服务器配置
+server:
+  port: "8082"
+  mode: "debug"
+  read_timeout: 60
+  write_timeout: 60
+  external_url: "http://60.191.116.75:8082" # 外部访问地址（Agent心跳上报地址）
+
+# 数据库配置
+database:
+  host: "60.191.116.75"
+  port: "38089"
+  user: "root"
+  password: "123456"
+  dbname: "oneops"
+  max_idle_conns: 10
+  max_open_conns: 100
+  log_level: "warn"
+
+# JWT认证配置
+jwt:
+  secret: "MO0aNyUBCGm9FKO4VwxTmQ52nL1phzBWXpDKM0EUt2I="
+  expire_time: 24
+  issuer: "oneops"
+
+# 数据加密配置（用于SSH凭证等敏感数据加密）
+encryption:
+  key: "jJiiBUdx4bb0Fbj4JZPC7SRW2X7qaAUoPp4XECGlxtY="
+
+# 日志配置
+log:
+  level: "debug"
+  filename: "logs/app.log"
+  max_size: 100
+  max_backups: 3
+  max_age: 28
+  compress: true
+
+# CORS跨域配置
+# 注意：当前CORS配置直接在middlewares/cors.go中硬编码
+# 这里的配置仅供参考，实际使用的是硬编码的AllowAllOrigins = true
+cors:
+  allow_origins:
+    - "http://localhost:5173"
+    - "http://localhost:5174"
+    - "http://localhost:3000"
+  allow_methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "DELETE"
+    - "OPTIONS"
+  allow_headers:
+    - "Origin"
+    - "Content-Type"
+    - "Authorization"
+    - "X-Requested-With"
+  expose_headers:
+    - "Content-Length"
+    - "Content-Type"
+  max_age: 86400
+  allow_credentials: true
+
+# 应用配置
+app:
+  name: "OneOps"
+  version: "1.0.0"
+  environment: "development"
+  debug: true
+redis:
+  host: "192.168.4.168"
+  port: "6379"
+  password: "qwerty"
+  db: 12
+  enabled: false # 需要手动启用

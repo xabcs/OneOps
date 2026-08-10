@@ -91,12 +91,12 @@ func (s *AlertRuleService) CreateAlertRule(rule *AlertRule) error {
 
 	// 验证指标
 	validMetrics := map[string]bool{
-		"cpu_usage":     true,
-		"memory_usage":  true,
-		"disk_usage":    true,
-		"load1":         true,
-		"load5":         true,
-		"load15":        true,
+		"cpu_usage":    true,
+		"memory_usage": true,
+		"disk_usage":   true,
+		"load1":        true,
+		"load5":        true,
+		"load15":       true,
 	}
 	if !validMetrics[rule.Metric] {
 		return fmt.Errorf("无效的监控指标: %s", rule.Metric)
@@ -163,7 +163,7 @@ func (s *AlertRuleService) UpdateAlertRule(id string, rule *AlertRule) error {
 		updates["threshold"] = rule.Threshold
 	}
 	if rule.Duration >= 0 {
-	updates["duration"] = rule.Duration
+		updates["duration"] = rule.Duration
 	}
 	if rule.Description != "" {
 		updates["description"] = rule.Description
@@ -213,7 +213,7 @@ func (s *AlertRuleService) UpdateAlertRuleStatus(id string, enabled bool) error 
 
 	// 更新状态
 	result := db.Table("mon_agent_alert_rules").Where("id = ?", id).Updates(map[string]interface{}{
-		"enabled":   enabled,
+		"enabled":    enabled,
 		"updated_at": time.Now(),
 	})
 	if result.Error != nil {
@@ -300,7 +300,7 @@ func (s *AlertRuleService) InitDefaultAlertRules() error {
 			Metric:      "disk_usage",
 			Condition:   ">",
 			Threshold:   90.0,
-			Duration:    0,    // 立即告警
+			Duration:    0, // 立即告警
 			Description: "磁盘空间不足90%，可能导致服务异常",
 		},
 		{
