@@ -56,9 +56,9 @@ async function loadEnvCounts() {
   loading.value.env = true;
   try {
     const [prodRes, testRes, devRes] = await Promise.all([
-      fetchGetServers({ env: 'prod', pageSize: 1 } as any),
-      fetchGetServers({ env: 'test', pageSize: 1 } as any),
-      fetchGetServers({ env: 'dev', pageSize: 1 } as any)
+      fetchGetServers({ env: 'prod', pageSize: 1 } as CMDB.ServerQuery),
+      fetchGetServers({ env: 'test', pageSize: 1 } as CMDB.ServerQuery),
+      fetchGetServers({ env: 'dev', pageSize: 1 } as CMDB.ServerQuery)
     ]);
     envCounts.value = {
       prod: prodRes.data?.total || 0,

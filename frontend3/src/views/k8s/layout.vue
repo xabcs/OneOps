@@ -36,7 +36,6 @@ const handleMenuSelect = (index: string) => {
 watch(
   () => route.path,
   newPath => {
-    console.log('路由变化:', newPath);
   }
 );
 </script>

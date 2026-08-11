@@ -129,7 +129,6 @@ function getRiskLevelColor(level: string): string {
 
 // 查看命令详情
 function handleViewDetail(command: Bastion.BastionCommand) {
-  console.log('Command detail:', command);
 }
 
 onMounted(() => {

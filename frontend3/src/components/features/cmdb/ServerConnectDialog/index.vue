@@ -24,7 +24,7 @@ const availableCredentials = ref<CMDB.SSHCredential[]>([]);
 const hasPermission = ref(true);
 const permissionError = ref('');
 const connectReason = ref('');
-const recentSession = ref<any>(null);
+const recentSession = ref<CMDB.SSHSession | null>(null);
 
 const selectedProtocol = ref('ssh');
 
@@ -33,7 +33,6 @@ const selectedCredential = computed(() => availableCredentials.value.find(c => c
 
 // 检查连接权限，获取可用凭证列表
 async function checkPermission() {
-  console.log('[ServerConnectDialog] checkPermission 开始，serverId:', props.serverId);
   loading.value = true;
   hasPermission.value = true;
   permissionError.value = '';
@@ -43,7 +42,6 @@ async function checkPermission() {
   try {
     const { data, error } = await fetchCheckConnectPermission(props.serverId);
 
-    console.log('[ServerConnectDialog] fetchCheckConnectPermission 响应:', { data, error });
 
     if (error) {
       hasPermission.value = false;
@@ -54,8 +52,6 @@ async function checkPermission() {
     if (data) {
       hasPermission.value = data.hasPermission;
       availableCredentials.value = data.credentials || [];
-      console.log('[ServerConnectDialog] hasPermission:', hasPermission.value);
-      console.log('[ServerConnectDialog] credentials:', availableCredentials.value);
     } else {
       hasPermission.value = false;
       permissionError.value = '响应格式错误';
@@ -73,16 +69,13 @@ async function checkPermission() {
         const targetCredential = availableCredentials.value.find(c => c.id === props.credentialId);
         if (targetCredential) {
           selectedCredentialId.value = targetCredential.id;
-          console.log('[ServerConnectDialog] 选中传入的凭证ID:', selectedCredentialId.value);
         } else {
           // 传入的凭证ID不在可用列表中，使用第一个凭证
           selectedCredentialId.value = availableCredentials.value[0].id;
-          console.log('[ServerConnectDialog] 传入的凭证不可用，使用第一个凭证:', selectedCredentialId.value);
         }
       } else {
         // 默认选中第一个凭证
         selectedCredentialId.value = availableCredentials.value[0].id;
-        console.log('[ServerConnectDialog] 选中的凭证ID:', selectedCredentialId.value);
       }
     }
   } catch (err: any) {
@@ -127,8 +120,8 @@ async function handleConnect() {
     } else {
       window.$message?.error('连接失败: 未获取到会话信息');
     }
-  } catch (err: any) {
-    window.$message?.error(err.message || '连接失败');
+  } catch (err: unknown) {
+    window.$message?.error((err as Error).message || '连接失败');
   } finally {
     connecting.value = false;
   }
@@ -141,7 +134,6 @@ function handleClose() {
 
 // 组件挂载时检查权限
 onMounted(() => {
-  console.log('[ServerConnectDialog] onMounted, visible:', props.visible, 'serverId:', props.serverId);
   if (props.visible) {
     checkPermission();
     loadRecentSession();
@@ -150,7 +142,6 @@ onMounted(() => {
 
 // 组件从 keep-alive 激活时刷新数据
 onActivated(() => {
-  console.log('[ServerConnectDialog] onActivated, visible:', props.visible, 'serverId:', props.serverId);
   if (props.visible) {
     // 从缓存恢复时刷新权限检查
     checkPermission();
@@ -161,11 +152,9 @@ onActivated(() => {
 watch(
   () => props.visible,
   visible => {
-    console.log('[ServerConnectDialog] visible changed:', visible);
     if (visible) {
       connectReason.value = '';
       selectedProtocol.value = 'ssh';
-      console.log('[ServerConnectDialog] serverId:', props.serverId);
       checkPermission();
       // 延迟加载最近会话，不阻塞主流程
       nextTick(() => loadRecentSession());

@@ -5,7 +5,7 @@ import { fetchApplications, fetchOperationLogs } from '@/service/api/application
 defineOptions({ name: 'AuthCenterOperationLogs' });
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
+const tableData = ref<Api.ApplicationPermission.ApplicationOperationLog[]>([]);
 const applications = ref<Api.ApplicationPermission.Application[]>([]);
 
 const pagination = ref({

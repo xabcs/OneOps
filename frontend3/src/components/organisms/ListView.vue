@@ -50,7 +50,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   search: [keyword: string];
   reset: [];
-  'selection-change': [selection: any[]];
+  'selection-change': [selection: Record<string, unknown>[]];
   'page-change': [page: number];
   'size-change': [pageSize: number];
 }>();

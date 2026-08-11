@@ -160,20 +160,12 @@ async function getHomePathOptions() {
 }
 
 function handleInitModel() {
-  console.log('🔧 [handleInitModel] 开始执行', {
-    isEdit: isEdit.value,
-    operateType: props.operateType,
-    hasRowData: Boolean(props.rowData),
-    rowData: props.rowData,
-    rowDataUsername: props.rowData?.username
-  });
 
   // 🔥 关键修复：直接使用 props.operateType 判断，避免 computed 的时序问题
   const isEditMode = props.operateType === 'edit' && props.rowData;
 
   if (isEditMode) {
     // 编辑模式：填充用户数据
-    console.log('✏️ [handleInitModel] 使用编辑模式，rowData:', props.rowData);
 
     // 🔥 关键修复：先清空，再赋值，确保响应式更新
     const newData = {
@@ -188,14 +180,8 @@ function handleInitModel() {
 
     model.value = { ...newData };
 
-    console.log('📝 [handleInitModel] 编辑模式赋值后的 model:', {
-      username: model.value.username,
-      'model.value.username': model.value.username,
-      fullModel: model.value
-    });
   } else {
     // 新增模式或无数据：使用空表单
-    console.log('➕ [handleInitModel] 使用新增模式，清空表单');
     model.value = {
       username: '',
       nickname: '',
@@ -207,7 +193,6 @@ function handleInitModel() {
     };
   }
 
-  console.log('📝 [handleInitModel] 最终model值:', model.value);
 }
 
 async function handleSubmit() {
@@ -234,7 +219,7 @@ async function handleSubmit() {
 
   const { error } = isEdit.value
     ? await fetchUpdateUser(userId.value, submitData)
-    : await fetchCreateUser(submitData as any);
+    : await fetchCreateUser(submitData as Api.SystemManage.User);
 
   if (!error) {
     window.$message?.success(isEdit.value ? $t('common.updateSuccess') : '添加成功');
@@ -252,13 +237,6 @@ async function handleSubmit() {
 watch(
   () => visible.value,
   async newVal => {
-    console.log('🔍 [用户操作抽屉] visible变化', {
-      visible: visible.value,
-      newVal,
-      operateType: props.operateType,
-      isEdit: isEdit.value,
-      rowData: props.rowData
-    });
 
     if (newVal) {
       // 抽屉打开时，初始化数据
@@ -276,7 +254,6 @@ watch(
   () => [props.rowData, props.operateType] as const,
   async () => {
     if (visible.value && props.rowData) {
-      console.log('🔍 [用户操作抽屉] rowData变化，重新初始化');
       await nextTick();
       handleInitModel();
       restoreValidation();

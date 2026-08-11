@@ -63,7 +63,6 @@ const handleTerminal = (row: Pod) => {
     ElMessage.warning('浏览器阻止了新标签页打开，请检查浏览器设置允许弹窗');
   } else {
     newWindow.focus();
-    console.log('✅ [终端] 新标签页已打开:', terminalUrl);
   }
 };
 
@@ -91,9 +90,9 @@ const handleLogs = async (row: Pod) => {
       tailLines: 100
     });
     logContent.value = res.data?.logs || '暂无日志';
-  } catch (error: any) {
-    logContent.value = `日志加载失败: ${error.message || '未知错误'}`;
-    ElMessage.error(`日志加载失败: ${error.message}`);
+  } catch (error: unknown) {
+    logContent.value = `日志加载失败: ${(error as Error).message || '未知错误'}`;
+    ElMessage.error(`日志加载失败: ${(error as Error).message}`);
   }
 };
 

@@ -32,7 +32,7 @@ export default defineConfig(configEnv => {
               '/styles/scss/sxdevops-theme.scss',
               '/styles/scss/layout-theme.scss',
               '/styles/scss/interaction-states.scss',
-              '/styles/scss/sidebar-enhanced.scss',
+              '/styles/scss/sidebar.scss',
               '/styles/scss/design-system.scss',
               '/styles/scss/element-plus.scss',
               '/styles/scss/compact-theme.scss',

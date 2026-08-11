@@ -170,7 +170,7 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     key: K,
     value: App.Theme.ThemeSetting['borderRadius'][K]
   ) {
-    (settings.value.borderRadius as any)[key] = value;
+    settings.value.borderRadius[key] = value;
   }
 
   /**
@@ -317,10 +317,10 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
    * @param theme Complete content theme 2 object or key
    * @param value Value if setting a specific key
    */
-  function setContentTheme2(theme: App.Theme.ThemeSetting['contentTheme2'] | string, value?: any) {
+  function setContentTheme2(theme: App.Theme.ThemeSetting['contentTheme2'] | string, value?: App.Theme.ThemeSetting['contentTheme2'][keyof App.Theme.ThemeSetting['contentTheme2']]) {
     if (typeof theme === 'string') {
       // 单个键值对设置
-      (settings.value.contentTheme2 as any)[theme] = value;
+      (settings.value.contentTheme2 as Record<string, App.Theme.ThemeSetting['contentTheme2'][keyof App.Theme.ThemeSetting['contentTheme2']]>)[theme] = value!;
     } else {
       // 整个对象替换
       Object.assign(settings.value.contentTheme2, theme);
@@ -337,9 +337,9 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
   function setContentTheme2Module<M extends keyof App.Theme.ThemeSetting['contentTheme2']>(
     module: M,
     key: keyof App.Theme.ThemeSetting['contentTheme2'][M],
-    value: any
+    value: App.Theme.ThemeSetting['contentTheme2'][M][keyof App.Theme.ThemeSetting['contentTheme2'][M]]
   ) {
-    (settings.value.contentTheme2[module] as any)[key] = value;
+    (settings.value.contentTheme2[module] as Record<string, App.Theme.ThemeSetting['contentTheme2'][M][keyof App.Theme.ThemeSetting['contentTheme2'][M]]>)[key] = value;
   }
 
   /**

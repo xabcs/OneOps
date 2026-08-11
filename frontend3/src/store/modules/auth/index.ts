@@ -68,7 +68,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
   function getPermissionName(code: string): string {
 		// 从登录返回的 permissionInfo 中查找权限名称
 		if (userInfo.permissionInfo && userInfo.permissionInfo.length > 0) {
-			const perm = userInfo.permissionInfo.find((p: any) => p.code === code)
+			const perm = userInfo.permissionInfo.find(p => p.code === code)
 			if (perm) return perm.name
 		}
 		// 回退到显示权限码
@@ -228,14 +228,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
 
   async function handleUserInfo(info: Api.Auth.UserInfo) {
     // update store - 需要深度更新以触发响应式
-    Object.keys(info).forEach(key => {
-      if (key === 'menuTree' || key === 'permissions' || key === 'permissionInfo') {
-        // 对于数组类型，需要特殊处理
-        (userInfo as any)[key] = info[key as keyof Api.Auth.UserInfo];
-      } else {
-        (userInfo as any)[key] = info[key as keyof Api.Auth.UserInfo];
-      }
-    });
+    Object.assign(userInfo, info);
 
     return true;
   }
@@ -245,14 +238,7 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
 
     if (!error) {
       // update store - 需要深度更新以触发响应式
-      Object.keys(info).forEach(key => {
-        if (key === 'menuTree' || key === 'permissions') {
-          // 对于数组类型，需要特殊处理
-          (userInfo as any)[key] = info[key as keyof Api.Auth.UserInfo];
-        } else {
-          (userInfo as any)[key] = info[key as keyof Api.Auth.UserInfo];
-        }
-      });
+      Object.assign(userInfo, info);
 
       return true;
     }

@@ -1,7 +1,8 @@
 /**
- * 服务器管理相关类型定义
+ * 服务器模块公共类型定义
  */
 
+/** 树节点 */
 export interface TreeNode {
   id: number;
   name: string;
@@ -17,30 +18,10 @@ export interface TreeNode {
   serverCount?: number;
 }
 
-export interface ServerFormData {
-  hostname?: string;
-  ip?: string;
-  innerIp?: string;
-  sshPort?: number;
-  env?: string;
-  provider?: string;
-  agentStatus?: string;
-  status?: number;
-  groupId?: number[];
-  credentialId?: number;
-  systemCredentialId?: number;
-  cabinetId?: number;
-  remarks?: string;
-}
+/** 搜索类型 */
+export type SearchType = 'hostname' | 'ip' | 'group';
 
-export interface GroupFormData {
-  name?: string;
-  code?: string;
-  parentId?: number;
-  owner?: string;
-  description?: string;
-}
-
+/** 服务器筛选参数 */
 export interface ServerFilters {
   keyword?: string;
   env?: string;
@@ -49,24 +30,21 @@ export interface ServerFilters {
   groupId?: number;
 }
 
-export interface ServerStats {
-  total: number;
-  online: number;
-  offline: number;
-  warning: number;
-  healthy: number;
+/** 服务器表单数据 */
+export interface ServerFormData {
+  hostname?: string;
+  ip?: string;
+  innerIp?: string;
+  sshPort?: number;
+  env?: string;
+  status?: number;
+  provider?: string;
+  groupId?: number[];
+  credentialId?: number;
+  systemCredentialId?: number;
+  cabinetId?: number;
+  remarks?: string;
 }
 
-export interface ConnectInfo {
-  serverId: number;
-  hostname: string;
-  ip: string;
-  sshPort: number;
-  username?: string;
-  password?: string;
-  privateKey?: string;
-}
-
-export type EnvType = 'prod' | 'test' | 'dev';
-export type AgentStatus = 'running' | 'offline' | 'uninstalled';
-export type ServerStatus = 1 | 0;
+/** Agent 状态类型 */
+export type AgentStatus = 'running' | 'offline' | 'uninstalled' | 'failed' | 'unknown' | '';

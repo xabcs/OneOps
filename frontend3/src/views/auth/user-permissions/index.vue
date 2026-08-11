@@ -14,9 +14,9 @@ defineOptions({ name: 'AuthUserPermissions' });
 
 const loading = ref(false);
 const matrixLoading = ref(false);
-const tableData = ref<any[]>([]);
-const applications = ref<any[]>([]);
-const matrixData = ref<any>(null);
+const tableData = ref<Api.ApplicationPermission.UserEffectivePermission[]>([]);
+const applications = ref<Api.ApplicationPermission.Application[]>([]);
+const matrixData = ref<unknown>(null);
 const viewMode = ref<'list' | 'matrix'>('matrix');
 
 const selectedAppId = ref<number | null>(null);
@@ -50,7 +50,7 @@ const adaptedMatrixData = computed(() => {
   if (!matrixData.value) return null;
 
   const appType = selectedApp.value?.type || 'jenkins';
-  const data = matrixData.value as any;
+  const data = matrixData.value as Record<string, unknown>;
 
   // 根据应用类型适配数据结构
   switch (appType) {
@@ -58,7 +58,7 @@ const adaptedMatrixData = computed(() => {
     case 'gitlab':
       // Jenkins/GitLab: roles -> columns
       // 添加 name 字段以兼容 PermissionMatrix 组件
-      const adaptedRoles = (data.roles || []).map((role: any) => ({
+      const adaptedRoles = (data.roles as Record<string, unknown>[] || []).map((role: Record<string, unknown>) => ({
         ...role,
         name: role.roleName || role.name // 兼容不同字段名
       }));
@@ -73,7 +73,7 @@ const adaptedMatrixData = computed(() => {
 
     case 'jumpserver':
       // Jumpserver: rules -> columns
-      const adaptedRules = (data.rules || []).map((rule: any) => ({
+      const adaptedRules = (data.rules as Record<string, unknown>[] || []).map((rule: Record<string, unknown>) => ({
         ...rule, // 先展开 rule，这样后续的字段会覆盖它
         id: rule.rule_id, // 覆盖 id 为 rule_id (UUID)，用于矩阵匹配
         name: rule.rule_name,
@@ -219,7 +219,7 @@ function handleViewModeChange() {
 }
 
 function getStatusTag(status: string) {
-  const statusMap: Record<string, { type: any; label: string }> = {
+  const statusMap: Record<string, { type: '' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
     active: { type: 'success', label: '有效' },
     inactive: { type: 'info', label: '无效' },
     expired: { type: 'danger', label: '已过期' },

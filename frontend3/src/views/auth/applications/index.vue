@@ -49,7 +49,7 @@ const supportedAppTypes = ref<Array<{ type: string; displayName: string }>>([]);
 const loadingAppTypes = ref(false);
 
 // 当前应用类型的配置模板
-const currentConfigTemplate = ref<Record<string, any>>({});
+const currentConfigTemplate = ref<Record<string, unknown>>({});
 const loadingConfigTemplate = ref(false);
 
 // 默认端点配置
@@ -204,7 +204,7 @@ function handleAdd() {
   drawerVisible.value = true;
 }
 
-function handleEdit(row: any) {
+function handleEdit(row: Api.ApplicationPermission.Application) {
   isEdit.value = true;
   // 解析JSON字符串为对象
   const endpoints = typeof row.endpoints === 'string' ? JSON.parse(row.endpoints) : row.endpoints;
@@ -228,7 +228,7 @@ async function handleSubmit() {
 
   const api = isEdit.value ? updateApplication(submitData.id!, submitData) : createApplication(submitData);
 
-  const { error } = (await api) as any;
+  const { error } = await api;
   if (!error) {
     ElMessage.success(isEdit.value ? '更新成功' : '添加成功');
     drawerVisible.value = false;
@@ -244,7 +244,7 @@ async function handleDelete(id: number) {
   }
 }
 
-async function handleSyncRoles(row: any) {
+async function handleSyncRoles(row: Api.ApplicationPermission.Application) {
   const { error } = await syncApplicationRoles(row.id);
   if (!error) {
     ElMessage.success(`同步 ${row.name} 角色成功`);
@@ -254,7 +254,7 @@ async function handleSyncRoles(row: any) {
   }
 }
 
-async function handleSyncUsers(row: any) {
+async function handleSyncUsers(row: Api.ApplicationPermission.Application) {
   const { error } = await syncApplicationUsers(row.id);
   if (!error) {
     ElMessage.success(`同步 ${row.name} 用户成功`);
@@ -264,7 +264,7 @@ async function handleSyncUsers(row: any) {
   }
 }
 
-async function handleViewRoles(row: any) {
+async function handleViewRoles(row: Api.ApplicationPermission.Application) {
   currentAppName.value = row.name;
   const { data, error } = await fetchApplicationRoles(row.id);
   if (!error && data) {
@@ -275,7 +275,7 @@ async function handleViewRoles(row: any) {
   }
 }
 
-async function handleViewUsers(row: any) {
+async function handleViewUsers(row: Api.ApplicationPermission.Application) {
   currentAppName.value = row.name;
   const { data, error } = await fetchApplicationUsers(row.id);
   if (!error && data) {
@@ -286,7 +286,7 @@ async function handleViewUsers(row: any) {
   }
 }
 
-async function handleSyncGroups(row: any) {
+async function handleSyncGroups(row: Api.ApplicationPermission.Application) {
   const { error } = await syncApplicationGroups(row.id);
   if (!error) {
     ElMessage.success(`同步 ${row.name} 用户组成功`);
@@ -296,7 +296,7 @@ async function handleSyncGroups(row: any) {
   }
 }
 
-async function handleViewGroups(row: any) {
+async function handleViewGroups(row: Api.ApplicationPermission.Application) {
   currentAppName.value = row.name;
   const { data, error } = await fetchApplicationGroups(row.id);
   if (!error && data) {
@@ -310,7 +310,7 @@ async function handleViewGroups(row: any) {
   }
 }
 
-async function handleSyncRules(row: any) {
+async function handleSyncRules(row: Api.ApplicationPermission.Application) {
   const { error } = await syncApplicationAuthorizationRules(row.id);
   if (!error) {
     ElMessage.success(`同步 ${row.name} 授权规则成功`);
@@ -320,7 +320,7 @@ async function handleSyncRules(row: any) {
   }
 }
 
-async function handleViewRules(row: any) {
+async function handleViewRules(row: Api.ApplicationPermission.Application) {
   currentAppName.value = row.name;
   const { data, error } = await fetchApplicationAuthorizationRules(row.id);
   if (!error && data) {
@@ -334,7 +334,7 @@ async function handleViewRules(row: any) {
   }
 }
 
-function handleCommand(command: string, row: any) {
+function handleCommand(command: string, row: Api.ApplicationPermission.Application) {
   switch (command) {
     case 'viewUsers':
       handleViewUsers(row);

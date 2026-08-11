@@ -108,7 +108,7 @@ export interface ApiError {
 /**
  * API 响应接口
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   code: number;
   success: boolean;
   data?: T;
@@ -164,7 +164,7 @@ export class ApiErrorHandler {
   /**
    * 处理字段级验证错误
    */
-  static handleFieldErrors(errors: FieldError[], formRef?: any): void {
+  static handleFieldErrors(errors: FieldError[], formRef?: { validateFields?: unknown; validateField: (field: string, message: string) => void }): void {
     if (!errors || errors.length === 0) return;
 
     // 如果有表单引用，设置字段错误

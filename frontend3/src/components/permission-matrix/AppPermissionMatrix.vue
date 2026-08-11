@@ -6,7 +6,7 @@ interface Column {
   id: number | string;
   name: string;
   type?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface User {

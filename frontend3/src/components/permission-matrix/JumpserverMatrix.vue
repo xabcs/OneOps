@@ -29,7 +29,7 @@ interface Props {
     rules: Rule[];
     users: User[];
     matrix: Record<string, Record<string, boolean>>;
-    permissions_detail: Record<string, any>;
+    permissions_detail: Record<string, unknown>;
     message?: string;
   };
   ruleType?: 'all' | 'user' | 'group';

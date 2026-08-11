@@ -3,10 +3,11 @@ import { computed } from 'vue';
 import { Icon } from '@iconify/vue';
 import SessionList from '../session_list.vue';
 import XTermTerminal from './XTermTerminal.vue';
+import type { WorkbenchSession } from '../composables/useSessions';
 
 interface Props {
-  activeSession: any;
-  sessions: any[];
+  activeSession: WorkbenchSession | null;
+  sessions: WorkbenchSession[];
 }
 
 interface Emits {

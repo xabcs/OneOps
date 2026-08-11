@@ -103,7 +103,7 @@ export function getAnnotationSummary(annotations: Record<string, string> | undef
 /**
  * 格式化滚动更新策略
  */
-export function formatStrategy(strategy: any): string {
+export function formatStrategy(strategy: { type?: string; maxUnavailable?: number; maxSurge?: number; partition?: number } | null | undefined): string {
   if (!strategy) return '-';
   const type = strategy.type || 'RollingUpdate';
   const params: string[] = [];
@@ -128,9 +128,9 @@ export function formatConditions(
 /**
  * 从 Pod 对象提取镜像列表（换行分隔）
  */
-export function formatImages(pod: any): string {
+export function formatImages(pod: { containers: { image: string }[] }): string {
   if (!pod?.containers || pod.containers.length === 0) return '-';
-  return pod.containers.map((c: any) => c.image).join('\n');
+  return pod.containers.map(c => c.image).join('\n');
 }
 
 /**

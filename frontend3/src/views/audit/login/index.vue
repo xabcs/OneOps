@@ -112,7 +112,7 @@ async function handleExport() {
 
 // 状态标签
 function getStatusTag(status: string) {
-  const statusMap: Record<string, { text: string; type: any }> = {
+  const statusMap: Record<string, { text: string; type: '' | 'success' | 'warning' | 'danger' | 'info' }> = {
     success: { text: '成功', type: 'success' },
     failed: { text: '失败', type: 'danger' }
   };

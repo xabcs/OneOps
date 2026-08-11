@@ -4,8 +4,8 @@ import PermissionMatrix from './PermissionMatrix.vue';
 
 interface Props {
   data: {
-    roles: any[];
-    users: any[];
+    roles: Record<string, unknown>[];
+    users: Record<string, unknown>[];
     matrix: Record<number, Record<number, boolean>>;
     permissions_detail: Record<string, any>;
   };
@@ -64,12 +64,6 @@ const filteredMatrix = computed(() => {
       matrix[roleId] = safeData.value.matrix[roleId];
     }
   }
-  console.log('filteredMatrix:', {
-    roleType: props.roleType,
-    filteredRolesCount: filteredRoles.value.length,
-    matrixKeys: Object.keys(matrix),
-    sampleData: matrix
-  });
   return matrix;
 });
 

@@ -23,11 +23,11 @@ declare namespace UI {
 // ======================================== element-plus ========================================
 
 declare module 'element-plus/dist/locale/zh-cn.mjs' {
-  const locale: any;
+  const locale: Record<string, unknown>;
   export default locale;
 }
 
 declare module 'element-plus/dist/locale/en.mjs' {
-  const locale: any;
+  const locale: Record<string, unknown>;
   export default locale;
 }

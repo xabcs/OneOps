@@ -46,7 +46,6 @@ const connectTerminal = () => {
     import.meta.env.VITE_SERVICE_BASE_URL?.replace(/^https?:\/\//, '').replace(/\/api$/, '') || window.location.host;
   const wsUrl = `${protocol}//${host}/api/k8s/terminal/ws?clusterId=${props.clusterId}&namespace=${props.namespace}&podName=${props.podName}&containerName=${props.containerName || ''}&token=${token}`;
 
-  console.log('Connecting to WebSocket:', wsUrl);
 
   // 初始化 xterm.js
   terminal.value = new Terminal({
@@ -180,10 +179,11 @@ const connectTerminal = () => {
       }
       window.removeEventListener('resize', handleResize);
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (!isComponentMounted.value) return;
-    terminal.value?.writeln(`\x1B[31m✗ 连接失败: ${error.message}\x1B[0m`);
-    message.error(error.message || '连接失败');
+    const err = error as Error;
+    terminal.value?.writeln(`\x1B[31m✗ 连接失败: ${err.message}\x1B[0m`);
+    message.error(err.message || '连接失败');
   }
 };
 

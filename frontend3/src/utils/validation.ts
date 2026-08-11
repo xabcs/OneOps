@@ -179,7 +179,7 @@ export class Validator {
 /**
  * 验证对象
  */
-export function validateObject(obj: any, rules: Record<string, ValidationRule>): ValidationResult {
+export function validateObject(obj: Record<string, unknown>, rules: Record<string, ValidationRule>): ValidationResult {
   const validator = new Validator();
 
   for (const field in rules) {

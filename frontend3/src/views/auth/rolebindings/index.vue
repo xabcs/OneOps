@@ -15,12 +15,12 @@ import { fetchAllAuthGroups } from '@/service/api';
 defineOptions({ name: 'AuthCenterGroupBindings' });
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
-const groups = ref<any[]>([]);
+const tableData = ref<Api.ApplicationPermission.GroupBinding[]>([]);
+const groups = ref<Api.ApplicationPermission.AuthGroup[]>([]);
 const selectedGroupId = ref<number | null>(null);
 const drawerVisible = ref(false);
 const executionDetailVisible = ref(false);
-const executionDetails = ref<any[]>([]);
+const executionDetails = ref<Api.ApplicationPermission.GroupBindingExecution[]>([]);
 
 const formData = ref({
   appId: null as number | null,
@@ -34,13 +34,13 @@ const authorizationRules = ref<Api.ApplicationPermission.AuthorizationRule[]>([]
 const selectedApplication = ref<Api.ApplicationPermission.Application | null>(null);
 
 // 权限分配结果
-const assignmentResult = ref<any>(null);
+const assignmentResult = ref<unknown>(null);
 const showAssignmentResult = ref(false);
 
 async function getRoles() {
   const { data, error } = await fetchAllAuthGroups();
   if (!error && data) {
-    groups.value = Array.isArray(data) ? data : (data as any).list || [];
+    groups.value = Array.isArray(data) ? data : (data as { list?: Api.ApplicationPermission.AuthGroup[] }).list || [];
   }
 }
 
@@ -141,7 +141,7 @@ async function handleSubmit() {
         app?.type === 'jumpserver' ? formData.value.authorizationRuleId! : formData.value.applicationRoleId!
     };
 
-    const { data, error } = await createGroupBinding(bindingData as any);
+    const { data, error } = await createGroupBinding(bindingData);
 
     if (!error) {
       drawerVisible.value = false;
@@ -216,7 +216,7 @@ function showDetailedResult() {
           <ul style="margin: 0; padding-left: 20px;">
             ${result.createdIdentities
               .map(
-                (item: any) => `
+                (item: { username: string; appName: string; status: string }) => `
               <li style="margin: 3px 0;">${item.username} - ${item.appName} - ${item.status}</li>
             `
               )
@@ -235,7 +235,7 @@ function showDetailedResult() {
           <ul style="margin: 0; padding-left: 20px;">
             ${result.pendingMembers
               .map(
-                (item: any) => `
+                (item: { username: string; reason: string }) => `
               <li style="margin: 3px 0;">${item.username} - ${item.reason}</li>
             `
               )
@@ -257,7 +257,7 @@ function showDetailedResult() {
           <ul style="margin: 0; padding-left: 20px;">
             ${result.failedMembers
               .map(
-                (item: any) => `
+                (item: { username: string; error: string }) => `
               <li style="margin: 3px 0;">${item.username} - ${item.error}</li>
             `
               )
@@ -278,7 +278,7 @@ function showDetailedResult() {
 }
 
 function getStatusTag(status: string) {
-  const statusMap: Record<string, { type: any; label: string }> = {
+  const statusMap: Record<string, { type: '' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
     success: { type: 'success', label: '成功' },
     pending: { type: 'warning', label: '处理中' },
     partial: { type: 'info', label: '部分成功' },

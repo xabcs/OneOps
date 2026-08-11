@@ -45,7 +45,7 @@ export function useDebounce<T>(value: Ref<T> | ComputedRef<T>, delay: number = 3
  * @example
  * const throttledScroll = useThrottle(() => console.log('scroll'), 200)
  */
-export function useThrottle<T extends (...args: any[]) => any>(fn: T, delay: number = 200): T {
+export function useThrottle<T extends (...args: unknown[]) => unknown>(fn: T, delay: number = 200): T {
   let lastCall = 0;
   let timeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -84,7 +84,7 @@ export function useThrottle<T extends (...args: any[]) => any>(fn: T, delay: num
  *   5000
  * )
  */
-export function useMemoryCache<T, K extends any[]>(
+export function useMemoryCache<T, K extends unknown[]>(
   fetchFn: (...args: K) => Promise<T>,
   key: string,
   ttl: number = 5000

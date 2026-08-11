@@ -25,7 +25,7 @@ export interface VirtualListOptions<T> {
 
 export interface VirtualListReturn {
   /** 可见列表数据 */
-  list: Ref<any[]>;
+  list: Ref<unknown[]>;
   /** 容器属性 */
   containerProps: {
     ref: Ref<HTMLElement | undefined>;

@@ -98,9 +98,9 @@ async function handleConnect() {
       path: '/terminal/workbench',
       query: { sessionId: String(sessionId) }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('连接失败:', error);
-    window.$message?.error(error.message || '连接失败');
+    window.$message?.error((error instanceof Error ? error.message : '连接失败'));
   }
 }
 

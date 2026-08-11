@@ -110,8 +110,7 @@ function getLoadColor(load: number): string {
 const { subscribe, unsubscribe } = useWebSocket();
 
 // 处理指标更新
-function handleMetricsUpdate(data: any) {
-  console.log('主机监控列表收到指标更新:', data);
+function handleMetricsUpdate(data: { server_id: number }) {
 
   // 查找对应的服务器并更新数据
   const server = servers.value.find(s => s.id === data.server_id);

@@ -69,7 +69,7 @@ function handleAdd() {
   drawerVisible.value = true;
 }
 
-function handleEdit(row: any) {
+function handleEdit(row: Api.ApplicationPermission.AuthGroup) {
   isEdit.value = true;
   formData.value = { ...row };
   drawerVisible.value = true;
@@ -78,7 +78,7 @@ function handleEdit(row: any) {
 async function handleSubmit() {
   const api = isEdit.value ? updateAuthGroup(formData.value.id!, formData.value) : createAuthGroup(formData.value);
 
-  const { error } = (await api) as any;
+  const { error } = await api;
   if (!error) {
     ElMessage.success(isEdit.value ? '更新成功' : '添加成功');
     drawerVisible.value = false;

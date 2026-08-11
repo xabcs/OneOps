@@ -7,13 +7,13 @@ import { fetchAllAuthGroups, fetchAllUsers } from '@/service/api';
 defineOptions({ name: 'AuthCenterUserGroupAssignment' });
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
-const users = ref<any[]>([]);
-const groups = ref<any[]>([]);
+const tableData = ref<Api.ApplicationPermission.AuthUserGroup[]>([]);
+const users = ref<Api.ApplicationPermission.AuthUser[]>([]);
+const groups = ref<Api.ApplicationPermission.AuthGroup[]>([]);
 const selectedUserId = ref<number | null>(null);
 const drawerVisible = ref(false);
 const resultDialogVisible = ref(false);
-const authorizationResults = ref<any[]>([]);
+const authorizationResults = ref<unknown[]>([]);
 
 const formData = ref({
   groupId: null as number | null
@@ -22,14 +22,14 @@ const formData = ref({
 async function getUsers() {
   const { data, error } = await fetchAllUsers();
   if (!error && data) {
-    users.value = Array.isArray(data) ? data : (data as any).list || [];
+    users.value = Array.isArray(data) ? data : (data as { list?: Api.ApplicationPermission.AuthUser[] }).list || [];
   }
 }
 
 async function getGroups() {
   const { data, error } = await fetchAllAuthGroups();
   if (!error && data) {
-    groups.value = Array.isArray(data) ? data : (data as any).list || [];
+    groups.value = Array.isArray(data) ? data : (data as { list?: Api.ApplicationPermission.AuthGroup[] }).list || [];
   }
 }
 
@@ -80,8 +80,8 @@ async function handleSubmit() {
     // 显示授权结果（不显示密码，因为密码在创建用户时已经显示过）
     if (data.results && data.results.length > 0) {
       // 统计成功/失败数量
-      const successCount = data.results.filter((r: any) => r.success).length;
-      const failCount = data.results.filter((r: any) => !r.success).length;
+      const successCount = data.results.filter((r: { success: boolean }) => r.success).length;
+      const failCount = data.results.filter((r: { success: boolean }) => !r.success).length;
 
       if (failCount === 0) {
         ElMessage.success(`授权成功！已在 ${successCount} 个外部系统中授权`);

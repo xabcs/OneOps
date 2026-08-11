@@ -6,16 +6,13 @@
     import { useThemeStore } from '@/store/modules/theme';
     import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
     import { $t } from '@/locales';
-    import { useUnifiedPermission } from '@/composables/useUnifiedPermission';
+    import { executeWithPermission } from '@/utils/permission';
     import PermissionSearch from './modules/permission-search.vue';
     import PermissionOperateDrawer from './modules/permission-operate-drawer.vue';
 
     defineOptions({ name: 'PermissionManage' });
 
     const themeStore = useThemeStore();
-
-    // 使用统一权限检查
-    const { executeWithPermission } = useUnifiedPermission();
 
     // Hero区域显示状态
     const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);

@@ -1,222 +1,5 @@
 import { request } from '../request';
 
-// ========== Types ==========
-
-export namespace K8s {
-  export interface Cluster {
-    id: number;
-    name: string;
-    description: string;
-    endpoint: string;
-    clusterType: string;
-    region: string;
-    version: string;
-    nodeCount: number;
-    status: number;
-    createdAt: string;
-    updatedAt: string;
-  }
-
-  export interface ClusterForm {
-    name: string;
-    description?: string;
-    endpoint: string;
-    kubeconfig: string;
-    clusterType?: string;
-    region?: string;
-    nodeCount?: number;
-  }
-
-  export interface ClusterQuery {
-    page?: number;
-    pageSize?: number;
-    name?: string;
-    clusterType?: string;
-    status?: number;
-  }
-
-  export interface Node {
-    name: string;
-    status: string;
-    roles: string[];
-    version: string;
-    created: string;
-    capacity?: {
-      cpu: string;
-      memory: string;
-    };
-  }
-
-  export interface Namespace {
-    name: string;
-    status: string;
-    created: string;
-    labels?: Record<string, string>;
-  }
-
-  export interface ClusterUser {
-    user_id: number;
-    username: string;
-    nickname: string;
-    role_id: number;
-    role_name: string;
-    created_at: string;
-  }
-
-  export interface Deployment {
-    name: string;
-    namespace: string;
-    replicas: number;
-    ready: number;
-    upToDate: number;
-    available: number;
-    age: string;
-    labels?: Record<string, string>;
-    conditions?: Array<{
-      type: string;
-      status: string;
-      reason: string;
-      message: string;
-    }>;
-  }
-
-  export interface Pod {
-    name: string;
-    namespace: string;
-    status: string;
-    phase: string;
-    ip: string;
-    node: string;
-    age: string;
-    labels?: Record<string, string>;
-    restarts: number;
-  }
-
-  export interface Service {
-    name: string;
-    namespace: string;
-    type: string;
-    clusterIP: string;
-    externalIP: string[];
-    ports: Array<{
-      name: string;
-      protocol: string;
-      port: number;
-      targetPort: string;
-      nodePort?: number;
-    }>;
-    age: string;
-    selector?: Record<string, string>;
-  }
-
-  export interface Ingress {
-    name: string;
-    namespace: string;
-    hosts: string[];
-    addresses: string[];
-    ports: string[];
-    age: string;
-    annotations?: Record<string, string>;
-    ingressClassName?: string;
-  }
-
-  export interface ConfigMap {
-    name: string;
-    namespace: string;
-    age: string;
-    labels?: Record<string, string>;
-    dataKeys: string[];
-  }
-
-  export interface Secret {
-    name: string;
-    namespace: string;
-    type: string;
-    age: string;
-    labels?: Record<string, string>;
-    dataKeys: string[];
-  }
-
-  export interface StatefulSet {
-    name: string;
-    namespace: string;
-    replicas: number;
-    ready: number;
-    upToDate: number;
-    available: number;
-    age: string;
-    labels?: Record<string, string>;
-    conditions?: Array<{
-      type: string;
-      status: string;
-      reason: string;
-      message: string;
-    }>;
-  }
-
-  export interface DaemonSet {
-    name: string;
-    namespace: string;
-    desired: number;
-    current: number;
-    ready: number;
-    available: number;
-    age: string;
-    labels?: Record<string, string>;
-    conditions?: Array<{
-      type: string;
-      status: string;
-      reason: string;
-      message: string;
-    }>;
-  }
-
-  export interface Job {
-    name: string;
-    namespace: string;
-    completions: number;
-    duration: string;
-    age: string;
-    labels?: Record<string, string>;
-    conditions?: Array<{
-      type: string;
-      status: string;
-      reason: string;
-      message: string;
-    }>;
-  }
-
-  export interface CronJob {
-    name: string;
-    namespace: string;
-    schedule: string;
-    suspend: boolean;
-    active: number;
-    lastSchedule: string;
-    age: string;
-    labels?: Record<string, string>;
-  }
-
-  export interface TerminalSession {
-    session_id: number;
-    cluster_id: number;
-    namespace: string;
-    pod_name: string;
-    container: string;
-    last_activity: string;
-  }
-
-  export interface Event {
-    type: string;
-    reason: string;
-    message: string;
-    source: string;
-    count: number;
-    firstTimestamp: string;
-    lastTimestamp: string;
-  }
-}
-
 // ========== Cluster Management ==========
 
 /**
@@ -344,21 +127,13 @@ export function revokeK8sClusterRole(clusterId: number, userId: number) {
 // ========== Workloads - Deployments ==========
 
 /**
- * 分页响应接口（项目标准格式）
- */
-interface PaginatedResponse<T> {
-  list: T[];
-  total: number;
-}
-
-/**
  * 获取 Deployment 列表（支持分页）
  */
 export function fetchK8sDeployments(
   clusterId: number,
   params?: { namespace?: string; page?: number; pageSize?: number }
 ) {
-  return request<PaginatedResponse<K8s.Deployment>>({
+  return request<K8s.PaginatedResponse<K8s.Deployment>>({
     url: `/k8s/clusters/${clusterId}/deployments`,
     method: 'get',
     params
@@ -388,7 +163,7 @@ export function getK8sDeploymentPods(clusterId: number, namespace: string, name:
 /**
  * 创建 Deployment
  */
-export function createK8sDeployment(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+export function createK8sDeployment(clusterId: number, data: { namespace: string; manifest: Record<string, unknown> }) {
   return request({
     url: `/k8s/clusters/${clusterId}/deployments`,
     method: 'post',
@@ -399,7 +174,7 @@ export function createK8sDeployment(clusterId: number, data: { namespace: string
 /**
  * 更新 Deployment
  */
-export function updateK8sDeployment(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+export function updateK8sDeployment(clusterId: number, data: { namespace: string; manifest: Record<string, unknown> }) {
   return request({
     url: `/k8s/clusters/${clusterId}/deployments`,
     method: 'put',
@@ -449,7 +224,7 @@ export function fetchK8sPods(
   clusterId: number,
   params?: { namespace?: string; labelSelector?: string; page?: number; pageSize?: number }
 ) {
-  return request<PaginatedResponse<K8s.Pod>>({
+  return request<K8s.PaginatedResponse<K8s.Pod>>({
     url: `/k8s/clusters/${clusterId}/pods`,
     method: 'get',
     params
@@ -460,7 +235,7 @@ export function fetchK8sPods(
  * 获取 Pod 详情
  */
 export function getK8sPod(clusterId: number, namespace: string, name: string) {
-  return request<K8s.Pod & { manifest: string; images: string[]; containers: any[] }>({
+  return request<K8s.Pod & { manifest: string; images: string[]; containers: K8s.Container[] }>({
     url: `/k8s/clusters/${clusterId}/pods/${namespace}/${name}`,
     method: 'get'
   });
@@ -496,7 +271,7 @@ export function deleteK8sPod(clusterId: number, data: { namespace: string; name:
 /**
  * 更新 Pod
  */
-export function updateK8sPod(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+export function updateK8sPod(clusterId: number, data: { namespace: string; manifest: Record<string, unknown> }) {
   return request({
     url: `/k8s/clusters/${clusterId}/pods`,
     method: 'put',
@@ -510,7 +285,7 @@ export function updateK8sPod(clusterId: number, data: { namespace: string; manif
  * 获取 Service 列表（支持分页）
  */
 export function fetchK8sServices(clusterId: number, params?: { namespace?: string; page?: number; pageSize?: number }) {
-  return request<PaginatedResponse<K8s.Service>>({
+  return request<K8s.PaginatedResponse<K8s.Service>>({
     url: `/k8s/clusters/${clusterId}/services`,
     method: 'get',
     params
@@ -521,7 +296,7 @@ export function fetchK8sServices(clusterId: number, params?: { namespace?: strin
  * 获取 Service 详情
  */
 export function getK8sService(clusterId: number, namespace: string, name: string) {
-  return request<K8s.Service & { manifest: string; endpoints: any[] }>({
+  return request<K8s.Service & { manifest: string; endpoints: K8s.ServiceEndpoint[] }>({
     url: `/k8s/clusters/${clusterId}/services/${namespace}/${name}`,
     method: 'get'
   });
@@ -530,7 +305,7 @@ export function getK8sService(clusterId: number, namespace: string, name: string
 /**
  * 更新 Service
  */
-export function updateK8sService(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+export function updateK8sService(clusterId: number, data: { namespace: string; manifest: Record<string, unknown> }) {
   return request({
     url: `/k8s/clusters/${clusterId}/services`,
     method: 'put',
@@ -558,7 +333,7 @@ export function fetchK8sIngresses(
   clusterId: number,
   params?: { namespace?: string; page?: number; pageSize?: number }
 ) {
-  return request<PaginatedResponse<K8s.Ingress>>({
+  return request<K8s.PaginatedResponse<K8s.Ingress>>({
     url: `/k8s/clusters/${clusterId}/ingresses`,
     method: 'get',
     params
@@ -578,7 +353,7 @@ export function getK8sIngress(clusterId: number, namespace: string, name: string
 /**
  * 创建 Ingress
  */
-export function createK8sIngress(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+export function createK8sIngress(clusterId: number, data: { namespace: string; manifest: Record<string, unknown> }) {
   return request({
     url: `/k8s/clusters/${clusterId}/ingresses`,
     method: 'post',
@@ -589,7 +364,7 @@ export function createK8sIngress(clusterId: number, data: { namespace: string; m
 /**
  * 更新 Ingress
  */
-export function updateK8sIngress(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+export function updateK8sIngress(clusterId: number, data: { namespace: string; manifest: Record<string, unknown> }) {
   return request({
     url: `/k8s/clusters/${clusterId}/ingresses`,
     method: 'put',
@@ -617,7 +392,7 @@ export function fetchK8sConfigMaps(
   clusterId: number,
   params?: { namespace?: string; page?: number; pageSize?: number }
 ) {
-  return request<PaginatedResponse<K8s.ConfigMap>>({
+  return request<K8s.PaginatedResponse<K8s.ConfigMap>>({
     url: `/k8s/clusters/${clusterId}/configmaps`,
     method: 'get',
     params
@@ -637,7 +412,7 @@ export function getK8sConfigMap(clusterId: number, namespace: string, name: stri
 /**
  * 更新 ConfigMap
  */
-export function updateK8sConfigMap(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+export function updateK8sConfigMap(clusterId: number, data: { namespace: string; manifest: Record<string, unknown> }) {
   return request({
     url: `/k8s/clusters/${clusterId}/configmaps`,
     method: 'put',
@@ -662,7 +437,7 @@ export function deleteK8sConfigMap(clusterId: number, data: { namespace: string;
  * 获取 Secret 列表（支持分页）
  */
 export function fetchK8sSecrets(clusterId: number, params?: { namespace?: string; page?: number; pageSize?: number }) {
-  return request<PaginatedResponse<K8s.Secret>>({
+  return request<K8s.PaginatedResponse<K8s.Secret>>({
     url: `/k8s/clusters/${clusterId}/secrets`,
     method: 'get',
     params
@@ -682,7 +457,7 @@ export function getK8sSecret(clusterId: number, namespace: string, name: string)
 /**
  * 更新 Secret
  */
-export function updateK8sSecret(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+export function updateK8sSecret(clusterId: number, data: { namespace: string; manifest: Record<string, unknown> }) {
   return request({
     url: `/k8s/clusters/${clusterId}/secrets`,
     method: 'put',
@@ -723,7 +498,7 @@ export function fetchK8sStatefulSets(
   clusterId: number,
   params?: { namespace?: string; page?: number; pageSize?: number }
 ) {
-  return request<PaginatedResponse<K8s.StatefulSet>>({
+  return request<K8s.PaginatedResponse<K8s.StatefulSet>>({
     url: `/k8s/clusters/${clusterId}/statefulsets`,
     method: 'get',
     params
@@ -775,7 +550,7 @@ export function deleteK8sStatefulSet(clusterId: number, data: { namespace: strin
 /**
  * 更新 StatefulSet
  */
-export function updateK8sStatefulSet(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+export function updateK8sStatefulSet(clusterId: number, data: { namespace: string; manifest: Record<string, unknown> }) {
   return request({
     url: `/k8s/clusters/${clusterId}/statefulsets`,
     method: 'put',
@@ -792,7 +567,7 @@ export function fetchK8sDaemonSets(
   clusterId: number,
   params?: { namespace?: string; page?: number; pageSize?: number }
 ) {
-  return request<PaginatedResponse<K8s.DaemonSet>>({
+  return request<K8s.PaginatedResponse<K8s.DaemonSet>>({
     url: `/k8s/clusters/${clusterId}/daemonsets`,
     method: 'get',
     params
@@ -844,7 +619,7 @@ export function deleteK8sDaemonSet(clusterId: number, data: { namespace: string;
 /**
  * 更新 DaemonSet
  */
-export function updateK8sDaemonSet(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+export function updateK8sDaemonSet(clusterId: number, data: { namespace: string; manifest: Record<string, unknown> }) {
   return request({
     url: `/k8s/clusters/${clusterId}/daemonsets`,
     method: 'put',
@@ -858,7 +633,7 @@ export function updateK8sDaemonSet(clusterId: number, data: { namespace: string;
  * 获取 Job 列表（支持分页）
  */
 export function fetchK8sJobs(clusterId: number, params?: { namespace?: string; page?: number; pageSize?: number }) {
-  return request<PaginatedResponse<K8s.Job>>({
+  return request<K8s.PaginatedResponse<K8s.Job>>({
     url: `/k8s/clusters/${clusterId}/jobs`,
     method: 'get',
     params
@@ -899,7 +674,7 @@ export function deleteK8sJob(clusterId: number, data: { namespace: string; name:
 /**
  * 更新 Job
  */
-export function updateK8sJob(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+export function updateK8sJob(clusterId: number, data: { namespace: string; manifest: Record<string, unknown> }) {
   return request({
     url: `/k8s/clusters/${clusterId}/jobs`,
     method: 'put',
@@ -913,7 +688,7 @@ export function updateK8sJob(clusterId: number, data: { namespace: string; manif
  * 获取 CronJob 列表（支持分页）
  */
 export function fetchK8sCronJobs(clusterId: number, params?: { namespace?: string; page?: number; pageSize?: number }) {
-  return request<PaginatedResponse<K8s.CronJob>>({
+  return request<K8s.PaginatedResponse<K8s.CronJob>>({
     url: `/k8s/clusters/${clusterId}/cronjobs`,
     method: 'get',
     params
@@ -965,7 +740,7 @@ export function deleteK8sCronJob(clusterId: number, data: { namespace: string; n
 /**
  * 更新 CronJob
  */
-export function updateK8sCronJob(clusterId: number, data: { namespace: string; manifest: Record<string, any> }) {
+export function updateK8sCronJob(clusterId: number, data: { namespace: string; manifest: Record<string, unknown> }) {
   return request({
     url: `/k8s/clusters/${clusterId}/cronjobs`,
     method: 'put',

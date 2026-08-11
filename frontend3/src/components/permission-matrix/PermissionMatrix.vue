@@ -2,8 +2,8 @@
 import { computed } from 'vue';
 
 interface Props {
-  rows: any[];
-  columns: any[];
+  rows: Record<string, unknown>[];
+  columns: Record<string, unknown>[];
   matrix: Record<number | string, Record<number | string, boolean>>;
   rowKey: string;
   colKey: string;

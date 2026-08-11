@@ -185,18 +185,10 @@ export function useTableOperate<TableData>(
   const editingData = shallowRef<TableData | null>(null);
 
   function handleAdd() {
-    console.log('🎯 [useTableOperate.handleAdd] 开始执行', {
-      currentOperateType: operateType.value,
-      currentEditingData: editingData.value
-    });
 
     operateType.value = 'add';
     editingData.value = null;
 
-    console.log('✅ [useTableOperate.handleAdd] 设置完成', {
-      newOperateType: operateType.value,
-      newEditingData: editingData.value
-    });
 
     // 等待 Vue 响应式更新后再打开抽屉
     nextTick(() => {
@@ -205,21 +197,11 @@ export function useTableOperate<TableData>(
   }
 
   function handleEdit(id: TableData[keyof TableData]) {
-    console.log('🎯 [useTableOperate.handleEdit] 开始执行', {
-      id,
-      currentOperateType: operateType.value,
-      currentEditingData: editingData.value
-    });
 
     operateType.value = 'edit';
     const findItem = data.value.find(item => item[idKey] === id) || null;
     editingData.value = jsonClone(findItem);
 
-    console.log('✅ [useTableOperate.handleEdit] 设置完成', {
-      newOperateType: operateType.value,
-      newEditingData: editingData.value,
-      foundItem: findItem
-    });
 
     // 等待 Vue 响应式更新后再打开抽屉
     nextTick(() => {
@@ -261,7 +243,7 @@ export function useTableOperate<TableData>(
 }
 
 export function defaultTransform<ApiData>(
-  response: FlatResponseData<any, Api.Common.PaginatingQueryRecord<ApiData> | ApiData[]>
+  response: FlatResponseData<unknown, Api.Common.PaginatingQueryRecord<ApiData> | ApiData[]>
 ): PaginationData<ApiData> {
   const { data, error } = response;
 
@@ -289,7 +271,7 @@ export function defaultTransform<ApiData>(
 
     // 兼容旧格式（records/current/size/total）
     if (data && typeof data === 'object' && 'records' in data) {
-      const { records, current, size, total } = data as any;
+      const { records, current, size, total } = data as { records: ApiData[]; current: number; size: number; total: number };
       return {
         data: records,
         pageNum: current,
@@ -315,7 +297,7 @@ export function defaultTransform<ApiData>(
   };
 }
 
-function getColumnChecks<Column extends UI.TableColumn<any>>(
+function getColumnChecks<Column extends UI.TableColumn<unknown>>(
   cols: Column[],
   getColumnVisible?: (column: Column) => boolean
 ) {
@@ -356,7 +338,7 @@ function getColumnChecks<Column extends UI.TableColumn<any>>(
   return checks;
 }
 
-function getColumns<Column extends UI.TableColumn<any>>(cols: Column[], checks: TableColumnCheck[]) {
+function getColumns<Column extends UI.TableColumn<Record<string, unknown>>>(cols: Column[], checks: TableColumnCheck[]) {
   const columnMap = new Map<string, Column>();
 
   cols.forEach(column => {

@@ -2,7 +2,7 @@
  * 自定义路由配置
  * 这些路由不会被Elegant Router自动生成或覆盖
  */
-import type { RouteRecordRaw } from 'vue-router';
+import type { RouteRecordRaw, Router } from 'vue-router';
 import BaseLayout from '@/layouts/base-layout/index.vue';
 import TerminalLayout from '@/layouts/terminal-layout/index.vue';
 

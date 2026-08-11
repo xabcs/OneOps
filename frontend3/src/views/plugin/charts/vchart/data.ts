@@ -295,7 +295,7 @@ export const liquidChartSmartInvertSpec: ILiquidChartSpec & { indicator: IIndica
   }
 };
 
-const goldenMedals: Record<number, any[]> = {
+const goldenMedals: Record<number, { country: string; value: number }[]> = {
   2000: [
     { country: 'USA', value: 37 },
     { country: 'Russia', value: 32 },
@@ -392,10 +392,10 @@ const dataSpecs = Object.keys(goldenMedals).map(year => {
     data: [
       {
         id: 'id',
-        values: (goldenMedals[year as unknown as number] as any)
-          .sort((a: any, b: any) => b.value - a.value)
-          .map((v: any) => {
-            return { ...v, fill: (colors as any)[v.country] };
+        values: goldenMedals[year as unknown as number]
+          .sort((a, b) => b.value - a.value)
+          .map(v => {
+            return { ...v, fill: (colors as Record<string, string>)[v.country] };
           })
       },
       {
@@ -422,7 +422,7 @@ export const rankingBarSpec: IBarChartSpec = {
   seriesField: 'country',
   bar: {
     style: {
-      fill: (datum: any) => datum.fill
+      fill: (datum: { fill?: string }) => datum.fill
     }
   },
   axes: [
@@ -500,11 +500,11 @@ export const rankingBarSpec: IBarChartSpec = {
         textAlign: 'right',
         fontFamily: 'PingFang SC',
         fontWeight: 600,
-        text: (datum: any) => datum.year,
-        x: (_datum: any, ctx: any) => {
+        text: (datum: { year: string }) => datum.year,
+        x: (_datum: unknown, ctx: { vchart: { getChart: () => { getCanvasRect: () => { width: number } } } }) => {
           return ctx.vchart.getChart().getCanvasRect()?.width - 50;
         },
-        y: (_datum: any, ctx: any) => {
+        y: (_datum: unknown, ctx: { vchart: { getChart: () => { getCanvasRect: () => { height: number } } } }) => {
           return ctx.vchart.getChart().getCanvasRect()?.height - 50;
         },
         fill: 'grey',
@@ -609,7 +609,7 @@ export const stackedDashAreaSpec: IAreaChartSpec = {
   line: {
     style: {
       // Configure the lineDash attribute based on the forecast field value of the data
-      lineDash: (data: any) => {
+      lineDash: (data: { forecast?: boolean }) => {
         if (data.forecast) {
           return [5, 5];
         }
@@ -623,7 +623,7 @@ export const stackedDashAreaSpec: IAreaChartSpec = {
       textureColor: '#fff',
       textureSize: 14,
       // Configure the texture attribute based on the forecast field value of the data
-      texture: (data: any) => {
+      texture: (data: { forecast?: boolean }) => {
         if (data.forecast) {
           return 'bias-rl';
         }
@@ -684,7 +684,7 @@ export const barMarkPointSpec: IBarChartSpec = {
   label: {
     visible: true,
     animation: false,
-    formatMethod: (datum: any) => `${datum}分钟`,
+    formatMethod: (datum: number) => `${datum}分钟`,
     style: {
       fill: 'rgb(155,155,155)'
     }
@@ -755,10 +755,10 @@ export const barMarkPointSpec: IBarChartSpec = {
     {
       orient: 'bottom',
       label: {
-        formatMethod: (datum: any) => {
+        formatMethod: (datum: string) => {
           return datum === '10:20' ? '当前' : datum;
         },
-        style: (datum: any) => {
+        style: (datum: string) => {
           return {
             fontSize: datum === '10:20' ? 14 : 12,
             fill: datum === '10:20' ? 'black' : 'grey'
@@ -808,8 +808,8 @@ export const histogramDifferentBinSpec: IHistogramChartSpec = {
       },
       content: [
         {
-          key: (datum?: Record<string, any>) => `${datum?.from}～${datum?.to}`,
-          value: (datum?: Record<string, any>) => datum?.profit
+          key: (datum?: { from?: number; to?: number }) => `${datum?.from}～${datum?.to}`,
+          value: (datum?: { profit?: number }) => datum?.profit
         }
       ]
     }

@@ -137,13 +137,6 @@ const rules: Record<RuleKey, App.Global.FormRule> = {
 };
 
 function handleInitModel() {
-  console.log('🔧 [菜单操作抽屉] handleInitModel', {
-    operateType: props.operateType,
-    isEdit: isEdit.value,
-    isAddingChild: props.isAddingChild,
-    hasRowData: Boolean(props.rowData),
-    rowData: props.rowData
-  });
 
   if (isEdit.value && props.rowData) {
     // 编辑模式：填充数据
@@ -157,7 +150,6 @@ function handleInitModel() {
       sort: props.rowData.sort ?? 1,
       status: props.rowData.status ?? 1
     };
-    console.log('✏️ [菜单操作抽屉] 编辑模式数据', model.value);
   } else {
     // 新增模式：使用空表单
     // 如果是添加子菜单，从 rowData（父菜单数据）中获取父菜单ID
@@ -175,16 +167,6 @@ function handleInitModel() {
       sort: nextSort,
       status: 1
     };
-    console.log('➕ [菜单操作抽屉] 新增模式数据', {
-      ...model.value,
-      _debug: {
-        isAddingChild: props.isAddingChild,
-        rowDataId: props.rowData?.id,
-        rowDataParentId: props.rowData?.parentId,
-        calculatedParentId: parent_Id,
-        calculatedSort: nextSort
-      }
-    });
   }
 }
 
@@ -194,12 +176,6 @@ function getNextSort(): number {
   // 从 id 字段获取父菜单ID
   const parentId = props.rowData?.id;
 
-  console.log('🔢 [计算排序] getNextSort', {
-    isAddingChild: props.isAddingChild,
-    parentId,
-    parentIdType: typeof parentId,
-    menuTreeDataLength: menuTreeData.value.length
-  });
 
   if (!parentId) return 1;
 
@@ -232,16 +208,6 @@ function getNextSort(): number {
 
   const siblings = findSiblings(menuTreeData.value as Api.SystemManage.MenuTree[], parentId);
 
-  console.log('🔢 [计算排序] 筛选结果', {
-    parentId,
-    siblingsCount: siblings.length,
-    siblings: siblings.map(m => ({
-      id: m.id,
-      name: m.name,
-      parentId: m.parentId,
-      sort: m.sort
-    }))
-  });
 
   if (siblings.length === 0) return 1;
 
@@ -249,7 +215,6 @@ function getNextSort(): number {
   const maxSort = Math.max(...siblings.map(m => m.sort || 0));
   const nextSort = maxSort + 1;
 
-  console.log('✅ [计算排序] 结果', { maxSort, nextSort });
 
   return nextSort;
 }
@@ -277,13 +242,6 @@ async function handleSubmit() {
 watch(
   () => visible.value,
   async newVal => {
-    console.log('🔍 [菜单操作抽屉] visible变化', {
-      visible: visible.value,
-      newVal,
-      operateType: props.operateType,
-      isEdit: isEdit.value,
-      rowData: props.rowData
-    });
 
     if (newVal) {
       await nextTick();

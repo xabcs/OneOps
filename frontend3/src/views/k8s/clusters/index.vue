@@ -45,13 +45,13 @@ const loading = ref(false);
 const submitting = ref(false);
 
 // 列表数据
-const clusterList = ref<any[]>([]);
+const clusterList = ref<K8s.Cluster[]>([]);
 const total = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10);
 
 // 选中的行
-const checkedRowKeys = ref<any[]>([]);
+const checkedRowKeys = ref<K8s.Cluster[]>([]);
 
 // 显示列表（分页）
 const displayClusters = computed(() => {
@@ -70,7 +70,7 @@ const columns = [
     prop: 'name',
     label: '集群名称',
     minWidth: 140,
-    formatter: (row: any) => {
+    formatter: (row: K8s.Cluster) => {
       return (
         <span class="cluster-name-link" onClick={() => handleViewDetail(row)}>
           {row.name}
@@ -89,7 +89,7 @@ const columns = [
     label: '状态',
     width: 80,
     align: 'center',
-    formatter: (row: any) => {
+    formatter: (row: K8s.Cluster) => {
       const statusMap: Record<number, { type: UI.ThemeColor; text: string }> = {
         1: { type: 'success', text: '正常' },
         0: { type: 'danger', text: '禁用' }
@@ -108,7 +108,7 @@ const columns = [
     label: '操作',
     width: 280,
     align: 'center',
-    formatter: (row: any) => (
+    formatter: (row: K8s.Cluster) => (
       <div class="flex-center gap-8px">
         <ElButton link type="primary" onClick={() => handleEdit(row)}>
           编辑
@@ -139,10 +139,11 @@ async function loadClusters() {
       clusterList.value = res.data.list || [];
       total.value = res.data.total || 0;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     message({
       title: '加载失败',
-      message: error.message || '加载集群列表失败',
+      message: err.message || '加载集群列表失败',
       type: 'error',
       duration: 3000
     });
@@ -167,13 +168,13 @@ function handleAdd() {
 }
 
 // 编辑集群
-function handleEdit(row: any) {
+function handleEdit(row: K8s.Cluster) {
   form.value = { ...row };
   dialogVisible.value = true;
 }
 
 // 查看详情
-function handleViewDetail(row: any) {
+function handleViewDetail(row: K8s.Cluster) {
   message({
     title: '提示',
     message: `查看集群 "${row.name}" 详情功能即将推出`,
@@ -210,10 +211,11 @@ async function handleSubmit() {
         duration: 3000
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     message({
       title: '操作失败',
-      message: error.message || '操作失败',
+      message: err.message || '操作失败',
       type: 'error',
       duration: 3000
     });
@@ -223,7 +225,7 @@ async function handleSubmit() {
 }
 
 // 测试连接
-async function handleTestConnection(row: any) {
+async function handleTestConnection(row: K8s.Cluster) {
   try {
     const res = await testK8sConnection(row.id);
     if (res.data || res.code === 200) {
@@ -241,10 +243,11 @@ async function handleTestConnection(row: any) {
         duration: 3000
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     message({
       title: '测试失败',
-      message: error.message || '连接测试失败',
+      message: err.message || '连接测试失败',
       type: 'error',
       duration: 3000
     });
@@ -252,7 +255,7 @@ async function handleTestConnection(row: any) {
 }
 
 // 删除集群
-async function handleDelete(row: any) {
+async function handleDelete(row: K8s.Cluster) {
   try {
     const res = await deleteK8sCluster(row.id, { confirmName: row.name });
     if (res.data || res.code === 200) {
@@ -271,10 +274,11 @@ async function handleDelete(row: any) {
         duration: 3000
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as Error;
     message({
       title: '删除失败',
-      message: error.message || '删除集群失败',
+      message: err.message || '删除集群失败',
       type: 'error',
       duration: 3000
     });
@@ -368,493 +372,465 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="page-container cluster-management-page">
-    <!-- Hero 区域 -->
-    <section
-      v-if="heroVisible"
-      class="hero-section"
-      :style="{
+    <div class="page-container cluster-management-page">
+        <!-- Hero 区域 -->
+        <section v-if="heroVisible" class="hero-section" :style="{
         background: 'var(--sx-hero-bg)',
         border: '1px solid var(--sx-hero-border)',
         borderRadius: 'var(--sx-hero-radius)',
         boxShadow: 'var(--sx-hero-shadow)',
         padding: 'var(--sx-hero-padding)'
-      }"
-    >
-      <div class="hero-content">
-        <div class="hero-title-row">
-          <span class="hero-icon">
-            <ElIcon><Platform /></ElIcon>
-          </span>
-          <h2>集群管理</h2>
-          <p class="hero-desc">管理 Kubernetes 集群连接和配置信息，支持多集群统一管理和监控</p>
-        </div>
-      </div>
-      <div class="hero-actions">
-        <ElButton size="small" :loading="loading" @click="handleRefresh">
-          <ElIcon><Refresh /></ElIcon>
-          刷新
-        </ElButton>
-      </div>
-    </section>
+      }">
+            <div class="hero-content">
+                <div class="hero-title-row">
+                    <span class="hero-icon">
+                        <ElIcon>
+                            <Platform />
+                        </ElIcon>
+                    </span>
+                    <h2>集群管理</h2>
+                    <p class="hero-desc">管理 Kubernetes 集群连接和配置信息，支持多集群统一管理和监控</p>
+                </div>
+            </div>
+            <div class="hero-actions">
+                <ElButton size="small" :loading="loading" @click="handleRefresh">
+                    <ElIcon>
+                        <Refresh />
+                    </ElIcon>
+                    刷新
+                </ElButton>
+            </div>
+        </section>
 
-    <!-- 内容卡片 -->
-    <div
-      class="content-card cluster-content-card"
-      :style="{
+        <!-- 内容卡片 -->
+        <div class="content-card cluster-content-card" :style="{
         background: 'var(--sx-content-card-bg)',
         border: '1px solid var(--sx-content-card-border)',
         borderRadius: 'var(--sx-content-card-radius)',
         boxShadow: 'var(--sx-content-card-shadow)',
         padding: 'var(--sx-content-card-padding)'
-      }"
-    >
-      <!-- 工具栏 -->
-      <div class="card-toolbar">
-        <div class="toolbar-head">
-          <span class="toolbar-title">集群列表</span>
-          <span class="toolbar-desc">共 {{ total }} 个集群</span>
-        </div>
-        <div class="toolbar-actions">
-          <ElButton type="primary" size="small" @click="handleAdd">
-            <ElIcon><Plus /></ElIcon>
-            添加集群
-          </ElButton>
-          <ElButton type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
-            <ElIcon><Delete /></ElIcon>
-            批量删除
-          </ElButton>
-        </div>
-      </div>
+      }">
+            <!-- 工具栏 -->
+            <div class="card-toolbar">
+                <div class="toolbar-head">
+                    <span class="toolbar-title">集群列表</span>
+                    <span class="toolbar-desc">共 {{ total }} 个集群</span>
+                </div>
+                <div class="toolbar-actions">
+                    <ElButton type="primary" size="small" @click="handleAdd">
+                        <ElIcon>
+                            <Plus />
+                        </ElIcon>
+                        添加集群
+                    </ElButton>
+                    <ElButton type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
+                        <ElIcon>
+                            <Delete />
+                        </ElIcon>
+                        批量删除
+                    </ElButton>
+                </div>
+            </div>
 
-      <!-- 搜索工具栏 -->
-      <div class="workbench-toolbar workbench-toolbar--history clusters-toolbar">
-        <div class="workbench-toolbar-left">
-          <ElSelect
-            v-model="queryParams.clusterType"
-            placeholder="集群类型"
-            clearable
-            style="width: 120px"
-            @change="handleSearch"
-          >
-            <ElOption label="标准集群" value="standard" />
-            <ElOption label="托管集群" value="managed" />
-            <ElOption label="边缘集群" value="edge" />
-          </ElSelect>
-          <ElSelect
-            v-model="queryParams.status"
-            placeholder="状态"
-            clearable
-            style="width: 100px"
-            @change="handleSearch"
-          >
-            <ElOption label="正常" :value="1" />
-            <ElOption label="禁用" :value="0" />
-          </ElSelect>
-          <ElInput
-            v-model="queryParams.name"
-            placeholder="搜索集群名称"
-            clearable
-            style="width: 200px"
-            @keyup.enter="handleSearch"
-          >
-            <template #prefix>
-              <ElIcon><Search /></ElIcon>
-            </template>
-          </ElInput>
-        </div>
-        <div class="workbench-toolbar-right">
-          <ElButton class="filter-refresh-btn" @click="handleResetSearch">
-            <ElIcon><RefreshRight /></ElIcon>
-            重置
-          </ElButton>
-          <ElButton class="filter-refresh-btn" type="primary" @click="handleSearch">
-            <ElIcon><Search /></ElIcon>
-            搜索
-          </ElButton>
-        </div>
-      </div>
+            <!-- 搜索工具栏 -->
+            <div class="workbench-toolbar workbench-toolbar--history clusters-toolbar">
+                <div class="workbench-toolbar-left">
+                    <ElSelect v-model="queryParams.clusterType" placeholder="集群类型" clearable style="width: 120px" @change="handleSearch">
+                        <ElOption label="标准集群" value="standard" />
+                        <ElOption label="托管集群" value="managed" />
+                        <ElOption label="边缘集群" value="edge" />
+                    </ElSelect>
+                    <ElSelect v-model="queryParams.status" placeholder="状态" clearable style="width: 100px" @change="handleSearch">
+                        <ElOption label="正常" :value="1" />
+                        <ElOption label="禁用" :value="0" />
+                    </ElSelect>
+                    <ElInput v-model="queryParams.name" placeholder="搜索集群名称" clearable style="width: 200px" @keyup.enter="handleSearch">
+                        <template #prefix>
+                            <ElIcon>
+                                <Search />
+                            </ElIcon>
+                        </template>
+                    </ElInput>
+                </div>
+                <div class="workbench-toolbar-right">
+                    <ElButton class="filter-refresh-btn" @click="handleResetSearch">
+                        <ElIcon>
+                            <RefreshRight />
+                        </ElIcon>
+                        重置
+                    </ElButton>
+                    <ElButton class="filter-refresh-btn" type="primary" @click="handleSearch">
+                        <ElIcon>
+                            <Search />
+                        </ElIcon>
+                        搜索
+                    </ElButton>
+                </div>
+            </div>
 
-      <!-- 数据表格 -->
-      <div class="table-section">
-        <ElTable
-          v-loading="loading"
-          :data="displayClusters"
-          border
-          stripe
-          class="data-table"
-          row-key="id"
-          @selection-change="(selection: any[]) => (checkedRowKeys = selection)"
-        >
-          <ElTableColumn type="selection" width="48" align="center" />
-          <ElTableColumn type="index" label="序号" width="64" align="center" />
-          <ElTableColumn prop="name" label="集群名称" min-width="140" show-overflow-tooltip>
-            <template #default="{ row }">
-              <span class="cluster-name-link">{{ row.name }}</span>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn prop="description" label="描述" min-width="120" show-overflow-tooltip />
-          <ElTableColumn prop="endpoint" label="API 地址" min-width="200" show-overflow-tooltip />
-          <ElTableColumn prop="clusterType" label="类型" width="100" />
-          <ElTableColumn prop="region" label="区域" width="100" />
-          <ElTableColumn prop="version" label="版本" width="80" show-overflow-tooltip />
-          <ElTableColumn prop="nodeCount" label="节点数" width="80" align="center" />
-          <ElTableColumn prop="status" label="状态" width="80" align="center">
-            <template #default="{ row }">
-              <ElTag :type="row.status === 1 ? 'success' : 'danger'" size="small">
-                {{ row.status === 1 ? '正常' : '禁用' }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn prop="createdAt" label="创建时间" width="160" />
-          <ElTableColumn label="操作" width="280" fixed="right" align="center">
-            <template #default="{ row }">
-              <div class="flex-center gap-8px">
-                <ElButton link type="primary" @click="handleEdit(row)">编辑</ElButton>
-                <ElButton link class="text-accent" @click="handleTestConnection(row)">测试</ElButton>
-                <ElPopconfirm title="确定要删除集群吗？" @confirm="handleDelete(row)">
-                  <template #reference>
-                    <ElButton link type="danger">删除</ElButton>
-                  </template>
-                </ElPopconfirm>
-              </div>
-            </template>
-          </ElTableColumn>
-        </ElTable>
-      </div>
+            <!-- 数据表格 -->
+            <div class="table-section">
+                <ElTable v-loading="loading" :data="displayClusters" border stripe class="data-table" row-key="id" @selection-change="(selection: K8s.Cluster[]) => (checkedRowKeys = selection)">
+                    <ElTableColumn type="selection" width="48" align="center" />
+                    <ElTableColumn type="index" label="序号" width="64" align="center" />
+                    <ElTableColumn prop="name" label="集群名称" min-width="140" show-overflow-tooltip>
+                        <template #default="{ row }">
+                            <span class="cluster-name-link">{{ row.name }}</span>
+                        </template>
+                    </ElTableColumn>
+                    <ElTableColumn prop="description" label="描述" min-width="120" show-overflow-tooltip />
+                    <ElTableColumn prop="endpoint" label="API 地址" min-width="200" show-overflow-tooltip />
+                    <ElTableColumn prop="clusterType" label="类型" width="100" />
+                    <ElTableColumn prop="region" label="区域" width="100" />
+                    <ElTableColumn prop="version" label="版本" width="80" show-overflow-tooltip />
+                    <ElTableColumn prop="nodeCount" label="节点数" width="80" align="center" />
+                    <ElTableColumn prop="status" label="状态" width="80" align="center">
+                        <template #default="{ row }">
+                            <ElTag :type="row.status === 1 ? 'success' : 'danger'" size="small">
+                                {{ row.status === 1 ? '正常' : '禁用' }}
+                            </ElTag>
+                        </template>
+                    </ElTableColumn>
+                    <ElTableColumn prop="createdAt" label="创建时间" width="160" />
+                    <ElTableColumn label="操作" width="280" fixed="right" align="center">
+                        <template #default="{ row }">
+                            <div class="flex-center gap-8px">
+                                <ElButton link type="primary" @click="handleEdit(row)">编辑</ElButton>
+                                <ElButton link class="text-accent" @click="handleTestConnection(row)">测试</ElButton>
+                                <ElPopconfirm title="确定要删除集群吗？" @confirm="handleDelete(row)">
+                                    <template #reference>
+                                        <ElButton link type="danger">删除</ElButton>
+                                    </template>
+                                </ElPopconfirm>
+                            </div>
+                        </template>
+                    </ElTableColumn>
+                </ElTable>
+            </div>
 
-      <!-- 分页 -->
-      <div class="table-pagination">
-        <ElPagination
-          v-if="total > 0"
-          layout="total, sizes, prev, pager, next, jumper"
-          :current-page="currentPage"
-          :page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="total"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
-      </div>
+            <!-- 分页 -->
+            <div class="table-pagination">
+                <ElPagination v-if="total > 0" layout="total, sizes, prev, pager, next, jumper" :current-page="currentPage" :page-size="pageSize" :page-sizes="[10, 20, 50, 100]" :total="total" @size-change="handleSizeChange" @current-change="handleCurrentChange" />
+            </div>
+        </div>
+
+        <!-- 创建/编辑集群对话框 -->
+        <ElDialog v-model="dialogVisible" :title="modalTitle" width="600px" :close-on-click-modal="false">
+            <ElForm :model="form" label-width="100px">
+                <ElFormItem label="集群名称" required>
+                    <ElInput v-model="form.name" placeholder="请输入集群名称" />
+                </ElFormItem>
+                <ElFormItem label="集群描述">
+                    <ElInput v-model="form.description" type="textarea" placeholder="请输入集群描述" :rows="3" />
+                </ElFormItem>
+                <ElFormItem label="API 地址" required>
+                    <ElInput v-model="form.endpoint" placeholder="https://k8s-api.example.com:6443" />
+                </ElFormItem>
+                <ElFormItem label="Kubeconfig" required>
+                    <ElInput v-model="form.kubeconfig" type="textarea" placeholder="粘贴 kubeconfig 内容" :rows="10" />
+                </ElFormItem>
+                <ElFormItem label="集群类型" required>
+                    <ElSelect v-model="form.clusterType" placeholder="选择集群类型">
+                        <ElOption label="标准集群" value="standard" />
+                        <ElOption label="托管集群" value="managed" />
+                        <ElOption label="边缘集群" value="edge" />
+                    </ElSelect>
+                </ElFormItem>
+                <ElFormItem label="区域">
+                    <ElInput v-model="form.region" placeholder="如：us-west-2" />
+                </ElFormItem>
+                <ElFormItem label="节点数">
+                    <ElInputNumber v-model="form.nodeCount" :min="0" placeholder="自动获取" />
+                </ElFormItem>
+            </ElForm>
+
+            <template #footer>
+                <ElButton @click="dialogVisible = false">取消</ElButton>
+                <ElButton type="primary" :loading="submitting" @click="handleSubmit">确定</ElButton>
+            </template>
+        </ElDialog>
     </div>
-
-    <!-- 创建/编辑集群对话框 -->
-    <ElDialog v-model="dialogVisible" :title="modalTitle" width="600px" :close-on-click-modal="false">
-      <ElForm :model="form" label-width="100px">
-        <ElFormItem label="集群名称" required>
-          <ElInput v-model="form.name" placeholder="请输入集群名称" />
-        </ElFormItem>
-        <ElFormItem label="集群描述">
-          <ElInput v-model="form.description" type="textarea" placeholder="请输入集群描述" :rows="3" />
-        </ElFormItem>
-        <ElFormItem label="API 地址" required>
-          <ElInput v-model="form.endpoint" placeholder="https://k8s-api.example.com:6443" />
-        </ElFormItem>
-        <ElFormItem label="Kubeconfig" required>
-          <ElInput v-model="form.kubeconfig" type="textarea" placeholder="粘贴 kubeconfig 内容" :rows="10" />
-        </ElFormItem>
-        <ElFormItem label="集群类型" required>
-          <ElSelect v-model="form.clusterType" placeholder="选择集群类型">
-            <ElOption label="标准集群" value="standard" />
-            <ElOption label="托管集群" value="managed" />
-            <ElOption label="边缘集群" value="edge" />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem label="区域">
-          <ElInput v-model="form.region" placeholder="如：us-west-2" />
-        </ElFormItem>
-        <ElFormItem label="节点数">
-          <ElInputNumber v-model="form.nodeCount" :min="0" placeholder="自动获取" />
-        </ElFormItem>
-      </ElForm>
-
-      <template #footer>
-        <ElButton @click="dialogVisible = false">取消</ElButton>
-        <ElButton type="primary" :loading="submitting" @click="handleSubmit">确定</ElButton>
-      </template>
-    </ElDialog>
-  </div>
 </template>
 
 <style scoped lang="scss">
-/* ============================================
-	   1. 页面容器与布局
-	   ============================================ */
-.cluster-management-page {
-  padding: 16px 20px;
-  background: var(--el-bg-color-page);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-/* ============================================
-	   2. Hero 区域
-	   ============================================ */
-.hero-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
-
-.hero-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.hero-title-row {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.hero-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  color: var(--sx-hero-icon-color);
-  background: var(--sx-hero-icon-bg);
-  border: 1px solid var(--sx-hero-icon-border);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
-}
-
-.hero-title-row h2 {
-  color: var(--sx-text-primary);
-  font-size: 23px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.hero-desc {
-  color: var(--sx-text-secondary);
-  font-size: 13px;
-  line-height: 1.45;
-  margin: 0;
-  max-width: 600px;
-}
-
-.hero-actions {
-  display: flex;
-  gap: 4px;
-}
-
-/* ============================================
-	   3. 内容卡片
-	   ============================================ */
-.content-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.card-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--sx-border-soft);
-}
-
-.toolbar-head {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.toolbar-title {
-  color: var(--sx-text-primary);
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.toolbar-desc {
-  color: var(--sx-text-secondary);
-  font-size: 12px;
-}
-
-.toolbar-actions {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-/* ============================================
-	   4. 搜索工具栏
-	   ============================================ */
-.workbench-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin: 6px 0 8px;
-}
-
-.workbench-toolbar-left,
-.workbench-toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.workbench-toolbar.workbench-toolbar--history {
-  background: var(--sx-toolbar-bg);
-  border: 1px solid var(--sx-toolbar-border);
-  border-radius: var(--sx-toolbar-radius);
-  padding: var(--sx-toolbar-padding);
-  box-shadow: var(--sx-toolbar-shadow);
-  gap: 8px;
-  margin: 6px 0;
-
-  .workbench-toolbar-left,
-  .workbench-toolbar-right {
-    gap: 5px;
-    flex-wrap: nowrap; /* 防止元素换行 */
-  }
-
-  .el-input__wrapper,
-  .el-select__wrapper {
-    background: var(--sx-search-input-bg);
-    border-radius: var(--sx-search-input-radius);
-    box-shadow: 0 0 0 1px var(--sx-search-input-border) inset;
-    transition: all 0.3s ease;
-
-    &:hover {
-      box-shadow: 0 0 0 1px var(--sx-search-input-hover-border) inset;
+    /* ============================================
+                                	   1. 页面容器与布局
+                                	   ============================================ */
+    .cluster-management-page {
+      padding: 16px 20px;
+      background: var(--el-bg-color-page);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
-  }
 
-  .el-input.is-focus .el-input__wrapper,
-  .el-select.is-focus .el-select__wrapper {
-    box-shadow: 0 0 0 1px var(--sx-search-input-focus-border) inset;
-  }
-
-  .el-button:not(.is-link) {
-    background: var(--sx-search-button-bg);
-    color: var(--sx-search-button-text);
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: var(--sx-search-button-hover);
+    /* ============================================
+                                	   2. Hero 区域
+                                	   ============================================ */
+    .hero-section {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
     }
-  }
-}
 
-/* ============================================
-	   5. 数据表格
-	   ============================================ */
-.table-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
+    .hero-content {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
 
-.data-table {
-  width: 100%;
-  border-radius: var(--sx-table-radius);
-  overflow: hidden;
-  border: 1px solid var(--sx-table-border);
-  border-collapse: separate;
-  border-spacing: 0;
+    .hero-title-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
 
-  --el-table-border-color: var(--sx-table-border);
-  --el-table-header-bg-color: var(--sx-table-header-bg);
-  --el-table-row-hover-bg-color: var(--sx-table-row-hover);
+    .hero-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--sx-hero-icon-color);
+      background: var(--sx-hero-icon-bg);
+      border: 1px solid var(--sx-hero-icon-border);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
 
-  :deep(th.el-table__cell) {
-    background-color: var(--sx-table-header-bg);
-    color: var(--sx-table-header-text);
-    font-weight: 600;
-    border-radius: 0;
-  }
+    .hero-title-row h2 {
+      color: var(--sx-text-primary);
+      font-size: 23px;
+      font-weight: 700;
+      margin: 0;
+    }
 
-  :deep(td.el-table__cell) {
-    border-radius: 0;
-  }
+    .hero-desc {
+      color: var(--sx-text-secondary);
+      font-size: 13px;
+      line-height: 1.45;
+      margin: 0;
+      max-width: 600px;
+    }
 
-  :deep(.el-checkbox__inner),
-  :deep(.el-checkbox__inner::before),
-  :deep(.el-checkbox__inner::after) {
-    border-radius: 0;
-  }
+    .hero-actions {
+      display: flex;
+      gap: 4px;
+    }
 
-  &--striped :deep(.el-table__body tr.el-table__row--striped td) {
-    background-color: var(--sx-table-striped-bg);
-  }
-}
+    /* ============================================
+                                	   3. 内容卡片
+                                	   ============================================ */
+    .content-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
 
-.cluster-name-link {
-  color: var(--accent, #245bdb);
-  cursor: pointer;
-  transition: color 0.2s;
+    .card-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--sx-border-soft);
+    }
 
-  &:hover {
-    color: var(--accent-hover, #1d4ed8);
-    text-decoration: underline;
-  }
-}
+    .toolbar-head {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
 
-.text-accent {
-  color: var(--accent, #245bdb) !important;
+    .toolbar-title {
+      color: var(--sx-text-primary);
+      font-size: 16px;
+      font-weight: 700;
+    }
 
-  &:hover {
-    color: var(--accent-hover, #1d4ed8) !important;
-    text-decoration: underline;
-  }
-}
+    .toolbar-desc {
+      color: var(--sx-text-secondary);
+      font-size: 12px;
+    }
 
-/* ============================================
-	   6. 分页组件
-	   ============================================ */
-.table-pagination {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 12px;
+    .toolbar-actions {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
 
-  .el-pagination {
-    .btn-next,
-    .btn-prev,
-    .el-pager li {
-      background: var(--sx-pagination-button-bg);
-      color: var(--sx-pagination-button-text);
-      border-radius: var(--sx-pagination-radius);
-      transition: all 0.3s ease;
+    /* ============================================
+                                	   4. 搜索工具栏
+                                	   ============================================ */
+    .workbench-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 6px 0 8px;
+    }
+
+    .workbench-toolbar-left,
+    .workbench-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .workbench-toolbar.workbench-toolbar--history {
+      background: var(--sx-toolbar-bg);
+      border: 1px solid var(--sx-toolbar-border);
+      border-radius: var(--sx-toolbar-radius);
+      padding: var(--sx-toolbar-padding);
+      box-shadow: var(--sx-toolbar-shadow);
+      gap: 8px;
+      margin: 6px 0;
+
+      .workbench-toolbar-left,
+      .workbench-toolbar-right {
+        gap: 5px;
+        flex-wrap: nowrap; /* 防止元素换行 */
+      }
+
+      .el-input__wrapper,
+      .el-select__wrapper {
+        background: var(--sx-search-input-bg);
+        border-radius: var(--sx-search-input-radius);
+        box-shadow: 0 0 0 1px var(--sx-search-input-border) inset;
+        transition: all 0.3s ease;
+
+        &:hover {
+          box-shadow: 0 0 0 1px var(--sx-search-input-hover-border) inset;
+        }
+      }
+
+      .el-input.is-focus .el-input__wrapper,
+      .el-select.is-focus .el-select__wrapper {
+        box-shadow: 0 0 0 1px var(--sx-search-input-focus-border) inset;
+      }
+
+      .el-button:not(.is-link) {
+        background: var(--sx-search-button-bg);
+        color: var(--sx-search-button-text);
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: var(--sx-search-button-hover);
+        }
+      }
+    }
+
+    /* ============================================
+                                	   5. 数据表格
+                                	   ============================================ */
+    .table-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .data-table {
+      width: 100%;
+      border-radius: var(--sx-table-radius);
+      overflow: hidden;
+      border: 1px solid var(--sx-table-border);
+      border-collapse: separate;
+      border-spacing: 0;
+
+      --el-table-border-color: var(--sx-table-border);
+      --el-table-header-bg-color: var(--sx-table-header-bg);
+      --el-table-row-hover-bg-color: var(--sx-table-row-hover);
+
+      :deep(th.el-table__cell) {
+        background-color: var(--sx-table-header-bg);
+        color: var(--sx-table-header-text);
+        font-weight: 600;
+        border-radius: 0;
+      }
+
+      :deep(td.el-table__cell) {
+        border-radius: 0;
+      }
+
+      :deep(.el-checkbox__inner),
+      :deep(.el-checkbox__inner::before),
+      :deep(.el-checkbox__inner::after) {
+        border-radius: 0;
+      }
+
+      &--striped :deep(.el-table__body tr.el-table__row--striped td) {
+        background-color: var(--sx-table-striped-bg);
+      }
+    }
+
+    .cluster-name-link {
+      color: var(--accent, #245bdb);
+      cursor: pointer;
+      transition: color 0.2s;
 
       &:hover {
-        background: var(--sx-pagination-button-hover);
-      }
-
-      &.is-active {
-        background: var(--sx-pagination-active-bg);
-        color: var(--sx-pagination-active-text);
+        color: var(--accent-hover, #1d4ed8);
+        text-decoration: underline;
       }
     }
-  }
-}
 
-/* ============================================
-	   7. 响应式设计
-	   ============================================ */
-@media (max-width: 768px) {
-  .hero-section {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+    .text-accent {
+      color: var(--accent, #245bdb) !important;
 
-  .card-toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-}
+      &:hover {
+        color: var(--accent-hover, #1d4ed8) !important;
+        text-decoration: underline;
+      }
+    }
+
+    /* ============================================
+                                	   6. 分页组件
+                                	   ============================================ */
+    .table-pagination {
+      display: flex;
+      justify-content: flex-end;
+      padding-top: 12px;
+
+      .el-pagination {
+        .btn-next,
+        .btn-prev,
+        .el-pager li {
+          background: var(--sx-pagination-button-bg);
+          color: var(--sx-pagination-button-text);
+          border-radius: var(--sx-pagination-radius);
+          transition: all 0.3s ease;
+
+          &:hover {
+            background: var(--sx-pagination-button-hover);
+          }
+
+          &.is-active {
+            background: var(--sx-pagination-active-bg);
+            color: var(--sx-pagination-active-text);
+          }
+        }
+      }
+    }
+
+    /* ============================================
+                                	   7. 响应式设计
+                                	   ============================================ */
+    @media (max-width: 768px) {
+      .hero-section {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .card-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+    }
 </style>

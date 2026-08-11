@@ -146,8 +146,8 @@
         await fetchDeleteAccessPolicy(policy.id);
         window.$message?.success('删除成功');
         getPolicies();
-      } catch (error: any) {
-        window.$message?.error(error.message || '删除失败');
+      } catch (error: unknown) {
+        window.$message?.error(error instanceof Error ? error.message : '删除失败');
       }
     }
 
@@ -158,8 +158,8 @@
         await fetchUpdateAccessPolicy(policy.id, { status: newStatus });
         window.$message?.success('状态更新成功');
         getPolicies();
-      } catch (error: any) {
-        window.$message?.error(error.message || '状态更新失败');
+      } catch (error: unknown) {
+        window.$message?.error(error instanceof Error ? error.message : '状态更新失败');
       }
     }
 
@@ -180,10 +180,10 @@
 
         dialogVisible.value = false;
         getPolicies();
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error !== false) {
           // 表单验证失败时会返回 false
-          window.$message?.error(error.message || '操作失败');
+          window.$message?.error(error instanceof Error ? error.message : '操作失败');
         }
       }
     }

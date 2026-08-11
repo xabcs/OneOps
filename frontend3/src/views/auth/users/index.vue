@@ -52,8 +52,8 @@ const formData = ref<Api.ApplicationPermission.AuthUser>({
 // 用户组管理相关状态
 const groupDialogVisible = ref(false);
 const selectedUser = ref<Api.ApplicationPermission.AuthUser | null>(null);
-const userGroups = ref<any[]>([]);
-const allGroups = ref<any[]>([]);
+const userGroups = ref<Api.ApplicationPermission.AuthUserGroup[]>([]);
+const allGroups = ref<Api.ApplicationPermission.AuthGroup[]>([]);
 const groupFormData = ref({
   groupId: null as number | null
 });
@@ -102,7 +102,7 @@ async function handleManageGroups(row: Api.ApplicationPermission.AuthUser) {
   // 获取所有用户组
   const { data: allGroupsData } = await fetchAllAuthGroups();
   if (allGroupsData) {
-    allGroups.value = Array.isArray(allGroupsData) ? allGroupsData : (allGroupsData as any).list || [];
+    allGroups.value = Array.isArray(allGroupsData) ? allGroupsData : (allGroupsData as { list?: Api.ApplicationPermission.AuthGroup[] }).list || [];
   }
 
   // 获取该用户所属的用户组
@@ -164,7 +164,7 @@ function handleAdd() {
   drawerVisible.value = true;
 }
 
-function handleEdit(row: any) {
+function handleEdit(row: Api.ApplicationPermission.AuthUser) {
   isEdit.value = true;
   formData.value = { ...row };
   drawerVisible.value = true;
@@ -173,7 +173,7 @@ function handleEdit(row: any) {
 async function handleSubmit() {
   if (isEdit.value) {
     // 编辑模式
-    const { error } = (await updateAuthUser(formData.value.id!, formData.value)) as any;
+    const { error } = await updateAuthUser(formData.value.id!, formData.value);
     if (!error) {
       ElMessage.success('更新成功');
       drawerVisible.value = false;
@@ -181,7 +181,7 @@ async function handleSubmit() {
     }
   } else {
     // 新增模式
-    const { data, error } = (await createAuthUser(formData.value)) as any;
+    const { data, error } = await createAuthUser(formData.value);
     if (!error && data) {
       drawerVisible.value = false;
       getData();
@@ -217,7 +217,7 @@ function handleSizeChange(size: number) {
   getData();
 }
 
-async function handleViewPassword(row: any) {
+async function handleViewPassword(row: Api.ApplicationPermission.AuthUser) {
   const { data, error } = await getAuthUserPassword(row.id);
   if (!error && data) {
     createdUserPassword.value = {

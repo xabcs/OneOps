@@ -15,6 +15,14 @@ declare namespace Api {
       name: string;
     }
 
+    interface MenuTreeItem {
+      id: number;
+      name: string;
+      path?: string;
+      sort?: number;
+      children?: MenuTreeItem[];
+    }
+
     interface UserInfo {
       id: number;
       username: string;
@@ -27,7 +35,7 @@ declare namespace Api {
       createdAt?: string;
       updatedAt?: string;
       roleNames: string[];
-      menuTree: any[];
+      menuTree: MenuTreeItem[];
       permissions: string[];
       permissionInfo: PermissionInfo[];
     }

@@ -47,7 +47,6 @@ const router = useRouter();
 
 // 返回上一页
 const handleBack = () => {
-  console.log('[ActionBar] 点击返回按钮，backPath:', props.backPath);
   // 使用 router.push 而不是 router.back()，确保列表页能重新加载
   router.push(props.backPath);
 };

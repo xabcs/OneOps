@@ -37,7 +37,7 @@ const rules: FormRules = {
 };
 
 const businessTreeOptions = computed(() => [{ id: 0, name: '根业务', children: tableData.value }]);
-const treeSelectProps = { label: 'name', value: 'id', children: 'children' } as any;
+const treeSelectProps: { label: string; value: string; children: string } = { label: 'name', value: 'id', children: 'children' };
 
 async function getTableData() {
   loading.value = true;

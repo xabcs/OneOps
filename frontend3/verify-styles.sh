@@ -13,7 +13,7 @@ files=(
   "src/styles/scss/sxdevops-theme.scss"
   "src/styles/scss/layout-theme.scss"
   "src/styles/scss/interaction-states.scss"
-  "src/styles/scss/sidebar-enhanced.scss"
+  "src/styles/scss/sidebar.scss"
 )
 
 for file in "${files[@]}"; do
@@ -28,7 +28,7 @@ echo ""
 
 # 检查 global.scss 导入是否正确
 echo "🔍 验证全局样式导入..."
-if grep -q "sidebar-enhanced.scss" src/styles/scss/global.scss; then
+if grep -q "sidebar.scss" src/styles/scss/global.scss; then
   echo "✅ 全局样式导入正确"
 else
   echo "❌ 全局样式导入缺失"

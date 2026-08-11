@@ -82,7 +82,7 @@ export function useBatchSelection<T = any>() {
   };
 
   // 获取选中项的ID列表
-  const getSelectedIds = (key: keyof T = 'id' as keyof T): any[] => {
+  const getSelectedIds = (key: keyof T = 'id' as keyof T): unknown[] => {
     return selectedItems.value.map(item => item[key]);
   };
 
@@ -140,7 +140,7 @@ export function useConfirmDialog() {
 }
 
 // 异步操作处理组合式函数
-export function useAsyncOperation<T = any>() {
+export function useAsyncOperation<T = unknown>() {
   const loading = ref(false);
   const error = ref<Error | null>(null);
   const data = ref<T | null>(null);

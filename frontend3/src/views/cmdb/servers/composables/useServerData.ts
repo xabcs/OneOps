@@ -1,278 +1,208 @@
 /**
- * 服务器数据管理逻辑
+ * 服务器数据获取与列表管理
+ * 从 index.vue 拆分：主机列表加载、分页、选择、关联数据（凭证/机房/机柜/标签/业务系统/属性）
  */
 
-import { computed, ref } from 'vue';
+import { reactive, ref } from 'vue';
+import { ElNotification } from 'element-plus';
 import {
-  type Server,
-  fetchBatchDeployAgent,
-  fetchBatchUninstallAgent,
+  fetchAssignServerToGroups,
   fetchCreateServer,
   fetchDeleteServer,
+  fetchGetAttributes,
+  fetchGetBusinessUnits,
+  fetchGetCabinets,
   fetchGetSSHCredentials,
   fetchGetServerAttributes,
+  fetchGetServerRooms,
   fetchGetServerTags,
   fetchGetServers,
+  fetchSaveServerAttributes,
   fetchSyncServerMetrics,
   fetchUpdateServer
 } from '@/service/api';
-import type { AgentStatus, ServerFilters, ServerFormData } from '../types/server.types';
+import type { SearchType } from '../types/server.types';
 
 export function useServerData() {
-  // 数据状态
-  const servers = ref<Server[]>([]);
-  const serverAttributes = ref<CMDB.Attribute[]>([]);
+  // ===== 列表数据 =====
+  const tableData = ref<CMDB.Server[]>([]);
+  const loading = ref(false);
+  const total = ref(0);
+  const selectedIds = ref<number[]>([]);
+
+  // 分页
+  const pagination = reactive({ page: 1, pageSize: 20 });
+
+  // ===== 关联数据 =====
   const userCredentials = ref<CMDB.SSHCredential[]>([]);
   const systemCredentials = ref<CMDB.SSHCredential[]>([]);
-  const serverTags = ref<string[]>([]);
+  const businessUnits = ref<CMDB.BusinessUnit[]>([]);
+  const serverRooms = ref<CMDB.ServerRoom[]>([]);
+  const cabinets = ref<CMDB.Cabinet[]>([]);
+  const serverTags = ref<CMDB.ServerTag[]>([]);
+  const attributeDefinitions = ref<Api.SystemManage.AttributeDefinition[]>([]);
 
-  // 加载状态
-  const loading = ref(false);
-  const serverDetailLoading = ref(false);
-
-  // 统计信息
-  const serverStats = computed(() => {
-    const stats = {
-      total: servers.value.length,
-      online: 0,
-      offline: 0,
-      warning: 0,
-      healthy: 0
-    };
-
-    servers.value.forEach(server => {
-      if (server.agentStatus === 'running') {
-        stats.online++;
-      } else if (server.agentStatus === 'offline') {
-        stats.offline++;
-      } else if (server.agentStatus === 'uninstalled') {
-        stats.uninstalled++;
-      }
-
-      // 简单的健康状态判断
-      if (server.status === 1 && server.agentStatus === 'running') {
-        stats.healthy++;
-      } else if (server.agentStatus !== 'running') {
-        stats.warning++;
-      }
-    });
-
-    return stats;
-  });
-
-  /**
-   * 获取服务器列表
-   */
-  const getServers = async (filters: ServerFilters = {}) => {
+  // ===== 数据获取 =====
+  async function getServers(searchParams?: { searchType: SearchType; searchKeyword: string; groupId?: number }) {
     loading.value = true;
     try {
-      const params = {
-        page: 1,
-        pageSize: 1000,
-        keyword: filters.keyword || '',
-        env: filters.env || '',
-        status: filters.status !== undefined ? filters.status : undefined,
-        agentStatus: filters.agentStatus || '',
-        groupId: filters.groupId !== undefined ? filters.groupId : undefined
-      };
+      const params: CMDB.ServerQuery = { page: pagination.page, pageSize: pagination.pageSize };
+
+      if (searchParams?.groupId) {
+        params.groupId = searchParams.groupId;
+      }
+
+      if (searchParams?.searchKeyword) {
+        switch (searchParams.searchType) {
+          case 'hostname': params.hostname = searchParams.searchKeyword; break;
+          case 'ip': params.ip = searchParams.searchKeyword; break;
+        }
+      }
 
       const { data } = await fetchGetServers(params);
-      if (data) {
-        servers.value = data.list || [];
-      }
+      tableData.value = data?.list || [];
+      total.value = data?.total || 0;
+    } catch (error) {
+      console.error('获取主机列表失败:', error);
+      ElNotification.error('获取主机列表失败');
     } finally {
       loading.value = false;
     }
-  };
+  }
 
-  /**
-   * 获取服务器详情（含属性）
-   */
-  const getServerDetail = async (serverId: number) => {
-    serverDetailLoading.value = true;
+  async function getSSHCredentials() {
     try {
-      const [attrData, credData, tagData] = await Promise.all([
-        fetchGetServerAttributes(),
-        fetchGetSSHCredentials(),
-        fetchGetServerTags()
-      ]);
-
-      if (attrData?.data) {
-        serverAttributes.value = attrData.data;
-      }
-      if (credData?.data) {
-        userCredentials.value = credData.data.filter(c => c.credentialType === 'user');
-        systemCredentials.value = credData.data.filter(c => c.credentialType === 'system');
-      }
-      if (tagData?.data) {
-        serverTags.value = tagData.data;
-      }
-    } finally {
-      serverDetailLoading.value = false;
-    }
-  };
-
-  /**
-   * 创建服务器
-   */
-  const createServer = async (formData: ServerFormData) => {
-    try {
-      const response = await fetchCreateServer({
-        hostname: formData.hostname || '',
-        ip: formData.ip || '',
-        innerIp: formData.innerIp || '',
-        sshPort: formData.sshPort || 22,
-        env: formData.env || '',
-        provider: formData.provider || '',
-        groupId: formData.groupId || [],
-        credentialId: formData.credentialId || 0,
-        systemCredentialId: formData.systemCredentialId || 0,
-        cabinetId: formData.cabinetId || 0,
-        remarks: formData.remarks || ''
-      });
-
-      if (response.data) {
-        await getServers();
-        return { success: true, data: response.data };
-      }
-      return { success: false, message: '创建失败' };
+      const [userRes, systemRes] = await Promise.all([fetchGetSSHCredentials('user'), fetchGetSSHCredentials('system')]);
+      userCredentials.value = userRes.data || [];
+      systemCredentials.value = systemRes.data || [];
     } catch (error) {
-      const message =
-        error && typeof error === 'object' && 'message' in error
-          ? typeof error.message === 'string'
-            ? error.message
-            : '创建失败'
-          : '创建失败';
-      return { success: false, message };
+      console.error('获取SSH凭证失败:', error);
     }
-  };
+  }
 
-  /**
-   * 更新服务器
-   */
-  const updateServer = async (serverId: number, formData: ServerFormData) => {
+  async function getServerRooms() {
     try {
-      const response = await fetchUpdateServer(serverId, {
-        hostname: formData.hostname,
-        ip: formData.ip,
-        innerIp: formData.innerIp,
-        sshPort: formData.sshPort,
-        env: formData.env,
-        status: formData.status,
-        groupId: formData.groupId || [],
-        credentialId: formData.credentialId || 0,
-        systemCredentialId: formData.systemCredentialId || 0,
-        cabinetId: formData.cabinetId || 0,
-        remarks: formData.remarks || ''
-      });
-
-      if (response.data) {
-        await getServers();
-        return { success: true, data: response.data };
-      }
-      return { success: false, message: '更新失败' };
+      const { data } = await fetchGetServerRooms();
+      serverRooms.value = data || [];
     } catch (error) {
-      const message =
-        error && typeof error === 'object' && 'message' in error
-          ? typeof error.message === 'string'
-            ? error.message
-            : '更新失败'
-          : '更新失败';
-      return { success: false, message };
+      console.error('获取机房列表失败:', error);
     }
-  };
+  }
 
-  /**
-   * 删除服务器
-   */
-  const deleteServer = async (serverId: number) => {
+  async function getCabinets(roomId?: number) {
     try {
-      await fetchDeleteServer(serverId);
-      await getServers();
-      return { success: true };
+      const { data } = await fetchGetCabinets(roomId);
+      cabinets.value = data || [];
     } catch (error) {
-      const message =
-        error && typeof error === 'object' && 'message' in error
-          ? typeof error.message === 'string'
-            ? error.message
-            : '删除失败'
-          : '删除失败';
-      return { success: false, message };
+      console.error('获取机柜列表失败:', error);
     }
-  };
+  }
 
-  /**
-   * 批量部署Agent
-   */
-  const batchDeployAgent = async (serverIds: number[]) => {
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const serverId of serverIds) {
-      try {
-        await fetchBatchDeployAgent({ serverIds: [serverId] });
-        successCount++;
-      } catch {
-        failCount++;
-      }
-    }
-
-    await getServers();
-    return { successCount, failCount };
-  };
-
-  /**
-   * 批量卸载Agent
-   */
-  const batchUninstallAgent = async (serverIds: number[]) => {
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const serverId of serverIds) {
-      try {
-        await fetchBatchUninstallAgent({ serverIds: [serverId] });
-        successCount++;
-      } catch {
-        failCount++;
-      }
-    }
-
-    await getServers();
-    return { successCount, failCount };
-  };
-
-  /**
-   * 同步服务器指标
-   */
-  const syncServerMetrics = async (serverId: number) => {
+  async function getServerTags() {
     try {
-      await fetchSyncServerMetrics(serverId);
-      await getServers();
-      return { success: true };
+      const { data } = await fetchGetServerTags();
+      serverTags.value = data || [];
     } catch (error) {
-      return { success: false, message: '同步失败' };
+      console.error('获取标签列表失败:', error);
     }
-  };
+  }
+
+  async function getBusinessUnits() {
+    try {
+      const res = await fetchGetBusinessUnits();
+      businessUnits.value = res.data || [];
+    } catch { /* ignore */ }
+  }
+
+  async function getSystemOptions() {
+    try {
+      const { data } = await fetchGetAttributes();
+      const sortedAttrs = (data || []).sort(
+        (a: Api.SystemManage.AttributeDefinition, b: Api.SystemManage.AttributeDefinition) => a.sortOrder - b.sortOrder
+      );
+      attributeDefinitions.value = sortedAttrs;
+    } catch (error) {
+      console.error('加载系统选项失败:', error);
+      attributeDefinitions.value = [];
+    }
+  }
+
+  // ===== 选择 =====
+  function handleSelectAll(selection: CMDB.Server[]) {
+    selectedIds.value = selection.map(s => s.id);
+  }
+
+  function handleSelectionChange(selection: CMDB.Server[]) {
+    selectedIds.value = selection.map(s => s.id);
+  }
+
+  // ===== 分页 =====
+  function handlePageChange(page: number) {
+    pagination.page = page;
+  }
+
+  function handlePageSizeChange(pageSize: number) {
+    pagination.pageSize = pageSize;
+    pagination.page = 1;
+  }
+
+  // ===== 属性辅助 =====
+  async function loadAttributeDefinitions() {
+    try {
+      const { data } = await fetchGetAttributes();
+      attributeDefinitions.value = data || [];
+    } catch (error) {
+      console.error('加载属性定义失败:', error);
+    }
+  }
+
+  async function loadServerAttributes(serverId: number) {
+    try {
+      const { data } = await fetchGetServerAttributes(serverId);
+      return data || [];
+    } catch (error) {
+      console.error('加载主机属性失败:', error);
+      return [];
+    }
+  }
+
+  async function saveServerAttributes(serverId: number, serverAttributes: Api.SystemManage.ServerAttribute[]) {
+    try {
+      const attributesToSave = serverAttributes
+        .filter(attr => attr.attributeValue && attr.attributeValue.trim() !== '')
+        .map(attr => ({ attributeId: attr.attributeId, attributeKey: attr.attributeKey, attributeValue: attr.attributeValue }));
+      if (attributesToSave.length > 0) {
+        await fetchSaveServerAttributes(serverId, attributesToSave);
+      }
+    } catch (error) {
+      console.error('保存主机属性失败:', error);
+    }
+  }
+
+  // ===== 同步指标 =====
+  async function handleSyncMetrics(row: CMDB.Server) {
+    try {
+      await fetchSyncServerMetrics(row.id);
+      ElNotification.info('采集中，3秒后自动刷新...');
+    } catch {
+      ElNotification.error('提交采集任务失败');
+    }
+  }
+
+  // ===== 辅助 =====
+  function handleRoomChange(roomId: number, serverForm: CMDB.ServerForm) {
+    serverForm.cabinetId = undefined;
+    if (roomId) { getCabinets(roomId); } else { cabinets.value = []; }
+  }
 
   return {
-    // 状态
-    servers,
-    serverAttributes,
-    userCredentials,
-    systemCredentials,
-    serverTags,
-    loading,
-    serverDetailLoading,
-    serverStats,
-
+    // 数据
+    tableData, loading, total, selectedIds, pagination,
+    userCredentials, systemCredentials, businessUnits, serverRooms, cabinets, serverTags, attributeDefinitions,
     // 方法
-    getServers,
-    getServerDetail,
-    createServer,
-    updateServer,
-    deleteServer,
-    batchDeployAgent,
-    batchUninstallAgent,
-    syncServerMetrics
+    getServers, getSSHCredentials, getServerRooms, getCabinets, getServerTags, getBusinessUnits, getSystemOptions,
+    handleSelectAll, handleSelectionChange, handlePageChange, handlePageSizeChange,
+    loadAttributeDefinitions, loadServerAttributes, saveServerAttributes,
+    handleSyncMetrics, handleRoomChange
   };
 }

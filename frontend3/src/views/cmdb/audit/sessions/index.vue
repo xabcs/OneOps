@@ -39,7 +39,7 @@ const protocolOptions = [
 async function getSessions() {
   loading.value = true;
   try {
-    const params: Record<string, any> = {
+    const params: Record<string, unknown> = {
       page: pagination.value.page,
       pageSize: pagination.value.pageSize
     };

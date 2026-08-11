@@ -51,7 +51,7 @@ export interface ApiError {
 }
 
 // API 响应接口
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   code: number;
   success: boolean;
   data?: T;
@@ -136,7 +136,7 @@ export class ErrorHandler {
   /**
    * 处理字段级验证错误
    */
-  static handleFieldErrors(errors: FieldError[], formRef?: any): void {
+  static handleFieldErrors(errors: FieldError[], formRef?: { validateField: (field: string, message: string) => void }): void {
     if (!errors || errors.length === 0) return;
 
     // 如果有表单引用，设置字段错误
@@ -169,7 +169,7 @@ export class ErrorHandler {
  * 请求错误处理 Hook
  */
 export function useErrorHandler() {
-  const handleError = (error: any): void => {
+  const handleError = (error: { response?: { data?: unknown } }): void => {
     if (error.response) {
       const data = error.response.data as ApiResponse;
       const apiError = ErrorHandler.extractError(data);

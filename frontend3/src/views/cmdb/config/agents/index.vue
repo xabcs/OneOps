@@ -237,8 +237,8 @@ async function handleUpgrade(row: CMDB.Server) {
     await fetchUpgradeAgent(row.id, latestVersion.value.version);
     ElNotification.info(`${row.hostname} Agent 升级任务已提交，正在轮询状态...`);
     pollAgentStatus(row.id, 'running');
-  } catch (err: any) {
-    ElNotification.error(`${row.hostname} Agent 升级失败: ${err.message || '未知错误'}`);
+  } catch (err: unknown) {
+    ElNotification.error(`${row.hostname} Agent 升级失败: ${err instanceof Error ? err.message : '未知错误'}`);
   }
 }
 

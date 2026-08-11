@@ -20,9 +20,9 @@ export interface BatchDeleteOptions {
   /**
    * 删除API函数
    * @param id 要删除的项目ID
-   * @returns Promise<any>
+   * @returns Promise<unknown>
    */
-  deleteApi: (id: number) => Promise<any>;
+  deleteApi: (id: number) => Promise<unknown>;
 
   /**
    * 成功消息模板

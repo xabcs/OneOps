@@ -83,7 +83,7 @@ function handlePageSizeChange(pageSize: number) {
 }
 
 function getLevelTag(level: string) {
-  const levelMap: Record<string, { text: string; type: any }> = {
+  const levelMap: Record<string, { text: string; type: '' | 'success' | 'warning' | 'danger' | 'info' }> = {
     info: { text: '信息', type: 'info' },
     warning: { text: '警告', type: 'warning' },
     error: { text: '错误', type: 'danger' },

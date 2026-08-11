@@ -31,7 +31,7 @@ export const request = createFlatRequest(
       errMsgStack: [],
       refreshTokenPromise: null
     } as RequestInstanceState,
-    transform(response: AxiosResponse<App.Service.Response<any>>) {
+    transform(response: AxiosResponse<App.Service.Response<unknown>>) {
       return response.data.data;
     },
     async onRequest(config) {

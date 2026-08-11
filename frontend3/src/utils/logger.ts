@@ -15,7 +15,7 @@ class Logger {
     this.prefix = prefix;
   }
 
-  private log(level: string, ...args: any[]) {
+  private log(level: string, ...args: unknown[]) {
     if (isDev || isDebug) {
       const timestamp = new Date().toISOString();
       const message = `[${timestamp}] [${level}]${this.prefix ? ` [${this.prefix}]` : ''}`;

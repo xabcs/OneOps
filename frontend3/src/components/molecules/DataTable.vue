@@ -53,7 +53,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  'selection-change': [selection: any[]];
+  'selection-change': [selection: Record<string, unknown>[]];
   'sort-change': SortConfig;
   'size-change': [pageSize: number];
   'current-change': [currentPage: number];

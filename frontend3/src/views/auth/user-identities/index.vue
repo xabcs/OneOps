@@ -10,8 +10,8 @@ import {
 defineOptions({ name: 'AuthUserIdentities' });
 
 const loading = ref(false);
-const tableData = ref<any[]>([]);
-const applications = ref<any[]>([]);
+const tableData = ref<Api.ApplicationPermission.UserIdentityMapping[]>([]);
+const applications = ref<Api.ApplicationPermission.Application[]>([]);
 const searchParams = ref({
   username: '',
   appId: null as number | null,
@@ -92,7 +92,7 @@ async function handleDelete(id: number) {
 }
 
 function getStatusTag(status: string) {
-  const statusMap: Record<string, { type: any; label: string }> = {
+  const statusMap: Record<string, { type: '' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
     active: { type: 'success', label: '激活' },
     inactive: { type: 'info', label: '禁用' },
     deleted: { type: 'danger', label: '已删除' }
@@ -101,7 +101,7 @@ function getStatusTag(status: string) {
 }
 
 function getMappingTypeTag(type: string) {
-  const typeMap: Record<string, { type: any; label: string }> = {
+  const typeMap: Record<string, { type: '' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
     auto: { type: 'primary', label: '自动创建' },
     manual: { type: 'warning', label: '手动创建' }
   };

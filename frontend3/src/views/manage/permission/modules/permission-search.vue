@@ -32,7 +32,7 @@ watch(
       // 从路由查询参数中解析搜索条件
       Object.keys(val).forEach(key => {
         if (key in searchParams.value) {
-          (searchParams.value as any)[key] = val[key];
+          (searchParams.value as Record<string, string | number | undefined>)[key] = val[key];
         }
       });
     }

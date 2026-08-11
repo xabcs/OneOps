@@ -71,8 +71,7 @@ export function fetchApplicationUsers(id: number) {
 
 /** 获取用户组权限绑定列表 */
 export function fetchGroupBindings(groupId: number) {
-  return request<any[]>({
-    url: `/system/groups/${groupId}/bindings`,
+  return request<Api.ApplicationPermission.GroupBinding[]>({
     method: 'get'
   });
 }
@@ -96,8 +95,7 @@ export function deleteGroupBinding(id: number) {
 
 /** 获取用户所属用户组列表 */
 export function fetchUserGroups(userId: number) {
-  return request<any[]>({
-    url: `/system/users/${userId}/groups`,
+  return request<Api.ApplicationPermission.AuthUserGroup[]>({
     method: 'get'
   });
 }
@@ -253,7 +251,7 @@ export function fetchAppTypeConfigTemplate(appType: string) {
   return request<{
     appType: string;
     displayName: string;
-    configTemplate: Record<string, any>;
+    configTemplate: Record<string, unknown>;
   }>({
     url: `/system/applications/types/${appType}/config`,
     method: 'get'
@@ -335,7 +333,7 @@ export function fetchUserEffectivePermissions(params: {
 
 /** 获取用户有效权限矩阵视图 */
 export function fetchUserEffectivePermissionsMatrix(appId: number) {
-  return request<any>({
+  return request<Api.ApplicationPermission.UserEffectivePermission[]>({
     url: '/system/user-permissions/matrix',
     method: 'get',
     params: { appId }
@@ -346,7 +344,7 @@ export function fetchUserEffectivePermissionsMatrix(appId: number) {
 
 /** 获取权限绑定执行记录 */
 export function fetchGroupBindingExecutions(bindingId: number) {
-  return request<any[]>({
+  return request<Api.ApplicationPermission.GroupBindingExecution[]>({
     url: `/system/group-bindings/${bindingId}/executions`,
     method: 'get'
   });

@@ -151,7 +151,7 @@ const basicGanttOption: VTableGantt.GanttConstructorOptions = {
         unit: 'week',
         step: 1,
         startOfWeek: 'sunday',
-        format(date: any) {
+        format(date: { dateIndex: number }) {
           return `Week ${date.dateIndex}`;
         },
         style: {
@@ -168,7 +168,7 @@ const basicGanttOption: VTableGantt.GanttConstructorOptions = {
       {
         unit: 'day',
         step: 1,
-        format(date: any) {
+        format(date: { dateIndex: number }) {
           return date.dateIndex.toString();
         },
         style: {
@@ -365,7 +365,7 @@ const linkGanttOption: VTableGantt.GanttConstructorOptions = {
         unit: 'week',
         step: 1,
         startOfWeek: 'sunday',
-        format(date: any) {
+        format(date: { dateIndex: number }) {
           return `Week ${date.dateIndex}`;
         },
         style: {
@@ -377,7 +377,7 @@ const linkGanttOption: VTableGantt.GanttConstructorOptions = {
       {
         unit: 'day',
         step: 1,
-        format(date: any) {
+        format(date: { dateIndex: number }) {
           return date.dateIndex.toString();
         },
         style: {
@@ -418,7 +418,7 @@ const customGanttColumns: VTableGantt.ColumnsDefine = [
     style: {
       // bgColor: '#f0f0fb'
     },
-    customLayout: (args: any) => {
+    customLayout: (args: { table: { getCellOriginRecord: (col: number, row: number) => Record<string, unknown>; getCellRect: (col: number, row: number) => { height: number; width: number } }; row: number; col: number; rect?: { height: number; width: number } }) => {
       const { table, row, col, rect } = args;
       const taskRecord = table.getCellOriginRecord(col, row);
       const { height, width } = rect ?? table.getCellRect(col, row);
@@ -501,7 +501,7 @@ const customGanttOption: VTableGantt.GanttConstructorOptions = {
     endDateField: 'end',
     progressField: 'progress',
     barStyle: { width: 60 },
-    customLayout: (args: any) => {
+    customLayout: (args: { width: number; height: number; index: number; taskDays: number; progress: number; taskRecord: Record<string, unknown> }) => {
       const colorLength = barColors.length;
       const { width, height, index, taskDays, progress, taskRecord } = args;
       const container = new VTableGantt.VRender.Group({
@@ -542,7 +542,7 @@ const customGanttOption: VTableGantt.GanttConstructorOptions = {
         justifyContent: 'space-around'
         // fill: 'red'
       });
-      container.add(containerLeft as any);
+      container.add(containerLeft as never);
 
       const avatar = new VTableGantt.VRender.Image({
         width: 50,
@@ -558,7 +558,7 @@ const customGanttOption: VTableGantt.GanttConstructorOptions = {
         flexDirection: 'column'
         // alignItems: 'left'
       });
-      container.add(containerCenter as any);
+      container.add(containerCenter as never);
 
       const developer = new VTableGantt.VRender.Text({
         text: taskRecord.developer,
@@ -592,7 +592,7 @@ const customGanttOption: VTableGantt.GanttConstructorOptions = {
           justifyContent: 'center', // 垂直方向居中对齐
           boundsPadding: [10, 0, 0, 0]
         });
-        container.add(containerRight as any);
+        container.add(containerRight as never);
 
         const progressText = new VTableGantt.VRender.Text({
           text: `${progress}%`,
@@ -633,10 +633,10 @@ const customGanttOption: VTableGantt.GanttConstructorOptions = {
       {
         unit: 'day',
         step: 1,
-        format(date: any) {
+        format(date: { dateIndex: number }) {
           return date.dateIndex.toString();
         },
-        customLayout: (args: any) => {
+        customLayout: (args: { width: number; height: number; startDate: Date; dateIndex: number }) => {
           const { width, height, startDate, dateIndex } = args;
           const container = new VTableGantt.VRender.Group({
             width,
@@ -655,7 +655,7 @@ const customGanttOption: VTableGantt.GanttConstructorOptions = {
             justifyContent: 'space-around'
             // fill: 'red'
           });
-          container.add(containerLeft as any);
+          container.add(containerLeft as never);
 
           const avatar = new VTableGantt.VRender.Image({
             width: 20,
@@ -672,7 +672,7 @@ const customGanttOption: VTableGantt.GanttConstructorOptions = {
             flexDirection: 'column'
             // alignItems: 'left'
           });
-          container.add(containerCenter as any);
+          container.add(containerCenter as never);
           const dayNumber = new VTableGantt.VRender.Text({
             text: String(dateIndex).padStart(2, '0'),
             fontSize: 20,
@@ -775,18 +775,18 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <ElSpace direction="vertical" fill :size="16">
-    <ElCard header="VTableGantt" class="h-full card-wrapper">
-      <WebSiteLink label="More Demos: " link="https://www.visactor.com/vtable/example" />
-    </ElCard>
-    <ElCard class="h-full card-wrapper">
-      <div ref="basicGanttDomRef" class="relative h-400px"></div>
-    </ElCard>
-    <ElCard class="h-full card-wrapper">
-      <div ref="linkGanttDomRef" class="relative h-400px"></div>
-    </ElCard>
-    <ElCard class="h-full card-wrapper">
-      <div ref="customGanttDomRef" class="relative h-400px"></div>
-    </ElCard>
-  </ElSpace>
+    <ElSpace direction="vertical" fill :size="16">
+        <ElCard header="VTableGantt" class="h-full card-wrapper">
+            <WebSiteLink label="More Demos: " link="https://www.visactor.com/vtable/example" />
+        </ElCard>
+        <ElCard class="h-full card-wrapper">
+            <div ref="basicGanttDomRef" class="relative h-400px"></div>
+        </ElCard>
+        <ElCard class="h-full card-wrapper">
+            <div ref="linkGanttDomRef" class="relative h-400px"></div>
+        </ElCard>
+        <ElCard class="h-full card-wrapper">
+            <div ref="customGanttDomRef" class="relative h-400px"></div>
+        </ElCard>
+    </ElSpace>
 </template>

@@ -197,7 +197,7 @@ async function handleTest(row: CMDB.SSHCredential) {
 
 // 认证类型标签
 function getAuthTypeTag(type: string) {
-  const typeMap: Record<string, { text: string; type: any }> = {
+  const typeMap: Record<string, { text: string; type: '' | 'success' | 'warning' | 'info' | 'danger' | 'primary' }> = {
     password: { text: '密码', type: 'primary' },
     key: { text: '密钥', type: 'success' }
   };

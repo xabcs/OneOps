@@ -107,7 +107,7 @@ export function fetchGetServerGroups() {
  */
 export function fetchGetAssetTree() {
   return request<{
-    groups: any[];
+    groups: CMDB.ServerGroup[];
     ungroupedServers: CMDB.Server[];
   }>({
     url: '/cmdb/asset-tree',

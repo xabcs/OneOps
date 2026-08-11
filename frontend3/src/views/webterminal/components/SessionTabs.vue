@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue';
+import type { WorkbenchSession } from '../composables/useSessions';
 
 interface Props {
-  sessions: any[];
+  sessions: WorkbenchSession[];
   activeId: number | null;
   currentSessionIds: number[];
   showSidebar?: boolean;
@@ -11,7 +12,7 @@ interface Props {
 interface Emits {
   (e: 'select', sessionId: number): void;
   (e: 'remove', sessionId: number): void;
-  (e: 'connect', server: any): void;
+  (e: 'connect', server: WorkbenchSession): void;
   (e: 'toggleSidebar'): void;
   (e: 'toggleFullscreen'): void;
 }
@@ -19,7 +20,7 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
-function handleClose(session: any) {
+function handleClose(session: WorkbenchSession) {
   emit('remove', session.id);
 }
 </script>

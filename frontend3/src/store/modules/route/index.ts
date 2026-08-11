@@ -92,8 +92,8 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
       // 创建路径到排序的映射
       const pathOrderMap = new Map<string, number>();
 
-      function buildOrderMap(menus: any[]) {
-        menus.forEach((menu: any) => {
+      function buildOrderMap(menus: Api.Auth.MenuTreeItem[]) {
+        menus.forEach(menu => {
           if (menu.path) {
             pathOrderMap.set(menu.path, menu.sort || 0);
           }
@@ -251,22 +251,17 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
 
   /** Init dynamic auth route */
   async function initDynamicAuthRoute() {
-    console.log('🐛 [路由Store] 开始初始化动态路由');
 
     const { data, error } = await fetchGetUserRoutes();
 
     if (!error) {
       const { routes, home } = data;
 
-      console.log('🐛 [路由Store] 后端返回的路由数据:', JSON.stringify(routes, null, 2));
-      console.log('🐛 [路由Store] 后端返回的首页:', home);
 
       // 检查是否包含 webterminal 路由
-      const webterminalRoute = routes.find((r: any) => r.path === '/webterminal' || r.name === 'webterminal');
+      const webterminalRoute = routes.find(r => r.path === '/webterminal' || r.name === 'webterminal');
       if (webterminalRoute) {
-        console.log('🐛 [路由Store] 找到 webterminal 路由:', JSON.stringify(webterminalRoute, null, 2));
       } else {
-        console.log('⚠️ [路由Store] 未找到 webterminal 路由');
       }
 
       addAuthRoutes(routes);
@@ -279,9 +274,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
 
       setIsInitAuthRoute(true);
 
-      console.log('✅ [路由Store] 动态路由初始化完成');
     } else {
-      console.log('❌ [路由Store] 获取用户路由失败:', error);
       // if fetch user routes failed, reset store
       authStore.resetStore();
     }

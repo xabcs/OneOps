@@ -49,7 +49,7 @@ const rules: Record<RuleKey, App.Global.FormRule> = {
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
     {
-      validator: (rule: any, value: string, callback: any) => {
+      validator: (_rule: unknown, value: string, callback: (error?: Error) => void) => {
         if (value !== model.value.password) {
           callback(new Error('两次输入的密码不一致'));
         } else {

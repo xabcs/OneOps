@@ -227,7 +227,7 @@ function getCategoryName(category: System.AttributeCategory): string {
 
 // 获取分类标签类型
 function getCategoryTagType(category: System.AttributeCategory) {
-  const typeMap: Record<System.AttributeCategory, any> = {
+  const typeMap: Record<System.AttributeCategory, UI.ThemeColor | ''> = {
     system: 'info',
     location: 'success',
     environment: 'warning',

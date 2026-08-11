@@ -407,6 +407,66 @@ declare namespace Monitoring {
     load1: number;
   };
 
+  /** 监控概览（API 响应） */
+  type MonitoringOverview = {
+    summary: {
+      totalServers: number;
+      onlineServers: number;
+      offlineServers: number;
+      alertServers: number;
+    };
+    topCpu: Array<{
+      serverId: number;
+      hostname: string;
+      ip: string;
+      cpuUsage: number;
+      trend: number[];
+    }>;
+    topMemory: Array<{
+      serverId: number;
+      hostname: string;
+      ip: string;
+      memoryUsage: number;
+      trend: number[];
+    }>;
+    topDisk: Array<{
+      serverId: number;
+      hostname: string;
+      ip: string;
+      diskUsage: number;
+      trend: number[];
+    }>;
+    activeAlerts: Array<{
+      id: number;
+      serverId: number;
+      hostname: string;
+      level: string;
+      message: string;
+      firstSeen: string;
+      lastSeen: string;
+    }>;
+    refreshTime: string;
+  };
+
+  /** 历史指标数据点（API 响应） */
+  type MetricsDatapoint = {
+    timestamp: string;
+    value: number | string;
+  };
+
+  /** 历史指标响应（API 响应） */
+  type MetricsHistoryResponse = {
+    metricType: string;
+    interval: string;
+    datapoints: MetricsDatapoint[];
+  };
+
+  /** 告警列表响应（API 响应） */
+  type AlertListResponse = {
+    total: number;
+    items: Alert[];
+  };
+
   /** 历史指标数据点 */
   type MetricDatapoint = {
     timestamp: string;

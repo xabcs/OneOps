@@ -3,11 +3,11 @@ import { useAuthStore } from '@/store/modules/auth';
 
 interface WebSocketMessage {
   type: string;
-  data: any;
+  data: unknown;
   timestamp: string;
 }
 
-type MessageHandler = (data: any) => void;
+type MessageHandler = (data: unknown) => void;
 
 class MonitoringWebSocketClient {
   private ws: WebSocket | null = null;
@@ -39,12 +39,10 @@ class MonitoringWebSocketClient {
     const wsUrl = `${wsProtocol}${wsHost}/api/monitoring/ws?token=${token}`;
     this.url = wsUrl;
 
-    console.log('[WebSocket] 连接URL:', wsUrl);
     try {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('[WebSocket] 连接成功');
         this.reconnectAttempts = 0;
 
         // 清除重连定时器
@@ -71,7 +69,6 @@ class MonitoringWebSocketClient {
       };
 
       this.ws.onclose = () => {
-        console.log('[WebSocket] 连接关闭，5秒后重连...');
         this.scheduleReconnect();
       };
     } catch (error) {
@@ -88,7 +85,6 @@ class MonitoringWebSocketClient {
 
     this.reconnectTimer = window.setTimeout(() => {
       this.reconnectAttempts++;
-      console.log(`[WebSocket] 尝试重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
       this.connect();
     }, 5000) as unknown as number;
   }
@@ -109,11 +105,11 @@ class MonitoringWebSocketClient {
 
     // 默认处理：告警消息显示通知
     if (type === 'alert' && !handlers?.length) {
-      this.showAlertNotification(data);
+      this.showAlertNotification(data as Pick<Monitoring.Alert, 'level' | 'hostname' | 'message'>);
     }
   }
 
-  private showAlertNotification(alert: any) {
+  private showAlertNotification(alert: Pick<Monitoring.Alert, 'level' | 'hostname' | 'message'>) {
     const levelMap: Record<string, 'success' | 'warning' | 'error' | 'info'> = {
       critical: 'error',
       high: 'error',
@@ -189,7 +185,7 @@ class MonitoringWebSocketClient {
   }
 
   // 发送消息
-  private send(message: any) {
+  private send(message: Record<string, unknown>) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     }
