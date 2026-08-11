@@ -28,6 +28,7 @@ const visible = defineModel<boolean>('visible', {
   default: false
 });
 
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { formRef, validate, restoreValidation } = useUIForm();
 const { defaultRequiredRule } = useFormRules();
 

@@ -24,12 +24,9 @@ const tableRadius = ref(themeStore.contentTheme.tableRadius || '12px');
 
 // 按钮设置
 const buttonRadius = ref(themeStore.contentTheme.buttonRadius || '10px');
-const buttonDefaultBg = ref(themeStore.contentTheme.buttonDefaultBg || 'rgba(255, 255, 255, 0.9)');
-const buttonDefaultColor = ref(themeStore.contentTheme.buttonDefaultColor || '#475569');
 
 // 输入框设置
 const inputRadius = ref(themeStore.contentTheme.inputRadius || '12px');
-const inputBg = ref(themeStore.contentTheme.inputBg || 'rgba(255, 255, 255, 0.92)');
 
 // 工具栏渐变设置
 const useToolbarGradient = ref(themeStore.contentTheme.useToolbarGradient || false);

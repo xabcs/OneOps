@@ -7,6 +7,7 @@ import { $t } from '@/locales';
 defineOptions({ name: 'ResetPwd' });
 
 const { toggleLoginModule } = useRouterPush();
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { formRef, validate } = useForm();
 
 interface FormModel {

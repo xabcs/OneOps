@@ -4,14 +4,14 @@ import type { WorkbenchSession } from '../composables/useSessions';
 
 interface Props {
   sessions: WorkbenchSession[];
-  activeId: number | null;
+  activeId: number | string | null;
   currentSessionIds: number[];
   showSidebar?: boolean;
 }
 
 interface Emits {
-  (e: 'select', sessionId: number): void;
-  (e: 'remove', sessionId: number): void;
+  (e: 'select', sessionId: number | string): void;
+  (e: 'remove', sessionId: number | string): void;
   (e: 'connect', server: WorkbenchSession): void;
   (e: 'toggleSidebar'): void;
   (e: 'toggleFullscreen'): void;

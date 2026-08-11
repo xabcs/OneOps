@@ -11,14 +11,6 @@ import type { RequestInstanceState } from './type';
 const isHttpProxy = import.meta.env.DEV && import.meta.env.VITE_HTTP_PROXY === 'Y';
 const { baseURL, otherBaseURL } = getServiceBaseURL(import.meta.env, isHttpProxy);
 
-// 业务错误码映射
-const BusinessErrorMessages: Record<number, string> = {
-  40001: '主机名已存在，请使用其他主机名',
-  40002: 'IP地址已存在，请使用其他IP地址',
-  40003: '服务器不存在',
-  40004: '无效的SSH凭证'
-};
-
 export const request = createFlatRequest(
   {
     baseURL,

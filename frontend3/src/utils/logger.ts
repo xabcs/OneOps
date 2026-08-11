@@ -39,21 +39,21 @@ class Logger {
     }
   }
 
-  debug(...args: any[]) {
+  debug(...args: unknown[]) {
     if (isDev || isDebug) {
       this.log('debug', ...args);
     }
   }
 
-  info(...args: any[]) {
+  info(...args: unknown[]) {
     this.log('info', ...args);
   }
 
-  warn(...args: any[]) {
+  warn(...args: unknown[]) {
     this.log('warn', ...args);
   }
 
-  error(...args: any[]) {
+  error(...args: unknown[]) {
     this.log('error', ...args);
   }
 }

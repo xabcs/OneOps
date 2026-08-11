@@ -1,11 +1,10 @@
 <script setup lang="ts">
     import { ElButton, ElDialog, ElOption, ElSelect, ElTag } from 'element-plus';
     import { Icon } from '@iconify/vue';
-    import type { WorkbenchSession } from '../composables/useSessions';
 
     interface Props {
       modelValue: boolean;
-      connectingServer: WorkbenchSession | null;
+      connectingServer: CMDB.Server | null;
       selectedCredentialId: number | null;
     }
 

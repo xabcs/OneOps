@@ -4,20 +4,16 @@ import { useRoute, useRouter } from 'vue-router';
 import {
   ElButton,
   ElDialog,
-  ElForm,
-  ElFormItem,
   ElInput,
   ElInputNumber,
   ElMessage,
   ElMessageBox,
   ElOption,
-  ElPagination,
   ElSelect,
   ElSpace,
   ElTable,
   ElTableColumn,
-  ElTag,
-  type FormInstance
+  ElTag
 } from 'element-plus';
 import {
   deleteK8sPod,
@@ -39,7 +35,6 @@ const dataSource = ref<any[]>([]);
 const showTerminal = ref(false);
 const showLogs = ref(false);
 const logContent = ref('');
-const submitting = ref(false);
 
 // 当前选中的集群和命名空间
 const selectedCluster = ref<number | null>(null);
@@ -250,12 +245,6 @@ const handleViewDetail = (row: any) => {
 // 刷新
 const handleRefresh = () => {
   loadPods();
-};
-
-// 关闭日志弹窗
-const closeLogs = () => {
-  showLogs.value = false;
-  logContent.value = '';
 };
 
 // 关闭终端

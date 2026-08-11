@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
-import { ElButton, ElInput, ElTag, ElTooltip } from 'element-plus';
+import { computed, ref } from 'vue';
+import { ElButton, ElInput, ElTag } from 'element-plus';
 import { fetchCheckConnectPermission, fetchGetServers } from '@/service/api';
 import type { ApiServer } from '@/typings/api';
 
@@ -38,12 +38,6 @@ const filteredHosts = computed(() => {
     host => host.hostname.toLowerCase().includes(keyword) || host.ip.toLowerCase().includes(keyword)
   );
 });
-
-// 已连接的主机
-const connectedHosts = computed(() => hosts.value.filter(h => props.currentSessions.includes(h.id)));
-
-// 未连接的主机
-const availableHosts = computed(() => hosts.value.filter(h => !props.currentSessions.includes(h.id) && h.canConnect));
 
 // 加载可连接的主机列表
 async function loadHosts() {
@@ -102,19 +96,6 @@ function toggleExpand() {
   if (expanded.value && hosts.value.length === 0) {
     loadHosts();
   }
-}
-
-// 格式化主机标签
-function getHostTags(host: QuickConnectHost) {
-  const tags = [];
-  if (props.currentSessions.includes(host.id)) {
-    tags.push({ text: '已连接', type: 'success' });
-  } else if (!host.canConnect) {
-    tags.push({ text: '无权限', type: 'info' });
-  } else if (!host.credentials?.length) {
-    tags.push({ text: '无凭证', type: 'warning' });
-  }
-  return tags;
 }
 </script>
 

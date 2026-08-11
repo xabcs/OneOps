@@ -331,7 +331,7 @@ export const customRoutes: RouteRecordRaw[] = [
 /**
  * 将自定义路由添加到路由器
  */
-export function addCustomRoutes(router: any) {
+export function addCustomRoutes(router: Router) {
   customRoutes.forEach(route => {
     router.addRoute(route);
   });

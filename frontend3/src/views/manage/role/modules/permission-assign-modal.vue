@@ -1,6 +1,5 @@
 <script setup lang="ts">
     import { computed, ref, watch, nextTick } from 'vue';
-    import { $t } from '@/locales';
     import { fetchGetPermissionList, fetchGetRolePermissions, fetchAssignRolePermissions } from '@/service/api';
     import { ElMessage, ElNotification } from 'element-plus';
 
@@ -284,7 +283,6 @@
 
               // 验证设置结果
               const currentCheckedKeys = treeRef.value.getCheckedKeys();
-              const currentHalfCheckedKeys = treeRef.value.getHalfCheckedKeys();
 
               // 如果选中数量不匹配，给出警告
               if (currentCheckedKeys.length !== validPermissionIds.length) {
@@ -460,51 +458,6 @@
       refreshCounter.value++;
     }
 
-    // 统计所有节点数量
-    function countAllNodes(nodes: PermissionNode[]): number {
-      let count = 0;
-      function traverse(nodeList: PermissionNode[]) {
-        nodeList.forEach(node => {
-          count++;
-          if (node.children && node.children.length > 0) {
-            traverse(node.children);
-          }
-        });
-      }
-      traverse(nodes);
-      return count;
-    }
-
-    // 统计虚拟节点数量（负数ID）
-    function countVirtualNodes(nodes: PermissionNode[]): number {
-      let count = 0;
-      function traverse(nodeList: PermissionNode[]) {
-        nodeList.forEach(node => {
-          if (node.id < 0) count++;
-          if (node.children && node.children.length > 0) {
-            traverse(node.children);
-          }
-        });
-      }
-      traverse(nodes);
-      return count;
-    }
-
-    // 统计真实节点数量（正数ID）
-    function countRealNodes(nodes: PermissionNode[]): number {
-      let count = 0;
-      function traverse(nodeList: PermissionNode[]) {
-        nodeList.forEach(node => {
-          if (node.id > 0) count++;
-          if (node.children && node.children.length > 0) {
-            traverse(node.children);
-          }
-        });
-      }
-      traverse(nodes);
-      return count;
-    }
-
     // 查找节点级别
     function findNodeLevel(nodes: PermissionNode[], targetId: number): number | null {
       let result: number | null = null;
@@ -547,7 +500,7 @@
           label: 'label',
           children: 'children'
         }" class="permission-tree" :default-expand-all="true" :indent="24" @check-change="!props.viewOnly ? handleCheckChange : undefined">
-                <template #default="{ node, data }">
+                <template #default="{ data }">
                     <span class="custom-tree-node">
                         <span class="node-label">{{ data.label }}</span>
                         <ElTag v-if="data.level" :type="getLevelTagType(data.level)" size="small" class="level-tag">

@@ -17,8 +17,7 @@ import {
   deleteK8sConfigMap,
   fetchK8sClusterNamespaces,
   fetchK8sClusters,
-  fetchK8sConfigMaps,
-  getK8sConfigMap
+  fetchK8sConfigMaps
 } from '@/service/api/k8s';
 
 defineOptions({ name: 'K8sConfigMaps' });
@@ -145,17 +144,6 @@ const goToDetail = (row: any) => {
       name: row.name
     }
   });
-};
-
-// 查看详情（弹窗）
-const handleViewDetail = async (row: any) => {
-  try {
-    const res = await getK8sConfigMap(selectedCluster.value!, filters.namespace, row.name);
-    currentDetail.value = res;
-    showDetail.value = true;
-  } catch (error: any) {
-    message.error(error.message || '加载详情失败');
-  }
 };
 
 // 删除 ConfigMap

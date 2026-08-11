@@ -9,9 +9,7 @@ import SvgIcon from '@/components/custom/svg-icon.vue';
 import {
   getLayoutAndPage,
   getPathParamFromRoutePath,
-  getRoutePathByRouteName,
-  getRoutePathWithParam,
-  transformLayoutAndPageToComponent
+  getRoutePathByRouteName
 } from './shared';
 
 defineOptions({ name: 'MenuOperateModal' });
@@ -39,6 +37,7 @@ const visible = defineModel<boolean>('visible', {
   default: false
 });
 
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { formRef, validate, restoreValidation } = useForm();
 const { defaultRequiredRule } = useFormRules();
 
@@ -240,22 +239,8 @@ function handleUpdateI18nKeyByRouteName() {
   }
 }
 
-function getSubmitParams() {
-  const { layout, page, pathParam, ...params } = model.value;
-
-  const component = transformLayoutAndPageToComponent(layout, page);
-  const routePath = getRoutePathWithParam(model.value.routePath, pathParam);
-
-  params.component = component;
-  params.routePath = routePath;
-
-  return params;
-}
-
 async function handleSubmit() {
   await validate();
-
-  const params = getSubmitParams();
 
   // eslint-disable-next-line no-console
 

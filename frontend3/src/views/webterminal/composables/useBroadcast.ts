@@ -1,6 +1,6 @@
-export interface BroadcastMessage {
+export interface BroadcastMessage<T = unknown> {
   type: string;
-  data?: any;
+  data?: T;
   timestamp?: number;
 }
 
@@ -13,9 +13,9 @@ export function useBroadcast(channelName: string) {
     console.warn('BroadcastChannel not supported:', error);
   }
 
-  function broadcast(type: string, data?: any): void {
+  function broadcast<T = unknown>(type: string, data?: T): void {
     if (channel) {
-      const message: BroadcastMessage = {
+      const message: BroadcastMessage<T> = {
         type,
         data,
         timestamp: Date.now()
@@ -24,10 +24,10 @@ export function useBroadcast(channelName: string) {
     }
   }
 
-  function onMessage(handler: (message: BroadcastMessage) => void): void {
+  function onMessage<T = unknown>(handler: (message: BroadcastMessage<T>) => void): void {
     if (channel) {
       channel.onmessage = event => {
-        handler(event.data);
+        handler(event.data as BroadcastMessage<T>);
       };
     }
   }

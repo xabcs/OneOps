@@ -457,11 +457,9 @@ export function applyHeaderTheme(headerTheme: App.Theme.ThemeSetting['header']) 
     isGradient = true;
     // For gradient headers, use slightly darker colors for internal elements
     const gradientStart = headerTheme.headerGradientStart;
-    const gradientEnd = headerTheme.headerGradientEnd;
 
     // Parse alpha values and create adjusted colors
     const startAlpha = parseAlpha(gradientStart) || 0.98;
-    const endAlpha = parseAlpha(gradientEnd) || 0.94;
 
     root.style.setProperty(
       '--header-button-default-bg',

@@ -12,6 +12,7 @@ interface Emits {
 
 const emit = defineEmits<Emits>();
 
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { formRef, validate, restoreValidation } = useForm();
 
 const model = defineModel<Api.SystemManage.UserSearchParams>('model', { required: true });

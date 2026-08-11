@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { ElNotification } from 'element-plus';
 import { Icon } from '@iconify/vue';
 import { jsonClone } from '@sa/utils';
@@ -8,7 +8,7 @@ import { fetchDeleteMenu, fetchGetMenuTree, fetchUpdateMenu } from '@/service/ap
 import { useAuthStore } from '@/store/modules/auth';
 import { useRouteStore } from '@/store/modules/route';
 import { useThemeStore } from '@/store/modules/theme';
-import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
+import { useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import MenuOperateDrawer from './modules/menu-operate-drawer.vue';
 
@@ -142,23 +142,6 @@ function findSiblings(targetId: number): Api.SystemManage.Menu[] | null {
   return findInList(originalTreeData.value);
 }
 
-// 查找子菜单
-function findChildren(parentId: number): Api.SystemManage.Menu[] {
-  const findInList = (list: Api.SystemManage.Menu[]): Api.SystemManage.Menu[] => {
-    for (const item of list) {
-      if (item.id === parentId) {
-        return item.children || [];
-      }
-      if (item.children && item.children.length > 0) {
-        const found = findInList(item.children);
-        if (found.length > 0) return found;
-      }
-    }
-    return [];
-  };
-  return findInList(originalTreeData.value);
-}
-
 // 判断是否是第一个
 function isFirst(id: number): boolean {
   const siblings = findSiblings(id);
@@ -173,7 +156,7 @@ function isLast(id: number): boolean {
   return siblings[siblings.length - 1].id === id;
 }
 
-const { columns, columnChecks, data, loading, getData, getDataByPage } = useUIPaginatedTable({
+const { columns, data, loading, getData, getDataByPage } = useUIPaginatedTable({
   api: async () => {
     const { error, data } = await fetchGetMenuTree();
     if (!error && data && Array.isArray(data)) {
@@ -350,7 +333,6 @@ const {
   operateType,
   editingData,
   handleAdd: _handleAdd,
-  checkedRowKeys,
   onDeleted
 } = useTableOperate(data, 'id', getData);
 

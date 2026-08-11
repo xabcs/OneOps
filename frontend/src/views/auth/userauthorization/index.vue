@@ -105,20 +105,6 @@ async function handleDelete(groupId: number) {
   }
 }
 
-/**
- * 复制文本到剪贴板
- */
-function copyToClipboard(text: string) {
-  navigator.clipboard
-    .writeText(text)
-    .then(() => {
-      ElMessage.success('已复制到剪贴板');
-    })
-    .catch(() => {
-      ElMessage.error('复制失败，请手动复制');
-    });
-}
-
 onMounted(() => {
   getUsers();
   getGroups();

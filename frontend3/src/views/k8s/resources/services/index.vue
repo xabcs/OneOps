@@ -4,9 +4,6 @@
     import {
       ElButton,
       ElDialog,
-      ElForm,
-      ElFormItem,
-      ElInput,
       ElMessage,
       ElMessageBox,
       ElOption,
@@ -14,16 +11,13 @@
       ElSpace,
       ElTable,
       ElTableColumn,
-      ElTag,
-      type FormInstance,
-      type FormRules
+      ElTag
     } from 'element-plus';
     import {
       deleteK8sService,
       fetchK8sClusterNamespaces,
       fetchK8sClusters,
-      fetchK8sServices,
-      getK8sService
+      fetchK8sServices
     } from '@/service/api/k8s';
 
     defineOptions({ name: 'K8sServices' });
@@ -187,17 +181,6 @@
       });
     };
 
-    // 查看详情
-    const handleViewDetail = async (row: K8s.Service) => {
-      try {
-        const res = await getK8sService(selectedCluster.value!, filters.namespace, row.name);
-        currentDetail.value = res;
-        showDetail.value = true;
-      } catch (error: unknown) {
-        const err = error as Error;
-        message.error(err.message || '加载详情失败');
-      }
-    };
 
     // 删除 Service
     const handleDelete = async (row: K8s.Service) => {

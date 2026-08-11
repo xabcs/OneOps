@@ -1,5 +1,4 @@
 <script setup lang="ts">
-    import { computed } from 'vue';
     import { useRouter } from 'vue-router';
     import { ElButton, ElTabPane, ElTabs } from 'element-plus';
     import YamlEditor from '@/components/YamlEditor.vue';
@@ -57,18 +56,6 @@
       daemonsets: loadDaemonSets,
       jobs: loadJobs,
       cronjobs: loadCronJobs
-    });
-
-    const showBatchOperations = computed(() => {
-      const map: Record<string, K8s.WorkloadRow[]> = {
-        deployments: actions.selectedDeployments.value,
-        pods: actions.selectedPods.value,
-        statefulsets: actions.selectedStatefulSets.value,
-        daemonsets: actions.selectedDaemonSets.value,
-        jobs: actions.selectedJobs.value,
-        cronjobs: actions.selectedCronJobs.value
-      };
-      return (map[activeTab.value] || []).length > 0;
     });
 
     function goToDetail(row: K8s.WorkloadRow) {

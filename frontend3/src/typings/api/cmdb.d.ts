@@ -489,6 +489,32 @@ declare namespace Bastion {
     serverName: string;
     serverIp: string;
   };
+
+  /** 终端会话（前端本地视图模型） */
+  type TerminalSession = {
+    id: number | string;
+    serverId: number;
+    serverName: string;
+    serverIp: string;
+    loginAccount: string;
+    protocol: Protocol | 'view';
+    status: SessionStatus | 'connected';
+    connected: boolean;
+    duration: number;
+    startedAt: string;
+    websocketUrl?: string;
+    isSessionListView?: boolean;
+    title?: string;
+  };
+
+  /** 终端连接所需的最小服务器信息 */
+  type BasicServerInfo = {
+    id: number;
+    hostname?: string;
+    ip?: string;
+    env?: string;
+    agentStatus?: string;
+  };
 }
 
 /** ======================================== */

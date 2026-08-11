@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 
 interface Props {
   /** 卡片变体 */
@@ -11,13 +10,6 @@ interface Props {
 }
 
 defineProps<Props>();
-
-const variantClasses = computed(() => ({
-  'gradient-card-diagonal': 'gradient-card-diagonal',
-  'gradient-card-3d': 'gradient-card-3d',
-  'gradient-card-hover': 'gradient-card-hover',
-  'gradient-card-glass': 'gradient-card-glass'
-}));
 </script>
 
 <template>

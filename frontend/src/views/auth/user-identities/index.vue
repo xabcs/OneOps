@@ -1,6 +1,6 @@
 <script setup lang="tsx">
 import { onMounted, ref } from 'vue';
-import { Delete, View } from '@element-plus/icons-vue';
+import { Delete } from '@element-plus/icons-vue';
 import {
   deleteUserIdentityMapping,
   fetchApplications,

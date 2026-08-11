@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { Search, Refresh } from '@element-plus/icons-vue';
 import { useRouteStore } from '@/store/modules/route';
 import { $t } from '@/locales';

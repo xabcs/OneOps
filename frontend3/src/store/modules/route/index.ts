@@ -5,7 +5,6 @@ import { useBoolean } from '@sa/hooks';
 import type { CustomRoute, ElegantConstRoute, LastLevelRouteKey, RouteKey, RouteMap } from '@elegant-router/types';
 import { router } from '@/router';
 import { fetchGetConstantRoutes, fetchGetUserRoutes, fetchIsRouteExist } from '@/service/api';
-import { useSvgIcon } from '@/hooks/common/icon';
 import { SetupStoreId } from '@/enum';
 import { createStaticRoutes, getAuthVueRoutes } from '@/router/routes';
 import { ROOT_ROUTE } from '@/router/routes/builtin';
@@ -371,18 +370,6 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
     // 更新菜单显示
     getGlobalMenus(sortRoutes);
     getCacheRoutes(vueRoutes);
-  }
-
-  /**
-   * Add routes to vue router
-   *
-   * @param routes Vue routes
-   */
-  function addRoutesToVueRouter(routes: RouteRecordRaw[]) {
-    routes.forEach(route => {
-      const removeFn = router.addRoute(route);
-      addRemoveRouteFn(removeFn);
-    });
   }
 
   /**

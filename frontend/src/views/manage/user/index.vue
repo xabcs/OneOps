@@ -73,14 +73,6 @@ function getRoleTagType(roleCode: string): UI.ThemeColor {
   return COLOR_PALETTE[colorIndex].type;
 }
 
-// 获取角色颜色的自定义样式类（可选，用于更丰富的颜色）
-function getRoleTagClass(roleCode: string): string {
-  const hash = stringHash(roleCode);
-
-  // 可以根据哈希值添加自定义样式
-  return `role-tag-${hash % 10}`; // 10种自定义样式变体
-}
-
 // 获取所有角色
 async function getAllRoles() {
   const { error, data } = await fetchGetAllRoles();
@@ -151,7 +143,7 @@ function getInitSearchParams(): Api.SystemManage.UserSearchParams {
   };
 }
 
-const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
+const { columns, data, getData, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
   paginationProps: {
     currentPage: searchParams.value.current,
     pageSize: searchParams.value.size

@@ -260,12 +260,12 @@ export function defaultTransform<ApiData>(
 
     // 检查是否是统一分页格式（list/page/pageSize/total）
     if (data && typeof data === 'object' && 'list' in data) {
-      const { list, page, pageSize, total } = data as any;
+      const paginated = data as Api.Common.PaginatingQueryRecord<ApiData>;
       return {
-        data: list,
-        pageNum: page,
-        pageSize,
-        total
+        data: paginated.list,
+        pageNum: paginated.page,
+        pageSize: paginated.pageSize,
+        total: paginated.total
       };
     }
 

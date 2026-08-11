@@ -98,31 +98,6 @@ const adaptedMatrixData = computed(() => {
   }
 });
 
-// 使用新的通用矩阵组件
-const useUnifiedMatrix = computed(() => {
-  // 可以通过配置来控制是否使用统一组件
-  return true;
-});
-
-const matrixComponent = computed(() => {
-  if (!selectedApp.value) return null;
-
-  if (useUnifiedMatrix.value) {
-    return AppPermissionMatrix;
-  }
-
-  // 原有的逻辑作为后备
-  switch (selectedApp.value.type) {
-    case 'jenkins':
-    case 'gitlab':
-      return JenkinsMatrix;
-    case 'jumpserver':
-      return JumpserverMatrix;
-    default:
-      return JenkinsMatrix;
-  }
-});
-
 async function getApplications() {
   const { data, error } = await fetchApplications({ current: 1, size: 1000 });
   if (!error && data) {

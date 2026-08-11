@@ -40,10 +40,6 @@ function hasPermission(rowId: number | string, colId: number | string): boolean 
   return result;
 }
 
-function getCellKey(rowId: number | string, colId: number | string): string {
-  return `${colId}_${rowId}`;
-}
-
 function handleCellClick(row: any, col: any) {
   if (!row || !col) return;
 

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { useForm } from '@/hooks/common/form';
 import { $t } from '@/locales';
 
@@ -12,6 +11,7 @@ interface Emits {
 
 const emit = defineEmits<Emits>();
 
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { formRef, validate, restoreValidation } = useForm();
 
 const model = defineModel<{

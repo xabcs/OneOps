@@ -8,8 +8,6 @@ import {
   fetchAssignServerToGroups,
   fetchBatchDeployAgent,
   fetchBatchUninstallAgent,
-  fetchCheckConnectPermission,
-  fetchConnectServer,
   fetchCreateServer,
   fetchCreateServerGroup,
   fetchDeleteServer,
@@ -25,7 +23,6 @@ import {
   fetchGetServerRooms,
   fetchGetServerTags,
   fetchGetServers,
-  fetchGetSessions,
   fetchRestartAgent,
   fetchSaveServerAttributes,
   fetchSyncServerMetrics,
@@ -34,14 +31,11 @@ import {
   fetchUpdateServer,
   fetchUpdateServerGroup
 } from '@/service/api';
-import { views } from '@/router/elegant/imports';
-import { $t } from '@/locales';
 import { AlertBadge, MiniTrendChart, ServiceStatusIcon } from '@/components/features/monitoring/MonitoringComponents';
 
 defineOptions({ name: 'CmdbServers' });
 
 const router = useRouter();
-const currentLoginAccount = ref('');
 
 interface TreeNode {
   id: number;
@@ -155,13 +149,6 @@ const cabinets = ref<CMDB.Cabinet[]>([]);
 
 // ========== 标签相关 ==========
 const serverTags = ref<CMDB.ServerTag[]>([]);
-
-// SSH终端相关
-const sshTerminalVisible = ref(false);
-const sshSessionId = ref<number>(0);
-const sshWebsocketUrl = ref('');
-const sshServerName = ref('');
-const sshServerIp = ref('');
 
 // ========== 对话框相关 ==========
 const dialogVisible = ref(false);
@@ -1785,11 +1772,6 @@ function getEnvDisplayInfo(envValue: string) {
   return { label, type };
 }
 
-// 获取主机类型的显示信息
-function getServerTypeDisplayInfo(typeValue: string) {
-  return getAttributeLabel('server_type', typeValue);
-}
-
 // 获取磁盘最大使用率分区
 function getMaxDiskPartition(row: CMDB.Server) {
   if (!row.diskPartitions || row.diskPartitions.length === 0) {
@@ -1865,16 +1847,6 @@ function getNodeClass(node: TreeNode) {
   const classes = ['custom-tree-node'];
   if (node.status === 0) classes.push('disabled');
   return classes.join(' ');
-}
-
-// 获取状态标签
-function getStatusTag(status: string) {
-  const statusMap: Record<string, { text: string; type: 'success' | 'warning' | 'danger' | 'info' }> = {
-    online: { text: '在线', type: 'success' },
-    offline: { text: '离线', type: 'danger' },
-    unknown: { text: '未知', type: 'info' }
-  };
-  return statusMap[status] || { text: status, type: 'info' };
 }
 
 // 初始化

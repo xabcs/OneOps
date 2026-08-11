@@ -26,6 +26,7 @@ const {
   }
 });
 
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { formRef, validate } = useUIForm();
 
 const rules = computed<Record<keyof typeof form.value, App.Global.FormRule[]>>(() => {

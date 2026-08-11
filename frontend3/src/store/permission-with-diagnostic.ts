@@ -1,7 +1,7 @@
 // frontend/src/store/permission.ts
 // 权限管理store - 添加诊断相关权限
 
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import { defineStore } from 'pinia';
 
 export const usePermissionStore = defineStore('permission', () => {

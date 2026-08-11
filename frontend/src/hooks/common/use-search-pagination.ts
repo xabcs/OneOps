@@ -17,7 +17,7 @@
  * });
  */
 
-import { computed, reactive, ref } from 'vue';
+import { reactive, ref } from 'vue';
 import type { Ref } from 'vue';
 
 export interface SearchPaginationOptions<T> {

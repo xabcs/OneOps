@@ -10,6 +10,7 @@ defineOptions({ name: 'PwdLogin' });
 
 const authStore = useAuthStore();
 const { toggleLoginModule } = useRouterPush();
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { formRef, validate } = useForm();
 
 interface FormModel {

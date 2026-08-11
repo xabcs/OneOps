@@ -17,7 +17,6 @@ const empty = ref(false);
 const serverId = computed(() => Number(route.query.id));
 const activeTab = ref('overview');
 const metrics = ref<ExtendedMetrics | null>(null);
-const refreshTimer = ref<ReturnType<typeof setInterval> | null>(null);
 
 // WebSocket 客户端
 const { subscribe, unsubscribe } = useWebSocket();

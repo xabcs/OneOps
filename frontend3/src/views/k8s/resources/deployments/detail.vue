@@ -11,8 +11,6 @@
       ElMessage,
       ElMessageBox,
       ElTabPane,
-      ElTable,
-      ElTableColumn,
       ElTabs,
       ElTag,
       type FormInstance
@@ -30,11 +28,9 @@
     import {
       formatAnnotations,
       formatConditions,
-      formatImages,
       formatLabels,
       formatSelectors,
-      formatStrategy,
-      getAnnotationSummary
+      formatStrategy
     } from '@/utils/k8s-formatters';
     import K8sBasicInfoGrid from '@/components/k8s/K8sBasicInfoGrid.vue';
     import K8sPodsTable from '@/components/k8s/K8sPodsTable.vue';
@@ -160,23 +156,6 @@
       return [...result.user, ...result.system];
     });
 
-    // Pod 状态标签
-    const getPodStatusTag = (pod: K8s.Pod) => {
-      const phase = pod.phase || 'Unknown';
-      switch (phase) {
-        case 'Running':
-          return { type: 'success', text: '运行中' };
-        case 'Succeeded':
-          return { type: 'info', text: '已完成' };
-        case 'Failed':
-          return { type: 'danger', text: '失败' };
-        case 'Pending':
-          return { type: 'warning', text: '等待中' };
-        default:
-          return { type: 'info', text: '未知' };
-      }
-    };
-
     // 加载 Deployment 详情
     async function loadDeploymentDetail() {
       const queryClusterId = route.query.clusterId as string;
@@ -259,11 +238,6 @@
       } else if (tab === 'events' && events.value.length === 0) {
         await loadEvents();
       }
-    }
-
-    // 刷新数据
-    function handleRefresh() {
-      loadDeploymentDetail();
     }
 
     // 刷新 Pods
@@ -378,9 +352,9 @@
         // 刷新数据
         await loadDeploymentDetail();
       } catch (error: unknown) {
-        console.error('保存 YAML 失败:', error);
-        const err = error as Error;
-        throw new Error(err.message || 'YAML 格式错误');
+    console.error('保存 YAML 失败:', error);
+    const err = error as Error;
+    throw new Error(err.message || 'YAML 格式错误');
       } finally {
         yamlSaving.value = false;
       }

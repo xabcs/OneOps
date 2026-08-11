@@ -203,7 +203,7 @@ onUnmounted(() => {
           </template>
         </ElTableColumn>
         <ElTableColumn label="状态" width="90">
-          <template #default="{ row }">
+          <template #default>
             <ElTag type="success" size="small">活跃</ElTag>
           </template>
         </ElTableColumn>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import { ElButton, ElDialog, ElForm, ElFormItem, ElOption, ElSelect } from 'element-plus';
 import AssetTree from './AssetTree.vue';
 
@@ -37,18 +37,6 @@ const emit = defineEmits<Emits>();
 const showConnectDialog = ref(false);
 const selectedServer = ref<CMDB.Server | null>(null);
 const loginAccount = ref('');
-
-// 格式化时长
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds}秒`;
-  if (seconds < 3600) {
-    const mins = Math.floor(seconds / 60);
-    return `${mins}分`;
-  }
-  const hours = Math.floor(seconds / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
-  return `${hours}小时${mins}分`;
-}
 
 // 处理主机连接
 function handleConnect(server: CMDB.Server) {

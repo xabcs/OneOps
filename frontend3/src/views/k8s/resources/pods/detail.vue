@@ -4,7 +4,7 @@
     import { ElTag } from 'element-plus';
     import yaml from 'js-yaml';
     import { fetchK8sEvents, fetchK8sPodLogs, getK8sPod, updateK8sPod } from '@/service/api/k8s';
-    import { formatAnnotations, formatLabels, formatSelectors } from '@/utils/k8s-formatters';
+    import { formatAnnotations, formatLabels } from '@/utils/k8s-formatters';
     import YamlEditor from '@/components/YamlEditor.vue';
     import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
 

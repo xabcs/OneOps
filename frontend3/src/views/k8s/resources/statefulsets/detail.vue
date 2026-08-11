@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { computed, onMounted, ref } from 'vue';
     import { useRoute, useRouter } from 'vue-router';
-    import { ElButton, ElMessage, ElTabPane, ElTable, ElTableColumn, ElTabs, ElTag } from 'element-plus';
+    import { ElButton, ElMessage, ElTabPane, ElTabs, ElTag } from 'element-plus';
     import yaml from 'js-yaml';
     import { fetchK8sEvents, getK8sStatefulSet, getK8sStatefulSetPods, updateK8sStatefulSet } from '@/service/api/k8s';
     import YamlEditor from '@/components/YamlEditor.vue';
@@ -121,21 +121,6 @@
       return [...result.user, ...result.system];
     });
 
-    const getPodStatusTag = (pod: K8s.Pod) => {
-      switch (pod.phase) {
-        case 'Running':
-          return { type: 'success', text: '运行中' };
-        case 'Succeeded':
-          return { type: 'info', text: '已完成' };
-        case 'Failed':
-          return { type: 'danger', text: '失败' };
-        case 'Pending':
-          return { type: 'warning', text: '等待中' };
-        default:
-          return { type: 'info', text: '未知' };
-      }
-    };
-
     async function loadDetail() {
       const qClusterId = route.query.clusterId as string;
       const qNamespace = route.query.namespace as string;
@@ -236,8 +221,8 @@
         // 刷新数据
         await loadDetail();
       } catch (error: unknown) {
-        const err = error as Error;
-        throw new Error(err.message || '更新失败');
+    const err = error as Error;
+    throw new Error(err.message || '更新失败');
       } finally {
         yamlSaving.value = false;
       }

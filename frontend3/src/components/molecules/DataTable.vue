@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { Document } from '@element-plus/icons-vue';
 import type { TableColumn } from '@element-plus/components/table';
 
+type TableRow = Record<string, unknown>;
+
 interface Props {
-  data: any[];
+  data: TableRow[];
   loading?: boolean;
   stripe?: boolean;
   border?: boolean;
   size?: 'large' | 'default' | 'small';
-  rowKey?: string | ((row: any) => string);
+  rowKey?: string | ((row: TableRow) => string);
   height?: string | number;
   maxHeight?: string | number;
   columns?: TableColumn[];
@@ -27,10 +28,15 @@ interface Props {
     pageSizes?: number[];
   };
   paginationLayout?: string;
-  selectable?: (row: any, index: number) => boolean;
+  selectable?: (row: TableRow, index: number) => boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+interface SortConfig {
+  prop: string;
+  order: 'ascending' | 'descending';
+}
+
+withDefaults(defineProps<Props>(), {
   loading: false,
   stripe: true,
   border: true,
@@ -53,19 +59,14 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  'selection-change': [selection: Record<string, unknown>[]];
-  'sort-change': SortConfig;
+  'selection-change': [selection: TableRow[]];
+  'sort-change': [sort: SortConfig];
   'size-change': [pageSize: number];
   'current-change': [currentPage: number];
 }>();
 
-interface SortConfig {
-  prop: string;
-  order: 'ascending' | 'descending';
-}
-
 // 获取显示值
-const getDisplayValue = (row: any, prop: string) => {
+const getDisplayValue = (row: TableRow, prop: string) => {
   const value = row[prop];
   if (value === null || value === undefined) {
     return '-';
@@ -74,7 +75,7 @@ const getDisplayValue = (row: any, prop: string) => {
 };
 
 // 处理选择变化
-const handleSelectionChange = (selection: any[]) => {
+const handleSelectionChange = (selection: TableRow[]) => {
   emit('selection-change', selection);
 };
 

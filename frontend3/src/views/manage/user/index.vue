@@ -185,7 +185,7 @@ async function handleAddClick() {
   });
 }
 
-const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
+const { columns, data, getData, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
   paginationProps: {
     currentPage: searchParams.value.page,
     pageSize: searchParams.value.pageSize

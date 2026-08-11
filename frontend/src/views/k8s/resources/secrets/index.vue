@@ -17,8 +17,7 @@ import {
   deleteK8sSecret,
   fetchK8sClusterNamespaces,
   fetchK8sClusters,
-  fetchK8sSecrets,
-  getK8sSecret
+  fetchK8sSecrets
 } from '@/service/api/k8s';
 
 defineOptions({ name: 'K8sSecrets' });
@@ -165,17 +164,6 @@ const goToDetail = (row: any) => {
       name: row.name
     }
   });
-};
-
-// 查看详情（弹窗）
-const handleViewDetail = async (row: any) => {
-  try {
-    const res = await getK8sSecret(selectedCluster.value!, filters.namespace, row.name);
-    currentDetail.value = res;
-    showDetail.value = true;
-  } catch (error: any) {
-    message.error(error.message || '加载详情失败');
-  }
 };
 
 // 删除 Secret
@@ -356,7 +344,7 @@ watch(
         <div v-if="currentDetail.data && Object.keys(currentDetail.data).length > 0">
           <h4 class="mb-2 text-sm text-gray-700 font-medium">数据键:</h4>
           <div class="space-y-2">
-            <div v-for="(value, key) in currentDetail.data" :key="key" class="border rounded p-2">
+            <div v-for="(_value, key) in currentDetail.data" :key="key" class="border rounded p-2">
               <div class="mb-1 text-sm text-gray-700 font-medium">{{ key }}</div>
               <div class="rounded bg-gray-50 p-2 text-sm text-amber-600 font-mono">****** (敏感数据已隐藏)</div>
             </div>

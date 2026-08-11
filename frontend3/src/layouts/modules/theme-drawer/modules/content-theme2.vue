@@ -2,7 +2,6 @@
 import { computed, ref, watch } from 'vue';
 import { useThemeStore } from '@/store/modules/theme';
 import { applyContentTheme2 } from '@/utils/content-theme';
-import { $t } from '@/locales';
 import SettingItem from '../components/setting-item.vue';
 
 defineOptions({ name: 'ContentTheme2' });
@@ -106,7 +105,7 @@ const colorSwatches: string[] = [
 ];
 
 // 更新设置
-function updateSetting(module: keyof App.Theme.ThemeSetting['contentTheme2'], key: string, value: any) {
+function updateSetting(module: keyof App.Theme.ThemeSetting['contentTheme2'], key: string, value: unknown) {
   const currentTheme = themeStore.contentTheme2;
   const updatedTheme = {
     ...currentTheme,
@@ -120,42 +119,42 @@ function updateSetting(module: keyof App.Theme.ThemeSetting['contentTheme2'], ke
 }
 
 // Hero区域更新
-function updateHeroSetting(key: string, value: any) {
+function updateHeroSetting(key: string, value: unknown) {
   updateSetting('heroSection', key, value);
 }
 
 // 统计卡片更新
-function updateStatSetting(key: string, value: any) {
+function updateStatSetting(key: string, value: unknown) {
   updateSetting('statCards', key, value);
 }
 
 // 工具栏更新
-function updateToolbarSetting(key: string, value: any) {
+function updateToolbarSetting(key: string, value: unknown) {
   updateSetting('toolbar', key, value);
 }
 
 // 内容卡片更新
-function updateContentCardSetting(key: string, value: any) {
+function updateContentCardSetting(key: string, value: unknown) {
   updateSetting('contentCard', key, value);
 }
 
 // 数据表格更新
-function updateTableSetting(key: string, value: any) {
+function updateTableSetting(key: string, value: unknown) {
   updateSetting('dataTable', key, value);
 }
 
 // 搜索筛选更新
-function updateSearchSetting(key: string, value: any) {
+function updateSearchSetting(key: string, value: unknown) {
   updateSetting('searchFilters', key, value);
 }
 
 // 分页更新
-function updatePaginationSetting(key: string, value: any) {
+function updatePaginationSetting(key: string, value: unknown) {
   updateSetting('pagination', key, value);
 }
 
 // 标签更新
-function updateTagSetting(key: string, value: any) {
+function updateTagSetting(key: string, value: unknown) {
   updateSetting('tags', key, value);
 }
 

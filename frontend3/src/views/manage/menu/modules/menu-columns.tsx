@@ -4,7 +4,7 @@
 import { Bottom, Plus, Top } from '@element-plus/icons-vue';
 import { Icon } from '@iconify/vue';
 import { $t } from '@/locales';
-import { isFirst, isLast } from './menu-tree-helper';
+import { isFirst, isLast, type MenuWithHierarchy } from './menu-tree-helper';
 
 export function createMenuColumns(handlers: {
   handleMove: (row: Api.SystemManage.Menu, direction: 'up' | 'down') => void;
@@ -21,7 +21,7 @@ export function createMenuColumns(handlers: {
       label: '序号',
       width: 100,
       align: 'center',
-      formatter: (row: any) => {
+      formatter: (row: MenuWithHierarchy) => {
         return <span class="hierarchy-index">{row.hierarchyIndex || '-'}</span>;
       }
     },
@@ -31,7 +31,7 @@ export function createMenuColumns(handlers: {
       label: '菜单类型',
       width: 100,
       align: 'center',
-      formatter: (row: any) => {
+      formatter: (row: Api.SystemManage.Menu) => {
         const menuType = row.menuType || 'menu';
         const typeMap: Record<string, { text: string; type: UI.ThemeColor }> = {
           directory: { text: '目录', type: 'primary' },
@@ -50,7 +50,7 @@ export function createMenuColumns(handlers: {
       label: '图标',
       width: 80,
       align: 'center',
-      formatter: (row: any) => {
+      formatter: (row: Api.SystemManage.Menu) => {
         if (row.icon) {
           return (
             <div class="flex-center">
@@ -67,7 +67,7 @@ export function createMenuColumns(handlers: {
       label: '权限标识',
       minWidth: 150,
       align: 'center',
-      formatter: (row: any) => {
+      formatter: (row: Api.SystemManage.Menu) => {
         if (row.permission) {
           return (
             <ElTag size="small" type="info">
@@ -85,23 +85,25 @@ export function createMenuColumns(handlers: {
       align: 'center',
       formatter: (row: Api.SystemManage.Menu) => (
         <div class="flex items-center justify-center gap-4px">
-          <ElButton
-            link
-            type="primary"
-            icon={Top}
-            onClick={() => handlers.handleMove(row, 'up')}
-            disabled={isFirst(row.id, handlers.originalTreeData())}
-            title="上移"
-          />
+          <ElTooltip content="上移" placement="top">
+            <ElButton
+              link
+              type="primary"
+              icon={Top}
+              onClick={() => handlers.handleMove(row, 'up')}
+              disabled={isFirst(row.id, handlers.originalTreeData())}
+            />
+          </ElTooltip>
           <span class="sort-value">{row.sort}</span>
-          <ElButton
-            link
-            type="primary"
-            icon={Bottom}
-            onClick={() => handlers.handleMove(row, 'down')}
-            disabled={isLast(row.id, handlers.originalTreeData())}
-            title="下移"
-          />
+          <ElTooltip content="下移" placement="top">
+            <ElButton
+              link
+              type="primary"
+              icon={Bottom}
+              onClick={() => handlers.handleMove(row, 'down')}
+              disabled={isLast(row.id, handlers.originalTreeData())}
+            />
+          </ElTooltip>
         </div>
       )
     },
@@ -110,14 +112,14 @@ export function createMenuColumns(handlers: {
       label: '状态',
       width: 80,
       align: 'center',
-      formatter: (row: any) => {
+      formatter: (row: Api.SystemManage.Menu) => {
         if (row.status !== undefined) {
           return (
             <ElSwitch
               v-model={row.status}
               activeValue={1}
               inactiveValue={0}
-              onChange={(val: number) => handlers.handleStatusChange(row, val)}
+              onChange={(val: string | number | boolean) => handlers.handleStatusChange(row, Number(val))}
             />
           );
         }
@@ -139,7 +141,6 @@ export function createMenuColumns(handlers: {
               size="small"
               icon={Plus}
               onClick={() => handlers.handleAddChild(row)}
-              title="添加子菜单"
             >
               添加子菜单
             </ElButton>

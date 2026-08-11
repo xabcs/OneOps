@@ -16,7 +16,6 @@ class MonitoringWebSocketClient {
   private maxReconnectAttempts = 5;
   private subscriptions: Set<string> = new Set();
   private messageHandlers: Map<string, MessageHandler[]> = new Map();
-  private url: string = '';
 
   constructor() {
     // 延迟初始化，等待首次调用时确保 token 已加载
@@ -37,7 +36,6 @@ class MonitoringWebSocketClient {
     const wsHost = apiBase.replace(/^https?:\/\//, '').replace(/\/api$/, '');
     const wsProtocol = apiBase.startsWith('https') ? 'wss://' : 'ws://';
     const wsUrl = `${wsProtocol}${wsHost}/api/monitoring/ws?token=${token}`;
-    this.url = wsUrl;
 
     console.log('[WebSocket] 连接URL:', wsUrl);
     try {

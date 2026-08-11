@@ -117,10 +117,10 @@
         message.success('删除成功');
         router.push(backPath);
       } catch (error: unknown) {
-        if (error !== 'cancel') {
-          const err = error as Error;
-          message.error(err.message || '删除失败');
-        }
+    if (error !== 'cancel') {
+      const err = error as Error;
+      message.error(err.message || '删除失败');
+    }
       }
     }
 

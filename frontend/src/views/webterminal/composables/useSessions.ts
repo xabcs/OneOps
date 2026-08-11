@@ -99,29 +99,6 @@ export function useSessions() {
     }
   }
 
-  function loadFromStorage(): void {
-    try {
-      const stored = sessionStorage.getItem(SESSIONS_STORAGE_KEY);
-      if (stored) {
-        sessions.value = JSON.parse(stored);
-        if (sessions.value.length > 0) {
-          activeSessionId.value = sessions.value[0].id;
-        }
-      }
-    } catch (error) {
-      console.error('加载会话列表失败:', error);
-    }
-  }
-
-  function clearStorage(): void {
-    try {
-      sessionStorage.removeItem(SESSIONS_STORAGE_KEY);
-      localStorage.removeItem(SESSIONS_STORAGE_KEY);
-    } catch (error) {
-      console.error('清除会话列表失败:', error);
-    }
-  }
-
   // 不自动恢复会话，让用户手动连接
   // 如需恢复，可以调用 loadFromStorage()
   // loadFromStorage();

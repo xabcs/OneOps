@@ -8,7 +8,6 @@ import { useThemeStore } from '@/store/modules/theme';
 import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import { useUnifiedPermission } from '@/composables/useUnifiedPermission';
-import RoleSearch from './modules/role-search.vue';
 import RoleOperateDrawer from './modules/role-operate-drawer.vue';
 import PermissionAssignModal from './modules/permission-assign-modal.vue';
 
@@ -104,7 +103,7 @@ function getInitSearchParams(): Api.SystemManage.RoleSearchParams {
   };
 }
 
-const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
+const { columns, data, getData, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
   paginationProps: {
     currentPage: searchParams.value.current,
     pageSize: searchParams.value.size

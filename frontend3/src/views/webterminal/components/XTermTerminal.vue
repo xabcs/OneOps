@@ -6,7 +6,7 @@
     import '@xterm/xterm/css/xterm.css';
 
     interface Props {
-      sessionId: number;
+      sessionId: number | string;
       serverId: number;
       serverName: string;
       serverIp: string;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import type { FormInstance, FormRules } from 'element-plus';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
@@ -153,8 +153,8 @@ async function handleDelete(row: System.AttributeDefinition) {
     await fetchDeleteAttribute(row.id);
     ElMessage.success('删除成功');
     await getAttributes();
-  } catch (error: any) {
-    ElMessage.error(error.message || '删除失败');
+  } catch (error: unknown) {
+    ElMessage.error((error as { message?: string }).message || '删除失败');
   }
 }
 
@@ -206,9 +206,10 @@ async function handleSubmit() {
 
     dialogVisible.value = false;
     await getAttributes();
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error !== false) {
-      ElMessage.error(error.message || '操作失败');
+      const message = error instanceof Error ? error.message : '操作失败';
+      ElMessage.error(message);
     }
   }
 }
@@ -227,7 +228,7 @@ function getCategoryName(category: System.AttributeCategory): string {
 
 // 获取分类标签类型
 function getCategoryTagType(category: System.AttributeCategory) {
-  const typeMap: Record<System.AttributeCategory, UI.ThemeColor | ''> = {
+  const typeMap: Record<System.AttributeCategory, '' | UI.ThemeColor> = {
     system: 'info',
     location: 'success',
     environment: 'warning',

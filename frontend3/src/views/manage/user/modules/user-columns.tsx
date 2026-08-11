@@ -52,7 +52,7 @@ export function createUserColumns(handlers: {
       prop: 'roleIds',
       label: '分配角色',
       minWidth: 150,
-      formatter: (row: any) => {
+      formatter: (row: Api.SystemManage.User) => {
         if (!row.roleIds || row.roleIds.length === 0) {
           return <span class="pl-12px text-gray">-</span>;
         }
@@ -84,17 +84,18 @@ export function createUserColumns(handlers: {
       label: '状态',
       align: 'center',
       width: 100,
-      formatter: (row: any) => {
+      formatter: (row: Api.SystemManage.User) => {
         if (row.status === undefined) {
           return '';
         }
 
+        // 状态值约定：'1' 表示启用；'2' 表示禁用
         const statusMap: Record<string, UI.ThemeColor> = {
-          active: 'success',
-          inactive: 'warning'
+          '1': 'success',
+          '2': 'warning'
         };
 
-        const label = row.status === 'active' ? '启用' : '禁用';
+        const label = row.status === '1' ? '启用' : '禁用';
 
         return <ElTag type={statusMap[row.status] || 'info'}>{label}</ElTag>;
       }
@@ -121,7 +122,7 @@ export function createUserColumns(handlers: {
       label: '操作',
       align: 'center',
       width: 260,
-      formatter: (row: any) => (
+      formatter: (row: Api.SystemManage.User) => (
         <div class="flex-center gap-8px">
           <ElButton type="primary" plain size="small" onClick={() => handlers.edit(row.id)}>
             编辑

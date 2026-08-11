@@ -5,7 +5,6 @@
      */
 
     import { ref } from 'vue';
-    import AttributeFormItems from './AttributeFormItems.vue';
 
     const props = defineProps<{
       visible: boolean;

@@ -41,6 +41,7 @@ function closeDrawer() {
   visible.value = false;
 }
 
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { formRef, validate, restoreValidation } = useForm();
 const { defaultRequiredRule } = useFormRules();
 

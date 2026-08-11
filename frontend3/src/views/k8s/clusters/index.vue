@@ -62,74 +62,6 @@ const displayClusters = computed(() => {
 
 const modalTitle = computed(() => (form.value.id ? '编辑集群' : '添加集群'));
 
-// 表格列定义
-const columns = [
-  { prop: 'selection', type: 'selection', width: 48 },
-  { prop: 'index', type: 'index', label: '序号', width: 64 },
-  {
-    prop: 'name',
-    label: '集群名称',
-    minWidth: 140,
-    formatter: (row: K8s.Cluster) => {
-      return (
-        <span class="cluster-name-link" onClick={() => handleViewDetail(row)}>
-          {row.name}
-        </span>
-      );
-    }
-  },
-  { prop: 'description', label: '描述', minWidth: 120 },
-  { prop: 'endpoint', label: 'API 地址', minWidth: 200 },
-  { prop: 'clusterType', label: '类型', width: 100 },
-  { prop: 'region', label: '区域', width: 100 },
-  { prop: 'version', label: '版本', width: 80 },
-  { prop: 'nodeCount', label: '节点数', width: 80, align: 'center' },
-  {
-    prop: 'status',
-    label: '状态',
-    width: 80,
-    align: 'center',
-    formatter: (row: K8s.Cluster) => {
-      const statusMap: Record<number, { type: UI.ThemeColor; text: string }> = {
-        1: { type: 'success', text: '正常' },
-        0: { type: 'danger', text: '禁用' }
-      };
-      const status = statusMap[row.status] || { type: 'info', text: '未知' };
-      return (
-        <ElTag type={status.type} size="small">
-          {status.text}
-        </ElTag>
-      );
-    }
-  },
-  { prop: 'createdAt', label: '创建时间', width: 160 },
-  {
-    prop: 'operate',
-    label: '操作',
-    width: 280,
-    align: 'center',
-    formatter: (row: K8s.Cluster) => (
-      <div class="flex-center gap-8px">
-        <ElButton link type="primary" onClick={() => handleEdit(row)}>
-          编辑
-        </ElButton>
-        <ElButton link class="text-accent" onClick={() => handleTestConnection(row)}>
-          测试
-        </ElButton>
-        <ElPopconfirm title={`确定要删除集群 "${row.name}" 吗？`} onConfirm={() => handleDelete(row)}>
-          {{
-            reference: () => (
-              <ElButton link type="danger">
-                删除
-              </ElButton>
-            )
-          }}
-        </ElPopconfirm>
-      </div>
-    )
-  }
-];
-
 // 加载集群列表
 async function loadClusters() {
   loading.value = true;
@@ -171,16 +103,6 @@ function handleAdd() {
 function handleEdit(row: K8s.Cluster) {
   form.value = { ...row };
   dialogVisible.value = true;
-}
-
-// 查看详情
-function handleViewDetail(row: K8s.Cluster) {
-  message({
-    title: '提示',
-    message: `查看集群 "${row.name}" 详情功能即将推出`,
-    type: 'info',
-    duration: 3000
-  });
 }
 
 // 提交表单
@@ -554,8 +476,8 @@ onMounted(() => {
 
 <style scoped lang="scss">
     /* ============================================
-                                	   1. 页面容器与布局
-                                	   ============================================ */
+                            	   1. 页面容器与布局
+                            	   ============================================ */
     .cluster-management-page {
       padding: 16px 20px;
       background: var(--el-bg-color-page);
@@ -566,8 +488,8 @@ onMounted(() => {
     }
 
     /* ============================================
-                                	   2. Hero 区域
-                                	   ============================================ */
+                            	   2. Hero 区域
+                            	   ============================================ */
     .hero-section {
       display: flex;
       justify-content: space-between;
@@ -623,8 +545,8 @@ onMounted(() => {
     }
 
     /* ============================================
-                                	   3. 内容卡片
-                                	   ============================================ */
+                            	   3. 内容卡片
+                            	   ============================================ */
     .content-card {
       display: flex;
       flex-direction: column;
@@ -664,8 +586,8 @@ onMounted(() => {
     }
 
     /* ============================================
-                                	   4. 搜索工具栏
-                                	   ============================================ */
+                            	   4. 搜索工具栏
+                            	   ============================================ */
     .workbench-toolbar {
       display: flex;
       align-items: center;
@@ -727,8 +649,8 @@ onMounted(() => {
     }
 
     /* ============================================
-                                	   5. 数据表格
-                                	   ============================================ */
+                            	   5. 数据表格
+                            	   ============================================ */
     .table-section {
       flex: 1;
       display: flex;
@@ -790,8 +712,8 @@ onMounted(() => {
     }
 
     /* ============================================
-                                	   6. 分页组件
-                                	   ============================================ */
+                            	   6. 分页组件
+                            	   ============================================ */
     .table-pagination {
       display: flex;
       justify-content: flex-end;
@@ -819,8 +741,8 @@ onMounted(() => {
     }
 
     /* ============================================
-                                	   7. 响应式设计
-                                	   ============================================ */
+                            	   7. 响应式设计
+                            	   ============================================ */
     @media (max-width: 768px) {
       .hero-section {
         flex-direction: column;

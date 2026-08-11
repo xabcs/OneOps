@@ -3,7 +3,10 @@
  * 用于在提交前验证表单数据
  */
 
+import { ref } from 'vue';
+import { ElMessage } from 'element-plus';
 import { ValidationRules, validateObject } from './validation';
+import type { ValidationRule, ValidationResult } from './validation';
 
 /**
  * 服务器表单验证规则
@@ -137,11 +140,19 @@ export const MenuFormRules = {
 };
 
 /**
+ * 表单验证规则类型
+ */
+type FormRule = ValidationRule & { message?: string };
+
+/**
  * 验证表单数据
  */
-export function validateForm<T extends Record<string, any>>(data: T, rules: Record<string, any>): ValidationResult {
+export function validateForm<T extends Record<string, unknown>>(
+  data: T,
+  rules: Record<string, FormRule>
+): ValidationResult {
   // 提取验证规则
-  const validationRules: Record<string, any> = {};
+  const validationRules: Record<string, ValidationRule> = {};
 
   for (const field in rules) {
     const rule = rules[field];
@@ -149,7 +160,7 @@ export function validateForm<T extends Record<string, any>>(data: T, rules: Reco
       validationRules[field] = rule;
       // 提取 message 字段作为错误提示
       if (rule.message) {
-        validationRules[field].message = rule.message;
+        (validationRules[field] as FormRule).message = rule.message;
       }
     }
   }
@@ -160,14 +171,14 @@ export function validateForm<T extends Record<string, any>>(data: T, rules: Reco
 /**
  * 表单验证 Composable
  */
-export function useFormValidation<T extends Record<string, any>>() {
+export function useFormValidation<T extends Record<string, unknown>>() {
   const validationErrors = ref<Record<string, string>>({});
   const isValid = ref(true);
 
   /**
    * 验证表单
    */
-  const validate = (data: T, rules: Record<string, any>): boolean => {
+  const validate = (data: T, rules: Record<string, FormRule>): boolean => {
     const result = validateForm(data, rules);
 
     isValid.value = result.valid;

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue';
-import { $t } from '@/locales';
 import { fetchGetPermissionList, fetchGetRolePermissions, fetchAssignRolePermissions } from '@/service/api';
 import { ElMessage, ElNotification } from 'element-plus';
 
@@ -623,7 +622,7 @@ function findNodeLevel(nodes: PermissionNode[], targetId: number): number | null
         :indent="24"
         @check-change="!props.viewOnly ? handleCheckChange : undefined"
       >
-        <template #default="{ node, data }">
+        <template #default="{ data }">
           <span class="custom-tree-node">
             <span class="node-label">{{ data.label }}</span>
             <ElTag

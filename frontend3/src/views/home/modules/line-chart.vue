@@ -8,6 +8,7 @@ defineOptions({ name: 'LineChart' });
 
 const appStore = useAppStore();
 
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { domRef, updateOptions } = useEcharts(() => ({
   tooltip: {
     trigger: 'axis',

@@ -1,6 +1,6 @@
 <script setup lang="tsx">
 import { onMounted, ref, watch } from 'vue';
-import { ArrowDown, Delete, Edit, Plus, Refresh, Search, View } from '@element-plus/icons-vue';
+import { ArrowDown, Plus, Refresh, Search } from '@element-plus/icons-vue';
 import {
   createApplication,
   deleteApplication,
@@ -145,15 +145,6 @@ async function loadConfigTemplate(appType: string) {
 function needsEndpointsConfig() {
   const type = formData.value.type;
   return type === 'generic' || type === 'jumpserver' || type === 'gitlab';
-}
-
-// 根据应用类型判断认证方式
-function getAuthTypeForApp() {
-  const type = formData.value.type;
-  if (type === 'jenkins') return 'basic';
-  if (type === 'jumpserver') return 'token';
-  if (type === 'gitlab') return 'token';
-  return 'token'; // 默认
 }
 
 async function getData() {

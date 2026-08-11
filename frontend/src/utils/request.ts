@@ -39,34 +39,6 @@ async function extractErrorMessage(error: any): Promise<string> {
 }
 
 /**
- * 重定向到登录页
- */
-function redirectToLogin() {
-  if (window.location.pathname.startsWith('/login')) return
-  const redirect = encodeURIComponent(window.location.pathname + window.location.search)
-  window.location.href = `/login?redirect=${redirect}`
-}
-
-/**
- * 处理会话过期
- */
-let isHandlingSessionExpired = false
-function handleSessionExpired() {
-  const authStore = useAuthStore()
-
-  if (isHandlingSessionExpired) return
-  isHandlingSessionExpired = true
-
-  authStore.clearSession()
-  ElMessage.error('登录状态已过期，请重新登录')
-
-  window.setTimeout(() => {
-    redirectToLogin()
-    isHandlingSessionExpired = false
-  }, 700)
-}
-
-/**
  * 请求拦截器：添加 token
  */
 request.interceptors.request.use(

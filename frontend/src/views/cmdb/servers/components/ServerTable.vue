@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import type { Server } from '@/api/model';
-import type { EnvType } from '../types/server.types';
 
 interface Props {
   servers: Server[];
@@ -27,8 +26,6 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<Emits>();
-
-const tableRef = ref();
 
 // 环境显示信息
 const getEnvDisplayInfo = (env: string) => {
@@ -97,8 +94,7 @@ const handleBatchDelete = () => {
 
     <!-- 服务器表格 -->
     <ElTable
-      ref="tableRef"
-      v-loading="loading"
+          v-loading="loading"
       :data="filteredServers"
       stripe
       border

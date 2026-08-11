@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { onMounted, ref } from 'vue';
     import { ElButton, ElMessage, ElMessageBox, ElTable, ElTableColumn } from 'element-plus';
-    import { assignK8sClusterRole, fetchK8sClusterUsers, revokeK8sClusterRole } from '@/service/api/k8s';
+    import { fetchK8sClusterUsers, revokeK8sClusterRole } from '@/service/api/k8s';
 
     interface Props {
       clusterId: number;

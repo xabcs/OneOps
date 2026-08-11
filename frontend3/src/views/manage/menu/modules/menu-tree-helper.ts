@@ -21,6 +21,10 @@ export function flattenMenuTree(tree: Api.SystemManage.Menu[]): Api.SystemManage
         menuType: item.menuType,
         sort: item.sort,
         status: item.status,
+        createBy: item.createBy,
+        createTime: item.createTime,
+        updateBy: item.updateBy,
+        updateTime: item.updateTime,
         hierarchyIndex: (item as MenuWithHierarchy).hierarchyIndex
       } as Api.SystemManage.Menu);
 
@@ -40,7 +44,7 @@ export function cleanMenuTree(tree: Api.SystemManage.Menu[]): Api.SystemManage.M
     return list
       .sort((a, b) => (a.sort || 0) - (b.sort || 0))
       .map(item => {
-        const cleaned: any = {
+        const cleaned: Api.SystemManage.Menu = {
           id: item.id,
           parentId: item.parentId,
           name: item.name,
@@ -49,7 +53,11 @@ export function cleanMenuTree(tree: Api.SystemManage.Menu[]): Api.SystemManage.M
           permission: item.permission,
           menuType: item.menuType,
           sort: item.sort,
-          status: item.status
+          status: item.status,
+          createBy: item.createBy,
+          createTime: item.createTime,
+          updateBy: item.updateBy,
+          updateTime: item.updateTime
         };
 
         if (item.children && Array.isArray(item.children) && item.children.length > 0) {
@@ -111,8 +119,9 @@ export function findSiblings(targetId: number, originalTreeData: Api.SystemManag
   const findInList = (list: Api.SystemManage.Menu[]): Api.SystemManage.Menu[] | null => {
     for (let i = 0; i < list.length; i++) {
       if (list[i].id === targetId) return list;
-      if (list[i].children && list[i].children.length > 0) {
-        const found = findInList(list[i].children);
+      const children = list[i].children;
+      if (children && children.length > 0) {
+        const found = findInList(children);
         if (found) return found;
       }
     }
@@ -128,8 +137,9 @@ export function findChildren(parentId: number, originalTreeData: Api.SystemManag
       if (item.id === parentId) {
         return item.children || [];
       }
-      if (item.children && item.children.length > 0) {
-        const found = findInList(item.children);
+      const children = item.children;
+      if (children && children.length > 0) {
+        const found = findInList(children);
         if (found.length > 0) return found;
       }
     }

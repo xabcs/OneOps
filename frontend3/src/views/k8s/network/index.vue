@@ -87,17 +87,8 @@
     }
 
     // 当前数据
-    const currentData = computed(() => {
-      return activeTab.value === 'services' ? servicesData.value : ingressesData.value;
-    });
-
     const currentPagination = computed(() => {
       return activeTab.value === 'services' ? servicesPagination : ingressesPagination;
-    });
-
-    // 选中项计算属性
-    const selectedItems = computed(() => {
-      return activeTab.value === 'services' ? selectedServices.value : selectedIngresses.value;
     });
 
     // 设置选中项

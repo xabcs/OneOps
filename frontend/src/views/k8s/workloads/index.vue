@@ -14,8 +14,7 @@ import {
   ElTable,
   ElTableColumn,
   ElTabs,
-  ElTag,
-  type FormInstance
+  ElTag
 } from 'element-plus';
 import yaml from 'js-yaml';
 import {
@@ -110,7 +109,6 @@ const cronJobsPagination = reactive({ page: 1, pageSize: 10, itemCount: 0 });
 
 // 弹窗状态
 const showScaleDialog = ref(false);
-const scaleFormRef = ref<FormInstance>();
 const scaleData = reactive({ replicas: 1 });
 const selectedDeployment = ref<any>(null);
 
@@ -134,44 +132,7 @@ const selectedJobs = ref<any[]>([]);
 const selectedCronJobs = ref<any[]>([]);
 const batchOperationsVisible = ref(false);
 
-// 计算当前Tab的批量操作是否可见
-const showBatchOperations = computed(() => {
-  if (activeTab.value === 'deployments') {
-    return selectedDeployments.value.length > 0;
-  } else if (activeTab.value === 'pods') {
-    return selectedPods.value.length > 0;
-  } else if (activeTab.value === 'statefulsets') {
-    return selectedStatefulSets.value.length > 0;
-  } else if (activeTab.value === 'daemonsets') {
-    return selectedDaemonSets.value.length > 0;
-  } else if (activeTab.value === 'jobs') {
-    return selectedJobs.value.length > 0;
-  } else if (activeTab.value === 'cronjobs') {
-    return selectedCronJobs.value.length > 0;
-  }
-  return false;
-});
-
 // 根据Tab返回对应的数据和分页
-const currentData = computed(() => {
-  switch (activeTab.value) {
-    case 'pods':
-      return podsData.value;
-    case 'deployments':
-      return deploymentsData.value;
-    case 'statefulsets':
-      return statefulSetsData.value;
-    case 'daemonsets':
-      return daemonSetsData.value;
-    case 'jobs':
-      return jobsData.value;
-    case 'cronjobs':
-      return cronJobsData.value;
-    default:
-      return [];
-  }
-});
-
 const currentPagination = computed(() => {
   switch (activeTab.value) {
     case 'pods':
@@ -1276,11 +1237,6 @@ function clearSelection() {
 }
 
 // 分页变化
-function handlePageChange(page: number) {
-  currentPagination.value.page = page;
-  loadCurrentData();
-}
-
 function handlePageSizeChange(pageSize: number) {
   currentPagination.value.pageSize = pageSize;
   currentPagination.value.page = 1;
@@ -1914,7 +1870,7 @@ onMounted(async () => {
 
     <!-- 缩放弹窗 -->
     <ElDialog v-model="showScaleDialog" title="缩放 Deployment" width="500px">
-      <ElForm ref="scaleFormRef" :model="scaleData" label-width="100px">
+      <ElForm :model="scaleData" label-width="100px">
         <ElFormItem label="Deployment">
           <ElInput :value="selectedDeployment?.name" disabled />
         </ElFormItem>

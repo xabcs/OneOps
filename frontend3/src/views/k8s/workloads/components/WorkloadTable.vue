@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ElButton, ElPagination, ElTable, ElTableColumn, ElTag } from 'element-plus';
+    import { ElButton, ElPagination, ElTable, ElTableColumn } from 'element-plus';
 
     defineProps<{
       data: K8s.WorkloadRow[];

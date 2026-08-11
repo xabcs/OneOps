@@ -2,7 +2,6 @@
 import { computed, ref, watch } from 'vue';
 import { useThemeStore } from '@/store/modules/theme';
 import { applyContentTheme2 } from '@/utils/content-theme';
-import { $t } from '@/locales';
 import SettingItem from '../components/setting-item.vue';
 
 defineOptions({ name: 'ContentTheme2' });

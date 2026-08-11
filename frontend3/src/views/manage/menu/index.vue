@@ -103,7 +103,7 @@ async function handleDelete(id: number) {
   }
 }
 
-const { columns, columnChecks, data, loading, getData, getDataByPage } = useUIPaginatedTable({
+const { columns, data, loading, getData, getDataByPage } = useUIPaginatedTable({
   api: async () => {
     const { error, data } = await fetchGetMenuTree();
     if (!error && data && Array.isArray(data)) {
@@ -127,7 +127,7 @@ const { columns, columnChecks, data, loading, getData, getDataByPage } = useUIPa
   })
 });
 
-const { drawerVisible, operateType, editingData, handleAdd: _handleAdd, checkedRowKeys, onDeleted } = useTableOperate(data, 'id', getData);
+const { drawerVisible, operateType, editingData, handleAdd: _handleAdd, checkedRowKeys: _checkedRowKeys, onDeleted } = useTableOperate(data, 'id', getData);
 
 const isAddingChild = ref(false);
 const parentMenuName = ref('');

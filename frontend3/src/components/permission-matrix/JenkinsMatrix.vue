@@ -2,12 +2,14 @@
 import { computed } from 'vue';
 import PermissionMatrix from './PermissionMatrix.vue';
 
+type MatrixRecord = Record<string, unknown>;
+
 interface Props {
   data: {
-    roles: Record<string, unknown>[];
-    users: Record<string, unknown>[];
+    roles: MatrixRecord[];
+    users: MatrixRecord[];
     matrix: Record<number, Record<number, boolean>>;
-    permissions_detail: Record<string, any>;
+    permissions_detail: Record<string, unknown>;
   };
   roleType?: 'all' | 'global' | 'project';
 }
@@ -78,21 +80,18 @@ const projectRolesCount = computed(() => {
   return safeData.value.roles.filter(role => role.roleType === 'project').length;
 });
 
-function handleCellClick(user: any, role: any, hasPermission: boolean) {
+function toNumberId(value: unknown): number {
+  return typeof value === 'number' ? value : Number(value);
+}
+
+function handleCellClick(user: MatrixRecord, role: MatrixRecord, hasPermission: boolean) {
   if (!user || !role) return;
 
-  const userId = user.id;
-  const roleId = role.id;
+  const userId = toNumberId(user.id);
+  const roleId = toNumberId(role.id);
   const action = hasPermission ? 'revoke' : 'grant';
 
   emit('permissionChange', userId, roleId, action);
-}
-
-function getPermissionDetail(userId: number, roleId: number) {
-  if (!safeData.value.permissions_detail) return null;
-
-  const key = `${roleId}_${userId}`;
-  return safeData.value.permissions_detail[key] || null;
 }
 </script>
 

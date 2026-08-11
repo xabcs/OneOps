@@ -22,7 +22,7 @@ export function createRoleColumns(handlers: {
       prop: 'users',
       label: '关联用户',
       minWidth: 150,
-      formatter: (row: any) => {
+      formatter: (row: Api.SystemManage.Role) => {
         const users = handlers.roleUsersMap().get(row.id);
         if (!users || users.length === 0) {
           return <span class="pl-12px text-gray">-</span>;
@@ -60,7 +60,7 @@ export function createRoleColumns(handlers: {
             activeValue={1}
             inactiveValue={0}
             disabled={row.code === 'admin'}
-            onChange={(val: number) => handlers.handleStatusChange(row, val)}
+            onChange={(val: string | number | boolean) => handlers.handleStatusChange(row, Number(val))}
           />
         );
       }
@@ -70,7 +70,7 @@ export function createRoleColumns(handlers: {
       label: '状态',
       align: 'center',
       width: 120,
-      formatter: (row: any) => {
+      formatter: (row: Api.SystemManage.Role) => {
         const { canDelete, reason } = canDeleteRole(row, handlers.roleUsersMap());
 
         if (!canDelete) {
@@ -104,7 +104,7 @@ export function createRoleColumns(handlers: {
       label: $t('common.operate'),
       align: 'center',
       width: 260,
-      formatter: (row: any) => (
+      formatter: (row: Api.SystemManage.Role) => (
         <div class="flex-center gap-8px">
           <ElButton type="primary" plain size="small" onClick={() => handlers.edit(row.id)}>
             {$t('common.edit')}

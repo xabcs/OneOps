@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+    import { onMounted, onUnmounted, ref } from 'vue';
     import { useRouter } from 'vue-router';
     import { ElMessageBox, ElNotification } from 'element-plus';
     import { fetchDeleteServer } from '@/service/api';
@@ -60,12 +60,6 @@
       }
     }
 
-    function getAttributeLabel(key: string, value: string): string {
-      if (!value) return '-';
-      const options = getAttributeOptions(key);
-      return options.find(opt => opt.value === value)?.label || '-';
-    }
-
     function getEnvDisplayInfo(envValue: string) {
       const options = getAttributeOptions('server_env');
       const option = options.find(opt => opt.value === envValue);
@@ -75,10 +69,6 @@
       else if (envValue === 'test') type = 'warning';
       else if (envValue === 'dev') type = 'success';
       return { label, type };
-    }
-
-    function getServerTypeDisplayInfo(typeValue: string) {
-      return getAttributeLabel('server_type', typeValue);
     }
 
     function getMaxDiskPartition(row: CMDB.Server) {
@@ -202,12 +192,6 @@
     }
 
     function handleSearch() {
-      serverDataCtx.pagination.page = 1;
-      refreshServers();
-    }
-
-    function handleReset() {
-      searchCtx.handleReset();
       serverDataCtx.pagination.page = 1;
       refreshServers();
     }

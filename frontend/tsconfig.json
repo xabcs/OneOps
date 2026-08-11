@@ -15,7 +15,7 @@
     "types": ["vite/client", "node", "unplugin-icons/types/vue", "element-plus/global"],
     "strict": true,
     "strictNullChecks": true,
-    "noUnusedLocals": false,
+    "noUnusedLocals": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,

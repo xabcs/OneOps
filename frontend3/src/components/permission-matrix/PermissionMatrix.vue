@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
+type MatrixRow = Record<string, unknown>;
+type PermissionsDetail = Record<string, unknown>;
+
 interface Props {
-  rows: Record<string, unknown>[];
-  columns: Record<string, unknown>[];
+  rows: MatrixRow[];
+  columns: MatrixRow[];
   matrix: Record<number | string, Record<number | string, boolean>>;
   rowKey: string;
   colKey: string;
   rowLabel: string;
   colLabel: string;
-  permissionsDetail?: Record<string, any>;
+  permissionsDetail?: PermissionsDetail;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -17,7 +20,7 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-  cellClick: [row: any, col: any, hasPermission: boolean];
+  cellClick: [row: MatrixRow, col: MatrixRow, hasPermission: boolean];
 }>();
 
 // 安全的数据访问
@@ -40,14 +43,26 @@ function hasPermission(rowId: number | string, colId: number | string): boolean 
   return result;
 }
 
-function getCellKey(rowId: number | string, colId: number | string): string {
-  return `${colId}_${rowId}`;
+// 模板辅助函数：从行/列对象中安全提取键值
+function getRowId(row: MatrixRow): string | number {
+  const value = row[props.rowKey];
+  return typeof value === 'number' || typeof value === 'string' ? value : String(value ?? '');
 }
 
-function handleCellClick(row: any, col: any) {
+function getColId(col: MatrixRow): string | number {
+  const value = col[props.colKey];
+  return typeof value === 'number' || typeof value === 'string' ? value : String(value ?? '');
+}
+
+function getCellLabel(item: MatrixRow, labelKey: string): string {
+  const value = item[labelKey];
+  return value === null || value === undefined ? '-' : String(value);
+}
+
+function handleCellClick(row: MatrixRow, col: MatrixRow) {
   if (!row || !col) return;
 
-  const hasPerm = hasPermission(row[props.rowKey], col[props.colKey]);
+  const hasPerm = hasPermission(getRowId(row), getColId(col));
   emit('cellClick', row, col, hasPerm);
 }
 </script>
@@ -62,21 +77,21 @@ function handleCellClick(row: any, col: any) {
           </th>
           <th
             v-for="col in safeColumns"
-            :key="col[colKey]"
+            :key="getColId(col)"
             class="min-w-100px border border-gray-200 px-4 py-3 text-center font-medium"
           >
             <div class="flex flex-col items-center gap-1">
-              <span class="font-medium">{{ col[colLabel] || '-' }}</span>
+              <span class="font-medium">{{ getCellLabel(col, colLabel) }}</span>
               <span v-if="col.roleType" class="text-xs text-gray-500">({{ col.roleType }})</span>
             </div>
           </th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="row in safeRows" :key="row[rowKey]" class="hover:bg-blue-50">
+        <tr v-for="row in safeRows" :key="getRowId(row)" class="hover:bg-blue-50">
           <td class="sticky left-0 z-10 border border-gray-200 bg-white px-4 py-3 font-medium">
             <div class="flex flex-col gap-1">
-              <span>{{ row[rowLabel] || '-' }}</span>
+              <span>{{ getCellLabel(row, rowLabel) }}</span>
               <span v-if="row.nickname && row.nickname !== row[rowLabel]" class="text-xs text-gray-500">
                 {{ row.nickname }}
               </span>
@@ -84,12 +99,12 @@ function handleCellClick(row: any, col: any) {
           </td>
           <td
             v-for="col in safeColumns"
-            :key="col[colKey]"
+            :key="getColId(col)"
             class="cursor-pointer border border-gray-200 px-4 py-3 text-center transition-colors hover:bg-blue-100"
             @click="handleCellClick(row, col)"
           >
-            <ElTag :type="hasPermission(row[rowKey], col[colKey]) ? 'success' : 'info'" size="large">
-              {{ hasPermission(row[rowKey], col[colKey]) ? '✓' : '✗' }}
+            <ElTag :type="hasPermission(getRowId(row), getColId(col)) ? 'success' : 'info'" size="large">
+              {{ hasPermission(getRowId(row), getColId(col)) ? '✓' : '✗' }}
             </ElTag>
           </td>
         </tr>

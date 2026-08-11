@@ -11,25 +11,25 @@ export function useSessionManager() {
   const route = useRoute();
   const router = useRouter();
 
-  const sessions = ref<any[]>([]);
-  const activeSession = ref<any>(null);
+  const sessions = ref<Bastion.TerminalSession[]>([]);
+  const activeSession = ref<Bastion.TerminalSession | null>(null);
 
   // 连接对话框状态
   const showConnectDialog = ref(false);
-  const connectingServer = ref<any>(null);
+  const connectingServer = ref<CMDB.Server | null>(null);
   const selectedCredentialId = ref<number | null>(null);
 
   // 当前会话的 serverId 列表
-  const currentSessionIds = computed(() => sessions.value.map((s: any) => s.serverId));
+  const currentSessionIds = computed(() => sessions.value.map(s => s.serverId));
 
   // 切换会话
-  function switchSession(sessionId: number) {
-    activeSession.value = sessions.value.find((s: any) => s.id === sessionId) || null;
+  function switchSession(sessionId: number | string) {
+    activeSession.value = sessions.value.find(s => s.id === sessionId) || null;
   }
 
   // 移除会话
-  function removeSession(sessionId: number) {
-    const index = sessions.value.findIndex((s: any) => s.id === sessionId);
+  function removeSession(sessionId: number | string) {
+    const index = sessions.value.findIndex(s => s.id === sessionId);
     if (index > -1) {
       sessions.value.splice(index, 1);
       if (activeSession.value?.id === sessionId) {
@@ -66,8 +66,8 @@ export function useSessionManager() {
       }
 
       // 查找选择的凭证信息，获取实际的用户名
-      const selectedCredential = connectingServer.value.credentials.find(
-        (c: any) => c.id === selectedCredentialId.value
+      const selectedCredential = connectingServer.value.credentials?.find(
+        c => c.id === selectedCredentialId.value
       );
       const loginAccount = selectedCredential?.username || 'root';
 
@@ -82,7 +82,7 @@ export function useSessionManager() {
         const websocketUrl = response.data.websocketUrl;
 
         // 创建会话对象
-        const newSession = {
+        const newSession: Bastion.TerminalSession = {
           id: sessionId,
           serverId: connectingServer.value.id,
           serverName: connectingServer.value.hostname || 'Unknown',
@@ -121,7 +121,7 @@ export function useSessionManager() {
   }
 
   // 处理主机连接（统一入口）
-  async function handleConnect(server: any) {
+  async function handleConnect(server: Bastion.BasicServerInfo) {
     try {
       const response = await fetchGetServerForConnect(server.id);
 

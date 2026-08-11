@@ -8,7 +8,7 @@ import { getFlowData } from './data';
 
 defineOptions({ name: 'AntVCharts' });
 
-const antvFlowRef = useTemplateRef('antvFlowRef');
+useTemplateRef('antvFlowRef');
 
 const flowData = ref({
   nodes: [],

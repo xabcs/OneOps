@@ -77,7 +77,11 @@ export function useSessionList() {
   async function loadSessions() {
     loading.value = true;
     try {
-      const params: Record<string, any> = {
+      const params: {
+        page: number;
+        pageSize: number;
+        status?: string;
+      } = {
         page: pagination.value.current,
         pageSize: pagination.value.pageSize
       };

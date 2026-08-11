@@ -1,12 +1,11 @@
 <script setup lang="ts">
-    import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+    import { onBeforeUnmount, onMounted, reactive, ref } from 'vue';
     import {
       ElButton,
       ElMessage,
       ElMessageBox,
       ElOption,
       ElSelect,
-      ElSpace,
       ElTable,
       ElTableColumn,
       ElTag,
@@ -25,12 +24,7 @@
     const message = ElMessage;
 
     const loading = ref(false);
-    const dataSource = ref<AuditSession[]>([]);
     const activeSessions = ref<AuditSession[]>([]);
-
-    // 当前选中的集群
-    const selectedCluster = ref<number | null>(null);
-    const selectedClusterLabel = ref('');
 
     // 可用的集群列表
     const clusters = ref<K8s.Cluster[]>([]);
@@ -38,12 +32,6 @@
     const filters = reactive({
       clusterId: null as number | null,
       status: 'all'
-    });
-
-    const pagination = reactive({
-      page: 1,
-      pageSize: 20,
-      itemCount: 0
     });
 
     // 会话时长格式化
@@ -217,7 +205,7 @@
                 </ElTableColumn>
                 <ElTableColumn prop="container" label="容器组" width="150" />
                 <ElTableColumn label="状态" width="100">
-                    <template #default="{ row }">
+                    <template #default>
                         <ElTag :type="getStatusTag('active').type" size="small">
                             {{ getStatusTag('active').text }}
                         </ElTag>

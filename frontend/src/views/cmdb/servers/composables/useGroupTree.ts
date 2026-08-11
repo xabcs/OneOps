@@ -2,7 +2,7 @@
  * 分组树管理逻辑
  */
 
-import { computed, ref as deepRef, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { ElMessageBox, ElNotification } from 'element-plus';
 import {
   type ServerGroup,

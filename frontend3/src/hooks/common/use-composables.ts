@@ -82,8 +82,8 @@ export function useBatchSelection<T = any>() {
   };
 
   // 获取选中项的ID列表
-  const getSelectedIds = (key: keyof T = 'id' as keyof T): unknown[] => {
-    return selectedItems.value.map(item => item[key]);
+  const getSelectedIds = (key: keyof T = 'id' as keyof T): T[keyof T][] => {
+    return selectedItems.value.map(item => (item as T)[key]);
   };
 
   return {
@@ -179,9 +179,9 @@ export function useAsyncOperation<T = unknown>() {
 }
 
 // 表单验证组合式函数
-export function useFormValidation<T extends Record<string, any>>(
+export function useFormValidation<T extends Record<string, unknown>>(
   initialValues: T,
-  validationRules: Record<keyof T, (value: any) => string | null>
+  validationRules: Record<keyof T, (value: unknown) => string | null>
 ) {
   const formData = ref<T>({ ...initialValues });
   const errors = ref<Record<keyof T, string | null>>({} as Record<keyof T, string | null>);

@@ -14,11 +14,13 @@ interface Column {
   sortable?: boolean;
 }
 
+type TableRow = Record<string, unknown>;
+
 interface Props {
   title?: string;
   searchPlaceholder?: string;
   columns: Column[];
-  tableData: any[];
+  tableData: TableRow[];
   loading?: boolean;
   showSelection?: boolean;
   showIndex?: boolean;
@@ -50,7 +52,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   search: [keyword: string];
   reset: [];
-  'selection-change': [selection: Record<string, unknown>[]];
+  'selection-change': [selection: TableRow[]];
   'page-change': [page: number];
   'size-change': [pageSize: number];
 }>();
@@ -69,7 +71,7 @@ const handleReset = () => {
 };
 
 // 处理选择变化
-const handleSelectionChange = (selection: any[]) => {
+const handleSelectionChange = (selection: TableRow[]) => {
   emit('selection-change', selection);
 };
 

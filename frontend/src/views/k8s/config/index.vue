@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { ElButton, ElMessage, ElPagination, ElTabPane, ElTabs, ElTag } from 'element-plus';
+import { ElButton, ElPagination, ElTabPane, ElTabs, ElTag } from 'element-plus';
 import { fetchK8sClusterNamespaces, fetchK8sClusters, fetchK8sConfigMaps, fetchK8sSecrets } from '@/service/api/k8s';
 
 defineOptions({ name: 'K8sConfig' });
-
-const message = ElMessage;
 
 const loading = ref(false);
 const activeTab = ref('configmaps');
@@ -29,10 +27,6 @@ const configmapsPagination = reactive({ page: 1, pageSize: 10, itemCount: 0 });
 const secretsPagination = reactive({ page: 1, pageSize: 10, itemCount: 0 });
 
 // 当前数据
-const currentData = computed(() => {
-  return activeTab.value === 'configmaps' ? configmapsData.value : secretsData.value;
-});
-
 const currentPagination = computed(() => {
   return activeTab.value === 'configmaps' ? configmapsPagination : secretsPagination;
 });
@@ -132,11 +126,6 @@ async function loadCurrentData() {
 }
 
 // 分页变化
-function handlePageChange(page: number) {
-  currentPagination.value.page = page;
-  loadCurrentData();
-}
-
 function handlePageSizeChange(pageSize: number) {
   currentPagination.value.pageSize = pageSize;
   currentPagination.value.page = 1;
@@ -222,7 +211,7 @@ onMounted(async () => {
             </ElTableColumn>
             <ElTableColumn prop="age" label="年龄" min-width="120" align="left" />
             <ElTableColumn label="操作" min-width="120" align="left">
-              <template #default="{ row }">
+              <template #default="{ row: _row }">
                 <ElButton link type="primary" size="default">查看详情</ElButton>
               </template>
             </ElTableColumn>
@@ -262,7 +251,7 @@ onMounted(async () => {
             <ElTableColumn label="数据键" min-width="300" align="left">
               <template #default="{ row }">
                 <ElTag
-                  v-for="(key, index) in row.dataKeys"
+                  v-for="(_key, index) in row.dataKeys"
                   :key="index"
                   size="small"
                   class="mb-4px mr-4px"
@@ -274,7 +263,7 @@ onMounted(async () => {
             </ElTableColumn>
             <ElTableColumn prop="age" label="年龄" min-width="120" align="left" />
             <ElTableColumn label="操作" min-width="120" align="left">
-              <template #default="{ row }">
+              <template #default="{ row: _row }">
                 <ElButton link type="primary" size="default">查看详情</ElButton>
               </template>
             </ElTableColumn>

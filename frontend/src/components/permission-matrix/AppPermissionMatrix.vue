@@ -174,13 +174,6 @@ function handleCellClick(user: User, column: Column, hasPermission: boolean) {
   emit('permissionChange', userId, columnId, action);
 }
 
-function getPermissionDetail(userId: number, columnId: number | string) {
-  if (!safeData.value.permissions_detail) return null;
-
-  const key = `${columnId}_${userId}`;
-  return safeData.value.permissions_detail[key] || null;
-}
-
 // 获取当前类型的描述信息
 const currentDescription = computed(() => {
   const descriptions = defaultConfig.value.descriptions || {};

@@ -94,12 +94,6 @@ function handleCellClick(user: any, role: any, hasPermission: boolean) {
   emit('permissionChange', userId, roleId, action);
 }
 
-function getPermissionDetail(userId: number, roleId: number) {
-  if (!safeData.value.permissions_detail) return null;
-
-  const key = `${roleId}_${userId}`;
-  return safeData.value.permissions_detail[key] || null;
-}
 </script>
 
 <template>

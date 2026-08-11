@@ -14,15 +14,6 @@ const route = useRoute();
 const loading = ref(false);
 const chartLoading = ref(false);
 
-// 时间范围选项
-const timeRangeOptions = [
-  { label: '近1小时', value: '1h' },
-  { label: '近6小时', value: '6h' },
-  { label: '近24小时', value: '24h' },
-  { label: '近7天', value: '7d' },
-  { label: '近30天', value: '30d' }
-];
-
 const filterForm = reactive({
   serverId: null as number | null,
   metricType: 'cpu',

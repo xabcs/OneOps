@@ -39,7 +39,7 @@ export class Validator {
   /**
    * 验证字符串字段
    */
-  validateString(value: any, rules: ValidationRule): boolean {
+  validateString(value: unknown, rules: ValidationRule): boolean {
     if (value === undefined || value === null) {
       if (rules.required) {
         this.addError('field', '此字段为必填项');
@@ -106,7 +106,7 @@ export class Validator {
   /**
    * 验证数字字段
    */
-  validateNumber(value: any, rules: ValidationRule): boolean {
+  validateNumber(value: unknown, rules: ValidationRule): boolean {
     if (value === undefined || value === null) {
       if (rules.required) {
         this.addError('field', '此字段为必填项');
@@ -135,7 +135,7 @@ export class Validator {
   /**
    * 验证数组字段
    */
-  validateArray(value: any, rules: ValidationRule): boolean {
+  validateArray(value: unknown, rules: ValidationRule): boolean {
     if (value === undefined || value === null) {
       if (rules.required) {
         this.addError('field', '此字段为必填项');

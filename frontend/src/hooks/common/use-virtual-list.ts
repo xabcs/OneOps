@@ -69,9 +69,6 @@ export function useVirtualList<T>(options: VirtualListOptions<T>): VirtualListRe
   // 容器总高度
   const totalHeight = computed(() => data.value.length * itemHeight);
 
-  // 偏移量
-  const offsetY = computed(() => visibleRange.value.start * itemHeight);
-
   // 处理滚动事件
   const handleScroll = (e: Event) => {
     scrollTop.value = (e.target as HTMLElement).scrollTop;

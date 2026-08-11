@@ -86,10 +86,6 @@
       }
     }
 
-    function goBack() {
-      router.back();
-    }
-
     async function handleDelete() {
       try {
         await ElMessageBox.confirm(`确定要删除 Service "${resourceName.value}" 吗？`, '确认删除', { type: 'warning' });

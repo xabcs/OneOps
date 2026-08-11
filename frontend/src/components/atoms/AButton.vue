@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Loading } from '@element-plus/icons-vue';
-import type { Icon } from '@element-plus/icons-vue';
 
 interface Props {
   type?: 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'text';

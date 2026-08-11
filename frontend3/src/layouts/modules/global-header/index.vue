@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { useFullscreen } from '@vueuse/core';
 import { GLOBAL_HEADER_MENU_ID } from '@/constants/app';
 import { useAppStore } from '@/store/modules/app';
@@ -120,8 +120,16 @@ const showQuickMenu = ref(false);
 // 通知显示状态
 const showNotifications = ref(false);
 
+interface AppNotification {
+  id: number;
+  title: string;
+  message: string;
+  type: 'warning' | 'error' | 'info';
+  time: string;
+}
+
 // 模拟通知数据
-const notifications = computed(() => [
+const notifications = computed<AppNotification[]>(() => [
   {
     id: 1,
     title: '服务器告警',
@@ -152,7 +160,7 @@ const handleClickOutside = () => {
 };
 
 // 处理通知点击
-const handleNotificationClick = (notification: any) => {
+const handleNotificationClick = (_notification: AppNotification) => {
   showNotifications.value = false;
 };
 </script>

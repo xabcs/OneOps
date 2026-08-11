@@ -78,9 +78,10 @@ async function checkPermission() {
         selectedCredentialId.value = availableCredentials.value[0].id;
       }
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     hasPermission.value = false;
-    permissionError.value = err?.message || '检查权限失败';
+    const message = err instanceof Error ? err.message : '检查权限失败';
+    permissionError.value = message;
     console.error('[ServerConnectDialog] checkPermission 异常:', err);
   } finally {
     loading.value = false;

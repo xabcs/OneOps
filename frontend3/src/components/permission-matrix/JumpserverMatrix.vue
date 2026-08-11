@@ -102,11 +102,6 @@ const groupRulesCount = computed(() => {
   return safeData.value.rules.filter(rule => rule.subject_type === 'group').length;
 });
 
-const enabledRulesCount = computed(() => {
-  if (!safeData.value.rules) return 0;
-  return safeData.value.rules.filter(rule => rule.is_enabled).length;
-});
-
 function handleCellClick(user: User, rule: Rule, hasPermission: boolean) {
   if (!user || !rule) return;
 
@@ -115,36 +110,6 @@ function handleCellClick(user: User, rule: Rule, hasPermission: boolean) {
   const action = hasPermission ? 'revoke' : 'grant';
 
   emit('permissionChange', userId, ruleId, action);
-}
-
-function getPermissionDetail(userId: number, ruleId: string) {
-  if (!safeData.value.permissions_detail) return null;
-
-  const key = `${ruleId}_${userId}`;
-  return safeData.value.permissions_detail[key] || null;
-}
-
-// 格式化规则显示名称
-function formatRuleLabel(rule: Rule): string {
-  if (!rule) return '-';
-  return rule.rule_name || rule.rule_id || '-';
-}
-
-// 获取规则的额外信息
-function getRuleMeta(rule: Rule): string {
-  if (!rule) return '';
-
-  const parts: string[] = [];
-
-  if (rule.user_count !== undefined) {
-    parts.push(`${rule.user_count} 用户`);
-  }
-
-  if (rule.object_name) {
-    parts.push(rule.object_name);
-  }
-
-  return parts.length > 0 ? `(${parts.join(' | ')})` : '';
 }
 </script>
 

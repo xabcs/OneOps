@@ -8,6 +8,7 @@ import { getFlowData } from './data';
 
 defineOptions({ name: 'AntVCharts' });
 
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const antvFlowRef = useTemplateRef('antvFlowRef');
 
 const flowData = ref({

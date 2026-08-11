@@ -409,14 +409,14 @@ export function getScatterOption() {
     series[dataItem[0]].data.push([dataItem[1], dataItem[2]]);
   });
 
-  const option: ECOption = {
+  const option = {
     tooltip: {
       position: 'top'
     },
     title,
     singleAxis,
-    series: series as any
-  };
+    series
+  } as ECOption;
 
   return option;
 }

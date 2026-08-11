@@ -6,9 +6,6 @@
 import { reactive, ref } from 'vue';
 import { ElNotification } from 'element-plus';
 import {
-  fetchAssignServerToGroups,
-  fetchCreateServer,
-  fetchDeleteServer,
   fetchGetAttributes,
   fetchGetBusinessUnits,
   fetchGetCabinets,
@@ -18,8 +15,7 @@ import {
   fetchGetServerTags,
   fetchGetServers,
   fetchSaveServerAttributes,
-  fetchSyncServerMetrics,
-  fetchUpdateServer
+  fetchSyncServerMetrics
 } from '@/service/api';
 import type { SearchType } from '../types/server.types';
 

@@ -1,13 +1,10 @@
 <script setup lang="tsx">
 import { computed, onMounted, ref } from 'vue';
-import { View } from '@element-plus/icons-vue';
 import {
   fetchApplications,
   fetchUserEffectivePermissions,
   fetchUserEffectivePermissionsMatrix
 } from '@/service/api/application-permission';
-import JenkinsMatrix from '@/components/permission-matrix/JenkinsMatrix.vue';
-import JumpserverMatrix from '@/components/permission-matrix/JumpserverMatrix.vue';
 import AppPermissionMatrix from '@/components/permission-matrix/AppPermissionMatrix.vue';
 
 defineOptions({ name: 'AuthUserPermissions' });
@@ -95,31 +92,6 @@ const adaptedMatrixData = computed(() => {
     default:
       // 默认尝试直接使用
       return data;
-  }
-});
-
-// 使用新的通用矩阵组件
-const useUnifiedMatrix = computed(() => {
-  // 可以通过配置来控制是否使用统一组件
-  return true;
-});
-
-const matrixComponent = computed(() => {
-  if (!selectedApp.value) return null;
-
-  if (useUnifiedMatrix.value) {
-    return AppPermissionMatrix;
-  }
-
-  // 原有的逻辑作为后备
-  switch (selectedApp.value.type) {
-    case 'jenkins':
-    case 'gitlab':
-      return JenkinsMatrix;
-    case 'jumpserver':
-      return JumpserverMatrix;
-    default:
-      return JenkinsMatrix;
   }
 });
 

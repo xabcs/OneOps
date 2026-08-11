@@ -19,7 +19,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const containerRef = useTemplateRef('containerRef');
+useTemplateRef('containerRef');
 const graphRef = shallowRef<Graph | null>(null);
 
 // 监听容器尺寸变化，调整画布大小为图容器大小

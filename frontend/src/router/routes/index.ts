@@ -1,4 +1,3 @@
-import type { RouteRecordRaw } from 'vue-router';
 import type { CustomRoute, ElegantConstRoute, ElegantRoute } from '@elegant-router/types';
 import { generatedRoutes } from '../elegant/routes';
 import { layouts, views } from '../elegant/imports';

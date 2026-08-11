@@ -13,12 +13,19 @@ import {
 
 defineOptions({ name: 'EchartsDemo' });
 
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { domRef: pieRef } = useEcharts(() => pieOptions, { onRender() {} });
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { domRef: lineRef } = useEcharts(() => lineOptions, { onRender() {} });
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { domRef: barRef } = useEcharts(() => barOptions, { onRender() {} });
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { domRef: pictorialBarRef } = useEcharts(() => getPictorialBarOption(), { onRender() {} });
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { domRef: radarRef } = useEcharts(() => radarOptions, { onRender() {} });
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { domRef: scatterRef } = useEcharts(() => getScatterOption(), { onRender() {} });
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { domRef: gaugeRef, setOptions: setGaugeOptions } = useEcharts(() => gaugeOptions, { onRender() {} });
 
 let intervalId: NodeJS.Timeout;

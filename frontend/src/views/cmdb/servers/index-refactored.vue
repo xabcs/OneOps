@@ -31,7 +31,6 @@ const {
   userCredentials,
   systemCredentials,
   loading,
-  serverStats,
   getServers,
   getServerDetail,
   createServer,
@@ -47,13 +46,9 @@ const {
   groupTree,
   groupLoading,
   selectedGroupId,
-  filteredGroupTree,
   getGroups,
-  handleNodeClick: handleGroupNodeClick,
-  createGroup,
   updateGroupName,
-  deleteGroup,
-  assignServersToGroups
+  deleteGroup
 } = useGroupTree();
 
 // UI状态
@@ -63,7 +58,6 @@ const showFormDialog = ref(false);
 const currentServerId = ref<number>();
 const editingServerId = ref<number>();
 const dialogMode = ref<'create' | 'edit'>('create');
-const filterBarRef = ref();
 
 // 初始化
 onMounted(async () => {
@@ -206,7 +200,7 @@ const handleServerSaved = () => {
       <!-- 右侧服务器列表 -->
       <div class="right-panel">
         <!-- 过滤器 -->
-        <ServerFilterBar ref="filterBarRef" @search="handleSearch" @reset="handleReset" @refresh="refreshServers" />
+        <ServerFilterBar @search="handleSearch" @reset="handleReset" @refresh="refreshServers" />
 
         <!-- 服务器表格 -->
         <ServerTable

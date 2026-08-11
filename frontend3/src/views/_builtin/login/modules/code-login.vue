@@ -8,6 +8,7 @@ import { $t } from '@/locales';
 defineOptions({ name: 'CodeLogin' });
 
 const { toggleLoginModule } = useRouterPush();
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const { formRef, validate } = useForm();
 const { label, isCounting, loading, getCaptcha } = useCaptcha();
 

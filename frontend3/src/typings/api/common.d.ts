@@ -56,8 +56,6 @@ declare namespace Api {
       updateBy: string;
       /** record update time */
       updateTime: string;
-      /** record status */
-      status: EnableStatus | undefined;
     } & T;
   }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   ElButton,
@@ -37,10 +37,8 @@ const message = ElMessage;
 
 const loading = ref(false);
 const dataSource = ref<any[]>([]);
-const showModal = ref(false);
 const showScaleModal = ref(false);
 const submitting = ref(false);
-const formRef = ref<FormInstance | null>(null);
 const scaleFormRef = ref<FormInstance | null>(null);
 
 // 当前选中的集群和命名空间
@@ -57,15 +55,6 @@ const filters = reactive({
   namespace: 'default'
 });
 
-const formData = reactive({
-  name: '',
-  namespace: 'default',
-  replicas: 1,
-  image: '',
-  command: '',
-  args: ''
-});
-
 const scaleData = reactive({
   replicas: 1
 });
@@ -78,13 +67,6 @@ const pagination = reactive({
   pageSize: 10,
   itemCount: 0
 });
-
-const formRules: FormRules = {
-  name: { required: true, message: '请输入 Deployment 名称', trigger: 'blur' },
-  namespace: { required: true, message: '请选择命名空间', trigger: 'change' },
-  replicas: { required: true, message: '请输入副本数', trigger: 'blur' },
-  image: { required: true, message: '请输入镜像地址', trigger: 'blur' }
-};
 
 const scaleRules: FormRules = {
   replicas: [
@@ -239,24 +221,6 @@ const handleClusterChange = async () => {
 // 命名空间变化
 const handleNamespaceChange = () => {
   loadDeployments();
-};
-
-// 创建 Deployment
-const handleCreate = () => {
-  if (!selectedCluster.value) {
-    message.warning('请先选择集群');
-    return;
-  }
-
-  Object.assign(formData, {
-    name: '',
-    namespace: filters.namespace,
-    replicas: 1,
-    image: '',
-    command: '',
-    args: ''
-  });
-  showModal.value = true;
 };
 
 // 缩放 Deployment

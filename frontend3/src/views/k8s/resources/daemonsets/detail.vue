@@ -1,17 +1,15 @@
 <script setup lang="ts">
     import { computed, onMounted, ref } from 'vue';
     import { useRoute, useRouter } from 'vue-router';
-    import { ElButton, ElMessage, ElTabPane, ElTable, ElTableColumn, ElTabs, ElTag } from 'element-plus';
+    import { ElButton, ElMessage, ElTabPane, ElTabs, ElTag } from 'element-plus';
     import yaml from 'js-yaml';
     import { fetchK8sEvents, getK8sDaemonSet, getK8sDaemonSetPods, updateK8sDaemonSet } from '@/service/api/k8s';
     import {
       formatAnnotations,
       formatConditions,
-      formatImages,
       formatLabels,
       formatSelectors,
-      formatStrategy,
-      getAnnotationSummary
+      formatStrategy
     } from '@/utils/k8s-formatters';
     import K8sBasicInfoGrid from '@/components/k8s/K8sBasicInfoGrid.vue';
     import K8sPodsTable from '@/components/k8s/K8sPodsTable.vue';
@@ -123,21 +121,6 @@
       const result = formatAnnotations(resource.value.annotations);
       return [...result.user, ...result.system];
     });
-
-    const getPodStatusTag = (pod: K8s.Pod) => {
-      switch (pod.phase) {
-        case 'Running':
-          return { type: 'success', text: '运行中' };
-        case 'Succeeded':
-          return { type: 'info', text: '已完成' };
-        case 'Failed':
-          return { type: 'danger', text: '失败' };
-        case 'Pending':
-          return { type: 'warning', text: '等待中' };
-        default:
-          return { type: 'info', text: '未知' };
-      }
-    };
 
     async function loadDetail() {
       const qClusterId = route.query.clusterId as string;

@@ -1,20 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import {
   fetchGetActiveSessionsFromMemory,
-  fetchGetSessions,
   fetchGetSessionsList,
   fetchTerminateSession
 } from '@/service/api/cmdb';
-import { useAppStore } from '@/store/modules/app';
-import { useAuthStore } from '@/store/modules/auth';
 
 defineOptions({
   name: 'WebterminalSessionList'
 });
-
-const appStore = useAppStore();
-const authStore = useAuthStore();
 
 /** 标签页类型 */
 type TabType = 'active' | 'terminated' | 'history';

@@ -63,24 +63,19 @@
       }
     }
 
-    // 切换功能菜单（跳转到设置页面）
-    function toggleFunctionMenu() {
-      switchActivityItem('settings');
-    }
-
     function switchActivityItem(item: string) {
       mainMenuExpanded.value = false;
       serverMenuExpanded.value = false;
 
       // 特殊处理：会话列表在应用标签页中打开
       if (item === 'sessions') {
-        const sessionListSession = {
+        const sessionListSession: Bastion.TerminalSession = {
           id: 'session-list',
           serverId: 0,
           serverName: '会话列表',
           serverIp: '',
           loginAccount: '',
-          protocol: 'view' as any,
+          protocol: 'view',
           status: 'connected',
           connected: true,
           duration: 0,
@@ -89,7 +84,7 @@
           title: '会话列表'
         };
 
-        const existingSession = sessions.value.find((s: any) => s.id === 'session-list');
+        const existingSession = sessions.value.find(s => s.id === 'session-list');
         if (existingSession) {
           activeSession.value = existingSession;
         } else {
@@ -114,7 +109,7 @@
 
       const query = route.query;
       if (query.serverId && query.hostname) {
-        const basicServerInfo = {
+        const basicServerInfo: Bastion.BasicServerInfo = {
           id: Number(query.serverId),
           hostname: query.hostname as string,
           ip: query.ip as string,

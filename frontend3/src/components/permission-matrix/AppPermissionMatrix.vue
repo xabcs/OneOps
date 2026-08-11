@@ -6,6 +6,7 @@ interface Column {
   id: number | string;
   name: string;
   type?: string;
+  roleType?: string;
   [key: string]: unknown;
 }
 
@@ -15,6 +16,7 @@ interface User {
   nickname?: string;
   external_username?: string;
   external_user_id?: string;
+  [key: string]: unknown;
 }
 
 interface Props {
@@ -22,7 +24,7 @@ interface Props {
     columns: Column[];
     users: User[];
     matrix: Record<string, Record<string, boolean>>;
-    permissions_detail: Record<string, any>;
+    permissions_detail: Record<string, unknown>;
     message?: string;
   };
   itemType?: 'all' | string;
@@ -33,7 +35,7 @@ interface Props {
     typeOptions?: Array<{ value: string; label: string; description?: string }>;
     descriptions?: {
       all?: string;
-      [key: string]: string;
+      [key: string]: string | undefined;
     };
     syncAction?: boolean; // 是否显示同步按钮
   };
@@ -50,9 +52,19 @@ const emit = defineEmits<{
   refresh: [];
 }>();
 
+interface AppConfig {
+  columnTypeName?: string;
+  typeOptions?: Array<{ value: string; label: string; description?: string }>;
+  descriptions?: {
+    all?: string;
+    [key: string]: string | undefined;
+  };
+  syncAction?: boolean;
+}
+
 // 默认配置
-const defaultConfig = computed(() => {
-  const configs: Record<string, any> = {
+const defaultConfig = computed<AppConfig>(() => {
+  const configs: Record<string, AppConfig> = {
     jenkins: {
       columnTypeName: '角色',
       typeOptions: [
@@ -164,21 +176,14 @@ const typeCounts = computed(() => {
   return counts;
 });
 
-function handleCellClick(user: User, column: Column, hasPermission: boolean) {
+function handleCellClick(user: Record<string, unknown>, column: Record<string, unknown>, hasPermission: boolean) {
   if (!user || !column) return;
 
-  const userId = user.id;
-  const columnId = column.id;
+  const userId = Number(user.id);
+  const columnId = column.id as number | string;
   const action = hasPermission ? 'revoke' : 'grant';
 
   emit('permissionChange', userId, columnId, action);
-}
-
-function getPermissionDetail(userId: number, columnId: number | string) {
-  if (!safeData.value.permissions_detail) return null;
-
-  const key = `${columnId}_${userId}`;
-  return safeData.value.permissions_detail[key] || null;
 }
 
 // 获取当前类型的描述信息
@@ -224,7 +229,7 @@ const getListTextClass = (type: string) => {
 
 // 获取当前类型的中文名称
 const getDefaultConfigTypeLabel = (type: string) => {
-  const typeOption = defaultConfig.value.typeOptions?.find((opt: any) => opt.value === type);
+  const typeOption = defaultConfig.value.typeOptions?.find(opt => opt.value === type);
   return typeOption?.label || type;
 };
 </script>

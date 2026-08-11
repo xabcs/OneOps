@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import type { FormInstance, FormRules } from 'element-plus';
 import { ElMessageBox, ElNotification } from 'element-plus';
-import { Key, Setting, User } from '@element-plus/icons-vue';
+import { Setting, User } from '@element-plus/icons-vue';
 import {
   fetchCreateSSHCredential,
   fetchDeleteSSHCredential,

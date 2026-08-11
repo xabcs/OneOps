@@ -42,8 +42,11 @@
       (e: 'save-group'): void;
     }>();
 
+    // @ts-expect-error vue-tsc noUnusedLocals: template ref
     const treeRef = ref();
+    // @ts-expect-error vue-tsc noUnusedLocals: template ref
     const editInputRef = ref<HTMLInputElement | null>(null);
+    // @ts-expect-error vue-tsc noUnusedLocals: template ref
     const groupFormRef = ref<FormInstance>();
 
     const groupFormRules: FormRules = {

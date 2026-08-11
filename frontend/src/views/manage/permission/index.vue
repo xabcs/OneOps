@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { ElNotification, ElMessage } from 'element-plus';
 import { Delete, Management, Plus, Refresh, Search } from '@element-plus/icons-vue';
 import {
@@ -11,7 +11,6 @@ import { useThemeStore } from '@/store/modules/theme';
 import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import { useUnifiedPermission } from '@/composables/useUnifiedPermission';
-import PermissionSearch from './modules/permission-search.vue';
 import PermissionOperateDrawer from './modules/permission-operate-drawer.vue';
 
 defineOptions({ name: 'PermissionManage' });
@@ -37,7 +36,7 @@ function getInitSearchParams(): Api.SystemManage.PermissionSearchParams {
   };
 }
 
-const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
+const { columns, data, getData, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
   paginationProps: {
     currentPage: searchParams.value.current,
     pageSize: searchParams.value.size

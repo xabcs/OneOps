@@ -19,6 +19,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const containerRef = useTemplateRef('containerRef');
 const graphRef = shallowRef<Graph | null>(null);
 

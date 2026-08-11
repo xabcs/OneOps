@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { fetchGetCommands } from '@/service/api/cmdb';
 
 defineOptions({

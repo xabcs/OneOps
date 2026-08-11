@@ -27,6 +27,7 @@ const titleColorPool = ['#3370ff', '#34c724', '#ff9f1a', '#ff4050', '#1f2329'];
 const themeStore = useThemeStore();
 
 // list table
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const listTableRef = ref(null);
 const listOptions = computed(() => {
   const options = {
@@ -37,6 +38,7 @@ const listOptions = computed(() => {
 const listRecords = ref<Record<string, string | number>[]>(listTableRecords);
 
 // group table
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const groupTableRef = ref(null);
 const groupOptions = computed(() => {
   const options = {
@@ -60,6 +62,7 @@ const groupOptions = computed(() => {
 const groupRecords = ref<Record<string, string | number>[]>(listTableRecords);
 
 // pivot table
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const pivotTableRef = ref(null);
 const pivotTableOptions = computed(() => {
   return {
@@ -196,6 +199,7 @@ const handleLegendItemClick = (args: { value: string[] }) => {
 };
 
 // custom layout list table
+// @ts-expect-error vue-tsc noUnusedLocals: template ref
 const customLayoutListTableRef = ref(null);
 const customLayoutListTableOptions = computed(() => {
   return {

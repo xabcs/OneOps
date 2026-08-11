@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Delete, Document, Edit, View } from '@element-plus/icons-vue';
+import { Document } from '@element-plus/icons-vue';
 import { fetchGetServers } from '@/service/api';
 
 defineOptions({

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { Document } from '@element-plus/icons-vue';
 import type { TableColumn } from '@element-plus/components/table';
 

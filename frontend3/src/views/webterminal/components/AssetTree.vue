@@ -28,7 +28,9 @@
     const loading = ref(false);
     const searchKeyword = ref('');
     const searchExpanded = ref(false);
+    // @ts-expect-error vue-tsc noUnusedLocals: template ref
     const treeRef = ref<InstanceType<typeof ElTree> | null>(null);
+    // @ts-expect-error vue-tsc noUnusedLocals: template ref
     const searchInputRef = ref<InstanceType<typeof ElInput> | null>(null);
 
     // 右键菜单
@@ -235,7 +237,7 @@
           nextTick(() => {
             const wrapper = document.querySelector('.wb-search-input-inner .el-input__wrapper');
             if (wrapper) {
-              const styles = getComputedStyle(wrapper);
+              void getComputedStyle(wrapper);
             }
           });
         });

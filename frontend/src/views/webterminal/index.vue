@@ -4,10 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { onKeyStroke } from '@vueuse/core';
 import {
   ElButton,
-  ElDescriptions,
-  ElDescriptionsItem,
   ElDialog,
-  ElMessage,
   ElNotification,
   ElOption,
   ElSelect,
@@ -15,7 +12,6 @@ import {
 } from 'element-plus';
 import { Icon } from '@iconify/vue';
 import { fetchConnectServer, fetchGetServerForConnect } from '@/service/api';
-import { localStg } from '@/utils/storage';
 import SessionTabs from './components/SessionTabs.vue';
 import TerminalArea from './components/TerminalArea.vue';
 import AssetTree from './components/AssetTree.vue';
@@ -112,11 +108,6 @@ const currentSessionIds = computed(() => sessions.value.map((s: any) => s.server
 // 切换侧边栏显示
 function toggleSidebar() {
   showSidebar.value = !showSidebar.value;
-}
-
-// 切换功能菜单（跳转到设置页面）
-function toggleFunctionMenu() {
-  switchActivityItem('settings');
 }
 
 // 服务器菜单折叠状态

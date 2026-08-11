@@ -1,7 +1,7 @@
 <script setup lang="ts">
-    import { computed, onMounted, reactive, ref } from 'vue';
+    import { onMounted, ref } from 'vue';
     import { ElMessage, ElMessageBox } from 'element-plus';
-    import { Bell, ChatDotRound, Delete, Edit, Message, Plus } from '@element-plus/icons-vue';
+    import { Bell, ChatDotRound, Message, Plus } from '@element-plus/icons-vue';
     import type { Component } from 'vue';
     import {
       createAlertRule,

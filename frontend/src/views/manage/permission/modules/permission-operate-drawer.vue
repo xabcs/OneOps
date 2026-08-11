@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
 import { useFormRules } from '@/hooks/common/form';
-import { $t } from '@/locales';
 import { fetchAddPermission, fetchUpdatePermission } from '@/service/api';
 
 defineOptions({

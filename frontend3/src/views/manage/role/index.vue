@@ -8,7 +8,6 @@ import { useThemeStore } from '@/store/modules/theme';
 import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
 import { $t } from '@/locales';
 import { executeWithPermission } from '@/utils/permission';
-import RoleSearch from './modules/role-search.vue';
 import RoleOperateDrawer from './modules/role-operate-drawer.vue';
 import PermissionAssignModal from './modules/permission-assign-modal.vue';
 import { useRoleUsersMap, canDeleteRole } from './modules/role-helper';
@@ -22,7 +21,7 @@ const themeStore = useThemeStore();
 const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);
 
 // 用户列表和角色-用户映射
-const { allUsers, roleUsersMap, getAllUsers } = useRoleUsersMap();
+const { roleUsersMap, getAllUsers } = useRoleUsersMap();
 
 onMounted(() => {
   getAllUsers();
@@ -191,7 +190,7 @@ async function handleAddClick() {
   });
 }
 
-const { columns, columnChecks, data, getData, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
+const { columns, data, getData, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
   paginationProps: {
     currentPage: searchParams.value.page,
     pageSize: searchParams.value.pageSize
