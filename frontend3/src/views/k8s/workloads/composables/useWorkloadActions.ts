@@ -40,16 +40,37 @@ function parseManifest(manifestStr: string): string {
 }
 
 // 资源操作配置映射
-const resourceConfig: Record<string, {
-  label: string;
-  getFn: (clusterId: string, ns: string, name: string) => Promise<unknown>;
-  deleteFn: (clusterId: string, params: K8s.ResourceDeleteParams) => Promise<unknown>;
-  restartFn?: (clusterId: string, params: K8s.ResourceDeleteParams) => Promise<unknown>;
-  updateFn: ((clusterId: string, params: K8s.ResourceUpdateParams) => Promise<unknown>) | null;
-}> = {
-  deployments: { label: 'Deployment', getFn: getK8sDeployment, deleteFn: deleteK8sDeployment, restartFn: restartK8sDeployment, updateFn: updateK8sDeployment },
-  statefulsets: { label: 'StatefulSet', getFn: getK8sStatefulSet, deleteFn: deleteK8sStatefulSet, restartFn: restartK8sStatefulSet, updateFn: updateK8sStatefulSet },
-  daemonsets: { label: 'DaemonSet', getFn: getK8sDaemonSet, deleteFn: deleteK8sDaemonSet, restartFn: restartK8sDaemonSet, updateFn: updateK8sDaemonSet },
+const resourceConfig: Record<
+  string,
+  {
+    label: string;
+    getFn: (clusterId: string, ns: string, name: string) => Promise<unknown>;
+    deleteFn: (clusterId: string, params: K8s.ResourceDeleteParams) => Promise<unknown>;
+    restartFn?: (clusterId: string, params: K8s.ResourceDeleteParams) => Promise<unknown>;
+    updateFn: ((clusterId: string, params: K8s.ResourceUpdateParams) => Promise<unknown>) | null;
+  }
+> = {
+  deployments: {
+    label: 'Deployment',
+    getFn: getK8sDeployment,
+    deleteFn: deleteK8sDeployment,
+    restartFn: restartK8sDeployment,
+    updateFn: updateK8sDeployment
+  },
+  statefulsets: {
+    label: 'StatefulSet',
+    getFn: getK8sStatefulSet,
+    deleteFn: deleteK8sStatefulSet,
+    restartFn: restartK8sStatefulSet,
+    updateFn: updateK8sStatefulSet
+  },
+  daemonsets: {
+    label: 'DaemonSet',
+    getFn: getK8sDaemonSet,
+    deleteFn: deleteK8sDaemonSet,
+    restartFn: restartK8sDaemonSet,
+    updateFn: updateK8sDaemonSet
+  },
   jobs: { label: 'Job', getFn: getK8sJob, deleteFn: deleteK8sJob, updateFn: updateK8sJob },
   cronjobs: { label: 'CronJob', getFn: getK8sCronJob, deleteFn: deleteK8sCronJob, updateFn: updateK8sCronJob },
   pods: { label: 'YAML', getFn: getK8sPod, deleteFn: deleteK8sPod, updateFn: null }
@@ -88,14 +109,20 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
 
   // ========== 通用编辑操作 ==========
   async function handleResourceEdit(resourceType: string, row: K8s.WorkloadRow) {
-    if (!getSelectedCluster()) { message.warning('请先选择集群'); return; }
+    if (!getSelectedCluster()) {
+      message.warning('请先选择集群');
+      return;
+    }
     const config = resourceConfig[resourceType];
     if (!config) return;
     selectedResource.value = row;
     yamlDialogTitle.value = `编辑 ${config.label}: ${row.name}`;
     yamlLoading.value = true;
     try {
-      const response = await config.getFn(getSelectedCluster()!, row.namespace, row.name) as { data?: { manifest?: string }; manifest?: string };
+      const response = (await config.getFn(getSelectedCluster()!, row.namespace, row.name)) as {
+        data?: { manifest?: string };
+        manifest?: string;
+      };
       yamlContent.value = parseManifest(response.data?.manifest || response.manifest || '');
       showYamlDialog.value = true;
     } catch (error: unknown) {
@@ -114,7 +141,10 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
     if (!config?.updateFn) throw new Error('不支持的资源类型');
     try {
       const manifestObj = yaml.load(yamlStr);
-      await config.updateFn(getSelectedCluster()!, { namespace: selectedResource.value.namespace, manifest: manifestObj });
+      await config.updateFn(getSelectedCluster()!, {
+        namespace: selectedResource.value.namespace,
+        manifest: manifestObj
+      });
       await loadFns[resourceType]?.();
     } catch (error: unknown) {
       const err = error as Error;
@@ -128,7 +158,9 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
     if (!config) return;
     try {
       await ElMessageBox.confirm(`确定要删除 ${config.label} "${row.name}" 吗？此操作不可恢复！`, '确认删除', {
-        type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消'
+        type: 'warning',
+        confirmButtonText: '确定',
+        cancelButtonText: '取消'
       });
       if (!getSelectedCluster()) return;
       await config.deleteFn(getSelectedCluster()!, { namespace: row.namespace, name: row.name });
@@ -145,7 +177,9 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
     if (!config?.restartFn) return;
     try {
       await ElMessageBox.confirm(`确定要重启 ${config.label} "${row.name}" 吗？`, '确认重启', {
-        type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消'
+        type: 'warning',
+        confirmButtonText: '确定',
+        cancelButtonText: '取消'
       });
       if (!getSelectedCluster()) return;
       await config.restartFn(getSelectedCluster()!, { namespace: row.namespace, name: row.name });
@@ -168,7 +202,9 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
     if (!selectedDeployment.value || !getSelectedCluster()) return;
     try {
       await scaleK8sDeployment(getSelectedCluster()!, {
-        namespace: selectedDeployment.value.namespace, name: selectedDeployment.value.name, replicas: scaleData.replicas
+        namespace: selectedDeployment.value.namespace,
+        name: selectedDeployment.value.name,
+        replicas: scaleData.replicas
       });
       message.success('缩放成功');
       showScaleDialog.value = false;
@@ -197,13 +233,19 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
 
   // ========== Pod 操作 ==========
   async function handlePodLogs(row: K8s.Pod) {
-    if (!getSelectedCluster()) { message.warning('请先选择集群'); return; }
+    if (!getSelectedCluster()) {
+      message.warning('请先选择集群');
+      return;
+    }
     const containerName = row.containers?.[0]?.name || '';
     selectedResource.value = row;
     logDialogContent.value = '加载中...';
     showLogDialog.value = true;
     try {
-      const response = await fetchK8sPodLogs(getSelectedCluster()!, row.namespace, row.name, { container: containerName, tailLines: 100 }) as { data?: { logs?: string } };
+      const response = (await fetchK8sPodLogs(getSelectedCluster()!, row.namespace, row.name, {
+        container: containerName,
+        tailLines: 100
+      })) as { data?: { logs?: string } };
       logDialogContent.value = response.data?.logs || '暂无日志';
     } catch (error: unknown) {
       const err = error as Error;
@@ -215,7 +257,10 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
   function handlePodMoreCommand(command: string, row: K8s.Pod) {
     if (command === 'edit') handleResourceEdit('pods', row);
     else if (command === 'terminal') {
-      if (!getSelectedCluster()) { message.warning('请先选择集群'); return; }
+      if (!getSelectedCluster()) {
+        message.warning('请先选择集群');
+        return;
+      }
       const containerName = row.containers?.[0]?.name || '';
       const terminalUrl = `${window.location.origin}/k8s/terminal?clusterId=${getSelectedCluster()}&namespace=${row.namespace}&podName=${row.name}&containerName=${containerName}`;
       const newWindow = window.open(terminalUrl, '_blank');
@@ -232,7 +277,9 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
     const action = suspend ? '暂停' : '恢复';
     try {
       await ElMessageBox.confirm(`确定要${action} CronJob "${row.name}" 吗？`, `确认${action}`, {
-        type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消'
+        type: 'warning',
+        confirmButtonText: '确定',
+        cancelButtonText: '取消'
       });
       if (!getSelectedCluster()) return;
       await suspendK8sCronJob(getSelectedCluster()!, { namespace: row.namespace, name: row.name, suspend });
@@ -246,7 +293,12 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
 
   // ========== 通用操作处理（Tab Dropdown） ==========
   function handleWorkloadCommand(resourceType: string, command: string, row: K8s.WorkloadRow) {
-    const typeMap: Record<string, string> = { statefulset: 'statefulsets', daemonset: 'daemonsets', job: 'jobs', cronjob: 'cronjobs' };
+    const typeMap: Record<string, string> = {
+      statefulset: 'statefulsets',
+      daemonset: 'daemonsets',
+      job: 'jobs',
+      cronjob: 'cronjobs'
+    };
     const tabType = typeMap[resourceType];
     if (command === 'edit') handleResourceEdit(tabType, row);
     else if (command === 'restart') handleResourceRestart(tabType, row);
@@ -259,20 +311,47 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
     selectedDeployments.value = selection;
     batchOperationsVisible.value = selection.length > 0;
   }
-  function handleDeploymentSelectAll(selection: K8s.Deployment[]) { selectedDeployments.value = selection; }
-  function handlePodSelectionChange(selection: K8s.Pod[]) { selectedPods.value = selection; }
-  function handlePodSelectAll(selection: K8s.Pod[]) { selectedPods.value = selection; }
-  function handleStatefulSetSelectionChange(selection: K8s.StatefulSet[]) { selectedStatefulSets.value = selection; }
-  function handleStatefulSetSelectAll(selection: K8s.StatefulSet[]) { selectedStatefulSets.value = selection; }
-  function handleDaemonSetSelectionChange(selection: K8s.DaemonSet[]) { selectedDaemonSets.value = selection; }
-  function handleDaemonSetSelectAll(selection: K8s.DaemonSet[]) { selectedDaemonSets.value = selection; }
-  function handleJobSelectionChange(selection: K8s.Job[]) { selectedJobs.value = selection; }
-  function handleJobSelectAll(selection: K8s.Job[]) { selectedJobs.value = selection; }
-  function handleCronJobSelectionChange(selection: K8s.CronJob[]) { selectedCronJobs.value = selection; }
-  function handleCronJobSelectAll(selection: K8s.CronJob[]) { selectedCronJobs.value = selection; }
+  function handleDeploymentSelectAll(selection: K8s.Deployment[]) {
+    selectedDeployments.value = selection;
+  }
+  function handlePodSelectionChange(selection: K8s.Pod[]) {
+    selectedPods.value = selection;
+  }
+  function handlePodSelectAll(selection: K8s.Pod[]) {
+    selectedPods.value = selection;
+  }
+  function handleStatefulSetSelectionChange(selection: K8s.StatefulSet[]) {
+    selectedStatefulSets.value = selection;
+  }
+  function handleStatefulSetSelectAll(selection: K8s.StatefulSet[]) {
+    selectedStatefulSets.value = selection;
+  }
+  function handleDaemonSetSelectionChange(selection: K8s.DaemonSet[]) {
+    selectedDaemonSets.value = selection;
+  }
+  function handleDaemonSetSelectAll(selection: K8s.DaemonSet[]) {
+    selectedDaemonSets.value = selection;
+  }
+  function handleJobSelectionChange(selection: K8s.Job[]) {
+    selectedJobs.value = selection;
+  }
+  function handleJobSelectAll(selection: K8s.Job[]) {
+    selectedJobs.value = selection;
+  }
+  function handleCronJobSelectionChange(selection: K8s.CronJob[]) {
+    selectedCronJobs.value = selection;
+  }
+  function handleCronJobSelectAll(selection: K8s.CronJob[]) {
+    selectedCronJobs.value = selection;
+  }
 
   // 通用批量确认+执行
-  async function executeBatchAction<T extends K8s.WorkloadRow>(items: T[], actionFn: (row: T) => Promise<unknown>, successMsg: string, afterAction: () => void) {
+  async function executeBatchAction<T extends K8s.WorkloadRow>(
+    items: T[],
+    actionFn: (row: T) => Promise<unknown>,
+    successMsg: string,
+    afterAction: () => void
+  ) {
     try {
       if (!getSelectedCluster()) return;
       await Promise.all(items.map(actionFn));
@@ -286,13 +365,20 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
 
   async function handleBatchRestart() {
     try {
-      await ElMessageBox.confirm(`确定要重启选中的 ${selectedDeployments.value.length} 个 Deployment 吗？`, '确认批量重启',
-        { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' });
+      await ElMessageBox.confirm(
+        `确定要重启选中的 ${selectedDeployments.value.length} 个 Deployment 吗？`,
+        '确认批量重启',
+        { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' }
+      );
       await executeBatchAction(
         selectedDeployments.value,
         row => restartK8sDeployment(getSelectedCluster()!, { namespace: row.namespace, name: row.name }),
         `成功重启 ${selectedDeployments.value.length} 个 Deployment`,
-        async () => { selectedDeployments.value = []; batchOperationsVisible.value = false; await loadFns.deployments?.(); }
+        async () => {
+          selectedDeployments.value = [];
+          batchOperationsVisible.value = false;
+          await loadFns.deployments?.();
+        }
       );
     } catch (error: unknown) {
       const err = error as Error;
@@ -302,13 +388,20 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
 
   async function handleBatchDelete() {
     try {
-      await ElMessageBox.confirm(`确定要删除选中的 ${selectedDeployments.value.length} 个 Deployment 吗？此操作不可恢复！`, '确认批量删除',
-        { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' });
+      await ElMessageBox.confirm(
+        `确定要删除选中的 ${selectedDeployments.value.length} 个 Deployment 吗？此操作不可恢复！`,
+        '确认批量删除',
+        { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' }
+      );
       await executeBatchAction(
         selectedDeployments.value,
         row => deleteK8sDeployment(getSelectedCluster()!, { namespace: row.namespace, name: row.name }),
         `成功删除 ${selectedDeployments.value.length} 个 Deployment`,
-        async () => { selectedDeployments.value = []; batchOperationsVisible.value = false; await loadFns.deployments?.(); }
+        async () => {
+          selectedDeployments.value = [];
+          batchOperationsVisible.value = false;
+          await loadFns.deployments?.();
+        }
       );
     } catch (error: unknown) {
       const err = error as Error;
@@ -318,13 +411,20 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
 
   async function handleBatchDeletePods() {
     try {
-      await ElMessageBox.confirm(`确定要删除选中的 ${selectedPods.value.length} 个 Pod 吗？`, '确认批量删除',
-        { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' });
+      await ElMessageBox.confirm(`确定要删除选中的 ${selectedPods.value.length} 个 Pod 吗？`, '确认批量删除', {
+        type: 'warning',
+        confirmButtonText: '确定',
+        cancelButtonText: '取消'
+      });
       await executeBatchAction(
         selectedPods.value,
         row => deleteK8sPod(getSelectedCluster()!, { namespace: row.namespace, name: row.name }),
         `成功删除 ${selectedPods.value.length} 个 Pod`,
-        async () => { selectedPods.value = []; batchOperationsVisible.value = false; await loadFns.pods?.(); }
+        async () => {
+          selectedPods.value = [];
+          batchOperationsVisible.value = false;
+          await loadFns.pods?.();
+        }
       );
     } catch (error: unknown) {
       const err = error as Error;
@@ -333,7 +433,14 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
   }
 
   async function handleBatchDeleteByType(resourceType: string) {
-    const batchConfig: Record<string, { items: K8s.WorkloadRow[]; deleteFn: (clusterId: string, params: K8s.ResourceDeleteParams) => Promise<unknown>; label: string }> = {
+    const batchConfig: Record<
+      string,
+      {
+        items: K8s.WorkloadRow[];
+        deleteFn: (clusterId: string, params: K8s.ResourceDeleteParams) => Promise<unknown>;
+        label: string;
+      }
+    > = {
       statefulset: { items: selectedStatefulSets.value, deleteFn: deleteK8sStatefulSet, label: 'StatefulSet' },
       daemonset: { items: selectedDaemonSets.value, deleteFn: deleteK8sDaemonSet, label: 'DaemonSet' },
       job: { items: selectedJobs.value, deleteFn: deleteK8sJob, label: 'Job' },
@@ -343,18 +450,32 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
     if (!cfg) return;
 
     try {
-      await ElMessageBox.confirm(`确定要删除选中的 ${cfg.items.length} 个 ${cfg.label} 吗？此操作不可恢复！`, '确认批量删除',
-        { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' });
+      await ElMessageBox.confirm(
+        `确定要删除选中的 ${cfg.items.length} 个 ${cfg.label} 吗？此操作不可恢复！`,
+        '确认批量删除',
+        { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' }
+      );
       await executeBatchAction(
         cfg.items,
         row => cfg.deleteFn(getSelectedCluster()!, { namespace: row.namespace, name: row.name }),
         `成功删除 ${cfg.items.length} 个 ${cfg.label}`,
         async () => {
           const clearMap: Record<string, { value: K8s.WorkloadRow[] }> = {
-            statefulset: selectedStatefulSets, daemonset: selectedDaemonSets, job: selectedJobs, cronjob: selectedCronJobs
+            statefulset: selectedStatefulSets,
+            daemonset: selectedDaemonSets,
+            job: selectedJobs,
+            cronjob: selectedCronJobs
           };
           clearMap[resourceType].value = [];
-          await loadFns[resourceType === 'statefulset' ? 'statefulsets' : resourceType === 'daemonset' ? 'daemonsets' : resourceType === 'job' ? 'jobs' : 'cronjobs']?.();
+          await loadFns[
+            resourceType === 'statefulset'
+              ? 'statefulsets'
+              : resourceType === 'daemonset'
+                ? 'daemonsets'
+                : resourceType === 'job'
+                  ? 'jobs'
+                  : 'cronjobs'
+          ]?.();
         }
       );
     } catch (error: unknown) {
@@ -369,26 +490,58 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
   }
 
   return {
-    showScaleDialog, scaleData, selectedDeployment,
-    showYamlDialog, yamlDialogTitle, yamlContent, selectedResource, yamlLoading,
-    showLogDialog, logDialogContent,
-    selectedDeployments, selectedPods, selectedStatefulSets, selectedDaemonSets, selectedJobs, selectedCronJobs,
-    batchOperationsVisible, setLoadFunctions,
-    handleResourceEdit, handleYamlApply,
-    handleScale, handleScaleSubmit,
-    handleMoreCommand, handleRestart, handleDelete,
-    handlePodLogs, handlePodMoreCommand, handlePodDelete,
-    handleStatefulSetRestart, handleStatefulSetDelete,
-    handleDaemonSetRestart, handleDaemonSetDelete,
-    handleJobDelete, handleCronJobDelete, handleCronJobSuspend,
+    showScaleDialog,
+    scaleData,
+    selectedDeployment,
+    showYamlDialog,
+    yamlDialogTitle,
+    yamlContent,
+    selectedResource,
+    yamlLoading,
+    showLogDialog,
+    logDialogContent,
+    selectedDeployments,
+    selectedPods,
+    selectedStatefulSets,
+    selectedDaemonSets,
+    selectedJobs,
+    selectedCronJobs,
+    batchOperationsVisible,
+    setLoadFunctions,
+    handleResourceEdit,
+    handleYamlApply,
+    handleScale,
+    handleScaleSubmit,
+    handleMoreCommand,
+    handleRestart,
+    handleDelete,
+    handlePodLogs,
+    handlePodMoreCommand,
+    handlePodDelete,
+    handleStatefulSetRestart,
+    handleStatefulSetDelete,
+    handleDaemonSetRestart,
+    handleDaemonSetDelete,
+    handleJobDelete,
+    handleCronJobDelete,
+    handleCronJobSuspend,
     handleWorkloadCommand,
-    handleDeploymentSelectionChange, handleDeploymentSelectAll,
-    handlePodSelectionChange, handlePodSelectAll,
-    handleBatchRestart, handleBatchDelete, handleBatchDeletePods,
-    handleStatefulSetSelectionChange, handleStatefulSetSelectAll,
-    handleDaemonSetSelectionChange, handleDaemonSetSelectAll,
-    handleJobSelectionChange, handleJobSelectAll,
-    handleCronJobSelectionChange, handleCronJobSelectAll,
-    handleBatchDeleteByType, clearSelection
+    handleDeploymentSelectionChange,
+    handleDeploymentSelectAll,
+    handlePodSelectionChange,
+    handlePodSelectAll,
+    handleBatchRestart,
+    handleBatchDelete,
+    handleBatchDeletePods,
+    handleStatefulSetSelectionChange,
+    handleStatefulSetSelectAll,
+    handleDaemonSetSelectionChange,
+    handleDaemonSetSelectAll,
+    handleJobSelectionChange,
+    handleJobSelectAll,
+    handleCronJobSelectionChange,
+    handleCronJobSelectAll,
+    handleBatchDeleteByType,
+    clearSelection
   };
 }

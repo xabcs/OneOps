@@ -1,167 +1,167 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { ElMessage } from 'element-plus';
-import { Document } from '@element-plus/icons-vue';
-import { fetchGetServers } from '@/service/api';
+  import { onMounted, reactive, ref } from 'vue';
+  import { ElMessage } from 'element-plus';
+  import { Document } from '@element-plus/icons-vue';
+  import { fetchGetServers } from '@/service/api';
 
-defineOptions({
-  name: 'MonitoringReports'
-});
+  defineOptions({
+    name: 'MonitoringReports'
+  });
 
-const loading = ref(false);
-const generating = ref(false);
+  const loading = ref(false);
+  const generating = ref(false);
 
-const servers = ref<CMDB.Server[]>([]);
+  const servers = ref<CMDB.Server[]>([]);
 
-// 报告类型选项
-const reportTypes = [
-  { label: '主机巡检报告', value: 'host' },
-  { label: '安全合规报告', value: 'security' },
-  { label: '容量分析报告', value: 'capacity' }
-];
-
-// 报告表单
-const reportForm = reactive({
-  reportType: 'host',
-  serverIds: [] as number[],
-  title: ''
-});
-
-// 报告历史
-const reportHistory = ref<
-  Array<{
-    id: number;
-    type: string;
-    title: string;
-    status: string;
-    createdAt: string;
-    completedAt?: string;
-  }>
->([]);
-
-// 获取主机列表
-async function getServerList() {
-  loading.value = true;
-  const { data } = await fetchGetServers({ page: 1, pageSize: 1000, agentStatus: 'running' });
-  if (data) {
-    servers.value = data.list || [];
-  }
-  loading.value = false;
-}
-
-// 生成报告
-async function generateReport() {
-  if (reportForm.serverIds.length === 0) {
-    ElMessage.warning('请至少选择一台主机');
-    return;
-  }
-
-  if (!reportForm.title) {
-    const typeText = reportTypes.find(t => t.value === reportForm.reportType)?.label || '';
-    reportForm.title = `${typeText}-${new Date().toLocaleString('zh-CN')}`;
-  }
-
-  generating.value = true;
-
-  // 模拟生成报告
-  setTimeout(() => {
-    const newReport = {
-      id: Date.now(),
-      type: reportForm.reportType,
-      title: reportForm.title,
-      status: 'completed',
-      createdAt: new Date().toISOString(),
-      completedAt: new Date().toISOString()
-    };
-
-    reportHistory.value.unshift(newReport);
-    generating.value = false;
-    ElMessage.success('报告生成成功');
-    reportForm.title = '';
-  }, 2000);
-}
-
-// 查看报告
-function viewReport(report: { id: number; status: string }) {
-  if (report.status !== 'completed') {
-    ElMessage.warning('报告尚未生成完成');
-    return;
-  }
-
-  // 这里应该跳转到报告详情页或打开PDF预览
-  ElMessage.info(`查看报告功能开发中，报告ID: ${report.id}`);
-}
-
-// 导出报告
-function exportReport(report: { id: number; status: string }) {
-  if (report.status !== 'completed') {
-    ElMessage.warning('报告尚未生成完成');
-    return;
-  }
-
-  ElMessage.success(`导出报告功能开发中，报告ID: ${report.id}`);
-}
-
-// 删除报告
-function deleteReport(id: number) {
-  const index = reportHistory.value.findIndex(r => r.id === id);
-  if (index > -1) {
-    reportHistory.value.splice(index, 1);
-    ElMessage.success('删除成功');
-  }
-}
-
-// 获取报告状态标签类型
-function getStatusTagType(status: string): 'success' | 'warning' | 'danger' | 'info' {
-  const map: Record<string, 'success' | 'warning' | 'danger' | 'info'> = {
-    completed: 'success',
-    generating: 'warning',
-    failed: 'danger',
-    pending: 'info'
-  };
-  return map[status] || 'info';
-}
-
-// 获取报告状态文本
-function getStatusText(status: string): string {
-  const map: Record<string, string> = {
-    completed: '已完成',
-    generating: '生成中',
-    failed: '失败',
-    pending: '等待中'
-  };
-  return map[status] || status;
-}
-
-// 格式化时间
-function formatTime(time: string): string {
-  if (!time) return '-';
-  return new Date(time).toLocaleString('zh-CN');
-}
-
-onMounted(() => {
-  getServerList();
-
-  // 模拟加载历史报告
-  reportHistory.value = [
-    {
-      id: 1,
-      type: 'host',
-      title: '主机巡检报告-2026-05-26',
-      status: 'completed',
-      createdAt: '2026-05-26T10:00:00',
-      completedAt: '2026-05-26T10:05:00'
-    },
-    {
-      id: 2,
-      type: 'security',
-      title: '安全合规报告-2026-05-25',
-      status: 'completed',
-      createdAt: '2026-05-25T15:00:00',
-      completedAt: '2026-05-25T15:03:00'
-    }
+  // 报告类型选项
+  const reportTypes = [
+    { label: '主机巡检报告', value: 'host' },
+    { label: '安全合规报告', value: 'security' },
+    { label: '容量分析报告', value: 'capacity' }
   ];
-});
+
+  // 报告表单
+  const reportForm = reactive({
+    reportType: 'host',
+    serverIds: [] as number[],
+    title: ''
+  });
+
+  // 报告历史
+  const reportHistory = ref<
+    Array<{
+      id: number;
+      type: string;
+      title: string;
+      status: string;
+      createdAt: string;
+      completedAt?: string;
+    }>
+  >([]);
+
+  // 获取主机列表
+  async function getServerList() {
+    loading.value = true;
+    const { data } = await fetchGetServers({ page: 1, pageSize: 1000, agentStatus: 'running' });
+    if (data) {
+      servers.value = data.list || [];
+    }
+    loading.value = false;
+  }
+
+  // 生成报告
+  async function generateReport() {
+    if (reportForm.serverIds.length === 0) {
+      ElMessage.warning('请至少选择一台主机');
+      return;
+    }
+
+    if (!reportForm.title) {
+      const typeText = reportTypes.find(t => t.value === reportForm.reportType)?.label || '';
+      reportForm.title = `${typeText}-${new Date().toLocaleString('zh-CN')}`;
+    }
+
+    generating.value = true;
+
+    // 模拟生成报告
+    setTimeout(() => {
+      const newReport = {
+        id: Date.now(),
+        type: reportForm.reportType,
+        title: reportForm.title,
+        status: 'completed',
+        createdAt: new Date().toISOString(),
+        completedAt: new Date().toISOString()
+      };
+
+      reportHistory.value.unshift(newReport);
+      generating.value = false;
+      ElMessage.success('报告生成成功');
+      reportForm.title = '';
+    }, 2000);
+  }
+
+  // 查看报告
+  function viewReport(report: { id: number; status: string }) {
+    if (report.status !== 'completed') {
+      ElMessage.warning('报告尚未生成完成');
+      return;
+    }
+
+    // 这里应该跳转到报告详情页或打开PDF预览
+    ElMessage.info(`查看报告功能开发中，报告ID: ${report.id}`);
+  }
+
+  // 导出报告
+  function exportReport(report: { id: number; status: string }) {
+    if (report.status !== 'completed') {
+      ElMessage.warning('报告尚未生成完成');
+      return;
+    }
+
+    ElMessage.success(`导出报告功能开发中，报告ID: ${report.id}`);
+  }
+
+  // 删除报告
+  function deleteReport(id: number) {
+    const index = reportHistory.value.findIndex(r => r.id === id);
+    if (index > -1) {
+      reportHistory.value.splice(index, 1);
+      ElMessage.success('删除成功');
+    }
+  }
+
+  // 获取报告状态标签类型
+  function getStatusTagType(status: string): 'success' | 'warning' | 'danger' | 'info' {
+    const map: Record<string, 'success' | 'warning' | 'danger' | 'info'> = {
+      completed: 'success',
+      generating: 'warning',
+      failed: 'danger',
+      pending: 'info'
+    };
+    return map[status] || 'info';
+  }
+
+  // 获取报告状态文本
+  function getStatusText(status: string): string {
+    const map: Record<string, string> = {
+      completed: '已完成',
+      generating: '生成中',
+      failed: '失败',
+      pending: '等待中'
+    };
+    return map[status] || status;
+  }
+
+  // 格式化时间
+  function formatTime(time: string): string {
+    if (!time) return '-';
+    return new Date(time).toLocaleString('zh-CN');
+  }
+
+  onMounted(() => {
+    getServerList();
+
+    // 模拟加载历史报告
+    reportHistory.value = [
+      {
+        id: 1,
+        type: 'host',
+        title: '主机巡检报告-2026-05-26',
+        status: 'completed',
+        createdAt: '2026-05-26T10:00:00',
+        completedAt: '2026-05-26T10:05:00'
+      },
+      {
+        id: 2,
+        type: 'security',
+        title: '安全合规报告-2026-05-25',
+        status: 'completed',
+        createdAt: '2026-05-25T15:00:00',
+        completedAt: '2026-05-25T15:03:00'
+      }
+    ];
+  });
 </script>
 
 <template>

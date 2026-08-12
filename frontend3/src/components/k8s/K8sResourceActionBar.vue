@@ -1,55 +1,55 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router';
-import { ElButton, ElTag, ElTooltip } from 'element-plus';
+  import { useRouter } from 'vue-router';
+  import { ElButton, ElTag, ElTooltip } from 'element-plus';
 
-interface MetaItem {
-  label: string;
-  value: string;
-}
+  interface MetaItem {
+    label: string;
+    value: string;
+  }
 
-interface ActionItem {
-  label: string;
-  type?: '' | 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'text';
-  icon?: string;
-  handler: () => void;
-  tooltip?: string;
-}
+  interface ActionItem {
+    label: string;
+    type?: '' | 'primary' | 'success' | 'warning' | 'danger' | 'info' | 'text';
+    icon?: string;
+    handler: () => void;
+    tooltip?: string;
+  }
 
-interface StatusTag {
-  type: 'success' | 'warning' | 'danger' | 'info';
-  text: string;
-}
+  interface StatusTag {
+    type: 'success' | 'warning' | 'danger' | 'info';
+    text: string;
+  }
 
-interface Props {
-  /** 资源名称 */
-  name: string;
-  /** 命名空间 */
-  namespace: string;
-  /** 状态标签 */
-  statusTag: StatusTag;
-  /** 元信息（可选） */
-  meta?: MetaItem[];
-  /** 操作按钮列表 */
-  actions?: ActionItem[];
-  /** 返回路径（可选） */
-  backPath?: string;
-}
+  interface Props {
+    /** 资源名称 */
+    name: string;
+    /** 命名空间 */
+    namespace: string;
+    /** 状态标签 */
+    statusTag: StatusTag;
+    /** 元信息（可选） */
+    meta?: MetaItem[];
+    /** 操作按钮列表 */
+    actions?: ActionItem[];
+    /** 返回路径（可选） */
+    backPath?: string;
+  }
 
-defineOptions({ name: 'K8sResourceActionBar' });
+  defineOptions({ name: 'K8sResourceActionBar' });
 
-const props = withDefaults(defineProps<Props>(), {
-  meta: () => [],
-  actions: () => [],
-  backPath: '/k8s/workloads'
-});
+  const props = withDefaults(defineProps<Props>(), {
+    meta: () => [],
+    actions: () => [],
+    backPath: '/k8s/workloads'
+  });
 
-const router = useRouter();
+  const router = useRouter();
 
-// 返回上一页
-const handleBack = () => {
-  // 使用 router.push 而不是 router.back()，确保列表页能重新加载
-  router.push(props.backPath);
-};
+  // 返回上一页
+  const handleBack = () => {
+    // 使用 router.push 而不是 router.back()，确保列表页能重新加载
+    router.push(props.backPath);
+  };
 </script>
 
 <template>
@@ -86,57 +86,57 @@ const handleBack = () => {
 </template>
 
 <style scoped>
-/* 顶部操作栏 - 透明背景，保持轻量 */
-.resource-action-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
+  /* 顶部操作栏 - 透明背景，保持轻量 */
+  .resource-action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
 
-.action-bar-primary {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+  .action-bar-primary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
 
-.resource-name {
-  font-size: 16px;
-  font-weight: 500;
-  color: #303133;
-}
+  .resource-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: #303133;
+  }
 
-.back-arrow {
-  font-size: 20px;
-  color: #0052d9;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
+  .back-arrow {
+    font-size: 20px;
+    color: #0052d9;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
 
-.back-arrow:hover {
-  opacity: 0.8;
-}
+  .back-arrow:hover {
+    opacity: 0.8;
+  }
 
-.action-bar-actions {
-  display: flex;
-  gap: 8px;
-}
+  .action-bar-actions {
+    display: flex;
+    gap: 8px;
+  }
 
-/* 元信息行 - 灰色小字 */
-.action-bar-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-  font-size: 13px;
-  color: #909399;
-}
+  /* 元信息行 - 灰色小字 */
+  .action-bar-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #909399;
+  }
 
-.meta-item {
-  white-space: nowrap;
-}
+  .meta-item {
+    white-space: nowrap;
+  }
 
-.meta-divider {
-  color: #dcdfe6;
-}
+  .meta-divider {
+    color: #dcdfe6;
+  }
 </style>

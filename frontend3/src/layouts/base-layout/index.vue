@@ -1,103 +1,103 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue';
-import { AdminLayout, LAYOUT_SCROLL_EL_ID } from '@sa/materials';
-import type { LayoutMode } from '@sa/materials';
-import { useAppStore } from '@/store/modules/app';
-import { useThemeStore } from '@/store/modules/theme';
-import GlobalHeader from '../modules/global-header/index.vue';
-import GlobalSider from '../modules/global-sider/index.vue';
-import GlobalTab from '../modules/global-tab/index.vue';
-import GlobalContent from '../modules/global-content/index.vue';
-import GlobalFooter from '../modules/global-footer/index.vue';
-import ThemeDrawer from '../modules/theme-drawer/index.vue';
-import { setupMixMenuContext } from '../context';
+  import { computed, defineAsyncComponent } from 'vue';
+  import { AdminLayout, LAYOUT_SCROLL_EL_ID } from '@sa/materials';
+  import type { LayoutMode } from '@sa/materials';
+  import { useAppStore } from '@/store/modules/app';
+  import { useThemeStore } from '@/store/modules/theme';
+  import GlobalHeader from '../modules/global-header/index.vue';
+  import GlobalSider from '../modules/global-sider/index.vue';
+  import GlobalTab from '../modules/global-tab/index.vue';
+  import GlobalContent from '../modules/global-content/index.vue';
+  import GlobalFooter from '../modules/global-footer/index.vue';
+  import ThemeDrawer from '../modules/theme-drawer/index.vue';
+  import { setupMixMenuContext } from '../context';
 
-defineOptions({ name: 'BaseLayout' });
+  defineOptions({ name: 'BaseLayout' });
 
-const appStore = useAppStore();
-const themeStore = useThemeStore();
-const { childLevelMenus, isActiveFirstLevelMenuHasChildren } = setupMixMenuContext();
+  const appStore = useAppStore();
+  const themeStore = useThemeStore();
+  const { childLevelMenus, isActiveFirstLevelMenuHasChildren } = setupMixMenuContext();
 
-const GlobalMenu = defineAsyncComponent(() => import('../modules/global-menu/index.vue'));
+  const GlobalMenu = defineAsyncComponent(() => import('../modules/global-menu/index.vue'));
 
-const layoutMode = computed(() => {
-  const vertical: LayoutMode = 'vertical';
-  const horizontal: LayoutMode = 'horizontal';
-  return themeStore.layout.mode.includes(vertical) ? vertical : horizontal;
-});
+  const layoutMode = computed(() => {
+    const vertical: LayoutMode = 'vertical';
+    const horizontal: LayoutMode = 'horizontal';
+    return themeStore.layout.mode.includes(vertical) ? vertical : horizontal;
+  });
 
-const headerProps = computed(() => {
-  const { mode, reverseHorizontalMix } = themeStore.layout;
+  const headerProps = computed(() => {
+    const { mode, reverseHorizontalMix } = themeStore.layout;
 
-  const headerPropsConfig: Record<UnionKey.ThemeLayoutMode, App.Global.HeaderProps> = {
-    vertical: {
-      showLogo: false,
-      showMenu: false,
-      showMenuToggler: true
-    },
-    'vertical-mix': {
-      showLogo: false,
-      showMenu: false,
-      showMenuToggler: false
-    },
-    horizontal: {
-      showLogo: true,
-      showMenu: true,
-      showMenuToggler: false
-    },
-    'horizontal-mix': {
-      showLogo: true,
-      showMenu: true,
-      showMenuToggler: reverseHorizontalMix && isActiveFirstLevelMenuHasChildren.value
+    const headerPropsConfig: Record<UnionKey.ThemeLayoutMode, App.Global.HeaderProps> = {
+      vertical: {
+        showLogo: false,
+        showMenu: false,
+        showMenuToggler: true
+      },
+      'vertical-mix': {
+        showLogo: false,
+        showMenu: false,
+        showMenuToggler: false
+      },
+      horizontal: {
+        showLogo: true,
+        showMenu: true,
+        showMenuToggler: false
+      },
+      'horizontal-mix': {
+        showLogo: true,
+        showMenu: true,
+        showMenuToggler: reverseHorizontalMix && isActiveFirstLevelMenuHasChildren.value
+      }
+    };
+
+    return headerPropsConfig[mode];
+  });
+
+  const siderVisible = computed(() => themeStore.layout.mode !== 'horizontal');
+
+  const isVerticalMix = computed(() => themeStore.layout.mode === 'vertical-mix');
+
+  const isHorizontalMix = computed(() => themeStore.layout.mode === 'horizontal-mix');
+
+  const siderWidth = computed(() => getSiderWidth());
+
+  const siderCollapsedWidth = computed(() => getSiderCollapsedWidth());
+
+  function getSiderWidth() {
+    const { reverseHorizontalMix } = themeStore.layout;
+    const { width, mixWidth, mixChildMenuWidth } = themeStore.sider;
+
+    if (isHorizontalMix.value && reverseHorizontalMix) {
+      return isActiveFirstLevelMenuHasChildren.value ? width : 0;
     }
-  };
 
-  return headerPropsConfig[mode];
-});
+    let w = isVerticalMix.value || isHorizontalMix.value ? mixWidth : width;
 
-const siderVisible = computed(() => themeStore.layout.mode !== 'horizontal');
+    if (isVerticalMix.value && appStore.mixSiderFixed && childLevelMenus.value.length) {
+      w += mixChildMenuWidth;
+    }
 
-const isVerticalMix = computed(() => themeStore.layout.mode === 'vertical-mix');
-
-const isHorizontalMix = computed(() => themeStore.layout.mode === 'horizontal-mix');
-
-const siderWidth = computed(() => getSiderWidth());
-
-const siderCollapsedWidth = computed(() => getSiderCollapsedWidth());
-
-function getSiderWidth() {
-  const { reverseHorizontalMix } = themeStore.layout;
-  const { width, mixWidth, mixChildMenuWidth } = themeStore.sider;
-
-  if (isHorizontalMix.value && reverseHorizontalMix) {
-    return isActiveFirstLevelMenuHasChildren.value ? width : 0;
+    return w;
   }
 
-  let w = isVerticalMix.value || isHorizontalMix.value ? mixWidth : width;
+  function getSiderCollapsedWidth() {
+    const { reverseHorizontalMix } = themeStore.layout;
+    const { collapsedWidth, mixCollapsedWidth, mixChildMenuWidth } = themeStore.sider;
 
-  if (isVerticalMix.value && appStore.mixSiderFixed && childLevelMenus.value.length) {
-    w += mixChildMenuWidth;
+    if (isHorizontalMix.value && reverseHorizontalMix) {
+      return isActiveFirstLevelMenuHasChildren.value ? collapsedWidth : 0;
+    }
+
+    let w = isVerticalMix.value || isHorizontalMix.value ? mixCollapsedWidth : collapsedWidth;
+
+    if (isVerticalMix.value && appStore.mixSiderFixed && childLevelMenus.value.length) {
+      w += mixChildMenuWidth;
+    }
+
+    return w;
   }
-
-  return w;
-}
-
-function getSiderCollapsedWidth() {
-  const { reverseHorizontalMix } = themeStore.layout;
-  const { collapsedWidth, mixCollapsedWidth, mixChildMenuWidth } = themeStore.sider;
-
-  if (isHorizontalMix.value && reverseHorizontalMix) {
-    return isActiveFirstLevelMenuHasChildren.value ? collapsedWidth : 0;
-  }
-
-  let w = isVerticalMix.value || isHorizontalMix.value ? mixCollapsedWidth : collapsedWidth;
-
-  if (isVerticalMix.value && appStore.mixSiderFixed && childLevelMenus.value.length) {
-    w += mixChildMenuWidth;
-  }
-
-  return w;
-}
 </script>
 
 <template>
@@ -140,7 +140,7 @@ function getSiderCollapsedWidth() {
 </template>
 
 <style lang="scss">
-#__SCROLL_EL_ID__ {
-  @include scrollbar();
-}
+  #__SCROLL_EL_ID__ {
+    @include scrollbar();
+  }
 </style>

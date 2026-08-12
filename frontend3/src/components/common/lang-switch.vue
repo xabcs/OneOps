@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { $t } from '@/locales';
+  import { computed } from 'vue';
+  import { $t } from '@/locales';
 
-defineOptions({ name: 'LangSwitch' });
+  defineOptions({ name: 'LangSwitch' });
 
-interface Props {
-  /** Current language */
-  lang: App.I18n.LangType;
-  /** Language options */
-  langOptions: App.I18n.LangOption[];
-  /** Show tooltip */
-  showTooltip?: boolean;
-}
+  interface Props {
+    /** Current language */
+    lang: App.I18n.LangType;
+    /** Language options */
+    langOptions: App.I18n.LangOption[];
+    /** Show tooltip */
+    showTooltip?: boolean;
+  }
 
-const props = withDefaults(defineProps<Props>(), {
-  showTooltip: true
-});
+  const props = withDefaults(defineProps<Props>(), {
+    showTooltip: true
+  });
 
-type Emits = {
-  (e: 'changeLang', lang: App.I18n.LangType): void;
-};
+  type Emits = {
+    (e: 'changeLang', lang: App.I18n.LangType): void;
+  };
 
-const emit = defineEmits<Emits>();
+  const emit = defineEmits<Emits>();
 
-const tooltipContent = computed(() => {
-  if (!props.showTooltip) return '';
+  const tooltipContent = computed(() => {
+    if (!props.showTooltip) return '';
 
-  return $t('icon.lang');
-});
+    return $t('icon.lang');
+  });
 
-function changeLang(lang: App.I18n.LangType) {
-  emit('changeLang', lang);
-}
+  function changeLang(lang: App.I18n.LangType) {
+    emit('changeLang', lang);
+  }
 </script>
 
 <template>
@@ -59,11 +59,11 @@ function changeLang(lang: App.I18n.LangType) {
 </template>
 
 <style scoped>
-:deep(.el-dropdown-menu__item) {
-  border-radius: 6px;
-}
-:deep(.is-active) {
-  background-color: var(--el-dropdown-menuItem-hover-fill);
-  color: var(--el-dropdown-menuItem-hover-color);
-}
+  :deep(.el-dropdown-menu__item) {
+    border-radius: 6px;
+  }
+  :deep(.is-active) {
+    background-color: var(--el-dropdown-menuItem-hover-fill);
+    color: var(--el-dropdown-menuItem-hover-color);
+  }
 </style>

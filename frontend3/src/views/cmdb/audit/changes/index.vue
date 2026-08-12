@@ -1,80 +1,80 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { ElNotification } from 'element-plus';
-import { fetchGetAssetChanges } from '@/service/api';
+  import { onMounted, reactive, ref } from 'vue';
+  import { ElNotification } from 'element-plus';
+  import { fetchGetAssetChanges } from '@/service/api';
 
-defineOptions({ name: 'CmdbChanges' });
+  defineOptions({ name: 'CmdbChanges' });
 
-const loading = ref(false);
-const tableData = ref<CMDB.AssetChange[]>([]);
-const total = ref(0);
+  const loading = ref(false);
+  const tableData = ref<CMDB.AssetChange[]>([]);
+  const total = ref(0);
 
-const searchForm = reactive({
-  assetType: '',
-  assetId: undefined as number | undefined
-});
-
-const pagination = reactive({
-  page: 1,
-  pageSize: 20
-});
-
-async function getTableData() {
-  loading.value = true;
-  try {
-    const { data } = await fetchGetAssetChanges({
-      assetType: searchForm.assetType || undefined,
-      assetId: searchForm.assetId,
-      page: pagination.page,
-      pageSize: pagination.pageSize
-    });
-    tableData.value = data?.list || [];
-    total.value = data?.total || 0;
-  } catch (error) {
-    console.error('获取变更记录失败:', error);
-    ElNotification.error('获取变更记录失败');
-  } finally {
-    loading.value = false;
-  }
-}
-
-function handleSearch() {
-  pagination.page = 1;
-  getTableData();
-}
-
-function handleReset() {
-  Object.assign(searchForm, {
+  const searchForm = reactive({
     assetType: '',
-    assetId: undefined
+    assetId: undefined as number | undefined
   });
-  pagination.page = 1;
-  getTableData();
-}
 
-function handlePageChange(page: number) {
-  pagination.page = page;
-  getTableData();
-}
+  const pagination = reactive({
+    page: 1,
+    pageSize: 20
+  });
 
-function handlePageSizeChange(pageSize: number) {
-  pagination.pageSize = pageSize;
-  pagination.page = 1;
-  getTableData();
-}
+  async function getTableData() {
+    loading.value = true;
+    try {
+      const { data } = await fetchGetAssetChanges({
+        assetType: searchForm.assetType || undefined,
+        assetId: searchForm.assetId,
+        page: pagination.page,
+        pageSize: pagination.pageSize
+      });
+      tableData.value = data?.list || [];
+      total.value = data?.total || 0;
+    } catch (error) {
+      console.error('获取变更记录失败:', error);
+      ElNotification.error('获取变更记录失败');
+    } finally {
+      loading.value = false;
+    }
+  }
 
-function getChangeTypeTag(type: string) {
-  const typeMap: Record<string, { text: string; type: 'success' | 'warning' | 'danger' | 'info' }> = {
-    create: { text: '创建', type: 'success' },
-    update: { text: '更新', type: 'warning' },
-    delete: { text: '删除', type: 'danger' }
-  };
-  return typeMap[type] || { text: type, type: 'info' };
-}
+  function handleSearch() {
+    pagination.page = 1;
+    getTableData();
+  }
 
-onMounted(() => {
-  getTableData();
-});
+  function handleReset() {
+    Object.assign(searchForm, {
+      assetType: '',
+      assetId: undefined
+    });
+    pagination.page = 1;
+    getTableData();
+  }
+
+  function handlePageChange(page: number) {
+    pagination.page = page;
+    getTableData();
+  }
+
+  function handlePageSizeChange(pageSize: number) {
+    pagination.pageSize = pageSize;
+    pagination.page = 1;
+    getTableData();
+  }
+
+  function getChangeTypeTag(type: string) {
+    const typeMap: Record<string, { text: string; type: 'success' | 'warning' | 'danger' | 'info' }> = {
+      create: { text: '创建', type: 'success' },
+      update: { text: '更新', type: 'warning' },
+      delete: { text: '删除', type: 'danger' }
+    };
+    return typeMap[type] || { text: type, type: 'info' };
+  }
+
+  onMounted(() => {
+    getTableData();
+  });
 </script>
 
 <template>

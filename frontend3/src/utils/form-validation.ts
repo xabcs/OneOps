@@ -6,7 +6,7 @@
 import { ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { ValidationRules, validateObject } from './validation';
-import type { ValidationRule, ValidationResult } from './validation';
+import type { ValidationResult, ValidationRule } from './validation';
 
 /**
  * 服务器表单验证规则

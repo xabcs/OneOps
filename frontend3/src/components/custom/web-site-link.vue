@@ -1,14 +1,14 @@
 <script setup lang="ts">
-defineOptions({ name: 'WebSiteLink' });
+  defineOptions({ name: 'WebSiteLink' });
 
-interface Props {
-  /** Web site name */
-  label: string;
-  /** Web site link */
-  link: string;
-}
+  interface Props {
+    /** Web site name */
+    label: string;
+    /** Web site link */
+    link: string;
+  }
 
-defineProps<Props>();
+  defineProps<Props>();
 </script>
 
 <template>

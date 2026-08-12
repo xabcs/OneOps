@@ -1,12 +1,12 @@
 <script setup lang="ts">
-defineOptions({ name: 'SettingItem' });
+  defineOptions({ name: 'SettingItem' });
 
-interface Props {
-  /** Label */
-  label?: string;
-}
+  interface Props {
+    /** Label */
+    label?: string;
+  }
 
-defineProps<Props>();
+  defineProps<Props>();
 </script>
 
 <template>
@@ -20,7 +20,7 @@ defineProps<Props>();
 </template>
 
 <style scoped>
-.setting-item {
-  margin-bottom: 0;
-}
+  .setting-item {
+    margin-bottom: 0;
+  }
 </style>

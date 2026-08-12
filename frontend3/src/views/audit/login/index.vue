@@ -1,128 +1,128 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { ElNotification } from 'element-plus';
-import { fetchExportLoginLogs, fetchGetLoginLogs } from '@/service/api';
-import { exportFile } from '@/utils/file';
+  import { onMounted, reactive, ref } from 'vue';
+  import { ElNotification } from 'element-plus';
+  import { fetchExportLoginLogs, fetchGetLoginLogs } from '@/service/api';
+  import { exportFile } from '@/utils/file';
 
-defineOptions({ name: 'AuditLoginLogs' });
+  defineOptions({ name: 'AuditLoginLogs' });
 
-// 查询表单
-const searchForm = reactive<Audit.LogQuery>({
-  username: '',
-  status: '',
-  location: '',
-  startTime: '',
-  endTime: ''
-});
-
-// 表格数据
-const tableData = ref<Audit.LoginLog[]>([]);
-const loading = ref(false);
-const total = ref(0);
-
-// 分页信息
-const pagination = reactive({
-  page: 1,
-  pageSize: 20
-});
-
-// 状态选项
-const statusOptions = [
-  { label: '成功', value: 'success' },
-  { label: '失败', value: 'failed' }
-];
-
-// 获取登录日志
-async function getLoginLogs() {
-  loading.value = true;
-  try {
-    const { data, error } = await fetchGetLoginLogs({
-      ...searchForm,
-      page: pagination.page,
-      pageSize: pagination.pageSize
-    });
-
-    if (!error && data) {
-      tableData.value = data.list || [];
-      total.value = data.total || 0;
-    }
-  } catch (err) {
-    console.error('获取登录日志失败:', err);
-    ElNotification({
-      title: '错误',
-      message: '获取登录日志失败',
-      type: 'error'
-    });
-  } finally {
-    loading.value = false;
-  }
-}
-
-// 搜索
-function handleSearch() {
-  pagination.page = 1;
-  getLoginLogs();
-}
-
-// 重置
-function handleReset() {
-  Object.assign(searchForm, {
+  // 查询表单
+  const searchForm = reactive<Audit.LogQuery>({
     username: '',
     status: '',
     location: '',
     startTime: '',
     endTime: ''
   });
-  pagination.page = 1;
-  getLoginLogs();
-}
 
-// 分页变化
-function handlePageChange(page: number) {
-  pagination.page = page;
-  getLoginLogs();
-}
+  // 表格数据
+  const tableData = ref<Audit.LoginLog[]>([]);
+  const loading = ref(false);
+  const total = ref(0);
 
-// 页面大小变化
-function handlePageSizeChange(pageSize: number) {
-  pagination.pageSize = pageSize;
-  pagination.page = 1;
-  getLoginLogs();
-}
+  // 分页信息
+  const pagination = reactive({
+    page: 1,
+    pageSize: 20
+  });
 
-// 导出日志
-async function handleExport() {
-  try {
-    const blob = await fetchExportLoginLogs(searchForm);
-    exportFile(blob, 'login_logs.csv');
-    ElNotification({
-      title: '成功',
-      message: '登录日志导出成功',
-      type: 'success'
-    });
-  } catch (error) {
-    console.error('导出失败:', error);
-    ElNotification({
-      title: '错误',
-      message: '导出登录日志失败',
-      type: 'error'
-    });
+  // 状态选项
+  const statusOptions = [
+    { label: '成功', value: 'success' },
+    { label: '失败', value: 'failed' }
+  ];
+
+  // 获取登录日志
+  async function getLoginLogs() {
+    loading.value = true;
+    try {
+      const { data, error } = await fetchGetLoginLogs({
+        ...searchForm,
+        page: pagination.page,
+        pageSize: pagination.pageSize
+      });
+
+      if (!error && data) {
+        tableData.value = data.list || [];
+        total.value = data.total || 0;
+      }
+    } catch (err) {
+      console.error('获取登录日志失败:', err);
+      ElNotification({
+        title: '错误',
+        message: '获取登录日志失败',
+        type: 'error'
+      });
+    } finally {
+      loading.value = false;
+    }
   }
-}
 
-// 状态标签
-function getStatusTag(status: string) {
-  const statusMap: Record<string, { text: string; type: '' | 'success' | 'warning' | 'danger' | 'info' }> = {
-    success: { text: '成功', type: 'success' },
-    failed: { text: '失败', type: 'danger' }
-  };
-  return statusMap[status] || { text: status, type: 'info' };
-}
+  // 搜索
+  function handleSearch() {
+    pagination.page = 1;
+    getLoginLogs();
+  }
 
-// 初始化
-onMounted(() => {
-  getLoginLogs();
-});
+  // 重置
+  function handleReset() {
+    Object.assign(searchForm, {
+      username: '',
+      status: '',
+      location: '',
+      startTime: '',
+      endTime: ''
+    });
+    pagination.page = 1;
+    getLoginLogs();
+  }
+
+  // 分页变化
+  function handlePageChange(page: number) {
+    pagination.page = page;
+    getLoginLogs();
+  }
+
+  // 页面大小变化
+  function handlePageSizeChange(pageSize: number) {
+    pagination.pageSize = pageSize;
+    pagination.page = 1;
+    getLoginLogs();
+  }
+
+  // 导出日志
+  async function handleExport() {
+    try {
+      const blob = await fetchExportLoginLogs(searchForm);
+      exportFile(blob, 'login_logs.csv');
+      ElNotification({
+        title: '成功',
+        message: '登录日志导出成功',
+        type: 'success'
+      });
+    } catch (error) {
+      console.error('导出失败:', error);
+      ElNotification({
+        title: '错误',
+        message: '导出登录日志失败',
+        type: 'error'
+      });
+    }
+  }
+
+  // 状态标签
+  function getStatusTag(status: string) {
+    const statusMap: Record<string, { text: string; type: '' | 'success' | 'warning' | 'danger' | 'info' }> = {
+      success: { text: '成功', type: 'success' },
+      failed: { text: '失败', type: 'danger' }
+    };
+    return statusMap[status] || { text: status, type: 'info' };
+  }
+
+  // 初始化
+  onMounted(() => {
+    getLoginLogs();
+  });
 </script>
 
 <template>
@@ -215,17 +215,17 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
-.search-form {
-  :deep(.el-form-item) {
-    margin-bottom: 12px;
+  .search-form {
+    :deep(.el-form-item) {
+      margin-bottom: 12px;
+    }
   }
-}
 
-.text-tertiary {
-  color: var(--el-text-color-placeholder);
-}
+  .text-tertiary {
+    color: var(--el-text-color-placeholder);
+  }
 
-.text-error {
-  color: var(--el-color-danger);
-}
+  .text-error {
+    color: var(--el-color-danger);
+  }
 </style>

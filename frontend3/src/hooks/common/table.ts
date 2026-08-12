@@ -185,10 +185,8 @@ export function useTableOperate<TableData>(
   const editingData = shallowRef<TableData | null>(null);
 
   function handleAdd() {
-
     operateType.value = 'add';
     editingData.value = null;
-
 
     // 等待 Vue 响应式更新后再打开抽屉
     nextTick(() => {
@@ -197,11 +195,9 @@ export function useTableOperate<TableData>(
   }
 
   function handleEdit(id: TableData[keyof TableData]) {
-
     operateType.value = 'edit';
     const findItem = data.value.find(item => item[idKey] === id) || null;
     editingData.value = jsonClone(findItem);
-
 
     // 等待 Vue 响应式更新后再打开抽屉
     nextTick(() => {
@@ -271,7 +267,12 @@ export function defaultTransform<ApiData>(
 
     // 兼容旧格式（records/current/size/total）
     if (data && typeof data === 'object' && 'records' in data) {
-      const { records, current, size, total } = data as { records: ApiData[]; current: number; size: number; total: number };
+      const { records, current, size, total } = data as {
+        records: ApiData[];
+        current: number;
+        size: number;
+        total: number;
+      };
       return {
         data: records,
         pageNum: current,
@@ -338,7 +339,10 @@ function getColumnChecks<Column extends UI.TableColumn<unknown>>(
   return checks;
 }
 
-function getColumns<Column extends UI.TableColumn<Record<string, unknown>>>(cols: Column[], checks: TableColumnCheck[]) {
+function getColumns<Column extends UI.TableColumn<Record<string, unknown>>>(
+  cols: Column[],
+  checks: TableColumnCheck[]
+) {
   const columnMap = new Map<string, Column>();
 
   cols.forEach(column => {

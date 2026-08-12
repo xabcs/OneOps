@@ -1,45 +1,45 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useAppStore } from '@/store/modules/app';
-import { $t } from '@/locales';
-import pkg from '~/package.json';
+  import { computed } from 'vue';
+  import { useAppStore } from '@/store/modules/app';
+  import { $t } from '@/locales';
+  import pkg from '~/package.json';
 
-defineOptions({ name: 'AboutPage' });
+  defineOptions({ name: 'AboutPage' });
 
-const appStore = useAppStore();
+  const appStore = useAppStore();
 
-const column = computed(() => (appStore.isMobile ? 1 : 2));
+  const column = computed(() => (appStore.isMobile ? 1 : 2));
 
-interface PkgJson {
-  name: string;
-  version: string;
-  dependencies: PkgVersionInfo[];
-  devDependencies: PkgVersionInfo[];
-}
+  interface PkgJson {
+    name: string;
+    version: string;
+    dependencies: PkgVersionInfo[];
+    devDependencies: PkgVersionInfo[];
+  }
 
-interface PkgVersionInfo {
-  name: string;
-  version: string;
-}
+  interface PkgVersionInfo {
+    name: string;
+    version: string;
+  }
 
-const { name, version, dependencies, devDependencies } = pkg;
+  const { name, version, dependencies, devDependencies } = pkg;
 
-function transformVersionData(tuple: [string, string]): PkgVersionInfo {
-  const [$name, $version] = tuple;
-  return {
-    name: $name,
-    version: $version
+  function transformVersionData(tuple: [string, string]): PkgVersionInfo {
+    const [$name, $version] = tuple;
+    return {
+      name: $name,
+      version: $version
+    };
+  }
+
+  const pkgJson: PkgJson = {
+    name,
+    version,
+    dependencies: Object.entries(dependencies).map(item => transformVersionData(item)),
+    devDependencies: Object.entries(devDependencies).map(item => transformVersionData(item))
   };
-}
 
-const pkgJson: PkgJson = {
-  name,
-  version,
-  dependencies: Object.entries(dependencies).map(item => transformVersionData(item)),
-  devDependencies: Object.entries(devDependencies).map(item => transformVersionData(item))
-};
-
-const latestBuildTime = BUILD_TIME;
+  const latestBuildTime = BUILD_TIME;
 </script>
 
 <template>

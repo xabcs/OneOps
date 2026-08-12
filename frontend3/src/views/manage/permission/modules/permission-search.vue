@@ -1,60 +1,60 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { Search, Refresh } from '@element-plus/icons-vue';
-import { useRouteStore } from '@/store/modules/route';
-import { $t } from '@/locales';
+  import { ref, watch } from 'vue';
+  import { Refresh, Search } from '@element-plus/icons-vue';
+  import { useRouteStore } from '@/store/modules/route';
+  import { $t } from '@/locales';
 
-defineOptions({
-  name: 'PermissionSearch'
-});
+  defineOptions({
+    name: 'PermissionSearch'
+  });
 
-interface Emits {
-  (e: 'reset'): void;
-  (e: 'search'): void;
-}
+  interface Emits {
+    (e: 'reset'): void;
+    (e: 'search'): void;
+  }
 
-const emit = defineEmits<Emits>();
+  const emit = defineEmits<Emits>();
 
-const routeStore = useRouteStore();
+  const routeStore = useRouteStore();
 
-const searchParams = ref({
-  name: '',
-  code: '',
-  module: '',
-  level: undefined as number | undefined
-});
-
-// 监听路由查询参数变化
-watch(
-  () => routeStore.query,
-  val => {
-    if (val) {
-      // 从路由查询参数中解析搜索条件
-      Object.keys(val).forEach(key => {
-        if (key in searchParams.value) {
-          (searchParams.value as Record<string, string | number | undefined>)[key] = val[key];
-        }
-      });
-    }
-  },
-  { immediate: true }
-);
-
-// 重置搜索
-function handleReset() {
-  searchParams.value = {
+  const searchParams = ref({
     name: '',
     code: '',
     module: '',
-    level: undefined
-  };
-  emit('reset');
-}
+    level: undefined as number | undefined
+  });
 
-// 搜索
-function handleSearch() {
-  emit('search');
-}
+  // 监听路由查询参数变化
+  watch(
+    () => routeStore.query,
+    val => {
+      if (val) {
+        // 从路由查询参数中解析搜索条件
+        Object.keys(val).forEach(key => {
+          if (key in searchParams.value) {
+            (searchParams.value as Record<string, string | number | undefined>)[key] = val[key];
+          }
+        });
+      }
+    },
+    { immediate: true }
+  );
+
+  // 重置搜索
+  function handleReset() {
+    searchParams.value = {
+      name: '',
+      code: '',
+      module: '',
+      level: undefined
+    };
+    emit('reset');
+  }
+
+  // 搜索
+  function handleSearch() {
+    emit('search');
+  }
 </script>
 
 <template>
@@ -126,55 +126,55 @@ function handleSearch() {
 </template>
 
 <style scoped lang="scss">
-.permission-search-container {
-  padding: 16px;
-  background: var(--el-bg-color-page);
-}
-
-.search-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: flex-end;
-}
-
-.form-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 200px;
-  flex: 1;
-
-  label {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--el-text-color-primary);
+  .permission-search-container {
+    padding: 16px;
+    background: var(--el-bg-color-page);
   }
-}
 
-.search-input,
-.search-select {
-  width: 100%;
-}
-
-.form-actions {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 2px;
-}
-
-@media (max-width: 768px) {
   .search-form {
-    flex-direction: column;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-end;
   }
 
   .form-item {
-    min-width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 200px;
+    flex: 1;
+
+    label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--el-text-color-primary);
+    }
+  }
+
+  .search-input,
+  .search-select {
+    width: 100%;
   }
 
   .form-actions {
-    width: 100%;
-    justify-content: flex-end;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 2px;
   }
-}
+
+  @media (max-width: 768px) {
+    .search-form {
+      flex-direction: column;
+    }
+
+    .form-item {
+      min-width: 100%;
+    }
+
+    .form-actions {
+      width: 100%;
+      justify-content: flex-end;
+    }
+  }
 </style>

@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+  import { computed } from 'vue';
 
-defineOptions({ name: 'DarkModeContainer' });
+  defineOptions({ name: 'DarkModeContainer' });
 
-interface Props {
-  inverted?: boolean;
-  customColor?: string;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  inverted: false,
-  customColor: ''
-});
-
-const containerStyle = computed(() => {
-  if (props.inverted && props.customColor) {
-    return {
-      backgroundColor: props.customColor
-    };
+  interface Props {
+    inverted?: boolean;
+    customColor?: string;
   }
-  return {};
-});
+
+  const props = withDefaults(defineProps<Props>(), {
+    inverted: false,
+    customColor: ''
+  });
+
+  const containerStyle = computed(() => {
+    if (props.inverted && props.customColor) {
+      return {
+        backgroundColor: props.customColor
+      };
+    }
+    return {};
+  });
 </script>
 
 <template>

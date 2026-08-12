@@ -1,47 +1,47 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { Placement } from 'element-plus';
-import { $t } from '@/locales';
+  import { computed } from 'vue';
+  import type { Placement } from 'element-plus';
+  import { $t } from '@/locales';
 
-defineOptions({ name: 'ThemeSchemaSwitch' });
+  defineOptions({ name: 'ThemeSchemaSwitch' });
 
-interface Props {
-  /** Theme schema */
-  themeSchema: UnionKey.ThemeScheme;
-  /** Show tooltip */
-  showTooltip?: boolean;
-  /** Tooltip placement */
-  tooltipPlacement?: Placement;
-}
+  interface Props {
+    /** Theme schema */
+    themeSchema: UnionKey.ThemeScheme;
+    /** Show tooltip */
+    showTooltip?: boolean;
+    /** Tooltip placement */
+    tooltipPlacement?: Placement;
+  }
 
-const props = withDefaults(defineProps<Props>(), {
-  showTooltip: true,
-  tooltipPlacement: 'bottom'
-});
+  const props = withDefaults(defineProps<Props>(), {
+    showTooltip: true,
+    tooltipPlacement: 'bottom'
+  });
 
-interface Emits {
-  (e: 'switch'): void;
-}
+  interface Emits {
+    (e: 'switch'): void;
+  }
 
-const emit = defineEmits<Emits>();
+  const emit = defineEmits<Emits>();
 
-function handleSwitch() {
-  emit('switch');
-}
+  function handleSwitch() {
+    emit('switch');
+  }
 
-const icons: Record<UnionKey.ThemeScheme, string> = {
-  light: 'material-symbols:sunny',
-  dark: 'material-symbols:nightlight-rounded',
-  auto: 'material-symbols:hdr-auto'
-};
+  const icons: Record<UnionKey.ThemeScheme, string> = {
+    light: 'material-symbols:sunny',
+    dark: 'material-symbols:nightlight-rounded',
+    auto: 'material-symbols:hdr-auto'
+  };
 
-const icon = computed(() => icons[props.themeSchema]);
+  const icon = computed(() => icons[props.themeSchema]);
 
-const tooltipContent = computed(() => {
-  if (!props.showTooltip) return '';
+  const tooltipContent = computed(() => {
+    if (!props.showTooltip) return '';
 
-  return $t('icon.themeSchema');
-});
+    return $t('icon.themeSchema');
+  });
 </script>
 
 <template>

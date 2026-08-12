@@ -1,122 +1,122 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
-import { useForm, useWatcher } from '@sa/alova/client';
-import { enableStatusOptions, userGenderOptions } from '@/constants/business';
-import { useFormRules, useForm as useUIForm } from '@/hooks/common/form';
-import type { UserModel } from '@/service-alova/api';
-import { addUser, fetchGetAllRoles, updateUser } from '@/service-alova/api';
-import { $t } from '@/locales';
+  import { computed, watch } from 'vue';
+  import { useForm, useWatcher } from '@sa/alova/client';
+  import { enableStatusOptions, userGenderOptions } from '@/constants/business';
+  import { useFormRules, useForm as useUIForm } from '@/hooks/common/form';
+  import type { UserModel } from '@/service-alova/api';
+  import { addUser, fetchGetAllRoles, updateUser } from '@/service-alova/api';
+  import { $t } from '@/locales';
 
-defineOptions({ name: 'UserOperateDrawer' });
+  defineOptions({ name: 'UserOperateDrawer' });
 
-interface Props {
-  /** the type of operation */
-  operateType: UI.TableOperateType;
-  /** the edit row data */
-  rowData?: Api.SystemManage.User | null;
-}
+  interface Props {
+    /** the type of operation */
+    operateType: UI.TableOperateType;
+    /** the edit row data */
+    rowData?: Api.SystemManage.User | null;
+  }
 
-const props = defineProps<Props>();
+  const props = defineProps<Props>();
 
-interface Emits {
-  (e: 'submitted'): void;
-}
+  interface Emits {
+    (e: 'submitted'): void;
+  }
 
-const emit = defineEmits<Emits>();
+  const emit = defineEmits<Emits>();
 
-const visible = defineModel<boolean>('visible', {
-  default: false
-});
+  const visible = defineModel<boolean>('visible', {
+    default: false
+  });
 
-// @ts-expect-error vue-tsc noUnusedLocals: template ref
-const { formRef, validate, restoreValidation } = useUIForm();
-const { defaultRequiredRule } = useFormRules();
+  // @ts-expect-error vue-tsc noUnusedLocals: template ref
+  const { formRef, validate, restoreValidation } = useUIForm();
+  const { defaultRequiredRule } = useFormRules();
 
-const title = computed(() => {
-  const titles: Record<UI.TableOperateType, string> = {
-    add: $t('page.manage.user.addUser'),
-    edit: $t('page.manage.user.editUser')
+  const title = computed(() => {
+    const titles: Record<UI.TableOperateType, string> = {
+      add: $t('page.manage.user.addUser'),
+      edit: $t('page.manage.user.editUser')
+    };
+    return titles[props.operateType];
+  });
+
+  const {
+    loading: submiting,
+    reset,
+    send: submit,
+    form,
+    updateForm
+  } = useForm(formData => (props.operateType === 'add' ? addUser(formData) : updateUser(formData)), {
+    initialForm: {
+      userName: '',
+      userGender: undefined,
+      nickName: '',
+      userPhone: '',
+      userEmail: '',
+      userRoles: [],
+      status: undefined
+    } as UserModel,
+    resetAfterSubmiting: true
+  });
+
+  type RuleKey = Extract<keyof UserModel, 'userName' | 'status'>;
+
+  const rules: Record<RuleKey, App.Global.FormRule> = {
+    userName: defaultRequiredRule,
+    status: defaultRequiredRule
   };
-  return titles[props.operateType];
-});
 
-const {
-  loading: submiting,
-  reset,
-  send: submit,
-  form,
-  updateForm
-} = useForm(formData => (props.operateType === 'add' ? addUser(formData) : updateUser(formData)), {
-  initialForm: {
-    userName: '',
-    userGender: undefined,
-    nickName: '',
-    userPhone: '',
-    userEmail: '',
-    userRoles: [],
-    status: undefined
-  } as UserModel,
-  resetAfterSubmiting: true
-});
+  /** the enabled role options */
+  const { data: roleOptionsRaw, loading } = useWatcher(fetchGetAllRoles, [visible], {
+    initialData: [],
+    middleware(_, next) {
+      return visible.value ? next() : undefined;
+    }
+  });
+  const roleOptions = computed<CommonType.Option<string>[]>(() => {
+    const options = roleOptionsRaw.value.map(item => ({
+      label: item.roleName,
+      value: item.roleCode
+    }));
 
-type RuleKey = Extract<keyof UserModel, 'userName' | 'status'>;
+    // the mock data does not have the roleCode, so fill it
+    // if the real request, remove the following code
+    const userRoleOptions = form.value.userRoles.map(item => ({
+      label: item,
+      value: item
+    }));
+    // end
 
-const rules: Record<RuleKey, App.Global.FormRule> = {
-  userName: defaultRequiredRule,
-  status: defaultRequiredRule
-};
+    return [...userRoleOptions, ...options];
+  });
 
-/** the enabled role options */
-const { data: roleOptionsRaw, loading } = useWatcher(fetchGetAllRoles, [visible], {
-  initialData: [],
-  middleware(_, next) {
-    return visible.value ? next() : undefined;
+  function handleInitModel() {
+    if (props.operateType === 'edit' && props.rowData) {
+      updateForm(props.rowData);
+    } else if (props.operateType === 'add') {
+      reset();
+    }
   }
-});
-const roleOptions = computed<CommonType.Option<string>[]>(() => {
-  const options = roleOptionsRaw.value.map(item => ({
-    label: item.roleName,
-    value: item.roleCode
-  }));
 
-  // the mock data does not have the roleCode, so fill it
-  // if the real request, remove the following code
-  const userRoleOptions = form.value.userRoles.map(item => ({
-    label: item,
-    value: item
-  }));
-  // end
-
-  return [...userRoleOptions, ...options];
-});
-
-function handleInitModel() {
-  if (props.operateType === 'edit' && props.rowData) {
-    updateForm(props.rowData);
-  } else if (props.operateType === 'add') {
-    reset();
+  function closeDrawer() {
+    visible.value = false;
   }
-}
 
-function closeDrawer() {
-  visible.value = false;
-}
-
-async function handleSubmit() {
-  await validate();
-  // request
-  await submit();
-  window.$message?.success($t('common.updateSuccess'));
-  closeDrawer();
-  emit('submitted');
-}
-
-watch(visible, () => {
-  if (visible.value) {
-    restoreValidation();
-    handleInitModel();
+  async function handleSubmit() {
+    await validate();
+    // request
+    await submit();
+    window.$message?.success($t('common.updateSuccess'));
+    closeDrawer();
+    emit('submitted');
   }
-});
+
+  watch(visible, () => {
+    if (visible.value) {
+      restoreValidation();
+      handleInitModel();
+    }
+  });
 </script>
 
 <template>

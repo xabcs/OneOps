@@ -1,36 +1,36 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { useSessionList } from './composables/useSessionList';
-import SessionToolbar from './components/SessionToolbar.vue';
-import SessionTable from './components/SessionTable.vue';
+  import { onMounted } from 'vue';
+  import { useSessionList } from './composables/useSessionList';
+  import SessionToolbar from './components/SessionToolbar.vue';
+  import SessionTable from './components/SessionTable.vue';
 
-defineOptions({
-  name: 'WebterminalSessionList'
-});
+  defineOptions({
+    name: 'WebterminalSessionList'
+  });
 
-const {
-  activeTab,
-  searchKeyword,
-  selectedSessionIds,
-  loading,
-  dataSource,
-  pagination,
-  loadSessions,
-  handleTabChange,
-  handleSearch,
-  handleClearSearch,
-  handleSelectAll,
-  handleSelectRow,
-  handleBatchTerminate,
-  handlePageChange,
-  handlePageSizeChange,
-  handleRefresh,
-  handleTableAction
-} = useSessionList();
+  const {
+    activeTab,
+    searchKeyword,
+    selectedSessionIds,
+    loading,
+    dataSource,
+    pagination,
+    loadSessions,
+    handleTabChange,
+    handleSearch,
+    handleClearSearch,
+    handleSelectAll,
+    handleSelectRow,
+    handleBatchTerminate,
+    handlePageChange,
+    handlePageSizeChange,
+    handleRefresh,
+    handleTableAction
+  } = useSessionList();
 
-onMounted(() => {
-  loadSessions();
-});
+  onMounted(() => {
+    loadSessions();
+  });
 </script>
 
 <template>
@@ -64,13 +64,13 @@ onMounted(() => {
 </template>
 
 <style lang="scss" scoped>
-.session-list-page {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: #171717;
-  color: #fff;
-  font-size: 12px;
-}
+  .session-list-page {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #171717;
+    color: #fff;
+    font-size: 12px;
+  }
 </style>

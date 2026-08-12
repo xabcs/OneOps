@@ -1,116 +1,118 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { fetchCreateRole, fetchUpdateRole } from '@/service/api';
-import { useForm, useFormRules } from '@/hooks/common/form';
-import { $t } from '@/locales';
+  import { computed, ref, watch } from 'vue';
+  import { fetchCreateRole, fetchUpdateRole } from '@/service/api';
+  import { useForm, useFormRules } from '@/hooks/common/form';
+  import { $t } from '@/locales';
 
-defineOptions({ name: 'RoleOperateDrawer' });
+  defineOptions({ name: 'RoleOperateDrawer' });
 
-interface Props {
-  /** the type of operation */
-  operateType: UI.TableOperateType;
-  /** the edit row data */
-  rowData?: Api.SystemManage.Role | null;
-}
-
-const props = defineProps<Props>();
-
-interface Emits {
-  (e: 'submitted'): void;
-}
-
-const emit = defineEmits<Emits>();
-
-const visible = defineModel<boolean>('visible', {
-  default: false
-});
-
-// @ts-expect-error vue-tsc noUnusedLocals: template ref
-const { formRef, validate, restoreValidation } = useForm();
-const { defaultRequiredRule } = useFormRules();
-
-const title = computed(() => {
-  const titles: Record<UI.TableOperateType, string> = {
-    add: $t('page.manage.role.addRole'),
-    edit: $t('page.manage.role.editRole')
-  };
-  return titles[props.operateType];
-});
-
-type Model = Pick<Api.SystemManage.Role, 'name' | 'code' | 'description' | 'status'>;
-
-const model = ref(createDefaultModel());
-
-function createDefaultModel(): Model {
-  return {
-    name: '',
-    code: '',
-    description: '',
-    status: 1
-  };
-}
-
-type RuleKey = Exclude<keyof Model, 'description'>;
-
-const rules = computed(() => {
-  const baseRules: Record<string, App.Global.FormRule> = {
-    name: defaultRequiredRule,
-    status: defaultRequiredRule
-  };
-
-  // 只在新增模式下验证code字段
-  if (!isEdit.value) {
-    baseRules.code = defaultRequiredRule;
+  interface Props {
+    /** the type of operation */
+    operateType: UI.TableOperateType;
+    /** the edit row data */
+    rowData?: Api.SystemManage.Role | null;
   }
 
-  return baseRules;
-});
+  const props = defineProps<Props>();
 
-const roleId = computed(() => props.rowData?.id || -1);
-
-const isEdit = computed(() => props.operateType === 'edit');
-
-function handleInitModel() {
-  model.value = createDefaultModel();
-
-  if (props.operateType === 'edit' && props.rowData) {
-    Object.assign(model.value, props.rowData);
+  interface Emits {
+    (e: 'submitted'): void;
   }
-}
 
-function closeDrawer() {
-  visible.value = false;
-}
+  const emit = defineEmits<Emits>();
 
-async function handleSubmit() {
-  await validate();
+  const visible = defineModel<boolean>('visible', {
+    default: false
+  });
 
-  // 准备提交数据
-  const submitData = isEdit.value
-    ? {
-        name: model.value.name,
-        description: model.value.description,
-        status: model.value.status
-      }
-    : model.value;
+  // @ts-expect-error vue-tsc noUnusedLocals: template ref
+  const { formRef, validate, restoreValidation } = useForm();
+  const { defaultRequiredRule } = useFormRules();
 
-  const { error } = isEdit.value ? await fetchUpdateRole(roleId.value, submitData) : await fetchCreateRole(submitData);
+  const title = computed(() => {
+    const titles: Record<UI.TableOperateType, string> = {
+      add: $t('page.manage.role.addRole'),
+      edit: $t('page.manage.role.editRole')
+    };
+    return titles[props.operateType];
+  });
 
-  if (!error) {
-    window.$message?.success(isEdit.value ? $t('common.updateSuccess') : '添加成功');
-    closeDrawer();
-    emit('submitted');
-  } else {
-    window.$message?.error(isEdit.value ? '更新失败' : '添加失败');
+  type Model = Pick<Api.SystemManage.Role, 'name' | 'code' | 'description' | 'status'>;
+
+  const model = ref(createDefaultModel());
+
+  function createDefaultModel(): Model {
+    return {
+      name: '',
+      code: '',
+      description: '',
+      status: 1
+    };
   }
-}
 
-watch(visible, () => {
-  if (visible.value) {
-    handleInitModel();
-    restoreValidation();
+  type RuleKey = Exclude<keyof Model, 'description'>;
+
+  const rules = computed(() => {
+    const baseRules: Record<string, App.Global.FormRule> = {
+      name: defaultRequiredRule,
+      status: defaultRequiredRule
+    };
+
+    // 只在新增模式下验证code字段
+    if (!isEdit.value) {
+      baseRules.code = defaultRequiredRule;
+    }
+
+    return baseRules;
+  });
+
+  const roleId = computed(() => props.rowData?.id || -1);
+
+  const isEdit = computed(() => props.operateType === 'edit');
+
+  function handleInitModel() {
+    model.value = createDefaultModel();
+
+    if (props.operateType === 'edit' && props.rowData) {
+      Object.assign(model.value, props.rowData);
+    }
   }
-});
+
+  function closeDrawer() {
+    visible.value = false;
+  }
+
+  async function handleSubmit() {
+    await validate();
+
+    // 准备提交数据
+    const submitData = isEdit.value
+      ? {
+          name: model.value.name,
+          description: model.value.description,
+          status: model.value.status
+        }
+      : model.value;
+
+    const { error } = isEdit.value
+      ? await fetchUpdateRole(roleId.value, submitData)
+      : await fetchCreateRole(submitData);
+
+    if (!error) {
+      window.$message?.success(isEdit.value ? $t('common.updateSuccess') : '添加成功');
+      closeDrawer();
+      emit('submitted');
+    } else {
+      window.$message?.error(isEdit.value ? '更新失败' : '添加失败');
+    }
+  }
+
+  watch(visible, () => {
+    if (visible.value) {
+      handleInitModel();
+      restoreValidation();
+    }
+  });
 </script>
 
 <template>

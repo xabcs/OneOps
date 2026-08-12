@@ -1,12 +1,12 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>, K = never">
-import { VueDraggable } from 'vue-draggable-plus';
-import { $t } from '@/locales';
+  import { VueDraggable } from 'vue-draggable-plus';
+  import { $t } from '@/locales';
 
-defineOptions({ name: 'TableColumnSetting' });
+  defineOptions({ name: 'TableColumnSetting' });
 
-const columns = defineModel<UI.TableColumnCheck[]>('columns', {
-  required: true
-});
+  const columns = defineModel<UI.TableColumnCheck[]>('columns', {
+    required: true
+  });
 </script>
 
 <template>

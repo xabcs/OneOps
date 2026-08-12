@@ -1,41 +1,41 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue';
-import Vditor from 'vditor';
-import 'vditor/dist/index.css';
-import { useThemeStore } from '@/store/modules/theme';
+  import { onMounted, onUnmounted, ref, watch } from 'vue';
+  import Vditor from 'vditor';
+  import 'vditor/dist/index.css';
+  import { useThemeStore } from '@/store/modules/theme';
 
-defineOptions({ name: 'MarkdownPage' });
+  defineOptions({ name: 'MarkdownPage' });
 
-const theme = useThemeStore();
+  const theme = useThemeStore();
 
-const vditor = ref<Vditor>();
-const domRef = ref<HTMLElement>();
+  const vditor = ref<Vditor>();
+  const domRef = ref<HTMLElement>();
 
-function renderVditor() {
-  if (!domRef.value) return;
-  vditor.value = new Vditor(domRef.value, {
-    minHeight: 400,
-    theme: theme.darkMode ? 'dark' : 'classic',
-    icon: 'material',
-    cache: { enable: false }
-  });
-}
-
-const stopHandle = watch(
-  () => theme.darkMode,
-  newValue => {
-    const themeMode = newValue ? 'dark' : 'classic';
-    vditor.value?.setTheme(themeMode);
+  function renderVditor() {
+    if (!domRef.value) return;
+    vditor.value = new Vditor(domRef.value, {
+      minHeight: 400,
+      theme: theme.darkMode ? 'dark' : 'classic',
+      icon: 'material',
+      cache: { enable: false }
+    });
   }
-);
 
-onMounted(() => {
-  renderVditor();
-});
+  const stopHandle = watch(
+    () => theme.darkMode,
+    newValue => {
+      const themeMode = newValue ? 'dark' : 'classic';
+      vditor.value?.setTheme(themeMode);
+    }
+  );
 
-onUnmounted(() => {
-  stopHandle();
-});
+  onMounted(() => {
+    renderVditor();
+  });
+
+  onUnmounted(() => {
+    stopHandle();
+  });
 </script>
 
 <template>

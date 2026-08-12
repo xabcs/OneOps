@@ -6,11 +6,7 @@
 import { reactive, ref } from 'vue';
 import { ElNotification } from 'element-plus';
 import type { FormInstance, FormRules } from 'element-plus';
-import {
-  fetchAssignServerToGroups,
-  fetchCreateServer,
-  fetchUpdateServer
-} from '@/service/api';
+import { fetchAssignServerToGroups, fetchCreateServer, fetchUpdateServer } from '@/service/api';
 
 export function useServerForm() {
   // ===== 对话框状态 =====
@@ -26,7 +22,9 @@ export function useServerForm() {
   const editDrawerActiveTab = ref('basic');
 
   // 主机表单
-  const serverForm = reactive<CMDB.ServerForm & { groupIds?: number[]; tagIds?: number[]; roomId?: number; cabinetId?: number }>({
+  const serverForm = reactive<
+    CMDB.ServerForm & { groupIds?: number[]; tagIds?: number[]; roomId?: number; cabinetId?: number }
+  >({
     hostname: '',
     ip: '',
     innerIp: '',
@@ -106,20 +104,34 @@ export function useServerForm() {
     activeCollapse.value = [];
 
     Object.assign(serverForm, {
-      hostname: '', ip: '', innerIp: '',
-      credentialIds: [], systemCredentialId: undefined,
+      hostname: '',
+      ip: '',
+      innerIp: '',
+      credentialIds: [],
+      systemCredentialId: undefined,
       serverType: 'vm',
       groupIds: selectedGroupId ? [selectedGroupId] : [],
-      tagIds: [], roomId: undefined, cabinetId: undefined,
-      sshPort: 22, remarks: '',
+      tagIds: [],
+      roomId: undefined,
+      cabinetId: undefined,
+      sshPort: 22,
+      remarks: '',
       env: 'test' as CMDB.ServerEnv,
-      cpu: 0, memory: 0, disk: 0, os: '',
+      cpu: 0,
+      memory: 0,
+      disk: 0,
+      os: '',
       businessId: undefined as unknown as number
     });
 
     Object.assign(cloudForm, {
-      provider: 'aliyun', instanceId: '', instanceName: '',
-      instanceType: '', region: '', zone: '', chargeType: 'postpay'
+      provider: 'aliyun',
+      instanceId: '',
+      instanceName: '',
+      instanceType: '',
+      region: '',
+      zone: '',
+      chargeType: 'postpay'
     });
 
     dialogVisible.value = true;
@@ -134,29 +146,48 @@ export function useServerForm() {
     const groupIds = row.groups?.map(g => g.id) || [];
 
     Object.assign(serverForm, {
-      id: row.id, hostname: row.hostname, ip: row.ip, innerIp: row.innerIp,
-      credentialIds: row.credentials?.filter(c => c.credentialType === 'user').map(c => c.id) || (row.sshCredentialId ? [row.sshCredentialId] : []),
+      id: row.id,
+      hostname: row.hostname,
+      ip: row.ip,
+      innerIp: row.innerIp,
+      credentialIds:
+        row.credentials?.filter(c => c.credentialType === 'user').map(c => c.id) ||
+        (row.sshCredentialId ? [row.sshCredentialId] : []),
       systemCredentialId: row.systemCredentialId || row.systemCredential?.id || undefined,
-      serverType: row.serverType, groupIds,
+      serverType: row.serverType,
+      groupIds,
       tagIds: row.tags?.map(t => t.id) || [],
-      roomId: row.cabinet?.roomId, cabinetId: row.cabinetId,
-      sshPort: row.sshPort, remarks: row.remarks,
+      roomId: row.cabinet?.roomId,
+      cabinetId: row.cabinetId,
+      sshPort: row.sshPort,
+      remarks: row.remarks,
       env: row.env || 'test',
-      cpu: row.cpu || 0, memory: row.memory || 0, disk: row.disk || 0,
-      os: row.os || '', businessId: row.businessId || (undefined as unknown as number)
+      cpu: row.cpu || 0,
+      memory: row.memory || 0,
+      disk: row.disk || 0,
+      os: row.os || '',
+      businessId: row.businessId || (undefined as unknown as number)
     });
 
     if (row.cloudInfo) {
       Object.assign(cloudForm, {
         provider: row.provider as CMDB.CloudProvider,
-        instanceId: row.cloudInfo.instanceId, instanceName: row.cloudInfo.instanceName,
-        instanceType: row.cloudInfo.instanceType, region: row.cloudInfo.region,
-        zone: row.cloudInfo.zone, chargeType: row.cloudInfo.chargeType
+        instanceId: row.cloudInfo.instanceId,
+        instanceName: row.cloudInfo.instanceName,
+        instanceType: row.cloudInfo.instanceType,
+        region: row.cloudInfo.region,
+        zone: row.cloudInfo.zone,
+        chargeType: row.cloudInfo.chargeType
       });
     } else {
       Object.assign(cloudForm, {
-        provider: 'aliyun', instanceId: '', instanceName: '',
-        instanceType: '', region: '', zone: '', chargeType: 'postpay'
+        provider: 'aliyun',
+        instanceId: '',
+        instanceName: '',
+        instanceType: '',
+        region: '',
+        zone: '',
+        chargeType: 'postpay'
       });
     }
 
@@ -164,9 +195,7 @@ export function useServerForm() {
   }
 
   // ===== 保存 =====
-  async function handleSave(
-    saveAttributeFn: (serverId: number) => Promise<void>
-  ) {
+  async function handleSave(saveAttributeFn: (serverId: number) => Promise<void>) {
     if (!serverFormRef.value) return;
     submitError.value = '';
 
@@ -177,9 +206,10 @@ export function useServerForm() {
       const formData: CMDB.ServerForm = {
         ...serverForm,
         serverType: serverType.value === 'cloud' ? 'vm' : serverForm.serverType || 'vm',
-        cloudInfo: serverType.value === 'cloud'
-          ? { ...cloudForm, provider: cloudForm.provider, publicIp: serverForm.ip, privateIp: serverForm.innerIp }
-          : null
+        cloudInfo:
+          serverType.value === 'cloud'
+            ? { ...cloudForm, provider: cloudForm.provider, publicIp: serverForm.ip, privateIp: serverForm.innerIp }
+            : null
       };
 
       delete formData.tagIds;
@@ -215,9 +245,19 @@ export function useServerForm() {
   }
 
   return {
-    dialogVisible, dialogTitle, serverFormRef, serverType, submitError, activeCollapse,
-    editDrawerVisible, editDrawerActiveTab,
-    serverForm, cloudForm, serverFormRules,
-    openAddDialog, openEditDrawer, handleSave
+    dialogVisible,
+    dialogTitle,
+    serverFormRef,
+    serverType,
+    submitError,
+    activeCollapse,
+    editDrawerVisible,
+    editDrawerActiveTab,
+    serverForm,
+    cloudForm,
+    serverFormRules,
+    openAddDialog,
+    openEditDrawer,
+    handleSave
   };
 }

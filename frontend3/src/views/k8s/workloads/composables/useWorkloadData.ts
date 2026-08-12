@@ -107,7 +107,11 @@ export function useWorkloadData() {
 
   // 通用 API 响应解析
   function parseApiResponse<T>(response: unknown): { list: T[]; total: number } {
-    const resp = response as { data?: { data?: { list: T[]; total: number }; list: T[]; total: number }; list: T[]; total: number };
+    const resp = response as {
+      data?: { data?: { list: T[]; total: number }; list: T[]; total: number };
+      list: T[];
+      total: number;
+    };
     if (resp?.data?.data?.list) return resp.data.data;
     if (resp?.data?.list) return resp.data;
     return resp;

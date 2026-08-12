@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import Applications from './applications/index.vue';
-import RoleBindings from './role-bindings/index.vue';
-import UserAuthorization from './user-authorization/index.vue';
-import OperationLogs from './operation-logs/index.vue';
+  import { ref } from 'vue';
+  import Applications from './applications/index.vue';
+  import RoleBindings from './rolebindings/index.vue';
+  import UserAuthorization from './userauthorization/index.vue';
+  import OperationLogs from './operationlogs/index.vue';
 
-defineOptions({ name: 'AuthCenter' });
+  defineOptions({ name: 'AuthCenter' });
 
-const activeTab = ref('applications');
+  const activeTab = ref('applications');
 </script>
 
 <template>

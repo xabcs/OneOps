@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import type { RouteKey } from '@elegant-router/types';
-import { GLOBAL_HEADER_MENU_ID } from '@/constants/app';
-import { useRouteStore } from '@/store/modules/route';
-import { useMenu } from '../../../context';
-import MenuItem from '../components/menu-item.vue';
+  import type { RouteKey } from '@elegant-router/types';
+  import { GLOBAL_HEADER_MENU_ID } from '@/constants/app';
+  import { useRouteStore } from '@/store/modules/route';
+  import { useMenu } from '../../../context';
+  import MenuItem from '../components/menu-item.vue';
 
-defineOptions({ name: 'HorizontalMenu' });
+  defineOptions({ name: 'HorizontalMenu' });
 
-const routeStore = useRouteStore();
-const { selectedKeyDummy, handleSelect } = useMenu();
+  const routeStore = useRouteStore();
+  const { selectedKeyDummy, handleSelect } = useMenu();
 </script>
 
 <template>

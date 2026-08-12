@@ -1,25 +1,25 @@
 <script setup lang="ts">
-import { createReusableTemplate } from '@vueuse/core';
-import type { RouteKey } from '@elegant-router/types';
-import { useThemeStore } from '@/store/modules/theme';
-import { useRouteStore } from '@/store/modules/route';
-import { useRouterPush } from '@/hooks/common/router';
+  import { createReusableTemplate } from '@vueuse/core';
+  import type { RouteKey } from '@elegant-router/types';
+  import { useThemeStore } from '@/store/modules/theme';
+  import { useRouteStore } from '@/store/modules/route';
+  import { useRouterPush } from '@/hooks/common/router';
 
-defineOptions({ name: 'GlobalBreadcrumb' });
+  defineOptions({ name: 'GlobalBreadcrumb' });
 
-const themeStore = useThemeStore();
-const routeStore = useRouteStore();
-const { routerPushByKey } = useRouterPush();
+  const themeStore = useThemeStore();
+  const routeStore = useRouteStore();
+  const { routerPushByKey } = useRouterPush();
 
-interface BreadcrumbContentProps {
-  breadcrumb: App.Global.Menu;
-}
+  interface BreadcrumbContentProps {
+    breadcrumb: App.Global.Menu;
+  }
 
-const [DefineBreadcrumbContent, BreadcrumbContent] = createReusableTemplate<BreadcrumbContentProps>();
+  const [DefineBreadcrumbContent, BreadcrumbContent] = createReusableTemplate<BreadcrumbContentProps>();
 
-function handleClickMenu(key: RouteKey) {
-  routerPushByKey(key);
-}
+  function handleClickMenu(key: RouteKey) {
+    routerPushByKey(key);
+  }
 </script>
 
 <template>

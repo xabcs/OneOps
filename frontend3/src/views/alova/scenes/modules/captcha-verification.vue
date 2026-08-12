@@ -1,49 +1,49 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { actionDelegationMiddleware, useCaptcha, useForm } from '@sa/alova/client';
-import { useFormRules, useForm as useUIForm } from '@/hooks/common/form';
-import { $t } from '@/locales';
-import { sendCaptcha, verifyCaptcha } from '@/service-alova/api';
+  import { computed } from 'vue';
+  import { actionDelegationMiddleware, useCaptcha, useForm } from '@sa/alova/client';
+  import { useFormRules, useForm as useUIForm } from '@/hooks/common/form';
+  import { $t } from '@/locales';
+  import { sendCaptcha, verifyCaptcha } from '@/service-alova/api';
 
-defineOptions({ name: 'CaptchaVerification' });
+  defineOptions({ name: 'CaptchaVerification' });
 
-const { loading, send, countdown } = useCaptcha(sendCaptcha, {
-  middleware: actionDelegationMiddleware('captcha:send')
-});
-const label = computed(() => {
-  return countdown.value > 0
-    ? $t('page.login.codeLogin.reGetCode', { time: countdown.value })
-    : $t('page.login.codeLogin.getCode');
-});
-const {
-  form,
-  loading: submiting,
-  send: submit
-} = useForm(formData => verifyCaptcha(formData.phone, formData.code), {
-  initialForm: {
-    phone: '',
-    code: ''
+  const { loading, send, countdown } = useCaptcha(sendCaptcha, {
+    middleware: actionDelegationMiddleware('captcha:send')
+  });
+  const label = computed(() => {
+    return countdown.value > 0
+      ? $t('page.login.codeLogin.reGetCode', { time: countdown.value })
+      : $t('page.login.codeLogin.getCode');
+  });
+  const {
+    form,
+    loading: submiting,
+    send: submit
+  } = useForm(formData => verifyCaptcha(formData.phone, formData.code), {
+    initialForm: {
+      phone: '',
+      code: ''
+    }
+  });
+
+  // @ts-expect-error vue-tsc noUnusedLocals: template ref
+  const { formRef, validate } = useUIForm();
+
+  const rules = computed<Record<keyof typeof form.value, App.Global.FormRule[]>>(() => {
+    const { formRules } = useFormRules();
+
+    return {
+      phone: formRules.phone,
+      code: formRules.code
+    };
+  });
+
+  async function handleSubmit() {
+    await validate();
+    await submit();
+    // request
+    window.$message?.success($t('page.login.common.validateSuccess'));
   }
-});
-
-// @ts-expect-error vue-tsc noUnusedLocals: template ref
-const { formRef, validate } = useUIForm();
-
-const rules = computed<Record<keyof typeof form.value, App.Global.FormRule[]>>(() => {
-  const { formRules } = useFormRules();
-
-  return {
-    phone: formRules.phone,
-    code: formRules.code
-  };
-});
-
-async function handleSubmit() {
-  await validate();
-  await submit();
-  // request
-  window.$message?.success($t('page.login.common.validateSuccess'));
-}
 </script>
 
 <template>

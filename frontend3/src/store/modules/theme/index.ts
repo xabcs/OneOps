@@ -4,7 +4,7 @@ import { usePreferredColorScheme } from '@vueuse/core';
 import { defineStore } from 'pinia';
 import { getPaletteColorByNumber } from '@sa/color';
 import { localStg } from '@/utils/storage';
-import { applyContentTheme2, applyHeaderTheme } from '@/utils/content-theme';
+import { applyContentTheme2, applyHeaderTheme } from '@/theme/content-theme';
 import { themeSettings } from '@/theme/settings';
 import { SetupStoreId } from '@/enum';
 import {
@@ -317,10 +317,18 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
    * @param theme Complete content theme 2 object or key
    * @param value Value if setting a specific key
    */
-  function setContentTheme2(theme: App.Theme.ThemeSetting['contentTheme2'] | string, value?: App.Theme.ThemeSetting['contentTheme2'][keyof App.Theme.ThemeSetting['contentTheme2']]) {
+  function setContentTheme2(
+    theme: App.Theme.ThemeSetting['contentTheme2'] | string,
+    value?: App.Theme.ThemeSetting['contentTheme2'][keyof App.Theme.ThemeSetting['contentTheme2']]
+  ) {
     if (typeof theme === 'string') {
       // 单个键值对设置
-      (settings.value.contentTheme2 as Record<string, App.Theme.ThemeSetting['contentTheme2'][keyof App.Theme.ThemeSetting['contentTheme2']]>)[theme] = value!;
+      (
+        settings.value.contentTheme2 as Record<
+          string,
+          App.Theme.ThemeSetting['contentTheme2'][keyof App.Theme.ThemeSetting['contentTheme2']]
+        >
+      )[theme] = value!;
     } else {
       // 整个对象替换
       Object.assign(settings.value.contentTheme2, theme);
@@ -339,7 +347,12 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     key: keyof App.Theme.ThemeSetting['contentTheme2'][M],
     value: App.Theme.ThemeSetting['contentTheme2'][M][keyof App.Theme.ThemeSetting['contentTheme2'][M]]
   ) {
-    (settings.value.contentTheme2[module] as Record<string, App.Theme.ThemeSetting['contentTheme2'][M][keyof App.Theme.ThemeSetting['contentTheme2'][M]]>)[key] = value;
+    (
+      settings.value.contentTheme2[module] as Record<
+        string,
+        App.Theme.ThemeSetting['contentTheme2'][M][keyof App.Theme.ThemeSetting['contentTheme2'][M]]
+      >
+    )[key] = value;
   }
 
   /**

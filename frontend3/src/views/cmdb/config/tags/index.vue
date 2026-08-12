@@ -1,105 +1,105 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import { ElMessageBox, ElNotification, type FormInstance, type FormRules } from 'element-plus';
-import { fetchCreateServerTag, fetchDeleteServerTag, fetchGetServerTags, fetchUpdateServerTag } from '@/service/api';
+  import { onMounted, reactive, ref } from 'vue';
+  import { ElMessageBox, ElNotification, type FormInstance, type FormRules } from 'element-plus';
+  import { fetchCreateServerTag, fetchDeleteServerTag, fetchGetServerTags, fetchUpdateServerTag } from '@/service/api';
 
-defineOptions({ name: 'CmdbConfigTags' });
+  defineOptions({ name: 'CmdbConfigTags' });
 
-const loading = ref(false);
-const tableData = ref<CMDB.ServerTag[]>([]);
-const dialogVisible = ref(false);
-const dialogTitle = ref('');
-const formRef = ref<FormInstance>();
+  const loading = ref(false);
+  const tableData = ref<CMDB.ServerTag[]>([]);
+  const dialogVisible = ref(false);
+  const dialogTitle = ref('');
+  const formRef = ref<FormInstance>();
 
-const form = reactive<CMDB.ServerTagForm>({
-  name: '',
-  color: '#409EFF',
-  description: '',
-  sortOrder: 0,
-  status: 1
-});
-
-const rules: FormRules = {
-  name: [{ required: true, message: '请输入标签名称', trigger: 'blur' }],
-  color: [{ required: true, message: '请选择标签颜色', trigger: 'change' }]
-};
-
-async function getTableData() {
-  loading.value = true;
-  try {
-    const { data } = await fetchGetServerTags();
-    tableData.value = data || [];
-  } catch (error) {
-    console.error('获取标签列表失败:', error);
-    ElNotification.error('获取标签列表失败');
-  } finally {
-    loading.value = false;
-  }
-}
-
-function handleAdd() {
-  dialogTitle.value = '新增标签';
-  Object.assign(form, {
-    id: undefined,
+  const form = reactive<CMDB.ServerTagForm>({
     name: '',
     color: '#409EFF',
     description: '',
     sortOrder: 0,
     status: 1
   });
-  dialogVisible.value = true;
-}
 
-function handleEdit(row: CMDB.ServerTag) {
-  dialogTitle.value = '编辑标签';
-  Object.assign(form, {
-    id: row.id,
-    name: row.name,
-    color: row.color,
-    description: row.description || '',
-    sortOrder: row.sortOrder,
-    status: row.status
-  });
-  dialogVisible.value = true;
-}
+  const rules: FormRules = {
+    name: [{ required: true, message: '请输入标签名称', trigger: 'blur' }],
+    color: [{ required: true, message: '请选择标签颜色', trigger: 'change' }]
+  };
 
-async function handleSave() {
-  if (!formRef.value) return;
-
-  try {
-    await formRef.value.validate();
-    if (form.id) {
-      await fetchUpdateServerTag(form.id, form);
-      ElNotification.success('标签更新成功');
-    } else {
-      await fetchCreateServerTag(form);
-      ElNotification.success('标签创建成功');
+  async function getTableData() {
+    loading.value = true;
+    try {
+      const { data } = await fetchGetServerTags();
+      tableData.value = data || [];
+    } catch (error) {
+      console.error('获取标签列表失败:', error);
+      ElNotification.error('获取标签列表失败');
+    } finally {
+      loading.value = false;
     }
-    dialogVisible.value = false;
-    getTableData();
-  } catch (error) {
-    console.error('保存标签失败:', error);
-    ElNotification.error('保存标签失败');
   }
-}
 
-function handleDelete(row: CMDB.ServerTag) {
-  ElMessageBox.confirm(`确定要删除标签 "${row.name}" 吗？`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  })
-    .then(async () => {
-      await fetchDeleteServerTag(row.id);
-      ElNotification.success('删除成功');
+  function handleAdd() {
+    dialogTitle.value = '新增标签';
+    Object.assign(form, {
+      id: undefined,
+      name: '',
+      color: '#409EFF',
+      description: '',
+      sortOrder: 0,
+      status: 1
+    });
+    dialogVisible.value = true;
+  }
+
+  function handleEdit(row: CMDB.ServerTag) {
+    dialogTitle.value = '编辑标签';
+    Object.assign(form, {
+      id: row.id,
+      name: row.name,
+      color: row.color,
+      description: row.description || '',
+      sortOrder: row.sortOrder,
+      status: row.status
+    });
+    dialogVisible.value = true;
+  }
+
+  async function handleSave() {
+    if (!formRef.value) return;
+
+    try {
+      await formRef.value.validate();
+      if (form.id) {
+        await fetchUpdateServerTag(form.id, form);
+        ElNotification.success('标签更新成功');
+      } else {
+        await fetchCreateServerTag(form);
+        ElNotification.success('标签创建成功');
+      }
+      dialogVisible.value = false;
       getTableData();
-    })
-    .catch(() => {});
-}
+    } catch (error) {
+      console.error('保存标签失败:', error);
+      ElNotification.error('保存标签失败');
+    }
+  }
 
-onMounted(() => {
-  getTableData();
-});
+  function handleDelete(row: CMDB.ServerTag) {
+    ElMessageBox.confirm(`确定要删除标签 "${row.name}" 吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+      .then(async () => {
+        await fetchDeleteServerTag(row.id);
+        ElNotification.success('删除成功');
+        getTableData();
+      })
+      .catch(() => {});
+  }
+
+  onMounted(() => {
+    getTableData();
+  });
 </script>
 
 <template>

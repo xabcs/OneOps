@@ -1,98 +1,47 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import type { FormInstance, FormRules } from 'element-plus';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import {
-  fetchCreateAttribute,
-  fetchDeleteAttribute,
-  fetchGetAttributes,
-  fetchUpdateAttribute
-} from '@/service/api/system-manage';
+  import { onMounted, ref } from 'vue';
+  import type { FormInstance, FormRules } from 'element-plus';
+  import { ElMessage, ElMessageBox } from 'element-plus';
+  import {
+    fetchCreateAttribute,
+    fetchDeleteAttribute,
+    fetchGetAttributes,
+    fetchUpdateAttribute
+  } from '@/service/api/system-manage';
 
-defineOptions({
-  name: 'SystemAttributes'
-});
+  defineOptions({
+    name: 'SystemAttributes'
+  });
 
-// 属性分类选项
-const categoryOptions = [
-  { label: '系统分类', value: 'system' },
-  { label: '地理位置', value: 'location' },
-  { label: '环境信息', value: 'environment' },
-  { label: '硬件配置', value: 'hardware' },
-  { label: '自定义', value: 'custom' }
-];
+  // 属性分类选项
+  const categoryOptions = [
+    { label: '系统分类', value: 'system' },
+    { label: '地理位置', value: 'location' },
+    { label: '环境信息', value: 'environment' },
+    { label: '硬件配置', value: 'hardware' },
+    { label: '自定义', value: 'custom' }
+  ];
 
-// 属性类型选项
-const typeOptions = [
-  { label: '文本输入', value: 'text' },
-  { label: '下拉单选', value: 'select' },
-  { label: '下拉多选', value: 'multiselect' },
-  { label: '数字', value: 'number' },
-  { label: '日期', value: 'date' },
-  { label: '布尔值', value: 'boolean' }
-];
+  // 属性类型选项
+  const typeOptions = [
+    { label: '文本输入', value: 'text' },
+    { label: '下拉单选', value: 'select' },
+    { label: '下拉多选', value: 'multiselect' },
+    { label: '数字', value: 'number' },
+    { label: '日期', value: 'date' },
+    { label: '布尔值', value: 'boolean' }
+  ];
 
-// 状态变量
-const loading = ref(false);
-const attributes = ref<System.AttributeDefinition[]>([]);
-const selectedCategory = ref('');
-const dialogVisible = ref(false);
-const dialogMode = ref<'create' | 'edit'>('create');
-const formRef = ref<FormInstance>();
+  // 状态变量
+  const loading = ref(false);
+  const attributes = ref<System.AttributeDefinition[]>([]);
+  const selectedCategory = ref('');
+  const dialogVisible = ref(false);
+  const dialogMode = ref<'create' | 'edit'>('create');
+  const formRef = ref<FormInstance>();
 
-// 表单数据
-const formData = ref<System.AttributeDefinitionForm>({
-  name: '',
-  key: '',
-  category: 'system',
-  type: 'text',
-  options: '',
-  required: false,
-  defaultValue: '',
-  sortOrder: 0,
-  description: ''
-});
-
-// 选项列表（用于select/multiselect类型）
-const optionsList = ref<System.AttributeOption[]>([]);
-
-// 表单验证规则
-const rules: FormRules = {
-  name: [
-    { required: true, message: '请输入属性名称', trigger: 'blur' },
-    { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
-  ],
-  key: [
-    { required: true, message: '请输入属性键', trigger: 'blur' },
-    { pattern: /^[a-z][a-z0-9_]*$/, message: '只能包含小写字母、数字和下划线，且以字母开头', trigger: 'blur' }
-  ],
-  category: [{ required: true, message: '请选择分类', trigger: 'change' }],
-  type: [{ required: true, message: '请选择类型', trigger: 'change' }]
-};
-
-// 获取属性列表
-async function getAttributes() {
-  loading.value = true;
-  try {
-    const params = selectedCategory.value ? { category: selectedCategory.value } : {};
-    const { data } = await fetchGetAttributes(params);
-    attributes.value = data || [];
-  } catch (error) {
-    ElMessage.error('获取属性列表失败');
-  } finally {
-    loading.value = false;
-  }
-}
-
-// 分类筛选
-function handleCategoryChange() {
-  getAttributes();
-}
-
-// 新增属性
-function handleCreate() {
-  dialogMode.value = 'create';
-  Object.assign(formData.value, {
+  // 表单数据
+  const formData = ref<System.AttributeDefinitionForm>({
     name: '',
     key: '',
     category: 'system',
@@ -103,161 +52,212 @@ function handleCreate() {
     sortOrder: 0,
     description: ''
   });
-  optionsList.value = [];
-  dialogVisible.value = true;
-}
 
-// 编辑属性
-function handleEdit(row: System.AttributeDefinition) {
-  dialogMode.value = 'edit';
-  Object.assign(formData.value, {
-    id: row.id,
-    name: row.name,
-    key: row.key,
-    category: row.category,
-    type: row.type,
-    options: row.options,
-    required: row.required,
-    defaultValue: row.defaultValue,
-    sortOrder: row.sortOrder,
-    description: row.description
-  });
+  // 选项列表（用于select/multiselect类型）
+  const optionsList = ref<System.AttributeOption[]>([]);
 
-  // 解析选项
-  if (row.type === 'select' || row.type === 'multiselect') {
+  // 表单验证规则
+  const rules: FormRules = {
+    name: [
+      { required: true, message: '请输入属性名称', trigger: 'blur' },
+      { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
+    ],
+    key: [
+      { required: true, message: '请输入属性键', trigger: 'blur' },
+      { pattern: /^[a-z][a-z0-9_]*$/, message: '只能包含小写字母、数字和下划线，且以字母开头', trigger: 'blur' }
+    ],
+    category: [{ required: true, message: '请选择分类', trigger: 'change' }],
+    type: [{ required: true, message: '请选择类型', trigger: 'change' }]
+  };
+
+  // 获取属性列表
+  async function getAttributes() {
+    loading.value = true;
     try {
-      optionsList.value = JSON.parse(row.options || '[]');
-    } catch {
+      const params = selectedCategory.value ? { category: selectedCategory.value } : {};
+      const { data } = await fetchGetAttributes(params);
+      attributes.value = data || [];
+    } catch (error) {
+      ElMessage.error('获取属性列表失败');
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  // 分类筛选
+  function handleCategoryChange() {
+    getAttributes();
+  }
+
+  // 新增属性
+  function handleCreate() {
+    dialogMode.value = 'create';
+    Object.assign(formData.value, {
+      name: '',
+      key: '',
+      category: 'system',
+      type: 'text',
+      options: '',
+      required: false,
+      defaultValue: '',
+      sortOrder: 0,
+      description: ''
+    });
+    optionsList.value = [];
+    dialogVisible.value = true;
+  }
+
+  // 编辑属性
+  function handleEdit(row: System.AttributeDefinition) {
+    dialogMode.value = 'edit';
+    Object.assign(formData.value, {
+      id: row.id,
+      name: row.name,
+      key: row.key,
+      category: row.category,
+      type: row.type,
+      options: row.options,
+      required: row.required,
+      defaultValue: row.defaultValue,
+      sortOrder: row.sortOrder,
+      description: row.description
+    });
+
+    // 解析选项
+    if (row.type === 'select' || row.type === 'multiselect') {
+      try {
+        optionsList.value = JSON.parse(row.options || '[]');
+      } catch {
+        optionsList.value = [];
+      }
+    } else {
       optionsList.value = [];
     }
-  } else {
-    optionsList.value = [];
+
+    dialogVisible.value = true;
   }
 
-  dialogVisible.value = true;
-}
+  // 删除属性
+  async function handleDelete(row: System.AttributeDefinition) {
+    try {
+      await ElMessageBox.confirm(`确定要删除属性"${row.name}"吗？`, '删除确认', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      });
+    } catch {
+      return;
+    }
 
-// 删除属性
-async function handleDelete(row: System.AttributeDefinition) {
-  try {
-    await ElMessageBox.confirm(`确定要删除属性"${row.name}"吗？`, '删除确认', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    });
-  } catch {
-    return;
+    try {
+      await fetchDeleteAttribute(row.id);
+      ElMessage.success('删除成功');
+      await getAttributes();
+    } catch (error: unknown) {
+      ElMessage.error((error as { message?: string }).message || '删除失败');
+    }
   }
 
-  try {
-    await fetchDeleteAttribute(row.id);
-    ElMessage.success('删除成功');
-    await getAttributes();
-  } catch (error: unknown) {
-    ElMessage.error((error as { message?: string }).message || '删除失败');
+  // 类型变化处理
+  function handleTypeChange(type: System.AttributeType) {
+    // 清空选项
+    if (type !== 'select' && type !== 'multiselect') {
+      optionsList.value = [];
+      formData.value.options = '';
+    }
   }
-}
 
-// 类型变化处理
-function handleTypeChange(type: System.AttributeType) {
-  // 清空选项
-  if (type !== 'select' && type !== 'multiselect') {
-    optionsList.value = [];
-    formData.value.options = '';
+  // 添加选项
+  function handleAddOption() {
+    optionsList.value.push({ label: '', value: '' });
   }
-}
 
-// 添加选项
-function handleAddOption() {
-  optionsList.value.push({ label: '', value: '' });
-}
+  // 删除选项
+  function handleRemoveOption(index: number) {
+    optionsList.value.splice(index, 1);
+  }
 
-// 删除选项
-function handleRemoveOption(index: number) {
-  optionsList.value.splice(index, 1);
-}
+  // 提交表单
+  async function handleSubmit() {
+    if (!formRef.value) return;
 
-// 提交表单
-async function handleSubmit() {
-  if (!formRef.value) return;
+    try {
+      await formRef.value.validate();
 
-  try {
-    await formRef.value.validate();
-
-    // 如果是select/multiselect类型，生成选项JSON
-    const data: System.AttributeDefinitionForm = { ...formData.value };
-    if (data.type === 'select' || data.type === 'multiselect') {
-      // 验证选项
-      const validOptions = optionsList.value.filter(opt => opt.label && opt.value);
-      if (validOptions.length === 0) {
-        ElMessage.warning('请至少添加一个有效选项');
-        return;
+      // 如果是select/multiselect类型，生成选项JSON
+      const data: System.AttributeDefinitionForm = { ...formData.value };
+      if (data.type === 'select' || data.type === 'multiselect') {
+        // 验证选项
+        const validOptions = optionsList.value.filter(opt => opt.label && opt.value);
+        if (validOptions.length === 0) {
+          ElMessage.warning('请至少添加一个有效选项');
+          return;
+        }
+        data.options = JSON.stringify(validOptions);
       }
-      data.options = JSON.stringify(validOptions);
-    }
 
-    if (dialogMode.value === 'create') {
-      await fetchCreateAttribute(data);
-      ElMessage.success('创建成功');
-    } else {
-      await fetchUpdateAttribute(formData.value.id!, data);
-      ElMessage.success('更新成功');
-    }
+      if (dialogMode.value === 'create') {
+        await fetchCreateAttribute(data);
+        ElMessage.success('创建成功');
+      } else {
+        await fetchUpdateAttribute(formData.value.id!, data);
+        ElMessage.success('更新成功');
+      }
 
+      dialogVisible.value = false;
+      await getAttributes();
+    } catch (error: unknown) {
+      if (error !== false) {
+        const message = error instanceof Error ? error.message : '操作失败';
+        ElMessage.error(message);
+      }
+    }
+  }
+
+  // 关闭对话框
+  function handleCloseDialog() {
     dialogVisible.value = false;
-    await getAttributes();
-  } catch (error: unknown) {
-    if (error !== false) {
-      const message = error instanceof Error ? error.message : '操作失败';
-      ElMessage.error(message);
+    formRef.value?.resetFields();
+  }
+
+  // 获取分类名称
+  function getCategoryName(category: System.AttributeCategory): string {
+    const option = categoryOptions.find(opt => opt.value === category);
+    return option?.label || category;
+  }
+
+  // 获取分类标签类型
+  function getCategoryTagType(category: System.AttributeCategory) {
+    const typeMap: Record<System.AttributeCategory, '' | UI.ThemeColor> = {
+      system: 'info',
+      location: 'success',
+      environment: 'warning',
+      hardware: 'primary',
+      custom: ''
+    };
+    return typeMap[category] || 'info';
+  }
+
+  // 获取类型名称
+  function getTypeName(type: System.AttributeType) {
+    const option = typeOptions.find(opt => opt.value === type);
+    return option?.label || type;
+  }
+
+  // 解析选项（用于显示）
+  function parseOptions(optionsStr: string): System.AttributeOption[] {
+    if (!optionsStr) return [];
+    try {
+      return JSON.parse(optionsStr);
+    } catch {
+      return [];
     }
   }
-}
 
-// 关闭对话框
-function handleCloseDialog() {
-  dialogVisible.value = false;
-  formRef.value?.resetFields();
-}
-
-// 获取分类名称
-function getCategoryName(category: System.AttributeCategory): string {
-  const option = categoryOptions.find(opt => opt.value === category);
-  return option?.label || category;
-}
-
-// 获取分类标签类型
-function getCategoryTagType(category: System.AttributeCategory) {
-  const typeMap: Record<System.AttributeCategory, '' | UI.ThemeColor> = {
-    system: 'info',
-    location: 'success',
-    environment: 'warning',
-    hardware: 'primary',
-    custom: ''
-  };
-  return typeMap[category] || 'info';
-}
-
-// 获取类型名称
-function getTypeName(type: System.AttributeType) {
-  const option = typeOptions.find(opt => opt.value === type);
-  return option?.label || type;
-}
-
-// 解析选项（用于显示）
-function parseOptions(optionsStr: string): System.AttributeOption[] {
-  if (!optionsStr) return [];
-  try {
-    return JSON.parse(optionsStr);
-  } catch {
-    return [];
-  }
-}
-
-// 初始化
-onMounted(() => {
-  getAttributes();
-});
+  // 初始化
+  onMounted(() => {
+    getAttributes();
+  });
 </script>
 
 <template>
@@ -426,55 +426,55 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.attributes-page {
-  padding: 16px;
-}
+  .attributes-page {
+    padding: 16px;
+  }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-.title {
-  font-size: 16px;
-  font-weight: 500;
-}
+  .title {
+    font-size: 16px;
+    font-weight: 500;
+  }
 
-.filter-bar {
-  margin-bottom: 16px;
-}
+  .filter-bar {
+    margin-bottom: 16px;
+  }
 
-.options-config {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+  .options-config {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
 
-.option-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+  .option-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 
-.mx-2 {
-  margin-left: 8px;
-  margin-right: 8px;
-}
+  .mx-2 {
+    margin-left: 8px;
+    margin-right: 8px;
+  }
 
-.ml-2 {
-  margin-left: 8px;
-}
+  .ml-2 {
+    margin-left: 8px;
+  }
 
-.text-12px {
-  font-size: 12px;
-}
+  .text-12px {
+    font-size: 12px;
+  }
 
-.text-gray-400 {
-  color: #909399;
-}
+  .text-gray-400 {
+    color: #909399;
+  }
 
-.mt-4px {
-  margin-top: 4px;
-}
+  .mt-4px {
+    margin-top: 4px;
+  }
 </style>

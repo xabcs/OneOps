@@ -1,29 +1,29 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { enableStatusOptions } from '@/constants/business';
-import { translateOptions } from '@/utils/common';
-import { $t } from '@/locales';
+  import { ref } from 'vue';
+  import { enableStatusOptions } from '@/constants/business';
+  import { translateOptions } from '@/utils/common';
+  import { $t } from '@/locales';
 
-defineOptions({ name: 'RoleSearch' });
+  defineOptions({ name: 'RoleSearch' });
 
-const activeName = ref(['role-search']);
+  const activeName = ref(['role-search']);
 
-interface Emits {
-  (e: 'reset'): void;
-  (e: 'search'): void;
-}
+  interface Emits {
+    (e: 'reset'): void;
+    (e: 'search'): void;
+  }
 
-const emit = defineEmits<Emits>();
+  const emit = defineEmits<Emits>();
 
-const model = defineModel<Api.SystemManage.RoleSearchParams>('model', { required: true });
+  const model = defineModel<Api.SystemManage.RoleSearchParams>('model', { required: true });
 
-function reset() {
-  emit('reset');
-}
+  function reset() {
+    emit('reset');
+  }
 
-function search() {
-  emit('search');
-}
+  function search() {
+    emit('search');
+  }
 </script>
 
 <template>

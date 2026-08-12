@@ -115,7 +115,10 @@ export function filterMenuTree(list: Api.SystemManage.Menu[], filterText: string
 }
 
 /** 查找兄弟节点 */
-export function findSiblings(targetId: number, originalTreeData: Api.SystemManage.Menu[]): Api.SystemManage.Menu[] | null {
+export function findSiblings(
+  targetId: number,
+  originalTreeData: Api.SystemManage.Menu[]
+): Api.SystemManage.Menu[] | null {
   const findInList = (list: Api.SystemManage.Menu[]): Api.SystemManage.Menu[] | null => {
     for (let i = 0; i < list.length; i++) {
       if (list[i].id === targetId) return list;

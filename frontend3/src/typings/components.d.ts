@@ -160,7 +160,7 @@ declare module 'vue' {
     MenuToggler: typeof import('./../components/common/menu-toggler.vue')['default']
     MiniTrendChart: typeof import('./../components/features/monitoring/MonitoringComponents/MiniTrendChart.vue')['default']
     PageHeader: typeof import('./../components/organisms/PageHeader.vue')['default']
-    PermissionButton: typeof import('./../components/PermissionButton.vue')['default']
+    PermissionButton: typeof import('./../components/common/PermissionButton.vue')['default']
     PermissionMatrix: typeof import('./../components/permission-matrix/PermissionMatrix.vue')['default']
     PinToggler: typeof import('./../components/common/pin-toggler.vue')['default']
     ReloadButton: typeof import('./../components/common/reload-button.vue')['default']
@@ -179,7 +179,7 @@ declare module 'vue' {
     ThemeSchemaSwitch: typeof import('./../components/common/theme-schema-switch.vue')['default']
     WaveBg: typeof import('./../components/custom/wave-bg.vue')['default']
     WebSiteLink: typeof import('./../components/custom/web-site-link.vue')['default']
-    YamlEditor: typeof import('./../components/YamlEditor.vue')['default']
+    YamlEditor: typeof import('./../components/k8s/YamlEditor.vue')['default']
   }
   export interface GlobalDirectives {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']
@@ -336,7 +336,7 @@ declare global {
   const MenuToggler: typeof import('./../components/common/menu-toggler.vue')['default']
   const MiniTrendChart: typeof import('./../components/features/monitoring/MonitoringComponents/MiniTrendChart.vue')['default']
   const PageHeader: typeof import('./../components/organisms/PageHeader.vue')['default']
-  const PermissionButton: typeof import('./../components/PermissionButton.vue')['default']
+  const PermissionButton: typeof import('./../components/common/PermissionButton.vue')['default']
   const PermissionMatrix: typeof import('./../components/permission-matrix/PermissionMatrix.vue')['default']
   const PinToggler: typeof import('./../components/common/pin-toggler.vue')['default']
   const ReloadButton: typeof import('./../components/common/reload-button.vue')['default']
@@ -355,5 +355,5 @@ declare global {
   const ThemeSchemaSwitch: typeof import('./../components/common/theme-schema-switch.vue')['default']
   const WaveBg: typeof import('./../components/custom/wave-bg.vue')['default']
   const WebSiteLink: typeof import('./../components/custom/web-site-link.vue')['default']
-  const YamlEditor: typeof import('./../components/YamlEditor.vue')['default']
+  const YamlEditor: typeof import('./../components/k8s/YamlEditor.vue')['default']
 }

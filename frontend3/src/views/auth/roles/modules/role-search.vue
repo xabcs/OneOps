@@ -1,34 +1,34 @@
 <script setup lang="ts">
-import { useForm } from '@/hooks/common/form';
-import { $t } from '@/locales';
+  import { useForm } from '@/hooks/common/form';
+  import { $t } from '@/locales';
 
-defineOptions({ name: 'AuthRoleSearch' });
+  defineOptions({ name: 'AuthRoleSearch' });
 
-interface Emits {
-  (e: 'reset'): void;
-  (e: 'search'): void;
-}
+  interface Emits {
+    (e: 'reset'): void;
+    (e: 'search'): void;
+  }
 
-const emit = defineEmits<Emits>();
+  const emit = defineEmits<Emits>();
 
-// @ts-expect-error vue-tsc noUnusedLocals: template ref
-const { formRef, validate, restoreValidation } = useForm();
+  // @ts-expect-error vue-tsc noUnusedLocals: template ref
+  const { formRef, validate, restoreValidation } = useForm();
 
-const model = defineModel<{
-  name: string;
-  code: string;
-  description: string;
-}>('model', { required: true });
+  const model = defineModel<{
+    name: string;
+    code: string;
+    description: string;
+  }>('model', { required: true });
 
-async function reset() {
-  await restoreValidation();
-  emit('reset');
-}
+  async function reset() {
+    await restoreValidation();
+    emit('reset');
+  }
 
-async function search() {
-  await validate();
-  emit('search');
-}
+  async function search() {
+    await validate();
+    emit('search');
+  }
 </script>
 
 <template>
@@ -76,15 +76,15 @@ async function search() {
 </template>
 
 <style scoped lang="scss">
-/* 搜索卡片样式 - 无背景、无边框、无阴影 */
-:deep(.search-card-wrapper) {
-  background-color: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-
-  .el-card__body {
-    padding: 0 !important;
+  /* 搜索卡片样式 - 无背景、无边框、无阴影 */
+  :deep(.search-card-wrapper) {
     background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+
+    .el-card__body {
+      padding: 0 !important;
+      background-color: transparent !important;
+    }
   }
-}
 </style>

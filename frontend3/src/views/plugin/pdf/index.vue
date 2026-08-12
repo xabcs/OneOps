@@ -1,45 +1,45 @@
 <script setup lang="ts">
-import { ref, shallowRef } from 'vue';
-import VuePdfEmbed from 'vue-pdf-embed';
-import { useLoading } from '@sa/hooks';
+  import { ref, shallowRef } from 'vue';
+  import VuePdfEmbed from 'vue-pdf-embed';
+  import { useLoading } from '@sa/hooks';
 
-defineOptions({ name: 'PdfPage' });
+  defineOptions({ name: 'PdfPage' });
 
-const { loading, endLoading } = useLoading(true);
+  const { loading, endLoading } = useLoading(true);
 
-const pdfRef = shallowRef<InstanceType<typeof VuePdfEmbed> | null>(null);
-const source = `https://xiaoxian521.github.io/hyperlink/pdf/Cookie%E5%92%8CSession%E5%8C%BA%E5%88%AB%E7%94%A8%E6%B3%95.pdf`;
+  const pdfRef = shallowRef<InstanceType<typeof VuePdfEmbed> | null>(null);
+  const source = `https://xiaoxian521.github.io/hyperlink/pdf/Cookie%E5%92%8CSession%E5%8C%BA%E5%88%AB%E7%94%A8%E6%B3%95.pdf`;
 
-const showAllPages = ref(false);
-const currentPage = ref<number>(1);
-const pageCount = ref(1);
+  const showAllPages = ref(false);
+  const currentPage = ref<number>(1);
+  const pageCount = ref(1);
 
-function onPdfRendered() {
-  endLoading();
+  function onPdfRendered() {
+    endLoading();
 
-  if (pdfRef.value?.doc) {
-    pageCount.value = pdfRef.value.doc.numPages;
+    if (pdfRef.value?.doc) {
+      pageCount.value = pdfRef.value.doc.numPages;
+    }
   }
-}
 
-function showAllPagesChange() {
-  currentPage.value = 1;
-}
+  function showAllPagesChange() {
+    currentPage.value = 1;
+  }
 
-const rotations = [0, 90, 180, 270];
-const currentRotation = ref(0);
+  const rotations = [0, 90, 180, 270];
+  const currentRotation = ref(0);
 
-function handleRotate() {
-  currentRotation.value = (currentRotation.value + 1) % 4;
-}
+  function handleRotate() {
+    currentRotation.value = (currentRotation.value + 1) % 4;
+  }
 
-async function handlePrint() {
-  await pdfRef.value?.print(undefined, 'test.pdf', true);
-}
+  async function handlePrint() {
+    await pdfRef.value?.print(undefined, 'test.pdf', true);
+  }
 
-async function handleDownload() {
-  await pdfRef.value?.download('test.pdf');
-}
+  async function handleDownload() {
+    await pdfRef.value?.download('test.pdf');
+  }
 </script>
 
 <template>

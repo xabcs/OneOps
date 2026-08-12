@@ -1,7 +1,7 @@
 <script setup lang="ts">
-defineOptions({
-  name: 'SvgClose'
-});
+  defineOptions({
+    name: 'SvgClose'
+  });
 </script>
 
 <template>

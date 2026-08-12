@@ -50,8 +50,12 @@ export function useServerData() {
 
       if (searchParams?.searchKeyword) {
         switch (searchParams.searchType) {
-          case 'hostname': params.hostname = searchParams.searchKeyword; break;
-          case 'ip': params.ip = searchParams.searchKeyword; break;
+          case 'hostname':
+            params.hostname = searchParams.searchKeyword;
+            break;
+          case 'ip':
+            params.ip = searchParams.searchKeyword;
+            break;
         }
       }
 
@@ -68,7 +72,10 @@ export function useServerData() {
 
   async function getSSHCredentials() {
     try {
-      const [userRes, systemRes] = await Promise.all([fetchGetSSHCredentials('user'), fetchGetSSHCredentials('system')]);
+      const [userRes, systemRes] = await Promise.all([
+        fetchGetSSHCredentials('user'),
+        fetchGetSSHCredentials('system')
+      ]);
       userCredentials.value = userRes.data || [];
       systemCredentials.value = systemRes.data || [];
     } catch (error) {
@@ -107,7 +114,9 @@ export function useServerData() {
     try {
       const res = await fetchGetBusinessUnits();
       businessUnits.value = res.data || [];
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   async function getSystemOptions() {
@@ -166,7 +175,11 @@ export function useServerData() {
     try {
       const attributesToSave = serverAttributes
         .filter(attr => attr.attributeValue && attr.attributeValue.trim() !== '')
-        .map(attr => ({ attributeId: attr.attributeId, attributeKey: attr.attributeKey, attributeValue: attr.attributeValue }));
+        .map(attr => ({
+          attributeId: attr.attributeId,
+          attributeKey: attr.attributeKey,
+          attributeValue: attr.attributeValue
+        }));
       if (attributesToSave.length > 0) {
         await fetchSaveServerAttributes(serverId, attributesToSave);
       }
@@ -188,17 +201,43 @@ export function useServerData() {
   // ===== 辅助 =====
   function handleRoomChange(roomId: number, serverForm: CMDB.ServerForm) {
     serverForm.cabinetId = undefined;
-    if (roomId) { getCabinets(roomId); } else { cabinets.value = []; }
+    if (roomId) {
+      getCabinets(roomId);
+    } else {
+      cabinets.value = [];
+    }
   }
 
   return {
     // 数据
-    tableData, loading, total, selectedIds, pagination,
-    userCredentials, systemCredentials, businessUnits, serverRooms, cabinets, serverTags, attributeDefinitions,
+    tableData,
+    loading,
+    total,
+    selectedIds,
+    pagination,
+    userCredentials,
+    systemCredentials,
+    businessUnits,
+    serverRooms,
+    cabinets,
+    serverTags,
+    attributeDefinitions,
     // 方法
-    getServers, getSSHCredentials, getServerRooms, getCabinets, getServerTags, getBusinessUnits, getSystemOptions,
-    handleSelectAll, handleSelectionChange, handlePageChange, handlePageSizeChange,
-    loadAttributeDefinitions, loadServerAttributes, saveServerAttributes,
-    handleSyncMetrics, handleRoomChange
+    getServers,
+    getSSHCredentials,
+    getServerRooms,
+    getCabinets,
+    getServerTags,
+    getBusinessUnits,
+    getSystemOptions,
+    handleSelectAll,
+    handleSelectionChange,
+    handlePageChange,
+    handlePageSizeChange,
+    loadAttributeDefinitions,
+    loadServerAttributes,
+    saveServerAttributes,
+    handleSyncMetrics,
+    handleRoomChange
   };
 }

@@ -1,45 +1,45 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { enableStatusOptions, userGenderOptions } from '@/constants/business';
-import { useForm, useFormRules } from '@/hooks/common/form';
-import { translateOptions } from '@/utils/common';
-import { $t } from '@/locales';
+  import { computed } from 'vue';
+  import { enableStatusOptions, userGenderOptions } from '@/constants/business';
+  import { useForm, useFormRules } from '@/hooks/common/form';
+  import { translateOptions } from '@/utils/common';
+  import { $t } from '@/locales';
 
-defineOptions({ name: 'UserSearch' });
+  defineOptions({ name: 'UserSearch' });
 
-interface Emits {
-  (e: 'search'): void;
-}
+  interface Emits {
+    (e: 'search'): void;
+  }
 
-const emit = defineEmits<Emits>();
+  const emit = defineEmits<Emits>();
 
-// @ts-expect-error vue-tsc noUnusedLocals: template ref
-const { formRef, validate, restoreValidation } = useForm();
+  // @ts-expect-error vue-tsc noUnusedLocals: template ref
+  const { formRef, validate, restoreValidation } = useForm();
 
-const model = defineModel<Api.SystemManage.UserSearchParams>('model', { required: true });
+  const model = defineModel<Api.SystemManage.UserSearchParams>('model', { required: true });
 
-const initialParams = { ...model.value };
+  const initialParams = { ...model.value };
 
-type RuleKey = Extract<keyof Api.SystemManage.UserSearchParams, 'userEmail' | 'userPhone'>;
+  type RuleKey = Extract<keyof Api.SystemManage.UserSearchParams, 'userEmail' | 'userPhone'>;
 
-const rules = computed<Record<RuleKey, App.Global.FormRule>>(() => {
-  const { patternRules } = useFormRules(); // inside computed to make locale reactive
+  const rules = computed<Record<RuleKey, App.Global.FormRule>>(() => {
+    const { patternRules } = useFormRules(); // inside computed to make locale reactive
 
-  return {
-    userEmail: patternRules.email,
-    userPhone: patternRules.phone
-  };
-});
+    return {
+      userEmail: patternRules.email,
+      userPhone: patternRules.phone
+    };
+  });
 
-async function reset() {
-  await restoreValidation();
-  Object.assign(model.value, initialParams);
-}
+  async function reset() {
+    await restoreValidation();
+    Object.assign(model.value, initialParams);
+  }
 
-async function search() {
-  await validate();
-  emit('search');
-}
+  async function search() {
+    await validate();
+    emit('search');
+  }
 </script>
 
 <template>

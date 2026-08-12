@@ -319,4 +319,3 @@ export function fetchAssignRolePermissions(roleId: number, data: { permissionIds
     data
   });
 }
-

@@ -1,61 +1,22 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue';
-import { ElMessageBox, ElNotification, type FormInstance, type FormRules } from 'element-plus';
-import {
-  fetchCreateBusinessUnit,
-  fetchDeleteBusinessUnit,
-  fetchGetBusinessUnits,
-  fetchUpdateBusinessUnit
-} from '@/service/api';
+  import { computed, onMounted, reactive, ref } from 'vue';
+  import { ElMessageBox, ElNotification, type FormInstance, type FormRules } from 'element-plus';
+  import {
+    fetchCreateBusinessUnit,
+    fetchDeleteBusinessUnit,
+    fetchGetBusinessUnits,
+    fetchUpdateBusinessUnit
+  } from '@/service/api';
 
-defineOptions({ name: 'CmdbConfigBusiness' });
+  defineOptions({ name: 'CmdbConfigBusiness' });
 
-const loading = ref(false);
-const tableData = ref<CMDB.BusinessUnit[]>([]);
-const dialogVisible = ref(false);
-const dialogTitle = ref('');
-const formRef = ref<FormInstance>();
+  const loading = ref(false);
+  const tableData = ref<CMDB.BusinessUnit[]>([]);
+  const dialogVisible = ref(false);
+  const dialogTitle = ref('');
+  const formRef = ref<FormInstance>();
 
-const form = reactive<CMDB.BusinessUnitForm>({
-  name: '',
-  code: '',
-  parentId: 0,
-  owner: '',
-  phone: '',
-  email: '',
-  sortOrder: 0,
-  status: 1,
-  remarks: ''
-});
-
-const rules: FormRules = {
-  name: [{ required: true, message: '请输入业务名称', trigger: 'blur' }],
-  code: [
-    { required: true, message: '请输入业务代码', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9_-]+$/, message: '业务代码只能包含字母、数字、下划线和连字符', trigger: 'blur' }
-  ]
-};
-
-const businessTreeOptions = computed(() => [{ id: 0, name: '根业务', children: tableData.value }]);
-const treeSelectProps: { label: string; value: string; children: string } = { label: 'name', value: 'id', children: 'children' };
-
-async function getTableData() {
-  loading.value = true;
-  try {
-    const { data } = await fetchGetBusinessUnits();
-    tableData.value = data || [];
-  } catch (error) {
-    console.error('获取业务列表失败:', error);
-    ElNotification.error('获取业务列表失败');
-  } finally {
-    loading.value = false;
-  }
-}
-
-function handleAdd() {
-  dialogTitle.value = '新增业务';
-  Object.assign(form, {
-    id: undefined,
+  const form = reactive<CMDB.BusinessUnitForm>({
     name: '',
     code: '',
     parentId: 0,
@@ -66,68 +27,111 @@ function handleAdd() {
     status: 1,
     remarks: ''
   });
-  dialogVisible.value = true;
-}
 
-function handleEdit(row: CMDB.BusinessUnit) {
-  dialogTitle.value = '编辑业务';
-  Object.assign(form, {
-    id: row.id,
-    name: row.name,
-    code: row.code,
-    parentId: row.parentId,
-    owner: row.owner || '',
-    phone: row.phone || '',
-    email: row.email || '',
-    sortOrder: row.sortOrder,
-    status: row.status,
-    remarks: row.remarks || ''
-  });
-  dialogVisible.value = true;
-}
+  const rules: FormRules = {
+    name: [{ required: true, message: '请输入业务名称', trigger: 'blur' }],
+    code: [
+      { required: true, message: '请输入业务代码', trigger: 'blur' },
+      { pattern: /^[a-zA-Z0-9_-]+$/, message: '业务代码只能包含字母、数字、下划线和连字符', trigger: 'blur' }
+    ]
+  };
 
-async function handleSave() {
-  if (!formRef.value) return;
+  const businessTreeOptions = computed(() => [{ id: 0, name: '根业务', children: tableData.value }]);
+  const treeSelectProps: { label: string; value: string; children: string } = {
+    label: 'name',
+    value: 'id',
+    children: 'children'
+  };
 
-  try {
-    await formRef.value.validate();
-    if (form.id) {
-      await fetchUpdateBusinessUnit(form.id, form);
-      ElNotification.success('业务更新成功');
-    } else {
-      await fetchCreateBusinessUnit(form);
-      ElNotification.success('业务创建成功');
+  async function getTableData() {
+    loading.value = true;
+    try {
+      const { data } = await fetchGetBusinessUnits();
+      tableData.value = data || [];
+    } catch (error) {
+      console.error('获取业务列表失败:', error);
+      ElNotification.error('获取业务列表失败');
+    } finally {
+      loading.value = false;
     }
-    dialogVisible.value = false;
-    getTableData();
-  } catch (error) {
-    console.error('保存业务失败:', error);
-    ElNotification.error('保存业务失败');
-  }
-}
-
-function handleDelete(row: CMDB.BusinessUnit) {
-  if (row.children && row.children.length > 0) {
-    ElNotification.warning('该业务下有子业务，无法删除');
-    return;
   }
 
-  ElMessageBox.confirm(`确定要删除业务 "${row.name}" 吗？`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  })
-    .then(async () => {
-      await fetchDeleteBusinessUnit(row.id);
-      ElNotification.success('删除成功');
+  function handleAdd() {
+    dialogTitle.value = '新增业务';
+    Object.assign(form, {
+      id: undefined,
+      name: '',
+      code: '',
+      parentId: 0,
+      owner: '',
+      phone: '',
+      email: '',
+      sortOrder: 0,
+      status: 1,
+      remarks: ''
+    });
+    dialogVisible.value = true;
+  }
+
+  function handleEdit(row: CMDB.BusinessUnit) {
+    dialogTitle.value = '编辑业务';
+    Object.assign(form, {
+      id: row.id,
+      name: row.name,
+      code: row.code,
+      parentId: row.parentId,
+      owner: row.owner || '',
+      phone: row.phone || '',
+      email: row.email || '',
+      sortOrder: row.sortOrder,
+      status: row.status,
+      remarks: row.remarks || ''
+    });
+    dialogVisible.value = true;
+  }
+
+  async function handleSave() {
+    if (!formRef.value) return;
+
+    try {
+      await formRef.value.validate();
+      if (form.id) {
+        await fetchUpdateBusinessUnit(form.id, form);
+        ElNotification.success('业务更新成功');
+      } else {
+        await fetchCreateBusinessUnit(form);
+        ElNotification.success('业务创建成功');
+      }
+      dialogVisible.value = false;
       getTableData();
-    })
-    .catch(() => {});
-}
+    } catch (error) {
+      console.error('保存业务失败:', error);
+      ElNotification.error('保存业务失败');
+    }
+  }
 
-onMounted(() => {
-  getTableData();
-});
+  function handleDelete(row: CMDB.BusinessUnit) {
+    if (row.children && row.children.length > 0) {
+      ElNotification.warning('该业务下有子业务，无法删除');
+      return;
+    }
+
+    ElMessageBox.confirm(`确定要删除业务 "${row.name}" 吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+      .then(async () => {
+        await fetchDeleteBusinessUnit(row.id);
+        ElNotification.success('删除成功');
+        getTableData();
+      })
+      .catch(() => {});
+  }
+
+  onMounted(() => {
+    getTableData();
+  });
 </script>
 
 <template>

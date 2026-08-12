@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue';
+  import { Icon } from '@iconify/vue';
 
-interface Props {
-  showSidebar?: boolean;
-  isFullscreen?: boolean;
-  activeActivityItem: string;
-  serverMenuExpanded: boolean;
-  serverMenuPosition: { top: number };
-  mainMenuExpanded: boolean;
-  mainMenuPosition: { top: number };
-}
+  interface Props {
+    showSidebar?: boolean;
+    isFullscreen?: boolean;
+    activeActivityItem: string;
+    serverMenuExpanded: boolean;
+    serverMenuPosition: { top: number };
+    mainMenuExpanded: boolean;
+    mainMenuPosition: { top: number };
+  }
 
-interface Emits {
-  (e: 'toggle-sidebar'): void;
-  (e: 'toggle-fullscreen'): void;
-  (e: 'toggle-server-menu', event: MouseEvent): void;
-  (e: 'toggle-main-menu', event: MouseEvent): void;
-  (e: 'switch-activity-item', item: string): void;
-}
+  interface Emits {
+    (e: 'toggle-sidebar'): void;
+    (e: 'toggle-fullscreen'): void;
+    (e: 'toggle-server-menu', event: MouseEvent): void;
+    (e: 'toggle-main-menu', event: MouseEvent): void;
+    (e: 'switch-activity-item', item: string): void;
+  }
 
-defineProps<Props>();
-const emit = defineEmits<Emits>();
+  defineProps<Props>();
+  const emit = defineEmits<Emits>();
 </script>
 
 <template>
@@ -31,7 +31,12 @@ const emit = defineEmits<Emits>();
     </div>
 
     <!-- 菜单按钮 -->
-    <div class="wb-activity-item" :class="{ active: mainMenuExpanded }" title="菜单" @click="emit('toggle-main-menu', $event)">
+    <div
+      class="wb-activity-item"
+      :class="{ active: mainMenuExpanded }"
+      title="菜单"
+      @click="emit('toggle-main-menu', $event)"
+    >
       <Icon icon="lucide:menu" class="wb-activity-icon" />
       <div v-if="mainMenuExpanded" class="wb-menu-indicator"></div>
     </div>
@@ -115,129 +120,129 @@ const emit = defineEmits<Emits>();
 </template>
 
 <style lang="scss">
-.wb-activity-logo {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 0;
-  flex-shrink: 0;
-}
+  .wb-activity-logo {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 0;
+    flex-shrink: 0;
+  }
 
-.wb-logo-icon {
-  width: 24px;
-  height: 24px;
-  color: #007acc;
-}
+  .wb-logo-icon {
+    width: 24px;
+    height: 24px;
+    color: #007acc;
+  }
 
-/* Activity Bar 图标样式 */
-.wb-activity-item svg {
-  width: 20px;
-  height: 20px;
-}
+  /* Activity Bar 图标样式 */
+  .wb-activity-item svg {
+    width: 20px;
+    height: 20px;
+  }
 
-.wb-activity-item svg,
-.wb-activity-item .iconify {
-  color: #c5c5c5 !important;
-  transition: color 0.15s ease;
-}
+  .wb-activity-item svg,
+  .wb-activity-item .iconify {
+    color: #c5c5c5 !important;
+    transition: color 0.15s ease;
+  }
 
-.wb-activity-item:hover svg,
-.wb-activity-item:hover .iconify {
-  color: #ffffff !important;
-}
+  .wb-activity-item:hover svg,
+  .wb-activity-item:hover .iconify {
+    color: #ffffff !important;
+  }
 
-.wb-activity-item.active svg,
-.wb-activity-item.active .iconify {
-  color: #ffffff !important;
-}
+  .wb-activity-item.active svg,
+  .wb-activity-item.active .iconify {
+    color: #ffffff !important;
+  }
 
-.wb-activity-icon {
-  color: #cccccc !important;
-}
+  .wb-activity-icon {
+    color: #cccccc !important;
+  }
 
-.wb-activity-item:hover .wb-activity-icon {
-  color: #ffffff !important;
-}
+  .wb-activity-item:hover .wb-activity-icon {
+    color: #ffffff !important;
+  }
 
-.wb-activity-item.active .wb-activity-icon {
-  color: #ffffff !important;
-}
+  .wb-activity-item.active .wb-activity-icon {
+    color: #ffffff !important;
+  }
 
-/* 下拉菜单 */
-.wb-server-menu-dropdown,
-.wb-main-menu-dropdown {
-  position: fixed;
-  left: 48px;
-  min-width: 140px;
-  background: #212121;
-  border: none;
-  border-radius: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  padding: 4px 0;
-  z-index: 100;
-}
+  /* 下拉菜单 */
+  .wb-server-menu-dropdown,
+  .wb-main-menu-dropdown {
+    position: fixed;
+    left: 48px;
+    min-width: 140px;
+    background: #212121;
+    border: none;
+    border-radius: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    padding: 4px 0;
+    z-index: 100;
+  }
 
-.wb-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  color: #cccccc;
-  font-size: 12px;
-  transition: background 0.15s;
-}
+  .wb-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    color: #cccccc;
+    font-size: 12px;
+    transition: background 0.15s;
+  }
 
-.wb-menu-item:hover {
-  background: #2d2d2d;
-}
+  .wb-menu-item:hover {
+    background: #2d2d2d;
+  }
 
-.wb-menu-divider {
-  height: 1px;
-  background: #3c3c3c;
-  margin: 4px 0;
-}
+  .wb-menu-divider {
+    height: 1px;
+    background: #3c3c3c;
+    margin: 4px 0;
+  }
 
-.wb-menu-item-icon {
-  width: 14px;
-  height: 14px;
-  color: #858585;
-}
+  .wb-menu-item-icon {
+    width: 14px;
+    height: 14px;
+    color: #858585;
+  }
 
-.wb-menu-item:hover .wb-menu-item-icon {
-  color: #cccccc;
-}
+  .wb-menu-item:hover .wb-menu-item-icon {
+    color: #cccccc;
+  }
 
-.wb-menu-indicator {
-  position: absolute;
-  left: 0;
-  top: 12px;
-  bottom: 12px;
-  width: 2px;
-  background: #007acc;
-}
+  .wb-menu-indicator {
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 2px;
+    background: #007acc;
+  }
 
-/* 下拉菜单过渡动画 */
-.wb-menu-dropdown-enter-active,
-.wb-menu-dropdown-leave-active {
-  transition: all 0.2s ease;
-}
+  /* 下拉菜单过渡动画 */
+  .wb-menu-dropdown-enter-active,
+  .wb-menu-dropdown-leave-active {
+    transition: all 0.2s ease;
+  }
 
-.wb-menu-dropdown-enter-from {
-  opacity: 0;
-  transform: translateX(-8px);
-}
+  .wb-menu-dropdown-enter-from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
 
-.wb-menu-dropdown-leave-to {
-  opacity: 0;
-  transform: translateX(-8px);
-}
+  .wb-menu-dropdown-leave-to {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
 
-.wb-menu-dropdown-enter-to,
-.wb-menu-dropdown-leave-from {
-  opacity: 1;
-  transform: translateX(0);
-}
+  .wb-menu-dropdown-enter-to,
+  .wb-menu-dropdown-leave-from {
+    opacity: 1;
+    transform: translateX(0);
+  }
 </style>

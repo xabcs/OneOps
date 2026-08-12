@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { ElButton, ElTableColumn, ElTag } from 'element-plus';
-import WorkloadTable from './WorkloadTable.vue';
+  import { ElButton, ElTableColumn, ElTag } from 'element-plus';
+  import WorkloadTable from './WorkloadTable.vue';
 
-defineProps<{
-  data: K8s.WorkloadRow[];
-  loading: boolean;
-  pagination: { page: number; pageSize: number; itemCount: number };
-  selectedCount: number;
-  resourceType: 'statefulset' | 'daemonset' | 'job' | 'cronjob';
-  columns: 'statefulset' | 'daemonset' | 'job' | 'cronjob';
-}>();
+  defineProps<{
+    data: K8s.WorkloadRow[];
+    loading: boolean;
+    pagination: { page: number; pageSize: number; itemCount: number };
+    selectedCount: number;
+    resourceType: 'statefulset' | 'daemonset' | 'job' | 'cronjob';
+    columns: 'statefulset' | 'daemonset' | 'job' | 'cronjob';
+  }>();
 
-const emit = defineEmits<{
-  (e: 'go-to-detail', row: K8s.WorkloadRow): void;
-  (e: 'page-change', page: number): void;
-  (e: 'size-change', pageSize: number): void;
-  (e: 'selection-change', selection: K8s.WorkloadRow[]): void;
-  (e: 'select-all', selection: K8s.WorkloadRow[]): void;
-  (e: 'clear-selection'): void;
-  (e: 'workload-command', command: string, row: K8s.WorkloadRow): void;
-  (e: 'batch-delete-by-type', resourceType: string): void;
-}>();
+  const emit = defineEmits<{
+    (e: 'go-to-detail', row: K8s.WorkloadRow): void;
+    (e: 'page-change', page: number): void;
+    (e: 'size-change', pageSize: number): void;
+    (e: 'selection-change', selection: K8s.WorkloadRow[]): void;
+    (e: 'select-all', selection: K8s.WorkloadRow[]): void;
+    (e: 'clear-selection'): void;
+    (e: 'workload-command', command: string, row: K8s.WorkloadRow): void;
+    (e: 'batch-delete-by-type', resourceType: string): void;
+  }>();
 </script>
 
 <template>
@@ -30,7 +30,12 @@ const emit = defineEmits<{
     :pagination="pagination"
     :selected-count="selectedCount"
     :batch-buttons="[
-      { label: '批量删除', type: 'danger', disabled: selectedCount === 0, handler: () => emit('batch-delete-by-type', resourceType) }
+      {
+        label: '批量删除',
+        type: 'danger',
+        disabled: selectedCount === 0,
+        handler: () => emit('batch-delete-by-type', resourceType)
+      }
     ]"
     @page-change="emit('page-change', $event)"
     @size-change="emit('size-change', $event)"
@@ -74,7 +79,13 @@ const emit = defineEmits<{
         <template #default="{ row }">
           <ElTag
             :type="
-              row.status === '完成' ? 'success' : row.status === '失败' ? 'danger' : row.status === '运行中' ? 'primary' : 'info'
+              row.status === '完成'
+                ? 'success'
+                : row.status === '失败'
+                  ? 'danger'
+                  : row.status === '运行中'
+                    ? 'primary'
+                    : 'info'
             "
           >
             {{ row.status }}
@@ -111,8 +122,12 @@ const emit = defineEmits<{
             <template #dropdown>
               <ElDropdownMenu>
                 <ElDropdownItem command="edit">编辑YAML</ElDropdownItem>
-                <ElDropdownItem v-if="columns === 'statefulset' || columns === 'daemonset'" command="restart">重启</ElDropdownItem>
-                <ElDropdownItem v-if="columns === 'cronjob'" command="suspend">{{ row.suspend ? '恢复' : '暂停' }}</ElDropdownItem>
+                <ElDropdownItem v-if="columns === 'statefulset' || columns === 'daemonset'" command="restart">
+                  重启
+                </ElDropdownItem>
+                <ElDropdownItem v-if="columns === 'cronjob'" command="suspend">
+                  {{ row.suspend ? '恢复' : '暂停' }}
+                </ElDropdownItem>
                 <ElDropdownItem command="delete">删除</ElDropdownItem>
               </ElDropdownMenu>
             </template>

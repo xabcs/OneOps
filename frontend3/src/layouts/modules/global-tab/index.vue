@@ -1,163 +1,163 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import { useElementBounding } from '@vueuse/core';
-import { PageTab } from '@sa/materials';
-import { useAppStore } from '@/store/modules/app';
-import { useThemeStore } from '@/store/modules/theme';
-import { useTabStore } from '@/store/modules/tab';
-import { isPC } from '@/utils/agent';
-import BetterScroll from '@/components/custom/better-scroll.vue';
-import ContextMenu from './context-menu.vue';
+  import { nextTick, ref, watch } from 'vue';
+  import { useRoute } from 'vue-router';
+  import { useElementBounding } from '@vueuse/core';
+  import { PageTab } from '@sa/materials';
+  import { useAppStore } from '@/store/modules/app';
+  import { useThemeStore } from '@/store/modules/theme';
+  import { useTabStore } from '@/store/modules/tab';
+  import { isPC } from '@/utils/agent';
+  import BetterScroll from '@/components/custom/better-scroll.vue';
+  import ContextMenu from './context-menu.vue';
 
-defineOptions({ name: 'GlobalTab' });
+  defineOptions({ name: 'GlobalTab' });
 
-const route = useRoute();
-const appStore = useAppStore();
-const themeStore = useThemeStore();
-const tabStore = useTabStore();
+  const route = useRoute();
+  const appStore = useAppStore();
+  const themeStore = useThemeStore();
+  const tabStore = useTabStore();
 
-const bsWrapper = ref<HTMLElement>();
-const { width: bsWrapperWidth, left: bsWrapperLeft } = useElementBounding(bsWrapper);
-const bsScroll = ref<InstanceType<typeof BetterScroll>>();
-const tabRef = ref<HTMLElement>();
-const isPCFlag = isPC();
+  const bsWrapper = ref<HTMLElement>();
+  const { width: bsWrapperWidth, left: bsWrapperLeft } = useElementBounding(bsWrapper);
+  const bsScroll = ref<InstanceType<typeof BetterScroll>>();
+  const tabRef = ref<HTMLElement>();
+  const isPCFlag = isPC();
 
-const TAB_DATA_ID = 'data-tab-id';
+  const TAB_DATA_ID = 'data-tab-id';
 
-type TabNamedNodeMap = NamedNodeMap & {
-  [TAB_DATA_ID]: Attr;
-};
+  type TabNamedNodeMap = NamedNodeMap & {
+    [TAB_DATA_ID]: Attr;
+  };
 
-async function scrollToActiveTab() {
-  await nextTick();
-  if (!tabRef.value) return;
+  async function scrollToActiveTab() {
+    await nextTick();
+    if (!tabRef.value) return;
 
-  const { children } = tabRef.value;
+    const { children } = tabRef.value;
 
-  for (let i = 0; i < children.length; i += 1) {
-    const child = children[i];
+    for (let i = 0; i < children.length; i += 1) {
+      const child = children[i];
 
-    const { value: tabId } = (child.attributes as TabNamedNodeMap)[TAB_DATA_ID];
+      const { value: tabId } = (child.attributes as TabNamedNodeMap)[TAB_DATA_ID];
 
-    if (tabId === tabStore.activeTabId) {
-      const { left, width } = child.getBoundingClientRect();
-      const clientX = left + width / 2;
+      if (tabId === tabStore.activeTabId) {
+        const { left, width } = child.getBoundingClientRect();
+        const clientX = left + width / 2;
 
-      setTimeout(() => {
-        scrollByClientX(clientX);
-      }, 50);
+        setTimeout(() => {
+          scrollByClientX(clientX);
+        }, 50);
 
-      break;
+        break;
+      }
     }
   }
-}
 
-function scrollByClientX(clientX: number) {
-  const currentX = clientX - bsWrapperLeft.value;
-  const deltaX = currentX - bsWrapperWidth.value / 2;
+  function scrollByClientX(clientX: number) {
+    const currentX = clientX - bsWrapperLeft.value;
+    const deltaX = currentX - bsWrapperWidth.value / 2;
 
-  if (bsScroll.value?.instance) {
-    const { maxScrollX, x: leftX, scrollBy } = bsScroll.value.instance;
+    if (bsScroll.value?.instance) {
+      const { maxScrollX, x: leftX, scrollBy } = bsScroll.value.instance;
 
-    const rightX = maxScrollX - leftX;
-    const update = deltaX > 0 ? Math.max(-deltaX, rightX) : Math.min(-deltaX, -leftX);
+      const rightX = maxScrollX - leftX;
+      const update = deltaX > 0 ? Math.max(-deltaX, rightX) : Math.min(-deltaX, -leftX);
 
-    scrollBy(update, 0, 300);
-  }
-}
-
-function getContextMenuDisabledKeys(tabId: string) {
-  const disabledKeys: App.Global.DropdownKey[] = [];
-
-  if (tabStore.isTabRetain(tabId)) {
-    const homeDisable: App.Global.DropdownKey[] = ['closeCurrent', 'closeLeft'];
-    disabledKeys.push(...homeDisable);
+      scrollBy(update, 0, 300);
+    }
   }
 
-  return disabledKeys;
-}
+  function getContextMenuDisabledKeys(tabId: string) {
+    const disabledKeys: App.Global.DropdownKey[] = [];
 
-function handleCloseTab(tab: App.Global.Tab) {
-  tabStore.removeTab(tab.id);
-}
+    if (tabStore.isTabRetain(tabId)) {
+      const homeDisable: App.Global.DropdownKey[] = ['closeCurrent', 'closeLeft'];
+      disabledKeys.push(...homeDisable);
+    }
 
-async function refresh() {
-  appStore.reloadPage(500);
-}
-
-interface DropdownConfig {
-  visible: boolean;
-  x: number;
-  y: number;
-  tabId: string;
-}
-
-const dropdown = ref<DropdownConfig>({
-  visible: false,
-  x: 0,
-  y: 0,
-  tabId: ''
-});
-
-function setDropdown(config: Partial<DropdownConfig>) {
-  Object.assign(dropdown.value, config);
-}
-
-let isClickContextMenu = false;
-
-function handleDropdownVisible(visible: boolean | undefined) {
-  if (!isClickContextMenu) {
-    setDropdown({ visible });
+    return disabledKeys;
   }
-}
 
-async function handleContextMenu(e: MouseEvent, tabId: string) {
-  e.preventDefault();
-
-  const { clientX, clientY } = e;
-
-  isClickContextMenu = true;
-
-  const DURATION = dropdown.value.visible ? 150 : 0;
-
-  setDropdown({ visible: false });
-
-  setTimeout(() => {
-    setDropdown({
-      visible: true,
-      x: clientX,
-      y: clientY,
-      tabId
-    });
-    isClickContextMenu = false;
-  }, DURATION);
-}
-
-function init() {
-  tabStore.initTabStore(route);
-}
-
-function removeFocus() {
-  (document.activeElement as HTMLElement)?.blur();
-}
-
-// watch
-watch(
-  () => route.fullPath,
-  () => {
-    tabStore.addTab(route);
+  function handleCloseTab(tab: App.Global.Tab) {
+    tabStore.removeTab(tab.id);
   }
-);
-watch(
-  () => tabStore.activeTabId,
-  () => {
-    scrollToActiveTab();
-  }
-);
 
-// init
-init();
+  async function refresh() {
+    appStore.reloadPage(500);
+  }
+
+  interface DropdownConfig {
+    visible: boolean;
+    x: number;
+    y: number;
+    tabId: string;
+  }
+
+  const dropdown = ref<DropdownConfig>({
+    visible: false,
+    x: 0,
+    y: 0,
+    tabId: ''
+  });
+
+  function setDropdown(config: Partial<DropdownConfig>) {
+    Object.assign(dropdown.value, config);
+  }
+
+  let isClickContextMenu = false;
+
+  function handleDropdownVisible(visible: boolean | undefined) {
+    if (!isClickContextMenu) {
+      setDropdown({ visible });
+    }
+  }
+
+  async function handleContextMenu(e: MouseEvent, tabId: string) {
+    e.preventDefault();
+
+    const { clientX, clientY } = e;
+
+    isClickContextMenu = true;
+
+    const DURATION = dropdown.value.visible ? 150 : 0;
+
+    setDropdown({ visible: false });
+
+    setTimeout(() => {
+      setDropdown({
+        visible: true,
+        x: clientX,
+        y: clientY,
+        tabId
+      });
+      isClickContextMenu = false;
+    }, DURATION);
+  }
+
+  function init() {
+    tabStore.initTabStore(route);
+  }
+
+  function removeFocus() {
+    (document.activeElement as HTMLElement)?.blur();
+  }
+
+  // watch
+  watch(
+    () => route.fullPath,
+    () => {
+      tabStore.addTab(route);
+    }
+  );
+  watch(
+    () => tabStore.activeTabId,
+    () => {
+      scrollToActiveTab();
+    }
+  );
+
+  // init
+  init();
 </script>
 
 <template>

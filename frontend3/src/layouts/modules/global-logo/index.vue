@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineOptions({ name: 'GlobalLogo' });
+  defineOptions({ name: 'GlobalLogo' });
 </script>
 
 <template>

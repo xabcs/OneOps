@@ -1,43 +1,42 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import {
-  Bell,
-  Box,
-  Connection,
-  CopyDocument,
-  DataAnalysis,
-  DataLine,
-  Document,
-  DocumentCopy,
-  Folder,
-  Monitor,
-  Operation,
-  Service,
-  Setting,
-  Tools,
-  TrendCharts
-} from '@element-plus/icons-vue';
+  import { computed, watch } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
+  import {
+    Bell,
+    Box,
+    Connection,
+    CopyDocument,
+    DataAnalysis,
+    DataLine,
+    Document,
+    DocumentCopy,
+    Folder,
+    Monitor,
+    Operation,
+    Service,
+    Setting,
+    Tools,
+    TrendCharts
+  } from '@element-plus/icons-vue';
 
-const route = useRoute();
-const router = useRouter();
+  const route = useRoute();
+  const router = useRouter();
 
-// 当前激活的菜单
-const activeMenu = computed(() => {
-  return route.path;
-});
+  // 当前激活的菜单
+  const activeMenu = computed(() => {
+    return route.path;
+  });
 
-// 菜单选择处理
-const handleMenuSelect = (index: string) => {
-  router.push(index);
-};
+  // 菜单选择处理
+  const handleMenuSelect = (index: string) => {
+    router.push(index);
+  };
 
-// 监听路由变化，更新菜单激活状态
-watch(
-  () => route.path,
-  newPath => {
-  }
-);
+  // 监听路由变化，更新菜单激活状态
+  watch(
+    () => route.path,
+    newPath => {}
+  );
 </script>
 
 <template>
@@ -133,112 +132,112 @@ watch(
 </template>
 
 <style scoped lang="scss">
-.k8s-layout {
-  display: flex;
-  height: 100vh;
-  background-color: #f5f7fa;
+  .k8s-layout {
+    display: flex;
+    height: 100vh;
+    background-color: #f5f7fa;
 
-  .k8s-menu {
-    width: 240px;
-    height: 100%;
-    background-color: #fff;
-    border-right: 1px solid #e6e6e6;
-    overflow-y: auto;
+    .k8s-menu {
+      width: 240px;
+      height: 100%;
+      background-color: #fff;
+      border-right: 1px solid #e6e6e6;
+      overflow-y: auto;
 
-    .el-menu-item {
-      height: 50px;
-      line-height: 50px;
-      padding: 0 20px;
-
-      &:hover {
-        background-color: #ecf5ff;
-      }
-
-      &.is-active {
-        background-color: #e6f7ff;
-        border-right: 3px solid #409eff;
-        color: #409eff;
-      }
-
-      .el-icon {
-        margin-right: 8px;
-      }
-    }
-
-    // 诊断菜单项特殊样式
-    .diagnostic-menu-item {
-      position: relative;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #fff;
-      border-radius: 8px;
-      margin: 8px 12px;
-      padding: 12px 16px;
-
-      &:hover {
-        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
-      }
-
-      &.is-active {
-        background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-        box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
-      }
-
-      .el-icon {
-        color: #fff;
-      }
-
-      .new-tag {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        animation: pulse 2s infinite;
-      }
-    }
-
-    .el-sub-menu {
-      .el-sub-menu__title {
+      .el-menu-item {
         height: 50px;
         line-height: 50px;
         padding: 0 20px;
+
+        &:hover {
+          background-color: #ecf5ff;
+        }
+
+        &.is-active {
+          background-color: #e6f7ff;
+          border-right: 3px solid #409eff;
+          color: #409eff;
+        }
 
         .el-icon {
           margin-right: 8px;
         }
       }
+
+      // 诊断菜单项特殊样式
+      .diagnostic-menu-item {
+        position: relative;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        border-radius: 8px;
+        margin: 8px 12px;
+        padding: 12px 16px;
+
+        &:hover {
+          background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        &.is-active {
+          background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+          box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .el-icon {
+          color: #fff;
+        }
+
+        .new-tag {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          animation: pulse 2s infinite;
+        }
+      }
+
+      .el-sub-menu {
+        .el-sub-menu__title {
+          height: 50px;
+          line-height: 50px;
+          padding: 0 20px;
+
+          .el-icon {
+            margin-right: 8px;
+          }
+        }
+      }
+    }
+
+    .k8s-content {
+      flex: 1;
+      overflow: hidden;
+      padding: 20px;
     }
   }
 
-  .k8s-content {
-    flex: 1;
-    overflow: hidden;
-    padding: 20px;
+  // 新标签动画
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+      transform: translateY(-50%) scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: translateY(-50%) scale(1.1);
+    }
   }
-}
 
-// 新标签动画
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: translateY(-50%) scale(1);
+  // 路由切换动画
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity 0.3s ease;
   }
-  50% {
-    opacity: 0.8;
-    transform: translateY(-50%) scale(1.1);
+
+  .fade-enter-from,
+  .fade-leave-to {
+    opacity: 0;
   }
-}
-
-// 路由切换动画
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
 </style>

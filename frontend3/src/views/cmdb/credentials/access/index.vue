@@ -1,102 +1,35 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue';
-import type { FormInstance, FormRules } from 'element-plus';
-import { ElMessageBox, ElNotification } from 'element-plus';
-import { Setting, User } from '@element-plus/icons-vue';
-import {
-  fetchCreateSSHCredential,
-  fetchDeleteSSHCredential,
-  fetchGetSSHCredentials,
-  fetchTestSSHCredential,
-  fetchUpdateSSHCredential
-} from '@/service/api/cmdb';
+  import { computed, onMounted, reactive, ref } from 'vue';
+  import type { FormInstance, FormRules } from 'element-plus';
+  import { ElMessageBox, ElNotification } from 'element-plus';
+  import { Setting, User } from '@element-plus/icons-vue';
+  import {
+    fetchCreateSSHCredential,
+    fetchDeleteSSHCredential,
+    fetchGetSSHCredentials,
+    fetchTestSSHCredential,
+    fetchUpdateSSHCredential
+  } from '@/service/api/cmdb';
 
-defineOptions({ name: 'CmdbAccessCredentials' });
+  defineOptions({ name: 'CmdbAccessCredentials' });
 
-// 类型 Tab
-const activeTab = ref<CMDB.CredentialType | 'all'>('all');
+  // 类型 Tab
+  const activeTab = ref<CMDB.CredentialType | 'all'>('all');
 
-// 表格数据
-const allData = ref<CMDB.SSHCredential[]>([]);
-const loading = ref(false);
+  // 表格数据
+  const allData = ref<CMDB.SSHCredential[]>([]);
+  const loading = ref(false);
 
-const tableData = computed(() => {
-  if (activeTab.value === 'all') return allData.value;
-  return allData.value.filter(c => c.credentialType === activeTab.value);
-});
+  const tableData = computed(() => {
+    if (activeTab.value === 'all') return allData.value;
+    return allData.value.filter(c => c.credentialType === activeTab.value);
+  });
 
-// 对话框
-const dialogVisible = ref(false);
-const dialogTitle = ref('');
-const formRef = ref<FormInstance>();
-const form = reactive<CMDB.SSHCredentialForm>({
-  name: '',
-  description: '',
-  username: 'root',
-  authType: 'password',
-  password: '',
-  privateKey: '',
-  passphrase: '',
-  credentialType: 'user',
-  status: 1
-});
-
-// 测试连接状态
-const testLoading = ref(false);
-
-// 表单验证规则
-const rules: FormRules = {
-  name: [
-    { required: true, message: '请输入凭证名称', trigger: 'blur' },
-    { min: 2, max: 100, message: '凭证名称长度在 2 到 100 个字符', trigger: 'blur' }
-  ],
-  username: [{ required: true, message: '请输入SSH用户名', trigger: 'blur' }],
-  credentialType: [{ required: true, message: '请选择凭证用途', trigger: 'change' }],
-  password: [
-    {
-      validator: (_rule, value, callback) => {
-        if (form.authType === 'password' && !value) {
-          callback(new Error('请输入密码'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur'
-    }
-  ],
-  privateKey: [
-    {
-      validator: (_rule, value, callback) => {
-        if (form.authType === 'key' && !value) {
-          callback(new Error('请输入私钥'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur'
-    }
-  ]
-};
-
-// 获取凭证列表
-async function getData() {
-  loading.value = true;
-  try {
-    const { data } = await fetchGetSSHCredentials();
-    allData.value = data || [];
-  } catch (err) {
-    console.error('获取凭证列表失败:', err);
-    ElNotification.error('获取凭证列表失败');
-  } finally {
-    loading.value = false;
-  }
-}
-
-// 新增
-function handleAdd() {
-  dialogTitle.value = '新增SSH凭证';
-  Object.assign(form, {
-    id: undefined,
+  // 对话框
+  const dialogVisible = ref(false);
+  const dialogTitle = ref('');
+  const formRef = ref<FormInstance>();
+  const form = reactive<CMDB.SSHCredentialForm>({
     name: '',
     description: '',
     username: 'root',
@@ -104,127 +37,194 @@ function handleAdd() {
     password: '',
     privateKey: '',
     passphrase: '',
-    credentialType: activeTab.value === 'all' ? 'user' : activeTab.value,
+    credentialType: 'user',
     status: 1
   });
-  dialogVisible.value = true;
-}
 
-// 编辑
-function handleEdit(row: CMDB.SSHCredential) {
-  dialogTitle.value = '编辑SSH凭证';
-  Object.assign(form, {
-    id: row.id,
-    name: row.name,
-    description: row.description,
-    username: row.username,
-    authType: row.authType,
-    credentialType: row.credentialType || 'user',
-    password: '',
-    privateKey: '',
-    passphrase: ''
-  });
-  dialogVisible.value = true;
-}
+  // 测试连接状态
+  const testLoading = ref(false);
 
-// 保存
-async function handleSave() {
-  if (!formRef.value) return;
-  try {
-    await formRef.value.validate();
-    const formData = { ...form };
-    if (form.id) {
-      await fetchUpdateSSHCredential(form.id, formData);
-      ElNotification.success('保存成功');
-    } else {
-      await fetchCreateSSHCredential(formData);
-      ElNotification.success('创建成功');
-    }
-    dialogVisible.value = false;
-    getData();
-  } catch (error) {
-    if (error && typeof error === 'object' && 'message' in error) {
-      ElNotification.error(typeof error.message === 'string' ? error.message : '保存失败');
-    } else if (error !== false) {
-      ElNotification.error('保存失败');
-    }
-  }
-}
-
-// 删除
-function handleDelete(row: CMDB.SSHCredential) {
-  ElMessageBox.confirm(`确定要删除凭证 "${row.name}" 吗？`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  })
-    .then(async () => {
-      try {
-        await fetchDeleteSSHCredential(row.id);
-        ElNotification.success('删除成功');
-        getData();
-      } catch (error) {
-        console.error('删除失败:', error);
-        ElNotification.error('删除失败');
+  // 表单验证规则
+  const rules: FormRules = {
+    name: [
+      { required: true, message: '请输入凭证名称', trigger: 'blur' },
+      { min: 2, max: 100, message: '凭证名称长度在 2 到 100 个字符', trigger: 'blur' }
+    ],
+    username: [{ required: true, message: '请输入SSH用户名', trigger: 'blur' }],
+    credentialType: [{ required: true, message: '请选择凭证用途', trigger: 'change' }],
+    password: [
+      {
+        validator: (_rule, value, callback) => {
+          if (form.authType === 'password' && !value) {
+            callback(new Error('请输入密码'));
+          } else {
+            callback();
+          }
+        },
+        trigger: 'blur'
       }
-    })
-    .catch(() => {});
-}
-
-// 测试连接
-async function handleTest(row: CMDB.SSHCredential) {
-  const testIp = await ElMessageBox.prompt('请输入要测试连接的IP地址', '测试连接 - IP地址', {
-    confirmButtonText: '下一步',
-    cancelButtonText: '取消',
-    inputPattern: /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/,
-    inputErrorMessage: '请输入有效的IP地址'
-  }).catch(() => null);
-  if (!testIp) return;
-
-  const testPort = await ElMessageBox.prompt('请输入SSH端口号', '测试连接 - SSH端口', {
-    confirmButtonText: '测试',
-    cancelButtonText: '取消',
-    inputValue: '22',
-    inputPattern: /^[1-9][0-9]{0,4}$/,
-    inputErrorMessage: '请输入有效的端口号（1-65535）'
-  }).catch(() => null);
-  if (!testPort) return;
-
-  testLoading.value = true;
-  try {
-    const { data } = await fetchTestSSHCredential(row.id, testIp.value, Number.parseInt(testPort.value));
-    if (data.success) {
-      ElNotification.success(`连接测试成功：${data.message || '可以连接'}`);
-    } else {
-      ElNotification.warning(`连接测试：${data.message || '无法连接'}`);
-    }
-  } catch (error) {
-    ElNotification.error('连接测试失败');
-  } finally {
-    testLoading.value = false;
-  }
-}
-
-// 辅助：认证类型标签
-function getAuthTypeTag(type: string) {
-  const map: Record<string, { text: string; type: '' | 'success' | 'warning' | 'info' | 'danger' | 'primary' }> = {
-    password: { text: '密码', type: 'primary' },
-    key: { text: '密钥', type: 'success' }
+    ],
+    privateKey: [
+      {
+        validator: (_rule, value, callback) => {
+          if (form.authType === 'key' && !value) {
+            callback(new Error('请输入私钥'));
+          } else {
+            callback();
+          }
+        },
+        trigger: 'blur'
+      }
+    ]
   };
-  return map[type] || { text: type, type: 'info' };
-}
 
-// 辅助：凭证类型标签
-function getCredentialTypeTag(ct: CMDB.CredentialType) {
-  return ct === 'system'
-    ? { text: '系统运维', type: 'warning' as const }
-    : { text: '用户连接', type: 'primary' as const };
-}
+  // 获取凭证列表
+  async function getData() {
+    loading.value = true;
+    try {
+      const { data } = await fetchGetSSHCredentials();
+      allData.value = data || [];
+    } catch (err) {
+      console.error('获取凭证列表失败:', err);
+      ElNotification.error('获取凭证列表失败');
+    } finally {
+      loading.value = false;
+    }
+  }
 
-// 初始化
-onMounted(() => {
-  getData();
-});
+  // 新增
+  function handleAdd() {
+    dialogTitle.value = '新增SSH凭证';
+    Object.assign(form, {
+      id: undefined,
+      name: '',
+      description: '',
+      username: 'root',
+      authType: 'password',
+      password: '',
+      privateKey: '',
+      passphrase: '',
+      credentialType: activeTab.value === 'all' ? 'user' : activeTab.value,
+      status: 1
+    });
+    dialogVisible.value = true;
+  }
+
+  // 编辑
+  function handleEdit(row: CMDB.SSHCredential) {
+    dialogTitle.value = '编辑SSH凭证';
+    Object.assign(form, {
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      username: row.username,
+      authType: row.authType,
+      credentialType: row.credentialType || 'user',
+      password: '',
+      privateKey: '',
+      passphrase: ''
+    });
+    dialogVisible.value = true;
+  }
+
+  // 保存
+  async function handleSave() {
+    if (!formRef.value) return;
+    try {
+      await formRef.value.validate();
+      const formData = { ...form };
+      if (form.id) {
+        await fetchUpdateSSHCredential(form.id, formData);
+        ElNotification.success('保存成功');
+      } else {
+        await fetchCreateSSHCredential(formData);
+        ElNotification.success('创建成功');
+      }
+      dialogVisible.value = false;
+      getData();
+    } catch (error) {
+      if (error && typeof error === 'object' && 'message' in error) {
+        ElNotification.error(typeof error.message === 'string' ? error.message : '保存失败');
+      } else if (error !== false) {
+        ElNotification.error('保存失败');
+      }
+    }
+  }
+
+  // 删除
+  function handleDelete(row: CMDB.SSHCredential) {
+    ElMessageBox.confirm(`确定要删除凭证 "${row.name}" 吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+      .then(async () => {
+        try {
+          await fetchDeleteSSHCredential(row.id);
+          ElNotification.success('删除成功');
+          getData();
+        } catch (error) {
+          console.error('删除失败:', error);
+          ElNotification.error('删除失败');
+        }
+      })
+      .catch(() => {});
+  }
+
+  // 测试连接
+  async function handleTest(row: CMDB.SSHCredential) {
+    const testIp = await ElMessageBox.prompt('请输入要测试连接的IP地址', '测试连接 - IP地址', {
+      confirmButtonText: '下一步',
+      cancelButtonText: '取消',
+      inputPattern: /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/,
+      inputErrorMessage: '请输入有效的IP地址'
+    }).catch(() => null);
+    if (!testIp) return;
+
+    const testPort = await ElMessageBox.prompt('请输入SSH端口号', '测试连接 - SSH端口', {
+      confirmButtonText: '测试',
+      cancelButtonText: '取消',
+      inputValue: '22',
+      inputPattern: /^[1-9][0-9]{0,4}$/,
+      inputErrorMessage: '请输入有效的端口号（1-65535）'
+    }).catch(() => null);
+    if (!testPort) return;
+
+    testLoading.value = true;
+    try {
+      const { data } = await fetchTestSSHCredential(row.id, testIp.value, Number.parseInt(testPort.value));
+      if (data.success) {
+        ElNotification.success(`连接测试成功：${data.message || '可以连接'}`);
+      } else {
+        ElNotification.warning(`连接测试：${data.message || '无法连接'}`);
+      }
+    } catch (error) {
+      ElNotification.error('连接测试失败');
+    } finally {
+      testLoading.value = false;
+    }
+  }
+
+  // 辅助：认证类型标签
+  function getAuthTypeTag(type: string) {
+    const map: Record<string, { text: string; type: '' | 'success' | 'warning' | 'info' | 'danger' | 'primary' }> = {
+      password: { text: '密码', type: 'primary' },
+      key: { text: '密钥', type: 'success' }
+    };
+    return map[type] || { text: type, type: 'info' };
+  }
+
+  // 辅助：凭证类型标签
+  function getCredentialTypeTag(ct: CMDB.CredentialType) {
+    return ct === 'system'
+      ? { text: '系统运维', type: 'warning' as const }
+      : { text: '用户连接', type: 'primary' as const };
+  }
+
+  // 初始化
+  onMounted(() => {
+    getData();
+  });
 </script>
 
 <template>
@@ -371,12 +371,12 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
-.card-wrapper {
-  @apply flex-col-stretch;
-}
-.credential-tabs {
-  :deep(.el-tabs__header) {
-    margin-bottom: 0;
+  .card-wrapper {
+    @apply flex-col-stretch;
   }
-}
+  .credential-tabs {
+    :deep(.el-tabs__header) {
+      margin-bottom: 0;
+    }
+  }
 </style>

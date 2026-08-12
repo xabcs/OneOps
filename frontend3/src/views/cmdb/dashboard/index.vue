@@ -1,137 +1,137 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import {
-  fetchGetCommands,
-  fetchGetServerStats,
-  fetchGetServers,
-  fetchGetSessionStats,
-  fetchGetSessions
-} from '@/service/api/cmdb';
+  import { onMounted, ref } from 'vue';
+  import { useRouter } from 'vue-router';
+  import {
+    fetchGetCommands,
+    fetchGetServerStats,
+    fetchGetServers,
+    fetchGetSessionStats,
+    fetchGetSessions
+  } from '@/service/api/cmdb';
 
-defineOptions({ name: 'CmdbDashboard' });
+  defineOptions({ name: 'CmdbDashboard' });
 
-const router = useRouter();
+  const router = useRouter();
 
-const serverStats = ref<CMDB.ServerStats | null>(null);
-const sessionStats = ref<{ active: number; today: number } | null>(null);
-const recentSessions = ref<Bastion.BastionSession[]>([]);
-const recentCommands = ref<Bastion.BastionCommand[]>([]);
+  const serverStats = ref<CMDB.ServerStats | null>(null);
+  const sessionStats = ref<{ active: number; today: number } | null>(null);
+  const recentSessions = ref<Bastion.BastionSession[]>([]);
+  const recentCommands = ref<Bastion.BastionCommand[]>([]);
 
-const envCounts = ref({ prod: 0, test: 0, dev: 0 });
+  const envCounts = ref({ prod: 0, test: 0, dev: 0 });
 
-const loading = ref({
-  serverStats: false,
-  sessionStats: false,
-  sessions: false,
-  commands: false,
-  env: false
-});
+  const loading = ref({
+    serverStats: false,
+    sessionStats: false,
+    sessions: false,
+    commands: false,
+    env: false
+  });
 
-async function loadServerStats() {
-  loading.value.serverStats = true;
-  try {
-    const { data } = await fetchGetServerStats();
-    serverStats.value = data || null;
-  } catch (error) {
-    console.error('获取服务器统计失败:', error);
-  } finally {
-    loading.value.serverStats = false;
+  async function loadServerStats() {
+    loading.value.serverStats = true;
+    try {
+      const { data } = await fetchGetServerStats();
+      serverStats.value = data || null;
+    } catch (error) {
+      console.error('获取服务器统计失败:', error);
+    } finally {
+      loading.value.serverStats = false;
+    }
   }
-}
 
-async function loadSessionStats() {
-  loading.value.sessionStats = true;
-  try {
-    const { data } = await fetchGetSessionStats();
-    sessionStats.value = data || null;
-  } catch (error) {
-    console.error('获取会话统计失败:', error);
-  } finally {
-    loading.value.sessionStats = false;
+  async function loadSessionStats() {
+    loading.value.sessionStats = true;
+    try {
+      const { data } = await fetchGetSessionStats();
+      sessionStats.value = data || null;
+    } catch (error) {
+      console.error('获取会话统计失败:', error);
+    } finally {
+      loading.value.sessionStats = false;
+    }
   }
-}
 
-async function loadEnvCounts() {
-  loading.value.env = true;
-  try {
-    const [prodRes, testRes, devRes] = await Promise.all([
-      fetchGetServers({ env: 'prod', pageSize: 1 } as CMDB.ServerQuery),
-      fetchGetServers({ env: 'test', pageSize: 1 } as CMDB.ServerQuery),
-      fetchGetServers({ env: 'dev', pageSize: 1 } as CMDB.ServerQuery)
-    ]);
-    envCounts.value = {
-      prod: prodRes.data?.total || 0,
-      test: testRes.data?.total || 0,
-      dev: devRes.data?.total || 0
+  async function loadEnvCounts() {
+    loading.value.env = true;
+    try {
+      const [prodRes, testRes, devRes] = await Promise.all([
+        fetchGetServers({ env: 'prod', pageSize: 1 } as CMDB.ServerQuery),
+        fetchGetServers({ env: 'test', pageSize: 1 } as CMDB.ServerQuery),
+        fetchGetServers({ env: 'dev', pageSize: 1 } as CMDB.ServerQuery)
+      ]);
+      envCounts.value = {
+        prod: prodRes.data?.total || 0,
+        test: testRes.data?.total || 0,
+        dev: devRes.data?.total || 0
+      };
+    } catch (error) {
+      console.error('获取环境分布失败:', error);
+    } finally {
+      loading.value.env = false;
+    }
+  }
+
+  async function loadRecentSessions() {
+    loading.value.sessions = true;
+    try {
+      const { data } = await fetchGetSessions({ page: 1, pageSize: 5 });
+      recentSessions.value = data?.list || [];
+    } catch (error) {
+      console.error('获取最近会话失败:', error);
+    } finally {
+      loading.value.sessions = false;
+    }
+  }
+
+  async function loadRecentCommands() {
+    loading.value.commands = true;
+    try {
+      const { data } = await fetchGetCommands({ page: 1, pageSize: 5 });
+      recentCommands.value = data?.list || [];
+    } catch (error) {
+      console.error('获取最近命令失败:', error);
+    } finally {
+      loading.value.commands = false;
+    }
+  }
+
+  function formatTime(time: string): string {
+    return time ? new Date(time).toLocaleString('zh-CN') : '-';
+  }
+
+  function getStatusType(status: string): 'success' | 'info' | 'warning' | 'danger' {
+    switch (status) {
+      case 'active':
+        return 'success';
+      case 'closed':
+        return 'info';
+      case 'error':
+        return 'danger';
+      case 'terminated':
+        return 'warning';
+      default:
+        return 'info';
+    }
+  }
+
+  function getStatusText(status: string): string {
+    const map: Record<string, string> = {
+      active: '活跃',
+      closed: '已关闭',
+      error: '错误',
+      terminated: '已终止'
     };
-  } catch (error) {
-    console.error('获取环境分布失败:', error);
-  } finally {
-    loading.value.env = false;
+    return map[status] || status;
   }
-}
 
-async function loadRecentSessions() {
-  loading.value.sessions = true;
-  try {
-    const { data } = await fetchGetSessions({ page: 1, pageSize: 5 });
-    recentSessions.value = data?.list || [];
-  } catch (error) {
-    console.error('获取最近会话失败:', error);
-  } finally {
-    loading.value.sessions = false;
-  }
-}
-
-async function loadRecentCommands() {
-  loading.value.commands = true;
-  try {
-    const { data } = await fetchGetCommands({ page: 1, pageSize: 5 });
-    recentCommands.value = data?.list || [];
-  } catch (error) {
-    console.error('获取最近命令失败:', error);
-  } finally {
-    loading.value.commands = false;
-  }
-}
-
-function formatTime(time: string): string {
-  return time ? new Date(time).toLocaleString('zh-CN') : '-';
-}
-
-function getStatusType(status: string): 'success' | 'info' | 'warning' | 'danger' {
-  switch (status) {
-    case 'active':
-      return 'success';
-    case 'closed':
-      return 'info';
-    case 'error':
-      return 'danger';
-    case 'terminated':
-      return 'warning';
-    default:
-      return 'info';
-  }
-}
-
-function getStatusText(status: string): string {
-  const map: Record<string, string> = {
-    active: '活跃',
-    closed: '已关闭',
-    error: '错误',
-    terminated: '已终止'
-  };
-  return map[status] || status;
-}
-
-onMounted(() => {
-  loadServerStats();
-  loadSessionStats();
-  loadEnvCounts();
-  loadRecentSessions();
-  loadRecentCommands();
-});
+  onMounted(() => {
+    loadServerStats();
+    loadSessionStats();
+    loadEnvCounts();
+    loadRecentSessions();
+    loadRecentCommands();
+  });
 </script>
 
 <template>
@@ -276,186 +276,186 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.dashboard-page {
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+  .dashboard-page {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
 
-.stat-card {
-  height: 100%;
-}
+  .stat-card {
+    height: 100%;
+  }
 
-.stat-content {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
+  .stat-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
 
-.stat-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
+  .stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
 
-.stat-icon .icon {
-  font-size: 28px;
-  color: white;
-}
+  .stat-icon .icon {
+    font-size: 28px;
+    color: white;
+  }
 
-.stat-icon--servers {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-}
+  .stat-icon--servers {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+  }
 
-.stat-icon--online {
-  background: linear-gradient(135deg, #11998e, #38ef7d);
-}
+  .stat-icon--online {
+    background: linear-gradient(135deg, #11998e, #38ef7d);
+  }
 
-.stat-icon--today {
-  background: linear-gradient(135deg, #f7971e, #ffd200);
-}
+  .stat-icon--today {
+    background: linear-gradient(135deg, #f7971e, #ffd200);
+  }
 
-.stat-icon--active {
-  background: linear-gradient(135deg, #f093fb, #f5576c);
-}
+  .stat-icon--active {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+  }
 
-.stat-info {
-  flex: 1;
-}
+  .stat-info {
+    flex: 1;
+  }
 
-.stat-value {
-  font-size: 28px;
-  font-weight: bold;
-  line-height: 1.2;
-  color: #303133;
-}
+  .stat-value {
+    font-size: 28px;
+    font-weight: bold;
+    line-height: 1.2;
+    color: #303133;
+  }
 
-.stat-label {
-  font-size: 13px;
-  color: #909399;
-  margin-top: 4px;
-}
+  .stat-label {
+    font-size: 13px;
+    color: #909399;
+    margin-top: 4px;
+  }
 
-.env-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+  .env-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
 
-.env-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: #f5f7fa;
-  border-radius: 8px;
-}
+  .env-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #f5f7fa;
+    border-radius: 8px;
+  }
 
-.env-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
+  .env-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
 
-.env-dot--prod {
-  background: #f56c6c;
-}
+  .env-dot--prod {
+    background: #f56c6c;
+  }
 
-.env-dot--test {
-  background: #e6a23c;
-}
+  .env-dot--test {
+    background: #e6a23c;
+  }
 
-.env-dot--dev {
-  background: #67c23a;
-}
+  .env-dot--dev {
+    background: #67c23a;
+  }
 
-.env-name {
-  flex: 1;
-  font-size: 14px;
-  color: #303133;
-}
+  .env-name {
+    flex: 1;
+    font-size: 14px;
+    color: #303133;
+  }
 
-.env-count {
-  font-size: 16px;
-  font-weight: 600;
-  color: #409eff;
-}
+  .env-count {
+    font-size: 16px;
+    font-weight: 600;
+    color: #409eff;
+  }
 
-.quick-links {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
+  .quick-links {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
 
-.quick-links .el-button {
-  width: 100%;
-}
+  .quick-links .el-button {
+    width: 100%;
+  }
 
-.list-item {
-  padding: 10px 0;
-  border-bottom: 1px solid #f0f0f0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
+  .list-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
 
-.list-item:last-child {
-  border-bottom: none;
-}
+  .list-item:last-child {
+    border-bottom: none;
+  }
 
-.list-item-main {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  min-width: 0;
-}
+  .list-item-main {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+  }
 
-.list-item-user {
-  font-weight: 500;
-  color: #303133;
-}
+  .list-item-user {
+    font-weight: 500;
+    color: #303133;
+  }
 
-.list-item-sep {
-  color: #c0c4cc;
-  font-size: 12px;
-}
+  .list-item-sep {
+    color: #c0c4cc;
+    font-size: 12px;
+  }
 
-.list-item-server {
-  color: #606266;
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  .list-item-server {
+    color: #606266;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-.list-item-command {
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  color: #409eff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 240px;
-}
+  .list-item-command {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: #409eff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 240px;
+  }
 
-.list-item-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
+  .list-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
 
-.list-item-time {
-  font-size: 12px;
-  color: #909399;
-  white-space: nowrap;
-}
+  .list-item-time {
+    font-size: 12px;
+    color: #909399;
+    white-space: nowrap;
+  }
 </style>

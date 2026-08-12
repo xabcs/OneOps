@@ -63,7 +63,8 @@ export function useGroupTree() {
       return {
         ...group,
         serverCount: countServers(group),
-        children: group.children && group.children.length > 0 ? group.children.map(child => addServerCount(child)) : undefined
+        children:
+          group.children && group.children.length > 0 ? group.children.map(child => addServerCount(child)) : undefined
       };
     }
 
@@ -174,7 +175,9 @@ export function useGroupTree() {
       await fetchCreateServerGroup(newGroup);
       ElNotification.success('创建成功');
       groupDialogVisible.value = false;
-      setTimeout(async () => { await getGroups(); }, 300);
+      setTimeout(async () => {
+        await getGroups();
+      }, 300);
     } catch (error: unknown) {
       if (error && typeof error === 'object' && 'message' in error) {
         ElNotification.error(typeof error.message === 'string' ? error.message : '创建失败');
@@ -196,14 +199,22 @@ export function useGroupTree() {
   async function saveEditGroup() {
     if (editingNodeId.value === null) return;
     const newName = editingNodeName.value.trim();
-    if (!newName) { ElNotification.warning('分组名称不能为空'); return; }
-    if (newName.length < 2 || newName.length > 50) { ElNotification.warning('分组名称长度在 2 到 50 个字符'); return; }
+    if (!newName) {
+      ElNotification.warning('分组名称不能为空');
+      return;
+    }
+    if (newName.length < 2 || newName.length > 50) {
+      ElNotification.warning('分组名称长度在 2 到 50 个字符');
+      return;
+    }
 
     try {
       await fetchUpdateServerGroup(editingNodeId.value, { name: newName });
       ElNotification.success('重命名成功');
       editingNodeId.value = null;
-      setTimeout(async () => { await getGroups(); }, 300);
+      setTimeout(async () => {
+        await getGroups();
+      }, 300);
     } catch (error: unknown) {
       console.error('重命名失败:', error);
       if (error && typeof error === 'object' && 'message' in error) {
@@ -218,8 +229,13 @@ export function useGroupTree() {
   }
 
   function handleEditKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter') { event.preventDefault(); saveEditGroup(); }
-    else if (event.key === 'Escape') { event.preventDefault(); cancelEditGroup(); }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      saveEditGroup();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelEditGroup();
+    }
   }
 
   async function createGroupWithName(parentId: number, name: string) {
@@ -282,7 +298,12 @@ export function useGroupTree() {
     let message = `确定要删除分组 "${currentNode.value.name}" 吗？`;
     if (hasChildren) message += '\n\n注意：该分组包含子分组，删除后子分组也将被删除！';
 
-    ElMessageBox.confirm(message, '删除确认', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning', dangerouslyUseHTMLString: true })
+    ElMessageBox.confirm(message, '删除确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+      dangerouslyUseHTMLString: true
+    })
       .then(async () => {
         try {
           await fetchDeleteServerGroup(currentNode.value!.id);
@@ -294,7 +315,9 @@ export function useGroupTree() {
           ElNotification.error('删除失败');
         }
       })
-      .catch(() => { contextMenuVisible.value = false; });
+      .catch(() => {
+        contextMenuVisible.value = false;
+      });
   }
 
   function handleAddServer() {

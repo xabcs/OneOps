@@ -1,38 +1,38 @@
 <script setup lang="ts">
-import type { PageTabProps } from '../../types';
-import ChromeTabBg from './chrome-tab-bg.vue';
-import style from './index.module.css';
+  import type { PageTabProps } from '../../types';
+  import ChromeTabBg from './chrome-tab-bg.vue';
+  import style from './index.module.css';
 
-defineOptions({
-  name: 'ChromeTab'
-});
+  defineOptions({
+    name: 'ChromeTab'
+  });
 
-defineProps<PageTabProps>();
+  defineProps<PageTabProps>();
 
-type SlotFn = (props?: Record<string, unknown>) => any;
+  type SlotFn = (props?: Record<string, unknown>) => any;
 
-type Slots = {
-  /**
-   * Slot
-   *
-   * The center content of the tab
-   */
-  default?: SlotFn;
-  /**
-   * Slot
-   *
-   * The left content of the tab
-   */
-  prefix?: SlotFn;
-  /**
-   * Slot
-   *
-   * The right content of the tab
-   */
-  suffix?: SlotFn;
-};
+  type Slots = {
+    /**
+     * Slot
+     *
+     * The center content of the tab
+     */
+    default?: SlotFn;
+    /**
+     * Slot
+     *
+     * The left content of the tab
+     */
+    prefix?: SlotFn;
+    /**
+     * Slot
+     *
+     * The right content of the tab
+     */
+    suffix?: SlotFn;
+  };
 
-defineSlots<Slots>();
+  defineSlots<Slots>();
 </script>
 
 <template>

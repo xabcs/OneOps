@@ -66,9 +66,7 @@ export function useSessionManager() {
       }
 
       // 查找选择的凭证信息，获取实际的用户名
-      const selectedCredential = connectingServer.value.credentials?.find(
-        c => c.id === selectedCredentialId.value
-      );
+      const selectedCredential = connectingServer.value.credentials?.find(c => c.id === selectedCredentialId.value);
       const loginAccount = selectedCredential?.username || 'root';
 
       // 调用后端接口创建 SSH 会话

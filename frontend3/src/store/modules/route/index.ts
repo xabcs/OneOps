@@ -24,7 +24,6 @@ import {
 } from './shared';
 
 export const useRouteStore = defineStore(SetupStoreId.Route, () => {
-  const authStore = useAuthStore();
   const tabStore = useTabStore();
   const { bool: isInitConstantRoute, setBool: setIsInitConstantRoute } = useBoolean();
   const { bool: isInitAuthRoute, setBool: setIsInitAuthRoute } = useBoolean();
@@ -84,6 +83,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
 
   /** Get global menus */
   function getGlobalMenus(routes: ElegantConstRoute[]) {
+    const authStore = useAuthStore();
     const routeMenus = getGlobalMenusByAuthRoutes(routes);
 
     // 如果有数据库中的菜单数据，根据数据库的排序重新排序菜单
@@ -217,6 +217,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
 
   /** Init auth route */
   async function initAuthRoute() {
+    const authStore = useAuthStore();
     // check if user info is initialized
     if (!authStore.userInfo.id) {
       await authStore.initUserInfo();
@@ -233,6 +234,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
 
   /** Init static auth route */
   function initStaticAuthRoute() {
+    const authStore = useAuthStore();
     const { authRoutes: staticAuthRoutes } = createStaticRoutes();
 
     if (authStore.isStaticSuper) {
@@ -250,12 +252,12 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
 
   /** Init dynamic auth route */
   async function initDynamicAuthRoute() {
+    const authStore = useAuthStore();
 
     const { data, error } = await fetchGetUserRoutes();
 
     if (!error) {
       const { routes, home } = data;
-
 
       // 检查是否包含 webterminal 路由
       const webterminalRoute = routes.find(r => r.path === '/webterminal' || r.name === 'webterminal');
@@ -272,7 +274,6 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
       handleUpdateRootRouteRedirect(home);
 
       setIsInitAuthRoute(true);
-
     } else {
       // if fetch user routes failed, reset store
       authStore.resetStore();
@@ -432,6 +433,7 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
   }
 
   async function onRouteSwitchWhenLoggedIn() {
+    const authStore = useAuthStore();
     // 只有在用户信息未初始化时才调用
     if (!authStore.userInfo.id) {
       await authStore.initUserInfo();

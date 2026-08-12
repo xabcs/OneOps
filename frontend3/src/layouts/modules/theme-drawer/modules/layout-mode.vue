@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { useAppStore } from '@/store/modules/app';
-import { useThemeStore } from '@/store/modules/theme';
-import { $t } from '@/locales';
-import LayoutModeCard from '../components/layout-mode-card.vue';
-import SettingItem from '../components/setting-item.vue';
+  import { useAppStore } from '@/store/modules/app';
+  import { useThemeStore } from '@/store/modules/theme';
+  import { $t } from '@/locales';
+  import LayoutModeCard from '../components/layout-mode-card.vue';
+  import SettingItem from '../components/setting-item.vue';
 
-defineOptions({ name: 'LayoutMode' });
+  defineOptions({ name: 'LayoutMode' });
 
-const appStore = useAppStore();
-const themeStore = useThemeStore();
+  const appStore = useAppStore();
+  const themeStore = useThemeStore();
 
-function handleReverseHorizontalMixChange(value: boolean | string | number) {
-  themeStore.setLayoutReverseHorizontalMix(value as boolean);
-}
+  function handleReverseHorizontalMixChange(value: boolean | string | number) {
+    themeStore.setLayoutReverseHorizontalMix(value as boolean);
+  }
 </script>
 
 <template>
@@ -57,23 +57,23 @@ function handleReverseHorizontalMixChange(value: boolean | string | number) {
 </template>
 
 <style scoped>
-.layout-header {
-  --uno: h-16px bg-primary rd-4px;
-}
+  .layout-header {
+    --uno: h-16px bg-primary rd-4px;
+  }
 
-.layout-sider {
-  --uno: bg-primary-300 rd-4px;
-}
+  .layout-sider {
+    --uno: bg-primary-300 rd-4px;
+  }
 
-.layout-main {
-  --uno: flex-1 bg-primary-200 rd-4px;
-}
+  .layout-main {
+    --uno: flex-1 bg-primary-200 rd-4px;
+  }
 
-.vertical-wrapper {
-  --uno: flex-1 flex-col gap-6px;
-}
+  .vertical-wrapper {
+    --uno: flex-1 flex-col gap-6px;
+  }
 
-.horizontal-wrapper {
-  --uno: flex-1 flex gap-6px;
-}
+  .horizontal-wrapper {
+    --uno: flex-1 flex gap-6px;
+  }
 </style>

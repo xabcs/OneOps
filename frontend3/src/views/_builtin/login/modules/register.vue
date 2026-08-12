@@ -1,47 +1,47 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { useRouterPush } from '@/hooks/common/router';
-import { useForm, useFormRules } from '@/hooks/common/form';
-import { useCaptcha } from '@/hooks/business/captcha';
-import { $t } from '@/locales';
+  import { computed, ref } from 'vue';
+  import { useRouterPush } from '@/hooks/common/router';
+  import { useForm, useFormRules } from '@/hooks/common/form';
+  import { useCaptcha } from '@/hooks/business/captcha';
+  import { $t } from '@/locales';
 
-defineOptions({ name: 'Register' });
+  defineOptions({ name: 'Register' });
 
-const { toggleLoginModule } = useRouterPush();
-// @ts-expect-error vue-tsc noUnusedLocals: template ref
-const { formRef, validate } = useForm();
-const { label, isCounting, loading, getCaptcha } = useCaptcha();
+  const { toggleLoginModule } = useRouterPush();
+  // @ts-expect-error vue-tsc noUnusedLocals: template ref
+  const { formRef, validate } = useForm();
+  const { label, isCounting, loading, getCaptcha } = useCaptcha();
 
-interface FormModel {
-  phone: string;
-  code: string;
-  password: string;
-  confirmPassword: string;
-}
+  interface FormModel {
+    phone: string;
+    code: string;
+    password: string;
+    confirmPassword: string;
+  }
 
-const model = ref<FormModel>({
-  phone: '',
-  code: '',
-  password: '',
-  confirmPassword: ''
-});
+  const model = ref<FormModel>({
+    phone: '',
+    code: '',
+    password: '',
+    confirmPassword: ''
+  });
 
-const rules = computed<Record<keyof FormModel, App.Global.FormRule[]>>(() => {
-  const { formRules, createConfirmPwdRule } = useFormRules();
+  const rules = computed<Record<keyof FormModel, App.Global.FormRule[]>>(() => {
+    const { formRules, createConfirmPwdRule } = useFormRules();
 
-  return {
-    phone: formRules.phone,
-    code: formRules.code,
-    password: formRules.pwd,
-    confirmPassword: createConfirmPwdRule(model.value.password)
-  };
-});
+    return {
+      phone: formRules.phone,
+      code: formRules.code,
+      password: formRules.pwd,
+      confirmPassword: createConfirmPwdRule(model.value.password)
+    };
+  });
 
-async function handleSubmit() {
-  await validate();
-  // request to register
-  window.$message?.success($t('page.login.common.validateSuccess'));
-}
+  async function handleSubmit() {
+    await validate();
+    // request to register
+    window.$message?.success($t('page.login.common.validateSuccess'));
+  }
 </script>
 
 <template>

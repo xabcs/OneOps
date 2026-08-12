@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ElButton, ElDialog } from 'element-plus';
+  import { ElButton, ElDialog } from 'element-plus';
 
-const showDialog = defineModel<boolean>('show', { required: true });
+  const showDialog = defineModel<boolean>('show', { required: true });
 
-defineProps<{
-  title: string;
-  content: string;
-}>();
+  defineProps<{
+    title: string;
+    content: string;
+  }>();
 </script>
 
 <template>
@@ -19,16 +19,16 @@ defineProps<{
 </template>
 
 <style scoped>
-.log-content {
-  background: #1e1e1e;
-  color: #4ec9b0;
-  padding: 16px;
-  border-radius: 4px;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 13px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  max-height: 600px;
-  overflow: auto;
-}
+  .log-content {
+    background: #1e1e1e;
+    color: #4ec9b0;
+    padding: 16px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 600px;
+    overflow: auto;
+  }
 </style>

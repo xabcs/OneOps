@@ -103,7 +103,9 @@ export function getAnnotationSummary(annotations: Record<string, string> | undef
 /**
  * 格式化滚动更新策略
  */
-export function formatStrategy(strategy: { type?: string; maxUnavailable?: number; maxSurge?: number; partition?: number } | null | undefined): string {
+export function formatStrategy(
+  strategy: { type?: string; maxUnavailable?: number; maxSurge?: number; partition?: number } | null | undefined
+): string {
   if (!strategy) return '-';
   const type = strategy.type || 'RollingUpdate';
   const params: string[] = [];

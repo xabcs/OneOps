@@ -1,127 +1,127 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { fetchGetSessions } from '@/service/api/cmdb';
+  import { onMounted, ref } from 'vue';
+  import { fetchGetSessions } from '@/service/api/cmdb';
 
-defineOptions({ name: 'CmdbAuditSessions' });
+  defineOptions({ name: 'CmdbAuditSessions' });
 
-const loading = ref(false);
-const sessions = ref<Bastion.BastionSession[]>([]);
-const total = ref(0);
+  const loading = ref(false);
+  const sessions = ref<Bastion.BastionSession[]>([]);
+  const total = ref(0);
 
-const pagination = ref({
-  page: 1,
-  pageSize: 20
-});
+  const pagination = ref({
+    page: 1,
+    pageSize: 20
+  });
 
-const filters = ref<{
-  status?: string;
-  protocol?: string;
-  startDate?: string;
-  endDate?: string;
-}>({});
+  const filters = ref<{
+    status?: string;
+    protocol?: string;
+    startDate?: string;
+    endDate?: string;
+  }>({});
 
-const dateRange = ref<[string, string] | null>(null);
+  const dateRange = ref<[string, string] | null>(null);
 
-const statusOptions = [
-  { label: '全部', value: '' },
-  { label: '活跃', value: 'active' },
-  { label: '已关闭', value: 'closed' },
-  { label: '错误', value: 'error' },
-  { label: '已终止', value: 'terminated' }
-];
+  const statusOptions = [
+    { label: '全部', value: '' },
+    { label: '活跃', value: 'active' },
+    { label: '已关闭', value: 'closed' },
+    { label: '错误', value: 'error' },
+    { label: '已终止', value: 'terminated' }
+  ];
 
-const protocolOptions = [
-  { label: '全部', value: '' },
-  { label: 'SSH', value: 'ssh' },
-  { label: 'SFTP', value: 'sftp' }
-];
+  const protocolOptions = [
+    { label: '全部', value: '' },
+    { label: 'SSH', value: 'ssh' },
+    { label: 'SFTP', value: 'sftp' }
+  ];
 
-async function getSessions() {
-  loading.value = true;
-  try {
-    const params: Record<string, unknown> = {
-      page: pagination.value.page,
-      pageSize: pagination.value.pageSize
-    };
-    if (filters.value.status) params.status = filters.value.status;
-    if (filters.value.protocol) params.protocol = filters.value.protocol;
-    if (dateRange.value) {
-      params.startDate = dateRange.value[0];
-      params.endDate = dateRange.value[1];
+  async function getSessions() {
+    loading.value = true;
+    try {
+      const params: Record<string, unknown> = {
+        page: pagination.value.page,
+        pageSize: pagination.value.pageSize
+      };
+      if (filters.value.status) params.status = filters.value.status;
+      if (filters.value.protocol) params.protocol = filters.value.protocol;
+      if (dateRange.value) {
+        params.startDate = dateRange.value[0];
+        params.endDate = dateRange.value[1];
+      }
+
+      const { data } = await fetchGetSessions(params);
+      sessions.value = data?.list || [];
+      total.value = data?.total || 0;
+    } catch (error) {
+      window.$message?.error('获取会话列表失败');
+    } finally {
+      loading.value = false;
     }
-
-    const { data } = await fetchGetSessions(params);
-    sessions.value = data?.list || [];
-    total.value = data?.total || 0;
-  } catch (error) {
-    window.$message?.error('获取会话列表失败');
-  } finally {
-    loading.value = false;
   }
-}
 
-function handleSearch() {
-  pagination.value.page = 1;
-  getSessions();
-}
-
-function handleReset() {
-  filters.value = {};
-  dateRange.value = null;
-  pagination.value.page = 1;
-  getSessions();
-}
-
-function handlePageChange(page: number) {
-  pagination.value.page = page;
-  getSessions();
-}
-
-function handleViewDetail(session: Bastion.BastionSession) {
-  window.$message?.info('会话详情功能开发中');
-}
-
-function formatDuration(seconds: number): string {
-  if (!seconds) return '-';
-  if (seconds < 60) return `${seconds}秒`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟`;
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  return `${hours}小时${minutes}分钟`;
-}
-
-function formatTime(time: string): string {
-  return time ? new Date(time).toLocaleString('zh-CN') : '-';
-}
-
-function getStatusType(status: string): 'success' | 'info' | 'warning' | 'danger' {
-  switch (status) {
-    case 'active':
-      return 'success';
-    case 'closed':
-      return 'info';
-    case 'error':
-      return 'danger';
-    case 'terminated':
-      return 'warning';
-    default:
-      return 'info';
+  function handleSearch() {
+    pagination.value.page = 1;
+    getSessions();
   }
-}
 
-function getStatusText(status: string): string {
-  const map: Record<string, string> = {
-    active: '活跃',
-    closed: '已关闭',
-    error: '错误',
-    terminated: '已终止'
-  };
-  return map[status] || status;
-}
+  function handleReset() {
+    filters.value = {};
+    dateRange.value = null;
+    pagination.value.page = 1;
+    getSessions();
+  }
 
-onMounted(() => {
-  getSessions();
-});
+  function handlePageChange(page: number) {
+    pagination.value.page = page;
+    getSessions();
+  }
+
+  function handleViewDetail(session: Bastion.BastionSession) {
+    window.$message?.info('会话详情功能开发中');
+  }
+
+  function formatDuration(seconds: number): string {
+    if (!seconds) return '-';
+    if (seconds < 60) return `${seconds}秒`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟`;
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${hours}小时${minutes}分钟`;
+  }
+
+  function formatTime(time: string): string {
+    return time ? new Date(time).toLocaleString('zh-CN') : '-';
+  }
+
+  function getStatusType(status: string): 'success' | 'info' | 'warning' | 'danger' {
+    switch (status) {
+      case 'active':
+        return 'success';
+      case 'closed':
+        return 'info';
+      case 'error':
+        return 'danger';
+      case 'terminated':
+        return 'warning';
+      default:
+        return 'info';
+    }
+  }
+
+  function getStatusText(status: string): string {
+    const map: Record<string, string> = {
+      active: '活跃',
+      closed: '已关闭',
+      error: '错误',
+      terminated: '已终止'
+    };
+    return map[status] || status;
+  }
+
+  onMounted(() => {
+    getSessions();
+  });
 </script>
 
 <template>
@@ -226,30 +226,30 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.sessions-page {
-  padding: 16px;
-}
+  .sessions-page {
+    padding: 16px;
+  }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-.title {
-  font-size: 16px;
-  font-weight: 500;
-}
+  .title {
+    font-size: 16px;
+    font-weight: 500;
+  }
 
-.filter-bar {
-  padding: 16px;
-  background: #f5f7fa;
-  border-radius: 4px;
-}
+  .filter-bar {
+    padding: 16px;
+    background: #f5f7fa;
+    border-radius: 4px;
+  }
 
-.pagination-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-top: 16px;
-}
+  .pagination-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+  }
 </style>

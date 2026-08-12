@@ -1,139 +1,138 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { Refresh, RefreshRight, Search } from '@element-plus/icons-vue';
-import { fetchGetServers } from '@/service/api/cmdb';
-import { useWebSocket } from '@/service/websocket';
+  import { onMounted, onUnmounted, ref } from 'vue';
+  import { useRouter } from 'vue-router';
+  import { Refresh, RefreshRight, Search } from '@element-plus/icons-vue';
+  import { fetchGetServers } from '@/service/api/cmdb';
+  import { useWebSocket } from '@/service/websocket';
 
-defineOptions({
-  name: 'MonitoringServers'
-});
+  defineOptions({
+    name: 'MonitoringServers'
+  });
 
-const router = useRouter();
-const loading = ref(false);
+  const router = useRouter();
+  const loading = ref(false);
 
-const servers = ref<CMDB.Server[]>([]);
-const searchParams = ref({
-  page: 1,
-  pageSize: 20,
-  agentStatus: '',
-  keyword: ''
-});
-
-const pagination = ref({
-  page: 1,
-  pageSize: 20,
-  total: 0
-});
-
-async function getServerList() {
-  loading.value = true;
-  const { data } = await fetchGetServers(searchParams.value);
-  if (data) {
-    servers.value = data.list || [];
-    pagination.value.total = data.total || 0;
-  }
-  loading.value = false;
-}
-
-function handleSearch() {
-  searchParams.value.page = 1;
-  pagination.value.page = 1;
-  getServerList();
-}
-
-function handleReset() {
-  searchParams.value = {
+  const servers = ref<CMDB.Server[]>([]);
+  const searchParams = ref({
     page: 1,
     pageSize: 20,
     agentStatus: '',
     keyword: ''
-  };
-  pagination.value.page = 1;
-  getServerList();
-}
-
-function handlePageChange(page: number) {
-  searchParams.value.page = page;
-  pagination.value.page = page;
-  getServerList();
-}
-
-function handlePageSizeChange(pageSize: number) {
-  searchParams.value.pageSize = pageSize;
-  searchParams.value.page = 1;
-  pagination.value.page = 1;
-  getServerList();
-}
-
-function handleViewMonitoring(serverId: number) {
-  router.push({
-    path: '/monitoring/servers/detail',
-    query: { id: serverId }
   });
-}
 
-function getAgentTagType(status: string): 'success' | 'danger' | 'warning' | 'info' {
-  const map: Record<string, 'success' | 'danger' | 'warning' | 'info'> = {
-    running: 'success',
-    offline: 'danger',
-    failed: 'warning',
-    uninstalled: 'info'
-  };
-  return map[status] ?? 'info';
-}
+  const pagination = ref({
+    page: 1,
+    pageSize: 20,
+    total: 0
+  });
 
-function getAgentStatusText(status: string): string {
-  const textMap: Record<string, string> = {
-    running: '运行中',
-    offline: '离线',
-    failed: '失败',
-    uninstalled: '未安装'
-  };
-  return textMap[status] || status;
-}
-
-function getProgressColor(value: number): string {
-  if (value > 80) return '#ff4d4f';
-  if (value > 60) return '#faad14';
-  return '#52c41a';
-}
-
-function getLoadColor(load: number): string {
-  // 系统负载颜色逻辑（考虑 CPU 核心数会有影响，这里简化处理）
-  if (load > 5) return '#ff4d4f';
-  if (load > 3) return '#faad14';
-  return '#52c41a';
-}
-
-// WebSocket 客户端
-const { subscribe, unsubscribe } = useWebSocket();
-
-// 处理指标更新
-function handleMetricsUpdate(data: { server_id: number }) {
-
-  // 查找对应的服务器并更新数据
-  const server = servers.value.find(s => s.id === data.server_id);
-  if (server) {
-    server.cpuUsage = data.cpu;
-    server.memoryUsage = data.memory;
-    server.diskUsage = data.disk;
-    server.load5 = data.load5;
-    server.metricsUpdatedAt = new Date();
+  async function getServerList() {
+    loading.value = true;
+    const { data } = await fetchGetServers(searchParams.value);
+    if (data) {
+      servers.value = data.list || [];
+      pagination.value.total = data.total || 0;
+    }
+    loading.value = false;
   }
-}
 
-onMounted(() => {
-  getServerList();
+  function handleSearch() {
+    searchParams.value.page = 1;
+    pagination.value.page = 1;
+    getServerList();
+  }
 
-  // 订阅 WebSocket 指标更新
-  subscribe('metrics_update', handleMetricsUpdate);
-});
+  function handleReset() {
+    searchParams.value = {
+      page: 1,
+      pageSize: 20,
+      agentStatus: '',
+      keyword: ''
+    };
+    pagination.value.page = 1;
+    getServerList();
+  }
 
-onUnmounted(() => {
-  // 取消订阅
-  unsubscribe('metrics_update', handleMetricsUpdate);
-});
+  function handlePageChange(page: number) {
+    searchParams.value.page = page;
+    pagination.value.page = page;
+    getServerList();
+  }
+
+  function handlePageSizeChange(pageSize: number) {
+    searchParams.value.pageSize = pageSize;
+    searchParams.value.page = 1;
+    pagination.value.page = 1;
+    getServerList();
+  }
+
+  function handleViewMonitoring(serverId: number) {
+    router.push({
+      path: '/monitoring/servers/detail',
+      query: { id: serverId }
+    });
+  }
+
+  function getAgentTagType(status: string): 'success' | 'danger' | 'warning' | 'info' {
+    const map: Record<string, 'success' | 'danger' | 'warning' | 'info'> = {
+      running: 'success',
+      offline: 'danger',
+      failed: 'warning',
+      uninstalled: 'info'
+    };
+    return map[status] ?? 'info';
+  }
+
+  function getAgentStatusText(status: string): string {
+    const textMap: Record<string, string> = {
+      running: '运行中',
+      offline: '离线',
+      failed: '失败',
+      uninstalled: '未安装'
+    };
+    return textMap[status] || status;
+  }
+
+  function getProgressColor(value: number): string {
+    if (value > 80) return '#ff4d4f';
+    if (value > 60) return '#faad14';
+    return '#52c41a';
+  }
+
+  function getLoadColor(load: number): string {
+    // 系统负载颜色逻辑（考虑 CPU 核心数会有影响，这里简化处理）
+    if (load > 5) return '#ff4d4f';
+    if (load > 3) return '#faad14';
+    return '#52c41a';
+  }
+
+  // WebSocket 客户端
+  const { subscribe, unsubscribe } = useWebSocket();
+
+  // 处理指标更新
+  function handleMetricsUpdate(data: { server_id: number }) {
+    // 查找对应的服务器并更新数据
+    const server = servers.value.find(s => s.id === data.server_id);
+    if (server) {
+      server.cpuUsage = data.cpu;
+      server.memoryUsage = data.memory;
+      server.diskUsage = data.disk;
+      server.load5 = data.load5;
+      server.metricsUpdatedAt = new Date();
+    }
+  }
+
+  onMounted(() => {
+    getServerList();
+
+    // 订阅 WebSocket 指标更新
+    subscribe('metrics_update', handleMetricsUpdate);
+  });
+
+  onUnmounted(() => {
+    // 取消订阅
+    unsubscribe('metrics_update', handleMetricsUpdate);
+  });
 </script>
 
 <template>

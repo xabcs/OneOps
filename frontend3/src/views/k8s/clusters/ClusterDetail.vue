@@ -1,38 +1,38 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { ElDescriptions, ElDescriptionsItem, ElMessage, ElTabPane, ElTabs } from 'element-plus';
-import { getK8sClusterDetail } from '@/service/api/k8s';
-import ClusterNodes from './ClusterNodes.vue';
-import ClusterNamespaces from './ClusterNamespaces.vue';
-import ClusterUsers from './ClusterUsers.vue';
+  import { onMounted, ref } from 'vue';
+  import { ElDescriptions, ElDescriptionsItem, ElMessage, ElTabPane, ElTabs } from 'element-plus';
+  import { getK8sClusterDetail } from '@/service/api/k8s';
+  import ClusterNodes from './ClusterNodes.vue';
+  import ClusterNamespaces from './ClusterNamespaces.vue';
+  import ClusterUsers from './ClusterUsers.vue';
 
-interface Props {
-  clusterId: number;
-}
-
-const props = defineProps<Props>();
-
-const loading = ref(false);
-const cluster = ref<K8s.Cluster | null>(null);
-
-const loadClusterDetail = async () => {
-  loading.value = true;
-  try {
-    const res = await getK8sClusterDetail(props.clusterId);
-    if (res.code === 200) {
-      cluster.value = res.data;
-    }
-  } catch (error: unknown) {
-    const err = error as Error;
-    ElMessage.error(err.message || '加载集群详情失败');
-  } finally {
-    loading.value = false;
+  interface Props {
+    clusterId: number;
   }
-};
 
-onMounted(() => {
-  loadClusterDetail();
-});
+  const props = defineProps<Props>();
+
+  const loading = ref(false);
+  const cluster = ref<K8s.Cluster | null>(null);
+
+  const loadClusterDetail = async () => {
+    loading.value = true;
+    try {
+      const res = await getK8sClusterDetail(props.clusterId);
+      if (res.code === 200) {
+        cluster.value = res.data;
+      }
+    } catch (error: unknown) {
+      const err = error as Error;
+      ElMessage.error(err.message || '加载集群详情失败');
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  onMounted(() => {
+    loadClusterDetail();
+  });
 </script>
 
 <template>

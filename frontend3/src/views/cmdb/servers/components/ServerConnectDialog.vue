@@ -1,24 +1,24 @@
 <script setup lang="ts">
-/**
- * 连接主机确认对话框
- * 从 index.vue 拆分：SSH 连接确认弹窗
- */
+  /**
+   * 连接主机确认对话框
+   * 从 index.vue 拆分：SSH 连接确认弹窗
+   */
 
-const props = defineProps<{
-  visible: boolean;
-  connectingServer: CMDB.Server | null;
-}>();
+  const props = defineProps<{
+    visible: boolean;
+    connectingServer: CMDB.Server | null;
+  }>();
 
-const emit = defineEmits<{
-  (e: 'update:visible', val: boolean): void;
-  (e: 'confirm'): void;
-  (e: 'cancel'): void;
-}>();
+  const emit = defineEmits<{
+    (e: 'update:visible', val: boolean): void;
+    (e: 'confirm'): void;
+    (e: 'cancel'): void;
+  }>();
 
-function onCancel() {
-  emit('update:visible', false);
-  emit('cancel');
-}
+  function onCancel() {
+    emit('update:visible', false);
+    emit('cancel');
+  }
 </script>
 
 <template>
@@ -45,6 +45,12 @@ function onCancel() {
 </template>
 
 <style scoped>
-.connect-dialog-content { padding: 16px 0; }
-.dialog-footer { display: flex; justify-content: flex-end; gap: 12px; }
+  .connect-dialog-content {
+    padding: 16px 0;
+  }
+  .dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
 </style>

@@ -1,112 +1,112 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import {
-  fetchCheckConnectPermission,
-  fetchConnectServer,
-  fetchGetServerById,
-  fetchGetServerSessions
-} from '@/service/api';
+  import { computed, onMounted, ref } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
+  import {
+    fetchCheckConnectPermission,
+    fetchConnectServer,
+    fetchGetServerById,
+    fetchGetServerSessions
+  } from '@/service/api';
 
-defineOptions({ name: 'CMDBServerDetail' });
+  defineOptions({ name: 'CMDBServerDetail' });
 
-const route = useRoute();
-const router = useRouter();
+  const route = useRoute();
+  const router = useRouter();
 
-const server = ref<CMDB.Server | null>(null);
-const loading = ref(true);
-const activeTab = ref('basic');
-const sessions = ref<Bastion.BastionSession[]>([]);
-const sessionsLoading = ref(false);
-const hasPermission = ref(false);
-const availableCredentials = ref<CMDB.SSHCredential[]>([]);
+  const server = ref<CMDB.Server | null>(null);
+  const loading = ref(true);
+  const activeTab = ref('basic');
+  const sessions = ref<Bastion.BastionSession[]>([]);
+  const sessionsLoading = ref(false);
+  const hasPermission = ref(false);
+  const availableCredentials = ref<CMDB.SSHCredential[]>([]);
 
-const serverStatusText = computed(() => {
-  if (!server.value) return '-';
-  const statusMap: Record<string, string> = {
-    online: '在线',
-    offline: '离线',
-    unknown: '未知'
-  };
-  return statusMap[server.value.status] || '未知';
-});
+  const serverStatusText = computed(() => {
+    if (!server.value) return '-';
+    const statusMap: Record<string, string> = {
+      online: '在线',
+      offline: '离线',
+      unknown: '未知'
+    };
+    return statusMap[server.value.status] || '未知';
+  });
 
-async function loadServerDetail() {
-  const serverId = (route.query.id as string) || (route.params.id as string);
-  if (!serverId) {
-    router.push('/cmdb/servers');
-    return;
+  async function loadServerDetail() {
+    const serverId = (route.query.id as string) || (route.params.id as string);
+    if (!serverId) {
+      router.push('/cmdb/servers');
+      return;
+    }
+
+    try {
+      const res = await fetchGetServerById(Number(serverId));
+      server.value = res.data;
+      await checkConnectPermission(Number(serverId));
+    } catch (error) {
+      console.error('获取服务器详情失败:', error);
+      window.$message?.error('获取服务器详情失败');
+    } finally {
+      loading.value = false;
+    }
   }
 
-  try {
-    const res = await fetchGetServerById(Number(serverId));
-    server.value = res.data;
-    await checkConnectPermission(Number(serverId));
-  } catch (error) {
-    console.error('获取服务器详情失败:', error);
-    window.$message?.error('获取服务器详情失败');
-  } finally {
-    loading.value = false;
-  }
-}
-
-async function checkConnectPermission(serverId: number) {
-  try {
-    const res = await fetchCheckConnectPermission(serverId);
-    hasPermission.value = res.data.hasPermission;
-    availableCredentials.value = res.data.credentials || [];
-  } catch (error) {
-    console.error('检查连接权限失败:', error);
-  }
-}
-
-async function loadSessions() {
-  if (!server.value) return;
-  sessionsLoading.value = true;
-  try {
-    const res = await fetchGetServerSessions(server.value.id, { page: 1, pageSize: 10 });
-    sessions.value = res.data.list || [];
-  } catch (error) {
-    console.error('获取会话列表失败:', error);
-  } finally {
-    sessionsLoading.value = false;
-  }
-}
-
-function handleTabChange(tab: string) {
-  activeTab.value = tab;
-  if (tab === 'session' && server.value && sessions.value.length === 0) {
-    loadSessions();
-  }
-}
-
-async function handleConnect() {
-  if (!server.value || availableCredentials.value.length === 0) {
-    window.$message?.warning('没有可用的SSH凭证');
-    return;
+  async function checkConnectPermission(serverId: number) {
+    try {
+      const res = await fetchCheckConnectPermission(serverId);
+      hasPermission.value = res.data.hasPermission;
+      availableCredentials.value = res.data.credentials || [];
+    } catch (error) {
+      console.error('检查连接权限失败:', error);
+    }
   }
 
-  const credentialId = availableCredentials.value[0].id;
-  try {
-    const res = await fetchConnectServer(server.value.id, {
-      protocol: 'ssh',
-      credentialId
-    });
-
-    const { sessionId } = res.data;
-    router.push({
-      path: '/terminal/workbench',
-      query: { sessionId: String(sessionId) }
-    });
-  } catch (error: unknown) {
-    console.error('连接失败:', error);
-    window.$message?.error((error instanceof Error ? error.message : '连接失败'));
+  async function loadSessions() {
+    if (!server.value) return;
+    sessionsLoading.value = true;
+    try {
+      const res = await fetchGetServerSessions(server.value.id, { page: 1, pageSize: 10 });
+      sessions.value = res.data.list || [];
+    } catch (error) {
+      console.error('获取会话列表失败:', error);
+    } finally {
+      sessionsLoading.value = false;
+    }
   }
-}
 
-onMounted(() => {
-  loadServerDetail();
-});
+  function handleTabChange(tab: string) {
+    activeTab.value = tab;
+    if (tab === 'session' && server.value && sessions.value.length === 0) {
+      loadSessions();
+    }
+  }
+
+  async function handleConnect() {
+    if (!server.value || availableCredentials.value.length === 0) {
+      window.$message?.warning('没有可用的SSH凭证');
+      return;
+    }
+
+    const credentialId = availableCredentials.value[0].id;
+    try {
+      const res = await fetchConnectServer(server.value.id, {
+        protocol: 'ssh',
+        credentialId
+      });
+
+      const { sessionId } = res.data;
+      router.push({
+        path: '/terminal/workbench',
+        query: { sessionId: String(sessionId) }
+      });
+    } catch (error: unknown) {
+      console.error('连接失败:', error);
+      window.$message?.error(error instanceof Error ? error.message : '连接失败');
+    }
+  }
+
+  onMounted(() => {
+    loadServerDetail();
+  });
 </script>
 
 <template>
@@ -571,182 +571,182 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.detail-page {
-  min-height: 100vh;
-  background: #f5f7fa;
-  padding: 16px 24px 24px;
-}
+  .detail-page {
+    min-height: 100vh;
+    background: #f5f7fa;
+    padding: 16px 24px 24px;
+  }
 
-.instance-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
+  .instance-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
 
-.instance-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
+  .instance-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
 
-.back-arrow {
-  font-size: 20px;
-  color: #0052d9;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
+  .back-arrow {
+    font-size: 20px;
+    color: #0052d9;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
 
-.back-arrow:hover {
-  opacity: 0.7;
-}
+  .back-arrow:hover {
+    opacity: 0.7;
+  }
 
-.instance-name {
-  font-size: 16px;
-  font-weight: 500;
-  color: #1d1d1f;
-}
+  .instance-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: #1d1d1f;
+  }
 
-.instance-meta {
-  font-size: 12px;
-  color: #858e99;
-}
+  .instance-meta {
+    font-size: 12px;
+    color: #858e99;
+  }
 
-.tab-nav {
-  display: flex;
-  background: #fff;
-  border: 1px solid #e8e8e8;
-  border-radius: 2px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid #e8e8e8;
-}
+  .tab-nav {
+    display: flex;
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 2px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #e8e8e8;
+  }
 
-.tab-item {
-  padding: 6px 16px;
-  font-size: 14px;
-  color: #606266;
-  border-top: 2px solid transparent;
-  border-bottom: 1px solid #e8e8e8;
-  cursor: pointer;
-  transition:
-    color 0.2s,
-    border-color 0.2s;
-}
+  .tab-item {
+    padding: 6px 16px;
+    font-size: 14px;
+    color: #606266;
+    border-top: 2px solid transparent;
+    border-bottom: 1px solid #e8e8e8;
+    cursor: pointer;
+    transition:
+      color 0.2s,
+      border-color 0.2s;
+  }
 
-.tab-item:hover {
-  color: #0052d9;
-}
+  .tab-item:hover {
+    color: #0052d9;
+  }
 
-.tab-item.active {
-  color: #0052d9;
-  border-top-color: #0052d9;
-  border-bottom-color: transparent;
-  margin-bottom: -1px;
-}
+  .tab-item.active {
+    color: #0052d9;
+    border-top-color: #0052d9;
+    border-bottom-color: transparent;
+    margin-bottom: -1px;
+  }
 
-.info-card {
-  background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 2px;
-  margin-bottom: 16px;
-}
+  .info-card {
+    background: #fff;
+    border: 1px solid #e5e5e5;
+    border-radius: 2px;
+    margin-bottom: 16px;
+  }
 
-.info-card:last-child {
-  margin-bottom: 0;
-}
+  .info-card:last-child {
+    margin-bottom: 0;
+  }
 
-.card-head {
-  padding: 16px 16px 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+  .card-head {
+    padding: 16px 16px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-.card-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: #303133;
-}
+  .card-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #303133;
+  }
 
-.card-body {
-  padding: 16px;
-}
+  .card-body {
+    padding: 16px;
+  }
 
-.desc-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+  .desc-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
 
-.desc-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-}
+  .desc-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
 
-.desc-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+  .desc-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
 
-.desc-item-full {
-  grid-column: 1 / -1;
-}
+  .desc-item-full {
+    grid-column: 1 / -1;
+  }
 
-.item-label {
-  font-size: 12px;
-  color: #909399;
-  line-height: 1.5;
-}
+  .item-label {
+    font-size: 12px;
+    color: #909399;
+    line-height: 1.5;
+  }
 
-.item-content {
-  font-size: 14px;
-  color: #303133;
-  line-height: 1.5;
-}
+  .item-content {
+    font-size: 14px;
+    color: #303133;
+    line-height: 1.5;
+  }
 
-.value-text {
-  color: #303133;
-}
+  .value-text {
+    color: #303133;
+  }
 
-.status-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
+  .status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
 
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
 
-.status-online .status-dot {
-  background-color: #52c41a;
-}
+  .status-online .status-dot {
+    background-color: #52c41a;
+  }
 
-.status-offline .status-dot {
-  background-color: #d9d9d9;
-}
+  .status-offline .status-dot {
+    background-color: #d9d9d9;
+  }
 
-.status-unknown .status-dot {
-  background-color: #faad14;
-}
+  .status-unknown .status-dot {
+    background-color: #faad14;
+  }
 
-.env-tag {
-  display: inline-block;
-  padding: 2px 8px;
-  background-color: #f0f0f0;
-  border-radius: 2px;
-  font-size: 12px;
-  color: #606266;
-}
+  .env-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #f0f0f0;
+    border-radius: 2px;
+    font-size: 12px;
+    color: #606266;
+  }
 
-.loading-state,
-.empty-state {
-  padding: 40px 0;
-  text-align: center;
-  color: #909399;
-}
+  .loading-state,
+  .empty-state {
+    padding: 40px 0;
+    text-align: center;
+    color: #909399;
+  }
 </style>

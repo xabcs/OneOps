@@ -1,9 +1,5 @@
 import { ref } from 'vue';
-import {
-  fetchGetActiveSessionsFromMemory,
-  fetchGetSessionsList,
-  fetchTerminateSession
-} from '@/service/api/cmdb';
+import { fetchGetActiveSessionsFromMemory, fetchGetSessionsList, fetchTerminateSession } from '@/service/api/cmdb';
 
 /** 标签页类型 */
 export type TabType = 'active' | 'terminated' | 'history';

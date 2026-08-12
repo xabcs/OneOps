@@ -1,40 +1,40 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import { SimpleScrollbar } from '@sa/materials';
-import type { RouteKey } from '@elegant-router/types';
-import { GLOBAL_SIDER_MENU_ID } from '@/constants/app';
-import { useAppStore } from '@/store/modules/app';
-import { useRouteStore } from '@/store/modules/route';
-import { useMenu } from '../../../context';
-import MenuItem from '../components/menu-item.vue';
+  import { ref, watch } from 'vue';
+  import { useRoute } from 'vue-router';
+  import { SimpleScrollbar } from '@sa/materials';
+  import type { RouteKey } from '@elegant-router/types';
+  import { GLOBAL_SIDER_MENU_ID } from '@/constants/app';
+  import { useAppStore } from '@/store/modules/app';
+  import { useRouteStore } from '@/store/modules/route';
+  import { useMenu } from '../../../context';
+  import MenuItem from '../components/menu-item.vue';
 
-defineOptions({ name: 'VerticalMenu' });
+  defineOptions({ name: 'VerticalMenu' });
 
-const route = useRoute();
-const appStore = useAppStore();
-const routeStore = useRouteStore();
-const { selectedKey, selectedKeyDummy, handleSelect } = useMenu();
+  const route = useRoute();
+  const appStore = useAppStore();
+  const routeStore = useRouteStore();
+  const { selectedKey, selectedKeyDummy, handleSelect } = useMenu();
 
-// const inverted = computed(() => !themeStore.darkMode && themeStore.sider.inverted);
+  // const inverted = computed(() => !themeStore.darkMode && themeStore.sider.inverted);
 
-const expandedKeys = ref<string[]>([]);
+  const expandedKeys = ref<string[]>([]);
 
-function updateExpandedKeys() {
-  if (appStore.siderCollapse || !selectedKey.value) {
-    expandedKeys.value = [];
-    return;
+  function updateExpandedKeys() {
+    if (appStore.siderCollapse || !selectedKey.value) {
+      expandedKeys.value = [];
+      return;
+    }
+    expandedKeys.value = routeStore.getSelectedMenuKeyPath(selectedKey.value);
   }
-  expandedKeys.value = routeStore.getSelectedMenuKeyPath(selectedKey.value);
-}
 
-watch(
-  () => route.name,
-  () => {
-    updateExpandedKeys();
-  },
-  { immediate: true }
-);
+  watch(
+    () => route.name,
+    () => {
+      updateExpandedKeys();
+    },
+    { immediate: true }
+  );
 </script>
 
 <template>

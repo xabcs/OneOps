@@ -1,159 +1,159 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { ElButton, ElPagination, ElTabPane, ElTabs, ElTag } from 'element-plus';
-import { fetchK8sClusterNamespaces, fetchK8sClusters, fetchK8sConfigMaps, fetchK8sSecrets } from '@/service/api/k8s';
+  import { computed, onMounted, reactive, ref, watch } from 'vue';
+  import { ElButton, ElPagination, ElTabPane, ElTabs, ElTag } from 'element-plus';
+  import { fetchK8sClusterNamespaces, fetchK8sClusters, fetchK8sConfigMaps, fetchK8sSecrets } from '@/service/api/k8s';
 
-defineOptions({ name: 'K8sConfig' });
+  defineOptions({ name: 'K8sConfig' });
 
-const loading = ref(false);
-const activeTab = ref('configmaps');
+  const loading = ref(false);
+  const activeTab = ref('configmaps');
 
-// 当前选中的集群和命名空间
-const selectedCluster = ref<number | null>(null);
-const selectedNamespace = ref('default');
+  // 当前选中的集群和命名空间
+  const selectedCluster = ref<number | null>(null);
+  const selectedNamespace = ref('default');
 
-// 可用的命名空间列表
-const namespaces = ref<string[]>([]);
+  // 可用的命名空间列表
+  const namespaces = ref<string[]>([]);
 
-// 可用的集群列表
-const clusters = ref<K8s.Cluster[]>([]);
+  // 可用的集群列表
+  const clusters = ref<K8s.Cluster[]>([]);
 
-// 资源数据
-const configmapsData = ref<K8s.ConfigMap[]>([]);
-const secretsData = ref<K8s.Secret[]>([]);
+  // 资源数据
+  const configmapsData = ref<K8s.ConfigMap[]>([]);
+  const secretsData = ref<K8s.Secret[]>([]);
 
-// 分页
-const configmapsPagination = reactive({ page: 1, pageSize: 10, itemCount: 0 });
-const secretsPagination = reactive({ page: 1, pageSize: 10, itemCount: 0 });
+  // 分页
+  const configmapsPagination = reactive({ page: 1, pageSize: 10, itemCount: 0 });
+  const secretsPagination = reactive({ page: 1, pageSize: 10, itemCount: 0 });
 
-// 当前数据
-const currentPagination = computed(() => {
-  return activeTab.value === 'configmaps' ? configmapsPagination : secretsPagination;
-});
+  // 当前数据
+  const currentPagination = computed(() => {
+    return activeTab.value === 'configmaps' ? configmapsPagination : secretsPagination;
+  });
 
-// 加载集群列表
-async function loadClusters() {
-  try {
-    const response = await fetchK8sClusters();
-    clusters.value = response.data || [];
-    // 自动选中第一个集群
-    if (clusters.value.length > 0 && !selectedCluster.value) {
-      selectedCluster.value = clusters.value[0].id;
+  // 加载集群列表
+  async function loadClusters() {
+    try {
+      const response = await fetchK8sClusters();
+      clusters.value = response.data || [];
+      // 自动选中第一个集群
+      if (clusters.value.length > 0 && !selectedCluster.value) {
+        selectedCluster.value = clusters.value[0].id;
+      }
+    } catch (error) {
+      console.error('加载集群列表失败:', error);
     }
-  } catch (error) {
-    console.error('加载集群列表失败:', error);
   }
-}
 
-// 加载命名空间列表
-async function loadNamespaces() {
-  if (!selectedCluster.value) return;
-  try {
-    const response = await fetchK8sClusterNamespaces(selectedCluster.value);
-    namespaces.value = response.data.map((ns: K8s.Namespace) => ns.name);
-    // 自动选中第一个命名空间
-    if (namespaces.value.length > 0 && !namespaces.value.includes(selectedNamespace.value)) {
-      selectedNamespace.value = namespaces.value[0];
+  // 加载命名空间列表
+  async function loadNamespaces() {
+    if (!selectedCluster.value) return;
+    try {
+      const response = await fetchK8sClusterNamespaces(selectedCluster.value);
+      namespaces.value = response.data.map((ns: K8s.Namespace) => ns.name);
+      // 自动选中第一个命名空间
+      if (namespaces.value.length > 0 && !namespaces.value.includes(selectedNamespace.value)) {
+        selectedNamespace.value = namespaces.value[0];
+      }
+    } catch (error) {
+      console.error('加载命名空间失败:', error);
     }
-  } catch (error) {
-    console.error('加载命名空间失败:', error);
   }
-}
 
-// 加载配置项
-async function loadConfigMaps() {
-  if (!selectedCluster.value) return;
-  loading.value = true;
-  try {
-    const response = await fetchK8sConfigMaps(selectedCluster.value, {
-      namespace: selectedNamespace.value,
-      page: configmapsPagination.page,
-      pageSize: configmapsPagination.pageSize
-    });
+  // 加载配置项
+  async function loadConfigMaps() {
+    if (!selectedCluster.value) return;
+    loading.value = true;
+    try {
+      const response = await fetchK8sConfigMaps(selectedCluster.value, {
+        namespace: selectedNamespace.value,
+        page: configmapsPagination.page,
+        pageSize: configmapsPagination.pageSize
+      });
 
-    // 处理不同的响应格式
-    let apiData = response;
-    if (response?.data?.data?.list) {
-      apiData = response.data.data;
-    } else if (response?.data?.list) {
-      apiData = response.data;
+      // 处理不同的响应格式
+      let apiData = response;
+      if (response?.data?.data?.list) {
+        apiData = response.data.data;
+      } else if (response?.data?.list) {
+        apiData = response.data;
+      }
+
+      configmapsData.value = apiData.list || [];
+      configmapsPagination.itemCount = apiData.total || 0;
+    } catch (error) {
+      console.error('加载 ConfigMaps 失败:', error);
+    } finally {
+      loading.value = false;
     }
-
-    configmapsData.value = apiData.list || [];
-    configmapsPagination.itemCount = apiData.total || 0;
-  } catch (error) {
-    console.error('加载 ConfigMaps 失败:', error);
-  } finally {
-    loading.value = false;
   }
-}
 
-// 加载保密字典
-async function loadSecrets() {
-  if (!selectedCluster.value) return;
-  loading.value = true;
-  try {
-    const response = await fetchK8sSecrets(selectedCluster.value, {
-      namespace: selectedNamespace.value,
-      page: secretsPagination.page,
-      pageSize: secretsPagination.pageSize
-    });
+  // 加载保密字典
+  async function loadSecrets() {
+    if (!selectedCluster.value) return;
+    loading.value = true;
+    try {
+      const response = await fetchK8sSecrets(selectedCluster.value, {
+        namespace: selectedNamespace.value,
+        page: secretsPagination.page,
+        pageSize: secretsPagination.pageSize
+      });
 
-    // 处理不同的响应格式
-    let apiData = response;
-    if (response?.data?.data?.list) {
-      apiData = response.data.data;
-    } else if (response?.data?.list) {
-      apiData = response.data;
+      // 处理不同的响应格式
+      let apiData = response;
+      if (response?.data?.data?.list) {
+        apiData = response.data.data;
+      } else if (response?.data?.list) {
+        apiData = response.data;
+      }
+
+      secretsData.value = apiData.list || [];
+      secretsPagination.itemCount = apiData.total || 0;
+    } catch (error) {
+      console.error('加载 Secrets 失败:', error);
+    } finally {
+      loading.value = false;
     }
-
-    secretsData.value = apiData.list || [];
-    secretsPagination.itemCount = apiData.total || 0;
-  } catch (error) {
-    console.error('加载 Secrets 失败:', error);
-  } finally {
-    loading.value = false;
   }
-}
 
-// 加载当前Tab数据
-async function loadCurrentData() {
-  if (activeTab.value === 'configmaps') {
-    await loadConfigMaps();
-  } else {
-    await loadSecrets();
+  // 加载当前Tab数据
+  async function loadCurrentData() {
+    if (activeTab.value === 'configmaps') {
+      await loadConfigMaps();
+    } else {
+      await loadSecrets();
+    }
   }
-}
 
-// 分页变化
-function handlePageSizeChange(pageSize: number) {
-  currentPagination.value.pageSize = pageSize;
-  currentPagination.value.page = 1;
-  loadCurrentData();
-}
-
-// Tab切换
-function handleTabChange(tabName: string) {
-  activeTab.value = tabName;
-  loadCurrentData();
-}
-
-// 监听集群和命名空间变化
-// 监听集群和命名空间变化
-watch([selectedCluster, selectedNamespace], () => {
-  if (selectedCluster.value) {
-    loadNamespaces();
+  // 分页变化
+  function handlePageSizeChange(pageSize: number) {
+    currentPagination.value.pageSize = pageSize;
+    currentPagination.value.page = 1;
     loadCurrentData();
   }
-});
 
-onMounted(async () => {
-  await loadClusters();
-  if (selectedCluster.value) {
-    await loadNamespaces();
-    await loadConfigMaps();
+  // Tab切换
+  function handleTabChange(tabName: string) {
+    activeTab.value = tabName;
+    loadCurrentData();
   }
-});
+
+  // 监听集群和命名空间变化
+  // 监听集群和命名空间变化
+  watch([selectedCluster, selectedNamespace], () => {
+    if (selectedCluster.value) {
+      loadNamespaces();
+      loadCurrentData();
+    }
+  });
+
+  onMounted(async () => {
+    await loadClusters();
+    if (selectedCluster.value) {
+      await loadNamespaces();
+      await loadConfigMaps();
+    }
+  });
 </script>
 
 <template>
@@ -287,165 +287,165 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.config-page {
-  height: calc(100vh - 80px);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* Tab 容器自动填充剩余空间 */
-:deep(.el-tabs) {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* Tab 内容区域自动填充 */
-:deep(.el-tabs__content) {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-/* 每个 Tab 页面填充空间 */
-:deep(.el-tab-pane) {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  height: 100%;
-}
-
-/* 筛选输入框样式 - 参考主机资产页面 */
-.filter-inputs {
-  :deep(.el-select__wrapper) {
-    border-radius: 0 !important;
-    height: 30px;
-    font-size: 12px;
-    line-height: 30px;
+  .config-page {
+    height: calc(100vh - 80px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
-  :deep(.el-input__wrapper) {
-    border-radius: 0 !important;
-    height: 30px;
-    font-size: 12px;
+  /* Tab 容器自动填充剩余空间 */
+  :deep(.el-tabs) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
-  :deep(.el-select) {
-    height: 30px;
-    font-size: 12px;
+  /* Tab 内容区域自动填充 */
+  :deep(.el-tabs__content) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
-  :deep(.el-select .el-select__selection) {
-    display: none;
+  /* 每个 Tab 页面填充空间 */
+  :deep(.el-tab-pane) {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100%;
   }
 
-  :deep(.el-select .el-select__selected-item) {
-    display: none;
-  }
+  /* 筛选输入框样式 - 参考主机资产页面 */
+  .filter-inputs {
+    :deep(.el-select__wrapper) {
+      border-radius: 0 !important;
+      height: 30px;
+      font-size: 12px;
+      line-height: 30px;
+    }
 
-  :deep(.el-select .el-select__placeholder) {
-    display: none;
-  }
+    :deep(.el-input__wrapper) {
+      border-radius: 0 !important;
+      height: 30px;
+      font-size: 12px;
+    }
 
-  .select-fixed-label {
-    font-size: 12px;
-    color: var(--el-text-color-regular);
-    line-height: 30px;
-    padding-left: 8px;
-  }
+    :deep(.el-select) {
+      height: 30px;
+      font-size: 12px;
+    }
 
-  :deep(.el-select.has-value .el-select__prefix) {
-    position: static;
-    flex: none;
-  }
-}
+    :deep(.el-select .el-select__selection) {
+      display: none;
+    }
 
-/* 表格容器 */
-.table-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-  min-height: 0;
-}
+    :deep(.el-select .el-select__selected-item) {
+      display: none;
+    }
 
-/* 表格样式 */
-.config-table {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding-bottom: 60px;
+    :deep(.el-select .el-select__placeholder) {
+      display: none;
+    }
 
-  /* 表头样式 */
-  :deep(.el-table__header-wrapper) {
-    th.el-table__cell {
-      background-color: #f5f7fa !important;
-      color: #303133;
-      font-weight: 600;
-      text-align: left;
-      position: sticky;
-      top: 0;
-      z-index: 1;
+    .select-fixed-label {
+      font-size: 12px;
+      color: var(--el-text-color-regular);
+      line-height: 30px;
+      padding-left: 8px;
+    }
+
+    :deep(.el-select.has-value .el-select__prefix) {
+      position: static;
+      flex: none;
     }
   }
 
-  /* 数据行透明 */
-  :deep(.el-table__body-wrapper) {
-    background-color: transparent !important;
+  /* 表格容器 */
+  .table-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    min-height: 0;
   }
 
-  :deep(.el-table__body) {
-    background-color: transparent !important;
-  }
+  /* 表格样式 */
+  .config-table {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding-bottom: 60px;
 
-  :deep(.el-table__body tr) {
-    background-color: transparent !important;
-  }
+    /* 表头样式 */
+    :deep(.el-table__header-wrapper) {
+      th.el-table__cell {
+        background-color: #f5f7fa !important;
+        color: #303133;
+        font-weight: 600;
+        text-align: left;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+    }
 
-  :deep(.el-table__body td.el-table__cell) {
-    background-color: transparent !important;
-  }
-
-  :deep(.el-table__body tr:hover > td.el-table__cell) {
-    background-color: transparent !important;
-  }
-
-  :deep(.el-table__inner-wrapper) {
-    background-color: transparent !important;
-  }
-
-  :deep(.el-table__fixed),
-  :deep(.el-table__fixed-body-wrapper) {
-    background-color: transparent !important;
-
-    .el-table__body tr,
-    .el-table__body td.el-table__cell {
+    /* 数据行透明 */
+    :deep(.el-table__body-wrapper) {
       background-color: transparent !important;
     }
-  }
-}
 
-/* 底部工具栏固定在底部 */
-.bottom-toolbar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 12px 16px;
-  background-color: #fff;
-  border-top: 1px solid #ebeef5;
-  z-index: 10;
+    :deep(.el-table__body) {
+      background-color: transparent !important;
+    }
 
-  :deep(.el-pagination) {
-    margin: 0;
+    :deep(.el-table__body tr) {
+      background-color: transparent !important;
+    }
+
+    :deep(.el-table__body td.el-table__cell) {
+      background-color: transparent !important;
+    }
+
+    :deep(.el-table__body tr:hover > td.el-table__cell) {
+      background-color: transparent !important;
+    }
+
+    :deep(.el-table__inner-wrapper) {
+      background-color: transparent !important;
+    }
+
+    :deep(.el-table__fixed),
+    :deep(.el-table__fixed-body-wrapper) {
+      background-color: transparent !important;
+
+      .el-table__body tr,
+      .el-table__body td.el-table__cell {
+        background-color: transparent !important;
+      }
+    }
   }
-}
+
+  /* 底部工具栏固定在底部 */
+  .bottom-toolbar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 12px 16px;
+    background-color: #fff;
+    border-top: 1px solid #ebeef5;
+    z-index: 10;
+
+    :deep(.el-pagination) {
+      margin: 0;
+    }
+  }
 </style>

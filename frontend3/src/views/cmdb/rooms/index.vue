@@ -1,95 +1,36 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
-import type { FormInstance, FormRules } from 'element-plus';
-import { ElMessageBox, ElNotification } from 'element-plus';
-import {
-  fetchCreateServerRoom,
-  fetchDeleteServerRoom,
-  fetchGetServerRooms,
-  fetchUpdateServerRoom
-} from '@/service/api';
+  import { onMounted, reactive, ref } from 'vue';
+  import type { FormInstance, FormRules } from 'element-plus';
+  import { ElMessageBox, ElNotification } from 'element-plus';
+  import {
+    fetchCreateServerRoom,
+    fetchDeleteServerRoom,
+    fetchGetServerRooms,
+    fetchUpdateServerRoom
+  } from '@/service/api';
 
-defineOptions({ name: 'CmdbRooms' });
+  defineOptions({ name: 'CmdbRooms' });
 
-const loading = ref(false);
-const tableData = ref<CMDB.ServerRoom[]>([]);
-const searchKeyword = ref('');
+  const loading = ref(false);
+  const tableData = ref<CMDB.ServerRoom[]>([]);
+  const searchKeyword = ref('');
 
-// 对话框
-const dialogVisible = ref(false);
-const dialogTitle = ref('');
-const roomFormRef = ref<FormInstance>();
-const roomForm = reactive<{
-  id?: number;
-  name: string;
-  code: string;
-  location: string;
-  address: string;
-  provider: string;
-  contact: string;
-  phone: string;
-  status: number;
-  remarks: string;
-}>({
-  name: '',
-  code: '',
-  location: '',
-  address: '',
-  provider: '',
-  contact: '',
-  phone: '',
-  status: 1,
-  remarks: ''
-});
-
-// 表单验证规则
-const roomFormRules: FormRules = {
-  name: [
-    { required: true, message: '请输入机房名称', trigger: 'blur' },
-    { min: 2, max: 100, message: '机房名称长度在 2 到 100 个字符', trigger: 'blur' }
-  ],
-  code: [
-    { required: true, message: '请输入机房代码', trigger: 'blur' },
-    { min: 2, max: 50, message: '机房代码长度在 2 到 50 个字符', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9_-]+$/, message: '机房代码只能包含字母、数字、下划线和连字符', trigger: 'blur' }
-  ]
-};
-
-// 服务商选项
-const providerOptions = [
-  { label: '阿里云', value: 'aliyun' },
-  { label: '腾讯云', value: 'tencent' },
-  { label: 'AWS', value: 'aws' },
-  { label: '华为云', value: 'huawei' },
-  { label: '自建', value: 'self' },
-  { label: '其他', value: 'other' }
-];
-
-// 获取机房列表
-async function getTableData() {
-  loading.value = true;
-  try {
-    const { data } = await fetchGetServerRooms();
-    if (data) {
-      const keyword = searchKeyword.value.trim().toLowerCase();
-      tableData.value = keyword
-        ? (data || []).filter(item =>
-            [item.name, item.code, item.location, item.provider].some(value => value?.toLowerCase().includes(keyword))
-          )
-        : data || [];
-    }
-  } catch (err) {
-    console.error('获取机房列表失败:', err);
-    ElNotification.error('获取机房列表失败');
-  } finally {
-    loading.value = false;
-  }
-}
-
-// 打开新增对话框
-function handleAdd() {
-  dialogTitle.value = '新增机房';
-  Object.assign(roomForm, {
+  // 对话框
+  const dialogVisible = ref(false);
+  const dialogTitle = ref('');
+  const roomFormRef = ref<FormInstance>();
+  const roomForm = reactive<{
+    id?: number;
+    name: string;
+    code: string;
+    location: string;
+    address: string;
+    provider: string;
+    contact: string;
+    phone: string;
+    status: number;
+    remarks: string;
+  }>({
     name: '',
     code: '',
     location: '',
@@ -100,78 +41,137 @@ function handleAdd() {
     status: 1,
     remarks: ''
   });
-  dialogVisible.value = true;
-}
 
-// 打开编辑对话框
-function handleEdit(row: CMDB.ServerRoom) {
-  dialogTitle.value = '编辑机房';
-  Object.assign(roomForm, {
-    id: row.id,
-    name: row.name,
-    code: row.code,
-    location: row.location,
-    address: row.address,
-    provider: row.provider,
-    contact: row.contact,
-    phone: row.phone,
-    status: row.status,
-    remarks: row.remarks
-  });
-  dialogVisible.value = true;
-}
+  // 表单验证规则
+  const roomFormRules: FormRules = {
+    name: [
+      { required: true, message: '请输入机房名称', trigger: 'blur' },
+      { min: 2, max: 100, message: '机房名称长度在 2 到 100 个字符', trigger: 'blur' }
+    ],
+    code: [
+      { required: true, message: '请输入机房代码', trigger: 'blur' },
+      { min: 2, max: 50, message: '机房代码长度在 2 到 50 个字符', trigger: 'blur' },
+      { pattern: /^[a-zA-Z0-9_-]+$/, message: '机房代码只能包含字母、数字、下划线和连字符', trigger: 'blur' }
+    ]
+  };
 
-// 保存
-async function handleSave() {
-  if (!roomFormRef.value) return;
+  // 服务商选项
+  const providerOptions = [
+    { label: '阿里云', value: 'aliyun' },
+    { label: '腾讯云', value: 'tencent' },
+    { label: 'AWS', value: 'aws' },
+    { label: '华为云', value: 'huawei' },
+    { label: '自建', value: 'self' },
+    { label: '其他', value: 'other' }
+  ];
 
-  try {
-    await roomFormRef.value.validate();
-
-    if (roomForm.id) {
-      await fetchUpdateServerRoom(roomForm.id, roomForm);
-      ElNotification.success('机房更新成功');
-    } else {
-      await fetchCreateServerRoom(roomForm);
-      ElNotification.success('机房创建成功');
-    }
-    dialogVisible.value = false;
-    getTableData();
-  } catch (error) {
-    console.error('保存失败:', error);
-    ElNotification.error('保存失败');
-  }
-}
-
-// 删除
-function handleDelete(row: CMDB.ServerRoom) {
-  ElMessageBox.confirm(`确定要删除机房 "${row.name}" 吗？`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  })
-    .then(async () => {
-      try {
-        await fetchDeleteServerRoom(row.id);
-        ElNotification.success('删除成功');
-        getTableData();
-      } catch (error) {
-        console.error('删除失败:', error);
-        ElNotification.error('删除失败');
+  // 获取机房列表
+  async function getTableData() {
+    loading.value = true;
+    try {
+      const { data } = await fetchGetServerRooms();
+      if (data) {
+        const keyword = searchKeyword.value.trim().toLowerCase();
+        tableData.value = keyword
+          ? (data || []).filter(item =>
+              [item.name, item.code, item.location, item.provider].some(value => value?.toLowerCase().includes(keyword))
+            )
+          : data || [];
       }
+    } catch (err) {
+      console.error('获取机房列表失败:', err);
+      ElNotification.error('获取机房列表失败');
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  // 打开新增对话框
+  function handleAdd() {
+    dialogTitle.value = '新增机房';
+    Object.assign(roomForm, {
+      name: '',
+      code: '',
+      location: '',
+      address: '',
+      provider: '',
+      contact: '',
+      phone: '',
+      status: 1,
+      remarks: ''
+    });
+    dialogVisible.value = true;
+  }
+
+  // 打开编辑对话框
+  function handleEdit(row: CMDB.ServerRoom) {
+    dialogTitle.value = '编辑机房';
+    Object.assign(roomForm, {
+      id: row.id,
+      name: row.name,
+      code: row.code,
+      location: row.location,
+      address: row.address,
+      provider: row.provider,
+      contact: row.contact,
+      phone: row.phone,
+      status: row.status,
+      remarks: row.remarks
+    });
+    dialogVisible.value = true;
+  }
+
+  // 保存
+  async function handleSave() {
+    if (!roomFormRef.value) return;
+
+    try {
+      await roomFormRef.value.validate();
+
+      if (roomForm.id) {
+        await fetchUpdateServerRoom(roomForm.id, roomForm);
+        ElNotification.success('机房更新成功');
+      } else {
+        await fetchCreateServerRoom(roomForm);
+        ElNotification.success('机房创建成功');
+      }
+      dialogVisible.value = false;
+      getTableData();
+    } catch (error) {
+      console.error('保存失败:', error);
+      ElNotification.error('保存失败');
+    }
+  }
+
+  // 删除
+  function handleDelete(row: CMDB.ServerRoom) {
+    ElMessageBox.confirm(`确定要删除机房 "${row.name}" 吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
     })
-    .catch(() => {});
-}
+      .then(async () => {
+        try {
+          await fetchDeleteServerRoom(row.id);
+          ElNotification.success('删除成功');
+          getTableData();
+        } catch (error) {
+          console.error('删除失败:', error);
+          ElNotification.error('删除失败');
+        }
+      })
+      .catch(() => {});
+  }
 
-// 获取状态标签
-function getStatusTag(status: number) {
-  return status === 1 ? ({ text: '启用', type: 'success' } as const) : ({ text: '禁用', type: 'danger' } as const);
-}
+  // 获取状态标签
+  function getStatusTag(status: number) {
+    return status === 1 ? ({ text: '启用', type: 'success' } as const) : ({ text: '禁用', type: 'danger' } as const);
+  }
 
-// 初始化
-onMounted(() => {
-  getTableData();
-});
+  // 初始化
+  onMounted(() => {
+    getTableData();
+  });
 </script>
 
 <template>
@@ -277,7 +277,7 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
-.card-wrapper {
-  @apply flex-col-stretch p-16px;
-}
+  .card-wrapper {
+    @apply flex-col-stretch p-16px;
+  }
 </style>

@@ -1,61 +1,61 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { createReusableTemplate } from '@vueuse/core';
-import { SimpleScrollbar } from '@sa/materials';
-import { transformColorWithOpacity } from '@sa/color';
-import { useThemeStore } from '@/store/modules/theme';
+  import { computed } from 'vue';
+  import { createReusableTemplate } from '@vueuse/core';
+  import { SimpleScrollbar } from '@sa/materials';
+  import { transformColorWithOpacity } from '@sa/color';
+  import { useThemeStore } from '@/store/modules/theme';
 
-defineOptions({ name: 'FirstLevelMenu' });
+  defineOptions({ name: 'FirstLevelMenu' });
 
-interface Props {
-  menus: App.Global.Menu[];
-  activeMenuKey?: string;
-  inverted?: boolean;
-  siderCollapse?: boolean;
-  darkMode?: boolean;
-  themeColor: string;
-}
+  interface Props {
+    menus: App.Global.Menu[];
+    activeMenuKey?: string;
+    inverted?: boolean;
+    siderCollapse?: boolean;
+    darkMode?: boolean;
+    themeColor: string;
+  }
 
-const props = defineProps<Props>();
-const themeStore = useThemeStore();
+  const props = defineProps<Props>();
+  const themeStore = useThemeStore();
 
-interface Emits {
-  (e: 'select', menu: App.Global.Menu): boolean;
-  (e: 'toggleSiderCollapse'): void;
-}
+  interface Emits {
+    (e: 'select', menu: App.Global.Menu): boolean;
+    (e: 'toggleSiderCollapse'): void;
+  }
 
-const emit = defineEmits<Emits>();
+  const emit = defineEmits<Emits>();
 
-interface MixMenuItemProps {
-  /** Menu item label */
-  label: App.Global.Menu['label'];
-  /** Menu item icon */
-  icon: App.Global.Menu['icon'];
-  /** Active menu item */
-  active: boolean;
-  /** Mini size */
-  isMini?: boolean;
-}
-const [DefineMixMenuItem, MixMenuItem] = createReusableTemplate<MixMenuItemProps>();
+  interface MixMenuItemProps {
+    /** Menu item label */
+    label: App.Global.Menu['label'];
+    /** Menu item icon */
+    icon: App.Global.Menu['icon'];
+    /** Active menu item */
+    active: boolean;
+    /** Mini size */
+    isMini?: boolean;
+  }
+  const [DefineMixMenuItem, MixMenuItem] = createReusableTemplate<MixMenuItemProps>();
 
-const showIcon = computed(() => themeStore.sider.showIcon !== false); // 默认显示图标
+  const showIcon = computed(() => themeStore.sider.showIcon !== false); // 默认显示图标
 
-const selectedBgColor = computed(() => {
-  const { darkMode, themeColor } = props;
+  const selectedBgColor = computed(() => {
+    const { darkMode, themeColor } = props;
 
-  const light = transformColorWithOpacity(themeColor, 0.1, '#ffffff');
-  const dark = transformColorWithOpacity(themeColor, 0.3, '#000000');
+    const light = transformColorWithOpacity(themeColor, 0.1, '#ffffff');
+    const dark = transformColorWithOpacity(themeColor, 0.3, '#000000');
 
-  return darkMode ? dark : light;
-});
+    return darkMode ? dark : light;
+  });
 
-function handleClickMixMenu(menu: App.Global.Menu) {
-  emit('select', menu);
-}
+  function handleClickMixMenu(menu: App.Global.Menu) {
+    emit('select', menu);
+  }
 
-function toggleSiderCollapse() {
-  emit('toggleSiderCollapse');
-}
+  function toggleSiderCollapse() {
+    emit('toggleSiderCollapse');
+  }
 </script>
 
 <template>
@@ -104,7 +104,7 @@ function toggleSiderCollapse() {
 </template>
 
 <style scoped>
-.selected-mix-menu {
-  background-color: v-bind(selectedBgColor);
-}
+  .selected-mix-menu {
+    background-color: v-bind(selectedBgColor);
+  }
 </style>

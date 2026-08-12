@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import { fetchCustomBackendError } from '@/service/api';
-import { $t } from '@/locales';
+  import { fetchCustomBackendError } from '@/service/api';
+  import { $t } from '@/locales';
 
-async function logout() {
-  await fetchCustomBackendError('8888', $t('request.logoutMsg'));
-}
+  async function logout() {
+    await fetchCustomBackendError('8888', $t('request.logoutMsg'));
+  }
 
-async function logoutWithModal() {
-  await fetchCustomBackendError('7777', $t('request.logoutWithModalMsg'));
-}
+  async function logoutWithModal() {
+    await fetchCustomBackendError('7777', $t('request.logoutWithModalMsg'));
+  }
 
-async function refreshToken() {
-  await fetchCustomBackendError('9999', $t('request.tokenExpired'));
-}
+  async function refreshToken() {
+    await fetchCustomBackendError('9999', $t('request.tokenExpired'));
+  }
 
-async function handleRepeatedMessageError() {
-  await Promise.all([
-    fetchCustomBackendError('2222', $t('page.function.request.repeatedErrorMsg1')),
-    fetchCustomBackendError('2222', $t('page.function.request.repeatedErrorMsg1')),
-    fetchCustomBackendError('2222', $t('page.function.request.repeatedErrorMsg1')),
-    fetchCustomBackendError('3333', $t('page.function.request.repeatedErrorMsg2')),
-    fetchCustomBackendError('3333', $t('page.function.request.repeatedErrorMsg2')),
-    fetchCustomBackendError('3333', $t('page.function.request.repeatedErrorMsg2'))
-  ]);
-}
+  async function handleRepeatedMessageError() {
+    await Promise.all([
+      fetchCustomBackendError('2222', $t('page.function.request.repeatedErrorMsg1')),
+      fetchCustomBackendError('2222', $t('page.function.request.repeatedErrorMsg1')),
+      fetchCustomBackendError('2222', $t('page.function.request.repeatedErrorMsg1')),
+      fetchCustomBackendError('3333', $t('page.function.request.repeatedErrorMsg2')),
+      fetchCustomBackendError('3333', $t('page.function.request.repeatedErrorMsg2')),
+      fetchCustomBackendError('3333', $t('page.function.request.repeatedErrorMsg2'))
+    ]);
+  }
 
-async function handleRepeatedModalError() {
-  await Promise.all([
-    fetchCustomBackendError('7777', $t('request.logoutWithModalMsg')),
-    fetchCustomBackendError('7777', $t('request.logoutWithModalMsg')),
-    fetchCustomBackendError('7777', $t('request.logoutWithModalMsg'))
-  ]);
-}
+  async function handleRepeatedModalError() {
+    await Promise.all([
+      fetchCustomBackendError('7777', $t('request.logoutWithModalMsg')),
+      fetchCustomBackendError('7777', $t('request.logoutWithModalMsg')),
+      fetchCustomBackendError('7777', $t('request.logoutWithModalMsg'))
+    ]);
+  }
 </script>
 
 <template>

@@ -5,19 +5,19 @@
 </template>
 
 <style scoped>
-.app-logo {
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  .app-logo {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
-.logo-image {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  max-width: none;
-}
+  .logo-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    max-width: none;
+  }
 </style>

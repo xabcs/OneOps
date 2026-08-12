@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Icon } from '@iconify/vue';
-import SessionList from '../session_list.vue';
-import XTermTerminal from './XTermTerminal.vue';
-import type { WorkbenchSession } from '../composables/useSessions';
+  import { computed } from 'vue';
+  import { Icon } from '@iconify/vue';
+  import SessionList from '../session_list.vue';
+  import type { WorkbenchSession } from '../composables/useSessions';
+  import XTermTerminal from './XTermTerminal.vue';
 
-interface Props {
-  activeSession: WorkbenchSession | null;
-  sessions: WorkbenchSession[];
-}
+  interface Props {
+    activeSession: WorkbenchSession | null;
+    sessions: WorkbenchSession[];
+  }
 
-interface Emits {
-  (e: 'toggleFullscreen'): void;
-}
+  interface Emits {
+    (e: 'toggleFullscreen'): void;
+  }
 
-const props = defineProps<Props>();
-defineEmits<Emits>();
+  const props = defineProps<Props>();
+  defineEmits<Emits>();
 
-// 判断当前是否为会话列表视图
-const isSessionListView = computed(() => {
-  return props.activeSession?.isSessionListView === true;
-});
+  // 判断当前是否为会话列表视图
+  const isSessionListView = computed(() => {
+    return props.activeSession?.isSessionListView === true;
+  });
 </script>
 
 <template>
@@ -84,157 +84,157 @@ const isSessionListView = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-.terminal-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: #171717;
-  overflow: hidden;
-  min-width: 0;
-  min-height: 0;
-  position: relative;
-}
-
-.session-list-view,
-.terminal-view-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
-  min-height: 0;
-  position: absolute;
-  inset: 0;
-}
-
-.terminal-view-container {
-  background: #171717;
-}
-
-.terminal-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 12px;
-  height: 26px;
-  background: #1e1e1e;
-  flex-shrink: 0;
-}
-
-.toolbar-left,
-.toolbar-center,
-.toolbar-right {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.toolbar-btn {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  border-radius: 2px;
-  color: #858585;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.2);
-    color: #aaa;
+  .terminal-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #171717;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+    position: relative;
   }
-}
 
-.btn-icon {
-  width: 14px;
-  height: 14px;
-}
+  .session-list-view,
+  .terminal-view-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+    position: absolute;
+    inset: 0;
+  }
 
-.terminal-mode {
-  display: flex;
-  background: #252526;
-  border-radius: 2px;
-  padding: 1px;
-}
+  .terminal-view-container {
+    background: #171717;
+  }
 
-.mode-btn {
-  padding: 2px 8px;
-  font-size: 11px;
-  background: transparent;
-  border: none;
-  color: #858585;
-  cursor: pointer;
-  border-radius: 1px;
+  .terminal-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    height: 26px;
+    background: #1e1e1e;
+    flex-shrink: 0;
+  }
 
-  &:hover {
+  .toolbar-left,
+  .toolbar-center,
+  .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .toolbar-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 2px;
+    color: #858585;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.2);
+      color: #aaa;
+    }
+  }
+
+  .btn-icon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .terminal-mode {
+    display: flex;
+    background: #252526;
+    border-radius: 2px;
+    padding: 1px;
+  }
+
+  .mode-btn {
+    padding: 2px 8px;
+    font-size: 11px;
+    background: transparent;
+    border: none;
+    color: #858585;
+    cursor: pointer;
+    border-radius: 1px;
+
+    &:hover {
+      color: #ccc;
+    }
+
+    &.mode-active {
+      background: #007acc;
+      color: #fff;
+    }
+  }
+
+  .terminal-content {
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+    background: #0d0d0d;
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .terminal-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #858585;
+    gap: 8px;
+  }
+
+  .placeholder-icon {
+    width: 48px;
+    height: 48px;
+    opacity: 0.3;
+  }
+
+  .placeholder-title {
+    font-size: 14px;
+    font-weight: 500;
     color: #ccc;
+    margin: 0;
   }
 
-  &.mode-active {
-    background: #007acc;
-    color: #fff;
+  .placeholder-desc {
+    font-size: 12px;
+    color: #6e6e6e;
+    margin: 0;
   }
-}
 
-.terminal-content {
-  flex: 1;
-  overflow: hidden;
-  min-height: 0;
-  background: #0d0d0d;
-  border: none;
-  margin: 0;
-  padding: 0;
-}
+  .placeholder-hint {
+    font-size: 11px;
+    color: #4a4a4a;
+    margin: 0;
+  }
 
-.terminal-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #858585;
-  gap: 8px;
-}
+  .terminal-sessions {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
 
-.placeholder-icon {
-  width: 48px;
-  height: 48px;
-  opacity: 0.3;
-}
-
-.placeholder-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: #ccc;
-  margin: 0;
-}
-
-.placeholder-desc {
-  font-size: 12px;
-  color: #6e6e6e;
-  margin: 0;
-}
-
-.placeholder-hint {
-  font-size: 11px;
-  color: #4a4a4a;
-  margin: 0;
-}
-
-.terminal-sessions {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  border: none;
-  margin: 0;
-  padding: 0;
-}
-
-.terminal-session {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
+  .terminal-session {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
 </style>

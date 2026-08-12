@@ -1,172 +1,174 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { useThemeStore } from '@/store/modules/theme';
-import { applyContentTheme2 } from '@/utils/content-theme';
-import SettingItem from '../components/setting-item.vue';
+  import { computed, ref, watch } from 'vue';
+  import { useThemeStore } from '@/store/modules/theme';
+  import { applyContentTheme2 } from '@/theme/content-theme';
+  import SettingItem from '../components/setting-item.vue';
 
-defineOptions({ name: 'ContentTheme2' });
+  defineOptions({ name: 'ContentTheme2' });
 
-const themeStore = useThemeStore();
+  const themeStore = useThemeStore();
 
-// Hero区域设置 - 直接绑定到 store，不需要本地状态
-const heroSection = computed(() => themeStore.contentTheme2.heroSection);
+  // Hero区域设置 - 直接绑定到 store，不需要本地状态
+  const heroSection = computed(() => themeStore.contentTheme2.heroSection);
 
-// 统计卡片设置
-const statUseGradient = ref(themeStore.contentTheme2.statCards.useGradient || false);
-const statDefaultBg = ref(themeStore.contentTheme2.statCards.defaultBg || 'rgba(255, 255, 255, 0.98)');
-const statDefaultBgStart = ref(themeStore.contentTheme2.statCards.defaultBgStart || 'rgba(255, 255, 255, 0.98)');
-const statDefaultBgEnd = ref(themeStore.contentTheme2.statCards.defaultBgEnd || 'rgba(248, 250, 252, 0.94)');
-const statDefaultBorder = ref(themeStore.contentTheme2.statCards.defaultBorder || 'rgba(148, 163, 184, 0.16)');
-const statSuccessBg = ref(themeStore.contentTheme2.statCards.successBg || 'rgba(240, 253, 244, 0.98)');
-const statSuccessBgStart = ref(themeStore.contentTheme2.statCards.successBgStart || 'rgba(240, 253, 244, 0.98)');
-const statSuccessBgEnd = ref(themeStore.contentTheme2.statCards.successBgEnd || 'rgba(255, 255, 255, 0.94)');
-const statWarningBg = ref(themeStore.contentTheme2.statCards.warningBg || 'rgba(255, 251, 235, 0.98)');
-const statWarningBgStart = ref(themeStore.contentTheme2.statCards.warningBgStart || 'rgba(255, 251, 235, 0.98)');
-const statWarningBgEnd = ref(themeStore.contentTheme2.statCards.warningBgEnd || 'rgba(255, 255, 255, 0.94)');
-const statDangerBg = ref(themeStore.contentTheme2.statCards.dangerBg || 'rgba(254, 242, 242, 0.98)');
-const statDangerBgStart = ref(themeStore.contentTheme2.statCards.dangerBgStart || 'rgba(254, 242, 242, 0.98)');
-const statDangerBgEnd = ref(themeStore.contentTheme2.statCards.dangerBgEnd || 'rgba(255, 255, 255, 0.94)');
-const statBorderRadius = ref(themeStore.contentTheme2.statCards.borderRadius || '12px');
-const statShadow = ref(
-  themeStore.contentTheme2.statCards.shadow || '0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)'
-);
+  // 统计卡片设置
+  const statUseGradient = ref(themeStore.contentTheme2.statCards.useGradient || false);
+  const statDefaultBg = ref(themeStore.contentTheme2.statCards.defaultBg || 'rgba(255, 255, 255, 0.98)');
+  const statDefaultBgStart = ref(themeStore.contentTheme2.statCards.defaultBgStart || 'rgba(255, 255, 255, 0.98)');
+  const statDefaultBgEnd = ref(themeStore.contentTheme2.statCards.defaultBgEnd || 'rgba(248, 250, 252, 0.94)');
+  const statDefaultBorder = ref(themeStore.contentTheme2.statCards.defaultBorder || 'rgba(148, 163, 184, 0.16)');
+  const statSuccessBg = ref(themeStore.contentTheme2.statCards.successBg || 'rgba(240, 253, 244, 0.98)');
+  const statSuccessBgStart = ref(themeStore.contentTheme2.statCards.successBgStart || 'rgba(240, 253, 244, 0.98)');
+  const statSuccessBgEnd = ref(themeStore.contentTheme2.statCards.successBgEnd || 'rgba(255, 255, 255, 0.94)');
+  const statWarningBg = ref(themeStore.contentTheme2.statCards.warningBg || 'rgba(255, 251, 235, 0.98)');
+  const statWarningBgStart = ref(themeStore.contentTheme2.statCards.warningBgStart || 'rgba(255, 251, 235, 0.98)');
+  const statWarningBgEnd = ref(themeStore.contentTheme2.statCards.warningBgEnd || 'rgba(255, 255, 255, 0.94)');
+  const statDangerBg = ref(themeStore.contentTheme2.statCards.dangerBg || 'rgba(254, 242, 242, 0.98)');
+  const statDangerBgStart = ref(themeStore.contentTheme2.statCards.dangerBgStart || 'rgba(254, 242, 242, 0.98)');
+  const statDangerBgEnd = ref(themeStore.contentTheme2.statCards.dangerBgEnd || 'rgba(255, 255, 255, 0.94)');
+  const statBorderRadius = ref(themeStore.contentTheme2.statCards.borderRadius || '12px');
+  const statShadow = ref(
+    themeStore.contentTheme2.statCards.shadow || '0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)'
+  );
 
-// 工具栏设置
-const toolbarGradientStart = ref(themeStore.contentTheme2.toolbar.gradientStart || 'rgba(248, 250, 252, 0.92)');
-const toolbarGradientMiddle = ref(themeStore.contentTheme2.toolbar.gradientMiddle || '');
-const toolbarGradientEnd = ref(themeStore.contentTheme2.toolbar.gradientEnd || 'rgba(255, 255, 255, 0.96)');
-const toolbarGradientAngle = ref(themeStore.contentTheme2.toolbar.gradientAngle || 180);
-const toolbarBorderColor = ref(themeStore.contentTheme2.toolbar.borderColor || 'rgba(148, 163, 184, 0.12)');
-const toolbarBorderRadius = ref(themeStore.contentTheme2.toolbar.borderRadius || '12px');
+  // 工具栏设置
+  const toolbarGradientStart = ref(themeStore.contentTheme2.toolbar.gradientStart || 'rgba(248, 250, 252, 0.92)');
+  const toolbarGradientMiddle = ref(themeStore.contentTheme2.toolbar.gradientMiddle || '');
+  const toolbarGradientEnd = ref(themeStore.contentTheme2.toolbar.gradientEnd || 'rgba(255, 255, 255, 0.96)');
+  const toolbarGradientAngle = ref(themeStore.contentTheme2.toolbar.gradientAngle || 180);
+  const toolbarBorderColor = ref(themeStore.contentTheme2.toolbar.borderColor || 'rgba(148, 163, 184, 0.12)');
+  const toolbarBorderRadius = ref(themeStore.contentTheme2.toolbar.borderRadius || '12px');
 
-// 内容卡片设置
-const contentCardBg = ref(themeStore.contentTheme2.contentCard.background || '#ffffff');
-const contentCardBgGradientStart = ref(
-  themeStore.contentTheme2.contentCard.bgGradientStart || 'rgba(255, 255, 255, 0.98)'
-);
-const contentCardBgGradientMiddle = ref(themeStore.contentTheme2.contentCard.bgGradientMiddle || '');
-const contentCardBgGradientEnd = ref(themeStore.contentTheme2.contentCard.bgGradientEnd || 'rgba(248, 250, 252, 0.94)');
-const contentCardUseGradient = ref(themeStore.contentTheme2.contentCard.useGradient || false);
-const contentCardGradientAngle = ref(themeStore.contentTheme2.contentCard.gradientAngle || 145);
-const contentCardBorderColor = ref(themeStore.contentTheme2.contentCard.borderColor || 'rgba(148, 163, 184, 0.16)');
-const contentCardBorderRadius = ref(themeStore.contentTheme2.contentCard.borderRadius || '12px');
+  // 内容卡片设置
+  const contentCardBg = ref(themeStore.contentTheme2.contentCard.background || '#ffffff');
+  const contentCardBgGradientStart = ref(
+    themeStore.contentTheme2.contentCard.bgGradientStart || 'rgba(255, 255, 255, 0.98)'
+  );
+  const contentCardBgGradientMiddle = ref(themeStore.contentTheme2.contentCard.bgGradientMiddle || '');
+  const contentCardBgGradientEnd = ref(
+    themeStore.contentTheme2.contentCard.bgGradientEnd || 'rgba(248, 250, 252, 0.94)'
+  );
+  const contentCardUseGradient = ref(themeStore.contentTheme2.contentCard.useGradient || false);
+  const contentCardGradientAngle = ref(themeStore.contentTheme2.contentCard.gradientAngle || 145);
+  const contentCardBorderColor = ref(themeStore.contentTheme2.contentCard.borderColor || 'rgba(148, 163, 184, 0.16)');
+  const contentCardBorderRadius = ref(themeStore.contentTheme2.contentCard.borderRadius || '12px');
 
-// 数据表格设置
-const tableHeaderBg = ref(themeStore.contentTheme2.dataTable.headerBg || '#7f748c');
-const tableHeaderTextColor = ref(themeStore.contentTheme2.dataTable.headerTextColor || '#ffffff');
-const tableRowHoverBg = ref(themeStore.contentTheme2.dataTable.rowHoverBg || '#f8fbff');
-const tableStripedBg = ref(themeStore.contentTheme2.dataTable.stripedBg || '#fbfaff');
-const tableBorderColor = ref(themeStore.contentTheme2.dataTable.tableBorder || 'rgba(148, 163, 184, 0.14)');
-const tableBorderRadius = ref(themeStore.contentTheme2.dataTable.borderRadius || '0px');
+  // 数据表格设置
+  const tableHeaderBg = ref(themeStore.contentTheme2.dataTable.headerBg || '#7f748c');
+  const tableHeaderTextColor = ref(themeStore.contentTheme2.dataTable.headerTextColor || '#ffffff');
+  const tableRowHoverBg = ref(themeStore.contentTheme2.dataTable.rowHoverBg || '#f8fbff');
+  const tableStripedBg = ref(themeStore.contentTheme2.dataTable.stripedBg || '#fbfaff');
+  const tableBorderColor = ref(themeStore.contentTheme2.dataTable.tableBorder || 'rgba(148, 163, 184, 0.14)');
+  const tableBorderRadius = ref(themeStore.contentTheme2.dataTable.borderRadius || '0px');
 
-// 搜索筛选设置
-const searchInputBg = ref(themeStore.contentTheme2.searchFilters.inputBg || 'rgba(255, 255, 255, 0.94)');
-const searchInputBorder = ref(themeStore.contentTheme2.searchFilters.inputBorder || 'rgba(148, 163, 184, 0.12)');
-const searchInputHoverBorder = ref(
-  themeStore.contentTheme2.searchFilters.inputHoverBorder || 'rgba(59, 130, 246, 0.16)'
-);
-const searchInputFocusBorder = ref(
-  themeStore.contentTheme2.searchFilters.inputFocusBorder || 'rgba(37, 99, 235, 0.22)'
-);
-const searchInputBorderRadius = ref(themeStore.contentTheme2.searchFilters.inputBorderRadius || '8px');
+  // 搜索筛选设置
+  const searchInputBg = ref(themeStore.contentTheme2.searchFilters.inputBg || 'rgba(255, 255, 255, 0.94)');
+  const searchInputBorder = ref(themeStore.contentTheme2.searchFilters.inputBorder || 'rgba(148, 163, 184, 0.12)');
+  const searchInputHoverBorder = ref(
+    themeStore.contentTheme2.searchFilters.inputHoverBorder || 'rgba(59, 130, 246, 0.16)'
+  );
+  const searchInputFocusBorder = ref(
+    themeStore.contentTheme2.searchFilters.inputFocusBorder || 'rgba(37, 99, 235, 0.22)'
+  );
+  const searchInputBorderRadius = ref(themeStore.contentTheme2.searchFilters.inputBorderRadius || '8px');
 
-// 分页设置
-const paginationButtonBg = ref(themeStore.contentTheme2.pagination.buttonBg || 'rgba(255, 255, 255, 0.9)');
-const paginationButtonTextColor = ref(themeStore.contentTheme2.pagination.buttonTextColor || '#475569');
-const paginationButtonHoverBg = ref(themeStore.contentTheme2.pagination.buttonHoverBg || '#f8fbff');
-const paginationActiveButtonBg = ref(themeStore.contentTheme2.pagination.activeButtonBg || '#3b82f6');
-const paginationActiveButtonTextColor = ref(themeStore.contentTheme2.pagination.activeButtonTextColor || '#ffffff');
-const paginationBorderRadius = ref(themeStore.contentTheme2.pagination.borderRadius || '8px');
+  // 分页设置
+  const paginationButtonBg = ref(themeStore.contentTheme2.pagination.buttonBg || 'rgba(255, 255, 255, 0.9)');
+  const paginationButtonTextColor = ref(themeStore.contentTheme2.pagination.buttonTextColor || '#475569');
+  const paginationButtonHoverBg = ref(themeStore.contentTheme2.pagination.buttonHoverBg || '#f8fbff');
+  const paginationActiveButtonBg = ref(themeStore.contentTheme2.pagination.activeButtonBg || '#3b82f6');
+  const paginationActiveButtonTextColor = ref(themeStore.contentTheme2.pagination.activeButtonTextColor || '#ffffff');
+  const paginationBorderRadius = ref(themeStore.contentTheme2.pagination.borderRadius || '8px');
 
-// 标签设置
-const tagDefaultBg = ref(themeStore.contentTheme2.tags.defaultBg || 'rgba(255, 255, 255, 0.9)');
-const tagSuccessBg = ref(themeStore.contentTheme2.tags.successBg || 'rgba(16, 185, 129, 0.1)');
-const tagWarningBg = ref(themeStore.contentTheme2.tags.warningBg || 'rgba(245, 158, 11, 0.1)');
-const tagDangerBg = ref(themeStore.contentTheme2.tags.dangerBg || 'rgba(239, 68, 68, 0.1)');
-const tagInfoBg = ref(themeStore.contentTheme2.tags.infoBg || 'rgba(59, 130, 246, 0.1)');
-const tagBorderRadius = ref(themeStore.contentTheme2.tags.borderRadius || '8px');
+  // 标签设置
+  const tagDefaultBg = ref(themeStore.contentTheme2.tags.defaultBg || 'rgba(255, 255, 255, 0.9)');
+  const tagSuccessBg = ref(themeStore.contentTheme2.tags.successBg || 'rgba(16, 185, 129, 0.1)');
+  const tagWarningBg = ref(themeStore.contentTheme2.tags.warningBg || 'rgba(245, 158, 11, 0.1)');
+  const tagDangerBg = ref(themeStore.contentTheme2.tags.dangerBg || 'rgba(239, 68, 68, 0.1)');
+  const tagInfoBg = ref(themeStore.contentTheme2.tags.infoBg || 'rgba(59, 130, 246, 0.1)');
+  const tagBorderRadius = ref(themeStore.contentTheme2.tags.borderRadius || '8px');
 
-// 预设颜色
-const colorSwatches: string[] = [
-  '#ffffff',
-  '#f8fafc',
-  '#f1f5f9',
-  '#e2e8f0',
-  '#cbd5e1',
-  '#94a3b8',
-  '#64748b',
-  '#475569',
-  '#334155',
-  '#1e293b',
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444'
-];
+  // 预设颜色
+  const colorSwatches: string[] = [
+    '#ffffff',
+    '#f8fafc',
+    '#f1f5f9',
+    '#e2e8f0',
+    '#cbd5e1',
+    '#94a3b8',
+    '#64748b',
+    '#475569',
+    '#334155',
+    '#1e293b',
+    '#3b82f6',
+    '#10b981',
+    '#f59e0b',
+    '#ef4444'
+  ];
 
-// 更新设置
-function updateSetting(module: keyof App.Theme.ThemeSetting['contentTheme2'], key: string, value: unknown) {
-  const currentTheme = themeStore.contentTheme2;
-  const updatedTheme = {
-    ...currentTheme,
-    [module]: {
-      ...currentTheme[module],
-      [key]: value
-    }
-  };
-  themeStore.setContentTheme2(updatedTheme);
-  applyContentTheme2(updatedTheme);
-}
+  // 更新设置
+  function updateSetting(module: keyof App.Theme.ThemeSetting['contentTheme2'], key: string, value: unknown) {
+    const currentTheme = themeStore.contentTheme2;
+    const updatedTheme = {
+      ...currentTheme,
+      [module]: {
+        ...currentTheme[module],
+        [key]: value
+      }
+    };
+    themeStore.setContentTheme2(updatedTheme);
+    applyContentTheme2(updatedTheme);
+  }
 
-// Hero区域更新
-function updateHeroSetting(key: string, value: unknown) {
-  updateSetting('heroSection', key, value);
-}
+  // Hero区域更新
+  function updateHeroSetting(key: string, value: unknown) {
+    updateSetting('heroSection', key, value);
+  }
 
-// 统计卡片更新
-function updateStatSetting(key: string, value: unknown) {
-  updateSetting('statCards', key, value);
-}
+  // 统计卡片更新
+  function updateStatSetting(key: string, value: unknown) {
+    updateSetting('statCards', key, value);
+  }
 
-// 工具栏更新
-function updateToolbarSetting(key: string, value: unknown) {
-  updateSetting('toolbar', key, value);
-}
+  // 工具栏更新
+  function updateToolbarSetting(key: string, value: unknown) {
+    updateSetting('toolbar', key, value);
+  }
 
-// 内容卡片更新
-function updateContentCardSetting(key: string, value: unknown) {
-  updateSetting('contentCard', key, value);
-}
+  // 内容卡片更新
+  function updateContentCardSetting(key: string, value: unknown) {
+    updateSetting('contentCard', key, value);
+  }
 
-// 数据表格更新
-function updateTableSetting(key: string, value: unknown) {
-  updateSetting('dataTable', key, value);
-}
+  // 数据表格更新
+  function updateTableSetting(key: string, value: unknown) {
+    updateSetting('dataTable', key, value);
+  }
 
-// 搜索筛选更新
-function updateSearchSetting(key: string, value: unknown) {
-  updateSetting('searchFilters', key, value);
-}
+  // 搜索筛选更新
+  function updateSearchSetting(key: string, value: unknown) {
+    updateSetting('searchFilters', key, value);
+  }
 
-// 分页更新
-function updatePaginationSetting(key: string, value: unknown) {
-  updateSetting('pagination', key, value);
-}
+  // 分页更新
+  function updatePaginationSetting(key: string, value: unknown) {
+    updateSetting('pagination', key, value);
+  }
 
-// 标签更新
-function updateTagSetting(key: string, value: unknown) {
-  updateSetting('tags', key, value);
-}
+  // 标签更新
+  function updateTagSetting(key: string, value: unknown) {
+    updateSetting('tags', key, value);
+  }
 
-// 监听 store 变化 - 简化为只监听必要的变化
-watch(
-  () => themeStore.contentTheme2,
-  newTheme => {
-    // 当主题设置变更时应用新主题
-    applyContentTheme2(newTheme);
-  },
-  { deep: true }
-);
+  // 监听 store 变化 - 简化为只监听必要的变化
+  watch(
+    () => themeStore.contentTheme2,
+    newTheme => {
+      // 当主题设置变更时应用新主题
+      applyContentTheme2(newTheme);
+    },
+    { deep: true }
+  );
 </script>
 
 <template>
@@ -250,7 +252,11 @@ watch(
         </SettingItem>
 
         <SettingItem label="圆角大小">
-          <ElInput :model-value="heroSection.borderRadius" class="w-120px" @change="updateHeroSetting('borderRadius', $event)" />
+          <ElInput
+            :model-value="heroSection.borderRadius"
+            class="w-120px"
+            @change="updateHeroSetting('borderRadius', $event)"
+          />
         </SettingItem>
 
         <div class="sub-section-title">图标样式</div>
@@ -829,49 +835,49 @@ watch(
 </template>
 
 <style scoped lang="scss">
-.theme-section {
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  .theme-section {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 
-  &:last-child {
-    border-bottom: none;
+    &:last-child {
+      border-bottom: none;
+    }
   }
-}
 
-.section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #0f172a;
-}
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #0f172a;
+  }
 
-.section-icon {
-  font-size: 18px;
-}
+  .section-icon {
+    font-size: 18px;
+  }
 
-.section-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: #475569;
-}
+  .section-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #475569;
+  }
 
-.sub-section-title {
-  margin: 12px 0 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: #64748b;
-  border-left: 2px solid rgba(59, 130, 246, 0.2);
-  padding-left: 8px;
-}
+  .sub-section-title {
+    margin: 12px 0 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
+    border-left: 2px solid rgba(59, 130, 246, 0.2);
+    padding-left: 8px;
+  }
 
-.w-40px {
-  width: 40px;
-}
+  .w-40px {
+    width: 40px;
+  }
 
-.w-120px {
-  width: 120px;
-}
+  .w-120px {
+    width: 120px;
+  }
 </style>

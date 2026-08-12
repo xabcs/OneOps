@@ -1,78 +1,78 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { createReusableTemplate } from '@vueuse/core';
-import { $t } from '@/locales';
+  import { computed } from 'vue';
+  import { createReusableTemplate } from '@vueuse/core';
+  import { $t } from '@/locales';
 
-defineOptions({ name: 'CardData' });
+  defineOptions({ name: 'CardData' });
 
-interface CardData {
-  key: string;
-  title: string;
-  value: number;
-  unit: string;
-  color: {
-    start: string;
-    end: string;
-  };
-  icon: string;
-}
-
-const cardData = computed<CardData[]>(() => [
-  {
-    key: 'visitCount',
-    title: $t('page.home.visitCount'),
-    value: 9725,
-    unit: '',
+  interface CardData {
+    key: string;
+    title: string;
+    value: number;
+    unit: string;
     color: {
-      start: '#ec4786',
-      end: '#b955a4'
-    },
-    icon: 'ant-design:bar-chart-outlined'
-  },
-  {
-    key: 'turnover',
-    title: $t('page.home.turnover'),
-    value: 1026,
-    unit: '$',
-    color: {
-      start: '#865ec0',
-      end: '#5144b4'
-    },
-    icon: 'ant-design:money-collect-outlined'
-  },
-  {
-    key: 'downloadCount',
-    title: $t('page.home.downloadCount'),
-    value: 970925,
-    unit: '',
-    color: {
-      start: '#56cdf3',
-      end: '#719de3'
-    },
-    icon: 'carbon:document-download'
-  },
-  {
-    key: 'dealCount',
-    title: $t('page.home.dealCount'),
-    value: 9527,
-    unit: '',
-    color: {
-      start: '#fcbc25',
-      end: '#f68057'
-    },
-    icon: 'ant-design:trademark-circle-outlined'
+      start: string;
+      end: string;
+    };
+    icon: string;
   }
-]);
 
-interface GradientBgProps {
-  gradientColor: string;
-}
+  const cardData = computed<CardData[]>(() => [
+    {
+      key: 'visitCount',
+      title: $t('page.home.visitCount'),
+      value: 9725,
+      unit: '',
+      color: {
+        start: '#ec4786',
+        end: '#b955a4'
+      },
+      icon: 'ant-design:bar-chart-outlined'
+    },
+    {
+      key: 'turnover',
+      title: $t('page.home.turnover'),
+      value: 1026,
+      unit: '$',
+      color: {
+        start: '#865ec0',
+        end: '#5144b4'
+      },
+      icon: 'ant-design:money-collect-outlined'
+    },
+    {
+      key: 'downloadCount',
+      title: $t('page.home.downloadCount'),
+      value: 970925,
+      unit: '',
+      color: {
+        start: '#56cdf3',
+        end: '#719de3'
+      },
+      icon: 'carbon:document-download'
+    },
+    {
+      key: 'dealCount',
+      title: $t('page.home.dealCount'),
+      value: 9527,
+      unit: '',
+      color: {
+        start: '#fcbc25',
+        end: '#f68057'
+      },
+      icon: 'ant-design:trademark-circle-outlined'
+    }
+  ]);
 
-const [DefineGradientBg, GradientBg] = createReusableTemplate<GradientBgProps>();
+  interface GradientBgProps {
+    gradientColor: string;
+  }
 
-function getGradientColor(color: CardData['color']) {
-  return `linear-gradient(to bottom right, ${color.start}, ${color.end})`;
-}
+  const [DefineGradientBg, GradientBg] = createReusableTemplate<GradientBgProps>();
+
+  function getGradientColor(color: CardData['color']) {
+    return `linear-gradient(to bottom right, ${color.start}, ${color.end})`;
+  }
 </script>
 
 <template>

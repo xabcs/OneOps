@@ -1,55 +1,55 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { Component } from 'vue';
-import { getPaletteColorByNumber, mixColor } from '@sa/color';
-import { loginModuleRecord } from '@/constants/app';
-import { useAppStore } from '@/store/modules/app';
-import { useThemeStore } from '@/store/modules/theme';
-import { $t } from '@/locales';
-import PwdLogin from './modules/pwd-login.vue';
-import CodeLogin from './modules/code-login.vue';
-import Register from './modules/register.vue';
-import ResetPwd from './modules/reset-pwd.vue';
-import BindWechat from './modules/bind-wechat.vue';
+  import { computed } from 'vue';
+  import type { Component } from 'vue';
+  import { getPaletteColorByNumber, mixColor } from '@sa/color';
+  import { loginModuleRecord } from '@/constants/app';
+  import { useAppStore } from '@/store/modules/app';
+  import { useThemeStore } from '@/store/modules/theme';
+  import { $t } from '@/locales';
+  import PwdLogin from './modules/pwd-login.vue';
+  import CodeLogin from './modules/code-login.vue';
+  import Register from './modules/register.vue';
+  import ResetPwd from './modules/reset-pwd.vue';
+  import BindWechat from './modules/bind-wechat.vue';
 
-defineOptions({ name: 'LoginPage' });
+  defineOptions({ name: 'LoginPage' });
 
-interface Props {
-  /** The login module */
-  module?: UnionKey.LoginModule;
-}
+  interface Props {
+    /** The login module */
+    module?: UnionKey.LoginModule;
+  }
 
-const props = defineProps<Props>();
+  const props = defineProps<Props>();
 
-const appStore = useAppStore();
-const themeStore = useThemeStore();
+  const appStore = useAppStore();
+  const themeStore = useThemeStore();
 
-interface LoginModule {
-  label: App.I18n.I18nKey;
-  component: Component;
-}
+  interface LoginModule {
+    label: App.I18n.I18nKey;
+    component: Component;
+  }
 
-const moduleMap: Record<UnionKey.LoginModule, LoginModule> = {
-  'pwd-login': { label: loginModuleRecord['pwd-login'], component: PwdLogin },
-  'code-login': { label: loginModuleRecord['code-login'], component: CodeLogin },
-  register: { label: loginModuleRecord.register, component: Register },
-  'reset-pwd': { label: loginModuleRecord['reset-pwd'], component: ResetPwd },
-  'bind-wechat': { label: loginModuleRecord['bind-wechat'], component: BindWechat }
-};
+  const moduleMap: Record<UnionKey.LoginModule, LoginModule> = {
+    'pwd-login': { label: loginModuleRecord['pwd-login'], component: PwdLogin },
+    'code-login': { label: loginModuleRecord['code-login'], component: CodeLogin },
+    register: { label: loginModuleRecord.register, component: Register },
+    'reset-pwd': { label: loginModuleRecord['reset-pwd'], component: ResetPwd },
+    'bind-wechat': { label: loginModuleRecord['bind-wechat'], component: BindWechat }
+  };
 
-const activeModule = computed(() => moduleMap[props.module || 'pwd-login']);
+  const activeModule = computed(() => moduleMap[props.module || 'pwd-login']);
 
-const bgThemeColor = computed(() =>
-  themeStore.darkMode ? getPaletteColorByNumber(themeStore.themeColor, 600) : themeStore.themeColor
-);
+  const bgThemeColor = computed(() =>
+    themeStore.darkMode ? getPaletteColorByNumber(themeStore.themeColor, 600) : themeStore.themeColor
+  );
 
-const bgColor = computed(() => {
-  const COLOR_WHITE = '#ffffff';
+  const bgColor = computed(() => {
+    const COLOR_WHITE = '#ffffff';
 
-  const ratio = themeStore.darkMode ? 0.5 : 0.2;
+    const ratio = themeStore.darkMode ? 0.5 : 0.2;
 
-  return mixColor(COLOR_WHITE, themeStore.themeColor, ratio);
-});
+    return mixColor(COLOR_WHITE, themeStore.themeColor, ratio);
+  });
 </script>
 
 <template>

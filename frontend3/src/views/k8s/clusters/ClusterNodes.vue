@@ -1,35 +1,35 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { ElMessage, ElTable, ElTableColumn } from 'element-plus';
-import { fetchK8sClusterNodes } from '@/service/api/k8s';
+  import { onMounted, ref } from 'vue';
+  import { ElMessage, ElTable, ElTableColumn } from 'element-plus';
+  import { fetchK8sClusterNodes } from '@/service/api/k8s';
 
-interface Props {
-  clusterId: number;
-}
-
-const props = defineProps<Props>();
-
-const loading = ref(false);
-const dataSource = ref<K8s.Node[]>([]);
-
-const loadNodes = async () => {
-  loading.value = true;
-  try {
-    const res = await fetchK8sClusterNodes(props.clusterId);
-    if (res.code === 200) {
-      dataSource.value = res.data || [];
-    }
-  } catch (error: unknown) {
-    const err = error as Error;
-    ElMessage.error(err.message || '加载节点列表失败');
-  } finally {
-    loading.value = false;
+  interface Props {
+    clusterId: number;
   }
-};
 
-onMounted(() => {
-  loadNodes();
-});
+  const props = defineProps<Props>();
+
+  const loading = ref(false);
+  const dataSource = ref<K8s.Node[]>([]);
+
+  const loadNodes = async () => {
+    loading.value = true;
+    try {
+      const res = await fetchK8sClusterNodes(props.clusterId);
+      if (res.code === 200) {
+        dataSource.value = res.data || [];
+      }
+    } catch (error: unknown) {
+      const err = error as Error;
+      ElMessage.error(err.message || '加载节点列表失败');
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  onMounted(() => {
+    loadNodes();
+  });
 </script>
 
 <template>

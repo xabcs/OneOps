@@ -13,7 +13,6 @@ import { clearAuthStorage, getToken } from './shared';
 
 export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
   const route = useRoute();
-  const routeStore = useRouteStore();
   const tabStore = useTabStore();
   const { toLogin, redirectFromLogin } = useRouterPush(false);
   const { loading: loginLoading, startLoading, endLoading } = useLoading();
@@ -66,13 +65,13 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
    * @returns Permission name (e.g., '创建用户') or the code itself if not found
    */
   function getPermissionName(code: string): string {
-		// 从登录返回的 permissionInfo 中查找权限名称
-		if (userInfo.permissionInfo && userInfo.permissionInfo.length > 0) {
-			const perm = userInfo.permissionInfo.find(p => p.code === code)
-			if (perm) return perm.name
-		}
-		// 回退到显示权限码
-		return code
+    // 从登录返回的 permissionInfo 中查找权限名称
+    if (userInfo.permissionInfo && userInfo.permissionInfo.length > 0) {
+      const perm = userInfo.permissionInfo.find(p => p.code === code);
+      if (perm) return perm.name;
+    }
+    // 回退到显示权限码
+    return code;
   }
 
   /**
@@ -135,7 +134,8 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     }
 
     tabStore.cacheTabs();
-    routeStore.resetStore();
+    // Lazy resolve to break circular dep with routeStore (route store also lazy-resolves useAuthStore)
+    useRouteStore().resetStore();
   }
 
   /** Record the user ID of the previous login session Used to compare with the current user ID on next login */

@@ -4,7 +4,7 @@
 import { Bottom, Plus, Top } from '@element-plus/icons-vue';
 import { Icon } from '@iconify/vue';
 import { $t } from '@/locales';
-import { isFirst, isLast, type MenuWithHierarchy } from './menu-tree-helper';
+import { type MenuWithHierarchy, isFirst, isLast } from './menu-tree-helper';
 
 export function createMenuColumns(handlers: {
   handleMove: (row: Api.SystemManage.Menu, direction: 'up' | 'down') => void;
@@ -135,13 +135,7 @@ export function createMenuColumns(handlers: {
       formatter: (row: Api.SystemManage.Menu) => (
         <div class="flex-center gap-8px">
           {row.menuType === 'directory' && (
-            <ElButton
-              type="primary"
-              plain
-              size="small"
-              icon={Plus}
-              onClick={() => handlers.handleAddChild(row)}
-            >
+            <ElButton type="primary" plain size="small" icon={Plus} onClick={() => handlers.handleAddChild(row)}>
               添加子菜单
             </ElButton>
           )}

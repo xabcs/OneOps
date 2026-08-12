@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { createTextVNode, defineComponent } from 'vue';
+  import { createTextVNode, defineComponent } from 'vue';
 
-defineOptions({ name: 'AppProvider' });
+  defineOptions({ name: 'AppProvider' });
 
-const ContextHolder = defineComponent({
-  name: 'ContextHolder',
-  setup() {
-    function register() {
-      window.$notification = ElNotification;
-      window.$messageBox = ElMessageBox;
-      window.$message = ElMessage;
+  const ContextHolder = defineComponent({
+    name: 'ContextHolder',
+    setup() {
+      function register() {
+        window.$notification = ElNotification;
+        window.$messageBox = ElMessageBox;
+        window.$message = ElMessage;
+      }
+
+      register();
+
+      return () => createTextVNode();
     }
-
-    register();
-
-    return () => createTextVNode();
-  }
-});
+  });
 </script>
 
 <template>

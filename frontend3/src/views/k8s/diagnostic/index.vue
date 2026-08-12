@@ -1,310 +1,310 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import {
-  CircleCheck,
-  CircleClose,
-  Clock,
-  CopyDocument,
-  Download,
-  Refresh,
-  Search,
-  VideoPlay,
-  Warning
-} from '@element-plus/icons-vue';
-import { fetchK8sClusterNamespaces, fetchK8sClusters } from '@/service/api/k8s';
-import {
-  executeDiagnostic,
-  fetchDiagnosticCommands,
-  fetchDiagnosticHistory,
-  fetchJavaPods
-} from '@/service/api/diagnostic';
+  import { computed, onMounted, ref, watch } from 'vue';
+  import { useRoute } from 'vue-router';
+  import {
+    CircleCheck,
+    CircleClose,
+    Clock,
+    CopyDocument,
+    Download,
+    Refresh,
+    Search,
+    VideoPlay,
+    Warning
+  } from '@element-plus/icons-vue';
+  import { fetchK8sClusterNamespaces, fetchK8sClusters } from '@/service/api/k8s';
+  import {
+    executeDiagnostic,
+    fetchDiagnosticCommands,
+    fetchDiagnosticHistory,
+    fetchJavaPods
+  } from '@/service/api/diagnostic';
 
-// 数据状态
-const loading = ref(false);
-const executing = ref(false);
-const historyDialogVisible = ref(false);
+  // 数据状态
+  const loading = ref(false);
+  const executing = ref(false);
+  const historyDialogVisible = ref(false);
 
-// 过滤条件
-const filters = ref({
-  clusterId: '',
-  namespace: '',
-  search: ''
-});
-
-// 数据列表
-const clusters = ref([]);
-const namespaces = ref([]);
-const pods = ref([]);
-const diagnosticCommands = ref([]);
-
-// 选择状态
-const selectedPod = ref(null);
-const selectedCommand = ref(null);
-const commandArgs = ref({});
-
-// 诊断结果
-const diagnosticResult = ref(null);
-const diagnosticHistory = ref([]);
-
-// 计算属性
-const diagnosablePods = computed(() => pods.value.filter(pod => pod.hasAgent));
-
-const filteredPods = computed(() => {
-  let result = pods.value;
-
-  if (filters.value.search) {
-    const search = filters.value.search.toLowerCase();
-    result = result.filter(
-      pod => pod.podName.toLowerCase().includes(search) || pod.namespace.toLowerCase().includes(search)
-    );
-  }
-
-  return result;
-});
-
-const hasHistory = computed(() => diagnosticHistory.value.length > 0);
-
-// 生命周期
-onMounted(() => {
-  initializeData();
-});
-
-// 方法
-const initializeData = async () => {
-  await Promise.all([loadClusters(), loadNamespaces(), loadDiagnosticCommands()]);
-
-  // 从URL参数获取初始值
-  const route = useRoute();
-  if (route.query.cluster) {
-    filters.value.clusterId = route.query.cluster as string;
-  }
-  if (route.query.namespace) {
-    filters.value.namespace = route.query.namespace as string;
-  }
-
-  // 加载Pod列表
-  await loadPods();
-};
-
-const loadClusters = async () => {
-  try {
-    const response = await fetchK8sClusters();
-    clusters.value = response.data || [];
-
-    // 自动选择第一个集群
-    if (!filters.value.clusterId && clusters.value.length > 0) {
-      filters.value.clusterId = clusters.value[0].id;
-    }
-  } catch (error) {
-    console.error('加载集群失败:', error);
-  }
-};
-
-const loadNamespaces = async () => {
-  if (!filters.value.clusterId) return;
-
-  try {
-    const response = await fetchK8sClusterNamespaces(filters.value.clusterId);
-    namespaces.value = response.data || [];
-
-    // 自动选择default命名空间
-    if (!filters.value.namespace && namespaces.value.length > 0) {
-      const defaultNs = namespaces.value.find(ns => ns.name === 'default');
-      filters.value.namespace = defaultNs ? defaultNs.name : namespaces.value[0].name;
-    }
-  } catch (error) {
-    console.error('加载命名空间失败:', error);
-  }
-};
-
-const loadPods = async () => {
-  if (!filters.value.clusterId || !filters.value.namespace) return;
-
-  loading.value = true;
-  try {
-    const response = await fetchJavaPods(filters.value.clusterId, filters.value.namespace);
-    pods.value = response.data || [];
-  } catch (error) {
-    console.error('加载Pod列表失败:', error);
-  } finally {
-    loading.value = false;
-  }
-};
-
-const loadDiagnosticCommands = async () => {
-  try {
-    const response = await fetchDiagnosticCommands();
-    diagnosticCommands.value = response.data.commands || [];
-  } catch (error) {
-    console.error('加载诊断命令失败:', error);
-  }
-};
-
-// 事件处理
-const onClusterChange = () => {
-  filters.value.namespace = '';
-  selectedPod.value = null;
-  loadNamespaces();
-  loadPods();
-};
-
-const onNamespaceChange = () => {
-  selectedPod.value = null;
-  loadPods();
-};
-
-const onSearchChange = () => {
-  // 搜索由计算属性自动处理
-};
-
-const refreshPods = () => {
-  loadPods();
-};
-
-const selectPod = pod => {
-  selectedPod.value = pod;
-  diagnosticResult.value = null;
-};
-
-const selectCommand = command => {
-  selectedCommand.value = command;
-
-  // 初始化参数默认值
-  commandArgs.value = {};
-  command.args.forEach(arg => {
-    commandArgs.value[arg.name] = arg.defaultValue;
+  // 过滤条件
+  const filters = ref({
+    clusterId: '',
+    namespace: '',
+    search: ''
   });
-};
 
-const executeDiagnostic = async () => {
-  if (!selectedPod.value || !selectedCommand.value) return;
+  // 数据列表
+  const clusters = ref([]);
+  const namespaces = ref([]);
+  const pods = ref([]);
+  const diagnosticCommands = ref([]);
 
-  executing.value = true;
-  try {
-    const response = await executeDiagnostic({
-      clusterId: filters.value.clusterId,
-      namespace: selectedPod.value.namespace,
-      podName: selectedPod.value.podName,
-      command: selectedCommand.value.id,
-      args: commandArgs.value,
-      timeout: 60
+  // 选择状态
+  const selectedPod = ref(null);
+  const selectedCommand = ref(null);
+  const commandArgs = ref({});
+
+  // 诊断结果
+  const diagnosticResult = ref(null);
+  const diagnosticHistory = ref([]);
+
+  // 计算属性
+  const diagnosablePods = computed(() => pods.value.filter(pod => pod.hasAgent));
+
+  const filteredPods = computed(() => {
+    let result = pods.value;
+
+    if (filters.value.search) {
+      const search = filters.value.search.toLowerCase();
+      result = result.filter(
+        pod => pod.podName.toLowerCase().includes(search) || pod.namespace.toLowerCase().includes(search)
+      );
+    }
+
+    return result;
+  });
+
+  const hasHistory = computed(() => diagnosticHistory.value.length > 0);
+
+  // 生命周期
+  onMounted(() => {
+    initializeData();
+  });
+
+  // 方法
+  const initializeData = async () => {
+    await Promise.all([loadClusters(), loadNamespaces(), loadDiagnosticCommands()]);
+
+    // 从URL参数获取初始值
+    const route = useRoute();
+    if (route.query.cluster) {
+      filters.value.clusterId = route.query.cluster as string;
+    }
+    if (route.query.namespace) {
+      filters.value.namespace = route.query.namespace as string;
+    }
+
+    // 加载Pod列表
+    await loadPods();
+  };
+
+  const loadClusters = async () => {
+    try {
+      const response = await fetchK8sClusters();
+      clusters.value = response.data || [];
+
+      // 自动选择第一个集群
+      if (!filters.value.clusterId && clusters.value.length > 0) {
+        filters.value.clusterId = clusters.value[0].id;
+      }
+    } catch (error) {
+      console.error('加载集群失败:', error);
+    }
+  };
+
+  const loadNamespaces = async () => {
+    if (!filters.value.clusterId) return;
+
+    try {
+      const response = await fetchK8sClusterNamespaces(filters.value.clusterId);
+      namespaces.value = response.data || [];
+
+      // 自动选择default命名空间
+      if (!filters.value.namespace && namespaces.value.length > 0) {
+        const defaultNs = namespaces.value.find(ns => ns.name === 'default');
+        filters.value.namespace = defaultNs ? defaultNs.name : namespaces.value[0].name;
+      }
+    } catch (error) {
+      console.error('加载命名空间失败:', error);
+    }
+  };
+
+  const loadPods = async () => {
+    if (!filters.value.clusterId || !filters.value.namespace) return;
+
+    loading.value = true;
+    try {
+      const response = await fetchJavaPods(filters.value.clusterId, filters.value.namespace);
+      pods.value = response.data || [];
+    } catch (error) {
+      console.error('加载Pod列表失败:', error);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const loadDiagnosticCommands = async () => {
+    try {
+      const response = await fetchDiagnosticCommands();
+      diagnosticCommands.value = response.data.commands || [];
+    } catch (error) {
+      console.error('加载诊断命令失败:', error);
+    }
+  };
+
+  // 事件处理
+  const onClusterChange = () => {
+    filters.value.namespace = '';
+    selectedPod.value = null;
+    loadNamespaces();
+    loadPods();
+  };
+
+  const onNamespaceChange = () => {
+    selectedPod.value = null;
+    loadPods();
+  };
+
+  const onSearchChange = () => {
+    // 搜索由计算属性自动处理
+  };
+
+  const refreshPods = () => {
+    loadPods();
+  };
+
+  const selectPod = pod => {
+    selectedPod.value = pod;
+    diagnosticResult.value = null;
+  };
+
+  const selectCommand = command => {
+    selectedCommand.value = command;
+
+    // 初始化参数默认值
+    commandArgs.value = {};
+    command.args.forEach(arg => {
+      commandArgs.value[arg.name] = arg.defaultValue;
     });
+  };
 
-    diagnosticResult.value = response.data;
-  } catch (error) {
-    console.error('执行诊断失败:', error);
-    diagnosticResult.value = {
-      status: 'error',
-      error: error.message || '执行诊断失败',
-      output: '',
-      timestamp: Date.now(),
-      duration: 0
+  const executeDiagnostic = async () => {
+    if (!selectedPod.value || !selectedCommand.value) return;
+
+    executing.value = true;
+    try {
+      const response = await executeDiagnostic({
+        clusterId: filters.value.clusterId,
+        namespace: selectedPod.value.namespace,
+        podName: selectedPod.value.podName,
+        command: selectedCommand.value.id,
+        args: commandArgs.value,
+        timeout: 60
+      });
+
+      diagnosticResult.value = response.data;
+    } catch (error) {
+      console.error('执行诊断失败:', error);
+      diagnosticResult.value = {
+        status: 'error',
+        error: error.message || '执行诊断失败',
+        output: '',
+        timestamp: Date.now(),
+        duration: 0
+      };
+    } finally {
+      executing.value = false;
+    }
+  };
+
+  const showHistory = async () => {
+    try {
+      const response = await fetchDiagnosticHistory({
+        clusterId: filters.value.clusterId,
+        namespace: selectedPod.value.namespace,
+        podName: selectedPod.value.podName
+      });
+      diagnosticHistory.value = response.data.list || [];
+      historyDialogVisible.value = true;
+    } catch (error) {
+      console.error('加载历史记录失败:', error);
+    }
+  };
+
+  // 辅助方法
+  const getPodStatusColor = status => {
+    const colors = {
+      Running: 'success',
+      Pending: 'warning',
+      Failed: 'danger',
+      Succeeded: 'info'
     };
-  } finally {
-    executing.value = false;
-  }
-};
-
-const showHistory = async () => {
-  try {
-    const response = await fetchDiagnosticHistory({
-      clusterId: filters.value.clusterId,
-      namespace: selectedPod.value.namespace,
-      podName: selectedPod.value.podName
-    });
-    diagnosticHistory.value = response.data.list || [];
-    historyDialogVisible.value = true;
-  } catch (error) {
-    console.error('加载历史记录失败:', error);
-  }
-};
-
-// 辅助方法
-const getPodStatusColor = status => {
-  const colors = {
-    Running: 'success',
-    Pending: 'warning',
-    Failed: 'danger',
-    Succeeded: 'info'
+    return colors[status] || 'info';
   };
-  return colors[status] || 'info';
-};
 
-const getPodStatusIcon = status => {
-  const icons = {
-    Running: CircleCheck,
-    Pending: Warning,
-    Failed: CircleClose,
-    Succeeded: CircleCheck
+  const getPodStatusIcon = status => {
+    const icons = {
+      Running: CircleCheck,
+      Pending: Warning,
+      Failed: CircleClose,
+      Succeeded: CircleCheck
+    };
+    return icons[status] || Warning;
   };
-  return icons[status] || Warning;
-};
 
-const getPodStatusType = status => {
-  const types = {
-    Running: 'success',
-    Pending: 'warning',
-    Failed: 'danger',
-    Succeeded: 'info'
+  const getPodStatusType = status => {
+    const types = {
+      Running: 'success',
+      Pending: 'warning',
+      Failed: 'danger',
+      Succeeded: 'info'
+    };
+    return types[status] || 'info';
   };
-  return types[status] || 'info';
-};
 
-const getCommandIcon = category => {
-  // 根据类别返回不同图标
-  const icons = {
-    performance: 'TrendCharts',
-    memory: 'Coin',
-    system: 'Setting',
-    monitoring: 'Monitor',
-    logging: 'Document'
+  const getCommandIcon = category => {
+    // 根据类别返回不同图标
+    const icons = {
+      performance: 'TrendCharts',
+      memory: 'Coin',
+      system: 'Setting',
+      monitoring: 'Monitor',
+      logging: 'Document'
+    };
+    return icons[category] || 'Grid';
   };
-  return icons[category] || 'Grid';
-};
 
-const copyResult = () => {
-  if (diagnosticResult.value?.output) {
-    navigator.clipboard.writeText(diagnosticResult.value.output);
-    // 显示复制成功提示
-  }
-};
-
-const downloadResult = () => {
-  if (diagnosticResult.value?.output) {
-    const blob = new Blob([diagnosticResult.value.output], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `diagnostic-${selectedPod.value.podName}-${Date.now()}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-};
-
-const formatTime = timestamp => {
-  return new Date(timestamp).toLocaleString('zh-CN');
-};
-
-// 监听过滤器变化
-watch(
-  () => filters.value.clusterId,
-  () => {
-    if (filters.value.clusterId) {
-      loadNamespaces();
-      loadPods();
+  const copyResult = () => {
+    if (diagnosticResult.value?.output) {
+      navigator.clipboard.writeText(diagnosticResult.value.output);
+      // 显示复制成功提示
     }
-  }
-);
+  };
 
-watch(
-  () => filters.value.namespace,
-  () => {
-    if (filters.value.namespace) {
-      loadPods();
+  const downloadResult = () => {
+    if (diagnosticResult.value?.output) {
+      const blob = new Blob([diagnosticResult.value.output], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `diagnostic-${selectedPod.value.podName}-${Date.now()}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
     }
-  }
-);
+  };
+
+  const formatTime = timestamp => {
+    return new Date(timestamp).toLocaleString('zh-CN');
+  };
+
+  // 监听过滤器变化
+  watch(
+    () => filters.value.clusterId,
+    () => {
+      if (filters.value.clusterId) {
+        loadNamespaces();
+        loadPods();
+      }
+    }
+  );
+
+  watch(
+    () => filters.value.namespace,
+    () => {
+      if (filters.value.namespace) {
+        loadPods();
+      }
+    }
+  );
 </script>
 
 <template>
@@ -557,278 +557,278 @@ watch(
 </template>
 
 <style scoped lang="scss">
-.diagnostic-page {
-  padding: 20px;
+  .diagnostic-page {
+    padding: 20px;
 
-  .page-header {
-    margin-bottom: 20px;
+    .page-header {
+      margin-bottom: 20px;
 
-    h1 {
-      font-size: 24px;
-      margin: 0 0 8px 0;
+      h1 {
+        font-size: 24px;
+        margin: 0 0 8px 0;
+      }
+
+      .description {
+        color: #606266;
+        margin: 0;
+      }
     }
 
-    .description {
-      color: #606266;
-      margin: 0;
-    }
-  }
-
-  .filter-section {
-    background: #fff;
-    padding: 16px;
-    border-radius: 4px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  .main-content {
-    display: flex;
-    gap: 20px;
-    height: calc(100vh - 200px);
-
-    .pod-list-section {
-      width: 350px;
+    .filter-section {
       background: #fff;
+      padding: 16px;
       border-radius: 4px;
+      margin-bottom: 20px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .main-content {
       display: flex;
-      flex-direction: column;
+      gap: 20px;
+      height: calc(100vh - 200px);
 
-      .section-header {
-        padding: 16px;
-        border-bottom: 1px solid #ebeef5;
+      .pod-list-section {
+        width: 350px;
+        background: #fff;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
 
-        h3 {
-          margin: 0;
-          font-size: 16px;
-        }
-      }
-
-      .pod-list {
-        flex: 1;
-        overflow-y: auto;
-        padding: 8px;
-
-        .pod-item {
-          display: flex;
-          align-items: center;
-          padding: 12px;
-          margin-bottom: 8px;
-          border: 1px solid #ebeef5;
-          border-radius: 4px;
-          cursor: pointer;
-          transition: all 0.3s;
-
-          &:hover {
-            background-color: #f5f7fa;
-            border-color: #409eff;
-          }
-
-          &.active {
-            background-color: #ecf5ff;
-            border-color: #409eff;
-          }
-
-          .pod-status {
-            margin-right: 12px;
-          }
-
-          .pod-info {
-            flex: 1;
-
-            .pod-name {
-              font-weight: 500;
-              margin-bottom: 4px;
-            }
-
-            .pod-meta {
-              font-size: 12px;
-              color: #909399;
-
-              .el-divider {
-                margin: 0 8px;
-              }
-            }
-          }
-
-          .pod-diagnostic {
-            margin-left: 8px;
-          }
-        }
-      }
-    }
-
-    .diagnostic-panel-section {
-      flex: 1;
-      background: #fff;
-      border-radius: 4px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      overflow-y: auto;
-
-      .empty-state {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-      }
-
-      .diagnostic-panel {
-        padding: 20px;
-
-        .pod-info-card {
-          margin-bottom: 20px;
+        .section-header {
           padding: 16px;
-          background: #f5f7fa;
-          border-radius: 4px;
+          border-bottom: 1px solid #ebeef5;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
 
-          .pod-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-
-            h3 {
-              margin: 0;
-              font-size: 16px;
-            }
+          h3 {
+            margin: 0;
+            font-size: 16px;
           }
         }
 
-        .command-selector {
-          margin-bottom: 20px;
+        .pod-list {
+          flex: 1;
+          overflow-y: auto;
+          padding: 8px;
 
-          h4 {
-            margin: 0 0 12px 0;
-            font-size: 14px;
-          }
-
-          .command-card {
-            margin-bottom: 12px;
+          .pod-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: 1px solid #ebeef5;
+            border-radius: 4px;
             cursor: pointer;
             transition: all 0.3s;
 
             &:hover {
-              transform: translateY(-2px);
+              background-color: #f5f7fa;
+              border-color: #409eff;
             }
 
             &.active {
-              border-color: #409eff;
               background-color: #ecf5ff;
+              border-color: #409eff;
             }
 
-            .command-header {
-              display: flex;
-              align-items: center;
-              margin-bottom: 8px;
+            .pod-status {
+              margin-right: 12px;
+            }
 
-              .command-icon {
-                margin-right: 8px;
-                color: #409eff;
-              }
+            .pod-info {
+              flex: 1;
 
-              .command-name {
+              .pod-name {
                 font-weight: 500;
+                margin-bottom: 4px;
+              }
+
+              .pod-meta {
+                font-size: 12px;
+                color: #909399;
+
+                .el-divider {
+                  margin: 0 8px;
+                }
               }
             }
 
-            .command-description {
-              font-size: 12px;
-              color: #606266;
+            .pod-diagnostic {
+              margin-left: 8px;
             }
           }
         }
+      }
 
-        .command-config {
-          margin-bottom: 20px;
-          padding: 16px;
-          background: #f5f7fa;
-          border-radius: 4px;
+      .diagnostic-panel-section {
+        flex: 1;
+        background: #fff;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow-y: auto;
 
-          h4 {
-            margin: 0 0 12px 0;
-            font-size: 14px;
-          }
-
-          .action-buttons {
-            margin-top: 16px;
-            display: flex;
-            gap: 12px;
-          }
-
-          .arg-description {
-            font-size: 12px;
-            color: #909399;
-            margin-top: 4px;
-          }
+        .empty-state {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
         }
 
-        .result-section {
-          margin-top: 20px;
+        .diagnostic-panel {
+          padding: 20px;
 
-          .result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
+          .pod-info-card {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f5f7fa;
+            border-radius: 4px;
+
+            .pod-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 12px;
+
+              h3 {
+                margin: 0;
+                font-size: 16px;
+              }
+            }
+          }
+
+          .command-selector {
+            margin-bottom: 20px;
 
             h4 {
-              margin: 0;
+              margin: 0 0 12px 0;
               font-size: 14px;
             }
 
-            .result-actions {
+            .command-card {
+              margin-bottom: 12px;
+              cursor: pointer;
+              transition: all 0.3s;
+
+              &:hover {
+                transform: translateY(-2px);
+              }
+
+              &.active {
+                border-color: #409eff;
+                background-color: #ecf5ff;
+              }
+
+              .command-header {
+                display: flex;
+                align-items: center;
+                margin-bottom: 8px;
+
+                .command-icon {
+                  margin-right: 8px;
+                  color: #409eff;
+                }
+
+                .command-name {
+                  font-weight: 500;
+                }
+              }
+
+              .command-description {
+                font-size: 12px;
+                color: #606266;
+              }
+            }
+          }
+
+          .command-config {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f5f7fa;
+            border-radius: 4px;
+
+            h4 {
+              margin: 0 0 12px 0;
+              font-size: 14px;
+            }
+
+            .action-buttons {
+              margin-top: 16px;
+              display: flex;
+              gap: 12px;
+            }
+
+            .arg-description {
+              font-size: 12px;
+              color: #909399;
+              margin-top: 4px;
+            }
+          }
+
+          .result-section {
+            margin-top: 20px;
+
+            .result-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 12px;
+
+              h4 {
+                margin: 0;
+                font-size: 14px;
+              }
+
+              .result-actions {
+                display: flex;
+                gap: 8px;
+              }
+            }
+
+            .result-content {
+              margin-bottom: 12px;
+
+              .result-output {
+                background: #1e1e1e;
+                color: #d4d4d4;
+                padding: 16px;
+                border-radius: 4px;
+                max-height: 400px;
+                overflow-y: auto;
+                font-family: 'Courier New', monospace;
+                font-size: 12px;
+                line-height: 1.6;
+              }
+            }
+
+            .result-meta {
               display: flex;
               gap: 8px;
             }
           }
-
-          .result-content {
-            margin-bottom: 12px;
-
-            .result-output {
-              background: #1e1e1e;
-              color: #d4d4d4;
-              padding: 16px;
-              border-radius: 4px;
-              max-height: 400px;
-              overflow-y: auto;
-              font-family: 'Courier New', monospace;
-              font-size: 12px;
-              line-height: 1.6;
-            }
-          }
-
-          .result-meta {
-            display: flex;
-            gap: 8px;
-          }
         }
       }
     }
+
+    .history-item {
+      .history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .history-args {
+        color: #606266;
+        font-size: 14px;
+        margin-bottom: 4px;
+      }
+
+      .history-user {
+        color: #909399;
+        font-size: 12px;
+      }
+    }
   }
-
-  .history-item {
-    .history-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
-    .history-args {
-      color: #606266;
-      font-size: 14px;
-      margin-bottom: 4px;
-    }
-
-    .history-user {
-      color: #909399;
-      font-size: 12px;
-    }
-  }
-}
 </style>

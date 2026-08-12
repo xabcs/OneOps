@@ -1,29 +1,29 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useRoute } from 'vue-router';
-import PodTerminal from './PodTerminal.vue';
+  import { computed } from 'vue';
+  import { useRoute } from 'vue-router';
+  import PodTerminal from './PodTerminal.vue';
 
-defineOptions({ name: 'K8sTerminalPage' });
+  defineOptions({ name: 'K8sTerminalPage' });
 
-const route = useRoute();
+  const route = useRoute();
 
-// 从URL查询参数获取终端配置
-const clusterId = computed(() => {
-  const id = route.query.clusterId;
-  return id ? Number(id) : 0;
-});
+  // 从URL查询参数获取终端配置
+  const clusterId = computed(() => {
+    const id = route.query.clusterId;
+    return id ? Number(id) : 0;
+  });
 
-const namespace = computed(() => {
-  return (route.query.namespace as string) || '';
-});
+  const namespace = computed(() => {
+    return (route.query.namespace as string) || '';
+  });
 
-const podName = computed(() => {
-  return (route.query.podName as string) || '';
-});
+  const podName = computed(() => {
+    return (route.query.podName as string) || '';
+  });
 
-const containerName = computed(() => {
-  return (route.query.containerName as string) || undefined;
-});
+  const containerName = computed(() => {
+    return (route.query.containerName as string) || undefined;
+  });
 </script>
 
 <template>

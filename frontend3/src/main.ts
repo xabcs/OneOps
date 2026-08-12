@@ -5,10 +5,10 @@ import { setupAppVersionNotification, setupDayjs, setupIconifyOffline, setupLoad
 import { setupStore } from './store';
 import { setupRouter } from './router';
 import { setupI18n } from './locales';
-import { initContentTheme, initContentTheme2, initHeaderTheme } from './utils/content-theme';
+import { initContentTheme, initContentTheme2, initHeaderTheme } from './theme/content-theme';
 import App from './App.vue';
 import permission from './directives/permission';
-import PermissionButton from './components/PermissionButton.vue';
+import PermissionButton from './components/common/PermissionButton.vue';
 
 async function setupApp() {
   setupLoading();

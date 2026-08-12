@@ -130,8 +130,8 @@ function transformElegantRouteToVueRoute(
       }
 
     }
-  } catch (error) {
-    console.error(`Error transforming route "${route.name}":`, error);
+  } catch (error: any) {
+    console.error(`Error transforming route "${route.name}": ${error.toString()}`);
     return [];
   }
 

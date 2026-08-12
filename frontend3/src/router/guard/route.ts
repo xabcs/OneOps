@@ -34,8 +34,8 @@ export function createRouteGuard(router: Router) {
     // 🔥 修复：同时支持角色名和权限码检查
     const hasRole = routeRoles.length && authStore.userInfo.roleNames.some(role => routeRoles.includes(role));
     const hasPermission = routePermissions.length && routePermissions.some(perm => authStore.hasPermission(perm));
-    const hasAuth = authStore.isStaticSuper || (!routeRoles.length && !routePermissions.length) || hasRole || hasPermission;
-
+    const hasAuth =
+      authStore.isStaticSuper || (!routeRoles.length && !routePermissions.length) || hasRole || hasPermission;
 
     // if it is login route when logged in, then switch to the root page
     if (to.name === loginRoute && isLogin) {
@@ -107,10 +107,8 @@ async function initRoute(to: RouteLocationNormalized, router: Router): Promise<R
   if (!routeStore.isInitAuthRoute) {
     await routeStore.initAuthRoute();
 
-
     // 如果被not-found捕获，检查是否是刚刚初始化的动态路由
     if (isNotFoundRoute) {
-
       // 等待一个 tick，确保动态路由已完全注册到 Vue Router
       await nextTick();
 

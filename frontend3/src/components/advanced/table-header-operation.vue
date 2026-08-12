@@ -1,38 +1,38 @@
 <script setup lang="ts">
-import { $t } from '@/locales';
+  import { $t } from '@/locales';
 
-defineOptions({ name: 'TableHeaderOperation' });
+  defineOptions({ name: 'TableHeaderOperation' });
 
-interface Props {
-  disabledDelete?: boolean;
-  loading?: boolean;
-}
+  interface Props {
+    disabledDelete?: boolean;
+    loading?: boolean;
+  }
 
-defineProps<Props>();
+  defineProps<Props>();
 
-interface Emits {
-  (e: 'add'): void;
-  (e: 'delete'): void;
-  (e: 'refresh'): void;
-}
+  interface Emits {
+    (e: 'add'): void;
+    (e: 'delete'): void;
+    (e: 'refresh'): void;
+  }
 
-const emit = defineEmits<Emits>();
+  const emit = defineEmits<Emits>();
 
-const columns = defineModel<UI.TableColumnCheck[]>('columns', {
-  default: () => []
-});
+  const columns = defineModel<UI.TableColumnCheck[]>('columns', {
+    default: () => []
+  });
 
-function add() {
-  emit('add');
-}
+  function add() {
+    emit('add');
+  }
 
-function batchDelete() {
-  emit('delete');
-}
+  function batchDelete() {
+    emit('delete');
+  }
 
-function refresh() {
-  emit('refresh');
-}
+  function refresh() {
+    emit('refresh');
+  }
 </script>
 
 <template>

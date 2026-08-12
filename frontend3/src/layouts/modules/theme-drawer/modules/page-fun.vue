@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { themePageAnimationModeOptions, themeScrollModeOptions, themeTabModeOptions } from '@/constants/app';
-import { useThemeStore } from '@/store/modules/theme';
-import { translateOptions } from '@/utils/common';
-import { $t } from '@/locales';
-import SettingItem from '../components/setting-item.vue';
+  import { computed } from 'vue';
+  import { themePageAnimationModeOptions, themeScrollModeOptions, themeTabModeOptions } from '@/constants/app';
+  import { useThemeStore } from '@/store/modules/theme';
+  import { translateOptions } from '@/utils/common';
+  import { $t } from '@/locales';
+  import SettingItem from '../components/setting-item.vue';
 
-defineOptions({ name: 'PageFun' });
+  defineOptions({ name: 'PageFun' });
 
-const themeStore = useThemeStore();
+  const themeStore = useThemeStore();
 
-const layoutMode = computed(() => themeStore.layout.mode);
+  const layoutMode = computed(() => themeStore.layout.mode);
 
-const isMixLayoutMode = computed(() => layoutMode.value.includes('mix'));
+  const isMixLayoutMode = computed(() => layoutMode.value.includes('mix'));
 
-const isWrapperScrollMode = computed(() => themeStore.layout.scrollMode === 'wrapper');
+  const isWrapperScrollMode = computed(() => themeStore.layout.scrollMode === 'wrapper');
 </script>
 
 <template>
@@ -131,18 +131,18 @@ const isWrapperScrollMode = computed(() => themeStore.layout.scrollMode === 'wra
 </template>
 
 <style scoped>
-.setting-list-move,
-.setting-list-enter-active,
-.setting-list-leave-active {
-  --uno: transition-all-300;
-}
+  .setting-list-move,
+  .setting-list-enter-active,
+  .setting-list-leave-active {
+    --uno: transition-all-300;
+  }
 
-.setting-list-enter-from,
-.setting-list-leave-to {
-  --uno: opacity-0 -translate-x-30px;
-}
+  .setting-list-enter-from,
+  .setting-list-leave-to {
+    --uno: opacity-0 -translate-x-30px;
+  }
 
-.setting-list-leave-active {
-  --uno: absolute;
-}
+  .setting-list-leave-active {
+    --uno: absolute;
+  }
 </style>

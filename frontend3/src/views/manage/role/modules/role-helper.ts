@@ -14,7 +14,10 @@ const BUILTIN_ROLES: Record<string, string> = {
 };
 
 /** 检查角色是否可以删除 */
-export function canDeleteRole(role: Api.SystemManage.Role, roleUsersMap: Map<number, string[]>): { canDelete: boolean; reason?: string } {
+export function canDeleteRole(
+  role: Api.SystemManage.Role,
+  roleUsersMap: Map<number, string[]>
+): { canDelete: boolean; reason?: string } {
   if (BUILTIN_ROLES[role.code]) {
     return {
       canDelete: false,

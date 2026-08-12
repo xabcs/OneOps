@@ -30,17 +30,27 @@ export function useServerAgent() {
     try {
       const testResult = await fetchTestSSHConnection(row.id);
       if (!testResult.data.success) {
-        await ElMessageBox.alert(`${testResult.data.message}`, '连接失败', { type: 'error', confirmButtonText: '我知道了' });
+        await ElMessageBox.alert(`${testResult.data.message}`, '连接失败', {
+          type: 'error',
+          confirmButtonText: '我知道了'
+        });
         return;
       }
       await fetchDeployAgent(row.id);
-      ElNotification.success({ message: `Agent 部署任务已提交，正在后台执行...\nSSH连接测试成功（延迟: ${testResult.data.latency}）`, duration: 3000 });
+      ElNotification.success({
+        message: `Agent 部署任务已提交，正在后台执行...\nSSH连接测试成功（延迟: ${testResult.data.latency}）`,
+        duration: 3000
+      });
       pollAgentStatus(row.id, 'running', tableData);
     } catch (error: unknown) {
       console.error('Agent 部署失败:', error);
       const errorMsg = resolveErrorMsg(error) || '部署失败';
       if (errorMsg.includes('系统运维凭证') || errorMsg.includes('systemCredential')) {
-        ElNotification.error({ message: '部署失败：主机未配置系统运维凭证，请先在主机编辑页配置', duration: 0, customClass: 'agent-error-notification' });
+        ElNotification.error({
+          message: '部署失败：主机未配置系统运维凭证，请先在主机编辑页配置',
+          duration: 0,
+          customClass: 'agent-error-notification'
+        });
       } else if (errorMsg.includes('SSH 连接失败')) {
         ElNotification.error({ message: `部署失败：无法连接到主机 ${row.hostname || row.ip}`, duration: 0 });
       } else {
@@ -68,22 +78,34 @@ export function useServerAgent() {
   async function handleAgentUninstall(row: CMDB.Server, tableData: CMDB.Server[]) {
     try {
       await ElMessageBox.confirm(`确认卸载 ${row.hostname} 上的 Agent？卸载后主机将不再上报监控数据。`, '卸载确认', {
-        type: 'warning', confirmButtonText: '确认卸载', cancelButtonText: '取消'
+        type: 'warning',
+        confirmButtonText: '确认卸载',
+        cancelButtonText: '取消'
       });
       const testResult = await fetchTestSSHConnection(row.id);
       if (!testResult.data.success) {
-        await ElMessageBox.alert(`${testResult.data.message}`, '连接失败', { type: 'error', confirmButtonText: '我知道了' });
+        await ElMessageBox.alert(`${testResult.data.message}`, '连接失败', {
+          type: 'error',
+          confirmButtonText: '我知道了'
+        });
         return;
       }
       await fetchUninstallAgent(row.id);
-      ElNotification.success({ message: `Agent 卸载任务已提交，正在后台执行...\nSSH连接测试成功（延迟: ${testResult.data.latency}）`, duration: 3000 });
+      ElNotification.success({
+        message: `Agent 卸载任务已提交，正在后台执行...\nSSH连接测试成功（延迟: ${testResult.data.latency}）`,
+        duration: 3000
+      });
       pollAgentStatus(row.id, 'uninstalled', tableData);
     } catch (error: unknown) {
       if (error === 'cancel') return;
       console.error('Agent 卸载失败:', error);
       const errorMsg = resolveErrorMsg(error) || '卸载失败';
       if (errorMsg.includes('系统运维凭证') || errorMsg.includes('systemCredential')) {
-        ElNotification.error({ message: '卸载失败：主机未配置系统运维凭证，请先在主机编辑页配置', duration: 0, customClass: 'agent-error-notification' });
+        ElNotification.error({
+          message: '卸载失败：主机未配置系统运维凭证，请先在主机编辑页配置',
+          duration: 0,
+          customClass: 'agent-error-notification'
+        });
       } else if (errorMsg.includes('SSH 连接失败')) {
         ElNotification.error({ message: `卸载失败：无法连接到主机 ${row.hostname || row.ip}`, duration: 0 });
       } else {
@@ -93,7 +115,12 @@ export function useServerAgent() {
   }
 
   // ===== 轮询 Agent 状态 =====
-  function pollAgentStatus(serverId: number, expectedStatus: CMDB.Server['agentStatus'] = 'running', tableData: CMDB.Server[], maxTimes = 20) {
+  function pollAgentStatus(
+    serverId: number,
+    expectedStatus: CMDB.Server['agentStatus'] = 'running',
+    tableData: CMDB.Server[],
+    maxTimes = 20
+  ) {
     let count = 0;
     let previousStatus: string | null = null;
     const timer = setInterval(async () => {
@@ -104,34 +131,59 @@ export function useServerAgent() {
 
         const idx = tableData.findIndex(s => s.id === serverId);
         if (idx !== -1 && res.data) {
-          tableData[idx] = { ...tableData[idx], agentStatus: status, agentPort: res.data.agentPort, agentVersion: res.data.agentVersion, lastHeartbeatAt: res.data.lastHeartbeatAt };
+          tableData[idx] = {
+            ...tableData[idx],
+            agentStatus: status,
+            agentPort: res.data.agentPort,
+            agentVersion: res.data.agentVersion,
+            lastHeartbeatAt: res.data.lastHeartbeatAt
+          };
 
           if (previousStatus !== null && previousStatus !== status) {
-            if (status === 'running') ElNotification.success(`主机 ${tableData[idx].hostname} 的 Agent 已成功部署并运行`);
-            else if (status === 'uninstalled') ElNotification.success(`主机 ${tableData[idx].hostname} 的 Agent 已成功卸载`);
-            else if (status === 'failed') ElNotification.warning(`主机 ${tableData[idx].hostname} 的 Agent 状态异常，请检查日志`);
+            if (status === 'running')
+              ElNotification.success(`主机 ${tableData[idx].hostname} 的 Agent 已成功部署并运行`);
+            else if (status === 'uninstalled')
+              ElNotification.success(`主机 ${tableData[idx].hostname} 的 Agent 已成功卸载`);
+            else if (status === 'failed')
+              ElNotification.warning(`主机 ${tableData[idx].hostname} 的 Agent 状态异常，请检查日志`);
           }
           previousStatus = status;
         }
 
-        if (status === expectedStatus) { clearInterval(timer); return; }
+        if (status === expectedStatus) {
+          clearInterval(timer);
+          return;
+        }
         if (count >= maxTimes) {
           clearInterval(timer);
           const serverName = tableData.find(s => s.id === serverId)?.hostname || serverId;
-          if (status !== expectedStatus) ElNotification.warning(`主机 ${serverName} 的 Agent 状态轮询超时（当前状态: ${status}），请手动刷新页面查看最新状态`);
+          if (status !== expectedStatus)
+            ElNotification.warning(
+              `主机 ${serverName} 的 Agent 状态轮询超时（当前状态: ${status}），请手动刷新页面查看最新状态`
+            );
         }
       } catch (error: unknown) {
         console.error('轮询 Agent 状态失败:', error);
-        if (count >= maxTimes) { clearInterval(timer); ElNotification.error('轮询 Agent 状态失败，请刷新页面查看最新状态'); }
+        if (count >= maxTimes) {
+          clearInterval(timer);
+          ElNotification.error('轮询 Agent 状态失败，请刷新页面查看最新状态');
+        }
       }
     }, 3000);
   }
 
   // ===== 批量操作 =====
   async function handleBatchTestConnection(selectedIds: number[], tableData: CMDB.Server[]) {
-    if (selectedIds.length === 0) { ElNotification.warning('请先选择要测试连接的主机'); return; }
+    if (selectedIds.length === 0) {
+      ElNotification.warning('请先选择要测试连接的主机');
+      return;
+    }
 
-    const results = { success: 0, failed: 0, details: [] as Array<{ id: number; hostname: string; success: boolean; message: string }> };
+    const results = {
+      success: 0,
+      failed: 0,
+      details: [] as Array<{ id: number; hostname: string; success: boolean; message: string }>
+    };
     ElNotification.info(`正在测试 ${selectedIds.length} 台主机的SSH连接...`);
 
     for (const serverId of selectedIds) {
@@ -139,35 +191,70 @@ export function useServerAgent() {
       if (!server) continue;
       try {
         const testResult = await fetchTestSSHConnection(serverId);
-        results.details.push({ id: serverId, hostname: server.hostname || server.ip, success: testResult.data.success, message: testResult.data.message });
-        if (testResult.data.success) results.success++; else results.failed++;
+        results.details.push({
+          id: serverId,
+          hostname: server.hostname || server.ip,
+          success: testResult.data.success,
+          message: testResult.data.message
+        });
+        if (testResult.data.success) results.success++;
+        else results.failed++;
       } catch (error: unknown) {
         results.failed++;
-        results.details.push({ id: serverId, hostname: server.hostname || server.ip, success: false, message: resolveErrorMsg(error) || '连接测试失败' });
+        results.details.push({
+          id: serverId,
+          hostname: server.hostname || server.ip,
+          success: false,
+          message: resolveErrorMsg(error) || '连接测试失败'
+        });
       }
     }
 
     const summary = `SSH连接测试完成：\n成功: ${results.success} 台\n失败: ${results.failed} 台`;
     if (results.failed > 0) {
-      const failedServers = results.details.filter(d => !d.success).map(d => `- ${d.hostname}: ${d.message}`).join('\n');
-      await ElMessageBox.alert(`${summary}\n\n以下主机连接失败：\n${failedServers}\n\n请检查主机配置和网络连接。`, '连接测试结果', { type: 'warning', confirmButtonText: '我知道了' });
+      const failedServers = results.details
+        .filter(d => !d.success)
+        .map(d => `- ${d.hostname}: ${d.message}`)
+        .join('\n');
+      await ElMessageBox.alert(
+        `${summary}\n\n以下主机连接失败：\n${failedServers}\n\n请检查主机配置和网络连接。`,
+        '连接测试结果',
+        { type: 'warning', confirmButtonText: '我知道了' }
+      );
     } else {
       ElNotification.success(`${summary}\n所有主机连接测试成功！`);
     }
   }
 
-  async function handleBatchDeploy(selectedIds: number[], tableData: CMDB.Server[], pollFn: (id: number, status: CMDB.Server['agentStatus']) => void) {
-    if (selectedIds.length === 0) { ElNotification.warning('请先选择要部署 Agent 的主机'); return; }
+  async function handleBatchDeploy(
+    selectedIds: number[],
+    tableData: CMDB.Server[],
+    pollFn: (id: number, status: CMDB.Server['agentStatus']) => void
+  ) {
+    if (selectedIds.length === 0) {
+      ElNotification.warning('请先选择要部署 Agent 的主机');
+      return;
+    }
 
-    const serversWithoutCred = tableData.filter(s => selectedIds.includes(s.id)).filter(s => !s.systemCredentialId || s.systemCredentialId === 0);
+    const serversWithoutCred = tableData
+      .filter(s => selectedIds.includes(s.id))
+      .filter(s => !s.systemCredentialId || s.systemCredentialId === 0);
     if (serversWithoutCred.length > 0) {
       const serverNames = serversWithoutCred.map(s => s.hostname || s.ip).join('、');
-      await ElMessageBox.alert(`以下主机未配置系统运维凭证，无法部署：\n\n${serverNames}\n\n请先编辑主机配置系统运维凭证`, '凭证未配置', { type: 'warning', confirmButtonText: '我知道了' });
+      await ElMessageBox.alert(
+        `以下主机未配置系统运维凭证，无法部署：\n\n${serverNames}\n\n请先编辑主机配置系统运维凭证`,
+        '凭证未配置',
+        { type: 'warning', confirmButtonText: '我知道了' }
+      );
       return;
     }
 
     try {
-      await ElMessageBox.confirm(`确定要为选中的 ${selectedIds.length} 台主机部署 Agent 吗？部署过程可能需要几分钟，请耐心等待。`, '批量部署确认', { type: 'info', confirmButtonText: '确认部署', cancelButtonText: '取消' });
+      await ElMessageBox.confirm(
+        `确定要为选中的 ${selectedIds.length} 台主机部署 Agent 吗？部署过程可能需要几分钟，请耐心等待。`,
+        '批量部署确认',
+        { type: 'info', confirmButtonText: '确认部署', cancelButtonText: '取消' }
+      );
       await fetchBatchDeployAgent(selectedIds);
       ElNotification.success(`批量部署任务已提交，正在后台执行 ${selectedIds.length} 台主机的 Agent 部署`);
       selectedIds.forEach(serverId => pollFn(serverId, 'running'));
@@ -178,18 +265,35 @@ export function useServerAgent() {
     }
   }
 
-  async function handleBatchUninstall(selectedIds: number[], tableData: CMDB.Server[], pollFn: (id: number, status: CMDB.Server['agentStatus']) => void) {
-    if (selectedIds.length === 0) { ElNotification.warning('请先选择要卸载 Agent 的主机'); return; }
+  async function handleBatchUninstall(
+    selectedIds: number[],
+    tableData: CMDB.Server[],
+    pollFn: (id: number, status: CMDB.Server['agentStatus']) => void
+  ) {
+    if (selectedIds.length === 0) {
+      ElNotification.warning('请先选择要卸载 Agent 的主机');
+      return;
+    }
 
-    const serversWithoutCred = tableData.filter(s => selectedIds.includes(s.id)).filter(s => !s.systemCredentialId || s.systemCredentialId === 0);
+    const serversWithoutCred = tableData
+      .filter(s => selectedIds.includes(s.id))
+      .filter(s => !s.systemCredentialId || s.systemCredentialId === 0);
     if (serversWithoutCred.length > 0) {
       const serverNames = serversWithoutCred.map(s => s.hostname || s.ip).join('、');
-      await ElMessageBox.alert(`以下主机未配置系统运维凭证，无法卸载：\n\n${serverNames}\n\n请先编辑主机配置系统运维凭证`, '凭证未配置', { type: 'warning', confirmButtonText: '我知道了' });
+      await ElMessageBox.alert(
+        `以下主机未配置系统运维凭证，无法卸载：\n\n${serverNames}\n\n请先编辑主机配置系统运维凭证`,
+        '凭证未配置',
+        { type: 'warning', confirmButtonText: '我知道了' }
+      );
       return;
     }
 
     try {
-      await ElMessageBox.confirm(`确定要从选中的 ${selectedIds.length} 台主机卸载 Agent 吗？卸载后主机将不再上报监控数据。`, '批量卸载确认', { type: 'warning', confirmButtonText: '确认卸载', cancelButtonText: '取消' });
+      await ElMessageBox.confirm(
+        `确定要从选中的 ${selectedIds.length} 台主机卸载 Agent 吗？卸载后主机将不再上报监控数据。`,
+        '批量卸载确认',
+        { type: 'warning', confirmButtonText: '确认卸载', cancelButtonText: '取消' }
+      );
       await fetchBatchUninstallAgent(selectedIds);
       ElNotification.success(`批量卸载任务已提交，正在后台执行 ${selectedIds.length} 台主机的 Agent 卸载`);
       selectedIds.forEach(serverId => pollFn(serverId, 'uninstalled'));
@@ -201,8 +305,12 @@ export function useServerAgent() {
   }
 
   return {
-    handleAgentDeploy, handleAgentRestart, handleAgentUninstall,
+    handleAgentDeploy,
+    handleAgentRestart,
+    handleAgentUninstall,
     pollAgentStatus,
-    handleBatchTestConnection, handleBatchDeploy, handleBatchUninstall
+    handleBatchTestConnection,
+    handleBatchDeploy,
+    handleBatchUninstall
   };
 }

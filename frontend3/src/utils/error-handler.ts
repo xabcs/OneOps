@@ -136,7 +136,10 @@ export class ErrorHandler {
   /**
    * 处理字段级验证错误
    */
-  static handleFieldErrors(errors: FieldError[], formRef?: { validateField: (field: string, message: string) => void }): void {
+  static handleFieldErrors(
+    errors: FieldError[],
+    formRef?: { validateField: (field: string, message: string) => void }
+  ): void {
     if (!errors || errors.length === 0) return;
 
     // 如果有表单引用，设置字段错误

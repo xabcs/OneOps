@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useThemeStore } from '@/store/modules/theme';
+  import { computed } from 'vue';
+  import { useThemeStore } from '@/store/modules/theme';
 
-interface Props {
-  item: App.Global.Menu;
-}
+  interface Props {
+    item: App.Global.Menu;
+  }
 
-const { item } = defineProps<Props>();
-const themeStore = useThemeStore();
+  const { item } = defineProps<Props>();
+  const themeStore = useThemeStore();
 
-const hasChildren = item.children && item.children.length > 0;
-const showIcon = computed(() => themeStore.sider.showIcon !== false); // 默认显示图标
+  const hasChildren = item.children && item.children.length > 0;
+  const showIcon = computed(() => themeStore.sider.showIcon !== false); // 默认显示图标
 </script>
 
 <template>
@@ -32,10 +32,10 @@ const showIcon = computed(() => themeStore.sider.showIcon !== false); // 默认�
 </template>
 
 <style scoped>
-.ib-ellipsis {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  position: relative;
-}
+  .ib-ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    position: relative;
+  }
 </style>

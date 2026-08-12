@@ -1,45 +1,45 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+  import { computed, ref } from 'vue';
 
-defineOptions({ name: 'CustomIconSelect' });
+  defineOptions({ name: 'CustomIconSelect' });
 
-interface Props {
-  /** Selected icon */
-  value: string;
-  /** List of icons */
-  icons: string[];
-  /** Icon for when nothing is selected */
-  emptyIcon?: string;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  emptyIcon: 'mdi:apps'
-});
-
-interface Emits {
-  (e: 'update:value', val: string): void;
-}
-
-const emit = defineEmits<Emits>();
-
-const modelValue = computed({
-  get() {
-    return props.value;
-  },
-  set(val: string) {
-    emit('update:value', val);
+  interface Props {
+    /** Selected icon */
+    value: string;
+    /** List of icons */
+    icons: string[];
+    /** Icon for when nothing is selected */
+    emptyIcon?: string;
   }
-});
 
-const selectedIcon = computed(() => modelValue.value || props.emptyIcon);
+  const props = withDefaults(defineProps<Props>(), {
+    emptyIcon: 'mdi:apps'
+  });
 
-const searchValue = ref('');
+  interface Emits {
+    (e: 'update:value', val: string): void;
+  }
 
-const iconsList = computed(() => props.icons.filter(v => v.includes(searchValue.value)));
+  const emit = defineEmits<Emits>();
 
-function handleChange(iconItem: string) {
-  modelValue.value = iconItem;
-}
+  const modelValue = computed({
+    get() {
+      return props.value;
+    },
+    set(val: string) {
+      emit('update:value', val);
+    }
+  });
+
+  const selectedIcon = computed(() => modelValue.value || props.emptyIcon);
+
+  const searchValue = ref('');
+
+  const iconsList = computed(() => props.icons.filter(v => v.includes(searchValue.value)));
+
+  function handleChange(iconItem: string) {
+    modelValue.value = iconItem;
+  }
 </script>
 
 <template>
@@ -68,11 +68,11 @@ function handleChange(iconItem: string) {
 </template>
 
 <style lang="scss" scoped>
-:deep(.n-input-wrapper) {
-  padding-right: 0;
-}
+  :deep(.n-input-wrapper) {
+    padding-right: 0;
+  }
 
-:deep(.n-input__suffix) {
-  border: 1px solid #d9d9d9;
-}
+  :deep(.n-input__suffix) {
+    border: 1px solid #d9d9d9;
+  }
 </style>

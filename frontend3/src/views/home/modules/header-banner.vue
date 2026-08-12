@@ -1,27 +1,27 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useAppStore } from '@/store/modules/app';
-import { useAuthStore } from '@/store/modules/auth';
-import { $t } from '@/locales';
+  import { computed } from 'vue';
+  import { useAppStore } from '@/store/modules/app';
+  import { useAuthStore } from '@/store/modules/auth';
+  import { $t } from '@/locales';
 
-defineOptions({ name: 'HeaderBanner' });
+  defineOptions({ name: 'HeaderBanner' });
 
-const appStore = useAppStore();
-const authStore = useAuthStore();
+  const appStore = useAppStore();
+  const authStore = useAuthStore();
 
-const gap = computed(() => (appStore.isMobile ? 0 : 16));
+  const gap = computed(() => (appStore.isMobile ? 0 : 16));
 
-interface StatisticData {
-  id: number;
-  title: string;
-  value: number;
-}
+  interface StatisticData {
+    id: number;
+    title: string;
+    value: number;
+  }
 
-const statisticData = computed<StatisticData[]>(() => [
-  { id: 0, title: $t('page.home.projectCount'), value: 25 },
-  { id: 1, title: $t('page.home.todo'), value: 4, formatter: (val: number) => `${val}/${16}` },
-  { id: 2, title: $t('page.home.message'), value: 12 }
-]);
+  const statisticData = computed<StatisticData[]>(() => [
+    { id: 0, title: $t('page.home.projectCount'), value: 25 },
+    { id: 1, title: $t('page.home.todo'), value: 4, formatter: (val: number) => `${val}/${16}` },
+    { id: 2, title: $t('page.home.message'), value: 12 }
+  ]);
 </script>
 
 <template>

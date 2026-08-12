@@ -1,66 +1,66 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { ElButton, ElDialog, ElForm, ElFormItem, ElOption, ElSelect } from 'element-plus';
-import AssetTree from './AssetTree.vue';
+  import { ref } from 'vue';
+  import { ElButton, ElDialog, ElForm, ElFormItem, ElOption, ElSelect } from 'element-plus';
+  import AssetTree from './AssetTree.vue';
 
-interface Session {
-  id: number;
-  serverId: number;
-  serverName: string;
-  serverIp: string;
-  loginAccount: string;
-  connected: boolean;
-  duration: number;
-}
-
-interface QuickConnectHost {
-  id: number;
-  hostname: string;
-  ip: string;
-}
-
-interface Props {
-  sessions: Session[];
-  activeId: number | null;
-  currentSessionIds: number[];
-}
-
-interface Emits {
-  (e: 'select', sessionId: number): void;
-  (e: 'remove', sessionId: number): void;
-  (e: 'connect', server: CMDB.Server & { loginAccount?: string }): void;
-}
-
-const props = defineProps<Props>();
-const emit = defineEmits<Emits>();
-
-const showConnectDialog = ref(false);
-const selectedServer = ref<CMDB.Server | null>(null);
-const loginAccount = ref('');
-
-// 处理主机连接
-function handleConnect(server: CMDB.Server) {
-  selectedServer.value = server;
-  loginAccount.value = server.sshCredential?.username || 'root';
-  showConnectDialog.value = true;
-}
-
-// 确认连接
-function handleConfirmConnect() {
-  if (selectedServer.value) {
-    emit('connect', {
-      ...selectedServer.value,
-      loginAccount: loginAccount.value
-    });
-    showConnectDialog.value = false;
+  interface Session {
+    id: number;
+    serverId: number;
+    serverName: string;
+    serverIp: string;
+    loginAccount: string;
+    connected: boolean;
+    duration: number;
   }
-}
 
-// 取消连接
-function handleCancelConnect() {
-  showConnectDialog.value = false;
-  selectedServer.value = null;
-}
+  interface QuickConnectHost {
+    id: number;
+    hostname: string;
+    ip: string;
+  }
+
+  interface Props {
+    sessions: Session[];
+    activeId: number | null;
+    currentSessionIds: number[];
+  }
+
+  interface Emits {
+    (e: 'select', sessionId: number): void;
+    (e: 'remove', sessionId: number): void;
+    (e: 'connect', server: CMDB.Server & { loginAccount?: string }): void;
+  }
+
+  const props = defineProps<Props>();
+  const emit = defineEmits<Emits>();
+
+  const showConnectDialog = ref(false);
+  const selectedServer = ref<CMDB.Server | null>(null);
+  const loginAccount = ref('');
+
+  // 处理主机连接
+  function handleConnect(server: CMDB.Server) {
+    selectedServer.value = server;
+    loginAccount.value = server.sshCredential?.username || 'root';
+    showConnectDialog.value = true;
+  }
+
+  // 确认连接
+  function handleConfirmConnect() {
+    if (selectedServer.value) {
+      emit('connect', {
+        ...selectedServer.value,
+        loginAccount: loginAccount.value
+      });
+      showConnectDialog.value = false;
+    }
+  }
+
+  // 取消连接
+  function handleCancelConnect() {
+    showConnectDialog.value = false;
+    selectedServer.value = null;
+  }
 </script>
 
 <template>
@@ -126,117 +126,117 @@ function handleCancelConnect() {
 </template>
 
 <style scoped>
-.sidebar {
-  width: 240px;
-  height: 100vh;
-  background: #252526;
-  border-right: 1px solid #3e3e42;
-  display: flex;
-  flex-direction: column;
-}
+  .sidebar {
+    width: 240px;
+    height: 100vh;
+    background: #252526;
+    border-right: 1px solid #3e3e42;
+    display: flex;
+    flex-direction: column;
+  }
 
-.section {
-  padding: 12px;
-}
+  .section {
+    padding: 12px;
+  }
 
-.section:not(:last-child) {
-  border-bottom: 1px solid #3e3e42;
-}
+  .section:not(:last-child) {
+    border-bottom: 1px solid #3e3e42;
+  }
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
 
-.section-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #cccccc;
-}
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #cccccc;
+  }
 
-.icon {
-  margin-right: 4px;
-}
+  .icon {
+    margin-right: 4px;
+  }
 
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 32px 12px;
-  color: #858585;
-}
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 12px;
+    color: #858585;
+  }
 
-.empty-icon {
-  font-size: 40px;
-  margin-bottom: 12px;
-  opacity: 0.5;
-}
+  .empty-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    opacity: 0.5;
+  }
 
-.empty p {
-  margin: 0 0 16px 0;
-  font-size: 12px;
-}
+  .empty p {
+    margin: 0 0 16px 0;
+    font-size: 12px;
+  }
 
-.session-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+  .session-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
 
-.session-item {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
+  .session-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
 
-.session-item:hover {
-  background: #2a2d2e;
-}
+  .session-item:hover {
+    background: #2a2d2e;
+  }
 
-.session-item.active {
-  background: #37373d;
-}
+  .session-item.active {
+    background: #37373d;
+  }
 
-.status {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 8px;
-  background: #757575;
-}
+  .status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+    background: #757575;
+  }
 
-.status.online {
-  background: #4caf50;
-  box-shadow: 0 0 4px #4caf50;
-}
+  .status.online {
+    background: #4caf50;
+    box-shadow: 0 0 4px #4caf50;
+  }
 
-.session-info {
-  flex: 1;
-  min-width: 0;
-}
+  .session-info {
+    flex: 1;
+    min-width: 0;
+  }
 
-.name {
-  font-size: 13px;
-  color: #cccccc;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  .name {
+    font-size: 13px;
+    color: #cccccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-.meta {
-  font-size: 11px;
-  color: #858585;
-  margin-top: 2px;
-}
+  .meta {
+    font-size: 11px;
+    color: #858585;
+    margin-top: 2px;
+  }
 
-.hint {
-  font-size: 11px;
-  color: #757575;
-  margin-top: 4px;
-}
+  .hint {
+    font-size: 11px;
+    color: #757575;
+    margin-top: 4px;
+  }
 </style>

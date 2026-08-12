@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineOptions({ name: 'BindWechat' });
+  defineOptions({ name: 'BindWechat' });
 </script>
 
 <template>

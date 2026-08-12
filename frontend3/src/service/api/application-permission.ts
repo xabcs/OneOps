@@ -129,7 +129,14 @@ export function fetchOperationLogs(appId: number, params: { page: number; pageSi
 // ========== 授权中心用户管理 API ==========
 
 /** 获取授权中心用户列表 */
-export function fetchAuthUsers(params: { page: number; pageSize: number; username?: string; nickname?: string; email?: string; phone?: string }) {
+export function fetchAuthUsers(params: {
+  page: number;
+  pageSize: number;
+  username?: string;
+  nickname?: string;
+  email?: string;
+  phone?: string;
+}) {
   return request<Api.ApplicationPermission.ApplicationList>({
     url: '/system/auth-users/list',
     method: 'get',

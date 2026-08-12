@@ -1,140 +1,140 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { fetchGetCommands } from '@/service/api/cmdb';
+  import { onMounted, ref } from 'vue';
+  import { fetchGetCommands } from '@/service/api/cmdb';
 
-defineOptions({
-  name: 'CMDBCommands'
-});
+  defineOptions({
+    name: 'CMDBCommands'
+  });
 
-const loading = ref(false);
-const commands = ref<Bastion.BastionCommand[]>([]);
-const total = ref(0);
+  const loading = ref(false);
+  const commands = ref<Bastion.BastionCommand[]>([]);
+  const total = ref(0);
 
-// 分页
-const pagination = ref({
-  page: 1,
-  pageSize: 20
-});
+  // 分页
+  const pagination = ref({
+    page: 1,
+    pageSize: 20
+  });
 
-// 筛选条件
-const filters = ref<{
-  sessionId?: number;
-  riskLevel?: string;
-  blocked?: boolean;
-  command?: string;
-  startDate?: string;
-  endDate?: string;
-}>({});
+  // 筛选条件
+  const filters = ref<{
+    sessionId?: number;
+    riskLevel?: string;
+    blocked?: boolean;
+    command?: string;
+    startDate?: string;
+    endDate?: string;
+  }>({});
 
-// 风险等级选项
-const riskLevelOptions = [
-  { label: '全部', value: '' },
-  { label: '安全', value: 'safe' },
-  { label: '低危', value: 'low' },
-  { label: '中危', value: 'medium' },
-  { label: '高危', value: 'high' },
-  { label: '严重', value: 'critical' }
-];
+  // 风险等级选项
+  const riskLevelOptions = [
+    { label: '全部', value: '' },
+    { label: '安全', value: 'safe' },
+    { label: '低危', value: 'low' },
+    { label: '中危', value: 'medium' },
+    { label: '高危', value: 'high' },
+    { label: '严重', value: 'critical' }
+  ];
 
-// 获取命令列表
-async function getCommands() {
-  loading.value = true;
-  try {
-    const params = {
-      page: pagination.value.page,
-      pageSize: pagination.value.pageSize,
-      ...filters.value
+  // 获取命令列表
+  async function getCommands() {
+    loading.value = true;
+    try {
+      const params = {
+        page: pagination.value.page,
+        pageSize: pagination.value.pageSize,
+        ...filters.value
+      };
+
+      const { data } = await fetchGetCommands(params);
+      commands.value = data?.list || [];
+      total.value = data?.total || 0;
+    } catch (error) {
+      window.$message?.error('获取命令列表失败');
+    } finally {
+      loading.value = false;
+    }
+  }
+
+  // 搜索
+  function handleSearch() {
+    pagination.value.page = 1;
+    getCommands();
+  }
+
+  // 重置筛选
+  function handleReset() {
+    filters.value = {
+      sessionId: undefined,
+      riskLevel: undefined,
+      blocked: undefined,
+      command: undefined,
+      startDate: undefined,
+      endDate: undefined
     };
-
-    const { data } = await fetchGetCommands(params);
-    commands.value = data?.list || [];
-    total.value = data?.total || 0;
-  } catch (error) {
-    window.$message?.error('获取命令列表失败');
-  } finally {
-    loading.value = false;
+    handleSearch();
   }
-}
 
-// 搜索
-function handleSearch() {
-  pagination.value.page = 1;
-  getCommands();
-}
-
-// 重置筛选
-function handleReset() {
-  filters.value = {
-    sessionId: undefined,
-    riskLevel: undefined,
-    blocked: undefined,
-    command: undefined,
-    startDate: undefined,
-    endDate: undefined
-  };
-  handleSearch();
-}
-
-// 分页变化
-function handlePageChange(page: number) {
-  pagination.value.page = page;
-  getCommands();
-}
-
-// 格式化时间
-function formatTime(time: string): string {
-  return time ? new Date(time).toLocaleString('zh-CN') : '-';
-}
-
-// 获取风险等级标签类型
-function getRiskLevelType(level: string): 'success' | 'info' | 'warning' | 'danger' {
-  switch (level) {
-    case 'safe':
-      return 'success';
-    case 'low':
-      return 'info';
-    case 'medium':
-      return 'warning';
-    case 'high':
-    case 'critical':
-      return 'danger';
-    default:
-      return 'info';
+  // 分页变化
+  function handlePageChange(page: number) {
+    pagination.value.page = page;
+    getCommands();
   }
-}
 
-// 获取风险等级文本
-function getRiskLevelText(level: string): string {
-  const map: Record<string, string> = {
-    safe: '安全',
-    low: '低危',
-    medium: '中危',
-    high: '高危',
-    critical: '严重'
-  };
-  return map[level] || level;
-}
+  // 格式化时间
+  function formatTime(time: string): string {
+    return time ? new Date(time).toLocaleString('zh-CN') : '-';
+  }
 
-// 获取风险等级颜色
-function getRiskLevelColor(level: string): string {
-  const map: Record<string, string> = {
-    safe: '#67c23a',
-    low: '#409eff',
-    medium: '#e6a23c',
-    high: '#f56c6c',
-    critical: '#ff0000'
-  };
-  return map[level] || '#909399';
-}
+  // 获取风险等级标签类型
+  function getRiskLevelType(level: string): 'success' | 'info' | 'warning' | 'danger' {
+    switch (level) {
+      case 'safe':
+        return 'success';
+      case 'low':
+        return 'info';
+      case 'medium':
+        return 'warning';
+      case 'high':
+      case 'critical':
+        return 'danger';
+      default:
+        return 'info';
+    }
+  }
 
-// 查看命令详情
-function handleViewDetail(command: Bastion.BastionCommand) {
-  // 显示命令详情对话框
-}
+  // 获取风险等级文本
+  function getRiskLevelText(level: string): string {
+    const map: Record<string, string> = {
+      safe: '安全',
+      low: '低危',
+      medium: '中危',
+      high: '高危',
+      critical: '严重'
+    };
+    return map[level] || level;
+  }
 
-onMounted(() => {
-  getCommands();
-});
+  // 获取风险等级颜色
+  function getRiskLevelColor(level: string): string {
+    const map: Record<string, string> = {
+      safe: '#67c23a',
+      low: '#409eff',
+      medium: '#e6a23c',
+      high: '#f56c6c',
+      critical: '#ff0000'
+    };
+    return map[level] || '#909399';
+  }
+
+  // 查看命令详情
+  function handleViewDetail(command: Bastion.BastionCommand) {
+    // 显示命令详情对话框
+  }
+
+  onMounted(() => {
+    getCommands();
+  });
 </script>
 
 <template>
@@ -278,53 +278,53 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.commands-page {
-  padding: 16px;
-}
+  .commands-page {
+    padding: 16px;
+  }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
-.title {
-  font-size: 16px;
-  font-weight: 500;
-}
+  .title {
+    font-size: 16px;
+    font-weight: 500;
+  }
 
-.filter-bar {
-  padding: 16px;
-  background: #f5f7fa;
-  border-radius: 4px;
-}
+  .filter-bar {
+    padding: 16px;
+    background: #f5f7fa;
+    border-radius: 4px;
+  }
 
-.command-cell {
-  display: flex;
-  align-items: center;
-}
+  .command-cell {
+    display: flex;
+    align-items: center;
+  }
 
-.command-text {
-  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-  font-size: 13px;
-  word-break: break-all;
-}
+  .command-text {
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 13px;
+    word-break: break-all;
+  }
 
-.text-success {
-  color: #67c23a;
-}
+  .text-success {
+    color: #67c23a;
+  }
 
-.text-danger {
-  color: #f56c6c;
-}
+  .text-danger {
+    color: #f56c6c;
+  }
 
-.pagination-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-top: 16px;
-}
+  .pagination-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
+  }
 
-:deep(.el-table__cell) {
-  padding: 8px 0;
-}
+  :deep(.el-table__cell) {
+    padding: 8px 0;
+  }
 </style>

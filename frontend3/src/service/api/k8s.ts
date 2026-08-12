@@ -550,7 +550,10 @@ export function deleteK8sStatefulSet(clusterId: number, data: { namespace: strin
 /**
  * 更新 StatefulSet
  */
-export function updateK8sStatefulSet(clusterId: number, data: { namespace: string; manifest: Record<string, unknown> }) {
+export function updateK8sStatefulSet(
+  clusterId: number,
+  data: { namespace: string; manifest: Record<string, unknown> }
+) {
   return request({
     url: `/k8s/clusters/${clusterId}/statefulsets`,
     method: 'put',

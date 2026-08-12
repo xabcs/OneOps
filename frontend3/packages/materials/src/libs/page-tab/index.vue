@@ -1,58 +1,58 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { Component } from 'vue';
-import type { PageTabMode, PageTabProps } from '../../types';
-import { ACTIVE_COLOR, createTabCssVars } from './shared';
-import ChromeTab from './chrome-tab.vue';
-import ButtonTab from './button-tab.vue';
-import SvgClose from './svg-close.vue';
-import style from './index.module.css';
+  import { computed } from 'vue';
+  import type { Component } from 'vue';
+  import type { PageTabMode, PageTabProps } from '../../types';
+  import { ACTIVE_COLOR, createTabCssVars } from './shared';
+  import ChromeTab from './chrome-tab.vue';
+  import ButtonTab from './button-tab.vue';
+  import SvgClose from './svg-close.vue';
+  import style from './index.module.css';
 
-defineOptions({
-  name: 'PageTab'
-});
+  defineOptions({
+    name: 'PageTab'
+  });
 
-const props = withDefaults(defineProps<PageTabProps>(), {
-  mode: 'chrome',
-  commonClass: 'transition-all-300',
-  activeColor: ACTIVE_COLOR,
-  closable: true
-});
+  const props = withDefaults(defineProps<PageTabProps>(), {
+    mode: 'chrome',
+    commonClass: 'transition-all-300',
+    activeColor: ACTIVE_COLOR,
+    closable: true
+  });
 
-interface Emits {
-  (e: 'close'): void;
-}
+  interface Emits {
+    (e: 'close'): void;
+  }
 
-const emit = defineEmits<Emits>();
+  const emit = defineEmits<Emits>();
 
-const activeTabComponent = computed(() => {
-  const { mode, chromeClass, buttonClass } = props;
+  const activeTabComponent = computed(() => {
+    const { mode, chromeClass, buttonClass } = props;
 
-  const tabComponentMap = {
-    chrome: {
-      component: ChromeTab,
-      class: chromeClass
-    },
-    button: {
-      component: ButtonTab,
-      class: buttonClass
-    }
-  } satisfies Record<PageTabMode, { component: Component; class?: string }>;
+    const tabComponentMap = {
+      chrome: {
+        component: ChromeTab,
+        class: chromeClass
+      },
+      button: {
+        component: ButtonTab,
+        class: buttonClass
+      }
+    } satisfies Record<PageTabMode, { component: Component; class?: string }>;
 
-  return tabComponentMap[mode];
-});
+    return tabComponentMap[mode];
+  });
 
-const cssVars = computed(() => createTabCssVars(props.activeColor));
+  const cssVars = computed(() => createTabCssVars(props.activeColor));
 
-const bindProps = computed(() => {
-  const { chromeClass: _chromeCls, buttonClass: _btnCls, ...rest } = props;
+  const bindProps = computed(() => {
+    const { chromeClass: _chromeCls, buttonClass: _btnCls, ...rest } = props;
 
-  return rest;
-});
+    return rest;
+  });
 
-function handleClose() {
-  emit('close');
-}
+  function handleClose() {
+    emit('close');
+  }
 </script>
 
 <template>
