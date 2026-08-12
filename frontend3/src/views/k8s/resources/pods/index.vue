@@ -3,9 +3,6 @@
   import { useRoute, useRouter } from 'vue-router';
   import {
     ElButton,
-    ElDialog,
-    ElInput,
-    ElInputNumber,
     ElMessage,
     ElMessageBox,
     ElOption,
@@ -19,10 +16,10 @@
     deleteK8sPod,
     fetchK8sClusterNamespaces,
     fetchK8sClusters,
-    fetchK8sPodLogs,
     fetchK8sPods
   } from '@/service/api/k8s';
-  import PodTerminal from '../../terminal/PodTerminal.vue';
+  import PodLogDialog from './modules/PodLogDialog.vue';
+  import PodTerminalDialog from './modules/PodTerminalDialog.vue';
 
   defineOptions({ name: 'K8sPods' });
 
@@ -34,7 +31,6 @@
   const dataSource = ref<K8s.Pod[]>([]);
   const showTerminal = ref(false);
   const showLogs = ref(false);
-  const logContent = ref('');
 
   // 当前选中的集群和命名空间
   const selectedCluster = ref<number | null>(null);
@@ -51,7 +47,7 @@
     labelSelector: ''
   });
 
-  // 终端相关
+  // 终端/日志相关
   const terminalProps = ref({
     clusterId: 0,
     namespace: '',
@@ -59,10 +55,12 @@
     containerName: ''
   });
 
-  // 日志相关
-  const logPodName = ref('');
-  const logContainerName = ref('');
-  const logTailLines = ref(100);
+  const logProps = ref({
+    clusterId: 0,
+    namespace: '',
+    podName: '',
+    containerName: ''
+  });
 
   const pagination = reactive({
     page: 1,
@@ -186,22 +184,14 @@
   };
 
   // 查看日志
-  const handleLogs = async (row: K8s.Pod, containerName?: string) => {
-    logPodName.value = row.name;
-    logContainerName.value = containerName || '';
-    logContent.value = '加载中...';
+  const handleLogs = (row: K8s.Pod, containerName?: string) => {
+    logProps.value = {
+      clusterId: selectedCluster.value!,
+      namespace: filters.namespace,
+      podName: row.name,
+      containerName: containerName || ''
+    };
     showLogs.value = true;
-
-    try {
-      const res = await fetchK8sPodLogs(selectedCluster.value!, filters.namespace, row.name, {
-        container: containerName || '',
-        tailLines: logTailLines.value
-      });
-      logContent.value = res.logs || '暂无日志';
-    } catch (error: unknown) {
-      const err = error as Error;
-      logContent.value = `日志加载失败: ${err.message || '未知错误'}`;
-    }
   };
 
   // 删除 Pod
@@ -249,11 +239,6 @@
   // 刷新
   const handleRefresh = () => {
     loadPods();
-  };
-
-  // 关闭终端
-  const closeTerminal = () => {
-    showTerminal.value = false;
   };
 
   // 从 sessionStorage 恢复状态
@@ -373,28 +358,21 @@
     </ElTable>
 
     <!-- 日志弹窗 -->
-    <ElDialog v-model="showLogs" :title="`日志: ${logPodName}`" width="900px" top="5vh">
-      <div class="mb-4 flex items-center gap-4">
-        <span class="text-sm text-gray-600">行数:</span>
-        <ElInputNumber v-model="logTailLines" :min="10" :max="10000" :step="100" />
-        <ElButton size="small" @click="handleLogs({ name: logPodName }, logContainerName)">刷新</ElButton>
-      </div>
-      <div
-        class="max-h-[600px] overflow-auto whitespace-pre-wrap rounded bg-black p-4 text-sm text-green-400 font-mono"
-      >
-        {{ logContent }}
-      </div>
-    </ElDialog>
+    <PodLogDialog
+      v-model:visible="showLogs"
+      :cluster-id="logProps.clusterId"
+      :namespace="logProps.namespace"
+      :pod-name="logProps.podName"
+      :container-name="logProps.containerName"
+    />
 
     <!-- 终端弹窗 -->
-    <ElDialog v-model="showTerminal" title="Pod 终端" width="900px" fullscreen @close="closeTerminal">
-      <PodTerminal
-        v-if="showTerminal"
-        :cluster-id="terminalProps.clusterId"
-        :namespace="terminalProps.namespace"
-        :pod-name="terminalProps.podName"
-        :container-name="terminalProps.containerName"
-      />
-    </ElDialog>
+    <PodTerminalDialog
+      v-model:visible="showTerminal"
+      :cluster-id="terminalProps.clusterId"
+      :namespace="terminalProps.namespace"
+      :pod-name="terminalProps.podName"
+      :container-name="terminalProps.containerName"
+    />
   </div>
 </template>

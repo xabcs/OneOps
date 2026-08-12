@@ -1,6 +1,5 @@
-<script setup lang="ts">
-  import { computed, onMounted, reactive, ref } from 'vue';
-  import { ElDropdown, ElDropdownItem, ElDropdownMenu, ElIcon, ElMessageBox, ElNotification } from 'element-plus';
+<script setup lang="tsx">
+  import { computed, onMounted, ref } from 'vue';
   import {
     fetchBatchUninstallAgent,
     fetchDeleteAgentRecord,
@@ -12,33 +11,172 @@
     fetchUninstallAgent,
     fetchUpgradeAgent
   } from '@/service/api/cmdb';
+  import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
+  import type { FlatResponseData } from '@sa/axios';
 
   defineOptions({ name: 'CmdbConfigAgents' });
 
-  // ========== 状态 ==========
-  const loading = ref(false);
-  const tableData = ref<CMDB.Server[]>([]);
-  const total = ref(0);
+  // ========== 搜索参数 ==========
+  interface SearchParams {
+    page: number;
+    pageSize: number;
+    hostname: string;
+    ip: string;
+    agentStatus: string;
+  }
+
+  function getInitSearchParams(): SearchParams {
+    return { page: 1, pageSize: 20, hostname: '', ip: '', agentStatus: '' };
+  }
+
+  const searchParams = ref<SearchParams>(getInitSearchParams());
+
   const selectedRows = ref<CMDB.Server[]>([]);
-
-  // 版本相关状态
-  const latestVersion = ref<CMDB.AgentVersion | null>(null);
-
-  // 分页
-  const pagination = reactive({
-    page: 1,
-    pageSize: 20
-  });
-
-  // 搜索表单
-  const searchForm = reactive({
-    hostname: '',
-    ip: '',
-    agentStatus: ''
-  });
-
-  // 批量进度
+  const latestVersion = ref<{ version: string; releaseNotes?: string } | null>(null);
   const batchProgress = ref({ current: 0, total: 0, running: false });
+
+  // ========== 表格 ==========
+  const { columns, data, loading, mobilePagination, getData, getDataByPage } = useUIPaginatedTable({
+    paginationProps: {
+      currentPage: searchParams.value.page,
+      pageSize: searchParams.value.pageSize,
+      pageSizes: [10, 20, 50, 100]
+    },
+    api: () => {
+      const params: Record<string, unknown> = {
+        page: searchParams.value.page,
+        pageSize: searchParams.value.pageSize
+      };
+      if (searchParams.value.hostname) params.hostname = searchParams.value.hostname;
+      if (searchParams.value.ip) params.ip = searchParams.value.ip;
+      if (searchParams.value.agentStatus) params.agentStatus = searchParams.value.agentStatus;
+      return fetchGetAgentList(params);
+    },
+    transform: response =>
+      defaultTransform<CMDB.Server>(
+        response as unknown as FlatResponseData<unknown, Api.Common.PaginatingQueryRecord<CMDB.Server>>
+      ),
+    onPaginationParamsChange: params => {
+      searchParams.value.page = params.currentPage ?? 1;
+      searchParams.value.pageSize = params.pageSize ?? 20;
+    },
+    columns: () => [
+      { prop: 'selection', type: 'selection', width: 50, align: 'center' },
+      { prop: 'hostname', label: '主机名称', minWidth: 150, showOverflowTooltip: true },
+      { prop: 'ip', label: 'IP地址', width: 140, showOverflowTooltip: true },
+      {
+        prop: 'innerIp',
+        label: '内网IP',
+        width: 140,
+        showOverflowTooltip: true,
+        formatter: row => <span class="text-gray">{row.innerIp || '-'}</span>
+      },
+      {
+        prop: 'agentVersion',
+        label: '版本',
+        width: 140,
+        align: 'center',
+        formatter: row =>
+          row.agentVersion ? (
+            <div class="version-cell">
+              <span class="version-text">v{row.agentVersion}</span>
+              {latestVersion.value && row.agentStatus === 'running' && (
+                <ElTag type={getVersionStatus(row.agentVersion).type} size="small" class="version-tag">
+                  {getVersionStatus(row.agentVersion).text}
+                </ElTag>
+              )}
+            </div>
+          ) : (
+            <span class="text-gray">-</span>
+          )
+      },
+      {
+        prop: 'agentStatus',
+        label: '状态',
+        width: 100,
+        align: 'center',
+        formatter: row => {
+          const t = getAgentStatusTag(row.agentStatus);
+          return (
+            <ElTag type={t.type} size="small">
+              {t.text}
+            </ElTag>
+          );
+        }
+      },
+      {
+        prop: 'agentPort',
+        label: '监听端口',
+        width: 100,
+        align: 'center',
+        formatter: row => <span class="text-gray">{row.agentPort || '-'}</span>
+      },
+      {
+        prop: 'lastHeartbeatAt',
+        label: '最近心跳',
+        width: 130,
+        align: 'center',
+        formatter: row => <span class="text-gray">{formatRelativeTime(row.lastHeartbeatAt)}</span>
+      },
+      {
+        prop: 'operate',
+        label: '操作',
+        width: 120,
+        align: 'center',
+        fixed: 'right',
+        formatter: row => {
+          if (!row.agentStatus || row.agentStatus === 'uninstalled') {
+            return (
+              <ElButton type="primary" size="small" onClick={() => handleDeploy(row)}>
+                部署
+              </ElButton>
+            );
+          }
+          return (
+            <span class="actions-wrapper">
+              {row.agentStatus === 'running' && !isLatestVersion(row.agentVersion) && (
+                <a class="action-link upgrade-link" onClick={() => handleUpgrade(row)}>
+                  <icon-mdi-arrow-up-bold />
+                  <span>升级</span>
+                </a>
+              )}
+              <ElDropdown trigger="click">
+                {{
+                  default: () => (
+                    <span class="more-btn">
+                      <i class="more-icon">⋮</i>
+                    </span>
+                  ),
+                  dropdown: () => (
+                    <ElDropdownMenu>
+                      <ElDropdownItem onClick={() => handleRestart(row)}>
+                        <ElIcon class="el-icon--left">
+                          <icon-mdi-refresh />
+                        </ElIcon>
+                        重启
+                      </ElDropdownItem>
+                      <ElDropdownItem onClick={() => handleUninstall(row)}>
+                        <ElIcon class="el-icon--left">
+                          <icon-mdi-delete />
+                        </ElIcon>
+                        卸载
+                      </ElDropdownItem>
+                      <ElDropdownItem onClick={() => handleDeleteRecord(row)}>
+                        <ElIcon class="el-icon--left">
+                          <icon-mdi-trash-can />
+                        </ElIcon>
+                        删除记录
+                      </ElDropdownItem>
+                    </ElDropdownMenu>
+                  )
+                }}
+              </ElDropdown>
+            </span>
+          );
+        }
+      }
+    ]
+  });
 
   // ========== 辅助函数 ==========
   function formatRelativeTime(time?: string) {
@@ -52,93 +190,53 @@
     return `${Math.floor(hours / 24)}天前`;
   }
 
-  function getAgentStatusTag(status?: string): {
-    text: string;
-    type: 'success' | 'danger' | 'info';
-  } {
+  function getAgentStatusTag(status?: string): { text: string; type: 'success' | 'danger' | 'info' | 'primary' | 'warning' } {
     if (status === 'running') return { text: '运行中', type: 'success' };
     if (status === 'offline') return { text: '离线', type: 'danger' };
     return { text: '未安装', type: 'info' };
   }
 
-  // ========== 版本相关函数 ==========
-  /**
-   * 判断是否为最新版本
-   */
   function isLatestVersion(currentVersion?: string): boolean {
     if (!currentVersion || !latestVersion.value) return false;
     return currentVersion === latestVersion.value.version;
   }
 
-  /**
-   * 获取版本状态标签
-   */
-  function getVersionStatus(currentVersion?: string): {
-    text: string;
-    type: 'success' | 'warning' | 'info';
-  } {
+  function getVersionStatus(currentVersion?: string): { text: string; type: 'success' | 'warning' | 'info' | 'primary' | 'danger' } {
     if (!currentVersion) return { text: '未安装', type: 'info' };
     if (isLatestVersion(currentVersion)) return { text: '最新版', type: 'success' };
     return { text: '可升级', type: 'warning' };
   }
 
-  /**
-   * 获取版本列表
-   */
   async function getLatestVersion() {
     try {
       const { data } = await fetchGetLatestAgentVersion();
       latestVersion.value = data;
-    } catch (err) {
-      ElNotification.error('获取最新版本失败');
-    }
-  }
-
-  // ========== 数据获取 ==========
-  async function getAgentList() {
-    loading.value = true;
-    try {
-      const params: Record<string, unknown> = {
-        page: pagination.page,
-        pageSize: pagination.pageSize
-      };
-      if (searchForm.hostname) params.hostname = searchForm.hostname;
-      if (searchForm.ip) params.ip = searchForm.ip;
-      if (searchForm.agentStatus) params.agentStatus = searchForm.agentStatus;
-
-      const { data } = await fetchGetAgentList(params);
-      tableData.value = data?.list || [];
-      total.value = data?.total || 0;
     } catch {
-      ElNotification.error('获取 Agent 列表失败');
-    } finally {
-      loading.value = false;
+      ElMessage.error('获取最新版本失败');
     }
   }
 
-  // ========== 轮询函数 ==========
+  // ========== 轮询 ==========
   function pollAgentStatus(serverId: number, expectedStatus: string, maxTimes = 20) {
     let count = 0;
     const timer = setInterval(async () => {
       count += 1;
-      const { data } = await fetchGetAgentStatus(serverId).catch(() => ({
-        data: null
-      }));
-      if (data) {
-        const idx = tableData.value.findIndex(r => r.id === serverId);
+      const { data: statusData } = await fetchGetAgentStatus(serverId).catch(() => ({ data: null }));
+      if (statusData) {
+        const idx = data.value.findIndex(r => r.id === serverId);
         if (idx !== -1) {
-          tableData.value[idx] = {
-            ...tableData.value[idx],
-            agentStatus: data.agentStatus as CMDB.Server['agentStatus'],
-            agentVersion: data.agentVersion,
-            agentPort: data.agentPort,
-            lastHeartbeatAt: data.lastHeartbeatAt
+          data.value[idx] = {
+            ...data.value[idx],
+            agentStatus: statusData.agentStatus as CMDB.Server['agentStatus'],
+            agentVersion: statusData.agentVersion,
+            agentPort: statusData.agentPort,
+            lastHeartbeatAt: statusData.lastHeartbeatAt
           };
         }
       }
-      if ((data && data.agentStatus === expectedStatus) || count >= maxTimes) {
+      if ((statusData && statusData.agentStatus === expectedStatus) || count >= maxTimes) {
         clearInterval(timer);
-        getAgentList();
+        getData();
       }
     }, 3000);
   }
@@ -147,20 +245,20 @@
   async function handleDeploy(row: CMDB.Server) {
     try {
       await fetchDeployAgent(row.id);
-      ElNotification.info(`${row.hostname} Agent 部署任务已提交，正在轮询状态...`);
+      ElMessage.info(`${row.hostname} Agent 部署任务已提交，正在轮询状态...`);
       pollAgentStatus(row.id, 'running');
     } catch {
-      ElNotification.error(`${row.hostname} Agent 部署失败`);
+      ElMessage.error(`${row.hostname} Agent 部署失败`);
     }
   }
 
   async function handleRestart(row: CMDB.Server) {
     try {
       await fetchRestartAgent(row.id);
-      ElNotification.info(`${row.hostname} Agent 重启任务已提交...`);
+      ElMessage.info(`${row.hostname} Agent 重启任务已提交...`);
       pollAgentStatus(row.id, 'running');
     } catch {
-      ElNotification.error(`${row.hostname} Agent 重启失败`);
+      ElMessage.error(`${row.hostname} Agent 重启失败`);
     }
   }
 
@@ -176,10 +274,10 @@
     }
     try {
       await fetchUninstallAgent(row.id);
-      ElNotification.info(`${row.hostname} Agent 卸载任务已提交...`);
+      ElMessage.info(`${row.hostname} Agent 卸载任务已提交...`);
       pollAgentStatus(row.id, 'uninstalled');
     } catch {
-      ElNotification.error(`${row.hostname} Agent 卸载失败`);
+      ElMessage.error(`${row.hostname} Agent 卸载失败`);
     }
   }
 
@@ -188,57 +286,44 @@
       await ElMessageBox.confirm(
         `确认删除主机 "${row.hostname}" 的 Agent 记录？此操作仅清空数据库记录，不会 SSH 到主机执行任何操作。`,
         '删除确认',
-        {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }
+        { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }
       );
     } catch {
       return;
     }
     try {
       await fetchDeleteAgentRecord(row.id);
-      ElNotification.success('Agent 记录已删除');
-      getAgentList();
+      ElMessage.success('Agent 记录已删除');
+      getData();
     } catch {
-      ElNotification.error('删除记录失败');
+      ElMessage.error('删除记录失败');
     }
   }
 
   async function handleUpgrade(row: CMDB.Server) {
     if (!latestVersion.value) {
-      ElNotification.warning('无法获取最新版本信息');
+      ElMessage.warning('无法获取最新版本信息');
       return;
     }
-
     if (row.agentVersion === latestVersion.value.version) {
-      ElNotification.info('当前已是最新版本，无需升级');
+      ElMessage.info('当前已是最新版本，无需升级');
       return;
     }
-
     try {
       await ElMessageBox.confirm(
-        `确认将主机 "${row.hostname}" 的 Agent 从 v${
-          row.agentVersion || '未知'
-        } 升级到 v${latestVersion.value.version}？`,
+        `确认将主机 "${row.hostname}" 的 Agent 从 v${row.agentVersion || '未知'} 升级到 v${latestVersion.value.version}？`,
         '升级确认',
-        {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'info'
-        }
+        { confirmButtonText: '确定', cancelButtonText: '取消', type: 'info' }
       );
     } catch {
       return;
     }
-
     try {
       await fetchUpgradeAgent(row.id, latestVersion.value.version);
-      ElNotification.info(`${row.hostname} Agent 升级任务已提交，正在轮询状态...`);
+      ElMessage.info(`${row.hostname} Agent 升级任务已提交，正在轮询状态...`);
       pollAgentStatus(row.id, 'running');
     } catch (err: unknown) {
-      ElNotification.error(`${row.hostname} Agent 升级失败: ${err instanceof Error ? err.message : '未知错误'}`);
+      ElMessage.error(`${row.hostname} Agent 升级失败: ${err instanceof Error ? err.message : '未知错误'}`);
     }
   }
 
@@ -246,18 +331,23 @@
   const batchDeployable = computed(() =>
     selectedRows.value.filter(r => !r.agentStatus || r.agentStatus === 'uninstalled')
   );
-
   const batchUninstallable = computed(() =>
     selectedRows.value.filter(r => r.agentStatus === 'running' || r.agentStatus === 'offline')
+  );
+  const batchUpgradeable = computed(() =>
+    selectedRows.value.filter(r => {
+      if (r.agentStatus !== 'running') return false;
+      if (!r.agentVersion) return false;
+      return !isLatestVersion(r.agentVersion);
+    })
   );
 
   async function handleBatchDeploy() {
     const targets = batchDeployable.value;
     if (targets.length === 0) {
-      ElNotification.warning('请先勾选状态为"未安装"的主机');
+      ElMessage.warning('请先勾选状态为"未安装"的主机');
       return;
     }
-
     try {
       await ElMessageBox.confirm(`确认批量部署 ${targets.length} 台主机的 Agent？`, '批量部署确认', {
         confirmButtonText: '确定',
@@ -267,26 +357,22 @@
     } catch {
       return;
     }
-
     batchProgress.value = { current: 0, total: targets.length, running: true };
-
     for (const server of targets) {
       await fetchDeployAgent(server.id).catch(() => {});
       batchProgress.value.current++;
       pollAgentStatus(server.id, 'running');
     }
-
     batchProgress.value.running = false;
-    ElNotification.success(`已提交 ${targets.length} 台主机的 Agent 部署任务`);
+    ElMessage.success(`已提交 ${targets.length} 台主机的 Agent 部署任务`);
   }
 
   async function handleBatchUninstall() {
     const targets = batchUninstallable.value;
     if (targets.length === 0) {
-      ElNotification.warning('请先勾选状态为"运行中"或"离线"的主机');
+      ElMessage.warning('请先勾选状态为"运行中"或"离线"的主机');
       return;
     }
-
     try {
       await ElMessageBox.confirm(`确认批量卸载 ${targets.length} 台主机的 Agent？`, '批量卸载确认', {
         confirmButtonText: '确定',
@@ -296,96 +382,59 @@
     } catch {
       return;
     }
-
     try {
       await fetchBatchUninstallAgent(targets.map(r => r.id));
-      ElNotification.info(`已提交 ${targets.length} 台主机的 Agent 卸载任务`);
+      ElMessage.info(`已提交 ${targets.length} 台主机的 Agent 卸载任务`);
       targets.forEach(s => pollAgentStatus(s.id, 'uninstalled'));
     } catch {
-      ElNotification.error('批量卸载失败');
+      ElMessage.error('批量卸载失败');
     }
   }
-
-  // 可升级的主机（运行中且不是最新版本）
-  const batchUpgradeable = computed(() =>
-    selectedRows.value.filter(r => {
-      if (r.agentStatus !== 'running') return false;
-      if (!r.agentVersion) return false;
-      return !isLatestVersion(r.agentVersion);
-    })
-  );
 
   async function handleBatchUpgrade() {
     const targets = batchUpgradeable.value;
     if (targets.length === 0) {
-      ElNotification.warning('请先勾选状态为"运行中"且需要升级的主机');
+      ElMessage.warning('请先勾选状态为"运行中"且需要升级的主机');
       return;
     }
-
     if (!latestVersion.value) {
-      ElNotification.warning('无法获取最新版本信息');
+      ElMessage.warning('无法获取最新版本信息');
       return;
     }
-
     try {
       await ElMessageBox.confirm(
         `确认批量升级 ${targets.length} 台主机的 Agent 到 v${latestVersion.value.version}？`,
         '批量升级确认',
-        {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'info'
-        }
+        { confirmButtonText: '确定', cancelButtonText: '取消', type: 'info' }
       );
     } catch {
       return;
     }
-
     batchProgress.value = { current: 0, total: targets.length, running: true };
-
     for (const server of targets) {
       await fetchUpgradeAgent(server.id, latestVersion.value.version).catch(() => {});
       batchProgress.value.current++;
       pollAgentStatus(server.id, 'running');
     }
-
     batchProgress.value.running = false;
-    ElNotification.success(`已提交 ${targets.length} 台主机的 Agent 升级任务`);
+    ElMessage.success(`已提交 ${targets.length} 台主机的 Agent 升级任务`);
   }
 
-  // ========== 表格事件 ==========
   function handleSelectionChange(rows: CMDB.Server[]) {
     selectedRows.value = rows;
   }
 
-  // ========== 搜索 & 分页 ==========
   function handleSearch() {
-    pagination.page = 1;
-    getAgentList();
+    getDataByPage(1);
   }
 
   function handleReset() {
-    searchForm.hostname = '';
-    searchForm.ip = '';
-    searchForm.agentStatus = '';
-    pagination.page = 1;
-    getAgentList();
+    searchParams.value = getInitSearchParams();
+    getDataByPage(1);
   }
 
-  function handlePageChange(page: number) {
-    pagination.page = page;
-    getAgentList();
-  }
-
-  function handlePageSizeChange(pageSize: number) {
-    pagination.pageSize = pageSize;
-    pagination.page = 1;
-    getAgentList();
-  }
-
-  // ========== 初始化 ==========
   onMounted(() => {
-    getAgentList();
+    getData();
     getLatestVersion();
   });
 </script>
@@ -393,14 +442,12 @@
 <template>
   <div class="agent-page">
     <ElCard shadow="never">
-      <!-- 工具栏 -->
       <template #header>
         <div class="toolbar">
-          <!-- 左侧搜索区 -->
-          <ElForm :model="searchForm" inline class="search-form">
+          <ElForm :model="searchParams" inline class="search-form">
             <ElFormItem>
               <ElInput
-                v-model="searchForm.hostname"
+                v-model="searchParams.hostname"
                 placeholder="主机名 / IP"
                 clearable
                 style="width: 200px"
@@ -408,7 +455,7 @@
               />
             </ElFormItem>
             <ElFormItem>
-              <ElSelect v-model="searchForm.agentStatus" placeholder="全部状态" clearable style="width: 140px">
+              <ElSelect v-model="searchParams.agentStatus" placeholder="全部状态" clearable style="width: 140px">
                 <ElOption label="运行中" value="running" />
                 <ElOption label="离线" value="offline" />
                 <ElOption label="未安装" value="uninstalled" />
@@ -426,32 +473,26 @@
             </ElFormItem>
           </ElForm>
 
-          <!-- 右侧操作区 -->
           <ElSpace>
-            <!-- 批量部署进度提示 -->
             <span v-if="batchProgress.running" class="batch-progress-text">
               批量部署中：{{ batchProgress.current }} / {{ batchProgress.total }} 台
             </span>
-
             <ElButton type="primary" plain :disabled="batchDeployable.length === 0" @click="handleBatchDeploy">
               <template #icon><icon-mdi-rocket-launch class="text-icon" /></template>
               批量部署
               <span v-if="batchDeployable.length > 0">（{{ batchDeployable.length }}）</span>
             </ElButton>
-
             <ElButton type="danger" plain :disabled="batchUninstallable.length === 0" @click="handleBatchUninstall">
               <template #icon><icon-mdi-delete class="text-icon" /></template>
               批量卸载
               <span v-if="batchUninstallable.length > 0">（{{ batchUninstallable.length }}）</span>
             </ElButton>
-
             <ElButton type="success" plain :disabled="batchUpgradeable.length === 0" @click="handleBatchUpgrade">
               <template #icon><icon-mdi-arrow-up-bold class="text-icon" /></template>
               批量升级
               <span v-if="batchUpgradeable.length > 0">（{{ batchUpgradeable.length }}）</span>
             </ElButton>
-
-            <ElButton plain @click="getAgentList">
+            <ElButton plain @click="getData">
               <template #icon>
                 <icon-mdi-refresh class="text-icon" :class="{ 'animate-spin': loading }" />
               </template>
@@ -461,129 +502,23 @@
         </div>
       </template>
 
-      <!-- Agent 列表 -->
       <ElTable
         v-loading="loading"
-        :data="tableData"
+        :data="data"
         border
         stripe
         style="width: 100%"
         @selection-change="handleSelectionChange"
       >
-        <ElTableColumn type="selection" width="50" align="center" />
-
-        <ElTableColumn prop="hostname" label="主机名称" min-width="150" show-overflow-tooltip>
-          <template #default="{ row }">
-            <span class="hostname-text">{{ row.hostname }}</span>
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn prop="ip" label="IP地址" width="140" show-overflow-tooltip />
-
-        <ElTableColumn prop="innerIp" label="内网IP" width="140" show-overflow-tooltip>
-          <template #default="{ row }">
-            <span class="text-gray">{{ row.innerIp || '-' }}</span>
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn label="版本" width="140" align="center">
-          <template #default="{ row }">
-            <div v-if="row.agentVersion" class="version-cell">
-              <span class="version-text">v{{ row.agentVersion }}</span>
-              <ElTag
-                v-if="latestVersion && row.agentStatus === 'running'"
-                :type="getVersionStatus(row.agentVersion).type"
-                size="small"
-                class="version-tag"
-              >
-                {{ getVersionStatus(row.agentVersion).text }}
-              </ElTag>
-            </div>
-            <span v-else class="text-gray">-</span>
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn label="状态" width="100" align="center">
-          <template #default="{ row }">
-            <ElTag :type="getAgentStatusTag(row.agentStatus).type" size="small">
-              {{ getAgentStatusTag(row.agentStatus).text }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn prop="agentPort" label="监听端口" width="100" align="center">
-          <template #default="{ row }">
-            <span class="text-gray">{{ row.agentPort || '-' }}</span>
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn label="最近心跳" width="130" align="center">
-          <template #default="{ row }">
-            <span class="text-gray">{{ formatRelativeTime(row.lastHeartbeatAt) }}</span>
-          </template>
-        </ElTableColumn>
-
-        <ElTableColumn label="操作" width="120" align="center" fixed="right">
-          <template #default="{ row }">
-            <!-- 未安装：直接显示部署按钮 -->
-            <template v-if="!row.agentStatus || row.agentStatus === 'uninstalled'">
-              <ElButton type="primary" size="small" @click="handleDeploy(row)">部署</ElButton>
-            </template>
-
-            <!-- 运行中或离线：显示升级按钮和更多菜单 -->
-            <template v-else>
-              <span class="actions-wrapper">
-                <!-- 运行中且非最新版本：显示升级按钮 -->
-                <a
-                  v-if="row.agentStatus === 'running' && !isLatestVersion(row.agentVersion)"
-                  class="action-link upgrade-link"
-                  @click="handleUpgrade(row)"
-                >
-                  <icon-mdi-arrow-up-bold />
-                  <span>升级</span>
-                </a>
-
-                <!-- 更多菜单 -->
-                <ElDropdown trigger="click">
-                  <span class="more-btn">
-                    <i class="more-icon">⋮</i>
-                  </span>
-                  <template #dropdown>
-                    <ElDropdownMenu>
-                      <!-- 重启 -->
-                      <ElDropdownItem @click="handleRestart(row)">
-                        <ElIcon class="el-icon--left"><icon-mdi-refresh /></ElIcon>
-                        重启
-                      </ElDropdownItem>
-                      <!-- 卸载 -->
-                      <ElDropdownItem @click="handleUninstall(row)">
-                        <ElIcon class="el-icon--left"><icon-mdi-delete /></ElIcon>
-                        卸载
-                      </ElDropdownItem>
-                      <!-- 删除记录 -->
-                      <ElDropdownItem @click="handleDeleteRecord(row)">
-                        <ElIcon class="el-icon--left"><icon-mdi-trash-can /></ElIcon>
-                        删除记录
-                      </ElDropdownItem>
-                    </ElDropdownMenu>
-                  </template>
-                </ElDropdown>
-              </span>
-            </template>
-          </template>
-        </ElTableColumn>
+        <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
       </ElTable>
 
-      <!-- 分页 -->
-      <div v-if="total > 0" class="pagination-bar">
+      <div v-if="mobilePagination.total" class="pagination-bar">
         <ElPagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="total"
           layout="total, sizes, prev, pager, next"
-          @current-change="handlePageChange"
-          @size-change="handlePageSizeChange"
+          v-bind="mobilePagination"
+          @current-change="mobilePagination['current-change']"
+          @size-change="mobilePagination['size-change']"
         />
       </div>
     </ElCard>
@@ -608,15 +543,9 @@
     margin-right: 8px;
   }
 
-  .hostname-text {
-    font-weight: 500;
-    color: #303133;
-  }
-
-  .version-text {
-    font-size: 12px;
-    color: #67c23a;
-    font-family: monospace;
+  .text-gray {
+    color: #909399;
+    font-size: 13px;
   }
 
   .version-cell {
@@ -626,13 +555,14 @@
     gap: 4px;
   }
 
-  .version-tag {
-    font-size: 11px;
+  .version-text {
+    font-size: 12px;
+    color: #67c23a;
+    font-family: monospace;
   }
 
-  .text-gray {
-    color: #909399;
-    font-size: 13px;
+  .version-tag {
+    font-size: 11px;
   }
 
   .batch-progress-text {

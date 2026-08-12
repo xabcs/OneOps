@@ -1,8 +1,7 @@
-<script setup lang="ts">
-  import { computed, h, onMounted, ref } from 'vue';
+<script setup lang="tsx">
+  import { h, onMounted, ref } from 'vue';
   import { ElMessageBox } from 'element-plus';
   import {
-    fetchCreateAccessPolicy,
     fetchDeleteAccessPolicy,
     fetchGetAccessPolicies,
     fetchUpdateAccessPolicy
@@ -14,6 +13,7 @@
     fetchGetServerTags,
     fetchGetUserList
   } from '@/service/api';
+  import PolicyOperateDrawer from './modules/policy-operate-drawer.vue';
 
   defineOptions({
     name: 'CMDBAccessPolicies'
@@ -22,9 +22,6 @@
   const loading = ref(false);
   const policies = ref<Bastion.AccessPolicy[]>([]);
   const total = ref(0);
-  const dialogVisible = ref(false);
-  const dialogMode = ref<'create' | 'edit'>('create');
-  const currentPolicy = ref<Partial<Bastion.AccessPolicyForm>>({});
 
   // 分页
   const pagination = ref({
@@ -32,41 +29,12 @@
     pageSize: 20
   });
 
-  // 表单引用
-  const formRef = ref();
+  // Drawer 状态
+  const drawerVisible = ref(false);
+  const operateType = ref<UI.TableOperateType>('add');
+  const editingData = ref<Bastion.AccessPolicy | null>(null);
 
-  // 表单验证规则
-  const rules = {
-    name: [{ required: true, message: '请输入策略名称', trigger: 'blur' }],
-    subjectType: [{ required: true, message: '请选择授权对象类型', trigger: 'change' }],
-    subjectId: [{ required: true, message: '请选择授权对象', trigger: 'change' }],
-    assetScopeType: [{ required: true, message: '请选择资产范围类型', trigger: 'change' }],
-    assetScopeId: [{ required: true, message: '请选择资产范围', trigger: 'change' }]
-  };
-
-  // 授权对象类型选项
-  const subjectTypeOptions = [
-    { label: '用户', value: 'user' },
-    { label: '角色', value: 'role' },
-    { label: '用户组', value: 'user_group' }
-  ];
-
-  // 资产范围类型选项
-  const assetScopeTypeOptions = [
-    { label: '全部资产', value: 'all' },
-    { label: '单台服务器', value: 'server' },
-    { label: '主机分组', value: 'group' },
-    { label: '业务系统', value: 'business' },
-    { label: '标签', value: 'tag' }
-  ];
-
-  // 协议选项
-  const protocolOptions = [
-    { label: 'SSH', value: 'ssh' },
-    { label: 'SFTP', value: 'sftp' }
-  ];
-
-  // ========== 资产数据 ==========
+  // ========== 资产数据（用于列表展示名称解析）==========
   const users = ref<Api.SystemManage.User[]>([]);
   const roles = ref<Api.SystemManage.AllRole[]>([]);
   const serverGroups = ref<CMDB.ServerGroup[]>([]);
@@ -92,30 +60,16 @@
 
   // 新增策略
   function handleCreate() {
-    dialogMode.value = 'create';
-    currentPolicy.value = {
-      name: '',
-      subjectType: 'role',
-      subjectId: [],
-      assetScopeType: 'all',
-      assetScopeId: 0,
-      loginAccounts: ['root'],
-      protocols: ['ssh', 'sftp'],
-      allowFileTransfer: true,
-      allowSudo: false,
-      requireApproval: false,
-      timeWindow: undefined,
-      highRiskCommands: [],
-      status: 1
-    };
-    dialogVisible.value = true;
+    operateType.value = 'add';
+    editingData.value = null;
+    drawerVisible.value = true;
   }
 
   // 编辑策略
   function handleEdit(policy: Bastion.AccessPolicy) {
-    dialogMode.value = 'edit';
-    currentPolicy.value = { ...policy };
-    dialogVisible.value = true;
+    operateType.value = 'edit';
+    editingData.value = policy;
+    drawerVisible.value = true;
   }
 
   // 删除策略
@@ -151,55 +105,6 @@
     }
   }
 
-  // 提交表单
-  async function handleSubmit() {
-    try {
-      await formRef.value?.validate();
-
-      const data = { ...currentPolicy.value };
-
-      if (dialogMode.value === 'create') {
-        await fetchCreateAccessPolicy(data as Bastion.AccessPolicyForm);
-        window.$message?.success('创建成功');
-      } else {
-        await fetchUpdateAccessPolicy(currentPolicy.value.id!, data);
-        window.$message?.success('更新成功');
-      }
-
-      dialogVisible.value = false;
-      getPolicies();
-    } catch (error: unknown) {
-      if (error !== false) {
-        // 表单验证失败时会返回 false
-        window.$message?.error(error instanceof Error ? error.message : '操作失败');
-      }
-    }
-  }
-
-  // 关闭对话框
-  function handleCloseDialog() {
-    dialogVisible.value = false;
-    formRef.value?.resetFields();
-  }
-
-  // 移除登录账号
-  function handleRemoveLoginAccount(index: number) {
-    currentPolicy.value.loginAccounts?.splice(index, 1);
-  }
-
-  // 添加高危命令
-  function handleAddHighRiskCommand() {
-    if (!currentPolicy.value.highRiskCommands) {
-      currentPolicy.value.highRiskCommands = [];
-    }
-    currentPolicy.value.highRiskCommands.push('');
-  }
-
-  // 移除高危命令
-  function handleRemoveHighRiskCommand(index: number) {
-    currentPolicy.value.highRiskCommands?.splice(index, 1);
-  }
-
   // 格式化时间窗口
   function formatTimeWindow(timeWindow?: Bastion.AccessPolicy['timeWindow']): string {
     if (!timeWindow) return '-';
@@ -231,50 +136,17 @@
         fetchGetServerTags()
       ]);
 
-      if (usersRes.status === 'fulfilled') {
-        users.value = usersRes.value.data?.list || [];
-      }
-      if (rolesRes.status === 'fulfilled') {
-        roles.value = rolesRes.value.data || [];
-      }
-      if (groupsRes.status === 'fulfilled') {
-        serverGroups.value = groupsRes.value.data || [];
-      }
-      if (businessRes.status === 'fulfilled') {
-        businessUnits.value = businessRes.value.data || [];
-      }
-      if (tagsRes.status === 'fulfilled') {
-        serverTags.value = tagsRes.value.data || [];
-      }
+      if (usersRes.status === 'fulfilled') users.value = usersRes.value.data?.list || [];
+      if (rolesRes.status === 'fulfilled') roles.value = rolesRes.value.data || [];
+      if (groupsRes.status === 'fulfilled') serverGroups.value = groupsRes.value.data || [];
+      if (businessRes.status === 'fulfilled') businessUnits.value = businessRes.value.data || [];
+      if (tagsRes.status === 'fulfilled') serverTags.value = tagsRes.value.data || [];
     } catch (error) {
       console.error('获取资产数据失败:', error);
     }
   }
 
-  // ========== 授权对象相关 ==========
-  const userOptions = computed(() => {
-    return users.value.map(u => ({ label: `${u.username} (${u.email || '无邮箱'})`, value: u.id }));
-  });
-
-  const roleOptions = computed(() => {
-    return roles.value.map(r => ({ label: r.name, value: r.id }));
-  });
-
-  // ========== 资产范围相关 ==========
-  const groupOptions = computed(() => {
-    return serverGroups.value;
-  });
-
-  const businessOptions = computed(() => {
-    return businessUnits.value;
-  });
-
-  const tagOptions = computed(() => {
-    return serverTags.value.map(t => ({ label: t.name, value: t.id }));
-  });
-
   // ========== 辅助函数 ==========
-  // 获取授权对象名称
   function getSubjectName(type: string, id: number): string {
     if (type === 'user') {
       const user = users.value.find(u => u.id === id);
@@ -287,7 +159,6 @@
     return `ID: ${id}`;
   }
 
-  // 获取资产范围类型名称
   function getAssetScopeTypeName(type: string): string {
     const typeMap: Record<string, string> = {
       all: '全部资产',
@@ -299,7 +170,6 @@
     return typeMap[type] || type;
   }
 
-  // 获取资产范围名称
   function getAssetScopeName(type: string, id: number): string {
     if (type === 'group') {
       const findGroup = (groups: CMDB.ServerGroup[], targetId: number): string => {
@@ -455,183 +325,12 @@
       </div>
     </ElCard>
 
-    <!-- 策略表单对话框 -->
-    <ElDialog
-      v-model="dialogVisible"
-      :title="dialogMode === 'create' ? '新增策略' : '编辑策略'"
-      width="700px"
-      :close-on-click-modal="false"
-      @close="handleCloseDialog"
-    >
-      <ElForm ref="formRef" :model="currentPolicy" :rules="rules" label-width="120px">
-        <ElFormItem label="策略名称" prop="name">
-          <ElInput v-model="currentPolicy.name" placeholder="请输入策略名称" maxlength="100" show-word-limit />
-        </ElFormItem>
-
-        <ElFormItem label="授权对象类型" prop="subjectType">
-          <ElSelect v-model="currentPolicy.subjectType" placeholder="选择授权对象类型" style="width: 100%">
-            <ElOption
-              v-for="option in subjectTypeOptions"
-              :key="option.value"
-              :value="option.value"
-              :label="option.label"
-            />
-          </ElSelect>
-        </ElFormItem>
-
-        <!-- 授权对象为用户时 -->
-        <ElFormItem v-if="currentPolicy.subjectType === 'user'" label="授权对象" prop="subjectId">
-          <ElSelect v-model="currentPolicy.subjectId" placeholder="请选择用户" filterable style="width: 100%">
-            <ElOption v-for="option in userOptions" :key="option.value" :label="option.label" :value="option.value" />
-          </ElSelect>
-        </ElFormItem>
-
-        <!-- 授权对象为角色时 -->
-        <ElFormItem v-if="currentPolicy.subjectType === 'role'" label="授权对象" prop="subjectId">
-          <ElSelect v-model="currentPolicy.subjectId" placeholder="请选择角色" style="width: 100%">
-            <ElOption v-for="option in roleOptions" :key="option.value" :label="option.label" :value="option.value" />
-          </ElSelect>
-        </ElFormItem>
-
-        <!-- 授权对象为用户组时（暂时不支持，显示提示） -->
-        <ElFormItem v-if="currentPolicy.subjectType === 'user_group'" label="授权对象" prop="subjectId">
-          <ElInput placeholder="用户组功能暂未开放" disabled />
-        </ElFormItem>
-
-        <ElFormItem label="资产范围类型" prop="assetScopeType">
-          <ElSelect v-model="currentPolicy.assetScopeType" placeholder="选择资产范围类型" style="width: 100%">
-            <ElOption
-              v-for="option in assetScopeTypeOptions"
-              :key="option.value"
-              :value="option.value"
-              :label="option.label"
-            />
-          </ElSelect>
-        </ElFormItem>
-
-        <!-- 全部资产时不需要选择 -->
-        <ElFormItem v-if="currentPolicy.assetScopeType === 'all'" label="资产范围">
-          <ElInput value="全部资产" disabled />
-        </ElFormItem>
-
-        <!-- 资产范围为主机分组时 -->
-        <ElFormItem v-if="currentPolicy.assetScopeType === 'group'" label="资产范围" prop="assetScopeId">
-          <ElTreeSelect
-            v-model="currentPolicy.assetScopeId"
-            :data="groupOptions"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
-            placeholder="请选择主机分组"
-            check-strictly
-            style="width: 100%"
-          />
-        </ElFormItem>
-
-        <!-- 资产范围为业务系统时 -->
-        <ElFormItem v-if="currentPolicy.assetScopeType === 'business'" label="资产范围" prop="assetScopeId">
-          <ElTreeSelect
-            v-model="currentPolicy.assetScopeId"
-            :data="businessOptions"
-            :props="{ label: 'name', value: 'id', children: 'children' }"
-            placeholder="请选择业务系统"
-            check-strictly
-            style="width: 100%"
-          />
-        </ElFormItem>
-
-        <!-- 资产范围为标签时 -->
-        <ElFormItem v-if="currentPolicy.assetScopeType === 'tag'" label="资产范围" prop="assetScopeId">
-          <ElSelect v-model="currentPolicy.assetScopeId" placeholder="请选择标签" style="width: 100%">
-            <ElOption v-for="option in tagOptions" :key="option.value" :label="option.label" :value="option.value" />
-          </ElSelect>
-        </ElFormItem>
-
-        <!-- 资产范围为单台服务器时（暂时不支持，显示提示） -->
-        <ElFormItem v-if="currentPolicy.assetScopeType === 'server'" label="资产范围" prop="assetScopeId">
-          <ElInput placeholder="单台服务器选择功能即将开放" disabled />
-        </ElFormItem>
-
-        <ElFormItem label="允许的登录账号">
-          <div class="tags-input-wrapper">
-            <ElTag
-              v-for="(account, idx) in currentPolicy.loginAccounts"
-              :key="idx"
-              closable
-              style="margin-right: 8px; margin-bottom: 8px"
-              @close="handleRemoveLoginAccount(idx)"
-            >
-              {{ account }}
-            </ElTag>
-            <ElInput
-              v-if="!currentPolicy.loginAccounts || currentPolicy.loginAccounts.length === 0"
-              placeholder="输入账号后按回车"
-              size="small"
-              style="width: 150px"
-              @change="
-                (val: string) => {
-                  if (val) {
-                    currentPolicy.loginAccounts = [val];
-                  }
-                }
-              "
-            />
-          </div>
-        </ElFormItem>
-
-        <ElFormItem label="允许的协议">
-          <ElCheckboxGroup v-model="currentPolicy.protocols">
-            <ElCheckbox
-              v-for="option in protocolOptions"
-              :key="option.value"
-              :value="option.value"
-              :label="option.label"
-            />
-          </ElCheckboxGroup>
-        </ElFormItem>
-
-        <ElFormItem label="文件传输">
-          <ElSwitch v-model="currentPolicy.allowFileTransfer" />
-          <span style="margin-left: 8px">允许文件传输</span>
-        </ElFormItem>
-
-        <ElFormItem label="Sudo 权限">
-          <ElSwitch v-model="currentPolicy.allowSudo" />
-          <span style="margin-left: 8px">允许 sudo</span>
-        </ElFormItem>
-
-        <ElFormItem label="需要审批">
-          <ElSwitch v-model="currentPolicy.requireApproval" />
-          <span style="margin-left: 8px">连接前需要审批</span>
-        </ElFormItem>
-
-        <ElFormItem label="高危命令">
-          <div class="tags-input-wrapper">
-            <ElTag
-              v-for="(cmd, idx) in currentPolicy.highRiskCommands"
-              :key="idx"
-              closable
-              type="danger"
-              style="margin-right: 8px; margin-bottom: 8px"
-              @close="handleRemoveHighRiskCommand(idx)"
-            >
-              {{ cmd }}
-            </ElTag>
-            <ElButton size="small" @click="handleAddHighRiskCommand">添加</ElButton>
-          </div>
-        </ElFormItem>
-
-        <ElFormItem label="状态">
-          <ElRadioGroup v-model="currentPolicy.status">
-            <ElRadio :value="1">启用</ElRadio>
-            <ElRadio :value="0">禁用</ElRadio>
-          </ElRadioGroup>
-        </ElFormItem>
-      </ElForm>
-
-      <template #footer>
-        <ElButton @click="handleCloseDialog">取消</ElButton>
-        <ElButton type="primary" @click="handleSubmit">确定</ElButton>
-      </template>
-    </ElDialog>
+    <PolicyOperateDrawer
+      v-model:visible="drawerVisible"
+      :operate-type="operateType"
+      :row-data="editingData"
+      @submitted="getPolicies"
+    />
   </div>
 </template>
 
@@ -655,11 +354,5 @@
     display: flex;
     justify-content: center;
     margin-top: 16px;
-  }
-
-  .tags-input-wrapper {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
   }
 </style>

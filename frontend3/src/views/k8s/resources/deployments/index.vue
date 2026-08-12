@@ -3,11 +3,6 @@
   import { useRoute, useRouter } from 'vue-router';
   import {
     ElButton,
-    ElDialog,
-    ElForm,
-    ElFormItem,
-    ElInput,
-    ElInputNumber,
     ElMessage,
     ElMessageBox,
     ElOption,
@@ -16,18 +11,16 @@
     ElSpace,
     ElTable,
     ElTableColumn,
-    ElTag,
-    type FormInstance,
-    type FormRules
+    ElTag
   } from 'element-plus';
   import {
     deleteK8sDeployment,
     fetchK8sClusterNamespaces,
     fetchK8sClusters,
     fetchK8sDeployments,
-    restartK8sDeployment,
-    scaleK8sDeployment
+    restartK8sDeployment
   } from '@/service/api/k8s';
+  import ScaleDialog from './modules/ScaleDialog.vue';
 
   defineOptions({ name: 'K8sDeployments' });
 
@@ -38,8 +31,7 @@
   const loading = ref(false);
   const dataSource = ref<K8s.Deployment[]>([]);
   const showScaleModal = ref(false);
-  const submitting = ref(false);
-  const scaleFormRef = ref<FormInstance | null>(null);
+  const scaleTarget = ref<K8s.Deployment | null>(null);
 
   // 当前选中的集群和命名空间
   const selectedCluster = ref<number | null>(null);
@@ -55,34 +47,11 @@
     namespace: 'default'
   });
 
-  const scaleData = reactive({
-    replicas: 1
-  });
-
-  const currentDeployment = ref<K8s.Deployment | null>(null);
-  const currentDeploymentName = ref('');
-
   const pagination = reactive({
     page: 1,
     pageSize: 10,
     itemCount: 0
   });
-
-  const scaleRules: FormRules = {
-    replicas: [
-      { required: true, message: '请输入副本数', trigger: 'blur' },
-      {
-        validator: (rule, value, callback) => {
-          if (value < 0 || value > 100) {
-            callback(new Error('副本数必须在 0-100 之间'));
-          } else {
-            callback();
-          }
-        },
-        trigger: 'blur'
-      }
-    ]
-  };
 
   // 状态显示
   const getStatusTag = (deployment: K8s.Deployment) => {
@@ -206,34 +175,8 @@
 
   // 缩放 Deployment
   const handleScale = (row: K8s.Deployment) => {
-    currentDeployment.value = row;
-    currentDeploymentName.value = row.name;
-    scaleData.replicas = row.replicas || 1;
+    scaleTarget.value = row;
     showScaleModal.value = true;
-  };
-
-  // 提交缩放
-  const handleScaleSubmit = async () => {
-    if (!scaleFormRef.value) return;
-
-    await scaleFormRef.value.validate();
-    submitting.value = true;
-
-    try {
-      await scaleK8sDeployment(selectedCluster.value!, {
-        namespace: filters.namespace,
-        name: currentDeploymentName.value,
-        replicas: scaleData.replicas
-      });
-      message.success('缩放成功');
-      showScaleModal.value = false;
-      loadDeployments();
-    } catch (error: unknown) {
-      const err = error as Error;
-      message.error(err.message || '缩放失败');
-    } finally {
-      submitting.value = false;
-    }
   };
 
   // 重启 Deployment
@@ -441,19 +384,12 @@
     </div>
 
     <!-- 缩放对话框 -->
-    <ElDialog v-model="showScaleModal" title="缩放 Deployment" width="500px">
-      <ElForm ref="scaleFormRef" :model="scaleData" :rules="scaleRules" label-width="100px">
-        <ElFormItem label="Deployment">
-          <ElInput :value="currentDeploymentName" disabled />
-        </ElFormItem>
-        <ElFormItem label="副本数" prop="replicas">
-          <ElInputNumber v-model="scaleData.replicas" :min="0" :max="100" :step="1" />
-        </ElFormItem>
-      </ElForm>
-      <template #footer>
-        <ElButton @click="showScaleModal = false">取消</ElButton>
-        <ElButton type="primary" :loading="submitting" @click="handleScaleSubmit">确定</ElButton>
-      </template>
-    </ElDialog>
+    <ScaleDialog
+      v-model:visible="showScaleModal"
+      :cluster-id="selectedCluster"
+      :namespace="filters.namespace"
+      :deployment="scaleTarget"
+      @submitted="loadDeployments"
+    />
   </div>
 </template>

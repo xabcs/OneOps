@@ -1,19 +1,24 @@
 <script setup lang="tsx">
   import { onMounted, ref } from 'vue';
   import { fetchApplications, fetchOperationLogs } from '@/service/api/application-permission';
+  import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
+  import type { FlatResponseData } from '@sa/axios';
 
   defineOptions({ name: 'AuthCenterOperationLogs' });
 
-  const loading = ref(false);
-  const tableData = ref<Api.ApplicationPermission.ApplicationOperationLog[]>([]);
-  const applications = ref<Api.ApplicationPermission.Application[]>([]);
+  interface SearchParams {
+    page: number;
+    pageSize: number;
+    appId: number | null;
+  }
 
-  const pagination = ref({
-    page: 1,
-    pageSize: 10,
-    total: 0,
-    appId: null as number | null
-  });
+  function getInitSearchParams(): SearchParams {
+    return { page: 1, pageSize: 10, appId: null };
+  }
+
+  const searchParams = ref<SearchParams>(getInitSearchParams());
+
+  const applications = ref<Api.ApplicationPermission.Application[]>([]);
 
   async function getApplications() {
     const { data, error } = await fetchApplications({ page: 1, pageSize: 1000 });
@@ -22,39 +27,67 @@
     }
   }
 
-  async function getData() {
-    if (!pagination.value.appId) return;
-
-    loading.value = true;
-    try {
-      const { data, error } = await fetchOperationLogs(pagination.value.appId, {
-        page: pagination.value.page,
-        pageSize: pagination.value.pageSize
-      });
-
-      if (!error && data) {
-        tableData.value = data.list || [];
-        pagination.value.total = data.total || 0;
+  const { columns, data, loading, mobilePagination, getDataByPage } = useUIPaginatedTable({
+    paginationProps: {
+      currentPage: searchParams.value.page,
+      pageSize: searchParams.value.pageSize,
+      pageSizes: [10, 20, 50, 100]
+    },
+    api: () => {
+      if (!searchParams.value.appId) {
+        return Promise.resolve({
+          error: null,
+          data: { list: [], total: 0 }
+        }) as unknown as ReturnType<typeof fetchOperationLogs>;
       }
-    } finally {
-      loading.value = false;
-    }
+      return fetchOperationLogs(searchParams.value.appId!, {
+        page: searchParams.value.page,
+        pageSize: searchParams.value.pageSize
+      });
+    },
+    transform: response =>
+      defaultTransform<Api.ApplicationPermission.ApplicationOperationLog>(
+        response as unknown as FlatResponseData<
+          unknown,
+          Api.Common.PaginatingQueryRecord<Api.ApplicationPermission.ApplicationOperationLog>
+        >
+      ),
+    onPaginationParamsChange: params => {
+      searchParams.value.page = params.currentPage ?? 1;
+      searchParams.value.pageSize = params.pageSize ?? 10;
+    },
+    columns: () => [
+      { prop: 'index', type: 'index', label: '序号', width: 60, align: 'center' },
+      { prop: 'operation', label: '操作类型', align: 'center', minWidth: 120 },
+      { prop: 'target', label: '操作目标', align: 'center', minWidth: 150 },
+      {
+        prop: 'status',
+        label: '状态',
+        align: 'center',
+        width: 100,
+        formatter: row => {
+          const t = getStatusTag(row.status);
+          return (
+            <ElTag type={t.type}>{t.label}</ElTag>
+          );
+        }
+      },
+      { prop: 'operator', label: '操作人', align: 'center', minWidth: 120 },
+      { prop: 'createdAt', label: '操作时间', align: 'center', minWidth: 160 }
+    ]
+  });
+
+  function getStatusTag(status: string): { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string } {
+    const map: Record<string, { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
+      success: { type: 'success', label: '成功' },
+      failed: { type: 'danger', label: '失败' },
+      running: { type: 'warning', label: '进行中' }
+    };
+    return map[status] || { type: 'primary', label: status };
   }
 
   function handleAppChange() {
-    pagination.value.page = 1;
-    getData();
-  }
-
-  function handlePageChange(page: number) {
-    pagination.value.page = page;
-    getData();
-  }
-
-  function handleSizeChange(size: number) {
-    pagination.value.pageSize = size;
-    pagination.value.page = 1;
-    getData();
+    getDataByPage(1);
   }
 
   onMounted(() => {
@@ -67,7 +100,7 @@
     <!-- 应用选择 -->
     <ElCard shadow="never">
       <ElSelect
-        v-model="pagination.appId"
+        v-model="searchParams.appId"
         placeholder="请选择应用查看操作日志"
         class="w-300px"
         @change="handleAppChange"
@@ -82,30 +115,17 @@
         <span class="text-lg font-medium">操作日志列表</span>
       </template>
 
-      <ElTable v-loading="loading" :data="tableData" :border="false">
-        <ElTableColumn type="index" label="序号" width="60" align="center" />
-        <ElTableColumn prop="operation" label="操作类型" align="center" min-width="120" />
-        <ElTableColumn prop="target" label="操作目标" align="center" min-width="150" />
-        <ElTableColumn prop="status" label="状态" align="center" width="100">
-          <template #default="{ row }">
-            <ElTag :type="row.status === 'success' ? 'success' : row.status === 'failed' ? 'danger' : 'warning'">
-              {{ row.status === 'success' ? '成功' : row.status === 'failed' ? '失败' : '进行中' }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn prop="operator" label="操作人" align="center" min-width="120" />
-        <ElTableColumn prop="createdAt" label="操作时间" align="center" min-width="160" />
+      <ElTable v-loading="loading" :data="data" :border="false">
+        <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
       </ElTable>
 
       <div class="mt-4 flex justify-end">
         <ElPagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.pageSize"
-          :total="pagination.total"
-          :page-sizes="[10, 20, 50, 100]"
+          v-if="mobilePagination.total"
           layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
+          v-bind="mobilePagination"
+          @current-change="mobilePagination['current-change']"
+          @size-change="mobilePagination['size-change']"
         />
       </div>
     </ElCard>

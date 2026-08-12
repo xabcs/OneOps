@@ -1,138 +1,109 @@
 <script setup lang="tsx">
-  import { onMounted, ref } from 'vue';
-  import { Delete, Edit, Plus, Refresh, Search } from '@element-plus/icons-vue';
-  import {
-    createAuthGroup,
-    deleteAuthGroup,
-    fetchAuthGroups,
-    updateAuthGroup
-  } from '@/service/api/application-permission';
+  import { ref } from 'vue';
+  import { Delete, Edit, Plus } from '@element-plus/icons-vue';
+  import { deleteAuthGroup, fetchAuthGroups } from '@/service/api/application-permission';
+  import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
+  import RoleSearch from './modules/role-search.vue';
+  import RoleOperateDrawer from './modules/role-operate-drawer.vue';
 
   defineOptions({ name: 'AuthCenterGroups' });
 
-  const loading = ref(false);
-  const tableData = ref<Api.ApplicationPermission.AuthGroup[]>([]);
-  const total = ref(0);
-  const searchName = ref('');
+  interface SearchParams {
+    page: number;
+    pageSize: number;
+    name: string;
+    code: string;
+    description: string;
+  }
 
-  const pagination = ref({
-    page: 1,
-    pageSize: 10
-  });
+  function getInitSearchParams(): SearchParams {
+    return { page: 1, pageSize: 10, name: '', code: '', description: '' };
+  }
 
-  const drawerVisible = ref(false);
-  const isEdit = ref(false);
+  const searchParams = ref<SearchParams>(getInitSearchParams());
 
-  const formData = ref<Api.ApplicationPermission.AuthGroup>({
-    name: '',
-    code: '',
-    description: '',
-    status: 1
-  });
-
-  async function getData() {
-    loading.value = true;
-    try {
-      const { data, error } = await fetchAuthGroups({
-        page: pagination.value.page,
-        pageSize: pagination.value.pageSize,
-        name: searchName.value
-      });
-      if (!error && data) {
-        tableData.value = data.list || [];
-        total.value = data.total || 0;
+  const { columns, data, getData, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
+    paginationProps: {
+      currentPage: searchParams.value.page,
+      pageSize: searchParams.value.pageSize,
+      pageSizes: [10, 20, 50, 100]
+    },
+    api: () => fetchAuthGroups(searchParams.value),
+    transform: response => defaultTransform(response),
+    onPaginationParamsChange: params => {
+      searchParams.value.page = params.currentPage ?? 1;
+      searchParams.value.pageSize = params.pageSize ?? 10;
+    },
+    columns: () => [
+      { prop: 'index', type: 'index', label: '序号', width: 60, align: 'center' },
+      { prop: 'name', label: '用户组名称', align: 'center', minWidth: 120 },
+      { prop: 'code', label: '用户组代码', align: 'center', minWidth: 120 },
+      { prop: 'description', label: '描述', align: 'center', minWidth: 200 },
+      {
+        prop: 'status',
+        label: '状态',
+        align: 'center',
+        width: 80,
+        formatter: row => (
+          <ElTag type={row.status === 1 ? 'success' : 'info'}>{row.status === 1 ? '启用' : '禁用'}</ElTag>
+        )
+      },
+      {
+        prop: 'operate',
+        label: '操作',
+        align: 'center',
+        width: 150,
+        fixed: 'right',
+        formatter: row => (
+          <ElSpace>
+            <ElButton size="small" type="warning" icon={Edit} onClick={() => handleEdit(row.id)}>
+              编辑
+            </ElButton>
+            <ElPopconfirm title="确认删除该用户组？" onConfirm={() => handleDelete(row.id)}>
+              {{
+                reference: () => (
+                  <ElButton size="small" type="danger" icon={Delete}>
+                    删除
+                  </ElButton>
+                )
+              }}
+            </ElPopconfirm>
+          </ElSpace>
+        )
       }
-    } finally {
-      loading.value = false;
-    }
-  }
+    ]
+  });
 
-  function handleSearch() {
-    pagination.value.page = 1;
-    getData();
-  }
-
-  function handleReset() {
-    searchName.value = '';
-    pagination.value.page = 1;
-    getData();
-  }
-
-  function handleAdd() {
-    isEdit.value = false;
-    formData.value = {
-      name: '',
-      code: '',
-      description: '',
-      status: 1
-    };
-    drawerVisible.value = true;
-  }
-
-  function handleEdit(row: Api.ApplicationPermission.AuthGroup) {
-    isEdit.value = true;
-    formData.value = { ...row };
-    drawerVisible.value = true;
-  }
-
-  async function handleSubmit() {
-    const api = isEdit.value ? updateAuthGroup(formData.value.id!, formData.value) : createAuthGroup(formData.value);
-
-    const { error } = await api;
-    if (!error) {
-      ElMessage.success(isEdit.value ? '更新成功' : '添加成功');
-      drawerVisible.value = false;
-      getData();
-    }
-  }
+  const { drawerVisible, operateType, editingData, handleAdd, handleEdit, onDeleted } = useTableOperate(
+    data,
+    'id',
+    getData
+  );
 
   async function handleDelete(id: number) {
     const { error } = await deleteAuthGroup(id);
     if (!error) {
-      ElMessage.success('删除成功');
-      getData();
+      await onDeleted();
     }
   }
 
-  function handlePageChange(page: number) {
-    pagination.value.page = page;
-    getData();
+  function handleSearch() {
+    getDataByPage(1);
   }
 
-  function handleSizeChange(size: number) {
-    pagination.value.pageSize = size;
-    pagination.value.page = 1;
-    getData();
+  function handleReset() {
+    searchParams.value = getInitSearchParams();
+    getDataByPage(1);
   }
-
-  onMounted(() => {
-    getData();
-  });
 </script>
 
 <template>
-  <div class="min-h-500px flex-col gap-4">
-    <!-- 搜索栏 -->
-    <ElCard shadow="never">
-      <ElForm :inline="true">
-        <ElFormItem label="用户组名称">
-          <ElInput
-            v-model="searchName"
-            placeholder="请输入用户组名称"
-            clearable
-            class="w-200px"
-            @keyup.enter="handleSearch"
-          />
-        </ElFormItem>
-        <ElFormItem>
-          <ElButton type="primary" :icon="Search" @click="handleSearch">搜索</ElButton>
-          <ElButton :icon="Refresh" @click="handleReset">重置</ElButton>
-        </ElFormItem>
-      </ElForm>
-    </ElCard>
+  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
+    <!-- 搜索区域 -->
+    <RoleSearch v-model:model="searchParams" @reset="handleReset" @search="handleSearch" />
 
-    <!-- 表格 -->
-    <ElCard shadow="never" class="flex-1">
+    <!-- 表格卡片 -->
+    <ElCard class="card-wrapper sm:flex-1-hidden">
       <template #header>
         <div class="flex items-center justify-between">
           <span class="text-lg font-medium">授权中心用户组列表</span>
@@ -140,64 +111,29 @@
         </div>
       </template>
 
-      <ElTable v-loading="loading" :data="tableData" :border="false">
-        <ElTableColumn type="index" label="序号" width="60" align="center" />
-        <ElTableColumn prop="name" label="用户组名称" align="center" min-width="120" />
-        <ElTableColumn prop="code" label="用户组代码" align="center" min-width="120" />
-        <ElTableColumn prop="description" label="描述" align="center" min-width="200" />
-        <ElTableColumn prop="status" label="状态" align="center" width="80">
-          <template #default="{ row }">
-            <ElTag :type="row.status === 1 ? 'success' : 'info'">
-              {{ row.status === 1 ? '启用' : '禁用' }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="操作" align="center" width="150" fixed="right">
-          <template #default="{ row }">
-            <ElSpace>
-              <ElButton size="small" type="warning" :icon="Edit" @click="handleEdit(row)">编辑</ElButton>
-              <ElButton size="small" type="danger" :icon="Delete" @click="handleDelete(row.id)">删除</ElButton>
-            </ElSpace>
-          </template>
-        </ElTableColumn>
-      </ElTable>
+      <div class="h-[calc(100%-52px)]">
+        <ElTable v-loading="loading" height="100%" :data="data" :border="false" class="sm:h-full" row-key="id">
+          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+        </ElTable>
 
-      <div class="mt-4 flex justify-end">
-        <ElPagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handlePageChange"
-        />
+        <div class="mt-20px flex justify-end">
+          <ElPagination
+            v-if="mobilePagination.total"
+            layout="total, sizes, prev, pager, next, jumper"
+            v-bind="mobilePagination"
+            @current-change="mobilePagination['current-change']"
+            @size-change="mobilePagination['size-change']"
+          />
+        </div>
       </div>
-    </ElCard>
 
-    <!-- 添加/编辑抽屉 -->
-    <ElDrawer v-model="drawerVisible" :title="isEdit ? '编辑用户组' : '添加用户组'" :width="500">
-      <ElForm :model="formData" label-width="100px">
-        <ElFormItem label="用户组名称" required>
-          <ElInput v-model="formData.name" placeholder="请输入用户组名称" />
-        </ElFormItem>
-        <ElFormItem label="用户组代码" required>
-          <ElInput v-model="formData.code" placeholder="请输入用户组代码" :disabled="isEdit" />
-        </ElFormItem>
-        <ElFormItem label="描述">
-          <ElInput v-model="formData.description" type="textarea" :rows="3" placeholder="请输入描述" />
-        </ElFormItem>
-        <ElFormItem label="状态">
-          <ElRadioGroup v-model="formData.status">
-            <ElRadio :value="1">启用</ElRadio>
-            <ElRadio :value="0">禁用</ElRadio>
-          </ElRadioGroup>
-        </ElFormItem>
-      </ElForm>
-      <template #footer>
-        <ElButton @click="drawerVisible = false">取消</ElButton>
-        <ElButton type="primary" @click="handleSubmit">确定</ElButton>
-      </template>
-    </ElDrawer>
+      <!-- 添加/编辑抽屉 -->
+      <RoleOperateDrawer
+        v-model:visible="drawerVisible"
+        :operate-type="operateType"
+        :row-data="editingData"
+        @submitted="getDataByPage"
+      />
+    </ElCard>
   </div>
 </template>

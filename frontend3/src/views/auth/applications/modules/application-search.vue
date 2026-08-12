@@ -15,9 +15,9 @@
   const { formRef, validate, restoreValidation } = useForm();
 
   const model = defineModel<{
-    name: string;
-    code: string;
-    type: string;
+    name?: string;
+    code?: string;
+    type?: string;
   }>('model', { required: true });
 
   async function reset() {

@@ -408,7 +408,7 @@ export function fetchDeleteSSHCredential(id: number) {
  * 测试SSH凭证连接
  */
 export function fetchTestSSHCredential(id: number, testIp: string, testPort: number) {
-  return request({
+  return request<{ success: boolean; message?: string }>({
     url: `/cmdb/ssh-credentials/${id}/test`,
     method: 'post',
     data: { testIp, testPort }

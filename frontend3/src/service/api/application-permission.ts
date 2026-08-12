@@ -4,7 +4,7 @@ import { request } from '../request';
 
 /** 获取应用列表 */
 export function fetchApplications(params: Api.ApplicationPermission.ApplicationSearchParams) {
-  return request<Api.ApplicationPermission.ApplicationList>({
+  return request<Api.Common.PaginatingQueryRecord<Api.ApplicationPermission.Application>>({
     url: '/system/applications',
     method: 'get',
     params
@@ -78,7 +78,7 @@ export function fetchGroupBindings(groupId: number) {
 
 /** 创建用户组权限绑定 */
 export function createGroupBinding(data: { groupId: number; appId: number; applicationRoleId: number }) {
-  return request<boolean>({
+  return request<Api.ApplicationPermission.GroupBindingResponse>({
     url: `/system/groups/${data.groupId}/bindings`,
     method: 'post',
     data
@@ -101,8 +101,9 @@ export function fetchUserGroups(userId: number) {
 }
 
 /** 为用户分配用户组成员 */
+/** 分配用户到用户组（会触发外部系统授权） */
 export function assignUserToGroup(data: { userId: number; groupId: number }) {
-  return request<boolean>({
+  return request<Api.ApplicationPermission.AssignmentResponse>({
     url: '/system/users/assign-group',
     method: 'post',
     data
@@ -137,16 +138,22 @@ export function fetchAuthUsers(params: {
   email?: string;
   phone?: string;
 }) {
-  return request<Api.ApplicationPermission.ApplicationList>({
+  return request<Api.Common.PaginatingQueryRecord<Api.ApplicationPermission.AuthUser>>({
     url: '/system/auth-users/list',
     method: 'get',
     params
   });
 }
 
+/** 创建授权中心用户返回的初始密码 */
+export type CreatedAuthUser = {
+  username: string;
+  password: string;
+};
+
 /** 创建授权中心用户 */
 export function createAuthUser(data: Partial<Api.ApplicationPermission.AuthUser>) {
-  return request<boolean>({
+  return request<CreatedAuthUser>({
     url: '/system/auth-users',
     method: 'post',
     data
@@ -190,7 +197,7 @@ export function fetchAllAuthUsers() {
 
 /** 获取授权中心用户组列表 */
 export function fetchAuthGroups(params: { page: number; pageSize: number; name?: string }) {
-  return request<Api.ApplicationPermission.ApplicationList>({
+  return request<Api.Common.PaginatingQueryRecord<Api.ApplicationPermission.AuthGroup>>({
     url: '/system/auth-groups/list',
     method: 'get',
     params

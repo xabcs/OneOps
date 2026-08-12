@@ -1,18 +1,20 @@
 /**
  * 服务器表单逻辑（创建/编辑）
- * 从 index.vue 拆分：表单数据、表单验证、保存逻辑
+ * 重构：消除 defineExpose({ serverFormRef }) 反模式
+ * - 表单 ref 由子组件内部 useForm() 管理
+ * - 验证在子组件内完成
+ * - 父组件通过 emit('submitted') 通知保存成功
  */
 
 import { reactive, ref } from 'vue';
 import { ElNotification } from 'element-plus';
-import type { FormInstance, FormRules } from 'element-plus';
+import type { FormRules } from 'element-plus';
 import { fetchAssignServerToGroups, fetchCreateServer, fetchUpdateServer } from '@/service/api';
 
 export function useServerForm() {
   // ===== 对话框状态 =====
   const dialogVisible = ref(false);
   const dialogTitle = ref('');
-  const serverFormRef = ref<FormInstance>();
   const serverType = ref<'normal' | 'cloud'>('normal');
   const submitError = ref('');
   const activeCollapse = ref<string[]>([]);
@@ -55,7 +57,7 @@ export function useServerForm() {
     chargeType: 'postpay'
   });
 
-  // 表单验证规则
+  // 表单验证规则（传递给子组件）
   const serverFormRules: FormRules = {
     hostname: [
       { required: true, message: '请输入主机名', trigger: 'blur' },
@@ -194,13 +196,11 @@ export function useServerForm() {
     editDrawerVisible.value = true;
   }
 
-  // ===== 保存 =====
-  async function handleSave(saveAttributeFn: (serverId: number) => Promise<void>) {
-    if (!serverFormRef.value) return;
+  // ===== 保存（不再调用 validate，验证由子组件完成）=====
+  async function submitForm(saveAttributeFn: (serverId: number) => Promise<void>) {
     submitError.value = '';
 
     try {
-      await serverFormRef.value.validate();
       const groupIds = (serverForm.groupIds || []).map((id: number) => Number(id));
 
       const formData: CMDB.ServerForm = {
@@ -244,10 +244,13 @@ export function useServerForm() {
     }
   }
 
+  function resetSubmitError() {
+    submitError.value = '';
+  }
+
   return {
     dialogVisible,
     dialogTitle,
-    serverFormRef,
     serverType,
     submitError,
     activeCollapse,
@@ -258,6 +261,7 @@ export function useServerForm() {
     serverFormRules,
     openAddDialog,
     openEditDrawer,
-    handleSave
+    submitForm,
+    resetSubmitError
   };
 }

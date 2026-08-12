@@ -1,20 +1,7 @@
 <script setup lang="ts">
   import { computed, onMounted, ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import {
-    ElButton,
-    ElDialog,
-    ElForm,
-    ElFormItem,
-    ElInput,
-    ElInputNumber,
-    ElMessage,
-    ElMessageBox,
-    ElTabPane,
-    ElTabs,
-    ElTag,
-    type FormInstance
-  } from 'element-plus';
+  import { ElButton, ElMessage, ElMessageBox, ElTabPane, ElTabs, ElTag } from 'element-plus';
   import * as yaml from 'js-yaml';
   import {
     deleteK8sDeployment,
@@ -22,7 +9,6 @@
     getK8sDeployment,
     getK8sDeploymentPods,
     restartK8sDeployment,
-    scaleK8sDeployment,
     updateK8sDeployment
   } from '@/service/api/k8s';
   import {
@@ -37,6 +23,7 @@
   import K8sEventsTable from '@/components/k8s/K8sEventsTable.vue';
   import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
   import YamlEditor from '@/components/k8s/YamlEditor.vue';
+  import ScaleDialog from './modules/ScaleDialog.vue';
 
   defineOptions({ name: 'K8sDeploymentDetail' });
 
@@ -57,8 +44,6 @@
 
   // 缩放相关
   const showScaleModal = ref(false);
-  const scaleData = ref({ replicas: 1 });
-  const scaleFormRef = ref<FormInstance | null>(null);
 
   // YAML 编辑相关
   const showYamlEditor = ref(false);
@@ -248,27 +233,7 @@
   // 缩放 Deployment
   function handleScale() {
     if (!deployment.value) return;
-    scaleData.value = { replicas: deployment.value.replicas || 1 };
     showScaleModal.value = true;
-  }
-
-  async function handleScaleSubmit() {
-    if (!scaleFormRef.value) return;
-
-    try {
-      await scaleFormRef.value.validate();
-      await scaleK8sDeployment(clusterId.value, {
-        namespace: namespace.value,
-        name: deploymentName.value,
-        replicas: scaleData.value.replicas
-      });
-      ElMessage.success('缩放成功');
-      showScaleModal.value = false;
-      loadDeploymentDetail();
-    } catch (error: unknown) {
-      const err = error as Error;
-      ElMessage.error(err.message || '缩放失败');
-    }
   }
 
   // 重启 Deployment
@@ -425,20 +390,13 @@
     </ElTabs>
 
     <!-- 缩放对话框 -->
-    <ElDialog v-model="showScaleModal" title="缩放 Deployment" width="500px">
-      <ElForm ref="scaleFormRef" :model="scaleData" label-width="100px">
-        <ElFormItem label="Deployment">
-          <ElInput :value="deploymentName" disabled />
-        </ElFormItem>
-        <ElFormItem label="副本数" prop="replicas">
-          <ElInputNumber v-model="scaleData.replicas" :min="0" :max="100" :step="1" />
-        </ElFormItem>
-      </ElForm>
-      <template #footer>
-        <ElButton @click="showScaleModal = false">取消</ElButton>
-        <ElButton type="primary" @click="handleScaleSubmit">确定</ElButton>
-      </template>
-    </ElDialog>
+    <ScaleDialog
+      v-model:visible="showScaleModal"
+      :cluster-id="clusterId"
+      :namespace="namespace"
+      :deployment="deploymentName"
+      @submitted="loadDeploymentDetail"
+    />
 
     <!-- YAML 编辑器 -->
     <YamlEditor

@@ -19,6 +19,9 @@
     fetchDiagnosticHistory,
     fetchJavaPods
   } from '@/service/api/diagnostic';
+  import HistoryDialog from './modules/HistoryDialog.vue';
+
+  defineOptions({ name: 'K8sDiagnostic' });
 
   // 数据状态
   const loading = ref(false);
@@ -530,29 +533,7 @@
     </div>
 
     <!-- 历史记录对话框 -->
-    <ElDialog v-model="historyDialogVisible" title="诊断历史" width="800px">
-      <ElTimeline>
-        <ElTimelineItem
-          v-for="item in diagnosticHistory"
-          :key="item.id"
-          :timestamp="formatTime(item.timestamp)"
-          placement="top"
-        >
-          <ElCard>
-            <div class="history-item">
-              <div class="history-header">
-                <strong>{{ item.command }}</strong>
-                <ElTag :type="item.status === 'success' ? 'success' : 'danger'" size="small">
-                  {{ item.status }}
-                </ElTag>
-              </div>
-              <div v-if="item.args && item.args.length" class="history-args">参数: {{ item.args.join(', ') }}</div>
-              <div class="history-user">执行人: {{ item.user }}</div>
-            </div>
-          </ElCard>
-        </ElTimelineItem>
-      </ElTimeline>
-    </ElDialog>
+    <HistoryDialog v-model:visible="historyDialogVisible" :history="diagnosticHistory" />
   </div>
 </template>
 

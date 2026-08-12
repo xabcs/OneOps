@@ -346,11 +346,8 @@ declare namespace CMDB {
     byProvider: Record<string, number>;
   };
 
-  /** 分页响应 */
-  type PageResponse<T> = {
-    list: T[];
-    total: number;
-  };
+  /** 分页响应（与 Api.Common.PaginatingQueryRecord 结构相同） */
+  type PageResponse<T> = Api.Common.PaginatingQueryRecord<T>;
 }
 
 /** 堡垒机相关类型 */

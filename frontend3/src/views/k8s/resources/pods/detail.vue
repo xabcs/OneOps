@@ -3,10 +3,11 @@
   import { useRoute, useRouter } from 'vue-router';
   import { ElTag } from 'element-plus';
   import yaml from 'js-yaml';
-  import { fetchK8sEvents, fetchK8sPodLogs, getK8sPod, updateK8sPod } from '@/service/api/k8s';
+  import { fetchK8sEvents, getK8sPod, updateK8sPod } from '@/service/api/k8s';
   import { formatAnnotations, formatLabels } from '@/views/k8s/shared/k8s-formatters';
   import YamlEditor from '@/components/k8s/YamlEditor.vue';
   import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
+  import PodLogDialog from './modules/PodLogDialog.vue';
 
   defineOptions({ name: 'K8sPodDetail' });
 
@@ -25,9 +26,7 @@
 
   // 日志相关
   const showLogs = ref(false);
-  const logContent = ref('');
-  const logPodName = ref('');
-  const logContainerName = ref('');
+  const logContainer = ref('');
 
   // YAML 编辑相关
   const showYamlEditor = ref(false);
@@ -178,29 +177,9 @@
   }
 
   // 日志
-  async function handleLogs(containerName?: string) {
-    const cName = containerName || resource.value?.containers?.[0]?.name || '';
-    logPodName.value = resourceName.value;
-    logContainerName.value = cName;
-    logContent.value = '加载中...';
+  function handleLogs(containerName?: string) {
+    logContainer.value = containerName || resource.value?.containers?.[0]?.name || '';
     showLogs.value = true;
-
-    try {
-      const res = await fetchK8sPodLogs(clusterId.value, namespace.value, resourceName.value, {
-        container: cName,
-        tailLines: 200
-      });
-      logContent.value = res.data?.logs || '暂无日志';
-    } catch (error: unknown) {
-      const err = error as Error;
-      logContent.value = `日志加载失败: ${err.message || '未知错误'}`;
-    }
-  }
-
-  // 关闭日志
-  function closeLogs() {
-    showLogs.value = false;
-    logContent.value = '';
   }
 
   // 打开 YAML 编辑器
@@ -451,17 +430,13 @@
     </ElTabs>
 
     <!-- 日志对话框 -->
-    <ElDialog
-      v-model="showLogs"
-      :title="`日志: ${logPodName}${logContainerName ? ' (' + logContainerName + ')' : ''}`"
-      width="900px"
-      top="5vh"
-    >
-      <div class="log-content">{{ logContent }}</div>
-      <template #footer>
-        <ElButton @click="closeLogs">关闭</ElButton>
-      </template>
-    </ElDialog>
+    <PodLogDialog
+      v-model:visible="showLogs"
+      :cluster-id="clusterId"
+      :namespace="namespace"
+      :pod-name="resourceName"
+      :container-name="logContainer"
+    />
 
     <!-- YAML 编辑器 -->
     <YamlEditor
@@ -696,20 +671,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-  }
-
-  /* 日志内容样式 */
-  .log-content {
-    background: #1e1e1e;
-    color: #4ec9b0;
-    padding: 16px;
-    border-radius: 4px;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 13px;
-    white-space: pre-wrap;
-    word-break: break-all;
-    max-height: 600px;
-    overflow: auto;
   }
 
   /* 表格透明样式 - 完全覆盖 Element Plus 默认样式 */

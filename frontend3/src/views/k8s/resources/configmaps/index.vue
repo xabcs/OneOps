@@ -3,7 +3,6 @@
   import { useRoute, useRouter } from 'vue-router';
   import {
     ElButton,
-    ElDialog,
     ElMessage,
     ElMessageBox,
     ElOption,
@@ -19,6 +18,7 @@
     fetchK8sClusters,
     fetchK8sConfigMaps
   } from '@/service/api/k8s';
+  import ConfigMapDetailDialog from './modules/ConfigMapDetailDialog.vue';
 
   defineOptions({ name: 'K8sConfigMaps' });
 
@@ -269,53 +269,6 @@
     </ElTable>
 
     <!-- 详情弹窗 -->
-    <ElDialog v-model="showDetail" :title="`ConfigMap: ${currentDetail?.name}`" width="800px">
-      <div v-if="currentDetail" class="space-y-4">
-        <!-- 基本信息 -->
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <span class="text-sm text-gray-700 font-medium">名称:</span>
-            <span class="ml-2">{{ currentDetail.name }}</span>
-          </div>
-          <div>
-            <span class="text-sm text-gray-700 font-medium">命名空间:</span>
-            <span class="ml-2">{{ currentDetail.namespace }}</span>
-          </div>
-          <div>
-            <span class="text-sm text-gray-700 font-medium">年龄:</span>
-            <span class="ml-2">{{ currentDetail.age }}</span>
-          </div>
-        </div>
-
-        <!-- Labels -->
-        <div v-if="currentDetail.labels && Object.keys(currentDetail.labels).length > 0">
-          <h4 class="mb-2 text-sm text-gray-700 font-medium">标签:</h4>
-          <div class="flex flex-wrap gap-2">
-            <ElTag v-for="(value, key) in currentDetail.labels" :key="key" type="info">{{ key }}: {{ value }}</ElTag>
-          </div>
-        </div>
-
-        <!-- Data -->
-        <div v-if="currentDetail.data && Object.keys(currentDetail.data).length > 0">
-          <h4 class="mb-2 text-sm text-gray-700 font-medium">数据:</h4>
-          <div class="space-y-2">
-            <div v-for="(value, key) in currentDetail.data" :key="key" class="border rounded p-2">
-              <div class="mb-1 text-sm text-gray-700 font-medium">{{ key }}</div>
-              <div class="whitespace-pre-wrap break-all rounded bg-gray-50 p-2 text-sm font-mono">
-                {{ value }}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- YAML Manifest -->
-        <div>
-          <h4 class="mb-2 text-sm text-gray-700 font-medium">YAML 配置:</h4>
-          <div class="max-h-400 overflow-auto whitespace-pre rounded bg-gray-50 p-3 text-sm font-mono">
-            {{ currentDetail.manifest }}
-          </div>
-        </div>
-      </div>
-    </ElDialog>
+    <ConfigMapDetailDialog v-model:visible="showDetail" :detail="currentDetail" />
   </div>
 </template>

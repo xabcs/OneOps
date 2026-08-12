@@ -2,14 +2,9 @@
   import { computed, onMounted, reactive, ref } from 'vue';
   import { ElNotification } from 'element-plus';
   import { Delete, Platform, Plus, Refresh, RefreshRight, Search } from '@element-plus/icons-vue';
-  import {
-    createK8sCluster,
-    deleteK8sCluster,
-    fetchK8sClusters,
-    testK8sConnection,
-    updateK8sCluster
-  } from '@/service/api/k8s';
+  import { deleteK8sCluster, fetchK8sClusters, testK8sConnection } from '@/service/api/k8s';
   import { useThemeStore } from '@/store/modules/theme';
+  import ClusterFormDialog from './modules/ClusterFormDialog.vue';
 
   defineOptions({ name: 'ClusterManage' });
 
@@ -23,26 +18,15 @@
   // 搜索参数
   const queryParams = reactive({
     name: '',
-    clusterType: null,
-    status: null
-  });
-
-  // 表单数据
-  const form = ref({
-    id: null,
-    name: '',
-    description: '',
-    endpoint: '',
-    kubeconfig: '',
-    clusterType: 'standard',
-    region: '',
-    nodeCount: 0
+    clusterType: undefined as string | undefined,
+    status: undefined as number | undefined
   });
 
   // 弹窗状态
-  const dialogVisible = ref(false);
   const loading = ref(false);
-  const submitting = ref(false);
+  const showDialog = ref(false);
+  const dialogMode = ref<'create' | 'edit'>('create');
+  const currentCluster = ref<K8s.Cluster | null>(null);
 
   // 列表数据
   const clusterList = ref<K8s.Cluster[]>([]);
@@ -59,8 +43,6 @@
     const end = start + pageSize.value;
     return clusterList.value.slice(start, end);
   });
-
-  const modalTitle = computed(() => (form.value.id ? '编辑集群' : '添加集群'));
 
   // 加载集群列表
   async function loadClusters() {
@@ -86,85 +68,28 @@
 
   // 创建集群
   function handleAdd() {
-    form.value = {
-      id: null,
-      name: '',
-      description: '',
-      endpoint: '',
-      kubeconfig: '',
-      clusterType: 'standard',
-      region: '',
-      nodeCount: 0
-    };
-    dialogVisible.value = true;
+    dialogMode.value = 'create';
+    currentCluster.value = null;
+    showDialog.value = true;
   }
 
   // 编辑集群
   function handleEdit(row: K8s.Cluster) {
-    form.value = { ...row };
-    dialogVisible.value = true;
-  }
-
-  // 提交表单
-  async function handleSubmit() {
-    submitting.value = true;
-    try {
-      let res;
-      if (form.value.id) {
-        res = await updateK8sCluster(form.value.id, form.value);
-      } else {
-        res = await createK8sCluster(form.value);
-      }
-
-      if (res.data || res.code === 200) {
-        message({
-          title: '操作成功',
-          message: form.value.id ? '更新集群成功' : '创建集群成功',
-          type: 'success',
-          duration: 3000
-        });
-        dialogVisible.value = false;
-        loadClusters();
-      } else {
-        message({
-          title: '操作失败',
-          message: res.message || '操作失败',
-          type: 'error',
-          duration: 3000
-        });
-      }
-    } catch (error: unknown) {
-      const err = error as Error;
-      message({
-        title: '操作失败',
-        message: err.message || '操作失败',
-        type: 'error',
-        duration: 3000
-      });
-    } finally {
-      submitting.value = false;
-    }
+    dialogMode.value = 'edit';
+    currentCluster.value = row;
+    showDialog.value = true;
   }
 
   // 测试连接
   async function handleTestConnection(row: K8s.Cluster) {
     try {
-      const res = await testK8sConnection(row.id);
-      if (res.data || res.code === 200) {
-        message({
-          title: '测试成功',
-          message: `集群 "${row.name}" 连接测试成功`,
-          type: 'success',
-          duration: 3000
-        });
-      } else {
-        message({
-          title: '测试失败',
-          message: res.message || '连接测试失败',
-          type: 'error',
-          duration: 3000
-        });
-      }
+      await testK8sConnection(row.id);
+      message({
+        title: '测试成功',
+        message: `集群 "${row.name}" 连接测试成功`,
+        type: 'success',
+        duration: 3000
+      });
     } catch (error: unknown) {
       const err = error as Error;
       message({
@@ -179,23 +104,14 @@
   // 删除集群
   async function handleDelete(row: K8s.Cluster) {
     try {
-      const res = await deleteK8sCluster(row.id, { confirmName: row.name });
-      if (res.data || res.code === 200) {
-        message({
-          title: '删除成功',
-          message: `集群 "${row.name}" 已成功删除`,
-          type: 'success',
-          duration: 3000
-        });
-        loadClusters();
-      } else {
-        message({
-          title: '删除失败',
-          message: res.message || '删除集群失败',
-          type: 'error',
-          duration: 3000
-        });
-      }
+      await deleteK8sCluster(row.id, { confirmName: row.name });
+      message({
+        title: '删除成功',
+        message: `集群 "${row.name}" 已成功删除`,
+        type: 'success',
+        duration: 3000
+      });
+      loadClusters();
     } catch (error: unknown) {
       const err = error as Error;
       message({
@@ -224,12 +140,8 @@
 
     for (const row of checkedRowKeys.value) {
       try {
-        const res = await deleteK8sCluster(row.id, { confirmName: row.name });
-        if (res.data || res.code === 200) {
-          successCount++;
-        } else {
-          failCount++;
-        }
+        await deleteK8sCluster(row.id, { confirmName: row.name });
+        successCount++;
       } catch (error) {
         failCount++;
       }
@@ -266,8 +178,8 @@
   // 重置搜索
   function handleResetSearch() {
     queryParams.name = '';
-    queryParams.clusterType = null;
-    queryParams.status = null;
+    queryParams.clusterType = undefined;
+    queryParams.status = undefined;
     currentPage.value = 1;
     loadClusters();
   }
@@ -479,40 +391,12 @@
     </div>
 
     <!-- 创建/编辑集群对话框 -->
-    <ElDialog v-model="dialogVisible" :title="modalTitle" width="600px" :close-on-click-modal="false">
-      <ElForm :model="form" label-width="100px">
-        <ElFormItem label="集群名称" required>
-          <ElInput v-model="form.name" placeholder="请输入集群名称" />
-        </ElFormItem>
-        <ElFormItem label="集群描述">
-          <ElInput v-model="form.description" type="textarea" placeholder="请输入集群描述" :rows="3" />
-        </ElFormItem>
-        <ElFormItem label="API 地址" required>
-          <ElInput v-model="form.endpoint" placeholder="https://k8s-api.example.com:6443" />
-        </ElFormItem>
-        <ElFormItem label="Kubeconfig" required>
-          <ElInput v-model="form.kubeconfig" type="textarea" placeholder="粘贴 kubeconfig 内容" :rows="10" />
-        </ElFormItem>
-        <ElFormItem label="集群类型" required>
-          <ElSelect v-model="form.clusterType" placeholder="选择集群类型">
-            <ElOption label="标准集群" value="standard" />
-            <ElOption label="托管集群" value="managed" />
-            <ElOption label="边缘集群" value="edge" />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem label="区域">
-          <ElInput v-model="form.region" placeholder="如：us-west-2" />
-        </ElFormItem>
-        <ElFormItem label="节点数">
-          <ElInputNumber v-model="form.nodeCount" :min="0" placeholder="自动获取" />
-        </ElFormItem>
-      </ElForm>
-
-      <template #footer>
-        <ElButton @click="dialogVisible = false">取消</ElButton>
-        <ElButton type="primary" :loading="submitting" @click="handleSubmit">确定</ElButton>
-      </template>
-    </ElDialog>
+    <ClusterFormDialog
+      v-model:visible="showDialog"
+      :mode="dialogMode"
+      :form-data="currentCluster"
+      @submitted="loadClusters"
+    />
   </div>
 </template>
 

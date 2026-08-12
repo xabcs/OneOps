@@ -4,17 +4,15 @@
   import { ElMessage, ElMessageBox } from 'element-plus';
   import { Bell, ChatDotRound, Message, Plus } from '@element-plus/icons-vue';
   import {
-    createAlertRule,
-    createNotificationChannel,
     deleteAlertRule,
     deleteNotificationChannel,
     fetchAlertRules,
     fetchNotificationChannels,
     testNotificationChannel,
-    updateAlertRule,
-    updateAlertRuleStatus,
-    updateNotificationChannel
+    updateAlertRuleStatus
   } from '@/service/api';
+  import AlertRuleDialog from './modules/AlertRuleDialog.vue';
+  import NotificationChannelDialog from './modules/NotificationChannelDialog.vue';
 
   defineOptions({
     name: 'MonitoringSettings'
@@ -30,24 +28,7 @@
   const alertRulesLoading = ref(false);
   const showRuleDialog = ref(false);
   const ruleDialogMode = ref<'create' | 'edit'>('create');
-  const currentRule = ref<Monitoring.AlertRuleForm>({
-    name: '',
-    level: 'high',
-    metric: 'cpu_usage',
-    condition: '>',
-    threshold: 80,
-    duration: 300,
-    description: ''
-  });
-
-  // 告警级别选项
-  const alertLevelOptions = [
-    { label: '严重', value: 'critical' },
-    { label: '高', value: 'high' },
-    { label: '中', value: 'medium' },
-    { label: '低', value: 'low' },
-    { label: '信息', value: 'info' }
-  ];
+  const currentRule = ref<Monitoring.AlertRule | null>(null);
 
   // 监控指标选项
   const metricOptions = [
@@ -57,14 +38,6 @@
     { label: '1分钟负载', value: 'load1' },
     { label: '5分钟负载', value: 'load5' },
     { label: '15分钟负载', value: 'load15' }
-  ];
-
-  // 告警条件选项
-  const conditionOptions = [
-    { label: '大于', value: '>' },
-    { label: '小于', value: '<' },
-    { label: '等于', value: '==' },
-    { label: '不等于', value: '!=' }
   ];
 
   // 加载告警规则
@@ -84,32 +57,14 @@
   // 新增告警规则
   function handleCreateRule() {
     ruleDialogMode.value = 'create';
-    currentRule.value = {
-      name: '',
-      level: 'high',
-      metric: 'cpu_usage',
-      condition: '>',
-      threshold: 80,
-      duration: 300,
-      description: ''
-    };
+    currentRule.value = null;
     showRuleDialog.value = true;
   }
 
   // 编辑告警规则
   function handleEditRule(rule: Monitoring.AlertRule) {
     ruleDialogMode.value = 'edit';
-    currentRule.value = {
-      id: rule.id,
-      name: rule.name,
-      level: rule.level,
-      metric: rule.metric,
-      condition: rule.condition,
-      threshold: rule.threshold,
-      duration: rule.duration,
-      description: rule.description,
-      enabled: rule.enabled
-    };
+    currentRule.value = rule;
     showRuleDialog.value = true;
   }
 
@@ -143,43 +98,17 @@
     }
   }
 
-  // 保存告警规则
-  async function handleSaveRule() {
-    // 验证表单
-    if (!currentRule.value.name) {
-      ElMessage.warning('请输入规则名称');
-      return;
-    }
-    if (currentRule.value.threshold <= 0) {
-      ElMessage.warning('阈值必须大于0');
-      return;
-    }
-
-    try {
-      if (ruleDialogMode.value === 'create') {
-        await createAlertRule(currentRule.value);
-        ElMessage.success('创建成功');
-      } else {
-        await updateAlertRule(currentRule.value.id!, currentRule.value);
-        ElMessage.success('更新成功');
-      }
-      showRuleDialog.value = false;
-      await loadAlertRules();
-    } catch (error) {
-      ElMessage.error(ruleDialogMode.value === 'create' ? '创建失败' : '更新失败');
-    }
-  }
-
   // 获取级别标签类型
-  function getLevelTagType(level: string) {
-    const map: Record<string, string> = {
+  type TagType = 'primary' | 'info' | 'success' | 'warning' | 'danger';
+  function getLevelTagType(level: string): TagType | undefined {
+    const map: Record<string, TagType> = {
       critical: 'danger',
       high: 'warning',
       medium: 'info',
       low: 'primary',
       info: 'success'
     };
-    return map[level] || '';
+    return map[level];
   }
 
   // 获取级别文本
@@ -208,12 +137,7 @@
   const notificationLoading = ref(false);
   const showChannelDialog = ref(false);
   const channelDialogMode = ref<'create' | 'edit'>('create');
-  const currentChannel = ref<Monitoring.NotificationChannelForm>({
-    channelType: 'email',
-    channelName: '',
-    config: {} as Record<string, unknown>,
-    enabled: true
-  });
+  const currentChannel = ref<Monitoring.NotificationChannel | null>(null);
 
   // 通知渠道类型选项
   const channelTypeOptions = [
@@ -240,34 +164,14 @@
   // 新增通知渠道
   function handleCreateChannel() {
     channelDialogMode.value = 'create';
-    currentChannel.value = {
-      channelType: 'email',
-      channelName: '',
-      config: {
-        smtpHost: '',
-        smtpPort: 587,
-        username: '',
-        password: '',
-        from: '',
-        fromName: '',
-        useTLS: true,
-        recipients: []
-      },
-      enabled: true
-    };
+    currentChannel.value = null;
     showChannelDialog.value = true;
   }
 
   // 编辑通知渠道
   function handleEditChannel(channel: Monitoring.NotificationChannel) {
     channelDialogMode.value = 'edit';
-    currentChannel.value = {
-      id: channel.id,
-      channelType: channel.channelType,
-      channelName: channel.channelName,
-      config: channel.config as Monitoring.EmailConfig,
-      enabled: channel.enabled
-    };
+    currentChannel.value = channel;
     showChannelDialog.value = true;
   }
 
@@ -305,44 +209,6 @@
       if ((error as string) !== 'cancel') {
         ElMessage.error('测试通知发送失败');
       }
-    }
-  }
-
-  // 保存通知渠道
-  async function handleSaveChannel() {
-    // 验证表单
-    if (!currentChannel.value.channelName) {
-      ElMessage.warning('请输入渠道名称');
-      return;
-    }
-
-    // 根据类型验证配置
-    if (currentChannel.value.channelType === 'email') {
-      const config = currentChannel.value.config as Monitoring.EmailConfig;
-      if (!config.smtpHost || !config.from) {
-        ElMessage.warning('请完善邮件配置');
-        return;
-      }
-    } else if (currentChannel.value.channelType === 'wechat') {
-      const config = currentChannel.value.config as Monitoring.WeChatConfig;
-      if (!config.webhookUrl) {
-        ElMessage.warning('请输入企业微信 Webhook URL');
-        return;
-      }
-    }
-
-    try {
-      if (channelDialogMode.value === 'create') {
-        await createNotificationChannel(currentChannel.value);
-        ElMessage.success('创建成功');
-      } else {
-        await updateNotificationChannel(currentChannel.value.id!, currentChannel.value);
-        ElMessage.success('更新成功');
-      }
-      showChannelDialog.value = false;
-      await loadNotificationChannels();
-    } catch (error) {
-      ElMessage.error(channelDialogMode.value === 'create' ? '创建失败' : '更新失败');
     }
   }
 
@@ -501,185 +367,20 @@
     </ElCard>
 
     <!-- 告警规则对话框 -->
-    <ElDialog
-      v-model="showRuleDialog"
-      :title="ruleDialogMode === 'create' ? '新增告警规则' : '编辑告警规则'"
-      width="600px"
-      :close-on-click-modal="false"
-    >
-      <ElForm :model="currentRule" label-width="120px">
-        <ElFormItem label="规则名称" required>
-          <ElInput v-model="currentRule.name" placeholder="请输入规则名称" />
-        </ElFormItem>
-
-        <ElFormItem label="告警级别" required>
-          <ElSelect v-model="currentRule.level" placeholder="请选择告警级别">
-            <ElOption v-for="level in alertLevelOptions" :key="level.value" :label="level.label" :value="level.value" />
-          </ElSelect>
-        </ElFormItem>
-
-        <ElFormItem label="监控指标" required>
-          <ElSelect v-model="currentRule.metric" placeholder="请选择监控指标">
-            <ElOption v-for="metric in metricOptions" :key="metric.value" :label="metric.label" :value="metric.value" />
-          </ElSelect>
-        </ElFormItem>
-
-        <ElFormItem label="判断条件" required>
-          <ElSelect v-model="currentRule.condition" placeholder="请选择条件">
-            <ElOption v-for="cond in conditionOptions" :key="cond.value" :label="cond.label" :value="cond.value" />
-          </ElSelect>
-        </ElFormItem>
-
-        <ElFormItem label="阈值" required>
-          <ElInputNumber v-model="currentRule.threshold" :min="0" :max="100" :precision="2" controls-position="right" />
-          <span class="ml-2 text-gray-500">
-            {{ currentRule.metric.includes('usage') ? '%' : '' }}
-          </span>
-        </ElFormItem>
-
-        <ElFormItem label="持续时间" required>
-          <ElInputNumber v-model="currentRule.duration" :min="0" :max="86400" :step="60" controls-position="right" />
-          <span class="ml-2 text-gray-500">秒（指标条件需持续多久才触发告警）</span>
-        </ElFormItem>
-
-        <ElFormItem label="描述">
-          <ElInput v-model="currentRule.description" type="textarea" :rows="3" placeholder="请输入规则描述" />
-        </ElFormItem>
-      </ElForm>
-
-      <template #footer>
-        <ElButton @click="showRuleDialog = false">取消</ElButton>
-        <ElButton type="primary" @click="handleSaveRule">确定</ElButton>
-      </template>
-    </ElDialog>
+    <AlertRuleDialog
+      v-model:visible="showRuleDialog"
+      :mode="ruleDialogMode"
+      :rule="currentRule"
+      @submitted="loadAlertRules"
+    />
 
     <!-- 通知渠道对话框 -->
-    <ElDialog
-      v-model="showChannelDialog"
-      :title="channelDialogMode === 'create' ? '新增通知渠道' : '编辑通知渠道'"
-      width="650px"
-      :close-on-click-modal="false"
-    >
-      <ElForm :model="currentChannel" label-width="120px">
-        <ElFormItem label="渠道类型" required>
-          <ElSelect
-            v-model="currentChannel.channelType"
-            placeholder="请选择渠道类型"
-            :disabled="channelDialogMode === 'edit'"
-          >
-            <ElOption v-for="type in channelTypeOptions" :key="type.value" :label="type.label" :value="type.value" />
-          </ElSelect>
-        </ElFormItem>
-
-        <ElFormItem label="渠道名称" required>
-          <ElInput v-model="currentChannel.channelName" placeholder="请输入渠道名称" />
-        </ElFormItem>
-
-        <!-- 邮件配置 -->
-        <template v-if="currentChannel.channelType === 'email'">
-          <ElDivider content-position="left">邮件服务器配置</ElDivider>
-
-          <ElFormItem label="SMTP 服务器" required>
-            <ElInput
-              v-model="(currentChannel.config as Monitoring.EmailConfig).smtpHost"
-              placeholder="smtp.example.com"
-            />
-            <span class="ml-2 text-gray-500">服务器地址</span>
-          </ElFormItem>
-
-          <ElFormItem label="SMTP 端口" required>
-            <ElInputNumber
-              v-model="(currentChannel.config as Monitoring.EmailConfig).smtpPort"
-              :min="1"
-              :max="65535"
-              controls-position="right"
-            />
-          </ElFormItem>
-
-          <ElFormItem label="用户名">
-            <ElInput v-model="(currentChannel.config as Monitoring.EmailConfig).username" placeholder="认证用户名" />
-          </ElFormItem>
-
-          <ElFormItem label="密码">
-            <ElInput
-              v-model="(currentChannel.config as Monitoring.EmailConfig).password"
-              type="password"
-              placeholder="认证密码"
-              show-password
-            />
-          </ElFormItem>
-
-          <ElFormItem label="发件人邮箱" required>
-            <ElInput
-              v-model="(currentChannel.config as Monitoring.EmailConfig).from"
-              placeholder="noreply@example.com"
-            />
-          </ElFormItem>
-
-          <ElFormItem label="发件人名称">
-            <ElInput v-model="(currentChannel.config as Monitoring.EmailConfig).fromName" placeholder="OneOps 监控" />
-          </ElFormItem>
-
-          <ElFormItem label="启用 TLS">
-            <ElSwitch v-model="(currentChannel.config as Monitoring.EmailConfig).useTLS" />
-            <span class="ml-2 text-gray-500">使用加密连接</span>
-          </ElFormItem>
-        </template>
-
-        <!-- 企业微信配置 -->
-        <template v-if="currentChannel.channelType === 'wechat'">
-          <ElDivider content-position="left">企业微信机器人配置</ElDivider>
-
-          <ElFormItem label="Webhook URL" required>
-            <ElInput
-              v-model="(currentChannel.config as Monitoring.WeChatConfig).webhookUrl"
-              type="textarea"
-              :rows="3"
-              placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx"
-            />
-          </ElFormItem>
-
-          <ElAlert title="提示" type="info" :closable="false" show-icon class="mb-4">
-            <template #default>
-              <div>在企业微信群聊中添加机器人，获取 Webhook 地址。</div>
-              <div>支持 @ 提醒指定人。</div>
-            </template>
-          </ElAlert>
-        </template>
-
-        <!-- 钉钉/飞书配置 -->
-        <template v-if="currentChannel.channelType === 'dingtalk' || currentChannel.channelType === 'feishu'">
-          <ElDivider content-position="left">
-            {{ currentChannel.channelType === 'dingtalk' ? '钉钉' : '飞书' }} 机器人配置
-          </ElDivider>
-
-          <ElFormItem label="Webhook URL" required>
-            <ElInput
-              v-model="(currentChannel.config as Monitoring.WeChatConfig).webhookUrl"
-              type="textarea"
-              :rows="3"
-              placeholder="请输入 Webhook 地址"
-            />
-          </ElFormItem>
-
-          <ElAlert title="提示" type="info" :closable="false" show-icon>
-            <template #default>
-              <div>在对应的平台群聊中添加自定义机器人，获取 Webhook 地址。</div>
-            </template>
-          </ElAlert>
-        </template>
-
-        <ElFormItem label="启用">
-          <ElSwitch v-model="currentChannel.enabled" />
-          <span class="ml-2 text-gray-500">启用后该渠道将接收告警通知</span>
-        </ElFormItem>
-      </ElForm>
-
-      <template #footer>
-        <ElButton @click="showChannelDialog = false">取消</ElButton>
-        <ElButton type="primary" @click="handleSaveChannel">确定</ElButton>
-      </template>
-    </ElDialog>
+    <NotificationChannelDialog
+      v-model:visible="showChannelDialog"
+      :mode="channelDialogMode"
+      :channel="currentChannel"
+      @submitted="loadNotificationChannels"
+    />
   </div>
 </template>
 

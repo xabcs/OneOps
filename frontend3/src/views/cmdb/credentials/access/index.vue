@@ -1,15 +1,13 @@
-<script setup lang="ts">
-  import { computed, onMounted, reactive, ref } from 'vue';
-  import type { FormInstance, FormRules } from 'element-plus';
-  import { ElMessageBox, ElNotification } from 'element-plus';
+<script setup lang="tsx">
+  import { computed, onMounted, ref } from 'vue';
+  import { ElMessageBox } from 'element-plus';
   import { Setting, User } from '@element-plus/icons-vue';
   import {
-    fetchCreateSSHCredential,
     fetchDeleteSSHCredential,
     fetchGetSSHCredentials,
-    fetchTestSSHCredential,
-    fetchUpdateSSHCredential
+    fetchTestSSHCredential
   } from '@/service/api/cmdb';
+  import SshCredentialOperateDrawer from '../ssh/modules/ssh-credential-operate-drawer.vue';
 
   defineOptions({ name: 'CmdbAccessCredentials' });
 
@@ -25,153 +23,58 @@
     return allData.value.filter(c => c.credentialType === activeTab.value);
   });
 
-  // 对话框
-  const dialogVisible = ref(false);
-  const dialogTitle = ref('');
-  const formRef = ref<FormInstance>();
-  const form = reactive<CMDB.SSHCredentialForm>({
-    name: '',
-    description: '',
-    username: 'root',
-    authType: 'password',
-    password: '',
-    privateKey: '',
-    passphrase: '',
-    credentialType: 'user',
-    status: 1
-  });
+  // Drawer 状态
+  const drawerVisible = ref(false);
+  const operateType = ref<UI.TableOperateType>('add');
+  const editingData = ref<CMDB.SSHCredential | null>(null);
+  const defaultCredentialType = ref<CMDB.CredentialType>('user');
 
   // 测试连接状态
   const testLoading = ref(false);
 
-  // 表单验证规则
-  const rules: FormRules = {
-    name: [
-      { required: true, message: '请输入凭证名称', trigger: 'blur' },
-      { min: 2, max: 100, message: '凭证名称长度在 2 到 100 个字符', trigger: 'blur' }
-    ],
-    username: [{ required: true, message: '请输入SSH用户名', trigger: 'blur' }],
-    credentialType: [{ required: true, message: '请选择凭证用途', trigger: 'change' }],
-    password: [
-      {
-        validator: (_rule, value, callback) => {
-          if (form.authType === 'password' && !value) {
-            callback(new Error('请输入密码'));
-          } else {
-            callback();
-          }
-        },
-        trigger: 'blur'
-      }
-    ],
-    privateKey: [
-      {
-        validator: (_rule, value, callback) => {
-          if (form.authType === 'key' && !value) {
-            callback(new Error('请输入私钥'));
-          } else {
-            callback();
-          }
-        },
-        trigger: 'blur'
-      }
-    ]
-  };
-
-  // 获取凭证列表
   async function getData() {
     loading.value = true;
     try {
-      const { data } = await fetchGetSSHCredentials();
-      allData.value = data || [];
-    } catch (err) {
-      console.error('获取凭证列表失败:', err);
-      ElNotification.error('获取凭证列表失败');
+      const { data, error } = await fetchGetSSHCredentials();
+      if (!error) {
+        allData.value = data || [];
+      }
     } finally {
       loading.value = false;
     }
   }
 
-  // 新增
   function handleAdd() {
-    dialogTitle.value = '新增SSH凭证';
-    Object.assign(form, {
-      id: undefined,
-      name: '',
-      description: '',
-      username: 'root',
-      authType: 'password',
-      password: '',
-      privateKey: '',
-      passphrase: '',
-      credentialType: activeTab.value === 'all' ? 'user' : activeTab.value,
-      status: 1
-    });
-    dialogVisible.value = true;
+    operateType.value = 'add';
+    editingData.value = null;
+    defaultCredentialType.value = activeTab.value === 'all' ? 'user' : activeTab.value;
+    drawerVisible.value = true;
   }
 
-  // 编辑
   function handleEdit(row: CMDB.SSHCredential) {
-    dialogTitle.value = '编辑SSH凭证';
-    Object.assign(form, {
-      id: row.id,
-      name: row.name,
-      description: row.description,
-      username: row.username,
-      authType: row.authType,
-      credentialType: row.credentialType || 'user',
-      password: '',
-      privateKey: '',
-      passphrase: ''
-    });
-    dialogVisible.value = true;
+    operateType.value = 'edit';
+    editingData.value = row;
+    defaultCredentialType.value = row.credentialType || 'user';
+    drawerVisible.value = true;
   }
 
-  // 保存
-  async function handleSave() {
-    if (!formRef.value) return;
+  async function handleDelete(row: CMDB.SSHCredential) {
     try {
-      await formRef.value.validate();
-      const formData = { ...form };
-      if (form.id) {
-        await fetchUpdateSSHCredential(form.id, formData);
-        ElNotification.success('保存成功');
-      } else {
-        await fetchCreateSSHCredential(formData);
-        ElNotification.success('创建成功');
+      await ElMessageBox.confirm(`确定要删除凭证 "${row.name}" 吗？`, '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      });
+      const { error } = await fetchDeleteSSHCredential(row.id);
+      if (!error) {
+        ElMessage.success('删除成功');
+        getData();
       }
-      dialogVisible.value = false;
-      getData();
-    } catch (error) {
-      if (error && typeof error === 'object' && 'message' in error) {
-        ElNotification.error(typeof error.message === 'string' ? error.message : '保存失败');
-      } else if (error !== false) {
-        ElNotification.error('保存失败');
-      }
+    } catch {
+      // 用户取消
     }
   }
 
-  // 删除
-  function handleDelete(row: CMDB.SSHCredential) {
-    ElMessageBox.confirm(`确定要删除凭证 "${row.name}" 吗？`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-      .then(async () => {
-        try {
-          await fetchDeleteSSHCredential(row.id);
-          ElNotification.success('删除成功');
-          getData();
-        } catch (error) {
-          console.error('删除失败:', error);
-          ElNotification.error('删除失败');
-        }
-      })
-      .catch(() => {});
-  }
-
-  // 测试连接
   async function handleTest(row: CMDB.SSHCredential) {
     const testIp = await ElMessageBox.prompt('请输入要测试连接的IP地址', '测试连接 - IP地址', {
       confirmButtonText: '下一步',
@@ -193,35 +96,34 @@
     testLoading.value = true;
     try {
       const { data } = await fetchTestSSHCredential(row.id, testIp.value, Number.parseInt(testPort.value));
-      if (data.success) {
-        ElNotification.success(`连接测试成功：${data.message || '可以连接'}`);
+      if (data?.success) {
+        ElMessage.success(`连接测试成功：${data.message || '可以连接'}`);
       } else {
-        ElNotification.warning(`连接测试：${data.message || '无法连接'}`);
+        ElMessage.warning(`连接测试：${data?.message || '无法连接'}`);
       }
-    } catch (error) {
-      ElNotification.error('连接测试失败');
+    } catch {
+      ElMessage.error('连接测试失败');
     } finally {
       testLoading.value = false;
     }
   }
 
-  // 辅助：认证类型标签
-  function getAuthTypeTag(type: string) {
-    const map: Record<string, { text: string; type: '' | 'success' | 'warning' | 'info' | 'danger' | 'primary' }> = {
+  function getAuthTypeTag(
+    type: string
+  ): { text: string; type: 'primary' | 'success' | 'warning' | 'info' | 'danger' } {
+    const typeMap: Record<string, { text: string; type: 'primary' | 'success' | 'warning' | 'info' | 'danger' }> = {
       password: { text: '密码', type: 'primary' },
       key: { text: '密钥', type: 'success' }
     };
-    return map[type] || { text: type, type: 'info' };
+    return typeMap[type] || { text: type, type: 'info' };
   }
 
-  // 辅助：凭证类型标签
   function getCredentialTypeTag(ct: CMDB.CredentialType) {
     return ct === 'system'
       ? { text: '系统运维', type: 'warning' as const }
       : { text: '用户连接', type: 'primary' as const };
   }
 
-  // 初始化
   onMounted(() => {
     getData();
   });
@@ -306,67 +208,15 @@
           </template>
         </ElTableColumn>
       </ElTable>
-    </ElCard>
 
-    <!-- 新增/编辑对话框 -->
-    <ElDialog v-model="dialogVisible" :title="dialogTitle" width="620px">
-      <ElForm ref="formRef" :model="form" :rules="rules" label-width="120px">
-        <ElFormItem label="凭证用途" prop="credentialType">
-          <ElRadioGroup v-model="form.credentialType">
-            <ElRadio value="user">
-              <span class="font-medium">用户连接</span>
-              <span class="ml-6px text-12px text-gray-400">用于用户堡垒 SSH，受访问策略约束</span>
-            </ElRadio>
-          </ElRadioGroup>
-          <ElRadioGroup v-model="form.credentialType" class="mt-8px">
-            <ElRadio value="system">
-              <span class="font-medium">系统运维</span>
-              <span class="ml-6px text-12px text-gray-400">
-                供 OneOps 后端 Agent 部署、采集使用，需 root / sudo 权限
-              </span>
-            </ElRadio>
-          </ElRadioGroup>
-        </ElFormItem>
-        <ElFormItem label="凭证名称" prop="name">
-          <ElInput v-model="form.name" placeholder="请输入凭证名称" />
-        </ElFormItem>
-        <ElFormItem label="用户名" prop="username">
-          <ElInput v-model="form.username" placeholder="请输入SSH用户名" />
-        </ElFormItem>
-        <ElFormItem label="认证类型" prop="authType">
-          <ElRadioGroup v-model="form.authType">
-            <ElRadio value="password">密码认证</ElRadio>
-            <ElRadio value="key">密钥认证</ElRadio>
-          </ElRadioGroup>
-        </ElFormItem>
-        <template v-if="form.authType === 'password'">
-          <ElFormItem label="密码" prop="password">
-            <ElInput v-model="form.password" type="password" placeholder="请输入密码" show-password />
-          </ElFormItem>
-        </template>
-        <template v-if="form.authType === 'key'">
-          <ElFormItem label="私钥" prop="privateKey">
-            <ElInput v-model="form.privateKey" type="textarea" :rows="6" placeholder="请输入私钥内容" />
-          </ElFormItem>
-          <ElFormItem label="私钥密码">
-            <ElInput v-model="form.passphrase" type="password" placeholder="如果私钥有密码请输入" show-password />
-          </ElFormItem>
-        </template>
-        <ElFormItem label="描述">
-          <ElInput v-model="form.description" type="textarea" :rows="3" placeholder="请输入描述" />
-        </ElFormItem>
-        <ElFormItem label="状态">
-          <ElRadioGroup v-model="form.status">
-            <ElRadio :value="1">启用</ElRadio>
-            <ElRadio :value="0">禁用</ElRadio>
-          </ElRadioGroup>
-        </ElFormItem>
-      </ElForm>
-      <template #footer>
-        <ElButton @click="dialogVisible = false">取消</ElButton>
-        <ElButton type="primary" @click="handleSave">保存</ElButton>
-      </template>
-    </ElDialog>
+      <SshCredentialOperateDrawer
+        v-model:visible="drawerVisible"
+        :operate-type="operateType"
+        :row-data="editingData"
+        :default-credential-type="defaultCredentialType"
+        @submitted="getData"
+      />
+    </ElCard>
   </div>
 </template>
 

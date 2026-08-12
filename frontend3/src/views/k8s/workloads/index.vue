@@ -4,11 +4,11 @@
   import YamlEditor from '@/components/k8s/YamlEditor.vue';
   import { useWorkloadData } from './composables/useWorkloadData';
   import { useWorkloadActions } from './composables/useWorkloadActions';
-  import PodTab from './components/PodTab.vue';
-  import DeploymentTab from './components/DeploymentTab.vue';
-  import WorkloadTab from './components/WorkloadTab.vue';
-  import ScaleDialog from './components/ScaleDialog.vue';
-  import LogDialog from './components/LogDialog.vue';
+  import PodTab from './modules/PodTab.vue';
+  import DeploymentTab from './modules/DeploymentTab.vue';
+  import WorkloadTab from './modules/WorkloadTab.vue';
+  import ScaleDialog from './modules/ScaleDialog.vue';
+  import LogDialog from './modules/LogDialog.vue';
 
   defineOptions({ name: 'K8sWorkloads' });
 

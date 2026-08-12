@@ -1,23 +1,25 @@
 <script setup lang="tsx">
   import { onMounted, ref } from 'vue';
   import { Delete, Plus } from '@element-plus/icons-vue';
-  import { assignUserToGroup, deleteUserGroup, fetchUserGroups } from '@/service/api/application-permission';
+  import { deleteUserGroup, fetchUserGroups } from '@/service/api/application-permission';
   import { fetchAllAuthGroups, fetchAllUsers } from '@/service/api';
+  import AuthorizationOperateDrawer from './modules/authorization-operate-drawer.vue';
 
   defineOptions({ name: 'AuthCenterUserGroupAssignment' });
 
+  // 这个视图基于用户选择，非分页，保留手动 loading/tableData
   const loading = ref(false);
   const tableData = ref<Api.ApplicationPermission.AuthUserGroup[]>([]);
   const users = ref<Api.ApplicationPermission.AuthUser[]>([]);
   const groups = ref<Api.ApplicationPermission.AuthGroup[]>([]);
   const selectedUserId = ref<number | null>(null);
-  const drawerVisible = ref(false);
-  const resultDialogVisible = ref(false);
-  const authorizationResults = ref<unknown[]>([]);
 
-  const formData = ref({
-    groupId: null as number | null
-  });
+  // 分配用户组抽屉
+  const drawerVisible = ref(false);
+
+  // 授权结果对话框
+  const resultDialogVisible = ref(false);
+  const authorizationResults = ref<Api.ApplicationPermission.AssignmentResultItem[]>([]);
 
   async function getUsers() {
     const { data, error } = await fetchAllUsers();
@@ -56,43 +58,12 @@
       ElMessage.warning('请先选择用户');
       return;
     }
-    formData.value = {
-      groupId: null
-    };
     drawerVisible.value = true;
   }
 
-  async function handleSubmit() {
-    if (!selectedUserId.value || !formData.value.groupId) {
-      ElMessage.warning('请填写完整信息');
-      return;
-    }
-
-    const { data, error } = await assignUserToGroup({
-      userId: selectedUserId.value,
-      groupId: formData.value.groupId
-    });
-
-    if (!error && data) {
-      drawerVisible.value = false;
-      getData();
-
-      // 显示授权结果（不显示密码，因为密码在创建用户时已经显示过）
-      if (data.results && data.results.length > 0) {
-        // 统计成功/失败数量
-        const successCount = data.results.filter((r: { success: boolean }) => r.success).length;
-        const failCount = data.results.filter((r: { success: boolean }) => !r.success).length;
-
-        if (failCount === 0) {
-          ElMessage.success(`授权成功！已在 ${successCount} 个外部系统中授权`);
-        } else {
-          authorizationResults.value = data.results;
-          resultDialogVisible.value = true;
-        }
-      } else {
-        ElMessage.success('分配用户组成功');
-      }
-    }
+  function handleShowResults(results: Api.ApplicationPermission.AssignmentResultItem[]) {
+    authorizationResults.value = results;
+    resultDialogVisible.value = true;
   }
 
   async function handleDelete(groupId: number) {
@@ -112,9 +83,9 @@
 </script>
 
 <template>
-  <div class="min-h-500px flex-col gap-4">
+  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
     <!-- 用户选择 -->
-    <ElCard shadow="never">
+    <ElCard class="card-wrapper">
       <ElSpace>
         <ElSelect v-model="selectedUserId" placeholder="请选择用户" class="w-300px" @change="handleUserChange">
           <ElOption
@@ -131,39 +102,35 @@
     </ElCard>
 
     <!-- 表格 -->
-    <ElCard shadow="never" class="flex-1">
+    <ElCard class="card-wrapper sm:flex-1-hidden">
       <template #header>
         <span class="text-lg font-medium">用户所属用户组列表</span>
       </template>
 
-      <ElTable v-loading="loading" :data="tableData" :border="false">
-        <ElTableColumn type="index" label="序号" width="60" align="center" />
-        <ElTableColumn prop="groupName" label="用户组名称" align="center" min-width="150" />
-        <ElTableColumn prop="groupCode" label="用户组代码" align="center" min-width="150" />
-        <ElTableColumn prop="grantedBy" label="授权人" align="center" min-width="120" />
-        <ElTableColumn prop="grantedAt" label="授权时间" align="center" min-width="160" />
-        <ElTableColumn label="操作" align="center" width="100">
-          <template #default="{ row }">
-            <ElButton size="small" type="danger" :icon="Delete" @click="handleDelete(row.groupId)">删除</ElButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
-    </ElCard>
+      <div class="h-[calc(100%-52px)]">
+        <ElTable v-loading="loading" height="100%" :data="tableData" :border="false" row-key="groupId">
+          <ElTableColumn type="index" label="序号" width="60" align="center" />
+          <ElTableColumn prop="groupName" label="用户组名称" align="center" min-width="150" />
+          <ElTableColumn prop="groupCode" label="用户组代码" align="center" min-width="150" />
+          <ElTableColumn prop="grantedBy" label="授权人" align="center" min-width="120" />
+          <ElTableColumn prop="grantedAt" label="授权时间" align="center" min-width="160" />
+          <ElTableColumn label="操作" align="center" width="100">
+            <template #default="{ row }">
+              <ElButton size="small" type="danger" :icon="Delete" @click="handleDelete(row.groupId)">删除</ElButton>
+            </template>
+          </ElTableColumn>
+        </ElTable>
+      </div>
 
-    <!-- 分配用户组抽屉 -->
-    <ElDrawer v-model="drawerVisible" title="分配用户组" :width="400">
-      <ElForm :model="formData" label-width="80px">
-        <ElFormItem label="用户组">
-          <ElSelect v-model="formData.groupId" placeholder="请选择用户组" class="w-full">
-            <ElOption v-for="group in groups" :key="group.id" :label="group.name" :value="group.id" />
-          </ElSelect>
-        </ElFormItem>
-      </ElForm>
-      <template #footer>
-        <ElButton @click="drawerVisible = false">取消</ElButton>
-        <ElButton type="primary" @click="handleSubmit">确定</ElButton>
-      </template>
-    </ElDrawer>
+      <!-- 分配用户组抽屉（P0a + P1a + P2a）-->
+      <AuthorizationOperateDrawer
+        v-model:visible="drawerVisible"
+        :user-id="selectedUserId"
+        :groups="groups"
+        @submitted="getData"
+        @show-results="handleShowResults"
+      />
+    </ElCard>
 
     <!-- 授权结果对话框 -->
     <ElDialog v-model="resultDialogVisible" title="授权结果" width="600px">
@@ -177,9 +144,7 @@
         <ElTableColumn prop="roleName" label="外部角色" align="center" min-width="120" />
         <ElTableColumn label="状态" align="center" width="100">
           <template #default="{ row }">
-            <ElTag :type="row.success ? 'success' : 'danger'">
-              {{ row.success ? '成功' : '失败' }}
-            </ElTag>
+            <ElTag :type="row.success ? 'success' : 'danger'">{{ row.success ? '成功' : '失败' }}</ElTag>
           </template>
         </ElTableColumn>
         <ElTableColumn label="备注" align="center" min-width="150">
@@ -197,3 +162,13 @@
     </ElDialog>
   </div>
 </template>
+
+<style scoped lang="scss">
+  .text-danger {
+    color: var(--el-color-danger);
+  }
+
+  .text-success {
+    color: var(--el-color-success);
+  }
+</style>

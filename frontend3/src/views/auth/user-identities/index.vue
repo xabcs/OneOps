@@ -1,28 +1,31 @@
 <script setup lang="tsx">
   import { onMounted, ref } from 'vue';
-  import { Delete } from '@element-plus/icons-vue';
+  import { Delete, Refresh, Search } from '@element-plus/icons-vue';
   import {
     deleteUserIdentityMapping,
     fetchApplications,
     fetchUserIdentityMappings
   } from '@/service/api/application-permission';
+  import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
+  import type { FlatResponseData } from '@sa/axios';
 
   defineOptions({ name: 'AuthUserIdentities' });
 
-  const loading = ref(false);
-  const tableData = ref<Api.ApplicationPermission.UserIdentityMapping[]>([]);
-  const applications = ref<Api.ApplicationPermission.Application[]>([]);
-  const searchParams = ref({
-    username: '',
-    appId: null as number | null,
-    status: ''
-  });
+  interface SearchParams {
+    page: number;
+    pageSize: number;
+    username: string;
+    appId: number | null;
+    status: string;
+  }
 
-  const pagination = ref({
-    page: 1,
-    pageSize: 20,
-    total: 0
-  });
+  function getInitSearchParams(): SearchParams {
+    return { page: 1, pageSize: 20, username: '', appId: null, status: '' };
+  }
+
+  const searchParams = ref<SearchParams>(getInitSearchParams());
+
+  const applications = ref<Api.ApplicationPermission.Application[]>([]);
 
   async function getApplications() {
     const { data, error } = await fetchApplications({ page: 1, pageSize: 1000 });
@@ -31,46 +34,132 @@
     }
   }
 
-  async function getData() {
-    loading.value = true;
-    try {
-      const { data, error } = await fetchUserIdentityMappings({
-        page: pagination.value.page,
-        pageSize: pagination.value.pageSize,
-        ...searchParams.value
-      });
-      if (!error && data) {
-        tableData.value = data.list || [];
-        pagination.value.total = data.total || 0;
+  const { columns, data, loading, mobilePagination, getData, getDataByPage } = useUIPaginatedTable({
+    paginationProps: {
+      currentPage: searchParams.value.page,
+      pageSize: searchParams.value.pageSize,
+      pageSizes: [10, 20, 50, 100]
+    },
+    api: () => fetchUserIdentityMappings(searchParams.value),
+    transform: response =>
+      defaultTransform<Api.ApplicationPermission.UserIdentityMapping>(
+        response as unknown as FlatResponseData<
+          unknown,
+          Api.Common.PaginatingQueryRecord<Api.ApplicationPermission.UserIdentityMapping>
+        >
+      ),
+    onPaginationParamsChange: params => {
+      searchParams.value.page = params.currentPage ?? 1;
+      searchParams.value.pageSize = params.pageSize ?? 20;
+    },
+    columns: () => [
+      { prop: 'index', type: 'index', label: '序号', width: 60, align: 'center' },
+      {
+        prop: 'username',
+        label: '授权中心用户',
+        align: 'center',
+        minWidth: 120,
+        formatter: row => (
+          <div>
+            <div class="font-medium">{row.authUser?.username || '-'}</div>
+            <div class="text-xs text-gray-500">{row.authUser?.nickname || ''}</div>
+          </div>
+        )
+      },
+      {
+        prop: 'app',
+        label: '应用',
+        align: 'center',
+        minWidth: 120,
+        formatter: row => <span>{row.appIDField?.name || '-'}</span>
+      },
+      {
+        prop: 'externalUsername',
+        label: '外部用户名',
+        align: 'center',
+        minWidth: 120,
+        formatter: row => <ElTag>{row.externalUsername}</ElTag>
+      },
+      {
+        prop: 'externalUserId',
+        label: '外部用户ID',
+        align: 'center',
+        minWidth: 120,
+        formatter: row => <span>{row.externalUserId || '-'}</span>
+      },
+      {
+        prop: 'mappingType',
+        label: '映射类型',
+        align: 'center',
+        width: 110,
+        formatter: row => {
+          const t = getMappingTypeTag(row.mappingType);
+          return (
+            <ElTag type={t.type}>{t.label}</ElTag>
+          );
+        }
+      },
+      {
+        prop: 'mappingStatus',
+        label: '映射状态',
+        align: 'center',
+        width: 100,
+        formatter: row => {
+          const t = getStatusTag(row.mappingStatus);
+          return (
+            <ElTag type={t.type}>{t.label}</ElTag>
+          );
+        }
+      },
+      {
+        prop: 'lastSyncTime',
+        label: '最后同步时间',
+        align: 'center',
+        minWidth: 160,
+        formatter: row => <span>{row.lastSyncTime || '-'}</span>
+      },
+      { prop: 'createdAt', label: '创建时间', align: 'center', minWidth: 160 },
+      {
+        prop: 'operate',
+        label: '操作',
+        align: 'center',
+        width: 100,
+        fixed: 'right',
+        formatter: row => (
+          <ElButton size="small" type="danger" icon={Delete} onClick={() => handleDelete(row.id)}>
+            删除
+          </ElButton>
+        )
       }
-    } finally {
-      loading.value = false;
-    }
+    ]
+  });
+
+  function getStatusTag(status: string): { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string } {
+    const statusMap: Record<string, { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
+      active: { type: 'success', label: '激活' },
+      inactive: { type: 'info', label: '禁用' },
+      deleted: { type: 'danger', label: '已删除' }
+    };
+    return statusMap[status] || { type: 'primary', label: status };
+  }
+
+  function getMappingTypeTag(
+    type: string
+  ): { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string } {
+    const typeMap: Record<string, { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
+      auto: { type: 'primary', label: '自动创建' },
+      manual: { type: 'warning', label: '手动创建' }
+    };
+    return typeMap[type] || { type: 'primary', label: type };
   }
 
   function handleSearch() {
-    pagination.value.page = 1;
-    getData();
+    getDataByPage(1);
   }
 
   function handleReset() {
-    searchParams.value = {
-      username: '',
-      appId: null,
-      status: ''
-    };
-    handleSearch();
-  }
-
-  function handlePageChange(page: number) {
-    pagination.value.page = page;
-    getData();
-  }
-
-  function handleSizeChange(size: number) {
-    pagination.value.pageSize = size;
-    pagination.value.page = 1;
-    getData();
+    searchParams.value = getInitSearchParams();
+    getDataByPage(1);
   }
 
   async function handleDelete(id: number) {
@@ -86,26 +175,9 @@
         ElMessage.success('删除身份映射成功');
         getData();
       }
-    } catch (error) {
+    } catch {
       // 用户取消
     }
-  }
-
-  function getStatusTag(status: string) {
-    const statusMap: Record<string, { type: '' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
-      active: { type: 'success', label: '激活' },
-      inactive: { type: 'info', label: '禁用' },
-      deleted: { type: 'danger', label: '已删除' }
-    };
-    return statusMap[status] || { type: '', label: status };
-  }
-
-  function getMappingTypeTag(type: string) {
-    const typeMap: Record<string, { type: '' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
-      auto: { type: 'primary', label: '自动创建' },
-      manual: { type: 'warning', label: '手动创建' }
-    };
-    return typeMap[type] || { type: '', label: type };
   }
 
   onMounted(() => {
@@ -135,8 +207,8 @@
           </ElSelect>
         </ElFormItem>
         <ElFormItem>
-          <ElButton type="primary" @click="handleSearch">查询</ElButton>
-          <ElButton @click="handleReset">重置</ElButton>
+          <ElButton type="primary" :icon="Search" @click="handleSearch">查询</ElButton>
+          <ElButton :icon="Refresh" @click="handleReset">重置</ElButton>
         </ElFormItem>
       </ElForm>
     </ElCard>
@@ -146,79 +218,23 @@
       <template #header>
         <div class="flex items-center justify-between">
           <span class="text-lg font-medium">用户身份映射列表</span>
-          <ElTag>共 {{ pagination.total }} 条记录</ElTag>
+          <ElTag>共 {{ mobilePagination.total || 0 }} 条记录</ElTag>
         </div>
       </template>
 
-      <ElTable v-loading="loading" :data="tableData" :border="false">
-        <ElTableColumn type="index" label="序号" width="60" align="center" />
-        <ElTableColumn label="授权中心用户" align="center" min-width="120">
-          <template #default="{ row }">
-            <div>
-              <div class="font-medium">{{ row.authUser?.username || '-' }}</div>
-              <div class="text-xs text-gray-500">{{ row.authUser?.nickname || '' }}</div>
-            </div>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="应用" align="center" min-width="120">
-          <template #default="{ row }">
-            {{ row.appIDField?.name || '-' }}
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="外部用户名" align="center" min-width="120">
-          <template #default="{ row }">
-            <ElTag>{{ row.externalUsername }}</ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="外部用户ID" align="center" min-width="120">
-          <template #default="{ row }">
-            {{ row.externalUserId || '-' }}
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="映射类型" align="center" width="110">
-          <template #default="{ row }">
-            <ElTag :type="getMappingTypeTag(row.mappingType).type">
-              {{ getMappingTypeTag(row.mappingType).label }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="映射状态" align="center" width="100">
-          <template #default="{ row }">
-            <ElTag :type="getStatusTag(row.mappingStatus).type">
-              {{ getStatusTag(row.mappingStatus).label }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="最后同步时间" align="center" min-width="160">
-          <template #default="{ row }">
-            {{ row.lastSyncAt || '-' }}
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="创建时间" align="center" min-width="160">
-          <template #default="{ row }">
-            {{ row.createdAt }}
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="操作" align="center" width="100" fixed="right">
-          <template #default="{ row }">
-            <ElButton size="small" type="danger" :icon="Delete" @click="handleDelete(row.id)">删除</ElButton>
-          </template>
-        </ElTableColumn>
+      <ElTable v-loading="loading" :data="data" :border="false">
+        <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
       </ElTable>
 
       <div class="mt-4 flex justify-end">
         <ElPagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.pageSize"
-          :total="pagination.total"
-          :page-sizes="[10, 20, 50, 100]"
+          v-if="mobilePagination.total"
           layout="total, sizes, prev, pager, next, jumper"
-          @current-change="handlePageChange"
-          @size-change="handleSizeChange"
+          v-bind="mobilePagination"
+          @current-change="mobilePagination['current-change']"
+          @size-change="mobilePagination['size-change']"
         />
       </div>
     </ElCard>
   </div>
 </template>
-
-<style scoped></style>

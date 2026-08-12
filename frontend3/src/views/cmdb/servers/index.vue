@@ -6,12 +6,12 @@
   import type { TreeNode } from './types/server.types';
 
   // 子组件
-  import GroupTreePanel from './components/GroupTreePanel.vue';
-  import ServerListPanel from './components/ServerListPanel.vue';
-  import ServerFormDialog from './components/ServerFormDialog.vue';
-  import ServerEditDrawer from './components/ServerEditDrawer.vue';
-  import ServerDetailDrawer from './components/ServerDetailDrawer.vue';
-  import ServerConnectDialog from './components/ServerConnectDialog.vue';
+  import GroupTreePanel from './modules/GroupTreePanel.vue';
+  import ServerListPanel from './modules/ServerListPanel.vue';
+  import ServerFormDialog from './modules/ServerFormDialog.vue';
+  import ServerEditDrawer from './modules/ServerEditDrawer.vue';
+  import ServerDetailDrawer from './modules/ServerDetailDrawer.vue';
+  import ServerConnectDialog from './modules/ServerConnectDialog.vue';
 
   // Composables
   import { useGroupTree } from './composables/useGroupTree';
@@ -239,8 +239,9 @@
     });
   }
 
-  async function onSave() {
-    const success = await formCtx.handleSave(async (serverId: number) => {
+  // ===== 创建/编辑提交（子组件验证通过后触发）=====
+  async function onSubmitted() {
+    const success = await formCtx.submitForm(async (serverId: number) => {
       await serverDataCtx.saveServerAttributes(serverId, serverAttributes.value);
     });
     if (success) {
@@ -465,12 +466,11 @@
 
     <!-- 创建主机对话框 -->
     <ServerFormDialog
-      :visible="formCtx.dialogVisible.value"
+      v-model:visible="formCtx.dialogVisible.value"
+      v-model:active-collapse="formCtx.activeCollapse.value"
       :server-form="formCtx.serverForm"
       :server-form-rules="formCtx.serverFormRules"
       :submit-error="formCtx.submitError.value"
-      :active-collapse="formCtx.activeCollapse.value"
-      @update:active-collapse="formCtx.activeCollapse.value = $event"
       :user-credentials="serverDataCtx.userCredentials.value"
       :system-credentials="serverDataCtx.systemCredentials.value"
       :group-tree-for-select="groupTreeCtx.groupTreeForSelect.value"
@@ -484,18 +484,17 @@
       :get-attribute-options="getAttributeOptions"
       :parse-attribute-options="parseAttributeOptions"
       :get-unified-attributes="getUnifiedAttributes"
-      @update:visible="formCtx.dialogVisible.value = $event"
-      @save="onSave"
+      @submitted="onSubmitted"
     />
 
     <!-- 编辑主机抽屉 -->
     <ServerEditDrawer
-      :visible="formCtx.editDrawerVisible.value"
+      v-model:visible="formCtx.editDrawerVisible.value"
+      v-model:active-tab="formCtx.editDrawerActiveTab.value"
       :server-form="formCtx.serverForm"
       :server-form-rules="formCtx.serverFormRules"
       :submit-error="formCtx.submitError.value"
       :server-type="formCtx.serverType.value"
-      :active-tab="formCtx.editDrawerActiveTab.value"
       :cloud-form="formCtx.cloudForm"
       :user-credentials="serverDataCtx.userCredentials.value"
       :system-credentials="serverDataCtx.systemCredentials.value"
@@ -514,9 +513,7 @@
       :set-attribute-multi-value="setAttributeMultiValue"
       :parse-attribute-options="parseAttributeOptions"
       :handle-room-change="serverDataCtx.handleRoomChange"
-      @update:visible="formCtx.editDrawerVisible.value = $event"
-      @update:active-tab="formCtx.editDrawerActiveTab.value = $event"
-      @save="onSave"
+      @submitted="onSubmitted"
     />
 
     <!-- 主机详情抽屉 -->

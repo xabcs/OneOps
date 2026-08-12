@@ -43,7 +43,15 @@
   });
 
   // 数据适配函数：将不同应用的数据结构统一化
-  const adaptedMatrixData = computed(() => {
+  interface AdaptedMatrixData {
+    columns: Array<Record<string, unknown>>;
+    users: Array<Record<string, unknown>>;
+    matrix: Record<string, Record<string, boolean>>;
+    permissions_detail: Record<string, unknown>;
+    message?: string;
+  }
+
+  const adaptedMatrixData = computed<AdaptedMatrixData | null>(() => {
     if (!matrixData.value) return null;
 
     const appType = selectedApp.value?.type || 'jenkins';
@@ -62,10 +70,10 @@
 
         return {
           columns: adaptedRoles,
-          users: data.users || [],
-          matrix: data.matrix || {},
-          permissions_detail: data.permissions_detail || {},
-          message: data.message || ''
+          users: (data.users as Array<Record<string, unknown>>) || [],
+          matrix: (data.matrix as Record<string, Record<string, boolean>>) || {},
+          permissions_detail: (data.permissions_detail as Record<string, unknown>) || {},
+          message: (data.message as string) || ''
         };
 
       case 'jumpserver':
@@ -79,19 +87,19 @@
         }));
 
         // 确保 users 不是 null
-        const adaptedUsers = data.users || [];
+        const adaptedUsers = (data.users as Array<Record<string, unknown>>) || [];
 
         return {
           columns: adaptedRules,
           users: adaptedUsers,
-          matrix: data.matrix || {},
-          permissions_detail: data.permissions_detail || {},
-          message: data.message || ''
+          matrix: (data.matrix as Record<string, Record<string, boolean>>) || {},
+          permissions_detail: (data.permissions_detail as Record<string, unknown>) || {},
+          message: (data.message as string) || ''
         };
 
       default:
         // 默认尝试直接使用
-        return data;
+        return data as unknown as AdaptedMatrixData;
     }
   });
 
@@ -191,13 +199,16 @@
   }
 
   function getStatusTag(status: string) {
-    const statusMap: Record<string, { type: '' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
+    const statusMap: Record<
+      string,
+      { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string }
+    > = {
       active: { type: 'success', label: '有效' },
       inactive: { type: 'info', label: '无效' },
       expired: { type: 'danger', label: '已过期' },
       pending: { type: 'warning', label: '待生效' }
     };
-    return statusMap[status] || { type: '', label: status };
+    return statusMap[status] || { type: 'primary', label: status };
   }
 
   onMounted(() => {
@@ -304,7 +315,7 @@
         <!-- 使用统一的矩阵组件 -->
         <AppPermissionMatrix
           v-else-if="adaptedMatrixData && adaptedMatrixData.columns && adaptedMatrixData.columns.length > 0"
-          :data="adaptedMatrixData"
+          :data="adaptedMatrixData as any"
           :item-type="selectedRoleType"
           :app-type="selectedApp?.type || 'jenkins'"
           @refresh="getMatrixData"

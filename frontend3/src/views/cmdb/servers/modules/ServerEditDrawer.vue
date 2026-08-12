@@ -1,18 +1,23 @@
 <script setup lang="ts">
   /**
    * 编辑主机抽屉
-   * 从 index.vue 拆分：编辑主机的抽屉式表单（含基础信息、属性配置、云主机配置 Tab）
+   * 重构：
+   * - defineModel('visible') 替代 :visible prop + @update:visible emit
+   * - useForm() 在内部管理 form ref，不再 defineExpose
+   * - emit('submitted') 替代 emit('save')，由父组件触发保存
    */
 
-  import { ref } from 'vue';
+  import { watch } from 'vue';
+  import type { FormRules } from 'element-plus';
+  import { useForm } from '@/hooks/common/form';
 
-  const props = defineProps<{
-    visible: boolean;
+  defineOptions({ name: 'ServerEditDrawer' });
+
+  interface Props {
     serverForm: CMDB.ServerForm;
-    serverFormRules: Record<string, unknown>;
+    serverFormRules: FormRules;
     submitError: string;
     serverType: 'normal' | 'cloud';
-    activeTab: string;
     cloudForm: CMDB.CloudServerForm;
     userCredentials: CMDB.SSHCredential[];
     systemCredentials: CMDB.SSHCredential[];
@@ -31,32 +36,55 @@
     setAttributeMultiValue: (id: number, vals: string[]) => void;
     parseAttributeOptions: (str: string) => { value: string; label: string }[];
     handleRoomChange: (roomId: number, serverForm: CMDB.ServerForm) => void;
-  }>();
+  }
 
-  const emit = defineEmits<{
-    (e: 'update:visible', val: boolean): void;
-    (e: 'update:activeTab', val: string): void;
-    (e: 'save'): void;
-  }>();
+  const props = defineProps<Props>();
 
-  const serverFormRef = ref<InstanceType<(typeof import('element-plus'))['ElForm']>>(null);
+  interface Emits {
+    (e: 'submitted'): void;
+  }
 
-  defineExpose({ serverFormRef });
+  const emit = defineEmits<Emits>();
+
+  // P1a: defineModel('visible')
+  const visible = defineModel<boolean>('visible', { default: false });
+
+  // activeTab 双向绑定（本地管理，无需上抛）
+  const activeTab = defineModel<string>('activeTab', { default: 'basic' });
+
+  // P0a: useForm() 在内部管理 form ref
+  // @ts-expect-error vue-tsc noUnusedLocals: template ref
+  const { formRef, validate, restoreValidation } = useForm();
+
+  async function handleSubmit() {
+    try {
+      await validate();
+      emit('submitted');
+    } catch {
+      // 验证失败，不触发 submitted
+    }
+  }
+
+  // 打开时重置验证状态
+  watch(visible, val => {
+    if (val) {
+      restoreValidation();
+    }
+  });
 </script>
 
 <template>
   <ElDrawer
-    :model-value="visible"
+    v-model="visible"
     :title="`编辑主机 - ${serverForm.hostname}`"
     direction="rtl"
     size="80%"
     destroy-on-close
-    @close="emit('update:visible', false)"
   >
-    <ElTabs :model-value="activeTab" type="border-card" @update:model-value="emit('update:activeTab', $event)">
+    <ElTabs v-model="activeTab" type="border-card">
       <!-- 基础信息 Tab -->
       <ElTabPane label="基础信息" name="basic">
-        <ElForm ref="serverFormRef" :model="serverForm" :rules="serverFormRules" label-width="100px" class="edit-form">
+        <ElForm ref="formRef" :model="serverForm" :rules="serverFormRules" label-width="100px" class="edit-form">
           <div class="edit-form-row">
             <div class="edit-form-col">
               <div class="subsection-title">主机信息</div>
@@ -379,8 +407,8 @@
 
     <template #footer>
       <div style="flex: 1"></div>
-      <ElButton size="large" @click="emit('update:visible', false)">取消</ElButton>
-      <ElButton type="primary" size="large" @click="emit('save')">保存更改</ElButton>
+      <ElButton size="large" @click="visible = false">取消</ElButton>
+      <ElButton type="primary" size="large" @click="handleSubmit">保存更改</ElButton>
     </template>
   </ElDrawer>
 </template>

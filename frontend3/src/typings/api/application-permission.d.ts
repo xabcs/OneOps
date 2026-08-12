@@ -26,18 +26,38 @@ declare namespace Api {
       revokeRole: string;
       /** Get user roles endpoint, e.g., /api/users/{username}/roles (GET) */
       getUserRoles: string;
+      /** Get users endpoint (jumpserver/gitlab/generic) */
+      getUsers?: string;
+      /** Get groups endpoint (jumpserver) */
+      getGroups?: string;
+      /** Project ID (gitlab) */
+      projectId?: string;
+      /** Group ID (gitlab) */
+      groupId?: string;
+      /** Dynamic extra fields (for forward compatibility) */
+      [key: string]: string | undefined;
     };
 
     /** Authentication configuration */
     type ApplicationAuthConfig = {
-      /** Auth type: basic, token, oauth2 */
-      type: 'basic' | 'token' | 'oauth2';
+      /** Auth type: basic, token, oauth2, accessKey */
+      type?: 'basic' | 'token' | 'oauth2';
+      /** Auth type alias for jumpserver */
+      authType?: 'accessKey' | 'token' | 'basic';
       /** Username for basic auth */
       username?: string;
       /** Password for basic auth */
       password?: string;
       /** API token */
       token?: string;
+      /** Access Key ID (jumpserver accessKey auth) */
+      accessKey?: string;
+      /** Access Key Secret (jumpserver accessKey auth) */
+      secret?: string;
+      /** Organization ID (jumpserver accessKey auth) */
+      orgId?: string;
+      /** Dynamic extra fields (for forward compatibility) */
+      [key: string]: string | undefined;
     };
 
     /** application */
@@ -91,6 +111,8 @@ declare namespace Api {
       description: string;
       /** status */
       status: number;
+      /** groups the user belongs to (denormalized on list response) */
+      groups?: AuthGroup[];
     }>;
 
     /** auth group (授权中心用户组) */
@@ -185,9 +207,61 @@ declare namespace Api {
       groupId: number;
       /** application id */
       appId: number;
+      /** application id field (denormalized on list response) */
+      appIDField?: Application;
       /** application role id */
       applicationRoleId: number;
+      /** application role (denormalized on list response) */
+      applicationRole?: ApplicationRole;
+      /** created at */
+      createdAt?: string;
     }>;
+
+    /** group binding creation result */
+    type GroupBindingResult = {
+      /** success count */
+      successCount: number;
+      /** failed count */
+      failedCount: number;
+      /** created external identities */
+      createdIdentities:
+        | number
+        | Array<{ username: string; appName: string; status: string }>;
+      /** pending members */
+      pendingMembers?: Array<{ username: string; reason: string }>;
+      /** failed members */
+      failedMembers?: Array<{ username: string; error: string }>;
+    };
+
+    /** group binding creation response */
+    type GroupBindingResponse = {
+      /** whether the operation was successful */
+      success: boolean;
+      /** result details */
+      result?: GroupBindingResult;
+    };
+
+    /** user group assignment result item */
+    type AssignmentResultItem = {
+      /** app name */
+      appName: string;
+      /** username */
+      username: string;
+      /** role name */
+      roleName?: string;
+      /** success */
+      success: boolean;
+      /** create error */
+      createError?: string;
+      /** grant error */
+      grantError?: string;
+    };
+
+    /** user group assignment response */
+    type AssignmentResponse = {
+      /** result list */
+      results?: AssignmentResultItem[];
+    };
 
     /** auth user group (授权中心用户组成员) */
     type AuthUserGroup = Common.CommonRecord<{
@@ -217,7 +291,7 @@ declare namespace Api {
 
     /** application search params */
     type ApplicationSearchParams = CommonType.RecordNullable<
-      Pick<Api.ApplicationPermission.Application, 'name'> & CommonSearchParams
+      Pick<Api.ApplicationPermission.Application, 'name' | 'code' | 'type'> & CommonSearchParams
     >;
 
     /** application list */
@@ -227,10 +301,7 @@ declare namespace Api {
     };
 
     /** operation log list */
-    type OperationLogList = {
-      list: ApplicationOperationLog[];
-      total: number;
-    };
+    type OperationLogList = Api.Common.PaginatingQueryRecord<ApplicationOperationLog>;
 
     /** user identity mapping (用户身份映射) */
     type UserIdentityMapping = Common.CommonRecord<{

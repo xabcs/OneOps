@@ -1,18 +1,23 @@
 <script setup lang="ts">
   /**
    * 创建主机对话框
-   * 从 index.vue 拆分：新增主机的表单对话框
+   * 重构：
+   * - defineModel('visible') 替代 :visible prop + @update:visible emit
+   * - useForm() 在内部管理 form ref，不再 defineExpose
+   * - emit('submitted') 替代 emit('save')，由父组件触发保存
    */
 
-  import { ref } from 'vue';
+  import { computed, watch } from 'vue';
+  import type { FormRules } from 'element-plus';
   import AttributeFormItems from './AttributeFormItems.vue';
+  import { useForm } from '@/hooks/common/form';
 
-  const props = defineProps<{
-    visible: boolean;
+  defineOptions({ name: 'ServerFormDialog' });
+
+  interface Props {
     serverForm: CMDB.ServerForm;
-    serverFormRules: Record<string, unknown>;
+    serverFormRules: FormRules;
     submitError: string;
-    activeCollapse: string[];
     userCredentials: CMDB.SSHCredential[];
     systemCredentials: CMDB.SSHCredential[];
     groupTreeForSelect: { id: number; name: string; children?: { id: number; name: string }[] }[];
@@ -26,30 +31,52 @@
     getAttributeOptions: (key: string) => { value: string; label: string }[];
     parseAttributeOptions: (str: string) => { value: string; label: string }[];
     getUnifiedAttributes: () => Api.SystemManage.AttributeDefinition[];
-  }>();
+  }
 
-  const emit = defineEmits<{
-    (e: 'update:visible', val: boolean): void;
-    (e: 'update:activeCollapse', val: string[]): void;
-    (e: 'save'): void;
-  }>();
+  const props = defineProps<Props>();
 
-  const serverFormRef = ref<InstanceType<(typeof import('element-plus'))['ElForm']>>(null);
+  interface Emits {
+    (e: 'submitted'): void;
+  }
+
+  const emit = defineEmits<Emits>();
+
+  // P1a: defineModel('visible')
+  const visible = defineModel<boolean>('visible', { default: false });
+
+  // 本地 activeCollapse（与父组件同步）
+  const activeCollapse = defineModel<string[]>('activeCollapse', { default: () => [] });
+
+  // P0a: useForm() 在内部管理 form ref
+  // @ts-expect-error vue-tsc noUnusedLocals: template ref
+  const { formRef, validate, restoreValidation } = useForm();
+
+  const dialogTitle = computed(() => '创建主机');
 
   function onClose() {
-    emit('update:visible', false);
+    visible.value = false;
   }
 
-  function onUpdateActiveCollapse(val: string | number | string[] | number[]) {
-    emit('update:activeCollapse', val as string[]);
+  async function handleSubmit() {
+    try {
+      await validate();
+      emit('submitted');
+    } catch {
+      // 验证失败，不触发 submitted
+    }
   }
 
-  defineExpose({ serverFormRef });
+  // 打开时重置验证状态
+  watch(visible, val => {
+    if (val) {
+      restoreValidation();
+    }
+  });
 </script>
 
 <template>
-  <ElDialog :model-value="visible" title="创建主机" width="600px" @update:model-value="onClose">
-    <ElForm ref="serverFormRef" :model="serverForm" :rules="serverFormRules" label-width="100px">
+  <ElDialog v-model="visible" :title="dialogTitle" width="600px">
+    <ElForm ref="formRef" :model="serverForm" :rules="serverFormRules" label-width="100px">
       <div class="form-section-title">基础信息（必填）</div>
 
       <ElFormItem label="主机名" prop="hostname" class="hostname-input">
@@ -136,7 +163,7 @@
         />
       </ElFormItem>
 
-      <ElCollapse :model-value="activeCollapse" @update:model-value="onUpdateActiveCollapse" class="mt-16px">
+      <ElCollapse v-model="activeCollapse" class="mt-16px">
         <ElCollapseItem title="更多属性（可选）" name="attributes">
           <AttributeFormItems
             :attributes="getUnifiedAttributes()"
@@ -153,7 +180,7 @@
 
     <template #footer>
       <ElButton @click="onClose">取消</ElButton>
-      <ElButton type="primary" @click="emit('save')">保存</ElButton>
+      <ElButton type="primary" @click="handleSubmit">保存</ElButton>
     </template>
   </ElDialog>
 </template>
