@@ -315,7 +315,6 @@ const local: App.I18n.Schema = {
     manage_role: 'Role Manage',
     // 'manage_api-permission': 'API Permission Manage', // 已废弃，使用层级权限代码管理
     manage_menu: 'Menu Manage',
-    manage_permission: 'Permission Manage',
     auth_center: 'Auth Center',
     auth: 'Auth Center',
     auth_users: 'Users',

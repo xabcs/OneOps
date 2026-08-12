@@ -709,15 +709,6 @@ export const generatedRoutes: GeneratedRoute[] = [
         }
       },
       {
-        name: 'manage_permission',
-        path: '/manage/permission',
-        component: 'view.manage_permission',
-        meta: {
-          title: 'manage_permission',
-          i18nKey: 'route.manage_permission'
-        }
-      },
-      {
         name: 'manage_role',
         path: '/manage/role',
         component: 'view.manage_role',
