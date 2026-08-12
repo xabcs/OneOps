@@ -199,7 +199,7 @@
 </template>
 
 <style lang="scss">
-  @import '@/styles/scss/terminal-workbench.scss';
+  @use '@/styles/scss/terminal-workbench.scss' as *;
   @import '@vscode/codicons/dist/codicon.css';
 
   /* 覆盖 Element Plus 树节点的悬停背景色变量 */

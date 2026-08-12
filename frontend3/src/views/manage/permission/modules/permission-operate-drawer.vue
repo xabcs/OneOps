@@ -142,7 +142,7 @@
         visible.value = false;
         emit('submitted');
       } else {
-        window.$message?.error(error.msg || '更新失败');
+        window.$message?.error(error?.response?.data?.message || error?.message || '更新失败');
       }
     } else {
       const { error } = await fetchAddPermission(data);
@@ -151,7 +151,7 @@
         visible.value = false;
         emit('submitted');
       } else {
-        window.$message?.error(error.msg || '添加失败');
+        window.$message?.error(error?.response?.data?.message || error?.message || '添加失败');
       }
     }
   }

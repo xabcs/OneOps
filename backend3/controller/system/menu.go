@@ -38,18 +38,10 @@ func (ctrl *MenuController) GetMenus(c *gin.Context) {
 func (ctrl *MenuController) GetMenuTree(c *gin.Context) {
 	menuTree, err := ctrl.svc.GetAllAsTree()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "获取菜单树失败",
-			"data":    nil,
-		})
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取菜单树失败"))
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "success",
-		"data":    menuTree,
-	})
+	c.JSON(http.StatusOK, utils.SuccessWithData(menuTree))
 }
 
 // CreateMenuRequest 创建菜单请求

@@ -81,10 +81,12 @@ export function useWorkloadData() {
   // 加载集群列表
   async function loadClusters() {
     try {
-      const response = await fetchK8sClusters();
-      clusters.value = response.data || [];
-      if (clusters.value.length > 0 && !selectedCluster.value) {
-        selectedCluster.value = clusters.value[0].id;
+      const { data, error } = await fetchK8sClusters();
+      if (!error && data) {
+        clusters.value = data.list || [];
+        if (clusters.value.length > 0 && !selectedCluster.value) {
+          selectedCluster.value = clusters.value[0].id;
+        }
       }
     } catch (error) {
       console.error('加载集群列表失败:', error);
@@ -95,10 +97,12 @@ export function useWorkloadData() {
   async function loadNamespaces() {
     if (!selectedCluster.value) return;
     try {
-      const response = await fetchK8sClusterNamespaces(selectedCluster.value);
-      namespaces.value = response.data.map((ns: { name: string }) => ns.name);
-      if (namespaces.value.length > 0 && !namespaces.value.includes(selectedNamespace.value)) {
-        selectedNamespace.value = namespaces.value[0];
+      const { data, error } = await fetchK8sClusterNamespaces(selectedCluster.value);
+      if (!error && data) {
+        namespaces.value = data.map((ns: { name: string }) => ns.name);
+        if (namespaces.value.length > 0 && !namespaces.value.includes(selectedNamespace.value)) {
+          selectedNamespace.value = namespaces.value[0];
+        }
       }
     } catch (error) {
       console.error('加载命名空间失败:', error);

@@ -18,9 +18,9 @@
   const loadClusterDetail = async () => {
     loading.value = true;
     try {
-      const res = await getK8sClusterDetail(props.clusterId);
-      if (res.code === 200) {
-        cluster.value = res.data;
+      const { data, error } = await getK8sClusterDetail(props.clusterId);
+      if (!error && data) {
+        cluster.value = data;
       }
     } catch (error: unknown) {
       const err = error as Error;

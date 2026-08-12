@@ -288,7 +288,7 @@ func (ctrl *MonitoringController) UpdateAlertRule(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(nil))
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("更新成功"))
 }
 
 // DeleteAlertRule 删除告警规则
@@ -305,7 +305,7 @@ func (ctrl *MonitoringController) DeleteAlertRule(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(nil))
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("删除成功"))
 }
 
 // UpdateAlertRuleStatus 更新告警规则状态
@@ -330,7 +330,7 @@ func (ctrl *MonitoringController) UpdateAlertRuleStatus(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(nil))
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("状态更新成功"))
 }
 
 // === 通知渠道管理 ===
@@ -384,7 +384,7 @@ func (ctrl *MonitoringController) UpdateNotificationChannel(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(nil))
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("更新成功"))
 }
 
 // DeleteNotificationChannel 删除通知渠道
@@ -400,7 +400,7 @@ func (ctrl *MonitoringController) DeleteNotificationChannel(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(nil))
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("删除成功"))
 }
 
 // TestNotificationChannel 测试通知渠道
@@ -516,5 +516,5 @@ func (ctrl *MonitoringController) DeleteReport(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.SuccessWithData(nil))
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("删除成功"))
 }

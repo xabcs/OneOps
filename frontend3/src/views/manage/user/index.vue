@@ -43,13 +43,7 @@
   async function getAllRoles() {
     const { error, data } = await fetchGetAllRoles();
     if (!error && data) {
-      if (Array.isArray(data)) {
-        allRoles.value = data;
-      } else if (data && Array.isArray(data.list)) {
-        allRoles.value = data.list;
-      } else {
-        allRoles.value = [];
-      }
+      allRoles.value = data.list || [];
     } else {
       allRoles.value = [];
     }
@@ -166,7 +160,7 @@
           await getAllRoles();
           await updateUserStats();
         } else {
-          window.$message?.error(error.msg || '删除失败');
+          window.$message?.error(error?.response?.data?.message || error?.message || '删除失败');
         }
       },
       { type: 'error' }

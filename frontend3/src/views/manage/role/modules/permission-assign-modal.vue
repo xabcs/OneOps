@@ -67,7 +67,7 @@
     const { error, data } = await fetchGetPermissionList({ page: 1, pageSize: 1000 });
 
     if (!error && data) {
-      const permissions = data.list || data || [];
+      const permissions = data.list || [];
 
       if (permissions.length === 0) {
         console.warn('⚠️ 权限列表为空，请先在权限管理中创建权限');
@@ -351,7 +351,7 @@
         });
         closeModal();
       } else {
-        ElMessage.error(error.msg || '分配失败');
+        ElMessage.error(error?.response?.data?.message || error?.message || '分配失败');
       }
     } catch (err) {
       loading.value = false;

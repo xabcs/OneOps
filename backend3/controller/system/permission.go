@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	modelsystem "oneops/backend3/model/system"
+	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
 	"oneops/backend3/service/system"
 )
@@ -26,7 +27,7 @@ func NewPermissionController(svc *system.PermissionService) *PermissionControlle
 func (ctrl *PermissionController) GetPermissionTree(ctx *gin.Context) {
 	tree, err := ctrl.svc.GetPermissionTree()
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.ErrorInternal("获取权限树失败"))
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("获取权限树失败"))
 		return
 	}
 
@@ -36,9 +37,9 @@ func (ctrl *PermissionController) GetPermissionTree(ctx *gin.Context) {
 // GetPermissionList 获取权限列表（分页）
 // GET /api/v1/permissions
 func (ctrl *PermissionController) GetPermissionList(ctx *gin.Context) {
-	// 获取分页参数
-	current, _ := strconv.Atoi(ctx.DefaultQuery("current", "1"))
-	size, _ := strconv.Atoi(ctx.DefaultQuery("size", "10"))
+	// 获取分页参数（兼容 current/size 和 page/pageSize 两种参数名）
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", ctx.DefaultQuery("current", "1")))
+	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", ctx.DefaultQuery("size", "10")))
 
 	// 获取搜索参数
 	name := ctx.Query("name")
@@ -62,20 +63,13 @@ func (ctrl *PermissionController) GetPermissionList(ctx *gin.Context) {
 	}
 
 	// 获取权限列表
-	permissions, total, err := ctrl.svc.GetPermissionList(current, size, query)
+	permissions, total, err := ctrl.svc.GetPermissionList(page, pageSize, query)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.ErrorInternal("获取权限列表失败"))
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("获取权限列表失败"))
 		return
 	}
 
-	responseData := gin.H{
-		"records": permissions,
-		"total":   total,
-		"current": current,
-		"size":    size,
-	}
-
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(responseData))
+	ctx.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(permissions, total, dto.BasePageQuery{Page: page, PageSize: pageSize})))
 }
 
 // CreatePermission 创建权限
@@ -83,7 +77,7 @@ func (ctrl *PermissionController) GetPermissionList(ctx *gin.Context) {
 func (ctrl *PermissionController) CreatePermission(ctx *gin.Context) {
 	var req modelsystem.CreatePermissionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.ErrorBadRequest("参数错误: "+err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("参数错误: "+err.Error()))
 		return
 	}
 
@@ -101,7 +95,7 @@ func (ctrl *PermissionController) CreatePermission(ctx *gin.Context) {
 	}
 
 	if err := ctrl.svc.CreatePermission(permission); err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.ErrorInternal("创建权限失败"))
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("创建权限失败"))
 		return
 	}
 
@@ -114,13 +108,13 @@ func (ctrl *PermissionController) UpdatePermission(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.ErrorBadRequest("无效的权限ID"))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的权限ID"))
 		return
 	}
 
 	var req modelsystem.UpdatePermissionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.ErrorBadRequest("参数错误: "+err.Error()))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("参数错误: "+err.Error()))
 		return
 	}
 
@@ -134,7 +128,7 @@ func (ctrl *PermissionController) UpdatePermission(ctx *gin.Context) {
 	}
 
 	if err := ctrl.svc.UpdatePermission(permission); err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.ErrorInternal("更新权限失败"))
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("更新权限失败"))
 		return
 	}
 
@@ -147,12 +141,12 @@ func (ctrl *PermissionController) DeletePermission(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.ErrorBadRequest("无效的权限ID"))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的权限ID"))
 		return
 	}
 
 	if err := ctrl.svc.DeletePermission(uint(id)); err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.ErrorInternal("删除权限失败"))
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("删除权限失败"))
 		return
 	}
 
@@ -165,13 +159,13 @@ func (ctrl *PermissionController) GetRolePermissions(ctx *gin.Context) {
 	roleIDStr := ctx.Param("roleId")
 	roleID, err := strconv.ParseUint(roleIDStr, 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.ErrorBadRequest("无效的角色ID"))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的角色ID"))
 		return
 	}
 
 	permissions, err := ctrl.svc.GetRolePermissions(uint(roleID))
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.ErrorInternal("获取角色权限失败"))
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("获取角色权限失败"))
 		return
 	}
 
@@ -191,20 +185,20 @@ func (ctrl *PermissionController) AssignRolePermissions(ctx *gin.Context) {
 	roleIDStr := ctx.Param("roleId")
 	roleID, err := strconv.ParseUint(roleIDStr, 10, 32)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.ErrorBadRequest("无效的角色ID"))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的角色ID"))
 		return
 	}
 
 	// 从请求体绑定参数（符合项目规范）
 	var req modelsystem.AssignRolePermissionsRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.ErrorBadRequest("请求参数错误"))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误"))
 		return
 	}
 
 	// 调用服务层
 	if err := ctrl.svc.BatchAssignPermissions(uint(roleID), req.PermissionIDs); err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.ErrorInternal("分配权限失败"))
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("分配权限失败"))
 		return
 	}
 
@@ -222,7 +216,7 @@ func (ctrl *PermissionController) GetUserPermissions(ctx *gin.Context) {
 
 	permissions, err := ctrl.svc.GetUserPermissions(userID)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.ErrorInternal("获取用户权限失败"))
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("获取用户权限失败"))
 		return
 	}
 
@@ -238,13 +232,13 @@ func (ctrl *PermissionController) GetUserPermissions(ctx *gin.Context) {
 func (ctrl *PermissionController) CheckPermission(ctx *gin.Context) {
 	var req modelsystem.CheckPermissionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, utils.ErrorBadRequest("参数错误"))
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("参数错误"))
 		return
 	}
 
 	allowed, err := ctrl.svc.HasPermission(req.UserID, req.Permission)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, utils.ErrorInternal("权限检查失败"))
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("权限检查失败"))
 		return
 	}
 

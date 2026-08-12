@@ -83,9 +83,13 @@ export function useSessionList() {
       };
 
       if (activeTab.value === 'active') {
-        const response = await fetchGetActiveSessionsFromMemory();
-        console.table(response.data || []);
-        dataSource.value = response.data || [];
+        const { data, error } = await fetchGetActiveSessionsFromMemory();
+        if (!error && data) {
+          console.table(data);
+          dataSource.value = data;
+        } else {
+          dataSource.value = [];
+        }
         pagination.value.total = dataSource.value.length;
         return;
       } else if (activeTab.value === 'terminated') {
@@ -96,9 +100,14 @@ export function useSessionList() {
         // 后端需要支持模糊查询
       }
 
-      const response = await fetchGetSessionsList(params);
-      dataSource.value = response.data?.list || [];
-      pagination.value.total = response.data?.total || 0;
+      const { data: pageData, error: pageError } = await fetchGetSessionsList(params);
+      if (!pageError && pageData) {
+        dataSource.value = pageData.list || [];
+        pagination.value.total = pageData.total || 0;
+      } else {
+        dataSource.value = [];
+        pagination.value.total = 0;
+      }
     } catch (error) {
       console.error('加载会话列表失败:', error);
       dataSource.value = [];

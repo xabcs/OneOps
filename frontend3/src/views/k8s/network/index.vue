@@ -102,13 +102,13 @@
 
   // 加载集群列表
   async function loadClusters() {
-    try {
-      const response = await fetchK8sClusters();
-      clusters.value = response.data || [];
+    const { data, error } = await fetchK8sClusters();
+    if (!error) {
+      clusters.value = data?.list || [];
       if (clusters.value.length > 0 && !selectedCluster.value) {
         selectedCluster.value = clusters.value[0].id;
       }
-    } catch (error) {
+    } else {
       console.error('加载集群列表失败:', error);
     }
   }
@@ -116,13 +116,13 @@
   // 加载命名空间列表
   async function loadNamespaces() {
     if (!selectedCluster.value) return;
-    try {
-      const response = await fetchK8sClusterNamespaces(selectedCluster.value);
-      namespaces.value = response.data.map((ns: K8s.Namespace) => ns.name);
+    const { data, error } = await fetchK8sClusterNamespaces(selectedCluster.value);
+    if (!error) {
+      namespaces.value = (data || []).map((ns: K8s.Namespace) => ns.name);
       if (namespaces.value.length > 0 && !namespaces.value.includes(selectedNamespace.value)) {
         selectedNamespace.value = namespaces.value[0];
       }
-    } catch (error) {
+    } else {
       console.error('加载命名空间失败:', error);
     }
   }
@@ -131,54 +131,38 @@
   async function loadServices() {
     if (!selectedCluster.value) return;
     loading.value = true;
-    try {
-      const response = await fetchK8sServices(selectedCluster.value, {
-        namespace: selectedNamespace.value,
-        page: servicesPagination.page,
-        pageSize: servicesPagination.pageSize
-      });
+    const { data, error } = await fetchK8sServices(selectedCluster.value, {
+      namespace: selectedNamespace.value,
+      page: servicesPagination.page,
+      pageSize: servicesPagination.pageSize
+    });
 
-      let apiData = response;
-      if (response?.data?.data?.list) {
-        apiData = response.data.data;
-      } else if (response?.data?.list) {
-        apiData = response.data;
-      }
-
-      servicesData.value = apiData.list || [];
-      servicesPagination.itemCount = apiData.total || 0;
-    } catch (error) {
+    if (!error) {
+      servicesData.value = data?.list || [];
+      servicesPagination.itemCount = data?.total || 0;
+    } else {
       console.error('加载 Services 失败:', error);
-    } finally {
-      loading.value = false;
     }
+    loading.value = false;
   }
 
   // 加载路由
   async function loadIngresses() {
     if (!selectedCluster.value) return;
     loading.value = true;
-    try {
-      const response = await fetchK8sIngresses(selectedCluster.value, {
-        namespace: selectedNamespace.value,
-        page: ingressesPagination.page,
-        pageSize: ingressesPagination.pageSize
-      });
+    const { data, error } = await fetchK8sIngresses(selectedCluster.value, {
+      namespace: selectedNamespace.value,
+      page: ingressesPagination.page,
+      pageSize: ingressesPagination.pageSize
+    });
 
-      let apiData = response;
-      if (response?.data?.data?.list) {
-        apiData = response.data.data;
-      } else if (response?.data?.list) {
-        apiData = response.data;
-      }
-
-      ingressesData.value = apiData.list || [];
-      ingressesPagination.itemCount = apiData.total || 0;
-    } catch (error) {
+    if (!error) {
+      ingressesData.value = data?.list || [];
+      ingressesPagination.itemCount = data?.total || 0;
+    } else {
       console.error('加载 Ingresses 失败:', error);
-    } finally {
-      loading.value = false;
     }
+    loading.value = false;
   }
 
   // 加载当前Tab数据
@@ -233,8 +217,12 @@
     yamlLoading.value = true;
 
     try {
-      const response = await getK8sService(selectedCluster.value, row.namespace, row.name);
-      const manifestStr = response.data?.manifest || response.manifest || '';
+      const { data, error } = await getK8sService(selectedCluster.value, row.namespace, row.name);
+      if (error) {
+        message.error('获取 YAML 失败');
+        return;
+      }
+      const manifestStr = data?.manifest || '';
       yamlContent.value = parseManifest(manifestStr);
       showYamlDialog.value = true;
     } catch (error: unknown) {
@@ -257,8 +245,12 @@
     yamlLoading.value = true;
 
     try {
-      const response = await getK8sIngress(selectedCluster.value, row.namespace, row.name);
-      const manifestStr = response.data?.manifest || response.manifest || '';
+      const { data, error } = await getK8sIngress(selectedCluster.value, row.namespace, row.name);
+      if (error) {
+        message.error('获取 YAML 失败');
+        return;
+      }
+      const manifestStr = data?.manifest || '';
       yamlContent.value = parseManifest(manifestStr);
       showYamlDialog.value = true;
     } catch (error: unknown) {

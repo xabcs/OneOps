@@ -540,7 +540,7 @@
 </template>
 
 <style scoped lang="scss">
-  @import '@/styles/scss/compact-theme.scss';
+  @use '@/styles/scss/compact-theme.scss' as *;
 
   .cmdb-servers-page {
     @extend .compact-form;

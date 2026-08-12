@@ -77,9 +77,13 @@
         type: 'warning'
       });
 
-      await deleteAlertRule(rule.id);
-      ElMessage.success('删除成功');
-      await loadAlertRules();
+      const { error } = await deleteAlertRule(rule.id);
+      if (!error) {
+        ElMessage.success('删除成功');
+        await loadAlertRules();
+      } else {
+        ElMessage.error('删除失败');
+      }
     } catch (error: unknown) {
       if ((error as string) !== 'cancel') {
         ElMessage.error('删除失败');
@@ -90,9 +94,13 @@
   // 切换告警规则状态
   async function handleToggleRuleStatus(rule: Monitoring.AlertRule) {
     try {
-      await updateAlertRuleStatus(rule.id, !rule.enabled);
-      ElMessage.success(rule.enabled ? '已禁用' : '已启用');
-      await loadAlertRules();
+      const { error } = await updateAlertRuleStatus(rule.id, !rule.enabled);
+      if (!error) {
+        ElMessage.success(rule.enabled ? '已禁用' : '已启用');
+        await loadAlertRules();
+      } else {
+        ElMessage.error('操作失败');
+      }
     } catch (error) {
       ElMessage.error('操作失败');
     }
@@ -184,9 +192,13 @@
         type: 'warning'
       });
 
-      await deleteNotificationChannel(channel.id);
-      ElMessage.success('删除成功');
-      await loadNotificationChannels();
+      const { error } = await deleteNotificationChannel(channel.id);
+      if (!error) {
+        ElMessage.success('删除成功');
+        await loadNotificationChannels();
+      } else {
+        ElMessage.error('删除失败');
+      }
     } catch (error: unknown) {
       if ((error as string) !== 'cancel') {
         ElMessage.error('删除失败');
@@ -203,8 +215,12 @@
         type: 'info'
       });
 
-      await testNotificationChannel(channel.id);
-      ElMessage.success('测试通知发送成功');
+      const { error } = await testNotificationChannel(channel.id);
+      if (!error) {
+        ElMessage.success('测试通知发送成功');
+      } else {
+        ElMessage.error('测试通知发送失败');
+      }
     } catch (error: unknown) {
       if ((error as string) !== 'cancel') {
         ElMessage.error('测试通知发送失败');

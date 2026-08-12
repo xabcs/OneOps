@@ -48,10 +48,10 @@
   async function loadClusters() {
     loading.value = true;
     try {
-      const res = await fetchK8sClusters(queryParams);
-      if (res.data) {
-        clusterList.value = res.data.list || [];
-        total.value = res.data.total || 0;
+      const { data, error } = await fetchK8sClusters(queryParams);
+      if (!error && data) {
+        clusterList.value = data.list || [];
+        total.value = data.total || 0;
       }
     } catch (error: unknown) {
       const err = error as Error;
@@ -83,13 +83,22 @@
   // 测试连接
   async function handleTestConnection(row: K8s.Cluster) {
     try {
-      await testK8sConnection(row.id);
-      message({
-        title: '测试成功',
-        message: `集群 "${row.name}" 连接测试成功`,
-        type: 'success',
-        duration: 3000
-      });
+      const { error } = await testK8sConnection(row.id);
+      if (!error) {
+        message({
+          title: '测试成功',
+          message: `集群 "${row.name}" 连接测试成功`,
+          type: 'success',
+          duration: 3000
+        });
+      } else {
+        message({
+          title: '测试失败',
+          message: '连接测试失败',
+          type: 'error',
+          duration: 3000
+        });
+      }
     } catch (error: unknown) {
       const err = error as Error;
       message({
@@ -104,14 +113,23 @@
   // 删除集群
   async function handleDelete(row: K8s.Cluster) {
     try {
-      await deleteK8sCluster(row.id, { confirmName: row.name });
-      message({
-        title: '删除成功',
-        message: `集群 "${row.name}" 已成功删除`,
-        type: 'success',
-        duration: 3000
-      });
-      loadClusters();
+      const { error } = await deleteK8sCluster(row.id, { confirmName: row.name });
+      if (!error) {
+        message({
+          title: '删除成功',
+          message: `集群 "${row.name}" 已成功删除`,
+          type: 'success',
+          duration: 3000
+        });
+        loadClusters();
+      } else {
+        message({
+          title: '删除失败',
+          message: '删除集群失败',
+          type: 'error',
+          duration: 3000
+        });
+      }
     } catch (error: unknown) {
       const err = error as Error;
       message({
@@ -140,8 +158,12 @@
 
     for (const row of checkedRowKeys.value) {
       try {
-        await deleteK8sCluster(row.id, { confirmName: row.name });
-        successCount++;
+        const { error } = await deleteK8sCluster(row.id, { confirmName: row.name });
+        if (!error) {
+          successCount++;
+        } else {
+          failCount++;
+        }
       } catch (error) {
         failCount++;
       }

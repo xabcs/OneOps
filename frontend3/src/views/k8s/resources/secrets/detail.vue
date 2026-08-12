@@ -67,11 +67,12 @@
   async function loadData() {
     loading.value = true;
     try {
-      const response = await getK8sSecret(clusterId.value, namespace.value, resourceName.value);
-      const data = response.data || response;
-      resource.value = data;
-      yamlContent.value = parseManifest(data.manifest || '');
-      dataKeys.value = parseDataKeys(data.data || {}, data.type || 'Opaque');
+      const { data, error } = await getK8sSecret(clusterId.value, namespace.value, resourceName.value);
+      if (!error && data) {
+        resource.value = data;
+        yamlContent.value = parseManifest(data.manifest || '');
+        dataKeys.value = parseDataKeys(data.data || {}, data.type || 'Opaque');
+      }
     } catch (error: unknown) {
       const err = error as Error;
       message.error(err.message || '加载失败');
@@ -83,12 +84,12 @@
   async function loadEvents() {
     eventsLoading.value = true;
     try {
-      const response = await fetchK8sEvents(
+      const { data: eventsData, error: eventsError } = await fetchK8sEvents(
         clusterId.value,
         namespace.value,
         `involvedObject.name=${resourceName.value}`
       );
-      events.value = response.data || response || [];
+      events.value = !eventsError && eventsData ? eventsData : [];
     } catch (error: unknown) {
       const err = error as Error;
       message.error(err.message || '加载事件失败');

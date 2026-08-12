@@ -77,7 +77,7 @@ func (ctrl *RouteController) InvalidateCache(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData("缓存已清除并重新同步菜单数据"))
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("缓存已清除并重新同步菜单数据"))
 }
 
 // DebugCache 调试当前缓存内容

@@ -186,7 +186,7 @@
       } else {
         ElNotification({
           title: '删除失败',
-          message: error.msg || '删除权限失败',
+          message: error?.response?.data?.message || error?.message || '删除权限失败',
           type: 'error',
           duration: 3000,
           position: 'top-right'

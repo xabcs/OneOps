@@ -95,15 +95,13 @@
     if (!selectedCluster.value) return;
 
     try {
-      const response = await fetchK8sClusterNamespaces(selectedCluster.value);
+      const { data, error } = await fetchK8sClusterNamespaces(selectedCluster.value);
 
-      // 尝试多种方式提取数组
+      // 提取命名空间数组
       let namespaceList: K8s.Namespace[] = [];
 
-      if (Array.isArray(response)) {
-        namespaceList = response;
-      } else if (response?.data && Array.isArray(response.data)) {
-        namespaceList = response.data;
+      if (!error && data && Array.isArray(data)) {
+        namespaceList = data;
       } else {
         console.error('[调试] 无法从响应中提取数组');
         namespaceList = [];
@@ -135,15 +133,15 @@
 
     loading.value = true;
     try {
-      const response = await fetchK8sDeployments(selectedCluster.value, {
+      const { data, error } = await fetchK8sDeployments(selectedCluster.value, {
         namespace: filters.namespace,
         page: pagination.page,
         pageSize: pagination.pageSize
       });
 
-      // 尝试从不同位置提取数据
-      const list = response.data?.list || response.list || [];
-      const total = response.data?.total || response.total || 0;
+      // 从返回数据中提取列表和总数
+      const list = !error && data ? data?.list || [] : [];
+      const total = !error && data ? data?.total || 0 : 0;
 
       dataSource.value = list;
       pagination.itemCount = total;

@@ -92,12 +92,14 @@
 
   const loadClusters = async () => {
     try {
-      const response = await fetchK8sClusters();
-      clusters.value = response.data || [];
+      const { data, error } = await fetchK8sClusters();
+      if (!error && data) {
+        clusters.value = data.list || [];
 
-      // 自动选择第一个集群
-      if (!filters.value.clusterId && clusters.value.length > 0) {
-        filters.value.clusterId = clusters.value[0].id;
+        // 自动选择第一个集群
+        if (!filters.value.clusterId && clusters.value.length > 0) {
+          filters.value.clusterId = clusters.value[0].id;
+        }
       }
     } catch (error) {
       console.error('加载集群失败:', error);
@@ -108,13 +110,15 @@
     if (!filters.value.clusterId) return;
 
     try {
-      const response = await fetchK8sClusterNamespaces(filters.value.clusterId);
-      namespaces.value = response.data || [];
+      const { data, error } = await fetchK8sClusterNamespaces(filters.value.clusterId);
+      if (!error && data) {
+        namespaces.value = data || [];
 
-      // 自动选择default命名空间
-      if (!filters.value.namespace && namespaces.value.length > 0) {
-        const defaultNs = namespaces.value.find(ns => ns.name === 'default');
-        filters.value.namespace = defaultNs ? defaultNs.name : namespaces.value[0].name;
+        // 自动选择default命名空间
+        if (!filters.value.namespace && namespaces.value.length > 0) {
+          const defaultNs = namespaces.value.find(ns => ns.name === 'default');
+          filters.value.namespace = defaultNs ? defaultNs.name : namespaces.value[0].name;
+        }
       }
     } catch (error) {
       console.error('加载命名空间失败:', error);
@@ -126,8 +130,10 @@
 
     loading.value = true;
     try {
-      const response = await fetchJavaPods(filters.value.clusterId, filters.value.namespace);
-      pods.value = response.data || [];
+      const { data, error } = await fetchJavaPods(filters.value.clusterId, filters.value.namespace);
+      if (!error && data) {
+        pods.value = data || [];
+      }
     } catch (error) {
       console.error('加载Pod列表失败:', error);
     } finally {
@@ -137,8 +143,10 @@
 
   const loadDiagnosticCommands = async () => {
     try {
-      const response = await fetchDiagnosticCommands();
-      diagnosticCommands.value = response.data.commands || [];
+      const { data, error } = await fetchDiagnosticCommands();
+      if (!error && data) {
+        diagnosticCommands.value = data.commands || [];
+      }
     } catch (error) {
       console.error('加载诊断命令失败:', error);
     }
@@ -185,7 +193,7 @@
 
     executing.value = true;
     try {
-      const response = await executeDiagnostic({
+      const { data, error } = await executeDiagnostic({
         clusterId: filters.value.clusterId,
         namespace: selectedPod.value.namespace,
         podName: selectedPod.value.podName,
@@ -194,7 +202,17 @@
         timeout: 60
       });
 
-      diagnosticResult.value = response.data;
+      if (!error && data) {
+        diagnosticResult.value = data;
+      } else {
+        diagnosticResult.value = {
+          status: 'error',
+          error: '执行诊断失败',
+          output: '',
+          timestamp: Date.now(),
+          duration: 0
+        };
+      }
     } catch (error) {
       console.error('执行诊断失败:', error);
       diagnosticResult.value = {
@@ -211,13 +229,15 @@
 
   const showHistory = async () => {
     try {
-      const response = await fetchDiagnosticHistory({
+      const { data, error } = await fetchDiagnosticHistory({
         clusterId: filters.value.clusterId,
         namespace: selectedPod.value.namespace,
         podName: selectedPod.value.podName
       });
-      diagnosticHistory.value = response.data.list || [];
-      historyDialogVisible.value = true;
+      if (!error && data) {
+        diagnosticHistory.value = data.list || [];
+        historyDialogVisible.value = true;
+      }
     } catch (error) {
       console.error('加载历史记录失败:', error);
     }

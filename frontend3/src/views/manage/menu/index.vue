@@ -102,7 +102,7 @@
       await authStore.getUserInfo();
       routeStore.rebuildRoutes();
     } else {
-      ElNotification({ title: '错误', message: error.msg || '删除失败', type: 'error', duration: 3000 });
+      ElNotification({ title: '错误', message: error?.response?.data?.message || error?.message || '删除失败', type: 'error', duration: 3000 });
     }
   }
 

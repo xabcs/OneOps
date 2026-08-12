@@ -92,11 +92,21 @@
     submitting.value = true;
     try {
       if (props.mode === 'create') {
-        await createNotificationChannel(form.value);
-        ElMessage.success('创建成功');
+        const { error } = await createNotificationChannel(form.value);
+        if (!error) {
+          ElMessage.success('创建成功');
+        } else {
+          ElMessage.error('创建失败');
+          return;
+        }
       } else {
-        await updateNotificationChannel(form.value.id!, form.value);
-        ElMessage.success('更新成功');
+        const { error } = await updateNotificationChannel(form.value.id!, form.value);
+        if (!error) {
+          ElMessage.success('更新成功');
+        } else {
+          ElMessage.error('更新失败');
+          return;
+        }
       }
       visible.value = false;
       emit('submitted');

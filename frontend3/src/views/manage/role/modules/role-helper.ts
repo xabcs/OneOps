@@ -60,7 +60,7 @@ export function useRoleUsersMap() {
   async function getAllUsers() {
     const { error, data } = await fetchGetUserList({ page: 1, pageSize: 1000 });
     if (!error && data) {
-      allUsers.value = data.list || data || [];
+      allUsers.value = data.list || [];
     }
   }
 

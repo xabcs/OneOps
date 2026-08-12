@@ -15,9 +15,9 @@
   const loadNodes = async () => {
     loading.value = true;
     try {
-      const res = await fetchK8sClusterNodes(props.clusterId);
-      if (res.code === 200) {
-        dataSource.value = res.data || [];
+      const { data, error } = await fetchK8sClusterNodes(props.clusterId);
+      if (!error && data) {
+        dataSource.value = data || [];
       }
     } catch (error: unknown) {
       const err = error as Error;

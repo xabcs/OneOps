@@ -46,7 +46,7 @@
 
     const { data } = await fetchAlerts(params as Record<string, unknown>);
     if (data) {
-      alertList.value = data.items || [];
+      alertList.value = data.list || [];
       totalCount.value = data.total || 0;
     }
     loading.value = false;

@@ -119,11 +119,11 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
     yamlDialogTitle.value = `编辑 ${config.label}: ${row.name}`;
     yamlLoading.value = true;
     try {
-      const response = (await config.getFn(getSelectedCluster()!, row.namespace, row.name)) as {
+      const { data } = (await config.getFn(getSelectedCluster()!, row.namespace, row.name)) as {
         data?: { manifest?: string };
-        manifest?: string;
+        error?: unknown;
       };
-      yamlContent.value = parseManifest(response.data?.manifest || response.manifest || '');
+      yamlContent.value = parseManifest(data?.manifest || '');
       showYamlDialog.value = true;
     } catch (error: unknown) {
       const err = error as Error;
@@ -242,11 +242,11 @@ export function useWorkloadActions(getSelectedCluster: () => string | undefined,
     logDialogContent.value = '加载中...';
     showLogDialog.value = true;
     try {
-      const response = (await fetchK8sPodLogs(getSelectedCluster()!, row.namespace, row.name, {
+      const { data } = (await fetchK8sPodLogs(getSelectedCluster()!, row.namespace, row.name, {
         container: containerName,
         tailLines: 100
-      })) as { data?: { logs?: string } };
-      logDialogContent.value = response.data?.logs || '暂无日志';
+      })) as { data?: { logs?: string }; error?: unknown };
+      logDialogContent.value = data?.logs || '暂无日志';
     } catch (error: unknown) {
       const err = error as Error;
       logDialogContent.value = `日志加载失败: ${err.message || '未知错误'}`;

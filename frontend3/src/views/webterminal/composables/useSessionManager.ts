@@ -70,14 +70,14 @@ export function useSessionManager() {
       const loginAccount = selectedCredential?.username || 'root';
 
       // 调用后端接口创建 SSH 会话
-      const response = await fetchConnectServer(connectingServer.value.id, {
+      const { data, error } = await fetchConnectServer(connectingServer.value.id, {
         protocol: 'ssh',
         credentialId: selectedCredentialId.value
       });
 
-      if (response.data && response.data.sessionId) {
-        const sessionId = response.data.sessionId;
-        const websocketUrl = response.data.websocketUrl;
+      if (!error && data && data.sessionId) {
+        const sessionId = data.sessionId;
+        const websocketUrl = data.websocketUrl;
 
         // 创建会话对象
         const newSession: Bastion.TerminalSession = {
@@ -121,10 +121,10 @@ export function useSessionManager() {
   // 处理主机连接（统一入口）
   async function handleConnect(server: Bastion.BasicServerInfo) {
     try {
-      const response = await fetchGetServerForConnect(server.id);
+      const { data: serverData, error: serverError } = await fetchGetServerForConnect(server.id);
 
-      if (response.data) {
-        connectingServer.value = response.data;
+      if (!serverError && serverData) {
+        connectingServer.value = serverData;
 
         // 默认选中第一个凭证（如果有）
         if (connectingServer.value.credentials && connectingServer.value.credentials.length > 0) {

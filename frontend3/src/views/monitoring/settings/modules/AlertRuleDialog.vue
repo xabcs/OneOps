@@ -101,11 +101,21 @@
     submitting.value = true;
     try {
       if (props.mode === 'create') {
-        await createAlertRule(form.value);
-        ElMessage.success('创建成功');
+        const { error } = await createAlertRule(form.value);
+        if (!error) {
+          ElMessage.success('创建成功');
+        } else {
+          ElMessage.error('创建失败');
+          return;
+        }
       } else {
-        await updateAlertRule(form.value.id!, form.value);
-        ElMessage.success('更新成功');
+        const { error } = await updateAlertRule(form.value.id!, form.value);
+        if (!error) {
+          ElMessage.success('更新成功');
+        } else {
+          ElMessage.error('更新失败');
+          return;
+        }
       }
       visible.value = false;
       emit('submitted');

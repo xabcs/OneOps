@@ -33,14 +33,14 @@
 
   // 加载集群列表
   async function loadClusters() {
-    try {
-      const response = await fetchK8sClusters();
-      clusters.value = response.data || [];
+    const { data, error } = await fetchK8sClusters();
+    if (!error) {
+      clusters.value = data?.list || [];
       // 自动选中第一个集群
       if (clusters.value.length > 0 && !selectedCluster.value) {
         selectedCluster.value = clusters.value[0].id;
       }
-    } catch (error) {
+    } else {
       console.error('加载集群列表失败:', error);
     }
   }
@@ -48,14 +48,14 @@
   // 加载命名空间列表
   async function loadNamespaces() {
     if (!selectedCluster.value) return;
-    try {
-      const response = await fetchK8sClusterNamespaces(selectedCluster.value);
-      namespaces.value = response.data.map((ns: K8s.Namespace) => ns.name);
+    const { data, error } = await fetchK8sClusterNamespaces(selectedCluster.value);
+    if (!error) {
+      namespaces.value = (data || []).map((ns: K8s.Namespace) => ns.name);
       // 自动选中第一个命名空间
       if (namespaces.value.length > 0 && !namespaces.value.includes(selectedNamespace.value)) {
         selectedNamespace.value = namespaces.value[0];
       }
-    } catch (error) {
+    } else {
       console.error('加载命名空间失败:', error);
     }
   }
@@ -64,56 +64,38 @@
   async function loadConfigMaps() {
     if (!selectedCluster.value) return;
     loading.value = true;
-    try {
-      const response = await fetchK8sConfigMaps(selectedCluster.value, {
-        namespace: selectedNamespace.value,
-        page: configmapsPagination.page,
-        pageSize: configmapsPagination.pageSize
-      });
+    const { data, error } = await fetchK8sConfigMaps(selectedCluster.value, {
+      namespace: selectedNamespace.value,
+      page: configmapsPagination.page,
+      pageSize: configmapsPagination.pageSize
+    });
 
-      // 处理不同的响应格式
-      let apiData = response;
-      if (response?.data?.data?.list) {
-        apiData = response.data.data;
-      } else if (response?.data?.list) {
-        apiData = response.data;
-      }
-
-      configmapsData.value = apiData.list || [];
-      configmapsPagination.itemCount = apiData.total || 0;
-    } catch (error) {
+    if (!error) {
+      configmapsData.value = data?.list || [];
+      configmapsPagination.itemCount = data?.total || 0;
+    } else {
       console.error('加载 ConfigMaps 失败:', error);
-    } finally {
-      loading.value = false;
     }
+    loading.value = false;
   }
 
   // 加载保密字典
   async function loadSecrets() {
     if (!selectedCluster.value) return;
     loading.value = true;
-    try {
-      const response = await fetchK8sSecrets(selectedCluster.value, {
-        namespace: selectedNamespace.value,
-        page: secretsPagination.page,
-        pageSize: secretsPagination.pageSize
-      });
+    const { data, error } = await fetchK8sSecrets(selectedCluster.value, {
+      namespace: selectedNamespace.value,
+      page: secretsPagination.page,
+      pageSize: secretsPagination.pageSize
+    });
 
-      // 处理不同的响应格式
-      let apiData = response;
-      if (response?.data?.data?.list) {
-        apiData = response.data.data;
-      } else if (response?.data?.list) {
-        apiData = response.data;
-      }
-
-      secretsData.value = apiData.list || [];
-      secretsPagination.itemCount = apiData.total || 0;
-    } catch (error) {
+    if (!error) {
+      secretsData.value = data?.list || [];
+      secretsPagination.itemCount = data?.total || 0;
+    } else {
       console.error('加载 Secrets 失败:', error);
-    } finally {
-      loading.value = false;
     }
+    loading.value = false;
   }
 
   // 加载当前Tab数据
