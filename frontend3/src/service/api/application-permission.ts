@@ -11,6 +11,14 @@ export function fetchApplications(params: Api.ApplicationPermission.ApplicationS
   });
 }
 
+/** 获取应用选项列表（不分页，用于选择器） */
+export function fetchApplicationOptions() {
+  return request<{ id: number; name: string; code: string; type: string }[]>({
+    url: '/system/applications/options',
+    method: 'get'
+  });
+}
+
 /** 创建应用 */
 export function createApplication(data: Partial<Api.ApplicationPermission.Application>) {
   return request<boolean>({
@@ -201,6 +209,14 @@ export function fetchAuthGroups(params: { page: number; pageSize: number; name?:
     url: '/system/auth-groups/list',
     method: 'get',
     params
+  });
+}
+
+/** 获取用户组选项列表（不分页，用于选择器） */
+export function fetchAuthGroupOptions() {
+  return request<{ id: number; name: string; code: string }[]>({
+    url: '/system/auth-groups/options',
+    method: 'get'
   });
 }
 

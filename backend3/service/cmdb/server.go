@@ -18,6 +18,17 @@ func (s *CMDBService) GetServers(query map[string]interface{}, page, pageSize in
 	return s.repo.FindServers(query, page, pageSize)
 }
 
+// GetServerOptions 获取服务器选项列表（不分页，用于选择器）
+func (s *CMDBService) GetServerOptions() ([]struct {
+	ID          uint   `json:"id"`
+	Hostname    string `json:"hostname"`
+	IP          string `json:"ip"`
+	AgentStatus string `json:"agentStatus"`
+	Env         string `json:"env"`
+}, error) {
+	return s.repo.FindAllServersBasic()
+}
+
 // GetServerByID 根据ID获取服务器
 func (s *CMDBService) GetServerByID(id uint) (*modelcmdb.Server, error) {
 	return s.repo.FindServerByID(id)

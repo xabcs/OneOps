@@ -31,9 +31,9 @@
   const groups = ref<Api.ApplicationPermission.AuthGroup[]>([]);
 
   async function loadGroups() {
-    const { data, error } = await fetchAuthGroups({ page: 1, pageSize: 1000 });
+    const { data, error } = await fetchAuthGroupOptions();
     if (!error && data) {
-      groups.value = data.list || [];
+      groups.value = data || [];
     }
   }
 

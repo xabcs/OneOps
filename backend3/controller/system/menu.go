@@ -24,7 +24,15 @@ func NewMenuController(svc *syssvc.MenuService) *MenuController {
 	return &MenuController{svc: svc}
 }
 
-// GetMenus 获取所有菜单
+// GetMenus godoc
+// @Summary      获取所有菜单
+// @Description  以树形结构返回全部菜单
+// @Tags         系统管理-菜单
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=[]modelsystem.Menu}
+// @Failure      200  {object}  utils.Response  "获取菜单列表失败"
+// @Router       /system/menus [get]
+// @Security     BearerAuth
 func (ctrl *MenuController) GetMenus(c *gin.Context) {
 	menuTree, err := ctrl.svc.GetAllAsTree()
 	if err != nil {
@@ -34,7 +42,15 @@ func (ctrl *MenuController) GetMenus(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(menuTree))
 }
 
-// GetMenuTree 获取菜单树（专用于前端菜单管理）
+// GetMenuTree godoc
+// @Summary      获取菜单树
+// @Description  专用于前端菜单管理的树形结构
+// @Tags         系统管理-菜单
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=[]modelsystem.Menu}
+// @Failure      200  {object}  utils.Response  "获取菜单树失败"
+// @Router       /system/menus/tree [get]
+// @Security     BearerAuth
 func (ctrl *MenuController) GetMenuTree(c *gin.Context) {
 	menuTree, err := ctrl.svc.GetAllAsTree()
 	if err != nil {
@@ -56,7 +72,17 @@ type CreateMenuRequest struct {
 	Status     int    `json:"status"`
 }
 
-// CreateMenu 创建菜单
+// CreateMenu godoc
+// @Summary      创建菜单
+// @Description  新增一个菜单项
+// @Tags         系统管理-菜单
+// @Accept       json
+// @Produce      json
+// @Param        body  body      CreateMenuRequest  true  "菜单信息"
+// @Success      200   {object}  utils.Response{data=modelsystem.Menu}
+// @Failure      200   {object}  utils.Response  "请求参数错误 / 创建菜单失败"
+// @Router       /system/menus [post]
+// @Security     BearerAuth
 func (ctrl *MenuController) CreateMenu(c *gin.Context) {
 	var req CreateMenuRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -95,7 +121,18 @@ type UpdateMenuRequest struct {
 	Status     int    `json:"status"`
 }
 
-// UpdateMenu 更新菜单
+// UpdateMenu godoc
+// @Summary      更新菜单
+// @Description  按菜单 ID 更新指定字段（支持部分更新）
+// @Tags         系统管理-菜单
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                true  "菜单 ID"
+// @Param        body  body      UpdateMenuRequest  true  "待更新字段"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的菜单ID / 请求参数错误 / 更新菜单失败"
+// @Router       /system/menus/{id} [put]
+// @Security     BearerAuth
 func (ctrl *MenuController) UpdateMenu(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -161,7 +198,16 @@ func (ctrl *MenuController) UpdateMenu(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("更新成功"))
 }
 
-// DeleteMenu 删除菜单
+// DeleteMenu godoc
+// @Summary      删除菜单
+// @Description  按菜单 ID 删除菜单（存在子菜单时禁止删除）
+// @Tags         系统管理-菜单
+// @Produce      json
+// @Param        id  path      int  true  "菜单 ID"
+// @Success      200  {object}  utils.Response
+// @Failure      200  {object}  utils.Response  "无效的菜单ID / 删除菜单失败"
+// @Router       /system/menus/{id} [delete]
+// @Security     BearerAuth
 func (ctrl *MenuController) DeleteMenu(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)

@@ -21,6 +21,11 @@ func (s *ApplicationPermissionService) GetApplications(page, pageSize int, name 
 	return s.repo.FindApplications(page, pageSize, name)
 }
 
+// GetAllApplicationOptions 获取所有应用选项（不分页，用于选择器）
+func (s *ApplicationPermissionService) GetAllApplicationOptions() ([]*modelauth.Application, error) {
+	return s.repo.FindAllApplications()
+}
+
 // GetApplicationByID 根据ID获取应用
 func (s *ApplicationPermissionService) GetApplicationByID(id uint) (*modelauth.Application, error) {
 	return s.repo.FindApplicationByID(id)

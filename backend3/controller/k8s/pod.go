@@ -12,7 +12,20 @@ import (
 
 // ========== Pods ==========
 
-// ListPods 获取 Pod 列表
+// ListPods godoc
+// @Summary      获取 Pod 列表
+// @Description  分页获取指定集群下指定命名空间的 Pod 列表，支持标签选择器
+// @Tags         K8s-Pod
+// @Produce      json
+// @Param        id              path      int     true  "集群 ID"
+// @Param        namespace       query     string  false  "命名空间"
+// @Param        labelSelector   query     string  false  "标签选择器"
+// @Param        page            query     int     false  "页码"    default(1)
+// @Param        pageSize        query     int     false  "每页数量" default(10)
+// @Success      200  {object}  utils.Response{data=object{list=object,total=int}}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/pods [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) ListPods(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -49,7 +62,18 @@ func (ctrl *K8sResourceController) ListPods(c *gin.Context) {
 	}))
 }
 
-// GetPod 获取 Pod 详情
+// GetPod godoc
+// @Summary      获取 Pod 详情
+// @Description  按集群、命名空间、名称获取 Pod 详情
+// @Tags         K8s-Pod
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  path      string  true  "命名空间"
+// @Param        name       path      string  true  "Pod 名称"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/pods/{namespace}/{name} [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) GetPod(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -80,7 +104,20 @@ func (ctrl *K8sResourceController) GetPod(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(pod))
 }
 
-// GetPodLogs 获取 Pod 日志
+// GetPodLogs godoc
+// @Summary      获取 Pod 日志
+// @Description  获取指定 Pod 的容器日志（一次性返回，非流式）
+// @Tags         K8s-Pod
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  path      string  true  "命名空间"
+// @Param        name       path      string  true  "Pod 名称"
+// @Param        container  query     string  false  "容器名称"
+// @Param        tailLines  query     int     false  "尾部行数" default(100)
+// @Success      200  {object}  utils.Response{data=object{logs=string}}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/pods/{namespace}/{name}/logs [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) GetPodLogs(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -127,7 +164,18 @@ type UpdatePodRequest struct {
 	Manifest  map[string]interface{} `json:"manifest" binding:"required"`
 }
 
-// UpdatePod 更新 Pod
+// UpdatePod godoc
+// @Summary      更新 Pod
+// @Description  更新指定集群中的 Pod
+// @Tags         K8s-Pod
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int              true  "集群 ID"
+// @Param        body  body      UpdatePodRequest  true  "更新请求(含 manifest)"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的集群ID / 无权访问 / 更新失败"
+// @Router       /k8s/clusters/{id}/pods [put]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) UpdatePod(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -166,7 +214,18 @@ type DeletePodRequest struct {
 	Name      string `json:"name" binding:"required"`
 }
 
-// DeletePod 删除 Pod
+// DeletePod godoc
+// @Summary      删除 Pod
+// @Description  删除指定集群中的 Pod
+// @Tags         K8s-Pod
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int              true  "集群 ID"
+// @Param        body  body      DeletePodRequest  true  "删除请求(命名空间+名称)"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的集群ID / 无权访问 / 删除失败"
+// @Router       /k8s/clusters/{id}/pods [delete]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) DeletePod(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {

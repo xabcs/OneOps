@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { ElButton, ElInput, ElTag } from 'element-plus';
-  import { fetchCheckConnectPermission, fetchGetServers } from '@/service/api';
+  import { fetchCheckConnectPermission, fetchServerOptions } from '@/service/api';
   import type { ApiServer } from '@/typings/api';
 
   interface QuickConnectHost {
@@ -43,16 +43,13 @@
   async function loadHosts() {
     loading.value = true;
     try {
-      const { data } = await fetchGetServers({
-        page: 1,
-        pageSize: 100,
-        agentStatus: 'online'
-      });
+      const { data } = await fetchServerOptions();
 
-      if (data?.list) {
+      const serverList = data?.filter(s => s.agentStatus === 'online') || [];
+      if (serverList.length > 0) {
         // 并行检查每个主机的连接权限
         const hostsWithPermission = await Promise.all(
-          data.list.map(async (server: ApiServer) => {
+          serverList.map(async (server: ApiServer) => {
             try {
               const permission = await fetchCheckConnectPermission(server.id);
               return {
@@ -77,6 +74,8 @@
         );
 
         hosts.value = hostsWithPermission.filter(h => h.agentStatus === 'online');
+      } else {
+        hosts.value = [];
       }
     } catch (error) {
       console.error('加载主机列表失败:', error);

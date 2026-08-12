@@ -70,6 +70,7 @@ func SetupCMDBRoutes(r *gin.Engine) {
 		cmdb.PUT("/servers/:id", cmdbController.UpdateServer)
 		cmdb.DELETE("/servers/:id", cmdbController.DeleteServer)
 		cmdb.GET("/servers/stats", cmdbController.GetServerStats)
+		cmdb.GET("/servers/options", cmdbController.GetServerOptions)
 		cmdb.POST("/servers/config", cmdbController.GetServerConfig)
 		cmdb.GET("/servers/:id", cmdbController.GetServerByID)
 		cmdb.GET("/servers/:id/connect", cmdbController.GetServerForConnect)

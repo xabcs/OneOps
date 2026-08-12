@@ -26,7 +26,16 @@ func NewAttributeController(svc *AttributeService) *AttributeController {
 	}
 }
 
-// GetAttributeDefinitions 获取属性定义列表
+// GetAttributeDefinitions godoc
+// @Summary      获取属性定义列表
+// @Description  获取属性定义列表，支持按分类筛选
+// @Tags         CMDB-属性
+// @Produce      json
+// @Param        category  query  string  false  "属性分类"
+// @Success      200  {object}  utils.Response  "属性定义列表"
+// @Failure      200  {object}  utils.Response  "获取属性列表失败"
+// @Router       /system/attributes [get]
+// @Security     BearerAuth
 func (c *AttributeController) GetAttributeDefinitions(ctx *gin.Context) {
 	category := ctx.Query("category")
 
@@ -39,7 +48,16 @@ func (c *AttributeController) GetAttributeDefinitions(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(attributes))
 }
 
-// GetAttributeDefinitionByID 获取属性定义详情
+// GetAttributeDefinitionByID godoc
+// @Summary      获取属性定义详情
+// @Description  根据属性 ID 获取属性定义详情
+// @Tags         CMDB-属性
+// @Produce      json
+// @Param        id  path  int  true  "属性 ID"
+// @Success      200  {object}  utils.Response{data=modelsystem.AttributeDefinition}
+// @Failure      200  {object}  utils.Response  "无效的 ID / 属性不存在"
+// @Router       /system/attributes/{id} [get]
+// @Security     BearerAuth
 func (c *AttributeController) GetAttributeDefinitionByID(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -57,7 +75,17 @@ func (c *AttributeController) GetAttributeDefinitionByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(attribute))
 }
 
-// CreateAttributeDefinition 创建属性定义
+// CreateAttributeDefinition godoc
+// @Summary      创建属性定义
+// @Description  创建一个新的属性定义（需要管理员权限）
+// @Tags         CMDB-属性
+// @Accept       json
+// @Produce      json
+// @Param        attr  body      modelsystem.AttributeDefinition  true  "属性定义信息"
+// @Success      200   {object}  utils.Response  "属性创建成功"
+// @Failure      200   {object}  utils.Response  "请求参数错误 / 无权限 / 创建失败"
+// @Router       /system/attributes [post]
+// @Security     BearerAuth
 func (c *AttributeController) CreateAttributeDefinition(ctx *gin.Context) {
 	var attr modelsystem.AttributeDefinition
 	if err := ctx.ShouldBindJSON(&attr); err != nil {
@@ -79,7 +107,18 @@ func (c *AttributeController) CreateAttributeDefinition(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("属性创建成功"))
 }
 
-// UpdateAttributeDefinition 更新属性定义
+// UpdateAttributeDefinition godoc
+// @Summary      更新属性定义
+// @Description  根据属性 ID 更新属性定义信息（部分字段更新，需要管理员权限）
+// @Tags         CMDB-属性
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                            true  "属性 ID"
+// @Param        attr  body      modelsystem.AttributeDefinition  true  "需要更新的字段"
+// @Success      200   {object}  utils.Response  "属性更新成功"
+// @Failure      200   {object}  utils.Response  "无效的 ID / 请求参数错误 / 无权限 / 更新失败"
+// @Router       /system/attributes/{id} [put]
+// @Security     BearerAuth
 func (c *AttributeController) UpdateAttributeDefinition(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -108,7 +147,16 @@ func (c *AttributeController) UpdateAttributeDefinition(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("属性更新成功"))
 }
 
-// DeleteAttributeDefinition 删除属性定义
+// DeleteAttributeDefinition godoc
+// @Summary      删除属性定义
+// @Description  根据属性 ID 删除属性定义（需要管理员权限）
+// @Tags         CMDB-属性
+// @Produce      json
+// @Param        id  path  int  true  "属性 ID"
+// @Success      200  {object}  utils.Response  "属性删除成功"
+// @Failure      200  {object}  utils.Response  "无效的 ID / 无权限 / 删除失败"
+// @Router       /system/attributes/{id} [delete]
+// @Security     BearerAuth
 func (c *AttributeController) DeleteAttributeDefinition(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -131,7 +179,16 @@ func (c *AttributeController) DeleteAttributeDefinition(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("属性删除成功"))
 }
 
-// GetServerAttributes 获取主机的属性列表
+// GetServerAttributes godoc
+// @Summary      获取主机属性列表
+// @Description  根据主机 ID 获取主机的属性列表
+// @Tags         CMDB-属性
+// @Produce      json
+// @Param        serverId  path  int  true  "主机 ID"
+// @Success      200  {object}  utils.Response  "主机属性列表"
+// @Failure      200  {object}  utils.Response  "无效的主机 ID / 获取主机属性失败"
+// @Router       /system/server-attributes/{serverId} [get]
+// @Security     BearerAuth
 func (c *AttributeController) GetServerAttributes(ctx *gin.Context) {
 	serverIDStr := ctx.Param("serverId")
 	serverID, err := strconv.ParseUint(serverIDStr, 10, 32)
@@ -169,7 +226,18 @@ func (c *AttributeController) ValidateServerAttribute(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("验证通过"))
 }
 
-// SaveServerAttributes 保存主机的属性列表
+// SaveServerAttributes godoc
+// @Summary      保存主机属性
+// @Description  保存指定主机的属性列表（覆盖更新）
+// @Tags         CMDB-属性
+// @Accept       json
+// @Produce      json
+// @Param        serverId    path      int                            true  "主机 ID"
+// @Param        attributes  body      []modelcmdb.ServerAttribute    true  "属性列表"
+// @Success      200         {object}  utils.Response  "属性保存成功"
+// @Failure      200         {object}  utils.Response  "无效的主机 ID / 请求参数错误 / 保存失败"
+// @Router       /system/server-attributes/{serverId} [post]
+// @Security     BearerAuth
 func (c *AttributeController) SaveServerAttributes(ctx *gin.Context) {
 	serverIDStr := ctx.Param("serverId")
 	serverID, err := strconv.ParseUint(serverIDStr, 10, 32)

@@ -103,7 +103,19 @@ func (q *k8sTerminalSizeQueue) Stop() {
 	close(q.sizes)
 }
 
-// HandleWebSocket 处理 WebSocket 连接
+// HandleWebSocket godoc
+// @Summary      K8s Pod 终端 WebSocket
+// @Description  通过 WebSocket 连接到指定 Pod 的容器终端，实现交互式 shell。认证通过 query 参数 token 完成，不经过 Auth 中间件。
+// @Tags         K8s-终端
+// @Produce      json
+// @Param        token         query     string  true   "JWT token"
+// @Param        clusterId     query     string  true   "集群 ID"
+// @Param        namespace     query     string  true   "命名空间"
+// @Param        podName       query     string  true   "Pod 名称"
+// @Param        containerName query     string  false  "容器名称(留空则取第一个容器)"
+// @Success      101  {string}  string  "升级为 WebSocket 连接"
+// @Failure      200  {object}  utils.Response  "缺少参数 / token验证失败 / 无权访问"
+// @Router       /k8s/terminal/ws [get]
 func (ctrl *TerminalController) HandleWebSocket(c *gin.Context) {
 	token := c.Query("token")
 	if token == "" {
@@ -336,7 +348,14 @@ func (ctrl *TerminalController) validateToken(token string) (uint, error) {
 	return claims.UserID, nil
 }
 
-// GetActiveSessions 获取活跃的 K8s 终端会话
+// GetActiveSessions godoc
+// @Summary      获取活跃终端会话
+// @Description  返回当前用户的活跃 K8s 终端会话列表
+// @Tags         K8s-终端
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=object}
+// @Router       /k8s/terminal/active [get]
+// @Security     BearerAuth
 func (ctrl *TerminalController) GetActiveSessions(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -363,7 +382,16 @@ func (ctrl *TerminalController) GetActiveSessions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"code": 200, "success": true, "data": sessions})
 }
 
-// TerminateSession 终止 K8s 终端会话
+// TerminateSession godoc
+// @Summary      终止终端会话
+// @Description  终止指定的 K8s 终端 WebSocket 会话
+// @Tags         K8s-终端
+// @Produce      json
+// @Param        sessionId  path      int  true  "会话 ID"
+// @Success      200  {object}  utils.Response
+// @Failure      200  {object}  utils.Response  "无效的会话ID / 会话不存在 / 无权操作"
+// @Router       /k8s/terminal/sessions/{sessionId}/terminate [post]
+// @Security     BearerAuth
 func (ctrl *TerminalController) TerminateSession(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {

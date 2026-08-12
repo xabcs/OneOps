@@ -2,6 +2,8 @@
 
 > 版本：v3.0 | 更新日期：2026-08-10
 
+> 💡 **交互式 API 文档**:本项目已接入 Swagger UI。启动服务后访问 `http://localhost:<port>/swagger/index.html`(仅非生产环境开放)。接口注释维护在各 controller 文件中,详见 [SWAGGER.md](./SWAGGER.md)。
+
 ---
 
 ## 一、概述

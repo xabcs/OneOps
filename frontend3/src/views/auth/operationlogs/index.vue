@@ -1,6 +1,6 @@
 <script setup lang="tsx">
   import { onMounted, ref } from 'vue';
-  import { fetchApplications, fetchOperationLogs } from '@/service/api/application-permission';
+  import { fetchApplicationOptions, fetchOperationLogs } from '@/service/api/application-permission';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
   import type { FlatResponseData } from '@sa/axios';
 
@@ -21,7 +21,7 @@
   const applications = ref<Api.ApplicationPermission.Application[]>([]);
 
   async function getApplications() {
-    const { data, error } = await fetchApplications({ page: 1, pageSize: 1000 });
+    const { data, error } = await fetchApplications({ page: 1, pageSize: 100 });
     if (!error && data) {
       applications.value = data.list || [];
     }

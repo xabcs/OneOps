@@ -3,7 +3,7 @@
   import { useRoute } from 'vue-router';
   import { Refresh } from '@element-plus/icons-vue';
   import * as echarts from 'echarts';
-  import { fetchGetServers, fetchServerMetricsHistory } from '@/service/api';
+  import { fetchServerMetricsHistory, fetchServerOptions } from '@/service/api';
 
   defineOptions({
     name: 'MonitoringTrends'
@@ -66,9 +66,9 @@
   // 获取主机列表
   async function getServerList() {
     loading.value = true;
-    const { data } = await fetchGetServers({ page: 1, pageSize: 1000, agentStatus: 'running' });
+    const { data } = await fetchServerOptions();
     if (data) {
-      servers.value = data.list || [];
+      servers.value = data.filter(s => s.agentStatus === 'running') || [];
       // 如果URL中有serverId，则选中该主机
       const queryServerId = route.query.serverId;
       if (queryServerId) {

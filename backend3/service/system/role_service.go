@@ -10,10 +10,21 @@ import (
 
 // 角色业务错误
 var (
-	ErrRoleNotFound       = errors.New("角色不存在")
-	ErrRoleHasUsers       = errors.New("该角色已绑定用户，请先解除绑定")
-	ErrAdminRoleProtected = errors.New("系统管理员角色不能删除")
+	ErrRoleNotFound         = errors.New("角色不存在")
+	ErrRoleHasUsers         = errors.New("该角色已绑定用户，请先解除绑定")
+	ErrAdminRoleProtected   = errors.New("系统管理员角色不能删除")
+	ErrBuiltinRoleProtected = errors.New("系统内置角色不能删除")
 )
+
+// builtinRoleCodes 内置角色代码列表
+var builtinRoleCodes = map[string]bool{
+	"admin":   true,
+	"ops":     true,
+	"auditor": true,
+	"viewer":  true,
+	"user":    true,
+	"test":    true,
+}
 
 // RoleService 角色业务逻辑层
 type RoleService struct {
@@ -94,9 +105,9 @@ func (s *RoleService) Delete(id uint) error {
 		return fmt.Errorf("该角色已绑定 %d 个用户：%s。请先在用户管理中解除该角色与用户的绑定关系后再删除", count, userList)
 	}
 
-	// 检查是否为管理员角色
-	if role.Code == "admin" {
-		return ErrAdminRoleProtected
+	// 检查是否为内置角色
+	if builtinRoleCodes[role.Code] {
+		return ErrBuiltinRoleProtected
 	}
 
 	return s.repo.Delete(uint64(id))

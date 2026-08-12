@@ -25,7 +25,14 @@ var monitoringUpgrader = websocket.Upgrader{
 	},
 }
 
-// HandleWebSocket WebSocket 连接处理
+// HandleWebSocket godoc
+// @Summary      监控 WebSocket 连接
+// @Description  升级 HTTP 连接为 WebSocket，用于实时推送监控概览与告警事件。鉴权通过 query 参数 token（或 Authorization 头）完成，不经过 Auth 中间件
+// @Tags         监控-WebSocket
+// @Param        token  query     string  true  "JWT token"
+// @Success      101  {string}  string  "升级为 WebSocket 连接"
+// @Failure      401  {object}  utils.Response  "缺少认证 Token 或 无效的 Token"
+// @Router       /monitoring/ws [get]
 func (ctrl *MonitoringController) HandleWebSocket(c *gin.Context) {
 	// 验证 Token - 优先从 query 参数获取
 	token := c.Query("token")

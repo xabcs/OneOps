@@ -1,3 +1,15 @@
+// @title           OneOps API
+// @version         1.0
+// @description     OneOps 一体化运维平台后端 API
+// @description     包含系统管理、CMDB、K8s、审计、监控、应用授权等模块
+// @host            localhost:8082
+// @BasePath        /api
+// @schemes         http https
+// @securityDefinitions.apikey BearerAuth
+// @in   header
+// @name Authorization
+// @description 输入 Bearer {token}，token 由 /api/login 获取
+
 package main
 
 import (
@@ -7,6 +19,7 @@ import (
 	"time"
 
 	"oneops/backend3/config"
+	_ "oneops/backend3/docs" // 注册 swag 生成的 OpenAPI 文档
 	"oneops/backend3/pkg/database"
 	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/logger"
@@ -107,6 +120,14 @@ func main() {
 
 	// 13. 注册路由
 	routes.SetupRoutes(r)
+
+	// 注册 Swagger UI（仅在非生产环境开放）
+	if cfg.App.Environment != "production" {
+		routes.SetupSwagger(r)
+		logger.Info("Swagger UI 已启用",
+			zap.String("url", fmt.Sprintf("http://localhost:%s/swagger/index.html", cfg.Server.Port)),
+		)
+	}
 
 	// 14. 启动服务器
 	addr := cfg.Server.GetServerAddr()

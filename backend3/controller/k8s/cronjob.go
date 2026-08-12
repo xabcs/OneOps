@@ -12,7 +12,19 @@ import (
 
 // ========== Workloads - CronJobs ==========
 
-// ListCronJobs 获取 CronJob 列表
+// ListCronJobs godoc
+// @Summary      获取 CronJob 列表
+// @Description  分页获取指定集群下指定命名空间的 CronJob 列表
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  query     string  false  "命名空间"
+// @Param        page       query     int     false  "页码"    default(1)
+// @Param        pageSize   query     int     false  "每页数量" default(10)
+// @Success      200  {object}  utils.Response{data=object{list=object,total=int}}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/cronjobs [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) ListCronJobs(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -49,7 +61,18 @@ func (ctrl *K8sResourceController) ListCronJobs(c *gin.Context) {
 	}))
 }
 
-// GetCronJob 获取 CronJob 详情
+// GetCronJob godoc
+// @Summary      获取 CronJob 详情
+// @Description  按集群、命名空间、名称获取 CronJob 详情
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  path      string  true  "命名空间"
+// @Param        name       path      string  true  "CronJob 名称"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/cronjobs/{namespace}/{name} [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) GetCronJob(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -86,7 +109,18 @@ type DeleteCronJobRequest struct {
 	Name      string `json:"name" binding:"required"`
 }
 
-// DeleteCronJob 删除 CronJob
+// DeleteCronJob godoc
+// @Summary      删除 CronJob
+// @Description  删除指定集群中的 CronJob
+// @Tags         K8s-工作负载
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                  true  "集群 ID"
+// @Param        body  body      DeleteCronJobRequest  true  "删除请求(命名空间+名称)"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的集群ID / 无权访问 / 删除失败"
+// @Router       /k8s/clusters/{id}/cronjobs [delete]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) DeleteCronJob(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -126,7 +160,18 @@ type SuspendCronJobRequest struct {
 	Suspend   bool   `json:"suspend"`
 }
 
-// SuspendCronJob 暂停/恢复 CronJob
+// SuspendCronJob godoc
+// @Summary      暂停/恢复 CronJob
+// @Description  暂停或恢复指定 CronJob 的调度
+// @Tags         K8s-工作负载
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "集群 ID"
+// @Param        body  body      SuspendCronJobRequest  true  "暂停请求(suspend=true暂停,false恢复)"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的集群ID / 无权访问 / 操作失败"
+// @Router       /k8s/clusters/{id}/cronjobs/suspend [put]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) SuspendCronJob(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {

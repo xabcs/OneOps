@@ -1,6 +1,6 @@
 <script setup lang="tsx">
   import { computed, ref } from 'vue';
-  import { ElMessage, ElNotification } from 'element-plus';
+  import { ElMessage, ElMessageBox, ElNotification } from 'element-plus';
   import { Delete, Management, Plus, Refresh, Search } from '@element-plus/icons-vue';
   import { fetchDeletePermission, fetchGetPermissionList, fetchUpdatePermission } from '@/service/api';
   import { useThemeStore } from '@/store/modules/theme';
@@ -98,15 +98,9 @@
             <ElButton type="primary" plain size="small" onClick={() => edit(row.id)}>
               {$t('common.edit')}
             </ElButton>
-            <ElPopconfirm title={$t('common.confirmDelete')} onConfirm={() => handleDelete(row.id)}>
-              {{
-                reference: () => (
-                  <ElButton type="danger" plain size="small">
-                    {$t('common.delete')}
-                  </ElButton>
-                )
-              }}
-            </ElPopconfirm>
+            <ElButton type="danger" plain size="small" onClick={() => confirmDelete(row.id)}>
+              {$t('common.delete')}
+            </ElButton>
           </div>
         )
       }
@@ -162,6 +156,15 @@
 
       onBatchDeleted();
     });
+  }
+
+  async function confirmDelete(id: number) {
+    await ElMessageBox.confirm($t('common.confirmDelete'), '提示', {
+      type: 'warning',
+      confirmButtonText: '确定',
+      cancelButtonText: '取消'
+    });
+    await handleDelete(id);
   }
 
   async function handleDelete(id: number) {

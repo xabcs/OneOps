@@ -1,6 +1,6 @@
 <script setup lang="tsx">
-  import { computed, onMounted, onUnmounted, ref } from 'vue';
-  import { ElNotification } from 'element-plus';
+  import { computed, onUnmounted, ref } from 'vue';
+  import { ElMessageBox, ElNotification } from 'element-plus';
   import { useBoolean } from '@sa/hooks';
   import { Delete, Management, Plus, Refresh, Search } from '@element-plus/icons-vue';
   import { fetchDeleteRole, fetchGetRoleList, fetchUpdateRole } from '@/service/api';
@@ -10,7 +10,6 @@
   import { $t } from '@/locales';
   import RoleOperateDrawer from './modules/role-operate-drawer.vue';
   import PermissionAssignModal from './modules/permission-assign-modal.vue';
-  import { canDeleteRole, useRoleUsersMap } from './modules/role-helper';
   import { createRoleColumns } from './modules/role-columns';
 
   defineOptions({ name: 'RoleManage' });
@@ -19,13 +18,6 @@
 
   // Hero区域显示状态
   const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);
-
-  // 用户列表和角色-用户映射
-  const { roleUsersMap, getAllUsers } = useRoleUsersMap();
-
-  onMounted(() => {
-    getAllUsers();
-  });
 
   const searchParams = ref(getInitSearchParams());
 
@@ -42,7 +34,6 @@
   // 角色操作完成后的数据刷新
   async function handleRoleOperateSubmitted() {
     await getData();
-    await getAllUsers();
   }
 
   // 统一权限分配
@@ -73,7 +64,6 @@
 
   async function handlePermissionSubmitted() {
     await getData();
-    await getAllUsers();
   }
 
   async function handleBatchDelete() {
@@ -90,48 +80,35 @@
       }
 
       const cannotDeleteRoles: Array<{ id: number; name: string; reason: string }> = [];
-      const canDeleteIds: number[] = [];
+      let successCount = 0;
+      let failCount = 0;
 
       for (const id of checkedRowKeys.value) {
         const role = data.value.find(r => r.id === id);
-        if (!role) {
-          cannotDeleteRoles.push({ id: id as number, name: `ID:${id}`, reason: '角色不存在' });
-          continue;
-        }
+        const roleName = role ? role.name : `ID:${id}`;
 
-        const { canDelete, reason } = canDeleteRole(role, roleUsersMap.value);
-        if (!canDelete) {
-          cannotDeleteRoles.push({ id: role.id, name: role.name, reason: reason || '不可删除' });
+        const { error } = await fetchDeleteRole(id as number);
+        if (!error) {
+          successCount++;
         } else {
-          canDeleteIds.push(role.id);
+          failCount++;
+          cannotDeleteRoles.push({
+            id: id as number,
+            name: roleName,
+            reason: error?.response?.data?.message || error?.message || '删除失败'
+          });
         }
       }
 
       if (cannotDeleteRoles.length > 0) {
         const message = cannotDeleteRoles.map(r => `• ${r.name}: ${r.reason}`).join('\n');
         ElNotification({
-          title: `无法删除 ${cannotDeleteRoles.length} 个角色`,
+          title: `${cannotDeleteRoles.length} 个角色删除失败`,
           message,
           type: 'warning',
           duration: 5000,
           position: 'top-right'
         });
-
-        if (canDeleteIds.length === 0) {
-          return;
-        }
-      }
-
-      let successCount = 0;
-      let failCount = 0;
-
-      for (const id of canDeleteIds) {
-        const { error } = await fetchDeleteRole(id);
-        if (!error) {
-          successCount++;
-        } else {
-          failCount++;
-        }
       }
 
       if (successCount > 0) {
@@ -155,27 +132,19 @@
       }
 
       onBatchDeleted();
-      await getAllUsers();
     });
   }
 
   async function handleDelete(id: number) {
+    await ElMessageBox.confirm('确认删除吗？', '提示', {
+      type: 'warning',
+      confirmButtonText: '确定',
+      cancelButtonText: '取消'
+    });
     await executeWithPermission('system.role.delete', async () => {
       const role = data.value.find(r => r.id === id);
       if (!role) {
         window.$message?.error('角色不存在');
-        return;
-      }
-
-      const { canDelete, reason } = canDeleteRole(role, roleUsersMap.value);
-      if (!canDelete) {
-        ElNotification({
-          title: '无法删除角色',
-          message: reason || '该角色不可删除',
-          type: 'warning',
-          duration: 3000,
-          position: 'top-right'
-        });
         return;
       }
 
@@ -190,7 +159,6 @@
           position: 'top-right'
         });
         onDeleted();
-        await getAllUsers();
       } else {
         ElNotification({
           title: '删除失败',
@@ -244,7 +212,6 @@
       searchParams.value.pageSize = params.pageSize;
     },
     columns: createRoleColumns({
-      roleUsersMap: () => roleUsersMap.value,
       edit,
       handleViewPermissions,
       handleAssignPermissions,
@@ -259,7 +226,6 @@
   // 刷新数据
   async function refreshData() {
     await getDataByPage();
-    await getAllUsers();
   }
 
   // 搜索输入处理（防抖）

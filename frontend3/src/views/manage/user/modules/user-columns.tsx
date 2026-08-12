@@ -130,15 +130,9 @@ export function createUserColumns(handlers: {
           <ElButton type="warning" plain size="small" onClick={() => handlers.openResetPassword(row)}>
             重置密码
           </ElButton>
-          <ElPopconfirm title="确认删除吗？" onConfirm={() => handlers.handleDelete(row.id)}>
-            {{
-              reference: () => (
-                <ElButton type="danger" plain size="small" disabled={row.username === 'admin'}>
-                  删除
-                </ElButton>
-              )
-            }}
-          </ElPopconfirm>
+          <ElButton type="danger" plain size="small" disabled={row.username === 'admin'} onClick={() => handlers.handleDelete(row.id)}>
+            删除
+          </ElButton>
         </div>
       )
     }

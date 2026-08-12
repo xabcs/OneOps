@@ -12,7 +12,19 @@ import (
 
 // ========== Workloads - Deployment ==========
 
-// ListDeployments 获取 Deployment 列表
+// ListDeployments godoc
+// @Summary      获取 Deployment 列表
+// @Description  分页获取指定集群下指定命名空间的 Deployment 列表
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int  true  "集群 ID"
+// @Param        namespace  query     string  false  "命名空间"
+// @Param        page       query     int     false  "页码"    default(1)
+// @Param        pageSize   query     int     false  "每页数量" default(10)
+// @Success      200  {object}  utils.Response{data=object{list=object,total=int}}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/deployments [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) ListDeployments(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -49,7 +61,18 @@ func (ctrl *K8sResourceController) ListDeployments(c *gin.Context) {
 	}))
 }
 
-// GetDeployment 获取 Deployment 详情
+// GetDeployment godoc
+// @Summary      获取 Deployment 详情
+// @Description  按集群、命名空间、名称获取 Deployment 详情
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  path      string  true  "命名空间"
+// @Param        name       path      string  true  "Deployment 名称"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/deployments/{namespace}/{name} [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) GetDeployment(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -80,7 +103,18 @@ func (ctrl *K8sResourceController) GetDeployment(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(deployment))
 }
 
-// GetDeploymentPods 获取 Deployment 管理的 Pods
+// GetDeploymentPods godoc
+// @Summary      获取 Deployment 的 Pods
+// @Description  返回指定 Deployment 管理的 Pod 列表
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  path      string  true  "命名空间"
+// @Param        name       path      string  true  "Deployment 名称"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/deployments/{namespace}/{name}/pods [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) GetDeploymentPods(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -117,7 +151,18 @@ type CreateDeploymentRequest struct {
 	Manifest  map[string]interface{} `json:"manifest" binding:"required"`
 }
 
-// CreateDeployment 创建 Deployment
+// CreateDeployment godoc
+// @Summary      创建 Deployment
+// @Description  在指定集群的命名空间中创建 Deployment
+// @Tags         K8s-工作负载
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                    true  "集群 ID"
+// @Param        body  body      CreateDeploymentRequest  true  "创建请求(含 manifest)"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的集群ID / 无权访问 / 创建失败"
+// @Router       /k8s/clusters/{id}/deployments [post]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) CreateDeployment(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -156,7 +201,18 @@ type UpdateDeploymentRequest struct {
 	Manifest  map[string]interface{} `json:"manifest" binding:"required"`
 }
 
-// UpdateDeployment 更新 Deployment
+// UpdateDeployment godoc
+// @Summary      更新 Deployment
+// @Description  更新指定集群中的 Deployment
+// @Tags         K8s-工作负载
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                    true  "集群 ID"
+// @Param        body  body      UpdateDeploymentRequest  true  "更新请求(含 manifest)"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的集群ID / 无权访问 / 更新失败"
+// @Router       /k8s/clusters/{id}/deployments [put]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) UpdateDeployment(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -195,7 +251,18 @@ type DeleteDeploymentRequest struct {
 	Name      string `json:"name" binding:"required"`
 }
 
-// DeleteDeployment 删除 Deployment
+// DeleteDeployment godoc
+// @Summary      删除 Deployment
+// @Description  删除指定集群中的 Deployment
+// @Tags         K8s-工作负载
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                    true  "集群 ID"
+// @Param        body  body      DeleteDeploymentRequest  true  "删除请求(命名空间+名称)"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的集群ID / 无权访问 / 删除失败"
+// @Router       /k8s/clusters/{id}/deployments [delete]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) DeleteDeployment(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -235,7 +302,18 @@ type ScaleDeploymentRequest struct {
 	Replicas  int32  `json:"replicas" binding:"required,min=0"`
 }
 
-// ScaleDeployment 扩缩容 Deployment
+// ScaleDeployment godoc
+// @Summary      扩缩容 Deployment
+// @Description  调整指定 Deployment 的副本数
+// @Tags         K8s-工作负载
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "集群 ID"
+// @Param        body  body      ScaleDeploymentRequest  true  "扩缩容请求"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的集群ID / 无权访问 / 扩缩容失败"
+// @Router       /k8s/clusters/{id}/deployments/scale [post]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) ScaleDeployment(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -274,7 +352,18 @@ type RestartDeploymentRequest struct {
 	Name      string `json:"name" binding:"required"`
 }
 
-// RestartDeployment 重启 Deployment
+// RestartDeployment godoc
+// @Summary      重启 Deployment
+// @Description  重启指定 Deployment 的所有 Pod
+// @Tags         K8s-工作负载
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                     true  "集群 ID"
+// @Param        body  body      RestartDeploymentRequest  true  "重启请求"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的集群ID / 无权访问 / 重启失败"
+// @Router       /k8s/clusters/{id}/deployments/restart [post]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) RestartDeployment(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {

@@ -11,7 +11,18 @@ import (
 
 // ========== Events ==========
 
-// ListEvents 获取 Event 列表
+// ListEvents godoc
+// @Summary      获取 Event 列表
+// @Description  获取指定集群下指定命名空间的 K8s 事件列表，支持字段选择器
+// @Tags         K8s-Pod
+// @Produce      json
+// @Param        id              path      int     true  "集群 ID"
+// @Param        namespace       query     string  false  "命名空间" default(default)
+// @Param        fieldSelector   query     string  false  "字段选择器"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/events [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) ListEvents(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {

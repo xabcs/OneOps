@@ -1,0 +1,8218 @@
+basePath: /api
+definitions:
+  controller_k8s.AssignClusterRoleRequest:
+    properties:
+      roleId:
+        type: integer
+      userId:
+        type: integer
+    required:
+    - roleId
+    - userId
+    type: object
+  controller_k8s.CreateClusterRequest:
+    properties:
+      clusterType:
+        type: string
+      description:
+        type: string
+      endpoint:
+        type: string
+      kubeconfig:
+        type: string
+      name:
+        type: string
+      nodeCount:
+        type: integer
+      region:
+        type: string
+    required:
+    - endpoint
+    - kubeconfig
+    - name
+    type: object
+  controller_k8s.CreateConfigMapRequest:
+    properties:
+      manifest:
+        additionalProperties: true
+        type: object
+      namespace:
+        type: string
+    required:
+    - manifest
+    - namespace
+    type: object
+  controller_k8s.CreateDeploymentRequest:
+    properties:
+      manifest:
+        additionalProperties: true
+        type: object
+      namespace:
+        type: string
+    required:
+    - manifest
+    - namespace
+    type: object
+  controller_k8s.CreateIngressRequest:
+    properties:
+      manifest:
+        additionalProperties: true
+        type: object
+      namespace:
+        type: string
+    required:
+    - manifest
+    - namespace
+    type: object
+  controller_k8s.CreateSecretRequest:
+    properties:
+      manifest:
+        additionalProperties: true
+        type: object
+      namespace:
+        type: string
+    required:
+    - manifest
+    - namespace
+    type: object
+  controller_k8s.CreateServiceRequest:
+    properties:
+      manifest:
+        additionalProperties: true
+        type: object
+      namespace:
+        type: string
+    required:
+    - manifest
+    - namespace
+    type: object
+  controller_k8s.DeleteClusterRequest:
+    properties:
+      confirmName:
+        type: string
+    required:
+    - confirmName
+    type: object
+  controller_k8s.DeleteConfigMapRequest:
+    properties:
+      name:
+        type: string
+      namespace:
+        type: string
+    required:
+    - name
+    - namespace
+    type: object
+  controller_k8s.DeleteCronJobRequest:
+    properties:
+      name:
+        type: string
+      namespace:
+        type: string
+    required:
+    - name
+    - namespace
+    type: object
+  controller_k8s.DeleteDeploymentRequest:
+    properties:
+      name:
+        type: string
+      namespace:
+        type: string
+    required:
+    - name
+    - namespace
+    type: object
+  controller_k8s.DeleteIngressRequest:
+    properties:
+      name:
+        type: string
+      namespace:
+        type: string
+    required:
+    - name
+    - namespace
+    type: object
+  controller_k8s.DeleteJobRequest:
+    properties:
+      name:
+        type: string
+      namespace:
+        type: string
+    required:
+    - name
+    - namespace
+    type: object
+  controller_k8s.DeletePodRequest:
+    properties:
+      name:
+        type: string
+      namespace:
+        type: string
+    required:
+    - name
+    - namespace
+    type: object
+  controller_k8s.DeleteSecretRequest:
+    properties:
+      name:
+        type: string
+      namespace:
+        type: string
+    required:
+    - name
+    - namespace
+    type: object
+  controller_k8s.DeleteServiceRequest:
+    properties:
+      name:
+        type: string
+      namespace:
+        type: string
+    required:
+    - name
+    - namespace
+    type: object
+  controller_k8s.RestartDeploymentRequest:
+    properties:
+      name:
+        type: string
+      namespace:
+        type: string
+    required:
+    - name
+    - namespace
+    type: object
+  controller_k8s.ScaleDeploymentRequest:
+    properties:
+      name:
+        type: string
+      namespace:
+        type: string
+      replicas:
+        minimum: 0
+        type: integer
+    required:
+    - name
+    - namespace
+    - replicas
+    type: object
+  controller_k8s.SuspendCronJobRequest:
+    properties:
+      name:
+        type: string
+      namespace:
+        type: string
+      suspend:
+        type: boolean
+    required:
+    - name
+    - namespace
+    type: object
+  controller_k8s.UpdateClusterRequest:
+    properties:
+      clusterType:
+        type: string
+      description:
+        type: string
+      endpoint:
+        type: string
+      kubeconfig:
+        type: string
+      name:
+        type: string
+      nodeCount:
+        type: integer
+      region:
+        type: string
+      status:
+        type: integer
+    type: object
+  controller_k8s.UpdateConfigMapRequest:
+    properties:
+      manifest:
+        additionalProperties: true
+        type: object
+      namespace:
+        type: string
+    required:
+    - manifest
+    - namespace
+    type: object
+  controller_k8s.UpdateDeploymentRequest:
+    properties:
+      manifest:
+        additionalProperties: true
+        type: object
+      namespace:
+        type: string
+    required:
+    - manifest
+    - namespace
+    type: object
+  controller_k8s.UpdateIngressRequest:
+    properties:
+      manifest:
+        additionalProperties: true
+        type: object
+      namespace:
+        type: string
+    required:
+    - manifest
+    - namespace
+    type: object
+  controller_k8s.UpdatePodRequest:
+    properties:
+      manifest:
+        additionalProperties: true
+        type: object
+      namespace:
+        type: string
+    required:
+    - manifest
+    - namespace
+    type: object
+  controller_k8s.UpdateSecretRequest:
+    properties:
+      manifest:
+        additionalProperties: true
+        type: object
+      namespace:
+        type: string
+    required:
+    - manifest
+    - namespace
+    type: object
+  controller_k8s.UpdateServiceRequest:
+    properties:
+      manifest:
+        additionalProperties: true
+        type: object
+      namespace:
+        type: string
+    required:
+    - manifest
+    - namespace
+    type: object
+  controller_system.CreateMenuRequest:
+    properties:
+      icon:
+        type: string
+      menuType:
+        type: string
+      name:
+        type: string
+      parentId:
+        type: integer
+      path:
+        type: string
+      permission:
+        type: string
+      sort:
+        type: integer
+      status:
+        type: integer
+    required:
+    - name
+    type: object
+  controller_system.CreateRoleRequest:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      status:
+        type: integer
+    required:
+    - code
+    - name
+    type: object
+  controller_system.CreateUserRequest:
+    properties:
+      avatar:
+        type: string
+      email:
+        type: string
+      homePath:
+        type: string
+      nickname:
+        type: string
+      password:
+        type: string
+      roleIds:
+        items:
+          type: integer
+        type: array
+      status:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  controller_system.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  controller_system.ResetPasswordRequest:
+    properties:
+      password:
+        type: string
+    required:
+    - password
+    type: object
+  controller_system.UpdateMenuRequest:
+    properties:
+      icon:
+        type: string
+      menuType:
+        type: string
+      name:
+        type: string
+      parentId:
+        type: integer
+      path:
+        type: string
+      permission:
+        type: string
+      sort:
+        type: integer
+      status:
+        type: integer
+    type: object
+  controller_system.UpdateRoleRequest:
+    properties:
+      code:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      status:
+        type: integer
+    type: object
+  controller_system.UpdateUserRequest:
+    properties:
+      avatar:
+        type: string
+      email:
+        type: string
+      homePath:
+        type: string
+      nickname:
+        type: string
+      password:
+        type: string
+      roleIds:
+        items:
+          type: integer
+        type: array
+      status:
+        type: string
+    type: object
+  oneops_backend3_model_authorization.Application:
+    properties:
+      authConfig:
+        description: 'JSON: ApplicationAuthConfig'
+        type: string
+      baseUrl:
+        type: string
+      code:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      endpoints:
+        description: 'JSON: ApplicationEndpoints'
+        type: string
+      id:
+        type: integer
+      lastSyncTime:
+        type: string
+      name:
+        type: string
+      status:
+        type: integer
+      syncInterval:
+        type: integer
+      type:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_authorization.ApplicationAuthorizationRule:
+    properties:
+      actions:
+        description: 操作权限
+        type: string
+      appId:
+        type: integer
+      createdAt:
+        type: string
+      expireTime:
+        description: 过期时间
+        type: string
+      id:
+        type: integer
+      isEnabled:
+        description: 是否启用
+        type: boolean
+      isExpired:
+        description: 是否过期
+        type: boolean
+      objectId:
+        description: 资产/节点ID（如果是all则为空）
+        type: string
+      objectName:
+        description: 资产/节点名称（用于显示）
+        type: string
+      objectType:
+        description: 授权对象
+        type: string
+      priority:
+        description: 优先级和状态
+        type: integer
+      ruleId:
+        description: 外部系统的规则ID
+        type: string
+      ruleName:
+        description: 规则名称
+        type: string
+      ruleType:
+        description: '规则类型: user(用户), group(用户组)'
+        type: string
+      subjectId:
+        description: 用户ID或用户组ID
+        type: string
+      subjectName:
+        description: 用户名或用户组名（用于显示）
+        type: string
+      subjectType:
+        description: 授权主体
+        type: string
+      syncTime:
+        description: 时间信息
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_authorization.ApplicationGroup:
+    properties:
+      appId:
+        type: integer
+      createdAt:
+        type: string
+      description:
+        type: string
+      groupCode:
+        type: string
+      groupName:
+        type: string
+      id:
+        type: integer
+      syncTime:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_authorization.ApplicationRole:
+    properties:
+      appId:
+        type: integer
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      roleCode:
+        type: string
+      roleName:
+        type: string
+      roleType:
+        type: string
+      syncTime:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_authorization.ApplicationUser:
+    properties:
+      appId:
+        type: integer
+      createdAt:
+        type: string
+      displayName:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      status:
+        type: string
+      syncTime:
+        type: string
+      updatedAt:
+        type: string
+      username:
+        type: string
+    type: object
+  oneops_backend3_model_authorization.AuthGroup:
+    properties:
+      code:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      status:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_authorization.AuthUser:
+    properties:
+      createdAt:
+        type: string
+      description:
+        type: string
+      email:
+        type: string
+      groups:
+        items:
+          $ref: '#/definitions/oneops_backend3_model_authorization.AuthGroup'
+        type: array
+      id:
+        type: integer
+      nickname:
+        type: string
+      phone:
+        type: string
+      status:
+        type: integer
+      updatedAt:
+        type: string
+      username:
+        type: string
+    type: object
+  oneops_backend3_model_authorization.GroupBinding:
+    properties:
+      appId:
+        type: integer
+      applicationPermissionId:
+        type: integer
+      applicationRole:
+        $ref: '#/definitions/oneops_backend3_model_authorization.ApplicationRole'
+      applicationRoleId:
+        type: integer
+      createdAt:
+        type: string
+      group:
+        $ref: '#/definitions/oneops_backend3_model_authorization.AuthGroup'
+      groupId:
+        type: integer
+      id:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_authorization.GroupBindingExecution:
+    properties:
+      actionType:
+        type: string
+      authUser:
+        $ref: '#/definitions/oneops_backend3_model_authorization.AuthUser'
+      authUserId:
+        type: integer
+      createdAt:
+        type: string
+      externalUsername:
+        type: string
+      groupBindingId:
+        type: integer
+      id:
+        type: integer
+      message:
+        type: string
+      operator:
+        type: string
+      status:
+        type: string
+    type: object
+  oneops_backend3_model_cmdb.AgentVersion:
+    properties:
+      amd64BinaryHash:
+        description: AMD64 文件哈希
+        type: string
+      amd64BinaryPath:
+        description: 二进制文件信息
+        type: string
+      amd64BinarySize:
+        description: AMD64 文件大小
+        type: integer
+      arm64BinaryHash:
+        description: ARM64 文件哈希
+        type: string
+      arm64BinaryPath:
+        description: ARM64 二进制路径
+        type: string
+      arm64BinarySize:
+        description: ARM64 文件大小
+        type: integer
+      changelog:
+        description: 更新日志
+        type: string
+      createdAt:
+        type: string
+      deployCount:
+        description: 部署次数
+        type: integer
+      downloadCount:
+        description: 统计信息
+        type: integer
+      features:
+        description: 功能支持
+        type: string
+      id:
+        type: integer
+      isDeprecated:
+        description: 是否弃用
+        type: boolean
+      isLatest:
+        description: 版本状态
+        type: boolean
+      maxCompatibleVersion:
+        description: 最大兼容版本
+        type: string
+      minCompatibleVersion:
+        description: 最小兼容版本
+        type: string
+      releaseNotes:
+        description: 发布说明
+        type: string
+      releasedAt:
+        description: 发布时间
+        type: string
+      updatedAt:
+        type: string
+      version:
+        description: 版本号
+        type: string
+    type: object
+  oneops_backend3_model_cmdb.AssetAccessPolicy:
+    properties:
+      allowFileTransfer:
+        type: boolean
+      allowSudo:
+        type: boolean
+      assetScopeId:
+        type: integer
+      assetScopeType:
+        type: string
+      createdAt:
+        type: string
+      highRiskCommands:
+        items:
+          type: string
+        type: array
+      id:
+        type: integer
+      loginAccounts:
+        items:
+          type: string
+        type: array
+      name:
+        type: string
+      protocols:
+        items:
+          type: string
+        type: array
+      requireApproval:
+        type: boolean
+      status:
+        type: integer
+      subjectId:
+        type: integer
+      subjectType:
+        type: string
+      timeWindow:
+        $ref: '#/definitions/oneops_backend3_model_cmdb.TimeWindow'
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_cmdb.BusinessUnit:
+    properties:
+      children:
+        description: 关联
+        items:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.BusinessUnit'
+        type: array
+      code:
+        description: 业务代码
+        type: string
+      createdAt:
+        type: string
+      email:
+        description: 联系邮箱
+        type: string
+      id:
+        type: integer
+      level:
+        description: 层级
+        type: integer
+      name:
+        description: 业务名称
+        type: string
+      owner:
+        description: 负责人
+        type: string
+      parentId:
+        description: 父业务ID
+        type: integer
+      phone:
+        description: 联系电话
+        type: string
+      remarks:
+        description: 备注
+        type: string
+      sortOrder:
+        description: 排序
+        type: integer
+      status:
+        description: 状态：1启用 0禁用
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_cmdb.Cabinet:
+    properties:
+      capacity:
+        description: U数
+        type: integer
+      code:
+        description: 机柜代码
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+      name:
+        description: 机柜名称
+        type: string
+      position:
+        description: 位置
+        type: string
+      powerCapacity:
+        description: 总电力(KW)
+        type: number
+      powerUsage:
+        description: 已用电力(KW)
+        type: number
+      remarks:
+        description: 备注
+        type: string
+      room:
+        allOf:
+        - $ref: '#/definitions/oneops_backend3_model_cmdb.ServerRoom'
+        description: 关联
+      roomId:
+        description: 机房ID
+        type: integer
+      servers:
+        items:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.Server'
+        type: array
+      status:
+        description: 状态：1启用 0禁用
+        type: integer
+      updatedAt:
+        type: string
+      usedU:
+        description: 已用U数
+        type: integer
+    type: object
+  oneops_backend3_model_cmdb.CloudServer:
+    properties:
+      chargeType:
+        description: postpay/prepay
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+      instanceId:
+        description: 云主机实例ID
+        type: string
+      instanceName:
+        description: 实例名称
+        type: string
+      instanceType:
+        description: 实例规格
+        type: string
+      privateIp:
+        description: 内网IP
+        type: string
+      provider:
+        description: aliyun, tencent, aws, huawei
+        type: string
+      publicIp:
+        description: 公网IP
+        type: string
+      region:
+        description: 地域
+        type: string
+      securityGroups:
+        description: 安全组JSON
+        type: string
+      server:
+        allOf:
+        - $ref: '#/definitions/oneops_backend3_model_cmdb.Server'
+        description: 关联
+      serverId:
+        type: integer
+      subnetId:
+        description: 子网ID
+        type: string
+      updatedAt:
+        type: string
+      vpcId:
+        description: VPC ID
+        type: string
+      zone:
+        description: 可用区
+        type: string
+    type: object
+  oneops_backend3_model_cmdb.ConnectRequest:
+    properties:
+      credentialId:
+        description: 选择的凭证 ID，登录账号从凭证的 username 派生
+        type: integer
+      protocol:
+        enum:
+        - ssh
+        - sftp
+        type: string
+    required:
+    - credentialId
+    - protocol
+    type: object
+  oneops_backend3_model_cmdb.ConnectResponse:
+    properties:
+      serverIp:
+        type: string
+      serverName:
+        type: string
+      sessionId:
+        type: integer
+      websocketUrl:
+        type: string
+    type: object
+  oneops_backend3_model_cmdb.CredentialType:
+    enum:
+    - user
+    - system
+    type: string
+    x-enum-comments:
+      CredentialTypeSystem: 用于系统自动化运维（Agent 部署/采集）
+      CredentialTypeUser: 用于用户堡垒连接
+    x-enum-descriptions:
+    - 用于用户堡垒连接
+    - 用于系统自动化运维（Agent 部署/采集）
+    x-enum-varnames:
+    - CredentialTypeUser
+    - CredentialTypeSystem
+  oneops_backend3_model_cmdb.DiskPartition:
+    properties:
+      mount:
+        description: 挂载点，如 /var, /home
+        type: string
+      usage:
+        description: 使用率百分比
+        type: number
+    type: object
+  oneops_backend3_model_cmdb.SSHCredential:
+    properties:
+      authType:
+        $ref: '#/definitions/oneops_backend3_model_cmdb.SSHPublicKeyAuth'
+      createdAt:
+        type: string
+      credentialType:
+        allOf:
+        - $ref: '#/definitions/oneops_backend3_model_cmdb.CredentialType'
+        description: user | system
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      passphrase:
+        description: 加密存储
+        type: string
+      password:
+        description: 加密存储
+        type: string
+      port:
+        type: integer
+      privateKey:
+        description: 加密存储
+        type: string
+      servers:
+        description: 关联
+        items:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.Server'
+        type: array
+      sortOrder:
+        type: integer
+      status:
+        type: integer
+      updatedAt:
+        type: string
+      username:
+        type: string
+    type: object
+  oneops_backend3_model_cmdb.SSHPublicKeyAuth:
+    enum:
+    - password
+    - key
+    type: string
+    x-enum-comments:
+      SSHAuthKey: 密钥认证
+      SSHAuthPassword: 密码认证
+    x-enum-descriptions:
+    - 密码认证
+    - 密钥认证
+    x-enum-varnames:
+    - SSHAuthPassword
+    - SSHAuthKey
+  oneops_backend3_model_cmdb.Server:
+    properties:
+      agentPort:
+        type: integer
+      agentStatus:
+        description: uninstalled | running | offline
+        type: string
+      agentVersion:
+        type: string
+      arch:
+        description: 系统架构
+        type: string
+      assetNumber:
+        description: 资产编号
+        type: string
+      attributes:
+        items:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.ServerAttribute'
+        type: array
+      business:
+        $ref: '#/definitions/oneops_backend3_model_cmdb.BusinessUnit'
+      businessId:
+        type: integer
+      cabinet:
+        $ref: '#/definitions/oneops_backend3_model_cmdb.Cabinet'
+      cabinetId:
+        description: 所在机柜ID
+        type: integer
+      cloudInfo:
+        $ref: '#/definitions/oneops_backend3_model_cmdb.CloudServer'
+      connectivityStatus:
+        description: 连通性状态
+        type: string
+      cpu:
+        description: CPU核心数
+        type: integer
+      cpuUsage:
+        type: number
+      createdAt:
+        type: string
+      credentialId:
+        description: SSH凭证ID（兼容旧字段）
+        type: integer
+      credentialIds:
+        items:
+          type: integer
+        type: array
+      credentialNames:
+        description: 凭证名称JSON数组
+        type: string
+      credentials:
+        items:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.SSHCredential'
+        type: array
+      disk:
+        description: 磁盘(GB)
+        type: integer
+      diskPartitions:
+        items:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.DiskPartition'
+        type: array
+      diskUsage:
+        type: number
+      env:
+        description: 环境
+        type: string
+      expireWarranty:
+        description: 保修到期
+        type: string
+      groupIds:
+        items:
+          type: integer
+        type: array
+      groupNames:
+        description: 冗余字段：优化列表查询性能（避免关联查询）
+        type: string
+      groups:
+        items:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.ServerGroup'
+        type: array
+      hostname:
+        description: 主机名
+        type: string
+      id:
+        type: integer
+      innerIp:
+        description: 内网IP
+        type: string
+      instanceId:
+        description: 云主机实例ID
+        type: string
+      instanceType:
+        description: 云主机类型
+        type: string
+      ip:
+        description: 外网IP
+        type: string
+      lastCheckTime:
+        description: 最后连通性检查时间
+        type: string
+      lastConnectTime:
+        description: 最后连接时间
+        type: string
+      lastHeartbeatAt:
+        type: string
+      load1:
+        type: number
+      load5:
+        type: number
+      load15:
+        type: number
+      manufacturer:
+        description: 厂商
+        type: string
+      memory:
+        description: 内存(GB)
+        type: integer
+      memoryUsage:
+        type: number
+      metricsUpdatedAt:
+        type: string
+      model:
+        description: 型号
+        type: string
+      os:
+        description: 操作系统
+        type: string
+      osVersion:
+        description: 系统版本
+        type: string
+      provider:
+        description: 服务商
+        type: string
+      purchaseDate:
+        description: 购买日期
+        type: string
+      region:
+        description: 区域
+        type: string
+      remarks:
+        description: 备注
+        type: string
+      serverType:
+        description: 类型
+        type: string
+      sn:
+        description: 序列号
+        type: string
+      sshCredential:
+        allOf:
+        - $ref: '#/definitions/oneops_backend3_model_cmdb.SSHCredential'
+        description: 关联
+      sshCredentialId:
+        description: SSH凭证ID
+        type: integer
+      sshPort:
+        description: SSH端口
+        type: integer
+      status:
+        description: 状态
+        type: string
+      systemCredential:
+        $ref: '#/definitions/oneops_backend3_model_cmdb.SSHCredential'
+      systemCredentialId:
+        description: 系统运维凭证（Agent部署/采集专用）
+        type: integer
+      tags:
+        items:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.ServerTag'
+        type: array
+      uPosition:
+        description: 机柜位置(U)
+        type: integer
+      updatedAt:
+        type: string
+      zone:
+        description: 可用区
+        type: string
+    type: object
+  oneops_backend3_model_cmdb.ServerAttribute:
+    properties:
+      attributeId:
+        type: integer
+      attributeKey:
+        type: string
+      attributeValue:
+        type: string
+      category:
+        type: string
+      createdAt:
+        type: string
+      definition:
+        $ref: '#/definitions/oneops_backend3_model_system.AttributeDefinition'
+      id:
+        type: integer
+      server:
+        allOf:
+        - $ref: '#/definitions/oneops_backend3_model_cmdb.Server'
+        description: 关联
+      serverId:
+        type: integer
+      updatedAt:
+        type: string
+      valueType:
+        type: string
+    type: object
+  oneops_backend3_model_cmdb.ServerGroup:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.ServerGroup'
+        type: array
+      code:
+        description: 分组代码
+        type: string
+      color:
+        description: 分组颜色
+        type: string
+      createdAt:
+        type: string
+      description:
+        description: 分组描述
+        type: string
+      icon:
+        description: 分组图标
+        type: string
+      id:
+        type: integer
+      level:
+        description: 层级
+        type: integer
+      name:
+        description: 分组名称
+        type: string
+      parent:
+        allOf:
+        - $ref: '#/definitions/oneops_backend3_model_cmdb.ServerGroup'
+        description: 关联
+      parentId:
+        description: 父分组ID
+        type: integer
+      servers:
+        items:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.Server'
+        type: array
+      sortOrder:
+        description: 排序
+        type: integer
+      status:
+        description: 状态：1启用 0禁用
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_cmdb.ServerRoom:
+    properties:
+      address:
+        description: 详细地址
+        type: string
+      cabinets:
+        description: 关联
+        items:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.Cabinet'
+        type: array
+      code:
+        description: 机房代码
+        type: string
+      contact:
+        description: 联系人
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+      location:
+        description: 机房位置
+        type: string
+      name:
+        description: 机房名称
+        type: string
+      phone:
+        description: 联系电话
+        type: string
+      provider:
+        description: 服务商
+        type: string
+      remarks:
+        description: 备注
+        type: string
+      status:
+        description: 状态：1启用 0禁用
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_cmdb.ServerTag:
+    properties:
+      color:
+        description: 标签颜色
+        type: string
+      createdAt:
+        type: string
+      description:
+        description: 标签描述
+        type: string
+      id:
+        type: integer
+      name:
+        description: 标签名称
+        type: string
+      servers:
+        description: 关联
+        items:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.Server'
+        type: array
+      sortOrder:
+        description: 排序
+        type: integer
+      status:
+        description: 状态：1启用 0禁用
+        type: integer
+    type: object
+  oneops_backend3_model_cmdb.TimeWindow:
+    properties:
+      days:
+        description: 1-7, 1=周一
+        items:
+          type: integer
+        type: array
+      end:
+        description: HH:mm格式
+        type: string
+      start:
+        description: HH:mm格式
+        type: string
+    type: object
+  oneops_backend3_model_system.AssignRolePermissionsRequest:
+    properties:
+      permissionIds:
+        items:
+          type: integer
+        minItems: 1
+        type: array
+    required:
+    - permissionIds
+    type: object
+  oneops_backend3_model_system.AttributeDefinition:
+    properties:
+      category:
+        type: string
+      createdAt:
+        type: string
+      defaultValue:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      key:
+        type: string
+      name:
+        type: string
+      options:
+        type: string
+      required:
+        type: boolean
+      sortOrder:
+        type: integer
+      status:
+        type: integer
+      type:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_system.CheckPermissionRequest:
+    properties:
+      permission:
+        type: string
+      resourceId:
+        type: integer
+      resourceType:
+        type: string
+      userId:
+        type: integer
+    required:
+    - permission
+    - userId
+    type: object
+  oneops_backend3_model_system.CheckPermissionResponse:
+    properties:
+      allowed:
+        type: boolean
+      reason:
+        type: string
+    type: object
+  oneops_backend3_model_system.CreatePermissionRequest:
+    properties:
+      action:
+        maxLength: 20
+        type: string
+      code:
+        maxLength: 100
+        type: string
+      description:
+        maxLength: 200
+        type: string
+      level:
+        enum:
+        - 1
+        - 2
+        - 3
+        - 4
+        type: integer
+      module:
+        maxLength: 30
+        type: string
+      name:
+        maxLength: 50
+        type: string
+      parentId:
+        type: integer
+      resource:
+        maxLength: 30
+        type: string
+      sortOrder:
+        type: integer
+    required:
+    - action
+    - code
+    - level
+    - module
+    - name
+    - resource
+    type: object
+  oneops_backend3_model_system.Menu:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/oneops_backend3_model_system.Menu'
+        type: array
+      createdAt:
+        type: string
+      icon:
+        type: string
+      id:
+        type: integer
+      menuType:
+        type: string
+      name:
+        type: string
+      parentId:
+        type: integer
+      path:
+        type: string
+      permission:
+        type: string
+      resource:
+        type: string
+      sort:
+        type: integer
+      status:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_system.Permission:
+    properties:
+      action:
+        type: string
+      children:
+        items:
+          $ref: '#/definitions/oneops_backend3_model_system.Permission'
+        type: array
+      code:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      level:
+        type: integer
+      module:
+        type: string
+      name:
+        type: string
+      parent:
+        $ref: '#/definitions/oneops_backend3_model_system.Permission'
+      parentId:
+        type: integer
+      resource:
+        type: string
+      routeMethod:
+        type: string
+      routePath:
+        type: string
+      sortOrder:
+        type: integer
+      status:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_system.PermissionTreeNode:
+    properties:
+      action:
+        type: string
+      checked:
+        type: boolean
+      children:
+        items:
+          $ref: '#/definitions/oneops_backend3_model_system.PermissionTreeNode'
+        type: array
+      code:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      level:
+        type: integer
+      module:
+        type: string
+      name:
+        type: string
+      parentId:
+        type: integer
+      resource:
+        type: string
+      sortOrder:
+        type: integer
+      status:
+        type: integer
+    type: object
+  oneops_backend3_model_system.Role:
+    properties:
+      code:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      status:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_system.UpdatePermissionRequest:
+    properties:
+      description:
+        maxLength: 200
+        type: string
+      level:
+        enum:
+        - 1
+        - 2
+        - 3
+        - 4
+        type: integer
+      name:
+        maxLength: 50
+        type: string
+      sortOrder:
+        type: integer
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+    required:
+    - level
+    - name
+    type: object
+  oneops_backend3_pkg_dto.PageResult:
+    properties:
+      list: {}
+      page:
+        type: integer
+      pageCount:
+        description: 兼容前端旧字段
+        type: integer
+      pageSize:
+        type: integer
+      pages:
+        description: 新规范
+        type: integer
+      total:
+        type: integer
+    type: object
+  oneops_backend3_pkg_utils.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  oneops_backend3_service_monitoring.AlertRule:
+    properties:
+      condition:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      duration:
+        type: integer
+      enabled:
+        type: boolean
+      id:
+        type: string
+      level:
+        type: string
+      metric:
+        type: string
+      name:
+        type: string
+      threshold:
+        type: number
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_service_monitoring.CreateReportRequest:
+    properties:
+      reportType:
+        type: string
+      serverIds:
+        items:
+          type: integer
+        type: array
+      title:
+        type: string
+    required:
+    - reportType
+    type: object
+  oneops_backend3_service_monitoring.NotificationChannel:
+    properties:
+      channelName:
+        type: string
+      channelType:
+        type: string
+      config:
+        items:
+          type: integer
+        type: array
+      createdAt:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_service_monitoring.ReportDetail:
+    properties:
+      completedAt:
+        type: string
+      createdAt:
+        type: string
+      createdBy:
+        type: string
+      id:
+        type: integer
+      reportData:
+        items:
+          type: integer
+        type: array
+      reportType:
+        type: string
+      serverIds:
+        items:
+          type: integer
+        type: array
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+host: localhost:8082
+info:
+  contact: {}
+  description: |-
+    OneOps 一体化运维平台后端 API
+    包含系统管理、CMDB、K8s、审计、监控、应用授权等模块
+  title: OneOps API
+  version: "1.0"
+paths:
+  /audit/login-logs:
+    get:
+      description: 分页获取登录日志，支持按用户名、状态、位置、时间范围筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 状态(success/failed)
+        in: query
+        name: status
+        type: string
+      - description: 登录位置
+        in: query
+        name: location
+        type: string
+      - description: 起始时间
+        in: query
+        name: startTime
+        type: string
+      - description: 结束时间
+        in: query
+        name: endTime
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取登录日志失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取登录日志
+      tags:
+      - 审计日志
+  /audit/login-logs/export:
+    get:
+      description: 按筛选条件导出登录日志为 CSV 文件下载
+      parameters:
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      - description: 起始时间
+        in: query
+        name: startTime
+        type: string
+      - description: 结束时间
+        in: query
+        name: endTime
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: 导出登录日志失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 导出登录日志
+      tags:
+      - 审计日志
+  /audit/modules:
+    get:
+      description: 返回操作日志筛选可用的业务模块列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  items:
+                    type: string
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取审计模块列表
+      tags:
+      - 审计日志
+  /audit/operation-logs:
+    get:
+      description: 分页获取操作日志，支持按用户名、模块、状态、动作、HTTP 方法、路径、耗时区间、时间范围筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 模块
+        in: query
+        name: module
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      - description: 操作动作
+        in: query
+        name: action
+        type: string
+      - description: HTTP 方法
+        in: query
+        name: method
+        type: string
+      - description: 状态码
+        in: query
+        name: statusCode
+        type: string
+      - description: 请求路径
+        in: query
+        name: path
+        type: string
+      - description: 耗时区间
+        in: query
+        name: durationRange
+        type: string
+      - description: 起始时间
+        in: query
+        name: startTime
+        type: string
+      - description: 结束时间
+        in: query
+        name: endTime
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取操作日志失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取操作日志
+      tags:
+      - 审计日志
+  /audit/operation-logs/export:
+    get:
+      description: 按筛选条件导出操作日志为 CSV 文件下载
+      parameters:
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 模块
+        in: query
+        name: module
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      - description: 起始时间
+        in: query
+        name: startTime
+        type: string
+      - description: 结束时间
+        in: query
+        name: endTime
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: 导出操作日志失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 导出操作日志
+      tags:
+      - 审计日志
+  /audit/stats:
+    get:
+      description: 返回审计模块的汇总统计信息（登录/操作/事件计数等）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取审计统计信息失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取审计统计
+      tags:
+      - 审计日志
+  /audit/system-event-logs:
+    get:
+      description: 分页获取系统事件日志，支持按级别、来源、分类、时间范围筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 日志级别
+        in: query
+        name: level
+        type: string
+      - description: 来源
+        in: query
+        name: source
+        type: string
+      - description: 分类
+        in: query
+        name: category
+        type: string
+      - description: 起始时间
+        in: query
+        name: startTime
+        type: string
+      - description: 结束时间
+        in: query
+        name: endTime
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取系统事件日志失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取系统事件日志
+      tags:
+      - 审计日志
+  /cmdb/access-policies:
+    get:
+      description: 分页获取访问策略列表
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 获取访问策略列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取访问策略列表
+      tags:
+      - CMDB-堡垒机
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的访问策略
+      parameters:
+      - description: 访问策略信息
+        in: body
+        name: policy
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.AssetAccessPolicy'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建访问策略
+      tags:
+      - CMDB-堡垒机
+  /cmdb/access-policies/{id}:
+    delete:
+      description: 根据策略 ID 删除访问策略
+      parameters:
+      - description: 策略 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的策略 ID / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除访问策略
+      tags:
+      - CMDB-堡垒机
+    get:
+      description: 根据策略 ID 获取访问策略详情
+      parameters:
+      - description: 策略 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的策略 ID / 策略不存在
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取访问策略详情
+      tags:
+      - CMDB-堡垒机
+    put:
+      consumes:
+      - application/json
+      description: 根据策略 ID 更新访问策略信息（部分字段更新）
+      parameters:
+      - description: 策略 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 需要更新的字段
+        in: body
+        name: policy
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.AssetAccessPolicy'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的策略 ID / 请求参数错误 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新访问策略
+      tags:
+      - CMDB-堡垒机
+  /cmdb/agent-upgrade-tasks:
+    get:
+      description: 分页获取 Agent 升级任务列表，支持按状态筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 任务状态
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 获取任务列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取升级任务列表
+      tags:
+      - CMDB-Agent
+  /cmdb/agent-upgrade-tasks/{id}:
+    get:
+      description: 根据任务 ID 获取 Agent 升级任务详情
+      parameters:
+      - description: 任务 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的任务 ID / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取升级任务详情
+      tags:
+      - CMDB-Agent
+  /cmdb/agent-versions:
+    get:
+      description: 获取所有 Agent 版本列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取版本列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Agent 版本列表
+      tags:
+      - CMDB-Agent
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的 Agent 版本
+      parameters:
+      - description: 版本信息
+        in: body
+        name: version
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.AgentVersion'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建 Agent 版本
+      tags:
+      - CMDB-Agent
+  /cmdb/agent-versions/{id}:
+    delete:
+      description: 根据版本 ID 删除 Agent 版本
+      parameters:
+      - description: 版本 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的版本 ID / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除 Agent 版本
+      tags:
+      - CMDB-Agent
+    get:
+      description: 根据版本 ID 获取 Agent 版本详细信息
+      parameters:
+      - description: 版本 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的版本 ID / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Agent 版本详情
+      tags:
+      - CMDB-Agent
+    put:
+      consumes:
+      - application/json
+      description: 根据版本 ID 更新 Agent 版本信息（部分字段更新）
+      parameters:
+      - description: 版本 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 需要更新的字段
+        in: body
+        name: version
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.AgentVersion'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的版本 ID / 请求参数错误 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新 Agent 版本
+      tags:
+      - CMDB-Agent
+  /cmdb/agent-versions/latest:
+    get:
+      description: 获取最新的 Agent 版本信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取最新版本失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取最新 Agent 版本
+      tags:
+      - CMDB-Agent
+  /cmdb/agent/heartbeat:
+    post:
+      consumes:
+      - application/json
+      description: 接收 Agent 上报的心跳数据（不经过 Auth 中间件，由 Agent 直接上报）
+      parameters:
+      - description: 心跳数据
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 处理失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      summary: 接收 Agent 心跳
+      tags:
+      - CMDB-Agent
+  /cmdb/agents:
+    get:
+      description: 分页获取 Agent 管理列表，支持按主机名、IP、Agent 状态筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 主机名
+        in: query
+        name: hostname
+        type: string
+      - description: IP 地址
+        in: query
+        name: ip
+        type: string
+      - description: Agent 状态
+        in: query
+        name: agentStatus
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 获取列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Agent 管理列表
+      tags:
+      - CMDB-Agent
+  /cmdb/agents/{id}:
+    delete:
+      description: 仅清空服务器上的 Agent 相关字段，不执行 SSH 操作
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的服务器 ID / 清除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除 Agent 记录
+      tags:
+      - CMDB-Agent
+  /cmdb/agents/batch-deploy:
+    post:
+      consumes:
+      - application/json
+      description: 批量异步部署 Agent 到多台主机
+      parameters:
+      - description: 服务器 ID 列表
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / serverIds 不能为空
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 批量部署 Agent
+      tags:
+      - CMDB-Agent
+  /cmdb/agents/batch-uninstall:
+    post:
+      consumes:
+      - application/json
+      description: 批量异步卸载多台主机的 Agent
+      parameters:
+      - description: 服务器 ID 列表
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / serverIds 不能为空
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 批量卸载 Agent
+      tags:
+      - CMDB-Agent
+  /cmdb/asset-changes:
+    get:
+      description: 分页获取资产变更记录，支持按资产类型和资产 ID 筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 资产类型
+        in: query
+        name: assetType
+        type: string
+      - description: 资产 ID
+        in: query
+        name: assetId
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 获取变更记录失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取资产变更记录
+      tags:
+      - CMDB-资产变更
+  /cmdb/asset-tree:
+    get:
+      description: 获取完整的资产树（分组 + 服务器），一次性返回所有数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取资产树失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取资产树
+      tags:
+      - CMDB-分组
+  /cmdb/business-units:
+    get:
+      description: 获取业务系统列表（树形结构）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取业务系统列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取业务系统列表
+      tags:
+      - CMDB-业务单元
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的业务系统
+      parameters:
+      - description: 业务系统信息
+        in: body
+        name: unit
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.BusinessUnit'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建业务系统
+      tags:
+      - CMDB-业务单元
+  /cmdb/business-units/{id}:
+    delete:
+      description: 根据业务系统 ID 删除业务系统
+      parameters:
+      - description: 业务系统 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除业务系统
+      tags:
+      - CMDB-业务单元
+    put:
+      consumes:
+      - application/json
+      description: 根据业务系统 ID 更新业务系统信息（部分字段更新）
+      parameters:
+      - description: 业务系统 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 需要更新的字段
+        in: body
+        name: unit
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.BusinessUnit'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 请求参数错误 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新业务系统
+      tags:
+      - CMDB-业务单元
+  /cmdb/cabinets:
+    get:
+      description: 根据机房 ID 获取机柜列表
+      parameters:
+      - description: 机房 ID
+        in: query
+        name: roomId
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取机柜列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取机柜列表
+      tags:
+      - CMDB-机房
+  /cmdb/commands:
+    get:
+      description: 分页获取命令审计记录，支持按会话、风险等级、是否拦截、命令内容、时间范围筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 会话 ID
+        in: query
+        name: sessionId
+        type: integer
+      - description: 风险等级
+        in: query
+        name: riskLevel
+        type: string
+      - description: 是否被拦截
+        in: query
+        name: blocked
+        type: boolean
+      - description: 命令内容（模糊匹配）
+        in: query
+        name: command
+        type: string
+      - description: 开始日期
+        in: query
+        name: startDate
+        type: string
+      - description: 结束日期
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 获取命令列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取命令审计列表
+      tags:
+      - CMDB-堡垒机
+  /cmdb/file-transfers:
+    get:
+      description: 分页获取文件传输审计记录，支持按会话、方向、状态、时间范围筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 会话 ID
+        in: query
+        name: sessionId
+        type: integer
+      - description: 传输方向（upload/download）
+        in: query
+        name: direction
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      - description: 开始日期
+        in: query
+        name: startDate
+        type: string
+      - description: 结束日期
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 获取文件传输列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取文件传输列表
+      tags:
+      - CMDB-堡垒机
+  /cmdb/group-servers/{groupId}:
+    get:
+      description: 分页获取指定分组下的服务器列表
+      parameters:
+      - description: 分组 ID
+        in: path
+        name: groupId
+        required: true
+        type: integer
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的分组 ID / 请求参数错误 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取分组下的服务器列表
+      tags:
+      - CMDB-分组
+  /cmdb/groups:
+    get:
+      description: 获取主机分组列表（树形结构）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取分组列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取主机分组列表
+      tags:
+      - CMDB-分组
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的主机分组
+      parameters:
+      - description: 分组信息
+        in: body
+        name: group
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.ServerGroup'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建主机分组
+      tags:
+      - CMDB-分组
+  /cmdb/groups/{id}:
+    delete:
+      description: 根据分组 ID 删除主机分组
+      parameters:
+      - description: 分组 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除主机分组
+      tags:
+      - CMDB-分组
+    get:
+      description: 根据分组 ID 获取主机分组详情
+      parameters:
+      - description: 分组 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 分组不存在
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取主机分组详情
+      tags:
+      - CMDB-分组
+    put:
+      consumes:
+      - application/json
+      description: 根据分组 ID 更新主机分组信息（部分字段更新）
+      parameters:
+      - description: 分组 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 需要更新的字段
+        in: body
+        name: group
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.ServerGroup'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 请求参数错误 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新主机分组
+      tags:
+      - CMDB-分组
+  /cmdb/groups/assign:
+    post:
+      consumes:
+      - application/json
+      description: 将指定服务器分配到单个分组
+      parameters:
+      - description: 分配请求
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 分配失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 将服务器分配到分组
+      tags:
+      - CMDB-分组
+  /cmdb/groups/assign-multi:
+    post:
+      consumes:
+      - application/json
+      description: 将指定服务器分配到多个分组
+      parameters:
+      - description: 分配请求
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 分配失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 将服务器分配到多个分组
+      tags:
+      - CMDB-分组
+  /cmdb/rooms:
+    get:
+      description: 获取所有机房列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取机房列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取机房列表
+      tags:
+      - CMDB-机房
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的机房
+      parameters:
+      - description: 机房信息
+        in: body
+        name: room
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.ServerRoom'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建机房
+      tags:
+      - CMDB-机房
+  /cmdb/rooms/{id}:
+    delete:
+      description: 根据机房 ID 删除机房
+      parameters:
+      - description: 机房 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除机房
+      tags:
+      - CMDB-机房
+    put:
+      consumes:
+      - application/json
+      description: 根据机房 ID 更新机房信息（部分字段更新）
+      parameters:
+      - description: 机房 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 需要更新的字段
+        in: body
+        name: room
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.ServerRoom'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 请求参数错误 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新机房
+      tags:
+      - CMDB-机房
+  /cmdb/server-tags/{serverId}/{tagId}:
+    delete:
+      description: 移除指定服务器的指定标签
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: serverId
+        required: true
+        type: integer
+      - description: 标签 ID
+        in: path
+        name: tagId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 移除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 移除服务器标签
+      tags:
+      - CMDB-标签
+  /cmdb/servers:
+    get:
+      description: 分页获取服务器列表，支持多条件筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 主机名
+        in: query
+        name: hostname
+        type: string
+      - description: IP 地址
+        in: query
+        name: ip
+        type: string
+      - description: 内网 IP
+        in: query
+        name: innerIp
+        type: string
+      - description: 环境
+        in: query
+        name: env
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      - description: 云供应商
+        in: query
+        name: provider
+        type: string
+      - description: Agent 状态
+        in: query
+        name: agentStatus
+        type: string
+      - description: 分组 ID
+        in: query
+        name: groupId
+        type: integer
+      - description: 业务单元 ID
+        in: query
+        name: businessUnitId
+        type: integer
+      - description: 标签（逗号分隔）
+        in: query
+        name: tags
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 获取服务器列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取服务器列表
+      tags:
+      - CMDB-服务器
+    post:
+      consumes:
+      - application/json
+      description: 创建一台新的服务器记录
+      parameters:
+      - description: 服务器信息
+        in: body
+        name: server
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.Server'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 主机名或 IP 重复 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建服务器
+      tags:
+      - CMDB-服务器
+  /cmdb/servers/{id}:
+    delete:
+      description: 根据服务器 ID 删除服务器记录
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除服务器
+      tags:
+      - CMDB-服务器
+    get:
+      description: 根据服务器 ID 获取服务器详细信息
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 服务器不存在
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取服务器详情
+      tags:
+      - CMDB-服务器
+    put:
+      consumes:
+      - application/json
+      description: 根据服务器 ID 更新服务器信息（部分字段更新）
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 需要更新的字段
+        in: body
+        name: server
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.Server'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 请求参数错误 / 主机名或 IP 重复 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新服务器
+      tags:
+      - CMDB-服务器
+  /cmdb/servers/{id}/agent/deploy:
+    post:
+      description: 异步部署 Agent 到目标主机
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的服务器 ID
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 部署 Agent
+      tags:
+      - CMDB-Agent
+  /cmdb/servers/{id}/agent/restart:
+    post:
+      description: 异步重启目标主机的 Agent 服务
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的服务器 ID
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 重启 Agent
+      tags:
+      - CMDB-Agent
+  /cmdb/servers/{id}/agent/status:
+    get:
+      description: 查询指定服务器上 Agent 的当前状态、端口、版本和最近心跳时间
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的服务器 ID / 服务器不存在
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 查询 Agent 状态
+      tags:
+      - CMDB-Agent
+  /cmdb/servers/{id}/agent/uninstall:
+    post:
+      description: 异步卸载目标主机的 Agent
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的服务器 ID
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 卸载 Agent
+      tags:
+      - CMDB-Agent
+  /cmdb/servers/{id}/agent/upgrade:
+    post:
+      consumes:
+      - application/json
+      description: 将指定服务器的 Agent 升级到目标版本
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 升级目标版本
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的服务器 ID / 请求参数错误 / 升级失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 升级 Agent
+      tags:
+      - CMDB-Agent
+  /cmdb/servers/{id}/connect:
+    get:
+      description: 返回连接服务器所需的轻量级信息（用于堡垒机连接前置校验）
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 服务器不存在
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取连接所需的服务器信息
+      tags:
+      - CMDB-服务器
+    post:
+      consumes:
+      - application/json
+      description: 创建到指定服务器的 SSH 会话，返回会话 ID 和 WebSocket 地址
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 连接请求（凭证 ID、协议等）
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.ConnectRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的服务器 ID / 请求参数错误 / 未认证 / 没有连接权限 / 创建会话失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 连接服务器
+      tags:
+      - CMDB-堡垒机
+  /cmdb/servers/{id}/permission:
+    get:
+      description: 检查当前用户是否有权限连接指定服务器，并返回可用凭证列表
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的服务器 ID / 未认证 / 检查失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 检查连接权限
+      tags:
+      - CMDB-堡垒机
+  /cmdb/servers/{id}/sync-metrics:
+    post:
+      description: 手动触发单台主机的指标采集（仅通过 Agent HTTP 拉取）
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的服务器 ID / 服务器不存在 / Agent 未运行
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 同步服务器指标
+      tags:
+      - CMDB-资产变更
+  /cmdb/servers/{id}/test-connection:
+    post:
+      description: 测试到指定服务器的 SSH 连接是否可用
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的服务器 ID / 测试失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 测试 SSH 连接
+      tags:
+      - CMDB-Agent
+  /cmdb/servers/config:
+    post:
+      consumes:
+      - application/json
+      description: 通过 SSH 远程获取指定服务器的硬件/操作系统配置信息
+      parameters:
+      - description: 服务器连接信息
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 获取服务器配置失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取服务器配置信息
+      tags:
+      - CMDB-服务器
+  /cmdb/servers/options:
+    get:
+      description: 返回所有服务器的基本信息（不分页，用于选择器）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取服务器选项失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取服务器选项列表
+      tags:
+      - CMDB-服务器
+  /cmdb/servers/stats:
+    get:
+      description: 获取服务器总数、状态分布、Agent 状态等统计信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取统计信息失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取服务器统计信息
+      tags:
+      - CMDB-服务器
+  /cmdb/sessions:
+    get:
+      description: 分页获取堡垒机会话列表，支持多维筛选（服务器、用户、状态、协议、客户端 IP、登录账号、时间范围等）
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 服务器 ID
+        in: query
+        name: serverId
+        type: integer
+      - description: 用户 ID
+        in: query
+        name: userId
+        type: integer
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      - description: 协议
+        in: query
+        name: protocol
+        type: string
+      - description: 客户端 IP
+        in: query
+        name: clientIp
+        type: string
+      - description: 登录账号
+        in: query
+        name: loginAccount
+        type: string
+      - description: 开始日期
+        in: query
+        name: startDate
+        type: string
+      - description: 结束日期
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 获取会话列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取会话列表
+      tags:
+      - CMDB-堡垒机
+  /cmdb/sessions/{id}:
+    get:
+      description: 根据会话 ID 获取会话详细信息
+      parameters:
+      - description: 会话 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的会话 ID / 会话不存在
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取会话详情
+      tags:
+      - CMDB-堡垒机
+  /cmdb/sessions/{id}/commands:
+    get:
+      description: 获取指定会话的命令审计记录列表
+      parameters:
+      - description: 会话 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的会话 ID / 获取命令列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取会话命令列表
+      tags:
+      - CMDB-堡垒机
+  /cmdb/sessions/{id}/file-transfers:
+    get:
+      description: 获取指定会话的文件传输记录列表
+      parameters:
+      - description: 会话 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的会话 ID / 获取文件传输记录失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取会话文件传输记录
+      tags:
+      - CMDB-堡垒机
+  /cmdb/sessions/{id}/resize:
+    post:
+      description: 调整终端 PTY 大小（实际由 WebSocket handler 直接处理，此 HTTP 接口仅作占位）
+      parameters:
+      - description: 会话 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 提示信息
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 调整终端大小
+      tags:
+      - CMDB-堡垒机
+  /cmdb/sessions/{id}/terminate:
+    post:
+      description: 强制断开指定的堡垒机会话
+      parameters:
+      - description: 会话 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的会话 ID / 未认证 / 断开失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 强制断开会话
+      tags:
+      - CMDB-堡垒机
+  /cmdb/sessions/active:
+    get:
+      description: 获取数据库中状态为活跃的会话列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取活跃会话失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取活跃会话列表
+      tags:
+      - CMDB-堡垒机
+  /cmdb/sessions/active-memory:
+    get:
+      description: 返回当前 WebSocket 连接仍然存在的会话列表（比查询数据库更准确），并实时计算会话持续时长
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取活跃会话失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取内存中的活跃会话
+      tags:
+      - CMDB-堡垒机
+  /cmdb/sessions/list:
+    get:
+      description: 分页获取会话列表，只返回列表展示所需字段，避免加载敏感信息和冗余数据，性能更优
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 服务器 ID
+        in: query
+        name: serverId
+        type: integer
+      - description: 用户 ID
+        in: query
+        name: userId
+        type: integer
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      - description: 协议
+        in: query
+        name: protocol
+        type: string
+      - description: 客户端 IP
+        in: query
+        name: clientIp
+        type: string
+      - description: 登录账号
+        in: query
+        name: loginAccount
+        type: string
+      - description: 开始日期
+        in: query
+        name: startDate
+        type: string
+      - description: 结束日期
+        in: query
+        name: endDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 获取会话列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取会话列表（轻量级）
+      tags:
+      - CMDB-堡垒机
+  /cmdb/sessions/stats:
+    get:
+      description: 获取当前活跃会话数和今日会话数等统计信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 会话统计信息
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取会话统计信息
+      tags:
+      - CMDB-堡垒机
+  /cmdb/ssh-credentials:
+    get:
+      description: 获取 SSH 凭证列表，支持按类型（user/system）筛选
+      parameters:
+      - description: 凭证类型（user/system）
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取凭证列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 SSH 凭证列表
+      tags:
+      - CMDB-SSH凭证
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的 SSH 凭证
+      parameters:
+      - description: 凭证信息
+        in: body
+        name: credential
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.SSHCredential'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建 SSH 凭证
+      tags:
+      - CMDB-SSH凭证
+  /cmdb/ssh-credentials/{id}:
+    delete:
+      description: 根据凭证 ID 删除 SSH 凭证
+      parameters:
+      - description: 凭证 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除 SSH 凭证
+      tags:
+      - CMDB-SSH凭证
+    get:
+      description: 根据凭证 ID 获取 SSH 凭证详情
+      parameters:
+      - description: 凭证 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 凭证不存在
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 SSH 凭证详情
+      tags:
+      - CMDB-SSH凭证
+    put:
+      consumes:
+      - application/json
+      description: 根据凭证 ID 更新 SSH 凭证信息（部分字段更新）
+      parameters:
+      - description: 凭证 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 需要更新的字段
+        in: body
+        name: credential
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.SSHCredential'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 请求参数错误 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新 SSH 凭证
+      tags:
+      - CMDB-SSH凭证
+  /cmdb/ssh-credentials/{id}/test:
+    post:
+      consumes:
+      - application/json
+      description: 使用指定凭证测试 SSH 连接是否可用
+      parameters:
+      - description: 凭证 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 测试目标
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 请求参数错误 / 测试失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 测试 SSH 凭证连接
+      tags:
+      - CMDB-SSH凭证
+  /cmdb/tags:
+    get:
+      description: 获取所有服务器标签列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取标签列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取服务器标签列表
+      tags:
+      - CMDB-标签
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的服务器标签
+      parameters:
+      - description: 标签信息
+        in: body
+        name: tag
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.ServerTag'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建服务器标签
+      tags:
+      - CMDB-标签
+  /cmdb/tags/{id}:
+    delete:
+      description: 根据标签 ID 删除服务器标签
+      parameters:
+      - description: 标签 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除服务器标签
+      tags:
+      - CMDB-标签
+    put:
+      consumes:
+      - application/json
+      description: 根据标签 ID 更新服务器标签信息（部分字段更新）
+      parameters:
+      - description: 标签 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 需要更新的字段
+        in: body
+        name: tag
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_cmdb.ServerTag'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 请求参数错误 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新服务器标签
+      tags:
+      - CMDB-标签
+  /cmdb/tags/assign:
+    post:
+      consumes:
+      - application/json
+      description: 为指定服务器分配单个标签
+      parameters:
+      - description: 分配请求
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 分配失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 为服务器分配标签
+      tags:
+      - CMDB-标签
+  /k8s/clusters:
+    get:
+      description: 分页获取当前用户有权限的 K8s 集群列表，支持按名称、状态、类型筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 集群名称
+        in: query
+        name: name
+        type: string
+      - description: 状态（0/1）
+        in: query
+        name: status
+        type: string
+      - description: 集群类型
+        in: query
+        name: clusterType
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取集群列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取集群列表
+      tags:
+      - K8s-集群管理
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的 K8s 集群配置（含 kubeconfig）
+      parameters:
+      - description: 创建集群请求
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.CreateClusterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建集群失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建集群
+      tags:
+      - K8s-集群管理
+  /k8s/clusters/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定 K8s 集群（需要二次确认，传入集群名称）
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 删除集群请求（需 confirmName 二次确认）
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.DeleteClusterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除集群失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除集群
+      tags:
+      - K8s-集群管理
+    get:
+      description: 根据 ID 获取指定 K8s 集群的详细信息
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取集群详情失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取集群详情
+      tags:
+      - K8s-集群管理
+    put:
+      consumes:
+      - application/json
+      description: 更新指定 K8s 集群的配置信息
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新集群请求
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.UpdateClusterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新集群失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新集群
+      tags:
+      - K8s-集群管理
+  /k8s/clusters/{id}/configmaps:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定集群中的 ConfigMap
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 删除请求(命名空间+名称)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.DeleteConfigMapRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除 ConfigMap
+      tags:
+      - K8s-配置
+    get:
+      description: 分页获取指定集群下指定命名空间的 ConfigMap 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 ConfigMap 列表
+      tags:
+      - K8s-配置
+    post:
+      consumes:
+      - application/json
+      description: 在指定集群的命名空间中创建 ConfigMap
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 创建请求(含 manifest)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.CreateConfigMapRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建 ConfigMap
+      tags:
+      - K8s-配置
+    put:
+      consumes:
+      - application/json
+      description: 更新指定集群中的 ConfigMap
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新请求(含 manifest)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.UpdateConfigMapRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新 ConfigMap
+      tags:
+      - K8s-配置
+  /k8s/clusters/{id}/configmaps/{namespace}/{name}:
+    get:
+      description: 按集群、命名空间、名称获取 ConfigMap 详情
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: ConfigMap 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 ConfigMap 详情
+      tags:
+      - K8s-配置
+  /k8s/clusters/{id}/cronjobs:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定集群中的 CronJob
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 删除请求(命名空间+名称)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.DeleteCronJobRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除 CronJob
+      tags:
+      - K8s-工作负载
+    get:
+      description: 分页获取指定集群下指定命名空间的 CronJob 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 CronJob 列表
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/cronjobs/{namespace}/{name}:
+    get:
+      description: 按集群、命名空间、名称获取 CronJob 详情
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: CronJob 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 CronJob 详情
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/cronjobs/{namespace}/{name}/pods:
+    get:
+      description: 返回指定 CronJob 关联的 Pod 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: CronJob 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 CronJob 的 Pods
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/cronjobs/suspend:
+    put:
+      consumes:
+      - application/json
+      description: 暂停或恢复指定 CronJob 的调度
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 暂停请求(suspend=true暂停,false恢复)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.SuspendCronJobRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 操作失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 暂停/恢复 CronJob
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/daemonsets:
+    get:
+      description: 分页获取指定集群下指定命名空间的 DaemonSet 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 DaemonSet 列表
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/daemonsets/{namespace}/{name}:
+    get:
+      description: 按集群、命名空间、名称获取 DaemonSet 详情
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: DaemonSet 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 DaemonSet 详情
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/daemonsets/{namespace}/{name}/pods:
+    get:
+      description: 返回指定 DaemonSet 管理的 Pod 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: DaemonSet 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 DaemonSet 的 Pods
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/deployments:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定集群中的 Deployment
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 删除请求(命名空间+名称)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.DeleteDeploymentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除 Deployment
+      tags:
+      - K8s-工作负载
+    get:
+      description: 分页获取指定集群下指定命名空间的 Deployment 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Deployment 列表
+      tags:
+      - K8s-工作负载
+    post:
+      consumes:
+      - application/json
+      description: 在指定集群的命名空间中创建 Deployment
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 创建请求(含 manifest)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.CreateDeploymentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建 Deployment
+      tags:
+      - K8s-工作负载
+    put:
+      consumes:
+      - application/json
+      description: 更新指定集群中的 Deployment
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新请求(含 manifest)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.UpdateDeploymentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新 Deployment
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/deployments/{namespace}/{name}:
+    get:
+      description: 按集群、命名空间、名称获取 Deployment 详情
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: Deployment 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Deployment 详情
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/deployments/{namespace}/{name}/pods:
+    get:
+      description: 返回指定 Deployment 管理的 Pod 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: Deployment 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Deployment 的 Pods
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/deployments/restart:
+    post:
+      consumes:
+      - application/json
+      description: 重启指定 Deployment 的所有 Pod
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 重启请求
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.RestartDeploymentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 重启失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 重启 Deployment
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/deployments/scale:
+    post:
+      consumes:
+      - application/json
+      description: 调整指定 Deployment 的副本数
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 扩缩容请求
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.ScaleDeploymentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 扩缩容失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 扩缩容 Deployment
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/events:
+    get:
+      description: 获取指定集群下指定命名空间的 K8s 事件列表，支持字段选择器
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: default
+        description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - description: 字段选择器
+        in: query
+        name: fieldSelector
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Event 列表
+      tags:
+      - K8s-Pod
+  /k8s/clusters/{id}/ingresses:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定集群中的 Ingress
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 删除请求(命名空间+名称)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.DeleteIngressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除 Ingress
+      tags:
+      - K8s-网络
+    get:
+      description: 分页获取指定集群下指定命名空间的 Ingress 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Ingress 列表
+      tags:
+      - K8s-网络
+    post:
+      consumes:
+      - application/json
+      description: 在指定集群的命名空间中创建 Ingress
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 创建请求(含 manifest)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.CreateIngressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建 Ingress
+      tags:
+      - K8s-网络
+    put:
+      consumes:
+      - application/json
+      description: 更新指定集群中的 Ingress
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新请求(含 manifest)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.UpdateIngressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新 Ingress
+      tags:
+      - K8s-网络
+  /k8s/clusters/{id}/ingresses/{namespace}/{name}:
+    get:
+      description: 按集群、命名空间、名称获取 Ingress 详情
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: Ingress 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Ingress 详情
+      tags:
+      - K8s-网络
+  /k8s/clusters/{id}/jobs:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定集群中的 Job
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 删除请求(命名空间+名称)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.DeleteJobRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除 Job
+      tags:
+      - K8s-工作负载
+    get:
+      description: 分页获取指定集群下指定命名空间的 Job 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Job 列表
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/jobs/{namespace}/{name}:
+    get:
+      description: 按集群、命名空间、名称获取 Job 详情
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: Job 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Job 详情
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/jobs/{namespace}/{name}/pods:
+    get:
+      description: 返回指定 Job 关联的 Pod 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: Job 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Job 的 Pods
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/namespaces:
+    get:
+      description: 获取指定 K8s 集群的命名空间列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取命名空间列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取集群命名空间列表
+      tags:
+      - K8s-集群管理
+  /k8s/clusters/{id}/nodes:
+    get:
+      description: 获取指定 K8s 集群的节点列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取节点列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取集群节点列表
+      tags:
+      - K8s-集群管理
+  /k8s/clusters/{id}/permissions:
+    post:
+      consumes:
+      - application/json
+      description: 为指定用户在指定集群中分配角色
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 分配集群角色请求
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.AssignClusterRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 分配角色失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 分配集群角色
+      tags:
+      - K8s-集群权限
+  /k8s/clusters/{id}/permissions/{userId}:
+    delete:
+      description: 撤销指定用户在指定集群中的角色授权
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 用户 ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 撤销角色失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 撤销集群角色
+      tags:
+      - K8s-集群权限
+  /k8s/clusters/{id}/pods:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定集群中的 Pod
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 删除请求(命名空间+名称)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.DeletePodRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除 Pod
+      tags:
+      - K8s-Pod
+    get:
+      description: 分页获取指定集群下指定命名空间的 Pod 列表，支持标签选择器
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - description: 标签选择器
+        in: query
+        name: labelSelector
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Pod 列表
+      tags:
+      - K8s-Pod
+    put:
+      consumes:
+      - application/json
+      description: 更新指定集群中的 Pod
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新请求(含 manifest)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.UpdatePodRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新 Pod
+      tags:
+      - K8s-Pod
+  /k8s/clusters/{id}/pods/{namespace}/{name}:
+    get:
+      description: 按集群、命名空间、名称获取 Pod 详情
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: Pod 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Pod 详情
+      tags:
+      - K8s-Pod
+  /k8s/clusters/{id}/pods/{namespace}/{name}/logs:
+    get:
+      description: 获取指定 Pod 的容器日志（一次性返回，非流式）
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: Pod 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: 容器名称
+        in: query
+        name: container
+        type: string
+      - default: 100
+        description: 尾部行数
+        in: query
+        name: tailLines
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Pod 日志
+      tags:
+      - K8s-Pod
+  /k8s/clusters/{id}/secrets:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定集群中的 Secret
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 删除请求(命名空间+名称)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.DeleteSecretRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除 Secret
+      tags:
+      - K8s-配置
+    get:
+      description: 分页获取指定集群下指定命名空间的 Secret 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Secret 列表
+      tags:
+      - K8s-配置
+    post:
+      consumes:
+      - application/json
+      description: 在指定集群的命名空间中创建 Secret
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 创建请求(含 manifest)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.CreateSecretRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建 Secret
+      tags:
+      - K8s-配置
+    put:
+      consumes:
+      - application/json
+      description: 更新指定集群中的 Secret
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新请求(含 manifest)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.UpdateSecretRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新 Secret
+      tags:
+      - K8s-配置
+  /k8s/clusters/{id}/secrets/{namespace}/{name}:
+    get:
+      description: 按集群、命名空间、名称获取 Secret 详情
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: Secret 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Secret 详情
+      tags:
+      - K8s-配置
+  /k8s/clusters/{id}/services:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定集群中的 Service
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 删除请求(命名空间+名称)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.DeleteServiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除 Service
+      tags:
+      - K8s-网络
+    get:
+      description: 分页获取指定集群下指定命名空间的 Service 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Service 列表
+      tags:
+      - K8s-网络
+    post:
+      consumes:
+      - application/json
+      description: 在指定集群的命名空间中创建 Service
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 创建请求(含 manifest)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.CreateServiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建 Service
+      tags:
+      - K8s-网络
+    put:
+      consumes:
+      - application/json
+      description: 更新指定集群中的 Service
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新请求(含 manifest)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_k8s.UpdateServiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新 Service
+      tags:
+      - K8s-网络
+  /k8s/clusters/{id}/services/{namespace}/{name}:
+    get:
+      description: 按集群、命名空间、名称获取 Service 详情
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: Service 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Service 详情
+      tags:
+      - K8s-网络
+  /k8s/clusters/{id}/statefulsets:
+    get:
+      description: 分页获取指定集群下指定命名空间的 StatefulSet 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 StatefulSet 列表
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/statefulsets/{namespace}/{name}:
+    get:
+      description: 按集群、命名空间、名称获取 StatefulSet 详情
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: StatefulSet 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 StatefulSet 详情
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/statefulsets/{namespace}/{name}/pods:
+    get:
+      description: 返回指定 StatefulSet 管理的 Pod 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: StatefulSet 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无权访问 / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 StatefulSet 的 Pods
+      tags:
+      - K8s-工作负载
+  /k8s/clusters/{id}/test:
+    post:
+      description: 测试指定 K8s 集群的连通性
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 连接测试失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 测试集群连接
+      tags:
+      - K8s-集群管理
+  /k8s/clusters/{id}/users:
+    get:
+      description: 获取指定 K8s 集群下的用户列表及权限信息
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取集群用户列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取集群用户列表
+      tags:
+      - K8s-集群管理
+  /k8s/clusters/{id}/users/{userId}/role:
+    get:
+      description: 查询指定用户在指定集群中的角色绑定信息
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 用户 ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 无效的用户ID / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取用户在集群中的角色
+      tags:
+      - K8s-集群权限
+  /k8s/diagnostic/commands:
+    get:
+      description: 返回所有可用的 Java 诊断命令及其参数定义
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  properties:
+                    commands:
+                      type: object
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取诊断命令列表
+      tags:
+      - K8s-诊断
+  /k8s/diagnostic/execute:
+    post:
+      consumes:
+      - application/json
+      description: 在指定 Pod 上执行 Java 诊断命令(通过 DaemonSet 侧车方式执行)
+      parameters:
+      - description: 诊断执行请求
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 无效的集群ID / 诊断执行失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 执行诊断命令
+      tags:
+      - K8s-诊断
+  /k8s/diagnostic/history:
+    get:
+      description: 分页获取诊断执行历史记录,支持按集群/命名空间/Pod 名称筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 集群 ID
+        in: query
+        name: clusterId
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        type: string
+      - description: Pod 名称
+        in: query
+        name: podName
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 内部错误
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取诊断历史
+      tags:
+      - K8s-诊断
+  /k8s/diagnostic/namespaces/{clusterId}:
+    get:
+      description: 获取指定集群下所有可访问的命名空间列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: clusterId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 内部错误
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取命名空间列表
+      tags:
+      - K8s-诊断
+  /k8s/diagnostic/pods/{clusterId}/{namespace}:
+    get:
+      description: 获取指定集群和命名空间下的 Java 应用 Pod 列表
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: clusterId
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的集群ID / 内部错误
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取 Java 应用 Pod 列表
+      tags:
+      - K8s-诊断
+  /k8s/permissions/batch-assign:
+    post:
+      consumes:
+      - application/json
+      description: 为多个用户批量分配同一集群的同一角色
+      parameters:
+      - description: 批量分配请求
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 分配失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 批量分配集群角色
+      tags:
+      - K8s-集群权限
+  /k8s/terminal/active:
+    get:
+      description: 返回当前用户的活跃 K8s 终端会话列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取活跃终端会话
+      tags:
+      - K8s-终端
+  /k8s/terminal/sessions/{sessionId}/terminate:
+    post:
+      description: 终止指定的 K8s 终端 WebSocket 会话
+      parameters:
+      - description: 会话 ID
+        in: path
+        name: sessionId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的会话ID / 会话不存在 / 无权操作
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 终止终端会话
+      tags:
+      - K8s-终端
+  /k8s/terminal/ws:
+    get:
+      description: 通过 WebSocket 连接到指定 Pod 的容器终端，实现交互式 shell。认证通过 query 参数 token 完成，不经过
+        Auth 中间件。
+      parameters:
+      - description: JWT token
+        in: query
+        name: token
+        required: true
+        type: string
+      - description: 集群 ID
+        in: query
+        name: clusterId
+        required: true
+        type: string
+      - description: 命名空间
+        in: query
+        name: namespace
+        required: true
+        type: string
+      - description: Pod 名称
+        in: query
+        name: podName
+        required: true
+        type: string
+      - description: 容器名称(留空则取第一个容器)
+        in: query
+        name: containerName
+        type: string
+      produces:
+      - application/json
+      responses:
+        "101":
+          description: 升级为 WebSocket 连接
+          schema:
+            type: string
+        "200":
+          description: 缺少参数 / token验证失败 / 无权访问
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      summary: K8s Pod 终端 WebSocket
+      tags:
+      - K8s-终端
+  /k8s/users/clusters:
+    get:
+      description: 分页获取当前登录用户有权限访问的集群列表
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取集群列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取用户可访问的集群
+      tags:
+      - K8s-集群权限
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: 使用用户名密码登录，返回 JWT token 和用户信息
+      parameters:
+      - description: 登录请求
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_system.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 用户名或密码错误 / 登录失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      summary: 用户登录
+      tags:
+      - 认证
+  /logout:
+    post:
+      description: 登出当前用户并记录登出日志
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 用户登出
+      tags:
+      - 认证
+  /monitoring/alerts:
+    get:
+      description: 分页获取告警列表，支持按服务器、级别、是否确认筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 服务器 ID
+        in: query
+        name: serverId
+        type: string
+      - description: 告警级别(critical/warning/info)
+        in: query
+        name: level
+        type: string
+      - description: 是否已确认(true/false)
+        in: query
+        name: acknowledged
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取告警列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取告警列表
+      tags:
+      - 监控-告警
+  /monitoring/alerts/{id}/acknowledge:
+    post:
+      consumes:
+      - application/json
+      description: 根据告警 ID 确认指定告警，可附带确认备注
+      parameters:
+      - description: 告警 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 确认信息
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的告警ID 或 确认失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 确认告警
+      tags:
+      - 监控-告警
+  /monitoring/alerts/rules:
+    get:
+      description: 获取全部告警规则列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取告警规则失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取告警规则列表
+      tags:
+      - 监控-告警规则
+    post:
+      consumes:
+      - application/json
+      description: 创建一条新的告警规则
+      parameters:
+      - description: 告警规则信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_service_monitoring.AlertRule'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 或 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建告警规则
+      tags:
+      - 监控-告警规则
+  /monitoring/alerts/rules/{id}:
+    delete:
+      description: 根据规则 ID 删除指定告警规则
+      parameters:
+      - description: 规则 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 缺少规则ID 或 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除告警规则
+      tags:
+      - 监控-告警规则
+    put:
+      consumes:
+      - application/json
+      description: 根据规则 ID 更新指定告警规则
+      parameters:
+      - description: 规则 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 告警规则信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_service_monitoring.AlertRule'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 缺少规则ID 或 参数错误 或 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新告警规则
+      tags:
+      - 监控-告警规则
+  /monitoring/alerts/rules/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: 根据规则 ID 启用或禁用指定告警规则
+      parameters:
+      - description: 规则 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 启用状态
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 缺少规则ID 或 参数错误 或 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新告警规则状态
+      tags:
+      - 监控-告警规则
+  /monitoring/alerts/stats:
+    get:
+      description: 获取告警按级别、状态等维度的汇总统计信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取告警统计失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取告警统计
+      tags:
+      - 监控-告警
+  /monitoring/notifications/channels:
+    get:
+      description: 获取全部通知渠道列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取通知渠道失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取通知渠道列表
+      tags:
+      - 监控-通知渠道
+    post:
+      consumes:
+      - application/json
+      description: 创建一条新的通知渠道
+      parameters:
+      - description: 通知渠道信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_service_monitoring.NotificationChannel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 或 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建通知渠道
+      tags:
+      - 监控-通知渠道
+  /monitoring/notifications/channels/{id}:
+    delete:
+      description: 根据渠道 ID 删除指定通知渠道
+      parameters:
+      - description: 渠道 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的渠道ID 或 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除通知渠道
+      tags:
+      - 监控-通知渠道
+    put:
+      consumes:
+      - application/json
+      description: 根据渠道 ID 更新指定通知渠道
+      parameters:
+      - description: 渠道 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 通知渠道信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_service_monitoring.NotificationChannel'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的渠道ID 或 参数错误 或 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新通知渠道
+      tags:
+      - 监控-通知渠道
+  /monitoring/notifications/channels/{id}/test:
+    post:
+      description: 根据渠道 ID 向指定通知渠道发送一条测试通知
+      parameters:
+      - description: 渠道 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的渠道ID 或 测试失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 测试通知渠道
+      tags:
+      - 监控-通知渠道
+  /monitoring/overview:
+    get:
+      description: 获取监控中心概览数据，包括主机、告警、资源使用等汇总信息
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取监控概览失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取监控概览
+      tags:
+      - 监控-概览
+  /monitoring/reports:
+    get:
+      description: 分页获取巡检报告列表，支持按报告类型、状态筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 报告类型
+        in: query
+        name: reportType
+        type: string
+      - description: 报告状态
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取巡检报告列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取巡检报告列表
+      tags:
+      - 监控-报表
+    post:
+      consumes:
+      - application/json
+      description: 创建一条新的巡检报告，根据请求参数生成对应类型的报告
+      parameters:
+      - description: 巡检报告请求信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_service_monitoring.CreateReportRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 或 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建巡检报告
+      tags:
+      - 监控-报表
+  /monitoring/reports/{id}:
+    delete:
+      description: 根据报告 ID 删除指定巡检报告
+      parameters:
+      - description: 报告 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的报告ID 或 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除巡检报告
+      tags:
+      - 监控-报表
+    get:
+      description: 根据报告 ID 获取巡检报告详情
+      parameters:
+      - description: 报告 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的报告ID 或 获取详情失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取巡检报告详情
+      tags:
+      - 监控-报表
+  /monitoring/reports/{id}/export:
+    get:
+      description: 根据报告 ID 导出指定格式的巡检报告，返回生成的文件路径
+      parameters:
+      - description: 报告 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: pdf
+        description: 导出格式(pdf/html/csv)
+        in: query
+        name: format
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的报告ID 或 导出失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 导出巡检报告
+      tags:
+      - 监控-报表
+  /monitoring/ws:
+    get:
+      description: 升级 HTTP 连接为 WebSocket，用于实时推送监控概览与告警事件。鉴权通过 query 参数 token（或 Authorization
+        头）完成，不经过 Auth 中间件
+      parameters:
+      - description: JWT token
+        in: query
+        name: token
+        required: true
+        type: string
+      responses:
+        "101":
+          description: 升级为 WebSocket 连接
+          schema:
+            type: string
+        "401":
+          description: 缺少认证 Token 或 无效的 Token
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      summary: 监控 WebSocket 连接
+      tags:
+      - 监控-WebSocket
+  /route/debugCache:
+    get:
+      description: 返回当前用户路由缓存的详细内容（仅用于调试）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取缓存失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 调试路由缓存
+      tags:
+      - 系统管理-路由
+  /route/getConstantRoutes:
+    get:
+      description: 返回无需登录即可访问的前端常量路由
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      summary: 获取常量路由
+      tags:
+      - 系统管理-路由
+  /route/getUserRoutes:
+    get:
+      description: 根据当前登录用户的角色，返回其可访问的动态路由及首页配置
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取菜单失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取用户路由
+      tags:
+      - 系统管理-路由
+  /route/invalidateCache:
+    post:
+      description: 清除 RBAC 路由缓存并重新同步菜单数据
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 菜单同步失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 清除路由缓存
+      tags:
+      - 系统管理-路由
+  /route/isRouteExist:
+    get:
+      description: 检查当前用户可访问的路由中是否存在指定名称的路由
+      parameters:
+      - description: 路由名称
+        in: query
+        name: routeName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 路由名称不能为空 / 获取用户权限失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 检查路由是否存在
+      tags:
+      - 系统管理-路由
+  /system/applications:
+    get:
+      description: 分页获取授权应用列表，支持按名称搜索
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 应用名称
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取应用列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取应用列表
+      tags:
+      - 应用授权-应用管理
+    post:
+      consumes:
+      - application/json
+      description: 新增一个授权应用
+      parameters:
+      - description: 应用信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_authorization.Application'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 创建应用失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建应用
+      tags:
+      - 应用授权-应用管理
+  /system/applications/{id}:
+    delete:
+      description: 按应用 ID 删除授权应用
+      parameters:
+      - description: 应用 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除应用失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除应用
+      tags:
+      - 应用授权-应用管理
+    put:
+      consumes:
+      - application/json
+      description: 按应用 ID 更新应用信息
+      parameters:
+      - description: 应用 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 应用信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_authorization.Application'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 更新应用失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新应用
+      tags:
+      - 应用授权-应用管理
+  /system/applications/{id}/groups:
+    get:
+      description: 返回指定应用已同步的用户组列表
+      parameters:
+      - description: 应用 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的应用ID / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取应用用户组列表
+      tags:
+      - 应用授权-应用管理
+  /system/applications/{id}/operation-logs:
+    get:
+      description: 分页获取指定授权应用的操作日志
+      parameters:
+      - description: 应用 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取操作日志失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取应用操作日志
+      tags:
+      - 应用授权-应用管理
+  /system/applications/{id}/roles:
+    get:
+      description: 返回指定应用的角色列表
+      parameters:
+      - description: 应用 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取角色列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取应用角色列表
+      tags:
+      - 应用授权-应用管理
+  /system/applications/{id}/rules:
+    get:
+      description: 返回指定应用的授权规则列表
+      parameters:
+      - description: 应用 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的应用ID / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取应用授权规则
+      tags:
+      - 应用授权-应用管理
+  /system/applications/{id}/sync-groups:
+    post:
+      description: 从外部应用同步用户组信息到本地
+      parameters:
+      - description: 应用 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的应用ID / 同步失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 同步应用用户组
+      tags:
+      - 应用授权-应用管理
+  /system/applications/{id}/sync-roles:
+    post:
+      description: 从外部应用同步角色信息到本地
+      parameters:
+      - description: 应用 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 同步失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 同步应用角色
+      tags:
+      - 应用授权-应用管理
+  /system/applications/{id}/sync-rules:
+    post:
+      description: 从外部应用同步授权规则到本地
+      parameters:
+      - description: 应用 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 同步失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 同步应用授权规则
+      tags:
+      - 应用授权-应用管理
+  /system/applications/{id}/sync-users:
+    post:
+      description: 从外部应用同步用户信息到本地
+      parameters:
+      - description: 应用 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 同步失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 同步应用用户
+      tags:
+      - 应用授权-应用管理
+  /system/applications/{id}/users:
+    get:
+      description: 返回指定应用的用户列表
+      parameters:
+      - description: 应用 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取应用用户列表
+      tags:
+      - 应用授权-应用管理
+  /system/applications/options:
+    get:
+      description: 返回所有应用的精简信息（不分页，用于选择器）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取应用选项失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取应用选项列表
+      tags:
+      - 应用授权-应用管理
+  /system/applications/types:
+    get:
+      description: 返回系统支持的授权应用类型列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取支持的应用类型
+      tags:
+      - 应用授权-应用类型
+  /system/applications/types/{type}/config:
+    get:
+      description: 返回指定应用类型的默认配置模板
+      parameters:
+      - description: 应用类型
+        in: path
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 应用类型参数缺失 / 获取配置模板失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取应用类型配置模板
+      tags:
+      - 应用授权-应用类型
+  /system/attributes:
+    get:
+      description: 获取属性定义列表，支持按分类筛选
+      parameters:
+      - description: 属性分类
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取属性列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取属性定义列表
+      tags:
+      - CMDB-属性
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的属性定义（需要管理员权限）
+      parameters:
+      - description: 属性定义信息
+        in: body
+        name: attr
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_system.AttributeDefinition'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 无权限 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建属性定义
+      tags:
+      - CMDB-属性
+  /system/attributes/{id}:
+    delete:
+      description: 根据属性 ID 删除属性定义（需要管理员权限）
+      parameters:
+      - description: 属性 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 无权限 / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除属性定义
+      tags:
+      - CMDB-属性
+    get:
+      description: 根据属性 ID 获取属性定义详情
+      parameters:
+      - description: 属性 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 属性不存在
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取属性定义详情
+      tags:
+      - CMDB-属性
+    put:
+      consumes:
+      - application/json
+      description: 根据属性 ID 更新属性定义信息（部分字段更新，需要管理员权限）
+      parameters:
+      - description: 属性 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 需要更新的字段
+        in: body
+        name: attr
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_system.AttributeDefinition'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 请求参数错误 / 无权限 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新属性定义
+      tags:
+      - CMDB-属性
+  /system/auth-groups:
+    get:
+      description: 返回全部授权中心用户组（不分页，用于下拉选择等）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户组列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取全部授权用户组
+      tags:
+      - 应用授权-授权用户组
+    post:
+      consumes:
+      - application/json
+      description: 新建授权中心用户组
+      parameters:
+      - description: 用户组信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_authorization.AuthGroup'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 创建用户组失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建授权中心用户组
+      tags:
+      - 应用授权-授权用户组
+  /system/auth-groups/{id}:
+    delete:
+      description: 按用户组 ID 删除授权中心用户组
+      parameters:
+      - description: 用户组 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除用户组失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除授权中心用户组
+      tags:
+      - 应用授权-授权用户组
+    put:
+      consumes:
+      - application/json
+      description: 按用户组 ID 更新授权中心用户组信息
+      parameters:
+      - description: 用户组 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 用户组信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_authorization.AuthGroup'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 更新用户组失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新授权中心用户组
+      tags:
+      - 应用授权-授权用户组
+  /system/auth-groups/list:
+    get:
+      description: 分页获取授权中心用户组，支持按名称搜索
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 用户组名称
+        in: query
+        name: name
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户组列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取授权中心用户组列表
+      tags:
+      - 应用授权-授权用户组
+  /system/auth-groups/options:
+    get:
+      description: 返回所有用户组的精简信息（不分页，用于选择器）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户组选项失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取用户组选项列表
+      tags:
+      - 应用授权-授权用户组
+  /system/auth-users:
+    get:
+      description: 返回全部授权中心用户（不分页，用于下拉选择等）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取全部授权用户
+      tags:
+      - 应用授权-授权用户
+    post:
+      consumes:
+      - application/json
+      description: 新建授权中心用户并生成初始密码
+      parameters:
+      - description: 用户信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_authorization.AuthUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 创建用户失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建授权中心用户
+      tags:
+      - 应用授权-授权用户
+  /system/auth-users/{id}:
+    delete:
+      description: 按用户 ID 删除授权中心用户
+      parameters:
+      - description: 用户 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除用户失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除授权中心用户
+      tags:
+      - 应用授权-授权用户
+    put:
+      consumes:
+      - application/json
+      description: 按用户 ID 更新授权中心用户信息
+      parameters:
+      - description: 用户 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 用户信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_authorization.AuthUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 更新用户失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新授权中心用户
+      tags:
+      - 应用授权-授权用户
+  /system/auth-users/{id}/password:
+    get:
+      description: 返回指定授权用户的初始密码
+      parameters:
+      - description: 用户 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户失败 / 用户未设置初始密码
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取用户初始密码
+      tags:
+      - 应用授权-授权用户
+  /system/auth-users/list:
+    get:
+      description: 分页获取授权中心用户，支持按用户名搜索
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取授权中心用户列表
+      tags:
+      - 应用授权-授权用户
+  /system/group-bindings/{bindingId}/executions:
+    get:
+      description: 返回指定用户组绑定的权限下发执行记录
+      parameters:
+      - description: 绑定 ID
+        in: path
+        name: bindingId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的绑定ID / 获取执行记录失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取权限绑定执行记录
+      tags:
+      - 应用授权-用户组绑定
+  /system/groups/{id}/bindings:
+    get:
+      description: 返回指定用户组的权限绑定列表
+      parameters:
+      - description: 用户组 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户组绑定失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取用户组绑定列表
+      tags:
+      - 应用授权-用户组绑定
+    post:
+      consumes:
+      - application/json
+      description: 为指定用户组创建权限绑定
+      parameters:
+      - description: 用户组 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 绑定信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_authorization.GroupBinding'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 创建用户组绑定失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建用户组绑定
+      tags:
+      - 应用授权-用户组绑定
+  /system/groups/bindings/{id}:
+    delete:
+      description: 按绑定 ID 删除用户组权限绑定
+      parameters:
+      - description: 绑定 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除用户组绑定失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除用户组绑定
+      tags:
+      - 应用授权-用户组绑定
+  /system/menus:
+    get:
+      description: 以树形结构返回全部菜单
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取菜单列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取所有菜单
+      tags:
+      - 系统管理-菜单
+    post:
+      consumes:
+      - application/json
+      description: 新增一个菜单项
+      parameters:
+      - description: 菜单信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_system.CreateMenuRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 创建菜单失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建菜单
+      tags:
+      - 系统管理-菜单
+  /system/menus/{id}:
+    delete:
+      description: 按菜单 ID 删除菜单（存在子菜单时禁止删除）
+      parameters:
+      - description: 菜单 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的菜单ID / 删除菜单失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除菜单
+      tags:
+      - 系统管理-菜单
+    put:
+      consumes:
+      - application/json
+      description: 按菜单 ID 更新指定字段（支持部分更新）
+      parameters:
+      - description: 菜单 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 待更新字段
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_system.UpdateMenuRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的菜单ID / 请求参数错误 / 更新菜单失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新菜单
+      tags:
+      - 系统管理-菜单
+  /system/menus/tree:
+    get:
+      description: 专用于前端菜单管理的树形结构
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取菜单树失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取菜单树
+      tags:
+      - 系统管理-菜单
+  /system/permissions:
+    get:
+      description: 分页获取权限列表，支持按名称、编码、模块、状态搜索；兼容 current/size 和 page/pageSize 两种分页参数
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 权限名称
+        in: query
+        name: name
+        type: string
+      - description: 权限编码
+        in: query
+        name: code
+        type: string
+      - description: 所属模块
+        in: query
+        name: module
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取权限列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取权限列表
+      tags:
+      - 系统管理-权限
+    post:
+      consumes:
+      - application/json
+      description: 新增一个权限节点
+      parameters:
+      - description: 权限信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_system.CreatePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 创建权限失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建权限
+      tags:
+      - 系统管理-权限
+  /system/permissions/{id}:
+    delete:
+      description: 按权限 ID 删除权限
+      parameters:
+      - description: 权限 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的权限ID / 删除权限失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除权限
+      tags:
+      - 系统管理-权限
+    put:
+      consumes:
+      - application/json
+      description: 按权限 ID 更新权限信息
+      parameters:
+      - description: 权限 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 待更新字段
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_system.UpdatePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的权限ID / 参数错误 / 更新权限失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新权限
+      tags:
+      - 系统管理-权限
+  /system/permissions/check:
+    post:
+      consumes:
+      - application/json
+      description: 检查指定用户是否拥有某项权限
+      parameters:
+      - description: 权限检查请求
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_system.CheckPermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 权限检查失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 检查权限
+      tags:
+      - 系统管理-权限
+  /system/permissions/tree:
+    get:
+      description: 返回全部权限的树形结构
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取权限树失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取权限树
+      tags:
+      - 系统管理-权限
+  /system/roles:
+    get:
+      description: 分页获取角色列表，支持按名称、编码、状态、描述搜索
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 角色名称
+        in: query
+        name: name
+        type: string
+      - description: 角色编码
+        in: query
+        name: code
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      - description: 描述
+        in: query
+        name: description
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取角色列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取角色列表
+      tags:
+      - 系统管理-角色
+    post:
+      consumes:
+      - application/json
+      description: 新增一个角色
+      parameters:
+      - description: 角色信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_system.CreateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 创建角色失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建角色
+      tags:
+      - 系统管理-角色
+  /system/roles/{id}:
+    delete:
+      description: 按角色 ID 删除角色（受保护的角色禁止删除）
+      parameters:
+      - description: 角色 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的角色ID / 角色不存在 / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除角色
+      tags:
+      - 系统管理-角色
+    put:
+      consumes:
+      - application/json
+      description: 按角色 ID 更新指定字段（支持部分更新）
+      parameters:
+      - description: 角色 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 待更新字段
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_system.UpdateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的角色ID / 请求参数错误 / 更新角色失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新角色
+      tags:
+      - 系统管理-角色
+  /system/roles/{roleId}/permissions:
+    get:
+      description: 返回指定角色已分配的权限 ID 列表
+      parameters:
+      - description: 角色 ID
+        in: path
+        name: roleId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的角色ID / 获取角色权限失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取角色权限
+      tags:
+      - 系统管理-权限
+    post:
+      consumes:
+      - application/json
+      description: 为指定角色批量分配权限（覆盖原有权限）
+      parameters:
+      - description: 角色 ID
+        in: path
+        name: roleId
+        required: true
+        type: integer
+      - description: 权限 ID 列表
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_system.AssignRolePermissionsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的角色ID / 请求参数错误 / 分配权限失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 分配角色权限
+      tags:
+      - 系统管理-权限
+  /system/server-attributes/{serverId}:
+    get:
+      description: 根据主机 ID 获取主机的属性列表
+      parameters:
+      - description: 主机 ID
+        in: path
+        name: serverId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的主机 ID / 获取主机属性失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取主机属性列表
+      tags:
+      - CMDB-属性
+    post:
+      consumes:
+      - application/json
+      description: 保存指定主机的属性列表（覆盖更新）
+      parameters:
+      - description: 主机 ID
+        in: path
+        name: serverId
+        required: true
+        type: integer
+      - description: 属性列表
+        in: body
+        name: attributes
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/oneops_backend3_model_cmdb.ServerAttribute'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的主机 ID / 请求参数错误 / 保存失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 保存主机属性
+      tags:
+      - CMDB-属性
+  /system/user-identity-mappings:
+    get:
+      description: 分页获取用户身份映射，支持按用户名、应用 ID、状态筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 应用 ID
+        in: query
+        name: appId
+        type: integer
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户身份映射列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取用户身份映射列表
+      tags:
+      - 应用授权-身份映射
+  /system/user-identity-mappings/{id}:
+    delete:
+      description: 按映射 ID 删除用户身份映射
+      parameters:
+      - description: 映射 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的身份映射ID / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除用户身份映射
+      tags:
+      - 应用授权-身份映射
+  /system/user-permissions:
+    get:
+      description: 分页获取用户在应用上的有效权限，支持按用户名、应用 ID 筛选
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 应用 ID
+        in: query
+        name: appId
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户有效权限列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取用户有效权限
+      tags:
+      - 应用授权-权限查询
+  /system/user-permissions/matrix:
+    get:
+      description: 返回指定应用下所有用户的有效权限矩阵视图
+      parameters:
+      - description: 应用 ID
+        in: query
+        name: appId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 缺少应用ID参数 / 获取权限矩阵失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取用户有效权限矩阵
+      tags:
+      - 应用授权-权限查询
+  /system/user/permissions:
+    get:
+      description: 返回当前登录用户拥有的权限列表
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户权限失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取当前用户权限
+      tags:
+      - 系统管理-权限
+  /system/users:
+    get:
+      description: 分页获取用户列表，支持按用户名、昵称、邮箱、状态搜索
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 用户名
+        in: query
+        name: username
+        type: string
+      - description: 昵称
+        in: query
+        name: nickname
+        type: string
+      - description: 邮箱
+        in: query
+        name: email
+        type: string
+      - description: 状态
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 获取用户列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取用户列表
+      tags:
+      - 系统管理-用户
+    post:
+      consumes:
+      - application/json
+      description: 新增用户并分配角色
+      parameters:
+      - description: 用户信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_system.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 用户名已存在
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建用户
+      tags:
+      - 系统管理-用户
+  /system/users/{id}:
+    delete:
+      description: 按用户 ID 删除用户（管理员用户受保护不可删除）
+      parameters:
+      - description: 用户 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的用户ID / 用户不存在 / 不能删除管理员用户
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除用户
+      tags:
+      - 系统管理-用户
+    put:
+      consumes:
+      - application/json
+      description: 按用户 ID 更新指定字段（支持部分更新）
+      parameters:
+      - description: 用户 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 待更新字段
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_system.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的用户ID / 请求参数错误
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新用户
+      tags:
+      - 系统管理-用户
+  /system/users/{id}/groups:
+    get:
+      description: 返回指定用户加入的用户组列表
+      parameters:
+      - description: 用户 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户组失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取用户所属用户组
+      tags:
+      - 应用授权-用户组成员
+  /system/users/{id}/groups/{groupId}:
+    delete:
+      description: 将指定用户从用户组中移除
+      parameters:
+      - description: 用户 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 用户组 ID
+        in: path
+        name: groupId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除用户组成员失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除用户组成员
+      tags:
+      - 应用授权-用户组成员
+  /system/users/{id}/password:
+    put:
+      consumes:
+      - application/json
+      description: 管理员按用户 ID 重置其密码
+      parameters:
+      - description: 用户 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 新密码
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controller_system.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的用户ID / 请求参数错误 / 密码重置失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 重置用户密码
+      tags:
+      - 系统管理-用户
+  /system/users/assign-group:
+    post:
+      consumes:
+      - application/json
+      description: 将指定用户加入用户组，并触发权限下发
+      parameters:
+      - description: 分配请求
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 授权失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 分配用户到用户组
+      tags:
+      - 应用授权-用户组成员
+  /user/info:
+    get:
+      description: 根据登录态获取当前登录用户的详细信息（含角色、权限、菜单）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户信息失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取当前用户信息
+      tags:
+      - 认证
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: 输入 Bearer {token}，token 由 /api/login 获取
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

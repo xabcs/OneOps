@@ -85,25 +85,25 @@ export function createMenuColumns(handlers: {
       align: 'center',
       formatter: (row: Api.SystemManage.Menu) => (
         <div class="flex items-center justify-center gap-4px">
-          <ElTooltip content="上移" placement="top">
-            <ElButton
-              link
-              type="primary"
-              icon={Top}
-              onClick={() => handlers.handleMove(row, 'up')}
-              disabled={isFirst(row.id, handlers.originalTreeData())}
-            />
-          </ElTooltip>
+          <ElButton
+            link
+            type="primary"
+            onClick={() => handlers.handleMove(row, 'up')}
+            disabled={isFirst(row.id, handlers.originalTreeData())}
+            title="上移"
+          >
+            <Icon icon="mdi:arrow-up" style="font-size: 16px" />
+          </ElButton>
           <span class="sort-value">{row.sort}</span>
-          <ElTooltip content="下移" placement="top">
-            <ElButton
-              link
-              type="primary"
-              icon={Bottom}
-              onClick={() => handlers.handleMove(row, 'down')}
-              disabled={isLast(row.id, handlers.originalTreeData())}
-            />
-          </ElTooltip>
+          <ElButton
+            link
+            type="primary"
+            onClick={() => handlers.handleMove(row, 'down')}
+            disabled={isLast(row.id, handlers.originalTreeData())}
+            title="下移"
+          >
+            <Icon icon="mdi:arrow-down" style="font-size: 16px" />
+          </ElButton>
         </div>
       )
     },
@@ -142,15 +142,9 @@ export function createMenuColumns(handlers: {
           <ElButton type="primary" plain size="small" onClick={() => handlers.handleEdit(row.id)}>
             {$t('common.edit')}
           </ElButton>
-          <ElPopconfirm title={$t('common.confirmDelete')} onConfirm={() => handlers.handleDelete(row.id)}>
-            {{
-              reference: () => (
-                <ElButton type="danger" plain size="small">
-                  {$t('common.delete')}
-                </ElButton>
-              )
-            }}
-          </ElPopconfirm>
+          <ElButton type="danger" plain size="small" onClick={() => handlers.handleDelete(row.id)}>
+            {$t('common.delete')}
+          </ElButton>
         </div>
       )
     }

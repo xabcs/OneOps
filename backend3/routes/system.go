@@ -53,6 +53,7 @@ func SetupSystemRoutes(
 
 		// 用户管理
 		system.GET("/users", userController.GetUsers)
+		system.GET("/users/options", userController.GetUserOptions)
 		system.POST("/users", userController.CreateUser)
 		system.PUT("/users/:id", userController.UpdateUser)
 		system.DELETE("/users/:id", userController.DeleteUser)
@@ -82,6 +83,7 @@ func registerPermissionRoutes(router *gin.RouterGroup, permController *sysctrl.P
 	{
 		permGroup.GET("", permController.GetPermissionList)
 		permGroup.GET("/tree", permController.GetPermissionTree)
+		permGroup.GET("/options", permController.GetPermissionOptions)
 		permGroup.POST("", permController.CreatePermission)
 		permGroup.PUT("/:id", permController.UpdatePermission)
 		permGroup.DELETE("/:id", permController.DeletePermission)

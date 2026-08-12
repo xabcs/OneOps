@@ -15,7 +15,27 @@ import (
 
 // ========== 服务器管理 ==========
 
-// GetServers 获取服务器列表
+// GetServers godoc
+// @Summary      获取服务器列表
+// @Description  分页获取服务器列表，支持多条件筛选
+// @Tags         CMDB-服务器
+// @Produce      json
+// @Param        page           query     int     false  "页码"                  default(1)
+// @Param        pageSize       query     int     false  "每页数量"              default(10)
+// @Param        hostname       query     string  false  "主机名"
+// @Param        ip             query     string  false  "IP 地址"
+// @Param        innerIp        query     string  false  "内网 IP"
+// @Param        env            query     string  false  "环境"
+// @Param        status         query     string  false  "状态"
+// @Param        provider       query     string  false  "云供应商"
+// @Param        agentStatus    query     string  false  "Agent 状态"
+// @Param        groupId        query     int     false  "分组 ID"
+// @Param        businessUnitId query     int     false  "业务单元 ID"
+// @Param        tags           query     string  false  "标签（逗号分隔）"
+// @Success      200  {object}  utils.Response{data=dto.PageResult}
+// @Failure      200  {object}  utils.Response  "请求参数错误 / 获取服务器列表失败"
+// @Router       /cmdb/servers [get]
+// @Security     BearerAuth
 func (c *CMDBController) GetServers(ctx *gin.Context) {
 	var params dto.ServerQueryParams
 	if err := ctx.ShouldBindQuery(&params); err != nil {
@@ -65,7 +85,34 @@ func (c *CMDBController) GetServers(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(servers, total, params.BasePageQuery)))
 }
 
-// GetServerByID 获取服务器详情
+// GetServerOptions godoc
+// @Summary      获取服务器选项列表
+// @Description  返回所有服务器的基本信息（不分页，用于选择器）
+// @Tags         CMDB-服务器
+// @Produce      json
+// @Success      200  {object}  utils.Response
+// @Failure      200  {object}  utils.Response  "获取服务器选项失败"
+// @Router       /cmdb/servers/options [get]
+// @Security     BearerAuth
+func (c *CMDBController) GetServerOptions(ctx *gin.Context) {
+	options, err := c.svc.GetServerOptions()
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("获取服务器选项失败"))
+		return
+	}
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(options))
+}
+
+// GetServerByID godoc
+// @Summary      获取服务器详情
+// @Description  根据服务器 ID 获取服务器详细信息
+// @Tags         CMDB-服务器
+// @Produce      json
+// @Param        id  path  int  true  "服务器 ID"
+// @Success      200  {object}  utils.Response{data=modelcmdb.Server}
+// @Failure      200  {object}  utils.Response  "无效的 ID / 服务器不存在"
+// @Router       /cmdb/servers/{id} [get]
+// @Security     BearerAuth
 func (c *CMDBController) GetServerByID(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -83,7 +130,16 @@ func (c *CMDBController) GetServerByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(server))
 }
 
-// GetServerForConnect 获取连接所需的服务器信息（轻量级）
+// GetServerForConnect godoc
+// @Summary      获取连接所需的服务器信息
+// @Description  返回连接服务器所需的轻量级信息（用于堡垒机连接前置校验）
+// @Tags         CMDB-服务器
+// @Produce      json
+// @Param        id  path  int  true  "服务器 ID"
+// @Success      200  {object}  utils.Response  "连接信息"
+// @Failure      200  {object}  utils.Response  "无效的 ID / 服务器不存在"
+// @Router       /cmdb/servers/{id}/connect [get]
+// @Security     BearerAuth
 func (c *CMDBController) GetServerForConnect(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -101,7 +157,17 @@ func (c *CMDBController) GetServerForConnect(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(server))
 }
 
-// CreateServer 创建服务器
+// CreateServer godoc
+// @Summary      创建服务器
+// @Description  创建一台新的服务器记录
+// @Tags         CMDB-服务器
+// @Accept       json
+// @Produce      json
+// @Param        server  body      modelcmdb.Server  true  "服务器信息"
+// @Success      200     {object}  utils.Response  "服务器创建成功"
+// @Failure      200     {object}  utils.Response  "请求参数错误 / 主机名或 IP 重复 / 创建失败"
+// @Router       /cmdb/servers [post]
+// @Security     BearerAuth
 func (c *CMDBController) CreateServer(ctx *gin.Context) {
 	var server modelcmdb.Server
 	if err := ctx.ShouldBindJSON(&server); err != nil {
@@ -133,7 +199,18 @@ func (c *CMDBController) CreateServer(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("服务器创建成功"))
 }
 
-// UpdateServer 更新服务器
+// UpdateServer godoc
+// @Summary      更新服务器
+// @Description  根据服务器 ID 更新服务器信息（部分字段更新）
+// @Tags         CMDB-服务器
+// @Accept       json
+// @Produce      json
+// @Param        id      path      int               true  "服务器 ID"
+// @Param        server  body      modelcmdb.Server  true  "需要更新的字段"
+// @Success      200     {object}  utils.Response  "服务器更新成功"
+// @Failure      200     {object}  utils.Response  "无效的 ID / 请求参数错误 / 主机名或 IP 重复 / 更新失败"
+// @Router       /cmdb/servers/{id} [put]
+// @Security     BearerAuth
 func (c *CMDBController) UpdateServer(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -172,7 +249,16 @@ func (c *CMDBController) UpdateServer(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("服务器更新成功"))
 }
 
-// DeleteServer 删除服务器
+// DeleteServer godoc
+// @Summary      删除服务器
+// @Description  根据服务器 ID 删除服务器记录
+// @Tags         CMDB-服务器
+// @Produce      json
+// @Param        id  path  int  true  "服务器 ID"
+// @Success      200  {object}  utils.Response  "服务器删除成功"
+// @Failure      200  {object}  utils.Response  "无效的 ID / 删除失败"
+// @Router       /cmdb/servers/{id} [delete]
+// @Security     BearerAuth
 func (c *CMDBController) DeleteServer(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)

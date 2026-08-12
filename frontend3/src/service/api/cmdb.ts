@@ -12,6 +12,16 @@ export function fetchGetServers(params?: CMDB.ServerQuery) {
 }
 
 /**
+ * 获取服务器选项列表（不分页，用于选择器）
+ */
+export function fetchServerOptions() {
+  return request<{ id: number; hostname: string; ip: string; agentStatus: string; env: string }[]>({
+    url: '/cmdb/servers/options',
+    method: 'get'
+  });
+}
+
+/**
  * 获取服务器详情
  */
 export function fetchGetServerById(id: number) {

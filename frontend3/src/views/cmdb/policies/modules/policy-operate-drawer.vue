@@ -9,7 +9,7 @@
     fetchGetBusinessUnits,
     fetchGetServerGroups,
     fetchGetServerTags,
-    fetchGetUserList
+    fetchUserOptions
   } from '@/service/api';
   import { useForm, useFormRules } from '@/hooks/common/form';
 
@@ -116,14 +116,14 @@
 
   async function loadAssetData() {
     const [usersRes, rolesRes, groupsRes, businessRes, tagsRes] = await Promise.allSettled([
-      fetchGetUserList({ page: 1, pageSize: 1000 }),
+      fetchUserOptions(),
       fetchGetAllRoles(),
       fetchGetServerGroups(),
       fetchGetBusinessUnits(),
       fetchGetServerTags()
     ]);
 
-    if (usersRes.status === 'fulfilled') users.value = usersRes.value.data?.list || [];
+    if (usersRes.status === 'fulfilled') users.value = usersRes.value.data || [];
     if (rolesRes.status === 'fulfilled') roles.value = rolesRes.value.data || [];
     if (groupsRes.status === 'fulfilled') serverGroups.value = groupsRes.value.data || [];
     if (businessRes.status === 'fulfilled') businessUnits.value = businessRes.value.data || [];

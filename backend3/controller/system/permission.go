@@ -22,8 +22,43 @@ func NewPermissionController(svc *system.PermissionService) *PermissionControlle
 	return &PermissionController{svc: svc}
 }
 
-// GetPermissionTree 获取权限树
-// GET /api/v1/permissions/tree
+// GetPermissionOptions 获取权限选项列表（不分页，用于选择器/权限树）
+// GET /api/v1/permissions/options
+func (ctrl *PermissionController) GetPermissionOptions(ctx *gin.Context) {
+	permissions, err := ctrl.svc.GetAllPermissionOptions()
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("获取权限选项失败"))
+		return
+	}
+
+	// 转换为精简格式
+	options := make([]gin.H, len(permissions))
+	for i, p := range permissions {
+		options[i] = gin.H{
+			"id":        p.ID,
+			"name":      p.Name,
+			"code":      p.Code,
+			"module":    p.Module,
+			"resource":  p.Resource,
+			"action":    p.Action,
+			"parentId":  p.ParentID,
+			"level":     p.Level,
+			"sortOrder": p.SortOrder,
+		}
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(options))
+}
+
+// GetPermissionTree godoc
+// @Summary      获取权限树
+// @Description  返回全部权限的树形结构
+// @Tags         系统管理-权限
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=[]modelsystem.PermissionTreeNode}
+// @Failure      200  {object}  utils.Response  "获取权限树失败"
+// @Router       /system/permissions/tree [get]
+// @Security     BearerAuth
 func (ctrl *PermissionController) GetPermissionTree(ctx *gin.Context) {
 	tree, err := ctrl.svc.GetPermissionTree()
 	if err != nil {
@@ -34,8 +69,21 @@ func (ctrl *PermissionController) GetPermissionTree(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(tree))
 }
 
-// GetPermissionList 获取权限列表（分页）
-// GET /api/v1/permissions
+// GetPermissionList godoc
+// @Summary      获取权限列表
+// @Description  分页获取权限列表，支持按名称、编码、模块、状态搜索；兼容 current/size 和 page/pageSize 两种分页参数
+// @Tags         系统管理-权限
+// @Produce      json
+// @Param        page      query     int     false  "页码"    default(1)
+// @Param        pageSize  query     int     false  "每页数量" default(10)
+// @Param        name      query     string  false  "权限名称"
+// @Param        code      query     string  false  "权限编码"
+// @Param        module    query     string  false  "所属模块"
+// @Param        status    query     string  false  "状态"
+// @Success      200  {object}  utils.Response{data=dto.PageResult}
+// @Failure      200  {object}  utils.Response  "获取权限列表失败"
+// @Router       /system/permissions [get]
+// @Security     BearerAuth
 func (ctrl *PermissionController) GetPermissionList(ctx *gin.Context) {
 	// 获取分页参数（兼容 current/size 和 page/pageSize 两种参数名）
 	page, _ := strconv.Atoi(ctx.DefaultQuery("page", ctx.DefaultQuery("current", "1")))
@@ -72,8 +120,17 @@ func (ctrl *PermissionController) GetPermissionList(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(permissions, total, dto.BasePageQuery{Page: page, PageSize: pageSize})))
 }
 
-// CreatePermission 创建权限
-// POST /api/v1/permissions
+// CreatePermission godoc
+// @Summary      创建权限
+// @Description  新增一个权限节点
+// @Tags         系统管理-权限
+// @Accept       json
+// @Produce      json
+// @Param        body  body      modelsystem.CreatePermissionRequest  true  "权限信息"
+// @Success      200   {object}  utils.Response{data=modelsystem.Permission}
+// @Failure      200   {object}  utils.Response  "参数错误 / 创建权限失败"
+// @Router       /system/permissions [post]
+// @Security     BearerAuth
 func (ctrl *PermissionController) CreatePermission(ctx *gin.Context) {
 	var req modelsystem.CreatePermissionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -102,8 +159,18 @@ func (ctrl *PermissionController) CreatePermission(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(permission))
 }
 
-// UpdatePermission 更新权限
-// PUT /api/v1/permissions/:id
+// UpdatePermission godoc
+// @Summary      更新权限
+// @Description  按权限 ID 更新权限信息
+// @Tags         系统管理-权限
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                              true  "权限 ID"
+// @Param        body  body      modelsystem.UpdatePermissionRequest  true  "待更新字段"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的权限ID / 参数错误 / 更新权限失败"
+// @Router       /system/permissions/{id} [put]
+// @Security     BearerAuth
 func (ctrl *PermissionController) UpdatePermission(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -135,8 +202,16 @@ func (ctrl *PermissionController) UpdatePermission(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("更新成功"))
 }
 
-// DeletePermission 删除权限
-// DELETE /api/v1/permissions/:id
+// DeletePermission godoc
+// @Summary      删除权限
+// @Description  按权限 ID 删除权限
+// @Tags         系统管理-权限
+// @Produce      json
+// @Param        id  path      int  true  "权限 ID"
+// @Success      200  {object}  utils.Response
+// @Failure      200  {object}  utils.Response  "无效的权限ID / 删除权限失败"
+// @Router       /system/permissions/{id} [delete]
+// @Security     BearerAuth
 func (ctrl *PermissionController) DeletePermission(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -153,8 +228,16 @@ func (ctrl *PermissionController) DeletePermission(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("删除成功"))
 }
 
-// GetRolePermissions 获取角色权限
-// GET /api/v1/roles/:roleId/permissions
+// GetRolePermissions godoc
+// @Summary      获取角色权限
+// @Description  返回指定角色已分配的权限 ID 列表
+// @Tags         系统管理-权限
+// @Produce      json
+// @Param        roleId  path      int  true  "角色 ID"
+// @Success      200  {object}  utils.Response{data=[]uint}
+// @Failure      200  {object}  utils.Response  "无效的角色ID / 获取角色权限失败"
+// @Router       /system/roles/{roleId}/permissions [get]
+// @Security     BearerAuth
 func (ctrl *PermissionController) GetRolePermissions(ctx *gin.Context) {
 	roleIDStr := ctx.Param("roleId")
 	roleID, err := strconv.ParseUint(roleIDStr, 10, 32)
@@ -178,8 +261,18 @@ func (ctrl *PermissionController) GetRolePermissions(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(permissionIDs))
 }
 
-// AssignRolePermissions 分配角色权限
-// POST /api/v1/roles/:roleId/permissions
+// AssignRolePermissions godoc
+// @Summary      分配角色权限
+// @Description  为指定角色批量分配权限（覆盖原有权限）
+// @Tags         系统管理-权限
+// @Accept       json
+// @Produce      json
+// @Param        roleId  path      int                                        true  "角色 ID"
+// @Param        body    body      modelsystem.AssignRolePermissionsRequest  true  "权限 ID 列表"
+// @Success      200     {object}  utils.Response
+// @Failure      200     {object}  utils.Response  "无效的角色ID / 请求参数错误 / 分配权限失败"
+// @Router       /system/roles/{roleId}/permissions [post]
+// @Security     BearerAuth
 func (ctrl *PermissionController) AssignRolePermissions(ctx *gin.Context) {
 	// 从URL路径参数获取角色ID（符合项目规范）
 	roleIDStr := ctx.Param("roleId")
@@ -205,8 +298,15 @@ func (ctrl *PermissionController) AssignRolePermissions(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("权限分配成功"))
 }
 
-// GetUserPermissions 获取当前用户权限
-// GET /api/v1/user/permissions
+// GetUserPermissions godoc
+// @Summary      获取当前用户权限
+// @Description  返回当前登录用户拥有的权限列表
+// @Tags         系统管理-权限
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=object{permissions=[]string}}
+// @Failure      200  {object}  utils.Response  "获取用户权限失败"
+// @Router       /system/user/permissions [get]
+// @Security     BearerAuth
 func (ctrl *PermissionController) GetUserPermissions(ctx *gin.Context) {
 	// 从上下文获取用户ID（假设由认证中间件设置）
 	userID, ok := utils.GetUserIDFromContext(ctx)
@@ -227,8 +327,17 @@ func (ctrl *PermissionController) GetUserPermissions(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(responseData))
 }
 
-// CheckPermission 检查权限（内部使用）
-// POST /api/v1/permissions/check
+// CheckPermission godoc
+// @Summary      检查权限
+// @Description  检查指定用户是否拥有某项权限
+// @Tags         系统管理-权限
+// @Accept       json
+// @Produce      json
+// @Param        body  body      modelsystem.CheckPermissionRequest  true  "权限检查请求"
+// @Success      200   {object}  utils.Response{data=modelsystem.CheckPermissionResponse}
+// @Failure      200   {object}  utils.Response  "参数错误 / 权限检查失败"
+// @Router       /system/permissions/check [post]
+// @Security     BearerAuth
 func (ctrl *PermissionController) CheckPermission(ctx *gin.Context) {
 	var req modelsystem.CheckPermissionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

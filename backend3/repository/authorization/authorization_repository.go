@@ -48,6 +48,13 @@ func (r *AuthorizationRepository) FindApplications(page, pageSize int, name stri
 	return apps, total, nil
 }
 
+// FindAllApplications 获取所有应用（不分页）
+func (r *AuthorizationRepository) FindAllApplications() ([]*modelauth.Application, error) {
+	var apps []*modelauth.Application
+	err := r.db.Where("status = ?", 1).Select("id, name, code, type").Find(&apps).Error
+	return apps, err
+}
+
 // FindApplicationByID 根据ID获取应用
 func (r *AuthorizationRepository) FindApplicationByID(id uint) (*modelauth.Application, error) {
 	var app modelauth.Application

@@ -13,7 +13,16 @@ import (
 
 // ========== SSH凭证管理 ==========
 
-// GetSSHCredentials 获取SSH凭证列表，支持 ?type=user|system 筛选
+// GetSSHCredentials godoc
+// @Summary      获取 SSH 凭证列表
+// @Description  获取 SSH 凭证列表，支持按类型（user/system）筛选
+// @Tags         CMDB-SSH凭证
+// @Produce      json
+// @Param        type  query  string  false  "凭证类型（user/system）"
+// @Success      200  {object}  utils.Response  "凭证列表"
+// @Failure      200  {object}  utils.Response  "获取凭证列表失败"
+// @Router       /cmdb/ssh-credentials [get]
+// @Security     BearerAuth
 func (c *CMDBController) GetSSHCredentials(ctx *gin.Context) {
 	credentialType := ctx.Query("type") // "" | "user" | "system"
 	credentials, err := c.svc.GetSSHCredentials(credentialType)
@@ -25,7 +34,16 @@ func (c *CMDBController) GetSSHCredentials(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(credentials))
 }
 
-// GetSSHCredentialByID 获取SSH凭证详情
+// GetSSHCredentialByID godoc
+// @Summary      获取 SSH 凭证详情
+// @Description  根据凭证 ID 获取 SSH 凭证详情
+// @Tags         CMDB-SSH凭证
+// @Produce      json
+// @Param        id  path  int  true  "凭证 ID"
+// @Success      200  {object}  utils.Response{data=modelcmdb.SSHCredential}
+// @Failure      200  {object}  utils.Response  "无效的 ID / 凭证不存在"
+// @Router       /cmdb/ssh-credentials/{id} [get]
+// @Security     BearerAuth
 func (c *CMDBController) GetSSHCredentialByID(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -43,7 +61,17 @@ func (c *CMDBController) GetSSHCredentialByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(credential))
 }
 
-// CreateSSHCredential 创建SSH凭证
+// CreateSSHCredential godoc
+// @Summary      创建 SSH 凭证
+// @Description  创建一个新的 SSH 凭证
+// @Tags         CMDB-SSH凭证
+// @Accept       json
+// @Produce      json
+// @Param        credential  body      modelcmdb.SSHCredential  true  "凭证信息"
+// @Success      200         {object}  utils.Response  "SSH 凭证创建成功"
+// @Failure      200         {object}  utils.Response  "请求参数错误 / 创建失败"
+// @Router       /cmdb/ssh-credentials [post]
+// @Security     BearerAuth
 func (c *CMDBController) CreateSSHCredential(ctx *gin.Context) {
 	var credential modelcmdb.SSHCredential
 	if err := ctx.ShouldBindJSON(&credential); err != nil {
@@ -59,7 +87,18 @@ func (c *CMDBController) CreateSSHCredential(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("SSH凭证创建成功"))
 }
 
-// UpdateSSHCredential 更新SSH凭证
+// UpdateSSHCredential godoc
+// @Summary      更新 SSH 凭证
+// @Description  根据凭证 ID 更新 SSH 凭证信息（部分字段更新）
+// @Tags         CMDB-SSH凭证
+// @Accept       json
+// @Produce      json
+// @Param        id          path      int                    true  "凭证 ID"
+// @Param        credential  body      modelcmdb.SSHCredential  true  "需要更新的字段"
+// @Success      200         {object}  utils.Response  "SSH 凭证更新成功"
+// @Failure      200         {object}  utils.Response  "无效的 ID / 请求参数错误 / 更新失败"
+// @Router       /cmdb/ssh-credentials/{id} [put]
+// @Security     BearerAuth
 func (c *CMDBController) UpdateSSHCredential(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -82,7 +121,16 @@ func (c *CMDBController) UpdateSSHCredential(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("SSH凭证更新成功"))
 }
 
-// DeleteSSHCredential 删除SSH凭证
+// DeleteSSHCredential godoc
+// @Summary      删除 SSH 凭证
+// @Description  根据凭证 ID 删除 SSH 凭证
+// @Tags         CMDB-SSH凭证
+// @Produce      json
+// @Param        id  path  int  true  "凭证 ID"
+// @Success      200  {object}  utils.Response  "SSH 凭证删除成功"
+// @Failure      200  {object}  utils.Response  "无效的 ID / 删除失败"
+// @Router       /cmdb/ssh-credentials/{id} [delete]
+// @Security     BearerAuth
 func (c *CMDBController) DeleteSSHCredential(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -99,7 +147,18 @@ func (c *CMDBController) DeleteSSHCredential(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("SSH凭证删除成功"))
 }
 
-// TestSSHCredential 测试SSH凭证连接
+// TestSSHCredential godoc
+// @Summary      测试 SSH 凭证连接
+// @Description  使用指定凭证测试 SSH 连接是否可用
+// @Tags         CMDB-SSH凭证
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int     true  "凭证 ID"
+// @Param        body  body      object  true  "测试目标"  examples({\"testIp\":\"10.0.0.1\",\"testPort\":22})
+// @Success      200   {object}  utils.Response  "测试结果"
+// @Failure      200   {object}  utils.Response  "无效的 ID / 请求参数错误 / 测试失败"
+// @Router       /cmdb/ssh-credentials/{id}/test [post]
+// @Security     BearerAuth
 func (c *CMDBController) TestSSHCredential(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)

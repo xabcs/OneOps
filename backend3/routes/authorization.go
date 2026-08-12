@@ -26,6 +26,7 @@ func SetupAuthorizationRoutes(r *gin.Engine) {
 	{
 		// 应用管理
 		system.GET("/applications", applicationPermissionController.GetApplications)
+		system.GET("/applications/options", applicationPermissionController.GetApplicationOptions)
 		system.POST("/applications", applicationPermissionController.CreateApplication)
 		system.PUT("/applications/:id", applicationPermissionController.UpdateApplication)
 		system.DELETE("/applications/:id", applicationPermissionController.DeleteApplication)
@@ -54,6 +55,7 @@ func SetupAuthorizationRoutes(r *gin.Engine) {
 		// 授权中心用户组管理
 		system.GET("/auth-groups", applicationPermissionController.GetAllAuthGroups)
 		system.GET("/auth-groups/list", applicationPermissionController.GetAuthGroups)
+		system.GET("/auth-groups/options", applicationPermissionController.GetAuthGroupOptions)
 		system.POST("/auth-groups", applicationPermissionController.CreateAuthGroup)
 		system.PUT("/auth-groups/:id", applicationPermissionController.UpdateAuthGroup)
 		system.DELETE("/auth-groups/:id", applicationPermissionController.DeleteAuthGroup)

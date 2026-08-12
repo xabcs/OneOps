@@ -24,6 +24,16 @@ export function fetchGetUserList(params?: Api.SystemManage.UserSearchParams) {
 }
 
 /**
+ * 获取用户选项列表（不分页，用于选择器）
+ */
+export function fetchUserOptions() {
+  return request<{ id: number; username: string; nickname: string }[]>({
+    url: '/system/users/options',
+    method: 'get'
+  });
+}
+
+/**
  * 获取用户详情
  */
 export function fetchGetUserById(id: number) {
@@ -254,6 +264,16 @@ export function fetchGetPermissionList(params?: Api.SystemManage.PermissionSearc
     url: '/system/permissions',
     method: 'get',
     params
+  });
+}
+
+/**
+ * 获取权限选项列表（不分页，用于选择器/权限树）
+ */
+export function fetchPermissionOptions() {
+  return request<{ id: number; name: string; code: string; module: string; resource: string; action: string; parentId: number; level: number; sortOrder: number }[]>({
+    url: '/system/permissions/options',
+    method: 'get'
   });
 }
 

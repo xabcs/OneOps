@@ -51,9 +51,9 @@
   const title = computed(() => '添加权限映射');
 
   async function getApplications() {
-    const { data, error } = await fetchApplications({ page: 1, pageSize: 1000 });
+    const { data, error } = await fetchApplicationOptions();
     if (!error && data) {
-      applications.value = data.list || [];
+      applications.value = data || [];
     }
   }
 

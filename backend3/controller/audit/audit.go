@@ -21,7 +21,22 @@ func NewAuditController(svc *AuditService) *AuditController {
 	return &AuditController{svc: svc}
 }
 
-// GetLoginLogs 获取登录日志列表
+// GetLoginLogs godoc
+// @Summary      获取登录日志
+// @Description  分页获取登录日志，支持按用户名、状态、位置、时间范围筛选
+// @Tags         审计日志
+// @Produce      json
+// @Param        page       query     int     false  "页码"    default(1)
+// @Param        pageSize   query     int     false  "每页数量" default(20)
+// @Param        username   query     string  false  "用户名"
+// @Param        status     query     string  false  "状态(success/failed)"
+// @Param        location   query     string  false  "登录位置"
+// @Param        startTime  query     string  false  "起始时间"
+// @Param        endTime    query     string  false  "结束时间"
+// @Success      200  {object}  utils.Response{data=dto.PageResult}  "登录日志列表"
+// @Failure      200  {object}  utils.Response  "获取登录日志失败"
+// @Router       /audit/login-logs [get]
+// @Security     BearerAuth
 func (ctrl *AuditController) GetLoginLogs(c *gin.Context) {
 	var params dto.BasePageQuery
 	if err := c.ShouldBindQuery(&params); err != nil {
@@ -54,7 +69,27 @@ func (ctrl *AuditController) GetLoginLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(logs, total, params)))
 }
 
-// GetOperationLogs 获取操作日志列表
+// GetOperationLogs godoc
+// @Summary      获取操作日志
+// @Description  分页获取操作日志，支持按用户名、模块、状态、动作、HTTP 方法、路径、耗时区间、时间范围筛选
+// @Tags         审计日志
+// @Produce      json
+// @Param           page           query     int     false  "页码"    default(1)
+// @Param           pageSize       query     int     false  "每页数量" default(20)
+// @Param           username       query     string  false  "用户名"
+// @Param           module         query     string  false  "模块"
+// @Param           status         query     string  false  "状态"
+// @Param           action         query     string  false  "操作动作"
+// @Param           method         query     string  false  "HTTP 方法"
+// @Param           statusCode     query     string  false  "状态码"
+// @Param           path           query     string  false  "请求路径"
+// @Param           durationRange  query     string  false  "耗时区间"
+// @Param           startTime      query     string  false  "起始时间"
+// @Param           endTime        query     string  false  "结束时间"
+// @Success      200  {object}  utils.Response{data=dto.PageResult}  "操作日志列表"
+// @Failure      200  {object}  utils.Response  "获取操作日志失败"
+// @Router       /audit/operation-logs [get]
+// @Security     BearerAuth
 func (ctrl *AuditController) GetOperationLogs(c *gin.Context) {
 	var params dto.BasePageQuery
 	if err := c.ShouldBindQuery(&params); err != nil {
@@ -102,7 +137,22 @@ func (ctrl *AuditController) GetOperationLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(logs, total, params)))
 }
 
-// GetSystemEventLogs 获取系统事件日志列表
+// GetSystemEventLogs godoc
+// @Summary      获取系统事件日志
+// @Description  分页获取系统事件日志，支持按级别、来源、分类、时间范围筛选
+// @Tags         审计日志
+// @Produce      json
+// @Param        page       query     int     false  "页码"    default(1)
+// @Param        pageSize   query     int     false  "每页数量" default(20)
+// @Param        level      query     string  false  "日志级别"
+// @Param        source     query     string  false  "来源"
+// @Param        category   query     string  false  "分类"
+// @Param        startTime  query     string  false  "起始时间"
+// @Param        endTime    query     string  false  "结束时间"
+// @Success      200  {object}  utils.Response{data=dto.PageResult}  "系统事件日志列表"
+// @Failure      200  {object}  utils.Response  "获取系统事件日志失败"
+// @Router       /audit/system-event-logs [get]
+// @Security     BearerAuth
 func (ctrl *AuditController) GetSystemEventLogs(c *gin.Context) {
 	var params dto.BasePageQuery
 	if err := c.ShouldBindQuery(&params); err != nil {
@@ -135,7 +185,15 @@ func (ctrl *AuditController) GetSystemEventLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(logs, total, params)))
 }
 
-// GetAuditStats 获取审计统计信息
+// GetAuditStats godoc
+// @Summary      获取审计统计
+// @Description  返回审计模块的汇总统计信息（登录/操作/事件计数等）
+// @Tags         审计日志
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "获取审计统计信息失败"
+// @Router       /audit/stats [get]
+// @Security     BearerAuth
 func (ctrl *AuditController) GetAuditStats(c *gin.Context) {
 	stats, err := ctrl.svc.GetAuditStats()
 	if err != nil {
@@ -145,13 +203,32 @@ func (ctrl *AuditController) GetAuditStats(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(stats))
 }
 
-// GetModules 获取可用的审计模块列表
+// GetModules godoc
+// @Summary      获取审计模块列表
+// @Description  返回操作日志筛选可用的业务模块列表
+// @Tags         审计日志
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=[]string}
+// @Router       /audit/modules [get]
+// @Security     BearerAuth
 func (ctrl *AuditController) GetModules(c *gin.Context) {
 	modules := ctrl.svc.GetModules()
 	c.JSON(http.StatusOK, utils.SuccessWithData(modules))
 }
 
-// ExportLoginLogs 导出登录日志
+// ExportLoginLogs godoc
+// @Summary      导出登录日志
+// @Description  按筛选条件导出登录日志为 CSV 文件下载
+// @Tags         审计日志
+// @Produce      plain
+// @Param        username   query     string  false  "用户名"
+// @Param        status     query     string  false  "状态"
+// @Param        startTime  query     string  false  "起始时间"
+// @Param        endTime    query     string  false  "结束时间"
+// @Success      200  {file}   binary  "login_logs.csv"
+// @Failure      200  {object}  utils.Response  "导出登录日志失败"
+// @Router       /audit/login-logs/export [get]
+// @Security     BearerAuth
 func (ctrl *AuditController) ExportLoginLogs(c *gin.Context) {
 	query := make(map[string]interface{})
 	if v := c.Query("username"); v != "" {
@@ -198,7 +275,20 @@ func (ctrl *AuditController) ExportLoginLogs(c *gin.Context) {
 	c.String(http.StatusOK, csvContent)
 }
 
-// ExportOperationLogs 导出操作日志
+// ExportOperationLogs godoc
+// @Summary      导出操作日志
+// @Description  按筛选条件导出操作日志为 CSV 文件下载
+// @Tags         审计日志
+// @Produce      plain
+// @Param        username   query     string  false  "用户名"
+// @Param        module     query     string  false  "模块"
+// @Param        status     query     string  false  "状态"
+// @Param        startTime  query     string  false  "起始时间"
+// @Param        endTime    query     string  false  "结束时间"
+// @Success      200  {file}   binary  "operation_logs.csv"
+// @Failure      200  {object}  utils.Response  "导出操作日志失败"
+// @Router       /audit/operation-logs/export [get]
+// @Security     BearerAuth
 func (ctrl *AuditController) ExportOperationLogs(c *gin.Context) {
 	query := make(map[string]interface{})
 	if v := c.Query("username"); v != "" {

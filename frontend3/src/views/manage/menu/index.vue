@@ -1,6 +1,6 @@
 <script setup lang="tsx">
   import { computed, ref } from 'vue';
-  import { ElNotification } from 'element-plus';
+  import { ElMessageBox, ElNotification } from 'element-plus';
   import { jsonClone } from '@sa/utils';
   import { Menu as MenuIcon, Plus, Refresh, Search } from '@element-plus/icons-vue';
   import { fetchDeleteMenu, fetchGetMenuTree, fetchUpdateMenu } from '@/service/api';
@@ -95,6 +95,11 @@
 
   // 删除菜单
   async function handleDelete(id: number) {
+    await ElMessageBox.confirm('确认删除吗？', '提示', {
+      type: 'warning',
+      confirmButtonText: '确定',
+      cancelButtonText: '取消'
+    });
     const { error } = await fetchDeleteMenu(id);
     if (!error) {
       ElNotification({ title: '成功', message: '删除成功', type: 'success', duration: 3000 });

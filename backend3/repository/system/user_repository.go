@@ -107,3 +107,10 @@ func (r *UserRepository) FindMenuByPath(path string) (*modelsystem.Menu, error) 
 func (r *UserRepository) UpdatePassword(id uint64, password string) error {
 	return r.db.Model(&modelsystem.User{}).Where("id = ?", id).Update("password", password).Error
 }
+
+// FindAllOptions 获取所有用户选项（仅 id, username, nickname）
+func (r *UserRepository) FindAllOptions() ([]modelsystem.User, error) {
+	var users []modelsystem.User
+	err := r.db.Select("id, username, nickname").Where("status = ?", "active").Find(&users).Error
+	return users, err
+}

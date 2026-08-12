@@ -36,7 +36,18 @@ type AssignClusterRoleRequest struct {
 	RoleID uint `json:"roleId" binding:"required"`
 }
 
-// AssignClusterRole 为用户分配集群角色
+// AssignClusterRole godoc
+// @Summary      分配集群角色
+// @Description  为指定用户在指定集群中分配角色
+// @Tags         K8s-集群权限
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                       true  "集群 ID"
+// @Param        body  body      AssignClusterRoleRequest  true  "分配集群角色请求"
+// @Success      200  {object}  utils.Response  "分配角色成功"
+// @Failure      200  {object}  utils.Response  "分配角色失败"
+// @Router       /k8s/clusters/{id}/permissions [post]
+// @Security     BearerAuth
 func (ctrl *K8sPermissionController) AssignClusterRole(c *gin.Context) {
 	operatorID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -69,7 +80,17 @@ func (ctrl *K8sPermissionController) AssignClusterRole(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("分配角色成功"))
 }
 
-// RevokeClusterRole 撤销用户的集群角色
+// RevokeClusterRole godoc
+// @Summary      撤销集群角色
+// @Description  撤销指定用户在指定集群中的角色授权
+// @Tags         K8s-集群权限
+// @Produce      json
+// @Param        id      path      int  true  "集群 ID"
+// @Param        userId  path      int  true  "用户 ID"
+// @Success      200  {object}  utils.Response  "撤销角色成功"
+// @Failure      200  {object}  utils.Response  "撤销角色失败"
+// @Router       /k8s/clusters/{id}/permissions/{userId} [delete]
+// @Security     BearerAuth
 func (ctrl *K8sPermissionController) RevokeClusterRole(c *gin.Context) {
 	operatorID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -101,7 +122,17 @@ func (ctrl *K8sPermissionController) RevokeClusterRole(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("撤销角色成功"))
 }
 
-// GetUserClusters 获取用户有权限的集群列表
+// GetUserClusters godoc
+// @Summary      获取用户可访问的集群
+// @Description  分页获取当前登录用户有权限访问的集群列表
+// @Tags         K8s-集群权限
+// @Produce      json
+// @Param        page      query     int  false  "页码"    default(1)
+// @Param        pageSize  query     int  false  "每页数量" default(10)
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "获取集群列表失败"
+// @Router       /k8s/users/clusters [get]
+// @Security     BearerAuth
 func (ctrl *K8sPermissionController) GetUserClusters(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -173,7 +204,17 @@ func (ctrl *K8sPermissionController) GetClusterUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(users))
 }
 
-// GetUserRoleInCluster 获取用户在集群中的角色
+// GetUserRoleInCluster godoc
+// @Summary      获取用户在集群中的角色
+// @Description  查询指定用户在指定集群中的角色绑定信息
+// @Tags         K8s-集群权限
+// @Produce      json
+// @Param        id       path      int  true  "集群 ID"
+// @Param        userId   path      int  true  "用户 ID"
+// @Success      200  {object}  utils.Response{data=object{hasAccess=bool,role=object}}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无效的用户ID / 获取失败"
+// @Router       /k8s/clusters/{id}/users/{userId}/role [get]
+// @Security     BearerAuth
 func (ctrl *K8sPermissionController) GetUserRoleInCluster(c *gin.Context) {
 	_, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -224,7 +265,17 @@ func (ctrl *K8sPermissionController) GetUserRoleInCluster(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(result))
 }
 
-// BatchAssignClusterRoles 批量分配集群角色
+// BatchAssignClusterRoles godoc
+// @Summary      批量分配集群角色
+// @Description  为多个用户批量分配同一集群的同一角色
+// @Tags         K8s-集群权限
+// @Accept       json
+// @Produce      json
+// @Param        body  body      object  true  "批量分配请求"  examples({\"clusterId\":1,\"userIds\":[1,2],\"roleId\":3})
+// @Success      200   {object}  utils.Response{data=object{total=int,success=int,failed=int}}
+// @Failure      200   {object}  utils.Response  "参数错误 / 分配失败"
+// @Router       /k8s/permissions/batch-assign [post]
+// @Security     BearerAuth
 func (ctrl *K8sPermissionController) BatchAssignClusterRoles(c *gin.Context) {
 	operatorID, ok := utils.GetUserIDFromContext(c)
 	if !ok {

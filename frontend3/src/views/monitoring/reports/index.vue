@@ -2,7 +2,7 @@
   import { onMounted, reactive, ref } from 'vue';
   import { ElMessage } from 'element-plus';
   import { Document } from '@element-plus/icons-vue';
-  import { fetchGetServers } from '@/service/api';
+  import { fetchServerOptions } from '@/service/api';
 
   defineOptions({
     name: 'MonitoringReports'
@@ -42,9 +42,9 @@
   // 获取主机列表
   async function getServerList() {
     loading.value = true;
-    const { data } = await fetchGetServers({ page: 1, pageSize: 1000, agentStatus: 'running' });
+    const { data } = await fetchServerOptions();
     if (data) {
-      servers.value = data.list || [];
+      servers.value = data.filter(s => s.agentStatus === 'running') || [];
     }
     loading.value = false;
   }

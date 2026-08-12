@@ -1,5 +1,6 @@
 <script setup lang="tsx">
   import { computed, onMounted, onUnmounted, ref } from 'vue';
+  import { ElMessageBox } from 'element-plus';
   import { Delete, Plus, Refresh, Search, User } from '@element-plus/icons-vue';
   import { fetchDeleteUser, fetchGetAllRoles, fetchGetUserList } from '@/service/api';
   import { useThemeStore } from '@/store/modules/theme';
@@ -149,6 +150,11 @@
   }
 
   async function handleDelete(id: number) {
+    await ElMessageBox.confirm('确认删除吗？', '提示', {
+      type: 'warning',
+      confirmButtonText: '确定',
+      cancelButtonText: '取消'
+    });
     await executeWithPermission(
       'system.user.delete',
       async () => {

@@ -23,7 +23,21 @@ func NewRoleController(svc *syssvc.RoleService) *RoleController {
 	return &RoleController{svc: svc}
 }
 
-// GetRoles 获取所有角色（支持搜索和分页）
+// GetRoles godoc
+// @Summary      获取角色列表
+// @Description  分页获取角色列表，支持按名称、编码、状态、描述搜索
+// @Tags         系统管理-角色
+// @Produce      json
+// @Param        page        query     int     false  "页码"    default(1)
+// @Param        pageSize    query     int     false  "每页数量" default(20)
+// @Param        name        query     string  false  "角色名称"
+// @Param        code        query     string  false  "角色编码"
+// @Param        status      query     string  false  "状态"
+// @Param        description query     string  false  "描述"
+// @Success      200  {object}  utils.Response{data=dto.PageResult{list=[]modelsystem.Role}}
+// @Failure      200  {object}  utils.Response  "获取角色列表失败"
+// @Router       /system/roles [get]
+// @Security     BearerAuth
 func (ctrl *RoleController) GetRoles(c *gin.Context) {
 	var params dto.BasePageQuery
 	if err := c.ShouldBindQuery(&params); err != nil {
@@ -60,7 +74,17 @@ type CreateRoleRequest struct {
 	Status      int    `json:"status"`
 }
 
-// CreateRole 创建角色
+// CreateRole godoc
+// @Summary      创建角色
+// @Description  新增一个角色
+// @Tags         系统管理-角色
+// @Accept       json
+// @Produce      json
+// @Param        body  body      CreateRoleRequest  true  "角色信息"
+// @Success      200   {object}  utils.Response{data=modelsystem.Role}
+// @Failure      200   {object}  utils.Response  "请求参数错误 / 创建角色失败"
+// @Router       /system/roles [post]
+// @Security     BearerAuth
 func (ctrl *RoleController) CreateRole(c *gin.Context) {
 	var req CreateRoleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -91,7 +115,18 @@ type UpdateRoleRequest struct {
 	Status      int    `json:"status"`
 }
 
-// UpdateRole 更新角色
+// UpdateRole godoc
+// @Summary      更新角色
+// @Description  按角色 ID 更新指定字段（支持部分更新）
+// @Tags         系统管理-角色
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                true  "角色 ID"
+// @Param        body  body      UpdateRoleRequest  true  "待更新字段"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的角色ID / 请求参数错误 / 更新角色失败"
+// @Router       /system/roles/{id} [put]
+// @Security     BearerAuth
 func (ctrl *RoleController) UpdateRole(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -128,7 +163,16 @@ func (ctrl *RoleController) UpdateRole(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("更新成功"))
 }
 
-// DeleteRole 删除角色
+// DeleteRole godoc
+// @Summary      删除角色
+// @Description  按角色 ID 删除角色（受保护的角色禁止删除）
+// @Tags         系统管理-角色
+// @Produce      json
+// @Param        id  path      int  true  "角色 ID"
+// @Success      200  {object}  utils.Response
+// @Failure      200  {object}  utils.Response  "无效的角色ID / 角色不存在 / 删除失败"
+// @Router       /system/roles/{id} [delete]
+// @Security     BearerAuth
 func (ctrl *RoleController) DeleteRole(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)

@@ -12,7 +12,19 @@ import (
 
 // ========== Workloads - Jobs ==========
 
-// ListJobs 获取 Job 列表
+// ListJobs godoc
+// @Summary      获取 Job 列表
+// @Description  分页获取指定集群下指定命名空间的 Job 列表
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  query     string  false  "命名空间"
+// @Param        page       query     int     false  "页码"    default(1)
+// @Param        pageSize   query     int     false  "每页数量" default(10)
+// @Success      200  {object}  utils.Response{data=object{list=object,total=int}}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/jobs [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) ListJobs(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -49,7 +61,18 @@ func (ctrl *K8sResourceController) ListJobs(c *gin.Context) {
 	}))
 }
 
-// GetJob 获取 Job 详情
+// GetJob godoc
+// @Summary      获取 Job 详情
+// @Description  按集群、命名空间、名称获取 Job 详情
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  path      string  true  "命名空间"
+// @Param        name       path      string  true  "Job 名称"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/jobs/{namespace}/{name} [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) GetJob(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -86,7 +109,18 @@ type DeleteJobRequest struct {
 	Name      string `json:"name" binding:"required"`
 }
 
-// DeleteJob 删除 Job
+// DeleteJob godoc
+// @Summary      删除 Job
+// @Description  删除指定集群中的 Job
+// @Tags         K8s-工作负载
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int               true  "集群 ID"
+// @Param        body  body      DeleteJobRequest  true  "删除请求(命名空间+名称)"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的集群ID / 无权访问 / 删除失败"
+// @Router       /k8s/clusters/{id}/jobs [delete]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) DeleteJob(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {

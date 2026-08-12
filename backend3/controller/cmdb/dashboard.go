@@ -11,7 +11,15 @@ import (
 
 // ========== 统计与配置 ==========
 
-// GetServerStats 获取服务器统计信息
+// GetServerStats godoc
+// @Summary      获取服务器统计信息
+// @Description  获取服务器总数、状态分布、Agent 状态等统计信息
+// @Tags         CMDB-服务器
+// @Produce      json
+// @Success      200  {object}  utils.Response  "统计信息"
+// @Failure      200  {object}  utils.Response  "获取统计信息失败"
+// @Router       /cmdb/servers/stats [get]
+// @Security     BearerAuth
 func (c *CMDBController) GetServerStats(ctx *gin.Context) {
 	stats, err := c.svc.GetServerStats()
 	if err != nil {
@@ -22,7 +30,17 @@ func (c *CMDBController) GetServerStats(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(stats))
 }
 
-// GetServerConfig 获取服务器配置信息（通过SSH）
+// GetServerConfig godoc
+// @Summary      获取服务器配置信息
+// @Description  通过 SSH 远程获取指定服务器的硬件/操作系统配置信息
+// @Tags         CMDB-服务器
+// @Accept       json
+// @Produce      json
+// @Param        body     body      object  true  "服务器连接信息"  examples({\"hostname\":\"web-01\",\"ip\":\"10.0.0.1\",\"sshUser\":\"root\",\"sshPort\":22})
+// @Success      200      {object}  utils.Response  "服务器配置信息"
+// @Failure      200      {object}  utils.Response  "请求参数错误 / 获取服务器配置失败"
+// @Router       /cmdb/servers/config [post]
+// @Security     BearerAuth
 func (c *CMDBController) GetServerConfig(ctx *gin.Context) {
 	var req struct {
 		Hostname string `json:"hostname" binding:"required"`

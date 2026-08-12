@@ -24,7 +24,20 @@ func NewK8sClusterController(svc *K8sClusterService) *K8sClusterController {
 	return &K8sClusterController{svc: svc}
 }
 
-// GetClusters 获取集群列表
+// GetClusters godoc
+// @Summary      获取集群列表
+// @Description  分页获取当前用户有权限的 K8s 集群列表，支持按名称、状态、类型筛选
+// @Tags         K8s-集群管理
+// @Produce      json
+// @Param        page        query     int     false  "页码"          default(1)
+// @Param        pageSize    query     int     false  "每页数量"      default(20)
+// @Param        name        query     string  false  "集群名称"
+// @Param        status      query     string  false  "状态（0/1）"
+// @Param        clusterType query     string  false  "集群类型"
+// @Success      200  {object}  utils.Response{data=dto.PageResult}
+// @Failure      200  {object}  utils.Response  "获取集群列表失败"
+// @Router       /k8s/clusters [get]
+// @Security     BearerAuth
 func (ctrl *K8sClusterController) GetClusters(c *gin.Context) {
 	var params dto.BasePageQuery
 	if err := c.ShouldBindQuery(&params); err != nil {
@@ -81,7 +94,16 @@ func (ctrl *K8sClusterController) GetClusters(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(result, total, params)))
 }
 
-// GetClusterByID 获取集群详情
+// GetClusterByID godoc
+// @Summary      获取集群详情
+// @Description  根据 ID 获取指定 K8s 集群的详细信息
+// @Tags         K8s-集群管理
+// @Produce      json
+// @Param        id   path      int  true  "集群 ID"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "获取集群详情失败"
+// @Router       /k8s/clusters/{id} [get]
+// @Security     BearerAuth
 func (ctrl *K8sClusterController) GetClusterByID(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -128,7 +150,17 @@ type CreateClusterRequest struct {
 	NodeCount   int    `json:"nodeCount"`
 }
 
-// CreateCluster 创建集群
+// CreateCluster godoc
+// @Summary      创建集群
+// @Description  创建一个新的 K8s 集群配置（含 kubeconfig）
+// @Tags         K8s-集群管理
+// @Accept       json
+// @Produce      json
+// @Param        body  body      CreateClusterRequest  true  "创建集群请求"
+// @Success      200  {object}  utils.Response  "创建集群成功"
+// @Failure      200  {object}  utils.Response  "创建集群失败"
+// @Router       /k8s/clusters [post]
+// @Security     BearerAuth
 func (ctrl *K8sClusterController) CreateCluster(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -177,7 +209,18 @@ type UpdateClusterRequest struct {
 	Status      int    `json:"status"`
 }
 
-// UpdateCluster 更新集群
+// UpdateCluster godoc
+// @Summary      更新集群
+// @Description  更新指定 K8s 集群的配置信息
+// @Tags         K8s-集群管理
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                    true  "集群 ID"
+// @Param        body  body      UpdateClusterRequest   true  "更新集群请求"
+// @Success      200  {object}  utils.Response  "更新集群成功"
+// @Failure      200  {object}  utils.Response  "更新集群失败"
+// @Router       /k8s/clusters/{id} [put]
+// @Security     BearerAuth
 func (ctrl *K8sClusterController) UpdateCluster(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -239,7 +282,18 @@ type DeleteClusterRequest struct {
 	ConfirmName string `json:"confirmName" binding:"required"`
 }
 
-// DeleteCluster 删除集群（需要二次确认）
+// DeleteCluster godoc
+// @Summary      删除集群
+// @Description  删除指定 K8s 集群（需要二次确认，传入集群名称）
+// @Tags         K8s-集群管理
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                    true  "集群 ID"
+// @Param        body  body      DeleteClusterRequest   true  "删除集群请求（需 confirmName 二次确认）"
+// @Success      200  {object}  utils.Response  "集群已删除"
+// @Failure      200  {object}  utils.Response  "删除集群失败"
+// @Router       /k8s/clusters/{id} [delete]
+// @Security     BearerAuth
 func (ctrl *K8sClusterController) DeleteCluster(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -271,7 +325,16 @@ func (ctrl *K8sClusterController) DeleteCluster(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("集群已删除"))
 }
 
-// TestConnection 测试集群连接
+// TestConnection godoc
+// @Summary      测试集群连接
+// @Description  测试指定 K8s 集群的连通性
+// @Tags         K8s-集群管理
+// @Produce      json
+// @Param        id   path      int  true  "集群 ID"
+// @Success      200  {object}  utils.Response  "连接测试成功"
+// @Failure      200  {object}  utils.Response  "连接测试失败"
+// @Router       /k8s/clusters/{id}/test [post]
+// @Security     BearerAuth
 func (ctrl *K8sClusterController) TestConnection(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -298,7 +361,16 @@ func (ctrl *K8sClusterController) TestConnection(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("连接测试成功"))
 }
 
-// GetClusterNodes 获取集群节点列表
+// GetClusterNodes godoc
+// @Summary      获取集群节点列表
+// @Description  获取指定 K8s 集群的节点列表
+// @Tags         K8s-集群管理
+// @Produce      json
+// @Param        id   path      int  true  "集群 ID"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "获取节点列表失败"
+// @Router       /k8s/clusters/{id}/nodes [get]
+// @Security     BearerAuth
 func (ctrl *K8sClusterController) GetClusterNodes(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -326,7 +398,16 @@ func (ctrl *K8sClusterController) GetClusterNodes(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(nodes))
 }
 
-// GetClusterNamespaces 获取集群命名空间列表
+// GetClusterNamespaces godoc
+// @Summary      获取集群命名空间列表
+// @Description  获取指定 K8s 集群的命名空间列表
+// @Tags         K8s-集群管理
+// @Produce      json
+// @Param        id   path      int  true  "集群 ID"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "获取命名空间列表失败"
+// @Router       /k8s/clusters/{id}/namespaces [get]
+// @Security     BearerAuth
 func (ctrl *K8sClusterController) GetClusterNamespaces(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -354,7 +435,16 @@ func (ctrl *K8sClusterController) GetClusterNamespaces(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(namespaces))
 }
 
-// GetClusterUsers 获取集群用户列表
+// GetClusterUsers godoc
+// @Summary      获取集群用户列表
+// @Description  获取指定 K8s 集群下的用户列表及权限信息
+// @Tags         K8s-集群管理
+// @Produce      json
+// @Param        id   path      int  true  "集群 ID"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "获取集群用户列表失败"
+// @Router       /k8s/clusters/{id}/users [get]
+// @Security     BearerAuth
 func (ctrl *K8sClusterController) GetClusterUsers(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {

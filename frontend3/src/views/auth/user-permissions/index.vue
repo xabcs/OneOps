@@ -1,7 +1,7 @@
 <script setup lang="tsx">
   import { computed, onMounted, ref } from 'vue';
   import {
-    fetchApplications,
+    fetchApplicationOptions,
     fetchUserEffectivePermissions,
     fetchUserEffectivePermissionsMatrix
   } from '@/service/api/application-permission';
@@ -104,7 +104,7 @@
   });
 
   async function getApplications() {
-    const { data, error } = await fetchApplications({ page: 1, pageSize: 1000 });
+    const { data, error } = await fetchApplications({ page: 1, pageSize: 100 });
     if (!error && data) {
       applications.value = data.list || [];
       // 默认选择第一个应用

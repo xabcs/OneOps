@@ -12,7 +12,19 @@ import (
 
 // ========== Workloads - StatefulSet ==========
 
-// ListStatefulSets 获取 StatefulSet 列表
+// ListStatefulSets godoc
+// @Summary      获取 StatefulSet 列表
+// @Description  分页获取指定集群下指定命名空间的 StatefulSet 列表
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  query     string  false  "命名空间"
+// @Param        page       query     int     false  "页码"    default(1)
+// @Param        pageSize   query     int     false  "每页数量" default(10)
+// @Success      200  {object}  utils.Response{data=object{list=object,total=int}}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/statefulsets [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) ListStatefulSets(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -49,7 +61,18 @@ func (ctrl *K8sResourceController) ListStatefulSets(c *gin.Context) {
 	}))
 }
 
-// GetStatefulSet 获取 StatefulSet 详情
+// GetStatefulSet godoc
+// @Summary      获取 StatefulSet 详情
+// @Description  按集群、命名空间、名称获取 StatefulSet 详情
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  path      string  true  "命名空间"
+// @Param        name       path      string  true  "StatefulSet 名称"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/statefulsets/{namespace}/{name} [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) GetStatefulSet(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -80,7 +103,18 @@ func (ctrl *K8sResourceController) GetStatefulSet(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(statefulSet))
 }
 
-// GetStatefulSetPods 获取 StatefulSet 管理的 Pods
+// GetStatefulSetPods godoc
+// @Summary      获取 StatefulSet 的 Pods
+// @Description  返回指定 StatefulSet 管理的 Pod 列表
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  path      string  true  "命名空间"
+// @Param        name       path      string  true  "StatefulSet 名称"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/statefulsets/{namespace}/{name}/pods [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) GetStatefulSetPods(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -113,7 +147,19 @@ func (ctrl *K8sResourceController) GetStatefulSetPods(c *gin.Context) {
 
 // ========== Workloads - DaemonSet ==========
 
-// ListDaemonSets 获取 DaemonSet 列表
+// ListDaemonSets godoc
+// @Summary      获取 DaemonSet 列表
+// @Description  分页获取指定集群下指定命名空间的 DaemonSet 列表
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  query     string  false  "命名空间"
+// @Param        page       query     int     false  "页码"    default(1)
+// @Param        pageSize   query     int     false  "每页数量" default(10)
+// @Success      200  {object}  utils.Response{data=object{list=object,total=int}}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/daemonsets [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) ListDaemonSets(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -150,7 +196,18 @@ func (ctrl *K8sResourceController) ListDaemonSets(c *gin.Context) {
 	}))
 }
 
-// GetDaemonSet 获取 DaemonSet 详情
+// GetDaemonSet godoc
+// @Summary      获取 DaemonSet 详情
+// @Description  按集群、命名空间、名称获取 DaemonSet 详情
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  path      string  true  "命名空间"
+// @Param        name       path      string  true  "DaemonSet 名称"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/daemonsets/{namespace}/{name} [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) GetDaemonSet(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -181,7 +238,18 @@ func (ctrl *K8sResourceController) GetDaemonSet(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(daemonSet))
 }
 
-// GetDaemonSetPods 获取 DaemonSet 管理的 Pods
+// GetDaemonSetPods godoc
+// @Summary      获取 DaemonSet 的 Pods
+// @Description  返回指定 DaemonSet 管理的 Pod 列表
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  path      string  true  "命名空间"
+// @Param        name       path      string  true  "DaemonSet 名称"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/daemonsets/{namespace}/{name}/pods [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) GetDaemonSetPods(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -212,7 +280,18 @@ func (ctrl *K8sResourceController) GetDaemonSetPods(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(pods))
 }
 
-// GetJobPods 获取 Job 关联的 Pods
+// GetJobPods godoc
+// @Summary      获取 Job 的 Pods
+// @Description  返回指定 Job 关联的 Pod 列表
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  path      string  true  "命名空间"
+// @Param        name       path      string  true  "Job 名称"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/jobs/{namespace}/{name}/pods [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) GetJobPods(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -243,7 +322,18 @@ func (ctrl *K8sResourceController) GetJobPods(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(pods))
 }
 
-// GetCronJobPods 获取 CronJob 关联的 Pods
+// GetCronJobPods godoc
+// @Summary      获取 CronJob 的 Pods
+// @Description  返回指定 CronJob 关联的 Pod 列表
+// @Tags         K8s-工作负载
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  path      string  true  "命名空间"
+// @Param        name       path      string  true  "CronJob 名称"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/cronjobs/{namespace}/{name}/pods [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) GetCronJobPods(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {

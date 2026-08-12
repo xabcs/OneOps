@@ -405,6 +405,13 @@ func (s *PermissionService) DeletePermission(id uint) error {
 	})
 }
 
+// GetAllPermissionOptions 获取所有权限选项（不分页，用于权限树/选择器）
+func (s *PermissionService) GetAllPermissionOptions() ([]modelsystem.Permission, error) {
+	var permissions []modelsystem.Permission
+	err := s.db.Where("status = ?", 1).Select("id, name, code, module, resource, action, parent_id, level, sort_order").Order("sort_order ASC").Find(&permissions).Error
+	return permissions, err
+}
+
 // GetPermissionTree 获取权限树
 func (s *PermissionService) GetPermissionTree() ([]modelsystem.Permission, error) {
 	var permissions []modelsystem.Permission

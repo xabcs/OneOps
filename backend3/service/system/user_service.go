@@ -181,6 +181,11 @@ func (s *UserService) parseRoleIDs(roleIDsStr string) []uint {
 	return roleIDs
 }
 
+// GetAllUserOptions 获取所有用户选项
+func (s *UserService) GetAllUserOptions() ([]modelsystem.User, error) {
+	return s.repo.FindAllOptions()
+}
+
 // validateHomePathPermission 验证家目录权限
 func (s *UserService) validateHomePathPermission(homePath string, roleIDs []uint) (bool, string) {
 	if homePath == "" || homePath == "/" {

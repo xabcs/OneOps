@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { computed, nextTick, ref, watch } from 'vue';
   import { ElMessage, ElNotification } from 'element-plus';
-  import { fetchAssignRolePermissions, fetchGetPermissionList, fetchGetRolePermissions } from '@/service/api';
+  import { fetchAssignRolePermissions, fetchGetRolePermissions, fetchPermissionOptions } from '@/service/api';
 
   defineOptions({ name: 'PermissionAssignModal' });
 
@@ -64,10 +64,10 @@
   // 获取所有权限并构建树
   async function getAllPermissions() {
     loading.value = true;
-    const { error, data } = await fetchGetPermissionList({ page: 1, pageSize: 1000 });
+    const { error, data } = await fetchPermissionOptions();
 
     if (!error && data) {
-      const permissions = data.list || [];
+      const permissions = data;
 
       if (permissions.length === 0) {
         console.warn('⚠️ 权限列表为空，请先在权限管理中创建权限');

@@ -22,7 +22,15 @@ func NewMonitoringController(svc *MonitoringService) *MonitoringController {
 	return &MonitoringController{svc: svc}
 }
 
-// GetOverview 获取监控概览
+// GetOverview godoc
+// @Summary      获取监控概览
+// @Description  获取监控中心概览数据，包括主机、告警、资源使用等汇总信息
+// @Tags         监控-概览
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=object}  "监控概览数据"
+// @Failure      200  {object}  utils.Response  "获取监控概览失败"
+// @Router       /monitoring/overview [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetOverview(c *gin.Context) {
 	overview, err := ctrl.svc.GetOverview()
 	if err != nil {
@@ -175,7 +183,20 @@ func (ctrl *MonitoringController) GetServerMetricsHistory(c *gin.Context) {
 
 // === 告警管理 ===
 
-// GetAlerts 查询告警列表
+// GetAlerts godoc
+// @Summary      获取告警列表
+// @Description  分页获取告警列表，支持按服务器、级别、是否确认筛选
+// @Tags         监控-告警
+// @Produce      json
+// @Param        page         query     int     false  "页码"               default(1)
+// @Param        pageSize     query     int     false  "每页数量"            default(20)
+// @Param        serverId     query     string  false  "服务器 ID"
+// @Param        level        query     string  false  "告警级别(critical/warning/info)"
+// @Param        acknowledged query     string  false  "是否已确认(true/false)"
+// @Success      200  {object}  utils.Response{data=dto.PageResult}  "告警列表"
+// @Failure      200  {object}  utils.Response  "获取告警列表失败"
+// @Router       /monitoring/alerts [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetAlerts(c *gin.Context) {
 	var params dto.BasePageQuery
 	if err := c.ShouldBindQuery(&params); err != nil {
@@ -200,7 +221,18 @@ func (ctrl *MonitoringController) GetAlerts(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(result.Items, result.Total, params)))
 }
 
-// AcknowledgeAlert 确认告警
+// AcknowledgeAlert godoc
+// @Summary      确认告警
+// @Description  根据告警 ID 确认指定告警，可附带确认备注
+// @Tags         监控-告警
+// @Accept       json
+// @Produce      json
+// @Param        id     path      int     true  "告警 ID"
+// @Param        body   body      object  true  "确认信息"  examples({"comment":"已处理"})
+// @Success      200  {object}  utils.Response  "告警确认成功"
+// @Failure      200  {object}  utils.Response  "无效的告警ID 或 确认失败"
+// @Router       /monitoring/alerts/{id}/acknowledge [post]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) AcknowledgeAlert(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
@@ -226,7 +258,15 @@ func (ctrl *MonitoringController) AcknowledgeAlert(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("告警确认成功"))
 }
 
-// GetAlertStats 获取告警统计
+// GetAlertStats godoc
+// @Summary      获取告警统计
+// @Description  获取告警按级别、状态等维度的汇总统计信息
+// @Tags         监控-告警
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=object}  "告警统计信息"
+// @Failure      200  {object}  utils.Response  "获取告警统计失败"
+// @Router       /monitoring/alerts/stats [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetAlertStats(c *gin.Context) {
 	stats, err := ctrl.svc.GetAlertStats()
 	if err != nil {
@@ -239,7 +279,15 @@ func (ctrl *MonitoringController) GetAlertStats(c *gin.Context) {
 
 // === 告警规则管理 ===
 
-// GetAlertRules 获取告警规则列表
+// GetAlertRules godoc
+// @Summary      获取告警规则列表
+// @Description  获取全部告警规则列表
+// @Tags         监控-告警规则
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=[]AlertRule}  "告警规则列表"
+// @Failure      200  {object}  utils.Response  "获取告警规则失败"
+// @Router       /monitoring/alerts/rules [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetAlertRules(c *gin.Context) {
 	ruleSvc := NewAlertRuleService()
 	rules, err := ruleSvc.GetAlertRules()
@@ -251,7 +299,17 @@ func (ctrl *MonitoringController) GetAlertRules(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(rules))
 }
 
-// CreateAlertRule 创建告警规则
+// CreateAlertRule godoc
+// @Summary      创建告警规则
+// @Description  创建一条新的告警规则
+// @Tags         监控-告警规则
+// @Accept       json
+// @Produce      json
+// @Param        body  body      AlertRule  true  "告警规则信息"
+// @Success      200  {object}  utils.Response{data=AlertRule}  "创建成功的告警规则"
+// @Failure      200  {object}  utils.Response  "参数错误 或 创建失败"
+// @Router       /monitoring/alerts/rules [post]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) CreateAlertRule(c *gin.Context) {
 	var rule AlertRule
 	if err := c.ShouldBindJSON(&rule); err != nil {
@@ -268,7 +326,18 @@ func (ctrl *MonitoringController) CreateAlertRule(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(rule))
 }
 
-// UpdateAlertRule 更新告警规则
+// UpdateAlertRule godoc
+// @Summary      更新告警规则
+// @Description  根据规则 ID 更新指定告警规则
+// @Tags         监控-告警规则
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string     true  "规则 ID"
+// @Param        body  body      AlertRule  true  "告警规则信息"
+// @Success      200  {object}  utils.Response  "更新成功"
+// @Failure      200  {object}  utils.Response  "缺少规则ID 或 参数错误 或 更新失败"
+// @Router       /monitoring/alerts/rules/{id} [put]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) UpdateAlertRule(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -291,7 +360,16 @@ func (ctrl *MonitoringController) UpdateAlertRule(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("更新成功"))
 }
 
-// DeleteAlertRule 删除告警规则
+// DeleteAlertRule godoc
+// @Summary      删除告警规则
+// @Description  根据规则 ID 删除指定告警规则
+// @Tags         监控-告警规则
+// @Produce      json
+// @Param        id  path      string  true  "规则 ID"
+// @Success      200  {object}  utils.Response  "删除成功"
+// @Failure      200  {object}  utils.Response  "缺少规则ID 或 删除失败"
+// @Router       /monitoring/alerts/rules/{id} [delete]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) DeleteAlertRule(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -308,7 +386,18 @@ func (ctrl *MonitoringController) DeleteAlertRule(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("删除成功"))
 }
 
-// UpdateAlertRuleStatus 更新告警规则状态
+// UpdateAlertRuleStatus godoc
+// @Summary      更新告警规则状态
+// @Description  根据规则 ID 启用或禁用指定告警规则
+// @Tags         监控-告警规则
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string  true  "规则 ID"
+// @Param        body  body      object  true  "启用状态"  examples({"enabled":true})
+// @Success      200  {object}  utils.Response  "状态更新成功"
+// @Failure      200  {object}  utils.Response  "缺少规则ID 或 参数错误 或 更新失败"
+// @Router       /monitoring/alerts/rules/{id}/status [put]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) UpdateAlertRuleStatus(c *gin.Context) {
 	id := c.Param("id")
 	if id == "" {
@@ -335,7 +424,15 @@ func (ctrl *MonitoringController) UpdateAlertRuleStatus(c *gin.Context) {
 
 // === 通知渠道管理 ===
 
-// GetNotificationChannels 获取通知渠道列表
+// GetNotificationChannels godoc
+// @Summary      获取通知渠道列表
+// @Description  获取全部通知渠道列表
+// @Tags         监控-通知渠道
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=[]NotificationChannel}  "通知渠道列表"
+// @Failure      200  {object}  utils.Response  "获取通知渠道失败"
+// @Router       /monitoring/notifications/channels [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetNotificationChannels(c *gin.Context) {
 	channels, err := ctrl.svc.GetNotificationChannels()
 	if err != nil {
@@ -346,7 +443,17 @@ func (ctrl *MonitoringController) GetNotificationChannels(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(channels))
 }
 
-// CreateNotificationChannel 创建通知渠道
+// CreateNotificationChannel godoc
+// @Summary      创建通知渠道
+// @Description  创建一条新的通知渠道
+// @Tags         监控-通知渠道
+// @Accept       json
+// @Produce      json
+// @Param        body  body      NotificationChannel  true  "通知渠道信息"
+// @Success      200  {object}  utils.Response{data=object}  "创建成功，返回新渠道 ID"
+// @Failure      200  {object}  utils.Response  "参数错误 或 创建失败"
+// @Router       /monitoring/notifications/channels [post]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) CreateNotificationChannel(c *gin.Context) {
 	var channel NotificationChannel
 	if err := c.ShouldBindJSON(&channel); err != nil {
@@ -363,7 +470,18 @@ func (ctrl *MonitoringController) CreateNotificationChannel(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{"id": id}))
 }
 
-// UpdateNotificationChannel 更新通知渠道
+// UpdateNotificationChannel godoc
+// @Summary      更新通知渠道
+// @Description  根据渠道 ID 更新指定通知渠道
+// @Tags         监控-通知渠道
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                  true  "渠道 ID"
+// @Param        body  body      NotificationChannel  true  "通知渠道信息"
+// @Success      200  {object}  utils.Response  "更新成功"
+// @Failure      200  {object}  utils.Response  "无效的渠道ID 或 参数错误 或 更新失败"
+// @Router       /monitoring/notifications/channels/{id} [put]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) UpdateNotificationChannel(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -387,7 +505,16 @@ func (ctrl *MonitoringController) UpdateNotificationChannel(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("更新成功"))
 }
 
-// DeleteNotificationChannel 删除通知渠道
+// DeleteNotificationChannel godoc
+// @Summary      删除通知渠道
+// @Description  根据渠道 ID 删除指定通知渠道
+// @Tags         监控-通知渠道
+// @Produce      json
+// @Param        id  path      int  true  "渠道 ID"
+// @Success      200  {object}  utils.Response  "删除成功"
+// @Failure      200  {object}  utils.Response  "无效的渠道ID 或 删除失败"
+// @Router       /monitoring/notifications/channels/{id} [delete]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) DeleteNotificationChannel(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -403,7 +530,16 @@ func (ctrl *MonitoringController) DeleteNotificationChannel(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("删除成功"))
 }
 
-// TestNotificationChannel 测试通知渠道
+// TestNotificationChannel godoc
+// @Summary      测试通知渠道
+// @Description  根据渠道 ID 向指定通知渠道发送一条测试通知
+// @Tags         监控-通知渠道
+// @Produce      json
+// @Param        id  path      int  true  "渠道 ID"
+// @Success      200  {object}  utils.Response  "测试通知已发送"
+// @Failure      200  {object}  utils.Response  "无效的渠道ID 或 测试失败"
+// @Router       /monitoring/notifications/channels/{id}/test [post]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) TestNotificationChannel(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -421,7 +557,19 @@ func (ctrl *MonitoringController) TestNotificationChannel(c *gin.Context) {
 
 // === 巡检报告管理 ===
 
-// GetReports 获取巡检报告列表
+// GetReports godoc
+// @Summary      获取巡检报告列表
+// @Description  分页获取巡检报告列表，支持按报告类型、状态筛选
+// @Tags         监控-报表
+// @Produce      json
+// @Param        page        query     int     false  "页码"    default(1)
+// @Param        pageSize    query     int     false  "每页数量" default(20)
+// @Param        reportType  query     string  false  "报告类型"
+// @Param        status      query     string  false  "报告状态"
+// @Success      200  {object}  utils.Response{data=dto.PageResult}  "巡检报告列表"
+// @Failure      200  {object}  utils.Response  "获取巡检报告列表失败"
+// @Router       /monitoring/reports [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetReports(c *gin.Context) {
 	var params dto.BasePageQuery
 	if err := c.ShouldBindQuery(&params); err != nil {
@@ -445,7 +593,17 @@ func (ctrl *MonitoringController) GetReports(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(result.Items, result.Total, params)))
 }
 
-// CreateReport 创建巡检报告
+// CreateReport godoc
+// @Summary      创建巡检报告
+// @Description  创建一条新的巡检报告，根据请求参数生成对应类型的报告
+// @Tags         监控-报表
+// @Accept       json
+// @Produce      json
+// @Param        body  body      CreateReportRequest  true  "巡检报告请求信息"
+// @Success      200  {object}  utils.Response{data=object}  "创建成功，返回新报告 ID"
+// @Failure      200  {object}  utils.Response  "参数错误 或 创建失败"
+// @Router       /monitoring/reports [post]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) CreateReport(c *gin.Context) {
 	var req CreateReportRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -467,7 +625,16 @@ func (ctrl *MonitoringController) CreateReport(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{"id": id}))
 }
 
-// GetReportDetail 获取巡检报告详情
+// GetReportDetail godoc
+// @Summary      获取巡检报告详情
+// @Description  根据报告 ID 获取巡检报告详情
+// @Tags         监控-报表
+// @Produce      json
+// @Param        id  path      int  true  "报告 ID"
+// @Success      200  {object}  utils.Response{data=ReportDetail}  "巡检报告详情"
+// @Failure      200  {object}  utils.Response  "无效的报告ID 或 获取详情失败"
+// @Router       /monitoring/reports/{id} [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetReportDetail(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
@@ -484,7 +651,17 @@ func (ctrl *MonitoringController) GetReportDetail(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(detail))
 }
 
-// ExportReport 导出巡检报告
+// ExportReport godoc
+// @Summary      导出巡检报告
+// @Description  根据报告 ID 导出指定格式的巡检报告，返回生成的文件路径
+// @Tags         监控-报表
+// @Produce      json
+// @Param        id      path      int     true  "报告 ID"
+// @Param        format  query     string  false  "导出格式(pdf/html/csv)"  default(pdf)
+// @Success      200  {object}  utils.Response{data=object}  "导出成功，返回文件路径"
+// @Failure      200  {object}  utils.Response  "无效的报告ID 或 导出失败"
+// @Router       /monitoring/reports/{id}/export [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) ExportReport(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
@@ -503,7 +680,16 @@ func (ctrl *MonitoringController) ExportReport(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(gin.H{"filePath": filePath}))
 }
 
-// DeleteReport 删除巡检报告
+// DeleteReport godoc
+// @Summary      删除巡检报告
+// @Description  根据报告 ID 删除指定巡检报告
+// @Tags         监控-报表
+// @Produce      json
+// @Param        id  path      int  true  "报告 ID"
+// @Success      200  {object}  utils.Response  "删除成功"
+// @Failure      200  {object}  utils.Response  "无效的报告ID 或 删除失败"
+// @Router       /monitoring/reports/{id} [delete]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) DeleteReport(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {

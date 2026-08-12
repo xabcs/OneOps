@@ -13,7 +13,15 @@ import (
 
 // ========== 业务系统管理 ==========
 
-// GetBusinessUnits 获取业务系统列表（树形结构）
+// GetBusinessUnits godoc
+// @Summary      获取业务系统列表
+// @Description  获取业务系统列表（树形结构）
+// @Tags         CMDB-业务单元
+// @Produce      json
+// @Success      200  {object}  utils.Response  "业务系统树形列表"
+// @Failure      200  {object}  utils.Response  "获取业务系统列表失败"
+// @Router       /cmdb/business-units [get]
+// @Security     BearerAuth
 func (c *CMDBController) GetBusinessUnits(ctx *gin.Context) {
 	units, err := c.svc.GetBusinessUnits()
 	if err != nil {
@@ -24,7 +32,17 @@ func (c *CMDBController) GetBusinessUnits(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(units))
 }
 
-// CreateBusinessUnit 创建业务系统
+// CreateBusinessUnit godoc
+// @Summary      创建业务系统
+// @Description  创建一个新的业务系统
+// @Tags         CMDB-业务单元
+// @Accept       json
+// @Produce      json
+// @Param        unit  body      modelcmdb.BusinessUnit  true  "业务系统信息"
+// @Success      200   {object}  utils.Response  "业务系统创建成功"
+// @Failure      200   {object}  utils.Response  "请求参数错误 / 创建失败"
+// @Router       /cmdb/business-units [post]
+// @Security     BearerAuth
 func (c *CMDBController) CreateBusinessUnit(ctx *gin.Context) {
 	var unit modelcmdb.BusinessUnit
 	if err := ctx.ShouldBindJSON(&unit); err != nil {
@@ -46,7 +64,18 @@ func (c *CMDBController) CreateBusinessUnit(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("业务系统创建成功"))
 }
 
-// UpdateBusinessUnit 更新业务系统
+// UpdateBusinessUnit godoc
+// @Summary      更新业务系统
+// @Description  根据业务系统 ID 更新业务系统信息（部分字段更新）
+// @Tags         CMDB-业务单元
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                    true  "业务系统 ID"
+// @Param        unit  body      modelcmdb.BusinessUnit  true  "需要更新的字段"
+// @Success      200   {object}  utils.Response  "业务系统更新成功"
+// @Failure      200   {object}  utils.Response  "无效的 ID / 请求参数错误 / 更新失败"
+// @Router       /cmdb/business-units/{id} [put]
+// @Security     BearerAuth
 func (c *CMDBController) UpdateBusinessUnit(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -69,7 +98,16 @@ func (c *CMDBController) UpdateBusinessUnit(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("业务系统更新成功"))
 }
 
-// DeleteBusinessUnit 删除业务系统
+// DeleteBusinessUnit godoc
+// @Summary      删除业务系统
+// @Description  根据业务系统 ID 删除业务系统
+// @Tags         CMDB-业务单元
+// @Produce      json
+// @Param        id  path  int  true  "业务系统 ID"
+// @Success      200  {object}  utils.Response  "业务系统删除成功"
+// @Failure      200  {object}  utils.Response  "无效的 ID / 删除失败"
+// @Router       /cmdb/business-units/{id} [delete]
+// @Security     BearerAuth
 func (c *CMDBController) DeleteBusinessUnit(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)

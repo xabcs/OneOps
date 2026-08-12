@@ -25,7 +25,14 @@ func NewDiagnosticController(svc *k8ssvc.DiagnosticService) *DiagnosticControlle
 	}
 }
 
-// GetDiagnosticCommands 获取诊断命令列表
+// GetDiagnosticCommands godoc
+// @Summary      获取诊断命令列表
+// @Description  返回所有可用的 Java 诊断命令及其参数定义
+// @Tags         K8s-诊断
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=object{commands=object}}
+// @Router       /k8s/diagnostic/commands [get]
+// @Security     BearerAuth
 func (ctrl *DiagnosticController) GetDiagnosticCommands(c *gin.Context) {
 	commands := ctrl.svc.GetDiagnosticCommands()
 
@@ -36,7 +43,17 @@ func (ctrl *DiagnosticController) GetDiagnosticCommands(c *gin.Context) {
 	})
 }
 
-// GetJavaPods 获取Java应用Pod列表
+// GetJavaPods godoc
+// @Summary      获取 Java 应用 Pod 列表
+// @Description  获取指定集群和命名空间下的 Java 应用 Pod 列表
+// @Tags         K8s-诊断
+// @Produce      json
+// @Param        clusterId  path      int     true  "集群 ID"
+// @Param        namespace  path      string  true  "命名空间"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 内部错误"
+// @Router       /k8s/diagnostic/pods/{clusterId}/{namespace} [get]
+// @Security     BearerAuth
 func (ctrl *DiagnosticController) GetJavaPods(c *gin.Context) {
 	clusterIDStr := c.Param("clusterId")
 	namespace := c.Param("namespace")
@@ -60,7 +77,16 @@ func (ctrl *DiagnosticController) GetJavaPods(c *gin.Context) {
 	})
 }
 
-// GetNamespaces 获取命名空间列表
+// GetNamespaces godoc
+// @Summary      获取命名空间列表
+// @Description  获取指定集群下所有可访问的命名空间列表
+// @Tags         K8s-诊断
+// @Produce      json
+// @Param        clusterId  path      int  true  "集群 ID"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 内部错误"
+// @Router       /k8s/diagnostic/namespaces/{clusterId} [get]
+// @Security     BearerAuth
 func (ctrl *DiagnosticController) GetNamespaces(c *gin.Context) {
 	clusterIDStr := c.Param("clusterId")
 
@@ -83,7 +109,17 @@ func (ctrl *DiagnosticController) GetNamespaces(c *gin.Context) {
 	})
 }
 
-// ExecuteDiagnostic 执行诊断
+// ExecuteDiagnostic godoc
+// @Summary      执行诊断命令
+// @Description  在指定 Pod 上执行 Java 诊断命令(通过 DaemonSet 侧车方式执行)
+// @Tags         K8s-诊断
+// @Accept       json
+// @Produce      json
+// @Param        body  body      object  true  "诊断执行请求"  example({"clusterId":"1","namespace":"default","podName":"app-pod","command":"jstack","args":{"pid":"1"},"timeout":30})
+// @Success      200  {object}  utils.Response{data=object{status=string,output=string,timestamp=int,duration=int,method=string}}
+// @Failure      200  {object}  utils.Response  "参数错误 / 无效的集群ID / 诊断执行失败"
+// @Router       /k8s/diagnostic/execute [post]
+// @Security     BearerAuth
 func (ctrl *DiagnosticController) ExecuteDiagnostic(c *gin.Context) {
 	var request struct {
 		ClusterID string            `json:"clusterId"`
@@ -158,7 +194,20 @@ func (ctrl *DiagnosticController) ExecuteDiagnostic(c *gin.Context) {
 	})
 }
 
-// GetDiagnosticHistory 获取诊断历史
+// GetDiagnosticHistory godoc
+// @Summary      获取诊断历史
+// @Description  分页获取诊断执行历史记录,支持按集群/命名空间/Pod 名称筛选
+// @Tags         K8s-诊断
+// @Produce      json
+// @Param        page        query     int     false  "页码"     default(1)
+// @Param        pageSize    query     int     false  "每页数量"  default(20)
+// @Param        clusterId   query     string  false  "集群 ID"
+// @Param        namespace   query     string  false  "命名空间"
+// @Param        podName     query     string  false  "Pod 名称"
+// @Success      200  {object}  utils.Response{data=dto.PageResult}
+// @Failure      200  {object}  utils.Response  "参数错误 / 内部错误"
+// @Router       /k8s/diagnostic/history [get]
+// @Security     BearerAuth
 func (ctrl *DiagnosticController) GetDiagnosticHistory(c *gin.Context) {
 	var params dto.BasePageQuery
 	if err := c.ShouldBindQuery(&params); err != nil {

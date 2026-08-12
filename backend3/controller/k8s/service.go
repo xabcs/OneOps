@@ -12,7 +12,19 @@ import (
 
 // ========== Services ==========
 
-// ListServices 获取 Service 列表
+// ListServices godoc
+// @Summary      获取 Service 列表
+// @Description  分页获取指定集群下指定命名空间的 Service 列表
+// @Tags         K8s-网络
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  query     string  false  "命名空间"
+// @Param        page       query     int     false  "页码"    default(1)
+// @Param        pageSize   query     int     false  "每页数量" default(10)
+// @Success      200  {object}  utils.Response{data=object{list=object,total=int}}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/services [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) ListServices(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -49,7 +61,18 @@ func (ctrl *K8sResourceController) ListServices(c *gin.Context) {
 	}))
 }
 
-// GetService 获取 Service 详情
+// GetService godoc
+// @Summary      获取 Service 详情
+// @Description  按集群、命名空间、名称获取 Service 详情
+// @Tags         K8s-网络
+// @Produce      json
+// @Param        id         path      int     true  "集群 ID"
+// @Param        namespace  path      string  true  "命名空间"
+// @Param        name       path      string  true  "Service 名称"
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 无权访问 / 获取失败"
+// @Router       /k8s/clusters/{id}/services/{namespace}/{name} [get]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) GetService(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -86,7 +109,18 @@ type CreateServiceRequest struct {
 	Manifest  map[string]interface{} `json:"manifest" binding:"required"`
 }
 
-// CreateService 创建 Service
+// CreateService godoc
+// @Summary      创建 Service
+// @Description  在指定集群的命名空间中创建 Service
+// @Tags         K8s-网络
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "集群 ID"
+// @Param        body  body      CreateServiceRequest  true  "创建请求(含 manifest)"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的集群ID / 无权访问 / 创建失败"
+// @Router       /k8s/clusters/{id}/services [post]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) CreateService(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -125,7 +159,18 @@ type UpdateServiceRequest struct {
 	Manifest  map[string]interface{} `json:"manifest" binding:"required"`
 }
 
-// UpdateService 更新 Service
+// UpdateService godoc
+// @Summary      更新 Service
+// @Description  更新指定集群中的 Service
+// @Tags         K8s-网络
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "集群 ID"
+// @Param        body  body      UpdateServiceRequest  true  "更新请求(含 manifest)"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的集群ID / 无权访问 / 更新失败"
+// @Router       /k8s/clusters/{id}/services [put]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) UpdateService(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -164,7 +209,18 @@ type DeleteServiceRequest struct {
 	Name      string `json:"name" binding:"required"`
 }
 
-// DeleteService 删除 Service
+// DeleteService godoc
+// @Summary      删除 Service
+// @Description  删除指定集群中的 Service
+// @Tags         K8s-网络
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "集群 ID"
+// @Param        body  body      DeleteServiceRequest  true  "删除请求(命名空间+名称)"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的集群ID / 无权访问 / 删除失败"
+// @Router       /k8s/clusters/{id}/services [delete]
+// @Security     BearerAuth
 func (ctrl *K8sResourceController) DeleteService(c *gin.Context) {
 	userID, ok := utils.GetUserIDFromContext(c)
 	if !ok {

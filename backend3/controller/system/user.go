@@ -24,7 +24,21 @@ func NewUserController(svc *syssvc.UserService) *UserController {
 	return &UserController{svc: svc}
 }
 
-// GetUsers 获取所有用户（支持搜索和分页）
+// GetUsers godoc
+// @Summary      获取用户列表
+// @Description  分页获取用户列表，支持按用户名、昵称、邮箱、状态搜索
+// @Tags         系统管理-用户
+// @Produce      json
+// @Param        page      query     int     false  "页码"    default(1)
+// @Param        pageSize  query     int     false  "每页数量" default(20)
+// @Param        username  query     string  false  "用户名"
+// @Param        nickname  query     string  false  "昵称"
+// @Param        email     query     string  false  "邮箱"
+// @Param        status    query     string  false  "状态"
+// @Success      200  {object}  utils.Response{data=dto.PageResult}
+// @Failure      200  {object}  utils.Response  "请求参数错误 / 获取用户列表失败"
+// @Router       /system/users [get]
+// @Security     BearerAuth
 func (ctrl *UserController) GetUsers(c *gin.Context) {
 	var params dto.BasePageQuery
 	if err := c.ShouldBindQuery(&params); err != nil {
@@ -65,7 +79,17 @@ type CreateUserRequest struct {
 	HomePath string `json:"homePath"`
 }
 
-// CreateUser 创建用户
+// CreateUser godoc
+// @Summary      创建用户
+// @Description  新增用户并分配角色
+// @Tags         系统管理-用户
+// @Accept       json
+// @Produce      json
+// @Param        body  body      CreateUserRequest  true  "用户信息"
+// @Success      200   {object}  utils.Response{data=object}
+// @Failure      200   {object}  utils.Response  "请求参数错误 / 用户名已存在"
+// @Router       /system/users [post]
+// @Security     BearerAuth
 func (ctrl *UserController) CreateUser(c *gin.Context) {
 	var req CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -112,7 +136,18 @@ type UpdateUserRequest struct {
 	Password string `json:"password"`
 }
 
-// UpdateUser 更新用户
+// UpdateUser godoc
+// @Summary      更新用户
+// @Description  按用户 ID 更新指定字段（支持部分更新）
+// @Tags         系统管理-用户
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                true  "用户 ID"
+// @Param        body  body      UpdateUserRequest  true  "待更新字段"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的用户ID / 请求参数错误"
+// @Router       /system/users/{id} [put]
+// @Security     BearerAuth
 func (ctrl *UserController) UpdateUser(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -163,7 +198,16 @@ func (ctrl *UserController) UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("更新成功"))
 }
 
-// DeleteUser 删除用户
+// DeleteUser godoc
+// @Summary      删除用户
+// @Description  按用户 ID 删除用户（管理员用户受保护不可删除）
+// @Tags         系统管理-用户
+// @Produce      json
+// @Param        id  path      int  true  "用户 ID"
+// @Success      200  {object}  utils.Response
+// @Failure      200  {object}  utils.Response  "无效的用户ID / 用户不存在 / 不能删除管理员用户"
+// @Router       /system/users/{id} [delete]
+// @Security     BearerAuth
 func (ctrl *UserController) DeleteUser(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -192,7 +236,18 @@ type ResetPasswordRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// ResetPassword 重置用户密码
+// ResetPassword godoc
+// @Summary      重置用户密码
+// @Description  管理员按用户 ID 重置其密码
+// @Tags         系统管理-用户
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                   true  "用户 ID"
+// @Param        body  body      ResetPasswordRequest  true  "新密码"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "无效的用户ID / 请求参数错误 / 密码重置失败"
+// @Router       /system/users/{id}/password [put]
+// @Security     BearerAuth
 func (ctrl *UserController) ResetPassword(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -217,4 +272,26 @@ func (ctrl *UserController) ResetPassword(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("密码重置成功"))
+}
+
+// GetUserOptions 获取用户选项列表（不分页，用于选择器）
+// GET /api/v1/users/options
+func (ctrl *UserController) GetUserOptions(c *gin.Context) {
+	users, err := ctrl.svc.GetAllUserOptions()
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户选项失败"))
+		return
+	}
+
+	// 转换为精简格式
+	options := make([]gin.H, len(users))
+	for i, u := range users {
+		options[i] = gin.H{
+			"id":       u.ID,
+			"username": u.Username,
+			"nickname": u.Nickname,
+		}
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(options))
 }

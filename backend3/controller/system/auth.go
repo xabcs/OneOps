@@ -41,7 +41,16 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// Login 登录
+// Login godoc
+// @Summary      用户登录
+// @Description  使用用户名密码登录，返回 JWT token 和用户信息
+// @Tags         认证
+// @Accept       json
+// @Produce      json
+// @Param        body  body      LoginRequest  true  "登录请求"
+// @Success      200   {object}  utils.Response{data=object{token=string,user=object}}
+// @Failure      200   {object}  utils.Response  "用户名或密码错误 / 登录失败"
+// @Router       /login [post]
 func (ctrl *AuthController) Login(c *gin.Context) {
 	startTime := time.Now()
 	logger.Debug("[登录调试] 登录请求开始",
@@ -139,7 +148,15 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessResponse(responseData, "登录成功"))
 }
 
-// GetUserInfo 获取用户信息
+// GetUserInfo godoc
+// @Summary      获取当前用户信息
+// @Description  根据登录态获取当前登录用户的详细信息（含角色、权限、菜单）
+// @Tags         认证
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=object}
+// @Failure      200  {object}  utils.Response  "获取用户信息失败"
+// @Router       /user/info [get]
+// @Security     BearerAuth
 func (ctrl *AuthController) GetUserInfo(c *gin.Context) {
 	uid, ok := utils.GetUserIDFromContext(c)
 	if !ok {
@@ -154,7 +171,14 @@ func (ctrl *AuthController) GetUserInfo(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessResponse(userInfo.ToMap(), "success"))
 }
 
-// Logout 登出
+// Logout godoc
+// @Summary      用户登出
+// @Description  登出当前用户并记录登出日志
+// @Tags         认证
+// @Produce      json
+// @Success      200  {object}  utils.Response
+// @Router       /logout [post]
+// @Security     BearerAuth
 func (ctrl *AuthController) Logout(c *gin.Context) {
 	uid, ok := utils.GetUserIDFromContext(c)
 	if !ok {
