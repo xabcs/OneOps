@@ -19,7 +19,7 @@
     searchKeyword: string;
     serverTags: CMDB.ServerTag[];
     attributeDefinitions: Api.SystemManage.AttributeDefinition[];
-    getEnvDisplayInfo: (env: string) => { label: string; type: string };
+    getEnvDisplayInfo: (env?: string) => { label: string; type: string };
     getUsageColor: (val: number) => string;
     getMaxDiskPartition: (row: CMDB.Server) => { usage: number; mount: string };
     formatDiskPartitions: (row: CMDB.Server) => string;
@@ -272,8 +272,8 @@
           </ElTableColumn>
           <ElTableColumn label="环境" width="75" align="center">
             <template #default="{ row }">
-              <ElTag :type="getEnvDisplayInfo(row.env).type" size="small" effect="plain">
-                {{ getEnvDisplayInfo(row.env).label }}
+              <ElTag :type="getEnvDisplayInfo(row.attributeValues?.env).type" size="small" effect="plain">
+                {{ getEnvDisplayInfo(row.attributeValues?.env).label }}
               </ElTag>
             </template>
           </ElTableColumn>

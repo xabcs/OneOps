@@ -60,7 +60,7 @@
     }
   }
 
-  function getEnvDisplayInfo(envValue: string) {
+  function getEnvDisplayInfo(envValue?: string) {
     const options = getAttributeOptions('env');
     const option = options.find(opt => opt.value === envValue);
     const label = option?.label || envValue || '-';
@@ -340,7 +340,7 @@
       hostname: row.hostname,
       ip: row.ip,
       sshUser: row.sshCredential?.username || 'root',
-      env: row.env || 'unknown',
+      env: row.attributeValues?.env || 'unknown',
       agentStatus: row.agentStatus || 'unknown'
     });
     window.open(`/webterminal?${params.toString()}`, '_blank');
@@ -356,7 +356,7 @@
         serverId: connectingServer.value.id.toString(),
         serverName: connectingServer.value.hostname,
         serverIp: connectingServer.value.ip,
-        serverEnv: connectingServer.value.env || 'unknown'
+        serverEnv: connectingServer.value.attributeValues?.env || 'unknown'
       });
       if (defaultCredentialId) params.append('credentialId', defaultCredentialId.toString());
       window.open(`/webterminal?${params.toString()}`, '_blank');

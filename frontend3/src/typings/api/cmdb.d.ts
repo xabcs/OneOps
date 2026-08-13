@@ -222,7 +222,6 @@ declare namespace CMDB {
     sshPort?: number;
     remarks?: string;
     cloudInfo?: CloudServerForm | null;
-    env?: string;
     cpu?: number;
     memory?: number;
     disk?: number;

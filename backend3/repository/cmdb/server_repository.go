@@ -190,16 +190,8 @@ func (r *ServerRepository) FindServers(query map[string]interface{}, page, pageS
 		return nil, 0, err
 	}
 
-	tx = tx.Select(`
-		cmdb_servers.id, cmdb_servers.hostname, cmdb_servers.ip, cmdb_servers.inner_ip, cmdb_servers.ssh_port, cmdb_servers.status,
-		cmdb_servers.provider, cmdb_servers.agent_status, cmdb_servers.agent_version, cmdb_servers.cpu,
-		cmdb_servers.memory, cmdb_servers.os, cmdb_servers.arch, cmdb_servers.created_at, cmdb_servers.updated_at,
-		cmdb_servers.group_names, cmdb_servers.credential_names, cmdb_servers.system_credential_id,
-		cmdb_servers.cpu_usage, cmdb_servers.memory_usage, cmdb_servers.disk_usage,
-		cmdb_servers.load1, cmdb_servers.load5, cmdb_servers.load15, cmdb_servers.metrics_updated_at
-	`)
-
 	err := tx.
+		Preload("Tags").
 		Order("id DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).

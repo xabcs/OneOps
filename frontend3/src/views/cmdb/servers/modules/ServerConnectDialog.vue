@@ -27,7 +27,7 @@
       <ElDescriptions :column="1" border>
         <ElDescriptionsItem label="主机名">{{ connectingServer.hostname }}</ElDescriptionsItem>
         <ElDescriptionsItem label="IP地址">{{ connectingServer.ip }}</ElDescriptionsItem>
-        <ElDescriptionsItem label="环境">{{ connectingServer.env || 'unknown' }}</ElDescriptionsItem>
+        <ElDescriptionsItem label="环境">{{ connectingServer.attributeValues?.env || 'unknown' }}</ElDescriptionsItem>
         <ElDescriptionsItem label="Agent状态">
           <ElTag v-if="connectingServer.agentStatus === 'running'" type="success">在线</ElTag>
           <ElTag v-else-if="connectingServer.agentStatus === 'offline'" type="warning">离线</ElTag>

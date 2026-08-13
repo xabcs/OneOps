@@ -193,7 +193,7 @@ type Server struct {
 	SSHCredential    *SSHCredential    `json:"sshCredential,omitempty" gorm:"foreignKey:SSHCredentialID;constraint:OnDelete:SET NULL"`
 	SystemCredential *SSHCredential    `json:"systemCredential,omitempty" gorm:"foreignKey:SystemCredentialID;constraint:OnDelete:SET NULL"`
 	Cabinet          *Cabinet          `json:"cabinet,omitempty" gorm:"foreignKey:CabinetID;constraint:OnDelete:SET NULL"`
-	Tags             []ServerTag       `json:"tags,omitempty" gorm:"many2many:cmdb_server_tag_relations;constraint:OnDelete:CASCADE"`
+	Tags             []ServerTag       `json:"tags,omitempty" gorm:"many2many:cmdb_server_tag_relations;joinForeignKey:ServerID;joinReferences:TagID;constraint:OnDelete:CASCADE"`
 	Groups           []ServerGroup     `json:"groups,omitempty" gorm:"many2many:cmdb_server_group_relations;constraint:OnDelete:CASCADE"`
 	CloudInfo        *CloudServer      `json:"cloudInfo,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:SET NULL"`
 	Credentials      []SSHCredential   `json:"credentials,omitempty" gorm:"many2many:cmdb_server_credentials;joinForeignKey:ServerID;joinReferences:CredentialID"`

@@ -12,7 +12,7 @@
     visible: boolean;
     server: CMDB.Server | null;
     getUsageColor: (val: number) => string;
-    getEnvDisplayInfo: (env: string) => { label: string; type: string };
+    getEnvDisplayInfo: (env?: string) => { label: string; type: string };
     formatTime: (time: string) => string;
     formatDiskPartitionsForDrawer: (server: CMDB.Server | null) => Array<{ mount: string; usage: number }>;
     handleConnect: (server: CMDB.Server) => void;
@@ -119,8 +119,8 @@
               <ElDescriptionsItem label="操作系统">{{ server.os || '-' }}</ElDescriptionsItem>
               <ElDescriptionsItem label="系统架构">{{ server.arch || '-' }}</ElDescriptionsItem>
               <ElDescriptionsItem label="环境">
-                <ElTag :type="getEnvDisplayInfo(server.env).type" size="small">
-                  {{ getEnvDisplayInfo(server.env).label }}
+                <ElTag :type="getEnvDisplayInfo(server.attributeValues?.env).type" size="small">
+                  {{ getEnvDisplayInfo(server.attributeValues?.env).label }}
                 </ElTag>
               </ElDescriptionsItem>
               <ElDescriptionsItem label="主机状态">

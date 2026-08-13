@@ -190,7 +190,7 @@
               <div class="desc-item">
                 <div class="item-label">环境</div>
                 <div class="item-content">
-                  <span v-if="server" class="env-tag">{{ server.env }}</span>
+                  <span v-if="server" class="env-tag">{{ server.attributeValues?.env || '-' }}</span>
                   <span v-else>-</span>
                 </div>
               </div>
