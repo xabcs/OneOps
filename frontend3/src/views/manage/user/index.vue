@@ -273,7 +273,59 @@
     <!-- 统计卡片 -->
     <UserStats :user-stats="userStats" />
 
-    <!-- 内容卡片 -->
+    <!-- 搜索卡片 -->
+    <ElCard shadow="hover">
+      <ElSpace wrap class="w-full" align="center">
+        <span class="text-16px font-bold whitespace-nowrap">搜索筛选</span>
+        <ElInput
+          v-model="searchParams.username"
+          placeholder="搜索用户名"
+          clearable
+          style="width: 200px"
+          @input="handleSearchInput"
+        >
+          <template #prefix>
+            <ElIcon><Search /></ElIcon>
+          </template>
+        </ElInput>
+        <ElInput
+          v-model="searchParams.nickname"
+          placeholder="搜索昵称"
+          clearable
+          style="width: 200px"
+          @input="handleSearchInput"
+        >
+          <template #prefix>
+            <ElIcon><Search /></ElIcon>
+          </template>
+        </ElInput>
+        <ElInput
+          v-model="searchParams.email"
+          placeholder="搜索邮箱"
+          clearable
+          style="width: 240px"
+          @input="handleSearchInput"
+        >
+          <template #prefix>
+            <ElIcon><Search /></ElIcon>
+          </template>
+        </ElInput>
+        <ElButton @click="resetSearchParams">
+          <template #icon>
+            <ElIcon><Refresh /></ElIcon>
+          </template>
+          重置
+        </ElButton>
+        <ElButton type="primary" @click="handleSearch">
+          <template #icon>
+            <ElIcon><Search /></ElIcon>
+          </template>
+          搜索
+        </ElButton>
+      </ElSpace>
+    </ElCard>
+
+    <!-- 数据表格卡片 -->
     <ElCard shadow="hover">
       <template #header>
         <div class="flex items-center justify-between">
@@ -286,17 +338,13 @@
           <ElSpace>
             <ElButton type="primary" size="small" @click="handleAddClick">
               <template #icon>
-                <ElIcon>
-                  <Plus />
-                </ElIcon>
+                <ElIcon><Plus /></ElIcon>
               </template>
               新增用户
             </ElButton>
             <ElButton type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
               <template #icon>
-                <ElIcon>
-                  <Delete />
-                </ElIcon>
+                <ElIcon><Delete /></ElIcon>
               </template>
               批量删除
             </ElButton>
@@ -304,66 +352,6 @@
         </div>
       </template>
 
-      <!-- 搜索工具栏 -->
-      <ElSpace wrap class="mb-16px w-full">
-        <ElInput
-          v-model="searchParams.username"
-          placeholder="搜索用户名"
-          clearable
-          style="width: 200px"
-          @input="handleSearchInput"
-        >
-          <template #prefix>
-            <ElIcon>
-              <Search />
-            </ElIcon>
-          </template>
-        </ElInput>
-        <ElInput
-          v-model="searchParams.nickname"
-          placeholder="搜索昵称"
-          clearable
-          style="width: 200px"
-          @input="handleSearchInput"
-        >
-          <template #prefix>
-            <ElIcon>
-              <Search />
-            </ElIcon>
-          </template>
-        </ElInput>
-        <ElInput
-          v-model="searchParams.email"
-          placeholder="搜索邮箱"
-          clearable
-          style="width: 240px"
-          @input="handleSearchInput"
-        >
-          <template #prefix>
-            <ElIcon>
-              <Search />
-            </ElIcon>
-          </template>
-        </ElInput>
-        <ElButton @click="resetSearchParams">
-          <template #icon>
-            <ElIcon>
-              <Refresh />
-            </ElIcon>
-          </template>
-          重置
-        </ElButton>
-        <ElButton type="primary" @click="handleSearch">
-          <template #icon>
-            <ElIcon>
-              <Search />
-            </ElIcon>
-          </template>
-          搜索
-        </ElButton>
-      </ElSpace>
-
-      <!-- 数据表格 -->
       <ElTable
         v-loading="loading"
         :data="data"
@@ -375,7 +363,6 @@
         <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
       </ElTable>
 
-      <!-- 分页 -->
       <div class="flex justify-end mt-16px">
         <ElPagination
           v-if="mobilePagination.total"

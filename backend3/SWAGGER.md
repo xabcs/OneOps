@@ -25,6 +25,7 @@ swag init -g cmd/api/main.go -o docs --parseDependency --parseInternal --parseDe
 ```
 
 生成的文件:
+
 - `docs/docs.go` —— Go 包,内嵌 swagger spec
 - `docs/swagger.json` —— OpenAPI JSON
 - `docs/swagger.yaml` —— OpenAPI YAML
@@ -76,14 +77,14 @@ func (ctrl *UserController) GetUsers(c *gin.Context) {
 
 ### 关键约定
 
-| 项目 | 约定 |
-|------|------|
-| `@Router` 路径 | 写完整路径,**不含** `/api` 前缀(BasePath 已设为 `/api`) |
-| `@Tags` | 按模块分组,如 `系统管理-用户`、`CMDB-服务器`、`K8s-集群管理`、`监控-告警` |
-| 响应外层 | 统一用 `utils.Response{data=...}`;分页用 `utils.Response{data=dto.PageResult}` |
-| 认证 | 除 `/login`、常量路由、agent 心跳、WebSocket 外,都加 `@Security BearerAuth` |
-| `@Produce` | 仅接受:`json`、`xml`、`plain`、`html`、`octet-stream` 等,**不要用 `csv`** |
-| 类型引用 | 注释中引用的类型必须在**所在 controller 文件已 import**,否则 swag 无法解析;跨包未导入的类型用 `object` 代替 |
+| 项目             | 约定                                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `@Router` 路径 | 写完整路径,**不含** `/api` 前缀(BasePath 已设为 `/api`)                                                   |
+| `@Tags`        | 按模块分组,如`系统管理-用户`、`CMDB-服务器`、`K8s-集群管理`、`监控-告警`                                    |
+| 响应外层         | 统一用`utils.Response{data=...}`;分页用 `utils.Response{data=dto.PageResult}`                                   |
+| 认证             | 除`/login`、常量路由、agent 心跳、WebSocket 外,都加 `@Security BearerAuth`                                      |
+| `@Produce`     | 仅接受:`json`、`xml`、`plain`、`html`、`octet-stream` 等,**不要用 `csv`**                         |
+| 类型引用         | 注释中引用的类型必须在**所在 controller 文件已 import**,否则 swag 无法解析;跨包未导入的类型用 `object` 代替 |
 
 ### 特殊接口
 
@@ -92,13 +93,13 @@ func (ctrl *UserController) GetUsers(c *gin.Context) {
 
 ## 常用命令
 
-| 命令 | 说明 |
-|------|------|
-| `make swag-init` | 生成 Swagger 文档到 `docs/` |
-| `make swag-fmt` | 格式化 swag 注释 |
-| `make build` | 生成文档 + 编译 |
-| `make run` | 生成文档 + 运行 |
-| `make vet` | 静态检查 |
+| 命令               | 说明                         |
+| ------------------ | ---------------------------- |
+| `make swag-init` | 生成 Swagger 文档到`docs/` |
+| `make swag-fmt`  | 格式化 swag 注释             |
+| `make build`     | 生成文档 + 编译              |
+| `make run`       | 生成文档 + 运行              |
+| `make vet`       | 静态检查                     |
 
 ## 完整文档生成后如何更新
 
