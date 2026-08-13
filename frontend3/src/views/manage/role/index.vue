@@ -255,31 +255,19 @@
 </script>
 
 <template>
-  <div class="page-container role-management-page">
+  <div class="flex flex-col gap-16px">
     <!-- Hero 区域 -->
-    <section
-      v-if="heroVisible"
-      class="hero-section"
-      :style="{
-        background: 'var(--sx-hero-bg)',
-        border: '1px solid var(--sx-hero-border)',
-        borderRadius: 'var(--sx-hero-radius)',
-        boxShadow: 'var(--sx-hero-shadow)',
-        padding: 'var(--sx-hero-padding)'
-      }"
-    >
-      <div class="hero-content">
-        <div class="hero-title-row">
-          <span class="hero-icon">
-            <ElIcon>
-              <Management />
-            </ElIcon>
-          </span>
-          <h2>{{ $t('page.manage.role.title') }}</h2>
-          <p class="hero-desc">统一管理角色权限，支持角色创建、编辑与权限分配</p>
+    <ElCard v-if="heroVisible" shadow="hover">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-12px">
+          <ElIcon :size="24">
+            <Management />
+          </ElIcon>
+          <div class="flex flex-col gap-2px">
+            <h2 class="text-18px font-bold m-0">{{ $t('page.manage.role.title') }}</h2>
+            <p class="text-13px opacity-70 m-0">统一管理角色权限，支持角色创建、编辑与权限分配</p>
+          </div>
         </div>
-      </div>
-      <div class="hero-actions">
         <ElButton size="small" :loading="loading" @click="refreshData">
           <ElIcon>
             <Refresh />
@@ -287,101 +275,87 @@
           刷新
         </ElButton>
       </div>
-    </section>
+    </ElCard>
 
     <!-- 内容卡片 -->
-    <div
-      class="content-card role-content-card"
-      :style="{
-        background: 'var(--sx-content-card-bg)',
-        border: '1px solid var(--sx-content-card-border)',
-        borderRadius: 'var(--sx-content-card-radius)',
-        boxShadow: 'var(--sx-content-card-shadow)',
-        padding: 'var(--sx-content-card-padding)'
-      }"
-    >
-      <!-- 工具栏 -->
-      <div class="card-toolbar">
-        <div class="toolbar-head">
-          <span class="toolbar-title">角色列表</span>
-          <span class="toolbar-desc">管理系统角色、分配菜单权限与用户关联</span>
+    <ElCard shadow="hover">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <div class="flex flex-col gap-2px">
+            <span class="text-16px font-bold">角色列表</span>
+            <span class="text-13px opacity-70">管理系统角色、分配菜单权限与用户关联</span>
+          </div>
+          <div class="flex items-center gap-8px">
+            <ElButton type="primary" size="small" @click="handleAddClick">
+              <ElIcon>
+                <Plus />
+              </ElIcon>
+              新增角色
+            </ElButton>
+            <ElButton type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
+              <ElIcon>
+                <Delete />
+              </ElIcon>
+              批量删除
+            </ElButton>
+          </div>
         </div>
-        <div class="toolbar-actions">
-          <ElButton type="primary" size="small" @click="handleAddClick">
-            <ElIcon>
-              <Plus />
-            </ElIcon>
-            新增角色
-          </ElButton>
-          <ElButton type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
-            <ElIcon>
-              <Delete />
-            </ElIcon>
-            批量删除
-          </ElButton>
-        </div>
-      </div>
+      </template>
 
       <!-- 搜索工具栏 -->
-      <div class="workbench-toolbar workbench-toolbar--history roles-toolbar">
-        <div class="workbench-toolbar-left">
-          <ElInput
-            v-model="searchParams.name"
-            placeholder="搜索角色名称"
-            clearable
-            style="width: 200px"
-            @input="handleSearchInput"
-          />
-          <ElInput
-            v-model="searchParams.code"
-            placeholder="搜索角色编码"
-            clearable
-            style="width: 200px"
-            @input="handleSearchInput"
-          />
-        </div>
-        <div class="workbench-toolbar-right">
-          <ElButton class="filter-refresh-btn" @click="resetSearchParams">
-            <ElIcon>
-              <Refresh />
-            </ElIcon>
-            重置
-          </ElButton>
-          <ElButton class="filter-refresh-btn" type="primary" @click="handleSearch">
-            <ElIcon>
-              <Search />
-            </ElIcon>
-            搜索
-          </ElButton>
-        </div>
-      </div>
+      <ElSpace wrap class="mb-16px">
+        <ElInput
+          v-model="searchParams.name"
+          placeholder="搜索角色名称"
+          clearable
+          style="width: 200px"
+          :prefix-icon="Search"
+          @input="handleSearchInput"
+        />
+        <ElInput
+          v-model="searchParams.code"
+          placeholder="搜索角色编码"
+          clearable
+          style="width: 200px"
+          :prefix-icon="Search"
+          @input="handleSearchInput"
+        />
+        <ElButton @click="resetSearchParams">
+          <ElIcon>
+            <Refresh />
+          </ElIcon>
+          重置
+        </ElButton>
+        <ElButton type="primary" @click="handleSearch">
+          <ElIcon>
+            <Search />
+          </ElIcon>
+          搜索
+        </ElButton>
+      </ElSpace>
 
       <!-- 数据表格 -->
-      <div class="table-section">
-        <ElTable
-          v-loading="loading"
-          :data="data"
-          border
-          stripe
-          class="data-table"
-          row-key="id"
-          @selection-change="checkedRowKeys = $event"
-        >
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
+      <ElTable
+        v-loading="loading"
+        :data="data"
+        border
+        stripe
+        row-key="id"
+        @selection-change="checkedRowKeys = $event"
+      >
+        <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+      </ElTable>
 
       <!-- 分页 -->
-      <div class="table-pagination">
+      <div v-if="mobilePagination.total" class="flex justify-end mt-16px">
         <ElPagination
-          v-if="mobilePagination.total"
-          layout="total, sizes, prev, pager, next"
+          layout="total, sizes, prev, pager, next, jumper"
           v-bind="mobilePagination"
           @current-change="mobilePagination['current-change']"
           @size-change="mobilePagination['size-change']"
         />
       </div>
-    </div>
+    </ElCard>
 
     <!-- 抽屉和模态框 -->
     <RoleOperateDrawer
@@ -399,7 +373,3 @@
     />
   </div>
 </template>
-
-<style scoped lang="scss">
-  @use './modules/role-page.scss';
-</style>

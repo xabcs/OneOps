@@ -190,31 +190,19 @@
 </script>
 
 <template>
-  <div class="page-container menu-management-page">
+  <div class="flex flex-col gap-16px">
     <!-- Hero 区域 -->
-    <section
-      v-if="heroVisible"
-      class="hero-section"
-      :style="{
-        background: 'var(--sx-hero-bg)',
-        border: '1px solid var(--sx-hero-border)',
-        borderRadius: 'var(--sx-hero-radius)',
-        boxShadow: 'var(--sx-hero-shadow)',
-        padding: 'var(--sx-hero-padding)'
-      }"
-    >
-      <div class="hero-content">
-        <div class="hero-title-row">
-          <span class="hero-icon">
-            <ElIcon>
-              <MenuIcon />
-            </ElIcon>
-          </span>
-          <h2>{{ $t('page.manage.menu.title') }}</h2>
-          <p class="hero-desc">管理系统菜单结构，支持树形层级展示与拖拽排序</p>
+    <ElCard v-if="heroVisible" shadow="hover">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-12px">
+          <ElIcon :size="24">
+            <MenuIcon />
+          </ElIcon>
+          <div class="flex flex-col gap-2px">
+            <h2 class="text-18px font-bold m-0">{{ $t('page.manage.menu.title') }}</h2>
+            <p class="text-13px opacity-70 m-0">管理系统菜单结构，支持树形层级展示与拖拽排序</p>
+          </div>
         </div>
-      </div>
-      <div class="hero-actions">
         <ElButton size="small" :loading="loading" @click="refreshData">
           <ElIcon>
             <Refresh />
@@ -222,26 +210,16 @@
           刷新
         </ElButton>
       </div>
-    </section>
+    </ElCard>
 
     <!-- 内容卡片 -->
-    <div
-      class="content-card menu-content-card"
-      :style="{
-        background: 'var(--sx-content-card-bg)',
-        border: '1px solid var(--sx-content-card-border)',
-        borderRadius: 'var(--sx-content-card-radius)',
-        boxShadow: 'var(--sx-content-card-shadow)',
-        padding: 'var(--sx-content-card-padding)'
-      }"
-    >
-      <!-- 工具栏 -->
-      <div class="card-toolbar">
-        <div class="toolbar-head">
-          <span class="toolbar-title">菜单列表</span>
-          <span class="toolbar-desc">管理菜单层级结构、路由配置与权限标识</span>
-        </div>
-        <div class="toolbar-actions">
+    <ElCard shadow="hover">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <div class="flex flex-col gap-2px">
+            <span class="text-16px font-bold">菜单列表</span>
+            <span class="text-13px opacity-70">管理菜单层级结构、路由配置与权限标识</span>
+          </div>
           <ElButton type="primary" size="small" @click="handleAdd">
             <ElIcon>
               <Plus />
@@ -249,43 +227,45 @@
             新增菜单
           </ElButton>
         </div>
-      </div>
+      </template>
 
       <!-- 搜索工具栏 -->
-      <div class="workbench-toolbar workbench-toolbar--history menus-toolbar">
-        <div class="workbench-toolbar-left">
-          <ElInput
-            v-model="filterText"
-            placeholder="搜索菜单名称 / 路径 / 权限"
-            clearable
-            style="width: 300px"
-            @input="handleFilterChange"
-            @clear="handleFilterChange"
-          >
-            <template #prefix>
-              <ElIcon>
-                <Search />
-              </ElIcon>
-            </template>
-          </ElInput>
-        </div>
-      </div>
+      <ElSpace wrap class="mb-16px">
+        <ElInput
+          v-model="filterText"
+          placeholder="搜索菜单名称 / 路径 / 权限"
+          clearable
+          style="width: 300px"
+          :prefix-icon="Search"
+          @input="handleFilterChange"
+          @clear="handleFilterChange"
+        />
+        <ElButton @click="filterText = ''; handleFilterChange()">
+          <ElIcon>
+            <Refresh />
+          </ElIcon>
+          重置
+        </ElButton>
+        <ElButton type="primary" @click="handleFilterChange">
+          <ElIcon>
+            <Search />
+          </ElIcon>
+          搜索
+        </ElButton>
+      </ElSpace>
 
       <!-- 数据表格 -->
-      <div class="table-section">
-        <ElTable
-          :key="tableKey"
-          v-loading="loading"
-          :data="data"
-          border
-          class="data-table"
-          row-key="id"
-          :tree-props="{ children: 'children', indent: 20 }"
-        >
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
-    </div>
+      <ElTable
+        :key="tableKey"
+        v-loading="loading"
+        :data="data"
+        border
+        row-key="id"
+        :tree-props="{ children: 'children', indent: 20 }"
+      >
+        <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+      </ElTable>
+    </ElCard>
 
     <!-- 抽屉 -->
     <MenuOperateDrawer
@@ -298,7 +278,3 @@
     />
   </div>
 </template>
-
-<style scoped lang="scss">
-  @use './modules/menu-page.scss';
-</style>

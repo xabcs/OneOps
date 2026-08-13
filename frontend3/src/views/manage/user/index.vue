@@ -244,143 +244,148 @@
 </script>
 
 <template>
-  <div class="page-container user-management-page">
+  <div class="flex flex-col gap-16px">
     <!-- Hero 区域 -->
-    <section
-      v-if="heroVisible"
-      class="hero-section"
-      :style="{
-        background: 'var(--sx-hero-bg)',
-        border: '1px solid var(--sx-hero-border)',
-        borderRadius: 'var(--sx-hero-radius)',
-        boxShadow: 'var(--sx-hero-shadow)',
-        padding: 'var(--sx-hero-padding)'
-      }"
-    >
-      <div class="hero-content">
-        <div class="hero-title-row">
-          <span class="hero-icon">
-            <ElIcon>
-              <User />
-            </ElIcon>
-          </span>
-          <h2>{{ $t('page.manage.user.title') }}</h2>
-          <p class="hero-desc">统一维护用户、分配角色与权限，支持账号治理与安全策略管理</p>
-        </div>
-      </div>
-      <div class="hero-actions">
-        <ElButton size="small" :loading="loading" @click="refreshData">
-          <ElIcon>
-            <Refresh />
+    <ElCard v-if="heroVisible" shadow="hover">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-12px">
+          <ElIcon :size="24">
+            <User />
           </ElIcon>
-          刷新
-        </ElButton>
-      </div>
-    </section>
-
-    <!-- 统计卡片网格 -->
-    <UserStats :user-stats="userStats" />
-
-    <!-- 内容卡片 -->
-    <div
-      class="content-card user-content-card"
-      :style="{
-        background: 'var(--sx-content-card-bg)',
-        border: '1px solid var(--sx-content-card-border)',
-        borderRadius: 'var(--sx-content-card-radius)',
-        boxShadow: 'var(--sx-content-card-shadow)',
-        padding: 'var(--sx-content-card-padding)'
-      }"
-    >
-      <!-- 工具栏 -->
-      <div class="card-toolbar">
-        <div class="toolbar-head">
-          <span class="toolbar-title">用户列表</span>
-          <span class="toolbar-desc">管理系统用户账号、角色分配与状态控制</span>
+          <div class="flex flex-col gap-4px">
+            <h2 class="text-18px font-bold m-0">{{ $t('page.manage.user.title') }}</h2>
+            <p class="text-13px color-[var(--el-text-color-secondary)] m-0">
+              统一维护用户、分配角色与权限，支持账号治理与安全策略管理
+            </p>
+          </div>
         </div>
-        <div class="toolbar-actions">
-          <ElButton type="primary" size="small" @click="handleAddClick">
-            <ElIcon>
-              <Plus />
-            </ElIcon>
-            新增用户
-          </ElButton>
-          <ElButton type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
-            <ElIcon>
-              <Delete />
-            </ElIcon>
-            批量删除
-          </ElButton>
-        </div>
-      </div>
-
-      <!-- 搜索工具栏 -->
-      <div class="workbench-toolbar workbench-toolbar--history users-toolbar">
-        <div class="workbench-toolbar-left">
-          <ElInput
-            v-model="searchParams.username"
-            placeholder="搜索用户名"
-            clearable
-            style="width: 200px"
-            @input="handleSearchInput"
-          />
-          <ElInput
-            v-model="searchParams.nickname"
-            placeholder="搜索昵称"
-            clearable
-            style="width: 200px"
-            @input="handleSearchInput"
-          />
-          <ElInput
-            v-model="searchParams.email"
-            placeholder="搜索邮箱"
-            clearable
-            style="width: 240px"
-            @input="handleSearchInput"
-          />
-        </div>
-        <div class="workbench-toolbar-right">
-          <ElButton class="filter-refresh-btn" @click="resetSearchParams">
+        <ElButton size="small" :loading="loading" @click="refreshData">
+          <template #icon>
             <ElIcon>
               <Refresh />
             </ElIcon>
-            重置
-          </ElButton>
-          <ElButton class="filter-refresh-btn" type="primary" @click="handleSearch">
+          </template>
+          刷新
+        </ElButton>
+      </div>
+    </ElCard>
+
+    <!-- 统计卡片 -->
+    <UserStats :user-stats="userStats" />
+
+    <!-- 内容卡片 -->
+    <ElCard shadow="hover">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <div class="flex flex-col gap-4px">
+            <span class="text-16px font-bold">用户列表</span>
+            <span class="text-13px color-[var(--el-text-color-secondary)]">
+              管理系统用户账号、角色分配与状态控制
+            </span>
+          </div>
+          <ElSpace>
+            <ElButton type="primary" size="small" @click="handleAddClick">
+              <template #icon>
+                <ElIcon>
+                  <Plus />
+                </ElIcon>
+              </template>
+              新增用户
+            </ElButton>
+            <ElButton type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
+              <template #icon>
+                <ElIcon>
+                  <Delete />
+                </ElIcon>
+              </template>
+              批量删除
+            </ElButton>
+          </ElSpace>
+        </div>
+      </template>
+
+      <!-- 搜索工具栏 -->
+      <ElSpace wrap class="mb-16px w-full">
+        <ElInput
+          v-model="searchParams.username"
+          placeholder="搜索用户名"
+          clearable
+          style="width: 200px"
+          @input="handleSearchInput"
+        >
+          <template #prefix>
             <ElIcon>
               <Search />
             </ElIcon>
-            搜索
-          </ElButton>
-        </div>
-      </div>
+          </template>
+        </ElInput>
+        <ElInput
+          v-model="searchParams.nickname"
+          placeholder="搜索昵称"
+          clearable
+          style="width: 200px"
+          @input="handleSearchInput"
+        >
+          <template #prefix>
+            <ElIcon>
+              <Search />
+            </ElIcon>
+          </template>
+        </ElInput>
+        <ElInput
+          v-model="searchParams.email"
+          placeholder="搜索邮箱"
+          clearable
+          style="width: 240px"
+          @input="handleSearchInput"
+        >
+          <template #prefix>
+            <ElIcon>
+              <Search />
+            </ElIcon>
+          </template>
+        </ElInput>
+        <ElButton @click="resetSearchParams">
+          <template #icon>
+            <ElIcon>
+              <Refresh />
+            </ElIcon>
+          </template>
+          重置
+        </ElButton>
+        <ElButton type="primary" @click="handleSearch">
+          <template #icon>
+            <ElIcon>
+              <Search />
+            </ElIcon>
+          </template>
+          搜索
+        </ElButton>
+      </ElSpace>
 
       <!-- 数据表格 -->
-      <div class="table-section">
-        <ElTable
-          v-loading="loading"
-          :data="data"
-          border
-          stripe
-          class="data-table"
-          row-key="id"
-          @selection-change="checkedRowKeys = $event"
-        >
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
+      <ElTable
+        v-loading="loading"
+        :data="data"
+        border
+        stripe
+        row-key="id"
+        @selection-change="checkedRowKeys = $event"
+      >
+        <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+      </ElTable>
 
       <!-- 分页 -->
-      <div class="table-pagination">
+      <div class="flex justify-end mt-16px">
         <ElPagination
           v-if="mobilePagination.total"
-          layout="total, sizes, prev, pager, next"
+          layout="total, sizes, prev, pager, next, jumper"
           v-bind="mobilePagination"
           @current-change="mobilePagination['current-change']"
           @size-change="mobilePagination['size-change']"
         />
       </div>
-    </div>
+    </ElCard>
 
     <!-- 抽屉和模态框 -->
     <UserOperateDrawer
@@ -398,7 +403,3 @@
     />
   </div>
 </template>
-
-<style scoped lang="scss">
-  @use './modules/user-page.scss';
-</style>

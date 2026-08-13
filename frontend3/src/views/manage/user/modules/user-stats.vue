@@ -1,36 +1,52 @@
 <script setup lang="ts">
-  defineProps<{
-    userStats: {
-      total: number;
-      active: number;
-      inactive: number;
-    };
+  import { computed } from 'vue';
+  import { User, CircleCheck, CircleClose } from '@element-plus/icons-vue';
+
+  interface UserStatsData {
+    total: number;
+    active: number;
+    inactive: number;
+  }
+
+  const props = defineProps<{
+    userStats: UserStatsData;
   }>();
+
+  const statsItems = computed(() => [
+    {
+      key: 'total',
+      value: props.userStats.total,
+      label: '用户总数',
+      icon: User,
+      color: 'var(--el-color-primary)'
+    },
+    {
+      key: 'active',
+      value: props.userStats.active,
+      label: '活跃用户',
+      icon: CircleCheck,
+      color: 'var(--el-color-success)'
+    },
+    {
+      key: 'inactive',
+      value: props.userStats.inactive,
+      label: '非活跃用户',
+      icon: CircleClose,
+      color: 'var(--el-color-info)'
+    }
+  ]);
 </script>
 
 <template>
   <ElRow :gutter="16">
-    <ElCol :span="8">
+    <ElCol v-for="item in statsItems" :key="item.key" :span="8">
       <ElCard shadow="hover">
-        <ElStatistic :value="userStats.total" title="用户总数" />
-      </ElCard>
-    </ElCol>
-    <ElCol :span="8">
-      <ElCard shadow="hover">
-        <ElStatistic :value="userStats.active" title="启用用户">
-          <template #suffix>
-            <ElTag type="success" size="small">活跃</ElTag>
-          </template>
-        </ElStatistic>
-      </ElCard>
-    </ElCol>
-    <ElCol :span="8">
-      <ElCard shadow="hover">
-        <ElStatistic :value="userStats.inactive" title="禁用用户">
-          <template #suffix>
-            <ElTag type="warning" size="small">停用</ElTag>
-          </template>
-        </ElStatistic>
+        <div class="flex items-center gap-16px">
+          <ElIcon :size="32" :color="item.color">
+            <component :is="item.icon" />
+          </ElIcon>
+          <ElStatistic :value="item.value" :title="item.label" />
+        </div>
       </ElCard>
     </ElCol>
   </ElRow>
