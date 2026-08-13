@@ -85,7 +85,11 @@ func (s *AuthService) GetUserInfo(userID uint) (*UserInfo, error) {
 
 	// 获取角色信息
 	roleStart := time.Now()
-	roles, err := NewRBACService().GetUserRoles(user.ID)
+	permSvc, err := GetPermissionService()
+	if err != nil {
+		return nil, err
+	}
+	roles, err := permSvc.GetUserRoles(user.ID)
 	logger.Debug("[登录调试-服务层] 角色信息获取完成",
 		zap.Duration("耗时", time.Since(roleStart)),
 		zap.Error(err),
@@ -104,9 +108,8 @@ func (s *AuthService) GetUserInfo(userID uint) (*UserInfo, error) {
 	logger.Debug("[登录调试-服务层] 开始构建菜单树和权限")
 
 	// 获取菜单树和权限
-	rbacService := NewRBACService()
 	menuStart := time.Now()
-	menuTree, permissions, _, err := rbacService.BuildMenuTreeAndPermissions(user.ID)
+	menuTree, permissions, _, err := permSvc.BuildMenuTreeAndPermissions(user.ID)
 	logger.Debug("[登录调试-服务层] 菜单树和权限构建完成",
 		zap.Duration("耗时", time.Since(menuStart)),
 		zap.Error(err),

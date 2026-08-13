@@ -1,6 +1,6 @@
 <script setup lang="tsx">
   import { computed, ref } from 'vue';
-  import { ElMessageBox, ElNotification } from 'element-plus';
+  import { ElMessage, ElMessageBox } from 'element-plus';
   import { jsonClone } from '@sa/utils';
   import { Menu as MenuIcon, Plus, Refresh, Search } from '@element-plus/icons-vue';
   import { fetchDeleteMenu, fetchGetMenuTree, fetchUpdateMenu } from '@/service/api';
@@ -31,7 +31,7 @@
   async function handleMove(row: Api.SystemManage.Menu, direction: 'up' | 'down') {
     const siblings = findSiblings(row.id, originalTreeData.value);
     if (!siblings || siblings.length < 2) {
-      ElNotification({ title: '提示', message: '无法移动：同级菜单不足', type: 'warning', duration: 3000 });
+      ElMessage.warning('无法移动：同级菜单不足');
       return;
     }
 
@@ -39,47 +39,37 @@
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
 
     if (targetIndex < 0 || targetIndex >= siblings.length) {
-      ElNotification({
-        title: '提示',
-        message: direction === 'up' ? '已经是第一个了' : '已经是最后一个了',
-        type: 'warning',
-        duration: 3000
-      });
+      ElMessage.warning(direction === 'up' ? '已经是第一个了' : '已经是最后一个了');
       return;
     }
 
     const targetRow = siblings[targetIndex];
 
     if (row.parentId !== targetRow.parentId) {
-      ElNotification({ title: '错误', message: '只能在同级菜单之间排序', type: 'error', duration: 3000 });
+      ElMessage.error('只能在同级菜单之间排序');
       return;
     }
 
-    try {
-      await Promise.all([
-        fetchUpdateMenu(row.id, { sort: targetRow.sort }),
-        fetchUpdateMenu(targetRow.id, { sort: row.sort })
-      ]);
-      ElNotification({ title: '成功', message: '排序更新成功', type: 'success', duration: 3000 });
-      await getData();
-      tableKey.value++;
-      await authStore.getUserInfo();
-      routeStore.rebuildRoutes();
-    } catch (error) {
-      ElNotification({ title: '错误', message: '排序更新失败', type: 'error', duration: 3000 });
-    }
+    await Promise.all([
+      fetchUpdateMenu(row.id, { sort: targetRow.sort }),
+      fetchUpdateMenu(targetRow.id, { sort: row.sort })
+    ]);
+    ElMessage.success('排序更新成功');
+    await getData();
+    tableKey.value++;
+    await authStore.getUserInfo();
+    routeStore.rebuildRoutes();
   }
 
   // 状态变更
   async function handleStatusChange(row: Api.SystemManage.Menu, val: number) {
     try {
       await fetchUpdateMenu(row.id, { status: val });
-      ElNotification({ title: '成功', message: `${val === 1 ? '启用' : '停用'}成功`, type: 'success', duration: 3000 });
+      ElMessage.success(`${val === 1 ? '启用' : '停用'}成功`);
       await getData();
       await authStore.getUserInfo();
       routeStore.rebuildRoutes();
     } catch (error) {
-      ElNotification({ title: '错误', message: '操作失败', type: 'error', duration: 3000 });
       row.status = val === 1 ? 0 : 1;
     }
   }
@@ -102,12 +92,10 @@
     });
     const { error } = await fetchDeleteMenu(id);
     if (!error) {
-      ElNotification({ title: '成功', message: '删除成功', type: 'success', duration: 3000 });
+      ElMessage.success('删除成功');
       onDeleted();
       await authStore.getUserInfo();
       routeStore.rebuildRoutes();
-    } else {
-      ElNotification({ title: '错误', message: error?.response?.data?.message || error?.message || '删除失败', type: 'error', duration: 3000 });
     }
   }
 

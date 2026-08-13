@@ -231,8 +231,6 @@
       window.$message?.success(isEdit.value ? $t('common.updateSuccess') : '添加成功');
       closeDrawer();
       emit('submitted');
-    } else {
-      window.$message?.error(isEdit.value ? '更新失败' : '添加失败');
     }
   }
 

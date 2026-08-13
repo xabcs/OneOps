@@ -223,11 +223,6 @@
       window.$message?.success(isEdit.value ? $t('common.updateSuccess') : '添加成功');
       closeDrawer();
       emit('submitted');
-    } else {
-      // 显示后端返回的具体错误信息
-      const backendMessage =
-        error?.response?.data?.message || error?.message || (isEdit.value ? '更新失败' : '添加失败');
-      window.$message?.error(backendMessage);
     }
   }
 

@@ -99,20 +99,17 @@ func (s *RouteGenService) GetUserRoutes(userID uint) ([]map[string]interface{}, 
 
 	logger.Info("[GetUserRoutes] 开始生成路由", zap.Uint("user_id", userID))
 
-	rbacService := NewRBACService()
-	menuTree, _, roles, err := rbacService.BuildMenuTreeAndPermissions(userID)
+	permSvc, err := GetPermissionService()
+	if err != nil {
+		return nil, err
+	}
+	menuTree, _, roles, err := permSvc.BuildMenuTreeAndPermissions(userID)
 	if err != nil {
 		return nil, err
 	}
 
 	// 检查是否是超级管理员
-	isSuper := false
-	for _, role := range roles {
-		if role.Code == "R_SUPER" || role.Code == "admin" {
-			isSuper = true
-			break
-		}
-	}
+	isSuper := permSvc.IsAdmin(roles)
 
 	// 将菜单转换为前端路由格式
 	routes := s.convertMenusToRoutes(menuTree, isSuper)
@@ -125,21 +122,22 @@ func (s *RouteGenService) GetUserRoutes(userID uint) ([]map[string]interface{}, 
 
 // IsRouteExist 检查路由是否存在于用户权限中
 func (s *RouteGenService) IsRouteExist(userID uint, routeName string) (bool, error) {
-	rbacService := NewRBACService()
+	permSvc, err := GetPermissionService()
+	if err != nil {
+		return false, err
+	}
 
 	// 检查是否为管理员
-	roles, err := rbacService.GetUserRoles(userID)
+	roles, err := permSvc.GetUserRoles(userID)
 	if err == nil {
-		for _, role := range roles {
-			if role.Code == "admin" {
-				// 管理员可以访问所有路由
-				return true, nil
-			}
+		if permSvc.IsAdmin(roles) {
+			// 管理员可以访问所有路由
+			return true, nil
 		}
 	}
 
 	// 获取用户权限列表
-	_, permissions, _, err := rbacService.BuildMenuTreeAndPermissions(userID)
+	_, permissions, _, err := permSvc.BuildMenuTreeAndPermissions(userID)
 	if err != nil {
 		return false, err
 	}
@@ -191,8 +189,11 @@ func (s *RouteGenService) InvalidateCache() error {
 
 // DebugCache 调试当前缓存内容
 func (s *RouteGenService) DebugCache(userID uint) (map[string]interface{}, error) {
-	rbacService := NewRBACService()
-	menuTree, permissions, roles, err := rbacService.BuildMenuTreeAndPermissions(userID)
+	permSvc, err := GetPermissionService()
+	if err != nil {
+		return nil, err
+	}
+	menuTree, permissions, roles, err := permSvc.BuildMenuTreeAndPermissions(userID)
 	if err != nil {
 		return nil, err
 	}

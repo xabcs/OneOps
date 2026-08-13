@@ -3,13 +3,16 @@ package system
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 
 	modelsystem "oneops/backend3/model/system"
 	"oneops/backend3/pkg/database"
+	"oneops/backend3/pkg/logger"
 
 	"github.com/casbin/casbin/v2"
 	gormadapter "github.com/casbin/gorm-adapter/v3"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -87,25 +90,14 @@ func NewPermissionService() (*PermissionService, error) {
 // HasPermission 检查用户是否拥有指定权限（统一的权限检查方法）
 // 权限代码格式：模块.资源.操作，例如 system.user.list
 func (s *PermissionService) HasPermission(userID uint, permissionCode string) (bool, error) {
-	// 获取用户信息
-	var user modelsystem.User
-	if err := s.db.First(&user, userID).Error; err != nil {
-		return false, err
-	}
-
-	// 超级管理员检查（admin用户名）
-	if user.Username == "admin" {
-		return true, nil
-	}
-
 	// 获取用户角色
-	roles, err := s.getUserRoles(userID)
+	roles, err := s.GetUserRoles(userID)
 	if err != nil {
 		return false, err
 	}
 
-	// 超级管理员角色检查
-	if s.isSuperAdmin(roles) {
+	// 超级管理员角色检查（统一通过角色码判断）
+	if s.IsAdmin(roles) {
 		return true, nil
 	}
 
@@ -159,13 +151,13 @@ func (s *PermissionService) HasAllPermissions(userID uint, permissionCodes []str
 // GetUserPermissions 获取用户的所有权限编码列表
 func (s *PermissionService) GetUserPermissions(userID uint) ([]string, error) {
 	// 获取用户角色
-	roles, err := s.getUserRoles(userID)
+	roles, err := s.GetUserRoles(userID)
 	if err != nil {
 		return nil, err
 	}
 
 	// 超级管理员返回所有权限
-	if s.isSuperAdmin(roles) {
+	if s.IsAdmin(roles) {
 		return s.getAllPermissionCodes(), nil
 	}
 
@@ -190,25 +182,31 @@ func (s *PermissionService) GetUserPermissions(userID uint) ([]string, error) {
 	return permissions, nil
 }
 
-// getUserRoles 获取用户角色
-func (s *PermissionService) getUserRoles(userID uint) ([]modelsystem.Role, error) {
+// GetUserRoles 获取用户角色列表（统一方法）
+func (s *PermissionService) GetUserRoles(userID uint) ([]*modelsystem.Role, error) {
 	var user modelsystem.User
 	if err := s.db.First(&user, userID).Error; err != nil {
 		return nil, err
 	}
 
-	var roles []modelsystem.Role
-	if err := s.db.Where("id IN ?", parseJSONIntArray(user.RoleIDs)).Find(&roles).Error; err != nil {
-		return nil, err
+	var roleIDs []uint
+	if err := json.Unmarshal([]byte(user.RoleIDs), &roleIDs); err != nil {
+		return []*modelsystem.Role{}, nil
 	}
 
+	var roles []*modelsystem.Role
+	if len(roleIDs) > 0 {
+		if err := s.db.Where("id IN ? AND status = 1", roleIDs).Find(&roles).Error; err != nil {
+			return nil, err
+		}
+	}
 	return roles, nil
 }
 
-// isSuperAdmin 检查是否为超级管理员
-func (s *PermissionService) isSuperAdmin(roles []modelsystem.Role) bool {
+// IsAdmin 检查是否为超级管理员（统一通过角色码 "admin" 判断）
+func (s *PermissionService) IsAdmin(roles []*modelsystem.Role) bool {
 	for _, role := range roles {
-		if role.Code == "admin" || role.Code == "super_admin" {
+		if role.Code == "admin" {
 			return true
 		}
 	}
@@ -653,24 +651,120 @@ func (s *PermissionService) InitializeCasbinPolicies() error {
 }
 
 // ======================================
-// 辅助方法
+// 菜单与路由构建（从 RBACService 合并）
 // ======================================
 
-// parseJSONIntArray 解析 JSON 整数数组
-func parseJSONIntArray(jsonStr string) []uint {
-	if jsonStr == "" || jsonStr == "[]" {
-		return []uint{}
+// BuildMenuTreeAndPermissions 构建菜单树和权限列表，同时返回角色
+func (s *PermissionService) BuildMenuTreeAndPermissions(userID uint) ([]*modelsystem.Menu, []string, []*modelsystem.Role, error) {
+	roles, err := s.GetUserRoles(userID)
+	if err != nil {
+		return nil, nil, nil, err
 	}
 
-	var result []uint
-	// 使用标准库解析 JSON
-	if err := json.Unmarshal([]byte(jsonStr), &result); err != nil {
-		// 如果解析失败，记录错误并返回空数组
-		return []uint{}
+	isAdmin := s.IsAdmin(roles)
+
+	// 获取所有菜单
+	var allMenus []*modelsystem.Menu
+	err = s.db.Where("status = 1").Order("sort ASC").Find(&allMenus).Error
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	menuIDs := make(map[uint]bool)
+	permissions := make([]string, 0)
+
+	if isAdmin {
+		// 管理员：拥有所有菜单和通配符权限
+		for _, menu := range allMenus {
+			menuIDs[menu.ID] = true
+		}
+		permissions = append(permissions, "*:*:*")
+	} else {
+		// 非管理员：从权限码推导菜单
+		// 1. 获取用户的所有权限码（从 role_permissions 表）
+		for _, role := range roles {
+			var rolePerms []modelsystem.RolePermission
+			s.db.Where("role_id = ?", role.ID).Preload("Permission").Find(&rolePerms)
+			for _, rp := range rolePerms {
+				if rp.Permission.Code != "" {
+					permissions = append(permissions, rp.Permission.Code)
+				}
+			}
+		}
+
+		// 2. 从权限码提取 resource 列表
+		allowedResources := make(map[string]bool)
+		for _, permCode := range permissions {
+			parts := strings.Split(permCode, ".")
+			if len(parts) >= 2 {
+				resource := parts[1]
+				allowedResources[resource] = true
+			}
+		}
+
+		// 3. 根据 resource 匹配菜单
+		for _, menu := range allMenus {
+			if menu.Resource != "" && allowedResources[menu.Resource] {
+				menuIDs[menu.ID] = true
+				// 标记父菜单
+				for _, m := range allMenus {
+					if m.ID == menu.ParentID {
+						menuIDs[m.ID] = true
+					}
+				}
+			}
+		}
+	}
+
+	// 构建菜单树
+	menuTree := s.buildMenuTree(allMenus, menuIDs, 0)
+
+	logger.Debug("[BuildMenuTreeAndPermissions]",
+		zap.Uint("user_id", userID),
+		zap.Bool("isAdmin", isAdmin),
+		zap.Int("menu_count", len(menuTree)),
+		zap.Int("permission_count", len(permissions)))
+
+	return menuTree, permissions, roles, nil
+}
+
+// buildMenuTree 递归构建菜单树
+func (s *PermissionService) buildMenuTree(allMenus []*modelsystem.Menu, menuIDs map[uint]bool, parentID uint) []*modelsystem.Menu {
+	var result []*modelsystem.Menu
+
+	for _, menu := range allMenus {
+		if _, hasPermission := menuIDs[menu.ID]; !hasPermission {
+			continue
+		}
+
+		if menu.ParentID == parentID {
+			menuItem := &modelsystem.Menu{
+				ID:         menu.ID,
+				Name:       menu.Name,
+				Icon:       menu.Icon,
+				Path:       menu.Path,
+				Permission: menu.Permission,
+				MenuType:   menu.MenuType,
+				ParentID:   menu.ParentID,
+				Sort:       menu.Sort,
+				Status:     menu.Status,
+			}
+
+			children := s.buildMenuTree(allMenus, menuIDs, menu.ID)
+			if len(children) > 0 {
+				menuItem.Children = children
+			}
+
+			result = append(result, menuItem)
+		}
 	}
 
 	return result
 }
+
+// ======================================
+// 辅助方法
+// ======================================
 
 // LogPermissionOperation 记录权限操作日志
 func (s *PermissionService) LogPermissionOperation(userID uint, permissionCode string, action string, result bool, ipAddress string, userAgent string) error {

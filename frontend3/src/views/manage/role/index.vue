@@ -1,6 +1,6 @@
 <script setup lang="tsx">
   import { computed, onUnmounted, ref } from 'vue';
-  import { ElMessageBox, ElNotification } from 'element-plus';
+  import { ElMessage, ElMessageBox, ElNotification } from 'element-plus';
   import { useBoolean } from '@sa/hooks';
   import { Delete, Management, Plus, Refresh, Search } from '@element-plus/icons-vue';
   import { fetchDeleteRole, fetchGetRoleList, fetchUpdateRole } from '@/service/api';
@@ -151,22 +151,8 @@
       const { error } = await fetchDeleteRole(id);
 
       if (!error) {
-        ElNotification({
-          title: '删除成功',
-          message: `角色 "${role.name}" 已成功删除`,
-          type: 'success',
-          duration: 3000,
-          position: 'top-right'
-        });
+        ElMessage.success(`角色 "${role.name}" 已成功删除`);
         onDeleted();
-      } else {
-        ElNotification({
-          title: '删除失败',
-          message: error?.response?.data?.message || error?.message || '删除角色失败',
-          type: 'error',
-          duration: 3000,
-          position: 'top-right'
-        });
       }
     });
   }
@@ -179,7 +165,6 @@
         window.$message?.success(`${val === 1 ? '启用' : '禁用'}成功`);
       } else {
         row.status = val === 1 ? 0 : 1;
-        window.$message?.error('状态更新失败');
       }
     });
   }

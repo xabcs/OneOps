@@ -350,12 +350,9 @@
           position: 'top-right'
         });
         closeModal();
-      } else {
-        ElMessage.error(error?.response?.data?.message || error?.message || '分配失败');
       }
     } catch (err) {
       loading.value = false;
-      ElMessage.error('分配失败');
       console.error('❌ 权限分配失败:', err);
     }
   }

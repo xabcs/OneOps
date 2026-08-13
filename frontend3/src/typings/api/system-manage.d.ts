@@ -241,6 +241,10 @@ declare namespace Api {
       sortOrder: number;
       /** 状态 */
       status: number;
+      /** 路由方法 (GET/POST/PUT/DELETE) */
+      routeMethod?: string;
+      /** 路由路径 */
+      routePath?: string;
       /** 子权限 */
       children?: Permission[] | null;
     }>;

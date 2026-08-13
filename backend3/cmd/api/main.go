@@ -121,6 +121,13 @@ func main() {
 	// 13. 注册路由
 	routes.SetupRoutes(r)
 
+	// 13.1 从 Gin 已注册的路由自动同步权限路由映射
+	if err := syssvc.SyncRoutePermissions(r); err != nil {
+		logger.Warn("路由权限同步失败", zap.Error(err))
+	} else {
+		logger.Info("路由权限同步完成")
+	}
+
 	// 注册 Swagger UI（仅在非生产环境开放）
 	if cfg.App.Environment != "production" {
 		routes.SetupSwagger(r)

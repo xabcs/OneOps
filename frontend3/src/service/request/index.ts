@@ -59,6 +59,7 @@ export const request = createFlatRequest(
         // 创建一个符合 axios 错误格式的对象
         const businessError = {
           response,
+          config: response.config,
           code: 'BACKEND_ERROR_CODE',
           message: response.data.message
         };
@@ -112,15 +113,15 @@ export const request = createFlatRequest(
       return null;
     },
     onError(error) {
-      // when the request is fail, you can show error message
+      // 优先使用后端返回的错误消息（HTTP 错误和业务错误统一提取）
+      const backendData = error.response?.data as { message?: string; code?: string } | undefined;
+      if (backendData?.message) {
+        error.message = backendData.message;
+      }
 
-      let message = error.message;
       let backendErrorCode = '';
-
-      // get backend error message and code
       if (error.code === BACKEND_ERROR_CODE) {
-        message = error.response?.data?.message || message;
-        backendErrorCode = String(error.response?.data?.code || '');
+        backendErrorCode = String(backendData?.code || '');
       }
 
       // 处理 HTTP 401 认证过期错误
@@ -128,7 +129,6 @@ export const request = createFlatRequest(
         const authStore = useAuthStore();
         authStore.resetStore();
         window.$message?.error('认证令牌已过期，请重新登录');
-        // 跳转到登录页
         window.location.href = '/login';
         return;
       }
@@ -145,9 +145,14 @@ export const request = createFlatRequest(
         return;
       }
 
-      // 业务错误（4xxxx）已经在 onBackendFail 中处理并抛出，这里不需要再处理
-      // 只处理其他类型的错误
-      showErrorMsg(request.state, message);
+      // 如果请求标记了 silent，不弹窗，交给页面自行处理
+      const isSilent = (error.config as { silent?: boolean } | undefined)?.silent;
+      if (isSilent) {
+        return;
+      }
+
+      // 默认：全局自动弹窗（兜底，确保用户总能看到错误反馈）
+      showErrorMsg(request.state, error.message);
     }
   }
 );

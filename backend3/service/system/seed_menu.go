@@ -121,6 +121,7 @@ func (i *Initializer) syncMenus() error {
 		{ID: 70, Name: "用户管理", Icon: "mdi:account-multiple", Path: "/manage/user", Permission: "system.user.view", MenuType: "menu", Sort: 1, Status: 1, ParentID: 6},
 		{ID: 71, Name: "角色管理", Icon: "mdi:shield-account", Path: "/manage/role", Permission: "system.role.view", MenuType: "menu", Sort: 2, Status: 1, ParentID: 6},
 		{ID: 72, Name: "菜单管理", Icon: "mdi:menu", Path: "/manage/menu", Permission: "system.menu.view", MenuType: "menu", Sort: 3, Status: 1, ParentID: 6},
+		{ID: 73, Name: "权限管理", Icon: "mdi:shield-key", Path: "/manage/permission", Permission: "system.permission.list", MenuType: "menu", Sort: 4, Status: 1, ParentID: 6},
 	}
 
 	addedCount := 0
@@ -172,6 +173,7 @@ func (i *Initializer) syncMenus() error {
 		{"/manage/user", "user"},
 		{"/manage/role", "role"},
 		{"/manage/menu", "menu"},
+		{"/manage/permission", "permission"},
 		{"/cmdb/servers", "server"},
 		{"/cmdb/business", "business"},
 		{"/cmdb/config/rooms", "rooms"},

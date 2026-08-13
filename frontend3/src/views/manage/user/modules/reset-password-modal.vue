@@ -75,8 +75,6 @@
       window.$message?.success('密码重置成功');
       closeModal();
       emit('submitted');
-    } else {
-      window.$message?.error('密码重置失败');
     }
   }
 

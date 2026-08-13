@@ -165,8 +165,6 @@
           onDeleted();
           await getAllRoles();
           await updateUserStats();
-        } else {
-          window.$message?.error(error?.response?.data?.message || error?.message || '删除失败');
         }
       },
       { type: 'error' }
