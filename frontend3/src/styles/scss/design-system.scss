@@ -300,26 +300,26 @@
 
 /* ========== 深色模式适配 ========== */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --oneops-light-white: #1e293b;
-    --oneops-light-bg-1: #0f172a;
-    --oneops-light-bg-2: #1e293b;
-    --oneops-light-bg-3: #334155;
-    --oneops-light-bg-4: #475569;
+html.dark:root {
+    --oneops-light-white: #1c1c1c;
+    --oneops-light-bg-1: #121212;
+    --oneops-light-bg-2: #1c1c1c;
+    --oneops-light-bg-3: #2a2a2a;
+    --oneops-light-bg-4: #3a3a3a;
 
-    --oneops-text-primary: #f1f5f9;
-    --oneops-text-secondary: #cbd5e1;
-    --oneops-text-muted: #94a3b8;
+    --oneops-text-primary: #e0e0e0;
+    --oneops-text-secondary: #a0a0a0;
+    --oneops-text-muted: #707070;
   }
 
+html.dark {
   .gradient-card-diagonal {
-    background: linear-gradient(135deg, #1e293b, #0f172a);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, #1c1c1c, #121212);
+    border-color: rgba(255, 255, 255, 0.08);
   }
 
   .gradient-header {
-    background: linear-gradient(180deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.94));
-    border-color: rgba(255, 255, 255, 0.1);
+    background: linear-gradient(180deg, rgba(28, 28, 28, 0.98), rgba(18, 18, 18, 0.94));
+    border-color: rgba(255, 255, 255, 0.08);
   }
 }

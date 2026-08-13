@@ -328,65 +328,65 @@
 }
 
 /* ========== 深色模式适配 ========== */
-@media (prefers-color-scheme: dark) {
+html.dark {
   .global-sider-enhanced {
-    background: linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
-    border-right-color: rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.3) !important;
+    background: linear-gradient(180deg, rgba(28, 28, 28, 0.98) 0%, rgba(18, 18, 18, 0.95) 100%);
+    border-right-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.3);
   }
 
   .global-sider-enhanced .global-logo {
-    background: linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+    background: linear-gradient(180deg, rgba(28, 28, 28, 0.98) 0%, rgba(18, 18, 18, 0.95) 100%);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
   }
 
   .global-sider-enhanced :deep(.el-menu-item),
   .global-sider-enhanced :deep(.el-sub-menu__title) {
-    color: #94a3b8 !important;
+    color: #a0a0a0;
   }
 
   .global-sider-enhanced :deep(.el-menu-item:hover),
   .global-sider-enhanced :deep(.el-sub-menu__title:hover) {
-    color: #cbd5e1 !important;
-    border-color: rgba(255, 255, 255, 0.1);
+    color: #e0e0e0;
+    border-color: rgba(255, 255, 255, 0.08);
   }
 
   .global-sider-enhanced :deep(.el-menu-item.is-active) {
-    color: #60a5fa !important;
-    border-color: transparent !important;
+    color: var(--primary);
+    border-color: transparent;
   }
 
   .global-sider-enhanced :deep(.el-menu-item.is-active::before) {
-    background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, transparent 100%) !important;
+    background: linear-gradient(90deg, rgba(129, 140, 248, 0.15) 0%, transparent 100%);
   }
 
   .global-sider-enhanced :deep(.el-menu-item .el-icon),
   .global-sider-enhanced :deep(.el-sub-menu__title .el-icon) {
-    color: #64748b;
+    color: #707070;
   }
 
   .global-sider-enhanced :deep(.el-menu-item.is-active .el-icon),
   .global-sider-enhanced :deep(.el-sub-menu.is-opened > .el-sub-menu__title .el-icon) {
-    color: #60a5fa;
+    color: var(--primary);
   }
 
   .global-sider-enhanced :deep(.el-sub-menu.is-opened > .el-sub-menu__title) {
-    background: rgba(30, 41, 59, 0.72) !important;
-    color: #cbd5e1 !important;
+    background: rgba(28, 28, 28, 0.72);
+    color: #e0e0e0;
   }
 
   .global-sider-enhanced :deep(.el-sub-menu__popup) {
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98)) !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+    background: linear-gradient(135deg, rgba(28, 28, 28, 0.95), rgba(18, 18, 18, 0.98));
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   }
 
   .global-sider-enhanced :deep(.simplebar-scrollbar) {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.2) 100%) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.16) 100%);
   }
 
   .global-sider-enhanced :deep(.simplebar-scrollbar:hover) {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.25) 100%) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.2) 100%);
   }
 }
 

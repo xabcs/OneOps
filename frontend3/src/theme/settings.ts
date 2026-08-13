@@ -281,10 +281,10 @@ export const themeSettings: App.Theme.ThemeSetting = {
     },
     dark: {
       colors: {
-        container: 'rgb(30, 41, 59)',
-        layout: 'rgb(15, 23, 42)',
-        'base-text': 'rgb(226, 232, 240)',
-        'sider-custom': 'rgb(30, 41, 59)'
+        container: 'rgb(28, 28, 28)',
+        layout: 'rgb(18, 18, 18)',
+        'base-text': 'rgb(224, 224, 224)',
+        'sider-custom': 'rgb(28, 28, 28)'
       }
     }
   }

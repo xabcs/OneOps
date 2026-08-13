@@ -37,34 +37,32 @@ html.dark:root,
   }
 }
 
-/* 深色模式菜单样式增强 */
+/* 深色模式菜单样式 - 通过 CSS 变量覆盖，不使用 !important */
 html.dark .el-menu,
 .bg-inverted .el-menu {
-  --el-menu-bg-color: transparent !important;
-  --el-menu-text-color: rgba(255, 255, 255, 0.85) !important;
-  --el-menu-hover-bg-color: rgba(255, 255, 255, 0.08) !important;
-  --el-menu-active-color: var(--el-color-primary) !important;
+  --el-menu-bg-color: transparent;
+  --el-menu-text-color: rgba(255, 255, 255, 0.85);
+  --el-menu-hover-bg-color: rgba(255, 255, 255, 0.08);
+  --el-menu-active-color: var(--el-color-primary);
 }
 
 html.dark .el-menu-item,
 html.dark .el-sub-menu__title,
 .bg-inverted .el-menu-item,
 .bg-inverted .el-sub-menu__title {
-  color: rgba(255, 255, 255, 0.85) !important;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 html.dark .el-menu-item:hover,
 html.dark .el-sub-menu__title:hover,
 .bg-inverted .el-menu-item:hover,
 .bg-inverted .el-sub-menu__title:hover {
-  color: #ffffff !important;
-  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff;
 }
 
 html.dark .el-menu-item.is-active,
 .bg-inverted .el-menu-item.is-active {
-  color: var(--el-color-primary) !important;
-  background-color: rgba(var(--primary-color), 0.1) !important;
+  color: var(--el-color-primary);
 }
 
 :focus-visible {
@@ -121,38 +119,38 @@ html.dark .el-menu-item.is-active,
 
 html .el-collapse {
   --el-collapse-header-font-size: 16px;
-  --el-collapse-header-text-color: #475569; /* 使用深灰色，不使用主色 */
+  --el-collapse-header-text-color: #475569;
   --el-collapse-header-background-color: transparent;
-  --el-collapse-border-color: transparent; /* 边框透明 */
-  background-color: transparent; /* 无背景色 */
+  --el-collapse-border-color: transparent;
+  background-color: transparent;
   border: none;
   .el-collapse-item__header {
     border: none;
-    color: #475569 !important; /* 强制使用深灰色 */
-    background-color: transparent !important; /* 无背景色 */
+    color: #475569;
+    background-color: transparent;
   }
   .el-collapse-item__header:hover {
-    color: #334155 !important; /* 悬停时颜色稍深 */
-    background-color: transparent !important; /* 悬停时无背景色 */
+    color: #334155;
+    background-color: transparent;
   }
   .el-collapse-item__header.is-active {
-    border: none !important; /* 激活状态无边框 */
+    border: none;
   }
   .el-collapse-item__header.focusing {
-    border: none !important; /* 聚焦状态无边框 */
-    outline: none !important; /* 移除外边框 */
+    border: none;
+    outline: none;
   }
   .el-collapse-item__arrow {
-    color: #94a3b8 !important; /* 箭头使用灰色 */
+    color: #94a3b8;
   }
   .el-collapse-item__wrap {
     border: none;
-    background-color: transparent !important; /* 无背景色 */
+    background-color: transparent;
   }
   .el-collapse-item__content {
     padding-bottom: 0;
-    background-color: transparent !important; /* 无背景色 */
-    border: none !important; /* 无边框 */
+    background-color: transparent;
+    border: none;
   }
 }
 
