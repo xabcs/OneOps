@@ -17,6 +17,7 @@ import (
 	modelcmdb "oneops/backend3/model/cmdb"
 	"oneops/backend3/pkg/database"
 	"oneops/backend3/pkg/logger"
+	"oneops/backend3/pkg/utils"
 	repocmdb "oneops/backend3/repository/cmdb"
 
 	"go.uber.org/zap"
@@ -460,7 +461,29 @@ func (s *AgentService) loadServerForAgent(serverID uint) (*modelcmdb.Server, err
 		return nil, fmt.Errorf("主机未配置系统运维凭证，请先在主机编辑页配置")
 	}
 
-	server.SSHCredential = server.SystemCredential
+	// 解密凭证密码
+	cred := server.SystemCredential
+	if cred.Password != "" {
+		if decrypted, err := utils.DecryptString(cred.Password); err == nil {
+			cred.Password = decrypted
+		} else {
+			logger.Warn("系统凭证密码解密失败", zap.Uint("credential_id", cred.ID), zap.Error(err))
+		}
+	}
+	if cred.PrivateKey != "" {
+		if decrypted, err := utils.DecryptString(cred.PrivateKey); err == nil {
+			cred.PrivateKey = decrypted
+		} else {
+			logger.Warn("系统凭证私钥解密失败", zap.Uint("credential_id", cred.ID), zap.Error(err))
+		}
+	}
+	if cred.Passphrase != "" {
+		if decrypted, err := utils.DecryptString(cred.Passphrase); err == nil {
+			cred.Passphrase = decrypted
+		}
+	}
+
+	server.SSHCredential = cred
 	return server, nil
 }
 

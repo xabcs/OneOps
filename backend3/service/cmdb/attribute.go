@@ -53,7 +53,7 @@ func (s *AttributeService) CreateAttributeDefinition(attr *modelsystem.Attribute
 		return fmt.Errorf("无效的属性分类: %s", attr.Category)
 	}
 
-	if (attr.Type == modelsystem.AttrTypeSelect || attr.Type == modelsystem.AttrTypeMultiselect) && attr.Options == "" {
+	if attr.Type == modelsystem.AttrTypeSelect && attr.Options == "" {
 		return fmt.Errorf("%s 类型必须配置选项", attr.Type)
 	}
 
@@ -107,7 +107,11 @@ func (s *AttributeService) ValidateAttributeValue(attrID uint, value string) err
 	if err != nil {
 		return err
 	}
+	return s.validateAttributeValueByDef(attr, value)
+}
 
+// validateAttributeValueByDef 根据属性定义验证值
+func (s *AttributeService) validateAttributeValueByDef(attr *modelsystem.AttributeDefinition, value string) error {
 	if attr.Required && strings.TrimSpace(value) == "" {
 		return fmt.Errorf("%s 不能为空", attr.Name)
 	}
@@ -125,7 +129,7 @@ func (s *AttributeService) ValidateAttributeValue(attrID uint, value string) err
 		if value != "true" && value != "false" {
 			return fmt.Errorf("%s 必须是 true 或 false", attr.Name)
 		}
-	case modelsystem.AttrTypeSelect, modelsystem.AttrTypeMultiselect:
+	case modelsystem.AttrTypeSelect:
 		valid := false
 		options := parseAttributeOptions(attr.Options)
 		for _, opt := range options {
@@ -150,10 +154,18 @@ func (s *AttributeService) GetServerAttributes(serverID uint) ([]modelcmdb.Serve
 // SaveServerAttributes 保存主机属性
 func (s *AttributeService) SaveServerAttributes(serverID uint, attributes []modelcmdb.ServerAttribute) error {
 	for i := range attributes {
-		if def, err := s.repo.FindAttributeDefinitionByID(attributes[i].AttributeID); err == nil {
-			attributes[i].Category = def.Category
-			attributes[i].ValueType = getValueType(def.Type)
+		def, err := s.repo.FindAttributeDefinitionByID(attributes[i].AttributeID)
+		if err != nil {
+			return fmt.Errorf("属性ID %d 不存在", attributes[i].AttributeID)
 		}
+
+		// 验证属性值
+		if err := s.validateAttributeValueByDef(def, attributes[i].AttributeValue); err != nil {
+			return err
+		}
+
+		attributes[i].Category = def.Category
+		attributes[i].ValueType = getValueType(def.Type)
 	}
 
 	return s.repo.SaveServerAttributes(serverID, attributes)
@@ -170,9 +182,7 @@ func isValidAttributeType(attrType string) bool {
 	validTypes := []string{
 		modelsystem.AttrTypeText,
 		modelsystem.AttrTypeSelect,
-		modelsystem.AttrTypeMultiselect,
 		modelsystem.AttrTypeNumber,
-		modelsystem.AttrTypeDate,
 		modelsystem.AttrTypeBoolean,
 	}
 	for _, t := range validTypes {
@@ -217,8 +227,6 @@ func getValueType(attrType string) string {
 		return "number"
 	case modelsystem.AttrTypeBoolean:
 		return "boolean"
-	case modelsystem.AttrTypeDate:
-		return "date"
 	default:
 		return "string"
 	}

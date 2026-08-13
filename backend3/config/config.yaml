@@ -14,7 +14,7 @@ database:
   port: "38089"
   user: "root"
   password: "123456"
-  dbname: "oneops"
+  dbname: "oneops2"
   max_idle_conns: 10
   max_open_conns: 100
   log_level: "warn"

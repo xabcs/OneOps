@@ -9,7 +9,7 @@
 import { reactive, ref } from 'vue';
 import { ElNotification } from 'element-plus';
 import type { FormRules } from 'element-plus';
-import { fetchAssignServerToGroups, fetchCreateServer, fetchUpdateServer } from '@/service/api';
+import { fetchAssignServerToGroups, fetchCreateServer, fetchUpdateServer, fetchAssignServerTag, fetchRemoveServerTag } from '@/service/api';
 
 export function useServerForm() {
   // ===== 对话框状态 =====
@@ -22,6 +22,9 @@ export function useServerForm() {
   // 编辑抽屉
   const editDrawerVisible = ref(false);
   const editDrawerActiveTab = ref('basic');
+
+  // 旧标签 ID 缓存（用于编辑时计算标签差异）
+  const oldTagIdsCache: number[] = [];
 
   // 主机表单
   const serverForm = reactive<
@@ -39,7 +42,6 @@ export function useServerForm() {
     cabinetId: undefined,
     sshPort: 22,
     remarks: '',
-    env: 'test' as CMDB.ServerEnv,
     cpu: 0,
     memory: 0,
     disk: 0,
@@ -118,7 +120,6 @@ export function useServerForm() {
       cabinetId: undefined,
       sshPort: 22,
       remarks: '',
-      env: 'test' as CMDB.ServerEnv,
       cpu: 0,
       memory: 0,
       disk: 0,
@@ -146,6 +147,11 @@ export function useServerForm() {
     editDrawerActiveTab.value = 'basic';
 
     const groupIds = row.groups?.map(g => g.id) || [];
+    const tagIds = row.tags?.map(t => t.id) || [];
+
+    // 缓存旧标签 ID，用于保存时计算差异
+    oldTagIdsCache.length = 0;
+    oldTagIdsCache.push(...tagIds);
 
     Object.assign(serverForm, {
       id: row.id,
@@ -163,7 +169,6 @@ export function useServerForm() {
       cabinetId: row.cabinetId,
       sshPort: row.sshPort,
       remarks: row.remarks,
-      env: row.env || 'test',
       cpu: row.cpu || 0,
       memory: row.memory || 0,
       disk: row.disk || 0,
@@ -202,6 +207,7 @@ export function useServerForm() {
 
     try {
       const groupIds = (serverForm.groupIds || []).map((id: number) => Number(id));
+      const tagIds = (serverForm.tagIds || []).map((id: number) => Number(id));
 
       const formData: CMDB.ServerForm = {
         ...serverForm,
@@ -219,15 +225,26 @@ export function useServerForm() {
       let savedServerId: number;
 
       if (serverForm.id) {
+        // 编辑：先获取当前标签，计算差异
         await fetchUpdateServer(serverForm.id, formData);
         savedServerId = serverForm.id;
         await saveAttributeFn(serverForm.id);
+
+        // 同步标签
+        await syncServerTags(serverForm.id, tagIds);
+
         ElNotification.success('更新成功');
       } else {
         const result = await fetchCreateServer(formData);
         const newServerId = result.data?.id;
         savedServerId = newServerId!;
         if (newServerId) await saveAttributeFn(newServerId);
+
+        // 新增：分配标签
+        for (const tagId of tagIds) {
+          await fetchAssignServerTag(savedServerId, tagId);
+        }
+
         ElNotification.success('创建成功');
       }
 
@@ -241,6 +258,29 @@ export function useServerForm() {
     } catch (error: unknown) {
       handleSaveError(error);
       return false;
+    }
+  }
+
+  /** 同步主机标签：计算新旧差异，增量分配/移除 */
+  async function syncServerTags(serverId: number, newTagIds: number[]) {
+    // 获取当前标签列表（从 serverForm 编辑前的值，或从 API 获取）
+    // 编辑时 openEditDrawer 已回填 tagIds，但用户可能修改了
+    // 这里通过对比 row.tags 和新 tagIds 来计算差异
+    // 由于当前作用域无法直接访问原 row，使用简单策略：先移除全部再重新分配
+    // 但更高效的方式是传旧标签进来，这里采用直接 diff 的方式
+    // 简化实现：直接全量同步
+    // 注意：fetchRemoveServerTag 需要逐个调用
+    // 此处依赖外部传入旧标签，如果没有则跳过移除逻辑
+    // 实际实现：在 openEditDrawer 时保存旧标签 ID
+    for (const tagId of newTagIds) {
+      await fetchAssignServerTag(serverId, tagId);
+    }
+    // 移除不再选中的标签
+    if (oldTagIdsCache.length > 0) {
+      const toRemove = oldTagIdsCache.filter(id => !newTagIds.includes(id));
+      for (const tagId of toRemove) {
+        await fetchRemoveServerTag(serverId, tagId);
+      }
     }
   }
 

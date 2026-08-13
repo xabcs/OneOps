@@ -1,6 +1,7 @@
 package cmdb
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -10,6 +11,7 @@ import (
 	modelsystem "oneops/backend3/model/system"
 	"oneops/backend3/pkg/dto"
 	"oneops/backend3/pkg/utils"
+	syssvc "oneops/backend3/service/system"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,7 +36,7 @@ func NewAttributeController(svc *AttributeService) *AttributeController {
 // @Param        category  query  string  false  "属性分类"
 // @Success      200  {object}  utils.Response  "属性定义列表"
 // @Failure      200  {object}  utils.Response  "获取属性列表失败"
-// @Router       /system/attributes [get]
+// @Router       /cmdb/attributes [get]
 // @Security     BearerAuth
 func (c *AttributeController) GetAttributeDefinitions(ctx *gin.Context) {
 	category := ctx.Query("category")
@@ -56,7 +58,7 @@ func (c *AttributeController) GetAttributeDefinitions(ctx *gin.Context) {
 // @Param        id  path  int  true  "属性 ID"
 // @Success      200  {object}  utils.Response{data=modelsystem.AttributeDefinition}
 // @Failure      200  {object}  utils.Response  "无效的 ID / 属性不存在"
-// @Router       /system/attributes/{id} [get]
+// @Router       /cmdb/attributes/{id} [get]
 // @Security     BearerAuth
 func (c *AttributeController) GetAttributeDefinitionByID(ctx *gin.Context) {
 	idStr := ctx.Param("id")
@@ -84,7 +86,7 @@ func (c *AttributeController) GetAttributeDefinitionByID(ctx *gin.Context) {
 // @Param        attr  body      modelsystem.AttributeDefinition  true  "属性定义信息"
 // @Success      200   {object}  utils.Response  "属性创建成功"
 // @Failure      200   {object}  utils.Response  "请求参数错误 / 无权限 / 创建失败"
-// @Router       /system/attributes [post]
+// @Router       /cmdb/attributes [post]
 // @Security     BearerAuth
 func (c *AttributeController) CreateAttributeDefinition(ctx *gin.Context) {
 	var attr modelsystem.AttributeDefinition
@@ -117,7 +119,7 @@ func (c *AttributeController) CreateAttributeDefinition(ctx *gin.Context) {
 // @Param        attr  body      modelsystem.AttributeDefinition  true  "需要更新的字段"
 // @Success      200   {object}  utils.Response  "属性更新成功"
 // @Failure      200   {object}  utils.Response  "无效的 ID / 请求参数错误 / 无权限 / 更新失败"
-// @Router       /system/attributes/{id} [put]
+// @Router       /cmdb/attributes/{id} [put]
 // @Security     BearerAuth
 func (c *AttributeController) UpdateAttributeDefinition(ctx *gin.Context) {
 	idStr := ctx.Param("id")
@@ -155,7 +157,7 @@ func (c *AttributeController) UpdateAttributeDefinition(ctx *gin.Context) {
 // @Param        id  path  int  true  "属性 ID"
 // @Success      200  {object}  utils.Response  "属性删除成功"
 // @Failure      200  {object}  utils.Response  "无效的 ID / 无权限 / 删除失败"
-// @Router       /system/attributes/{id} [delete]
+// @Router       /cmdb/attributes/{id} [delete]
 // @Security     BearerAuth
 func (c *AttributeController) DeleteAttributeDefinition(ctx *gin.Context) {
 	idStr := ctx.Param("id")
@@ -187,7 +189,7 @@ func (c *AttributeController) DeleteAttributeDefinition(ctx *gin.Context) {
 // @Param        serverId  path  int  true  "主机 ID"
 // @Success      200  {object}  utils.Response  "主机属性列表"
 // @Failure      200  {object}  utils.Response  "无效的主机 ID / 获取主机属性失败"
-// @Router       /system/server-attributes/{serverId} [get]
+// @Router       /cmdb/server-attributes/{serverId} [get]
 // @Security     BearerAuth
 func (c *AttributeController) GetServerAttributes(ctx *gin.Context) {
 	serverIDStr := ctx.Param("serverId")
@@ -206,7 +208,17 @@ func (c *AttributeController) GetServerAttributes(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(attributes))
 }
 
-// ValidateServerAttribute 验证主机属性值
+// ValidateServerAttribute godoc
+// @Summary      验证主机属性值
+// @Description  验证给定属性 ID 的值是否符合属性定义的规则
+// @Tags         CMDB-属性
+// @Accept       json
+// @Produce      json
+// @Param        body  body      object  true  "验证请求"
+// @Success      200   {object}  utils.Response  "验证通过"
+// @Failure      200   {object}  utils.Response  "验证失败"
+// @Router       /cmdb/attributes/validate [post]
+// @Security     BearerAuth
 func (c *AttributeController) ValidateServerAttribute(ctx *gin.Context) {
 	var req struct {
 		AttributeID uint   `json:"attributeId" binding:"required"`
@@ -236,7 +248,7 @@ func (c *AttributeController) ValidateServerAttribute(ctx *gin.Context) {
 // @Param        attributes  body      []modelcmdb.ServerAttribute    true  "属性列表"
 // @Success      200         {object}  utils.Response  "属性保存成功"
 // @Failure      200         {object}  utils.Response  "无效的主机 ID / 请求参数错误 / 保存失败"
-// @Router       /system/server-attributes/{serverId} [post]
+// @Router       /cmdb/server-attributes/{serverId} [post]
 // @Security     BearerAuth
 func (c *AttributeController) SaveServerAttributes(ctx *gin.Context) {
 	serverIDStr := ctx.Param("serverId")
@@ -260,11 +272,66 @@ func (c *AttributeController) SaveServerAttributes(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("属性保存成功"))
 }
 
-// isAdmin 检查是否是管理员
+// isAdmin 检查当前用户是否拥有管理员权限（通过统一的权限服务判断）
 func (c *AttributeController) isAdmin(ctx *gin.Context) bool {
-	// 从上下文获取用户信息
-	user := ctx.GetString("username")
-	// TODO: 实现真正的权限检查
-	// 现在简单处理：admin用户是管理员
-	return user == "admin"
+	userID, ok := utils.GetUserIDFromContext(ctx)
+	if !ok {
+		return false
+	}
+	permSvc, err := syssvc.GetPermissionService()
+	if err != nil {
+		return false
+	}
+	allowed, err := permSvc.HasPermission(userID, "cmdb.attribute.update")
+	if err != nil {
+		return false
+	}
+	return allowed
+}
+
+// GetServersByAttributes godoc
+// @Summary      按属性筛选主机
+// @Description  根据属性键值对筛选主机列表
+// @Tags         CMDB-属性
+// @Produce      json
+// @Param        filters   query  string  false  "属性筛选条件（JSON 格式，如 {\"env\":\"prod\"}）"
+// @Param        page      query  int     false  "页码"  default(1)
+// @Param        pageSize  query  int     false  "每页数量"  default(20)
+// @Success      200  {object}  utils.Response  "主机列表"
+// @Router       /cmdb/servers-by-attributes [get]
+// @Security     BearerAuth
+func (c *AttributeController) GetServersByAttributes(ctx *gin.Context) {
+	filtersStr := ctx.Query("filters")
+	if filtersStr == "" {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("filters 参数不能为空"))
+		return
+	}
+
+	filters := make(map[string]string)
+	if err := json.Unmarshal([]byte(filtersStr), &filters); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("filters 参数格式错误"))
+		return
+	}
+
+	page, _ := strconv.Atoi(ctx.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(ctx.DefaultQuery("pageSize", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	servers, total, err := c.svc.GetServersByAttributes(filters, page, pageSize)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("按属性筛选主机失败"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(map[string]interface{}{
+		"list":     servers,
+		"total":    total,
+		"page":     page,
+		"pageSize": pageSize,
+	}))
 }

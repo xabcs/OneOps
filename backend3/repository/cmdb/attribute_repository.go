@@ -116,13 +116,13 @@ func (r *AttributeRepository) FindServerAttributes(serverID uint) ([]modelcmdb.S
 			cmdb_server_attributes.category,
 			cmdb_server_attributes.created_at,
 			cmdb_server_attributes.updated_at,
-			sys_attribute_definitions.id as def_id,
-			sys_attribute_definitions.name as def_name,
-			sys_attribute_definitions.type as def_type,
-			sys_attribute_definitions.category as def_category,
-			sys_attribute_definitions.description as def_description
+			cmdb_attribute_definitions.id as def_id,
+			cmdb_attribute_definitions.name as def_name,
+			cmdb_attribute_definitions.type as def_type,
+			cmdb_attribute_definitions.category as def_category,
+			cmdb_attribute_definitions.description as def_description
 		`).
-		Joins("LEFT JOIN sys_attribute_definitions ON sys_attribute_definitions.id = cmdb_server_attributes.attribute_id").
+		Joins("LEFT JOIN cmdb_attribute_definitions ON cmdb_attribute_definitions.id = cmdb_server_attributes.attribute_id").
 		Where("cmdb_server_attributes.server_id = ?", serverID).
 		Order("cmdb_server_attributes.attribute_id ASC").
 		Rows()

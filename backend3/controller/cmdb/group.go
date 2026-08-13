@@ -23,13 +23,16 @@ import (
 // @Router       /cmdb/groups [get]
 // @Security     BearerAuth
 func (c *CMDBController) GetServerGroups(ctx *gin.Context) {
-	groups, err := c.svc.GetServerGroups()
+	groups, ungroupedCount, err := c.svc.GetServerGroups()
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(groups))
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(map[string]interface{}{
+		"groups":         groups,
+		"ungroupedCount": ungroupedCount,
+	}))
 }
 
 // GetAssetTree godoc

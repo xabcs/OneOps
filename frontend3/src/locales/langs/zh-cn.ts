@@ -433,7 +433,7 @@ const local: App.I18n.Schema = {
     plugin_tables: '表格',
     plugin_tables_vtable: 'VTable',
     system: '系统设置',
-    system_attributes: '属性管理',
+    cmdb_config_attributes: '属性管理',
     monitoring: '监控中心',
     monitoring_overview: '监控概览',
     monitoring_servers: '主机监控',

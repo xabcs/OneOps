@@ -106,8 +106,10 @@ var routePermOverride = map[string]string{
 	"PUT:/api/cmdb/access-policies/:id":    "cmdb.access_policy.update",
 	"DELETE:/api/cmdb/access-policies/:id": "cmdb.access_policy.delete",
 	// CMDB 主机属性
-	"GET:/api/system/server-attributes/:serverId":  "system.attribute.view",
-	"POST:/api/system/server-attributes/:serverId": "system.attribute.update",
+	"GET:/api/cmdb/server-attributes/:serverId":  "cmdb.attribute.view",
+	"POST:/api/cmdb/server-attributes/:serverId": "cmdb.attribute.update",
+	"GET:/api/cmdb/servers-by-attributes":        "cmdb.attribute.view",
+	"POST:/api/cmdb/attributes/validate":         "cmdb.attribute.view",
 
 	// K8s 集群操作
 	"POST:/api/k8s/clusters/:id/test":              "k8s.cluster.connect",

@@ -18,6 +18,7 @@ export function useGroupTree() {
   const groupTree = ref<TreeNode[]>([]);
   const groupLoading = ref(false);
   const selectedGroupId = ref<number | undefined>(undefined);
+  const selectedUngrouped = ref(false);
   const groupSearchKeyword = ref('');
 
   // 编辑状态
@@ -31,6 +32,7 @@ export function useGroupTree() {
   // 右键菜单
   const contextMenuVisible = ref(false);
   const contextMenuPosition = ref({ x: 0, y: 0 });
+  const contextMenuNodeId = ref<number | null>(null);
   const currentNode = ref<TreeNode | null>(null);
 
   // 根节点
@@ -47,32 +49,52 @@ export function useGroupTree() {
     serverCount: 0
   };
 
+  // 未分组虚拟节点 ID
+  const UNGROUPED_NODE_ID = -1;
+
+  // 未分组主机数量
+  const ungroupedCount = ref(0);
+
   // ===== 辅助函数 =====
-  function buildFullTree(groups: CMDB.ServerGroup[]): TreeNode[] {
-    function countServers(group: CMDB.ServerGroup): number {
-      let count = group.servers?.length || 0;
+  function buildFullTree(groups: CMDB.ServerGroup[], ungroupedCnt: number): TreeNode[] {
+    // 递归计算含子分组的主机总数
+    function countServersRecursive(group: CMDB.ServerGroup): number {
+      let count = group.serverCount || 0;
       if (group.children && group.children.length > 0) {
         group.children.forEach(child => {
-          count += countServers(child);
+          count += countServersRecursive(child);
         });
       }
       return count;
     }
 
-    function addServerCount(group: CMDB.ServerGroup): TreeNode {
+    function toTreeNode(group: CMDB.ServerGroup): TreeNode {
       return {
         ...group,
-        serverCount: countServers(group),
+        serverCount: countServersRecursive(group),
         children:
-          group.children && group.children.length > 0 ? group.children.map(child => addServerCount(child)) : undefined
+          group.children && group.children.length > 0 ? group.children.map(child => toTreeNode(child)) : undefined
       };
     }
 
     const rootGroups = groups.filter(g => g.parentId === 0);
-    const rootChildren = rootGroups.map(g => addServerCount(g));
+    const rootChildren = rootGroups.map(g => toTreeNode(g));
     const totalServers = rootChildren.reduce((sum, g) => sum + g.serverCount!, 0);
 
-    return [{ ...rootNode, serverCount: totalServers, children: rootChildren }];
+    const ungroupedNode: TreeNode = {
+      id: UNGROUPED_NODE_ID,
+      name: '未分组',
+      code: 'ungrouped',
+      parentId: 0,
+      level: 1,
+      color: '#E6A23C',
+      icon: 'mdi:alert-circle-outline',
+      sortOrder: -1,
+      status: 1,
+      serverCount: ungroupedCnt
+    };
+
+    return [{ ...rootNode, serverCount: totalServers, children: [ungroupedNode, ...rootChildren] }];
   }
 
   function filterGroupTree(nodes: TreeNode[], keyword: string): TreeNode[] {
@@ -101,8 +123,9 @@ export function useGroupTree() {
     groupLoading.value = true;
     try {
       const { data } = await fetchGetServerGroups();
-      if (data && Array.isArray(data)) {
-        groupTree.value = buildFullTree(data);
+      if (data && Array.isArray(data.groups)) {
+        ungroupedCount.value = data.ungroupedCount || 0;
+        groupTree.value = buildFullTree(data.groups, ungroupedCount.value);
       }
     } catch (error) {
       console.error('获取分组失败:', error);
@@ -116,10 +139,16 @@ export function useGroupTree() {
   function handleNodeClick(data: TreeNode) {
     if (data.id === 0) {
       selectedGroupId.value = undefined;
+      selectedUngrouped.value = false;
+    } else if (data.id === UNGROUPED_NODE_ID) {
+      selectedGroupId.value = undefined;
+      selectedUngrouped.value = !selectedUngrouped.value;
     } else if (selectedGroupId.value === data.id) {
       selectedGroupId.value = undefined;
+      selectedUngrouped.value = false;
     } else {
       selectedGroupId.value = data.id;
+      selectedUngrouped.value = false;
     }
   }
 
@@ -127,6 +156,7 @@ export function useGroupTree() {
     event.preventDefault();
     event.stopPropagation();
     currentNode.value = data;
+    contextMenuNodeId.value = data.id;
     contextMenuPosition.value = { x: event.clientX, y: event.clientY };
     contextMenuVisible.value = true;
   }
@@ -323,7 +353,7 @@ export function useGroupTree() {
   function handleAddServer() {
     if (!currentNode.value) return;
     contextMenuVisible.value = false;
-    if (currentNode.value.id !== 0) {
+    if (currentNode.value.id > 0) {
       selectedGroupId.value = currentNode.value.id;
     }
   }
@@ -339,6 +369,8 @@ export function useGroupTree() {
     groupTree,
     groupLoading,
     selectedGroupId,
+    selectedUngrouped,
+    ungroupedCount,
     groupSearchKeyword,
     editingNodeId,
     editingNodeName,
@@ -346,6 +378,7 @@ export function useGroupTree() {
     groupFormData,
     contextMenuVisible,
     contextMenuPosition,
+    contextMenuNodeId,
     currentNode,
     // 计算属性
     filteredGroupTree,

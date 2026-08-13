@@ -197,7 +197,7 @@ export function fetchDeleteMenu(id: number) {
  */
 export function fetchGetAttributes(params?: { category?: string }) {
   return request<System.AttributeDefinition[]>({
-    url: '/system/attributes',
+    url: '/cmdb/attributes',
     method: 'get',
     params
   });
@@ -208,7 +208,7 @@ export function fetchGetAttributes(params?: { category?: string }) {
  */
 export function fetchGetAttributeById(id: number) {
   return request<System.AttributeDefinition>({
-    url: `/system/attributes/${id}`,
+    url: `/cmdb/attributes/${id}`,
     method: 'get'
   });
 }
@@ -218,7 +218,7 @@ export function fetchGetAttributeById(id: number) {
  */
 export function fetchCreateAttribute(data: System.AttributeDefinitionForm) {
   return request({
-    url: '/system/attributes',
+    url: '/cmdb/attributes',
     method: 'post',
     data
   });
@@ -229,7 +229,7 @@ export function fetchCreateAttribute(data: System.AttributeDefinitionForm) {
  */
 export function fetchUpdateAttribute(id: number, data: Partial<System.AttributeDefinitionForm>) {
   return request({
-    url: `/system/attributes/${id}`,
+    url: `/cmdb/attributes/${id}`,
     method: 'put',
     data
   });
@@ -240,7 +240,7 @@ export function fetchUpdateAttribute(id: number, data: Partial<System.AttributeD
  */
 export function fetchDeleteAttribute(id: number) {
   return request({
-    url: `/system/attributes/${id}`,
+    url: `/cmdb/attributes/${id}`,
     method: 'delete'
   });
 }
@@ -250,7 +250,7 @@ export function fetchDeleteAttribute(id: number) {
  */
 export function fetchValidateServerAttribute(data: { attributeId: number; value: string }) {
   return request({
-    url: '/system/attributes/validate',
+    url: '/cmdb/attributes/validate',
     method: 'post',
     data
   });

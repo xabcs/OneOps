@@ -20,16 +20,19 @@ func SetupCMDBRoutes(r *gin.Engine) {
 	serverRepo := repocmdb.NewServerRepository(db)
 	bastionRepo := repocmdb.NewBastionRepository(db)
 	agentRepo := repocmdb.NewAgentRepository(db)
+	attributeRepo := repocmdb.NewAttributeRepository(db)
 
 	// 创建 services
 	cmdbSvc := cmdbsvc.NewCMDBService(serverRepo)
 	bastionSvc := cmdbsvc.NewBastionService(bastionRepo)
 	agentSvc := cmdbsvc.NewAgentService(agentRepo)
+	attributeSvc := cmdbsvc.NewAttributeService(attributeRepo)
 
 	// 创建 controllers
 	cmdbController := cmdbctrl.NewCMDBController(cmdbSvc, agentSvc)
 	bastionController := cmdbctrl.NewBastionController(bastionSvc)
 	agentController := cmdbctrl.NewAgentController(agentSvc, cmdbSvc)
+	attributeController := cmdbctrl.NewAttributeController(attributeSvc)
 
 	api := r.Group("/api")
 
@@ -158,5 +161,20 @@ func SetupCMDBRoutes(r *gin.Engine) {
 		cmdb.POST("/access-policies", bastionController.CreateAccessPolicy)
 		cmdb.PUT("/access-policies/:id", bastionController.UpdateAccessPolicy)
 		cmdb.DELETE("/access-policies/:id", bastionController.DeleteAccessPolicy)
+
+		// 属性定义管理
+		cmdb.GET("/attributes", attributeController.GetAttributeDefinitions)
+		cmdb.POST("/attributes", attributeController.CreateAttributeDefinition)
+		cmdb.PUT("/attributes/:id", attributeController.UpdateAttributeDefinition)
+		cmdb.DELETE("/attributes/:id", attributeController.DeleteAttributeDefinition)
+		cmdb.GET("/attributes/:id", attributeController.GetAttributeDefinitionByID)
+		cmdb.POST("/attributes/validate", attributeController.ValidateServerAttribute)
+
+		// 主机属性值管理
+		cmdb.GET("/server-attributes/:serverId", attributeController.GetServerAttributes)
+		cmdb.POST("/server-attributes/:serverId", attributeController.SaveServerAttributes)
+
+		// 按属性筛选主机
+		cmdb.GET("/servers-by-attributes", attributeController.GetServersByAttributes)
 	}
 }

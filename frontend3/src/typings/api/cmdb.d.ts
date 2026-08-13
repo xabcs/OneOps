@@ -2,9 +2,6 @@ declare namespace CMDB {
   /** 服务器类型 */
   type ServerType = 'physical' | 'vm' | 'container';
 
-  /** 服务器环境 */
-  type ServerEnv = 'prod' | 'test' | 'dev';
-
   /** 服务器状态 */
   type ServerStatus = 'online' | 'offline' | 'unknown';
 
@@ -25,7 +22,6 @@ declare namespace CMDB {
     os?: string;
     osVersion?: string;
     arch?: string;
-    env: ServerEnv;
     status: ServerStatus;
     sshPort: number;
     credentialId?: number;
@@ -75,6 +71,7 @@ declare namespace CMDB {
     serviceStatus?: 'running' | 'active' | 'dead' | 'failed' | 'offline' | 'unknown';
     alertCount?: number;
     diskPartitions?: Array<{ mount: string; usage: number }>;
+    attributeValues?: Record<string, string>;
   };
 
   /** 业务系统 */
@@ -161,6 +158,7 @@ declare namespace CMDB {
     parent?: ServerGroup;
     children?: ServerGroup[];
     servers?: Server[];
+    serverCount?: number;
   };
 
   /** 主机分组表单 */
@@ -196,11 +194,14 @@ declare namespace CMDB {
   type ServerQuery = {
     hostname?: string;
     ip?: string;
-    env?: ServerEnv;
+    innerIp?: string;
+    env?: string;
     status?: ServerStatus;
     businessId?: number;
     provider?: ServerProvider;
     groupId?: number;
+    ungrouped?: boolean;
+    tagId?: number;
     page?: number;
     pageSize?: number;
   };
@@ -221,7 +222,7 @@ declare namespace CMDB {
     sshPort?: number;
     remarks?: string;
     cloudInfo?: CloudServerForm | null;
-    env?: ServerEnv;
+    env?: string;
     cpu?: number;
     memory?: number;
     disk?: number;
@@ -337,11 +338,18 @@ declare namespace CMDB {
     status: number;
   };
 
+  /** 环境统计项 */
+  type EnvStatItem = {
+    value: string;
+    label: string;
+    count: number;
+  };
+
   /** 服务器统计 */
   type ServerStats = {
     total: number;
     online: number;
-    byEnv: Record<string, number>;
+    byEnv: EnvStatItem[] | Record<string, number>;
     byStatus: Record<string, number>;
     byProvider: Record<string, number>;
   };

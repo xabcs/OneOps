@@ -147,6 +147,7 @@ func (i *Initializer) syncAttributes() error {
 	db := database.GetDB()
 
 	// 定义预置属性（通过 key 唯一标识）
+	// 仅保留不与 Server 内置字段/实体重复的扩展属性
 	builtinAttributes := []struct {
 		name        string
 		key         string
@@ -158,17 +159,15 @@ func (i *Initializer) syncAttributes() error {
 		sortOrder   int
 		description string
 	}{
-		{"业务系统", "business_system", "system", "select", `[{"value":"ecommerce","label":"电商系统"},{"value":"crm","label":"CRM系统"},{"value":"erp","label":"ERP系统"},{"value":"monitor","label":"监控系统"}]`, "", false, 1, "主机所属的业务系统"},
-		{"机房", "room", "location", "select", `[{"value":"hz","label":"杭州机房"},{"value":"bj","label":"北京机房"},{"value":"sh","label":"上海机房"},{"value":"sz","label":"深圳机房"}]`, "", false, 2, "主机所在的机房"},
-		{"机柜", "cabinet", "location", "text", "", "", false, 3, "主机所在的机柜"},
-		{"环境", "env", "environment", "select", `[{"value":"prod","label":"生产"},{"value":"test","label":"测试"},{"value":"dev","label":"开发"}]`, "test", false, 4, "主机运行环境"},
-		{"标签", "tags", "system", "multiselect", `[{"value":"important","label":"重要"},{"value":"backup","label":"备份节点"},{"value":"monitor","label":"监控节点"},{"value":"web","label":"Web服务器"},{"value":"db","label":"数据库服务器"}]`, "", false, 5, "主机的标签分类"},
-		{"所属项目", "project", "system", "text", "", "", false, 6, "主机所属的项目"},
-		{"购买日期", "purchase_date", "hardware", "date", "", "", false, 7, "主机购买日期"},
-		{"过保日期", "warranty_date", "hardware", "date", "", "", false, 8, "主机过保日期"},
-		{"责任人", "owner", "system", "text", "", "", false, 9, "主机责任人"},
-		{"联系方式", "contact", "system", "text", "", "", false, 10, "责任人联系方式"},
-		{"备注", "remark", "custom", "text", "", "", false, 11, "主机备注信息"},
+		{"环境", "env", "environment", "select", `[{"value":"prod","label":"生产"},{"value":"test","label":"测试"},{"value":"dev","label":"开发"}]`, "test", false, 1, "主机运行环境"},
+		{"责任人", "owner", "system", "text", "", "", false, 2, "主机责任人"},
+		{"联系方式", "contact", "system", "text", "", "", false, 3, "责任人联系方式"},
+	}
+
+	// 删除已废弃的属性定义（与 Server 内置字段重复或类型不再支持）
+	deprecatedKeys := []string{"business_system", "room", "cabinet", "tags", "purchase_date", "warranty_date", "remark", "project"}
+	for _, key := range deprecatedKeys {
+		db.Where("key = ?", key).Delete(&modelsystem.AttributeDefinition{})
 	}
 
 	addedCount := 0
@@ -228,5 +227,6 @@ func (i *Initializer) syncAttributes() error {
 		zap.Int("added", addedCount),
 		zap.Int("updated", updatedCount),
 		zap.Int("total", len(builtinAttributes)))
+
 	return nil
 }

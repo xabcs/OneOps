@@ -10,13 +10,14 @@ type ServerQueryParams struct {
 	Hostname       string `form:"hostname" binding:"omitempty,max=100"`
 	IP             string `form:"ip" binding:"omitempty,ip"`
 	InnerIP        string `form:"innerIp" binding:"omitempty,ip"`
-	Env            string `form:"env" binding:"omitempty,oneof=dev test prod"`
+	Env            string `form:"env"`
 	Status         string `form:"status" binding:"omitempty,oneof=active inactive maintenance"`
 	Provider       string `form:"provider" binding:"omitempty,max=50"`
 	GroupID        *uint  `form:"groupId" binding:"omitempty,min=1"`
+	Ungrouped      bool   `form:"ungrouped"`
 	AgentStatus    string `form:"agentStatus" binding:"omitempty,oneof=running stopped unavailable"`
 	BusinessUnitID *uint  `form:"businessUnitId" binding:"omitempty,min=1"`
-	Tags           string `form:"tags" binding:"omitempty"`
+	TagID          *uint  `form:"tagId" binding:"omitempty,min=1"`
 }
 
 // ServerCreateParams 创建服务器参数
@@ -25,7 +26,6 @@ type ServerCreateParams struct {
 	IP              string `json:"ip" binding:"required,ip"`
 	InnerIP         string `json:"innerIp" binding:"omitempty,ip"`
 	SSHPort         int    `json:"sshPort" binding:"required,min=1,max=65535"`
-	Env             string `json:"env" binding:"required,oneof=dev test prod"`
 	Status          string `json:"status" binding:"omitempty,oneof=active inactive maintenance"`
 	Provider        string `json:"provider" binding:"omitempty,max=50"`
 	OS              string `json:"os" binding:"omitempty,max=50"`
@@ -46,7 +46,6 @@ type ServerUpdateParams struct {
 	IP       *string `json:"ip" binding:"omitempty,ip"`
 	InnerIP  *string `json:"innerIp" binding:"omitempty,ip"`
 	SSHPort  *int    `json:"sshPort" binding:"omitempty,min=1,max=65535"`
-	Env      *string `json:"env" binding:"omitempty,oneof=dev test prod"`
 	Status   *string `json:"status" binding:"omitempty,oneof=active inactive maintenance"`
 	Provider *string `json:"provider" binding:"omitempty,max=50"`
 	OS       *string `json:"os" binding:"omitempty,max=50"`

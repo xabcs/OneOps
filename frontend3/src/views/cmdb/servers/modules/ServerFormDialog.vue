@@ -31,6 +31,7 @@
     getAttributeOptions: (key: string) => { value: string; label: string }[];
     parseAttributeOptions: (str: string) => { value: string; label: string }[];
     getUnifiedAttributes: () => Api.SystemManage.AttributeDefinition[];
+    serverTags: CMDB.ServerTag[];
   }
 
   const props = defineProps<Props>();
@@ -142,12 +143,6 @@
         <div class="mt-4px text-12px text-gray-400">用于 Agent 部署、重启、指标采集，需 root/sudo 权限</div>
       </ElFormItem>
 
-      <ElFormItem label="环境">
-        <ElSelect v-model="serverForm.env" placeholder="请选择环境" style="width: 100%">
-          <ElOption v-for="opt in getAttributeOptions('env')" :key="opt.value" :label="opt.label" :value="opt.value" />
-        </ElSelect>
-      </ElFormItem>
-
       <ElFormItem label="所属分组" prop="groupIds">
         <ElTreeSelect
           v-model="serverForm.groupIds"
@@ -163,6 +158,29 @@
         />
       </ElFormItem>
 
+      <ElFormItem label="标签">
+        <ElSelect
+          v-model="serverForm.tagIds"
+          placeholder="请选择标签（可多选）"
+          style="width: 100%"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
+        >
+          <ElOption
+            v-for="tag in serverTags"
+            :key="tag.id"
+            :label="tag.name"
+            :value="tag.id"
+          >
+            <span>{{ tag.name }}</span>
+            <span
+              :style="{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: tag.color, marginLeft: '8px' }"
+            />
+          </ElOption>
+        </ElSelect>
+      </ElFormItem>
+
       <ElCollapse v-model="activeCollapse" class="mt-16px">
         <ElCollapseItem title="更多属性（可选）" name="attributes">
           <AttributeFormItems
@@ -170,8 +188,6 @@
             :loading-attributes="loadingAttributes"
             :get-attribute-value="getAttributeValue"
             :set-attribute-value="setAttributeValue"
-            :get-attribute-multi-value="getAttributeMultiValue"
-            :set-attribute-multi-value="setAttributeMultiValue"
             :parse-attribute-options="parseAttributeOptions"
           />
         </ElCollapseItem>

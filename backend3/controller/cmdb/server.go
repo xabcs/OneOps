@@ -31,7 +31,7 @@ import (
 // @Param        agentStatus    query     string  false  "Agent 状态"
 // @Param        groupId        query     int     false  "分组 ID"
 // @Param        businessUnitId query     int     false  "业务单元 ID"
-// @Param        tags           query     string  false  "标签（逗号分隔）"
+// @Param        tagId          query     int     false  "标签 ID"
 // @Success      200  {object}  utils.Response{data=dto.PageResult}
 // @Failure      200  {object}  utils.Response  "请求参数错误 / 获取服务器列表失败"
 // @Router       /cmdb/servers [get]
@@ -69,11 +69,14 @@ func (c *CMDBController) GetServers(ctx *gin.Context) {
 	if params.GroupID != nil {
 		query["groupId"] = *params.GroupID
 	}
+	if params.Ungrouped {
+		query["ungrouped"] = true
+	}
 	if params.BusinessUnitID != nil {
 		query["businessUnitId"] = *params.BusinessUnitID
 	}
-	if params.Tags != "" {
-		query["tags"] = params.Tags
+	if params.TagID != nil {
+		query["tagId"] = *params.TagID
 	}
 
 	servers, total, err := c.svc.GetServers(query, params.GetPage(), params.GetPageSize())
@@ -196,7 +199,10 @@ func (c *CMDBController) CreateServer(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("服务器创建成功"))
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(map[string]interface{}{
+		"id":      server.ID,
+		"message": "服务器创建成功",
+	}))
 }
 
 // UpdateServer godoc

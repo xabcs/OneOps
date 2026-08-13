@@ -40,11 +40,11 @@ func (i *Initializer) syncPermissions() error {
 		{Code: "system.permission.update", Name: "更新权限", Description: "更新权限信息", Module: "system", Resource: "permission", Action: "update", Level: 3, SortOrder: 18, Status: 1},
 		{Code: "system.permission.delete", Name: "删除权限", Description: "删除权限", Module: "system", Resource: "permission", Action: "delete", Level: 3, SortOrder: 19, Status: 1},
 		// 属性管理
-		{Code: "system.attribute.list", Name: "属性列表", Description: "查看属性定义列表", Module: "system", Resource: "attribute", Action: "list", Level: 3, SortOrder: 20, Status: 1},
-		{Code: "system.attribute.view", Name: "查看属性", Description: "查看属性详细信息", Module: "system", Resource: "attribute", Action: "view", Level: 3, SortOrder: 21, Status: 1},
-		{Code: "system.attribute.create", Name: "创建属性", Description: "创建新的属性定义", Module: "system", Resource: "attribute", Action: "create", Level: 3, SortOrder: 22, Status: 1},
-		{Code: "system.attribute.update", Name: "更新属性", Description: "更新属性定义", Module: "system", Resource: "attribute", Action: "update", Level: 3, SortOrder: 23, Status: 1},
-		{Code: "system.attribute.delete", Name: "删除属性", Description: "删除属性定义", Module: "system", Resource: "attribute", Action: "delete", Level: 3, SortOrder: 24, Status: 1},
+		{Code: "cmdb.attribute.list", Name: "属性列表", Description: "查看属性定义列表", Module: "cmdb", Resource: "attribute", Action: "list", Level: 3, SortOrder: 20, Status: 1},
+		{Code: "cmdb.attribute.view", Name: "查看属性", Description: "查看属性详细信息", Module: "cmdb", Resource: "attribute", Action: "view", Level: 3, SortOrder: 21, Status: 1},
+		{Code: "cmdb.attribute.create", Name: "创建属性", Description: "创建新的属性定义", Module: "cmdb", Resource: "attribute", Action: "create", Level: 3, SortOrder: 22, Status: 1},
+		{Code: "cmdb.attribute.update", Name: "更新属性", Description: "更新属性定义", Module: "cmdb", Resource: "attribute", Action: "update", Level: 3, SortOrder: 23, Status: 1},
+		{Code: "cmdb.attribute.delete", Name: "删除属性", Description: "删除属性定义", Module: "cmdb", Resource: "attribute", Action: "delete", Level: 3, SortOrder: 24, Status: 1},
 		// 路由管理
 		{Code: "system.route.list", Name: "查看路由列表", Description: "查看系统路由列表", Module: "system", Resource: "route", Action: "list", Level: 3, SortOrder: 25, Status: 1},
 		{Code: "system.route.invalidate", Name: "刷新路由缓存", Description: "刷新系统路由缓存", Module: "system", Resource: "route", Action: "invalidate", Level: 3, SortOrder: 26, Status: 1},

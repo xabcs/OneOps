@@ -146,7 +146,6 @@ type Server struct {
 	OS                 string         `json:"os" gorm:"size:50"`                                                                   // 操作系统
 	OSVersion          string         `json:"osVersion" gorm:"size:50"`                                                            // 系统版本
 	Arch               string         `json:"arch" gorm:"size:20;default:'x86_64'"`                                                // 系统架构
-	Env                string         `json:"env" gorm:"type:varchar(20);default:'test';index"`                                    // 环境
 	Status             string         `json:"status" gorm:"type:varchar(20);default:'unknown';index"`                              // 状态
 	SSHPort            int            `json:"sshPort" gorm:"default:22"`                                                           // SSH端口
 	CredentialID       uint           `json:"credentialId" gorm:"index"`                                                           // SSH凭证ID（兼容旧字段）
@@ -199,6 +198,7 @@ type Server struct {
 	CloudInfo        *CloudServer      `json:"cloudInfo,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:SET NULL"`
 	Credentials      []SSHCredential   `json:"credentials,omitempty" gorm:"many2many:cmdb_server_credentials;joinForeignKey:ServerID;joinReferences:CredentialID"`
 	Attributes       []ServerAttribute `json:"attributes,omitempty" gorm:"foreignKey:ServerID;constraint:OnDelete:CASCADE"`
+	AttributeValues  map[string]string `json:"attributeValues,omitempty" gorm:"-"` // 属性键值对（从 cmdb_server_attributes 填充）
 	GroupIDs         []uint            `json:"groupIds,omitempty" gorm:"-"`
 	CredentialIDs    []uint            `json:"credentialIds,omitempty" gorm:"-"`
 }

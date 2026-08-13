@@ -39,13 +39,21 @@ export function useServerData() {
   const attributeDefinitions = ref<Api.SystemManage.AttributeDefinition[]>([]);
 
   // ===== 数据获取 =====
-  async function getServers(searchParams?: { searchType: SearchType; searchKeyword: string; groupId?: number }) {
+  async function getServers(searchParams?: { searchType: SearchType; searchKeyword: string; groupId?: number; ungrouped?: boolean; tagId?: number }) {
     loading.value = true;
     try {
       const params: CMDB.ServerQuery = { page: pagination.page, pageSize: pagination.pageSize };
 
       if (searchParams?.groupId) {
         params.groupId = searchParams.groupId;
+      }
+
+      if (searchParams?.ungrouped) {
+        params.ungrouped = true;
+      }
+
+      if (searchParams?.tagId) {
+        params.tagId = searchParams.tagId;
       }
 
       if (searchParams?.searchKeyword) {

@@ -106,7 +106,7 @@ export function fetchGetServerConfig(data: { hostname: string; ip: string; sshPo
  * 获取主机分组列表（树形结构）
  */
 export function fetchGetServerGroups() {
-  return request<CMDB.ServerGroup[]>({
+  return request<{ groups: CMDB.ServerGroup[]; ungroupedCount: number }>({
     url: '/cmdb/groups',
     method: 'get'
   });
@@ -811,7 +811,7 @@ export function fetchDeleteAgentRecord(serverId: number) {
  */
 export function fetchGetServerAttributes(serverId: number) {
   return request<System.ServerAttribute[]>({
-    url: `/system/server-attributes/${serverId}`,
+    url: `/cmdb/server-attributes/${serverId}`,
     method: 'get'
   });
 }
@@ -821,9 +821,29 @@ export function fetchGetServerAttributes(serverId: number) {
  */
 export function fetchSaveServerAttributes(serverId: number, data: System.ServerAttribute[]) {
   return request({
-    url: `/system/server-attributes/${serverId}`,
+    url: `/cmdb/server-attributes/${serverId}`,
     method: 'post',
     data
+  });
+}
+
+/**
+ * 按属性筛选主机
+ */
+export function fetchGetServersByAttributes(filters: Record<string, string>, page = 1, pageSize = 20) {
+  return request<{
+    list: CMDB.Server[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }>({
+    url: '/cmdb/servers-by-attributes',
+    method: 'get',
+    params: {
+      filters: JSON.stringify(filters),
+      page,
+      pageSize
+    }
   });
 }
 

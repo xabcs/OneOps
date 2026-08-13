@@ -245,12 +245,6 @@ export const ValidationRules = {
     default: 'active'
   },
 
-  // 环境
-  env: {
-    enum: ['dev', 'test', 'prod'],
-    default: 'prod'
-  },
-
   // 用户名
   username: {
     pattern: /^[a-zA-Z0-9_]+$/,

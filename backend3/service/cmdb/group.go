@@ -7,34 +7,27 @@ import (
 // ========== 主机分组管理 ==========
 
 // GetServerGroups 获取主机分组列表（树形结构）
-func (s *CMDBService) GetServerGroups() ([]modelcmdb.ServerGroup, error) {
+func (s *CMDBService) GetServerGroups() ([]modelcmdb.ServerGroup, int64, error) {
 	groups, err := s.repo.FindAllServerGroups()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	relations, err := s.repo.FindAllGroupRelations()
+	// 批量统计每个分组直接关联的主机数量
+	countMap, err := s.repo.CountServersByGroup()
 	if err != nil {
-		return nil, err
+		countMap = make(map[uint]int64)
 	}
-
-	groupServerMap := make(map[uint][]uint)
-	for _, relation := range relations {
-		groupServerMap[relation.GroupID] = append(groupServerMap[relation.GroupID], relation.ServerID)
-	}
-
 	for i := range groups {
-		serverIDs := groupServerMap[groups[i].ID]
-		var servers []modelcmdb.Server
-		if len(serverIDs) > 0 {
-			for _, sid := range serverIDs {
-				servers = append(servers, modelcmdb.Server{ID: sid})
-			}
-		}
-		groups[i].Servers = servers
+		groups[i].ServerCount = int(countMap[groups[i].ID])
 	}
 
-	return s.buildGroupTree(groups, 0), nil
+	ungroupedCount, err := s.repo.CountUngroupedServers()
+	if err != nil {
+		ungroupedCount = 0
+	}
+
+	return s.buildGroupTree(groups, 0), ungroupedCount, nil
 }
 
 // buildGroupTree 构建分组树

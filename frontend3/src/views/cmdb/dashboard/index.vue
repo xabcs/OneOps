@@ -4,7 +4,6 @@
   import {
     fetchGetCommands,
     fetchGetServerStats,
-    fetchGetServers,
     fetchGetSessionStats,
     fetchGetSessions
   } from '@/service/api/cmdb';
@@ -18,14 +17,13 @@
   const recentSessions = ref<Bastion.BastionSession[]>([]);
   const recentCommands = ref<Bastion.BastionCommand[]>([]);
 
-  const envCounts = ref({ prod: 0, test: 0, dev: 0 });
+  const envList = ref<CMDB.EnvStatItem[]>([]);
 
   const loading = ref({
     serverStats: false,
     sessionStats: false,
     sessions: false,
-    commands: false,
-    env: false
+    commands: false
   });
 
   async function loadServerStats() {
@@ -33,6 +31,15 @@
     try {
       const { data } = await fetchGetServerStats();
       serverStats.value = data || null;
+      // 从 stats 的 byEnv 提取环境列表
+      const byEnv = data?.byEnv;
+      if (Array.isArray(byEnv)) {
+        envList.value = byEnv;
+      } else if (byEnv && typeof byEnv === 'object') {
+        envList.value = Object.entries(byEnv).map(([value, count]) => ({ value, label: value, count: count as number }));
+      } else {
+        envList.value = [];
+      }
     } catch (error) {
       console.error('获取服务器统计失败:', error);
     } finally {
@@ -49,26 +56,6 @@
       console.error('获取会话统计失败:', error);
     } finally {
       loading.value.sessionStats = false;
-    }
-  }
-
-  async function loadEnvCounts() {
-    loading.value.env = true;
-    try {
-      const [prodRes, testRes, devRes] = await Promise.all([
-        fetchGetServers({ env: 'prod', pageSize: 1 } as CMDB.ServerQuery),
-        fetchGetServers({ env: 'test', pageSize: 1 } as CMDB.ServerQuery),
-        fetchGetServers({ env: 'dev', pageSize: 1 } as CMDB.ServerQuery)
-      ]);
-      envCounts.value = {
-        prod: prodRes.data?.total || 0,
-        test: testRes.data?.total || 0,
-        dev: devRes.data?.total || 0
-      };
-    } catch (error) {
-      console.error('获取环境分布失败:', error);
-    } finally {
-      loading.value.env = false;
     }
   }
 
@@ -125,10 +112,18 @@
     return map[status] || status;
   }
 
+  function getEnvColor(value: string): string {
+    const colorMap: Record<string, string> = {
+      prod: '#52c41a',
+      test: '#faad14',
+      dev: '#1890ff'
+    };
+    return colorMap[value] || '#8c8c8c';
+  }
+
   onMounted(() => {
     loadServerStats();
     loadSessionStats();
-    loadEnvCounts();
     loadRecentSessions();
     loadRecentCommands();
   });
@@ -204,22 +199,13 @@
     <ElRow :gutter="16" class="middle-row">
       <ElCol :span="12">
         <ElCard shadow="never" header="按环境分布">
-          <div v-loading="loading.env" class="env-list">
-            <div class="env-item">
-              <span class="env-dot env-dot--prod" />
-              <span class="env-name">生产环境</span>
-              <span class="env-count">{{ envCounts.prod }} 台</span>
+          <div v-loading="loading.serverStats" class="env-list">
+            <div v-for="env in envList" :key="env.value" class="env-item">
+              <span class="env-dot" :style="{ backgroundColor: getEnvColor(env.value) }" />
+              <span class="env-name">{{ env.label }}</span>
+              <span class="env-count">{{ env.count }} 台</span>
             </div>
-            <div class="env-item">
-              <span class="env-dot env-dot--test" />
-              <span class="env-name">测试环境</span>
-              <span class="env-count">{{ envCounts.test }} 台</span>
-            </div>
-            <div class="env-item">
-              <span class="env-dot env-dot--dev" />
-              <span class="env-name">开发环境</span>
-              <span class="env-count">{{ envCounts.dev }} 台</span>
-            </div>
+            <div v-if="envList.length === 0" class="env-empty">暂无数据</div>
           </div>
         </ElCard>
       </ElCol>
@@ -363,18 +349,6 @@
     flex-shrink: 0;
   }
 
-  .env-dot--prod {
-    background: #f56c6c;
-  }
-
-  .env-dot--test {
-    background: #e6a23c;
-  }
-
-  .env-dot--dev {
-    background: #67c23a;
-  }
-
   .env-name {
     flex: 1;
     font-size: 14px;
@@ -385,6 +359,12 @@
     font-size: 16px;
     font-weight: 600;
     color: #409eff;
+  }
+
+  .env-empty {
+    text-align: center;
+    color: #909399;
+    padding: 20px 0;
   }
 
   .quick-links {

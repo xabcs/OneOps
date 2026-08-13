@@ -395,7 +395,7 @@ const local: App.I18n.Schema = {
     plugin_tables: 'Tables',
     plugin_tables_vtable: 'VTable',
     system: 'System',
-    system_attributes: 'Attributes',
+    cmdb_config_attributes: 'Attributes',
     monitoring: 'Monitoring',
     monitoring_overview: 'Overview',
     monitoring_servers: 'Host Monitor',

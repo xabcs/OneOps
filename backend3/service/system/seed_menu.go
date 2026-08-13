@@ -75,6 +75,7 @@ func (i *Initializer) syncMenus() error {
 		{ID: 28, Name: "机房管理", Icon: "mdi:server", Path: "/cmdb/config/rooms", Permission: "cmdb:rooms:query", MenuType: "menu", Sort: 2, Status: 1, ParentID: 26},
 		{ID: 29, Name: "标签管理", Icon: "mdi:tag-multiple", Path: "/cmdb/config/tags", Permission: "cmdb:tags:query", MenuType: "menu", Sort: 3, Status: 1, ParentID: 26},
 		{ID: 30, Name: "代理配置", Icon: "mdi:robot", Path: "/cmdb/config/agents", Permission: "cmdb:agents:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 26},
+		{ID: 39, Name: "属性管理", Icon: "mdi:format-list-bulleted-type", Path: "/cmdb/config/attributes", Permission: "cmdb.attribute.view", MenuType: "menu", Sort: 5, Status: 1, ParentID: 26},
 		// 资产总览
 		{ID: 31, Name: "资产总览", Icon: "mdi:chart-pie", Path: "/cmdb/dashboard", Permission: "cmdb:dashboard:query", MenuType: "menu", Sort: 6, Status: 1, ParentID: 2},
 		// 审计记录目录
@@ -179,6 +180,7 @@ func (i *Initializer) syncMenus() error {
 		{"/cmdb/config/rooms", "rooms"},
 		{"/cmdb/config/tags", "tags"},
 		{"/cmdb/config/agents", "agents"},
+		{"/cmdb/config/attributes", "attribute"},
 		{"/cmdb/config/business", "config_business"},
 		{"/k8s/clusters", "cluster"},
 		{"/k8s/workloads", "workload"},

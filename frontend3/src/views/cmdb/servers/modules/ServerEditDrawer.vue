@@ -10,6 +10,7 @@
   import { watch } from 'vue';
   import type { FormRules } from 'element-plus';
   import { useForm } from '@/hooks/common/form';
+  import AttributeFormItems from './AttributeFormItems.vue';
 
   defineOptions({ name: 'ServerEditDrawer' });
 
@@ -108,17 +109,7 @@
               </ElFormItem>
             </div>
             <div class="edit-form-col">
-              <div class="subsection-title">环境与归属</div>
-              <ElFormItem label="环境">
-                <ElSelect v-model="serverForm.env" placeholder="请选择环境" style="width: 100%">
-                  <ElOption
-                    v-for="opt in getAttributeOptions('env')"
-                    :key="opt.value"
-                    :label="opt.label"
-                    :value="opt.value"
-                  />
-                </ElSelect>
-              </ElFormItem>
+              <div class="subsection-title">归属信息</div>
               <ElFormItem label="业务系统">
                 <ElTreeSelect
                   v-model="serverForm.businessId"
@@ -282,87 +273,13 @@
 
       <!-- 属性配置 Tab -->
       <ElTabPane label="属性配置" name="attributes">
-        <div v-if="loadingAttributes" class="py-40px text-center">
-          <ElIcon class="is-loading text-32px"><icon-mdi-loading /></ElIcon>
-          <div class="mt-16px">加载中...</div>
-        </div>
-        <div v-else-if="getUnifiedAttributes().length === 0" class="py-40px text-center text-gray-400">
-          <icon-mdi-information-outline class="text-48px" />
-          <div class="mt-16px">暂无可用属性</div>
-          <div class="mt-8px text-12px">请先在"系统管理 → 属性管理"中配置属性</div>
-        </div>
-        <div v-else class="attributes-container-drawer">
-          <div v-for="attr in getUnifiedAttributes()" :key="attr.id" class="attribute-form-item-compact">
-            <div class="attribute-label">
-              <span v-if="attr.required" class="required-mark">*</span>
-              {{ attr.name }}
-              <span v-if="attr.description" class="attribute-description">{{ attr.description }}</span>
-            </div>
-            <div class="attribute-input">
-              <ElInput
-                v-if="attr.type === 'text'"
-                :model-value="getAttributeValue(attr.id)"
-                :placeholder="attr.defaultValue || `请输入${attr.name}`"
-                @change="val => setAttributeValue(attr.id, val)"
-              />
-              <ElInputNumber
-                v-else-if="attr.type === 'number'"
-                :model-value="getAttributeValue(attr.id)"
-                :placeholder="attr.defaultValue || `请输入${attr.name}`"
-                style="width: 100%"
-                @change="val => setAttributeValue(attr.id, val)"
-              />
-              <ElDatePicker
-                v-else-if="attr.type === 'date'"
-                :model-value="getAttributeValue(attr.id)"
-                type="date"
-                :placeholder="attr.defaultValue || `请选择${attr.name}`"
-                style="width: 100%"
-                format="YYYY-MM-DD"
-                value-format="YYYY-MM-DD"
-                @change="val => setAttributeValue(attr.id, val)"
-              />
-              <ElSwitch
-                v-else-if="attr.type === 'boolean'"
-                :model-value="getAttributeValue(attr.id)"
-                active-text="是"
-                inactive-text="否"
-                @change="val => setAttributeValue(attr.id, val)"
-              />
-              <ElSelect
-                v-else-if="attr.type === 'select'"
-                :model-value="getAttributeValue(attr.id)"
-                :placeholder="`请选择${attr.name}`"
-                style="width: 100%"
-                @change="val => setAttributeValue(attr.id, val)"
-              >
-                <ElOption
-                  v-for="opt in parseAttributeOptions(attr.options)"
-                  :key="opt.value"
-                  :label="opt.label"
-                  :value="opt.value"
-                />
-              </ElSelect>
-              <ElSelect
-                v-else-if="attr.type === 'multiselect'"
-                :model-value="getAttributeMultiValue(attr.id)"
-                :placeholder="`请选择${attr.name}`"
-                style="width: 100%"
-                multiple
-                collapse-tags
-                collapse-tags-tooltip
-                @change="val => setAttributeMultiValue(attr.id, val)"
-              >
-                <ElOption
-                  v-for="opt in parseAttributeOptions(attr.options)"
-                  :key="opt.value"
-                  :label="opt.label"
-                  :value="opt.value"
-                />
-              </ElSelect>
-            </div>
-          </div>
-        </div>
+        <AttributeFormItems
+          :attributes="getUnifiedAttributes()"
+          :loading-attributes="loadingAttributes"
+          :get-attribute-value="getAttributeValue"
+          :set-attribute-value="setAttributeValue"
+          :parse-attribute-options="parseAttributeOptions"
+        />
       </ElTabPane>
 
       <!-- 云主机配置 Tab -->

@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	modelcmdb "oneops/backend3/model/cmdb"
+	modelsystem "oneops/backend3/model/system"
 	"oneops/backend3/pkg/utils"
 
 	"gorm.io/gorm"
@@ -33,7 +34,7 @@ func (r *ServerRepository) FindServersLight(query map[string]interface{}, page, 
 	var servers []map[string]interface{}
 	var total int64
 
-	tx := r.db.Model(&modelcmdb.Server{}).Select("id, hostname, ip, inner_ip, env, status, provider, agent_status, cpu, memory, os, arch, ssh_port")
+	tx := r.db.Model(&modelcmdb.Server{}).Select("id, hostname, ip, inner_ip, status, provider, agent_status, cpu, memory, os, arch, ssh_port")
 
 	if hostname, ok := query["hostname"].(string); ok && hostname != "" {
 		tx = tx.Where("hostname LIKE ?", "%"+utils.SanitizeLikeInput(hostname)+"%")
@@ -42,7 +43,7 @@ func (r *ServerRepository) FindServersLight(query map[string]interface{}, page, 
 		tx = tx.Where("ip LIKE ?", "%"+utils.SanitizeLikeInput(ip)+"%")
 	}
 	if env, ok := query["env"].(string); ok && env != "" {
-		tx = tx.Where("env = ?", env)
+		tx = tx.Where("id IN (SELECT server_id FROM cmdb_server_attributes WHERE attribute_key = 'env' AND attribute_value = ?)", env)
 	}
 	if status, ok := query["status"].(string); ok && status != "" {
 		tx = tx.Where("status = ?", status)
@@ -61,6 +62,10 @@ func (r *ServerRepository) FindServersLight(query map[string]interface{}, page, 
 		}
 	}
 
+	if ungrouped, ok := query["ungrouped"].(bool); ok && ungrouped {
+		tx = tx.Where("id NOT IN (SELECT server_id FROM cmdb_server_group_relations)")
+	}
+
 	if err := tx.Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
@@ -70,6 +75,59 @@ func (r *ServerRepository) FindServersLight(query map[string]interface{}, page, 
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&servers).Error
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 从属性表填充属性值到 attributeValues
+	if len(servers) > 0 {
+		serverIDs := make([]uint, len(servers))
+		for i, s := range servers {
+			if id, ok := s["id"]; ok {
+				switch v := id.(type) {
+				case float64:
+					serverIDs[i] = uint(v)
+				case uint:
+					serverIDs[i] = v
+				case int:
+					serverIDs[i] = uint(v)
+				}
+			}
+		}
+		type attrRow struct {
+			ServerID       uint   `gorm:"column:server_id"`
+			AttributeKey   string `gorm:"column:attribute_key"`
+			AttributeValue string `gorm:"column:attribute_value"`
+		}
+		var rows []attrRow
+		r.db.Table("cmdb_server_attributes").
+			Select("server_id, attribute_key, attribute_value").
+			Where("server_id IN ?", serverIDs).
+			Scan(&rows)
+		attrMap := make(map[uint]map[string]string)
+		for _, row := range rows {
+			if attrMap[row.ServerID] == nil {
+				attrMap[row.ServerID] = make(map[string]string)
+			}
+			attrMap[row.ServerID][row.AttributeKey] = row.AttributeValue
+		}
+		for i, s := range servers {
+			if id, ok := s["id"]; ok {
+				var sid uint
+				switch v := id.(type) {
+				case float64:
+					sid = uint(v)
+				case uint:
+					sid = v
+				case int:
+					sid = uint(v)
+				}
+				if attrs, ok := attrMap[sid]; ok {
+					servers[i]["attributeValues"] = attrs
+				}
+			}
+		}
+	}
 
 	return servers, total, err
 }
@@ -90,7 +148,7 @@ func (r *ServerRepository) FindServers(query map[string]interface{}, page, pageS
 		tx = tx.Where("inner_ip LIKE ?", "%"+utils.SanitizeLikeInput(innerIp)+"%")
 	}
 	if env, ok := query["env"].(string); ok && env != "" {
-		tx = tx.Where("env = ?", env)
+		tx = tx.Where("id IN (SELECT server_id FROM cmdb_server_attributes WHERE attribute_key = 'env' AND attribute_value = ?)", env)
 	}
 	if status, ok := query["status"].(string); ok && status != "" {
 		tx = tx.Where("status = ?", status)
@@ -109,6 +167,10 @@ func (r *ServerRepository) FindServers(query map[string]interface{}, page, pageS
 		}
 	}
 
+	if ungrouped, ok := query["ungrouped"].(bool); ok && ungrouped {
+		tx = tx.Where("id NOT IN (SELECT server_id FROM cmdb_server_group_relations)")
+	}
+
 	if businessUnitID, ok := query["businessUnitId"]; ok && businessUnitID != nil {
 		businessUnitIDUint := parseUintVal(businessUnitID)
 		if businessUnitIDUint > 0 {
@@ -116,8 +178,11 @@ func (r *ServerRepository) FindServers(query map[string]interface{}, page, pageS
 		}
 	}
 
-	if tags, ok := query["tags"].(string); ok && tags != "" {
-		tx = tx.Where("JSON_CONTAINS(tags, ?)", fmt.Sprintf("\"%s\"", tags))
+	if tagID, ok := query["tagId"]; ok && tagID != nil {
+		tagIDUint := parseUintVal(tagID)
+		if tagIDUint > 0 {
+			tx = tx.Where("id IN (SELECT server_id FROM cmdb_server_tag_relations WHERE tag_id = ?)", tagIDUint)
+		}
 	}
 
 	var total int64
@@ -126,7 +191,7 @@ func (r *ServerRepository) FindServers(query map[string]interface{}, page, pageS
 	}
 
 	tx = tx.Select(`
-		cmdb_servers.id, cmdb_servers.hostname, cmdb_servers.ip, cmdb_servers.inner_ip, cmdb_servers.ssh_port, cmdb_servers.env, cmdb_servers.status,
+		cmdb_servers.id, cmdb_servers.hostname, cmdb_servers.ip, cmdb_servers.inner_ip, cmdb_servers.ssh_port, cmdb_servers.status,
 		cmdb_servers.provider, cmdb_servers.agent_status, cmdb_servers.agent_version, cmdb_servers.cpu,
 		cmdb_servers.memory, cmdb_servers.os, cmdb_servers.arch, cmdb_servers.created_at, cmdb_servers.updated_at,
 		cmdb_servers.group_names, cmdb_servers.credential_names, cmdb_servers.system_credential_id,
@@ -142,6 +207,9 @@ func (r *ServerRepository) FindServers(query map[string]interface{}, page, pageS
 	if err != nil {
 		return nil, 0, err
 	}
+
+	// 从属性表填充所有属性值
+	r.populateAttributes(servers)
 
 	for i := range servers {
 		if servers[i].GroupNames != "[]" && servers[i].GroupNames != "" && servers[i].GroupNames != "null" {
@@ -195,7 +263,17 @@ func (r *ServerRepository) FindServerByID(id uint) (*modelcmdb.Server, error) {
 		Preload("Attributes").
 		Preload("SSHCredential").
 		First(&server, id).Error
-	return &server, err
+	if err != nil {
+		return &server, err
+	}
+	// 从 Attributes 填充属性值 map
+	if len(server.Attributes) > 0 {
+		server.AttributeValues = make(map[string]string, len(server.Attributes))
+		for _, attr := range server.Attributes {
+			server.AttributeValues[attr.AttributeKey] = attr.AttributeValue
+		}
+	}
+	return &server, nil
 }
 
 // FindServerForConnect 获取连接所需的服务器信息（轻量级）
@@ -205,7 +283,12 @@ func (r *ServerRepository) FindServerForConnect(id uint) (*modelcmdb.Server, err
 		Preload("SSHCredential").
 		Preload("Credentials").
 		First(&server, id).Error
-	return &server, err
+	if err != nil {
+		return &server, err
+	}
+	// 从属性表填充属性值 map
+	r.populateAttributes([]modelcmdb.Server{server})
+	return &server, nil
 }
 
 // FindServerWithUserCredentials 获取服务器（含用户凭证，用于堡垒连接权限检查）
@@ -396,12 +479,51 @@ func (r *ServerRepository) GetServerStats() (map[string]interface{}, error) {
 		Env   string
 		Count int64
 	}
-	r.db.Model(&modelcmdb.Server{}).Select("env, count(*) as count").Group("env").Scan(&envStats)
-	envMap := make(map[string]int64)
-	for _, stat := range envStats {
-		envMap[stat.Env] = stat.Count
+	r.db.Table("cmdb_server_attributes").
+		Select("attribute_value as env, count(*) as count").
+		Where("attribute_key = 'env'").
+		Group("attribute_value").
+		Scan(&envStats)
+
+	// 获取 env 属性定义的 options，解析 label
+	var envDef modelsystem.AttributeDefinition
+	if err := r.db.Where("key = 'env'").First(&envDef).Error; err == nil && envDef.Options != "" {
+		var options []struct {
+			Value string `json:"value"`
+			Label string `json:"label"`
+		}
+		if json.Unmarshal([]byte(envDef.Options), &options) == nil {
+			envLabelMap := make(map[string]string)
+			for _, opt := range options {
+				envLabelMap[opt.Value] = opt.Label
+			}
+			envList := make([]map[string]interface{}, 0, len(envStats))
+			for _, stat := range envStats {
+				label := stat.Env
+				if l, ok := envLabelMap[stat.Env]; ok {
+					label = l
+				}
+				envList = append(envList, map[string]interface{}{
+					"value": stat.Env,
+					"label": label,
+					"count": stat.Count,
+				})
+			}
+			stats["byEnv"] = envList
+		} else {
+			envMap := make(map[string]int64)
+			for _, stat := range envStats {
+				envMap[stat.Env] = stat.Count
+			}
+			stats["byEnv"] = envMap
+		}
+	} else {
+		envMap := make(map[string]int64)
+		for _, stat := range envStats {
+			envMap[stat.Env] = stat.Count
+		}
+		stats["byEnv"] = envMap
 	}
-	stats["byEnv"] = envMap
 
 	var statusStats []struct {
 		Status string
@@ -444,6 +566,36 @@ func (r *ServerRepository) FindAllGroupRelations() ([]modelcmdb.ServerGroupRelat
 	return relations, err
 }
 
+// CountUngroupedServers 统计未分组主机数量
+func (r *ServerRepository) CountUngroupedServers() (int64, error) {
+	var count int64
+	err := r.db.Model(&modelcmdb.Server{}).
+		Where("id NOT IN (SELECT server_id FROM cmdb_server_group_relations)").
+		Count(&count).Error
+	return count, err
+}
+
+// CountServersByGroup 批量统计每个分组直接关联的主机数量
+func (r *ServerRepository) CountServersByGroup() (map[uint]int64, error) {
+	type result struct {
+		GroupID uint  `json:"group_id"`
+		Count   int64 `json:"count"`
+	}
+	var results []result
+	err := r.db.Table("cmdb_server_group_relations").
+		Select("group_id, COUNT(*) as count").
+		Group("group_id").
+		Find(&results).Error
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[uint]int64, len(results))
+	for _, r := range results {
+		m[r.GroupID] = r.Count
+	}
+	return m, nil
+}
+
 // FindAllServersBasic 查询所有服务器基本信息（用于资产树）
 func (r *ServerRepository) FindAllServersBasic() ([]struct {
 	ID          uint   `json:"id"`
@@ -460,10 +612,75 @@ func (r *ServerRepository) FindAllServersBasic() ([]struct {
 		Env         string `json:"env"`
 	}
 	err := r.db.Model(&modelcmdb.Server{}).
-		Select("id, hostname, ip, agent_status, env").
+		Select("id, hostname, ip, agent_status").
 		Order("hostname ASC").
 		Find(&servers).Error
+	if err != nil {
+		return servers, err
+	}
+
+	// 从属性表填充 env
+	if len(servers) > 0 {
+		serverIDs := make([]uint, len(servers))
+		for i := range servers {
+			serverIDs[i] = servers[i].ID
+		}
+		type envAttr struct {
+			ServerID       uint   `gorm:"column:server_id"`
+			AttributeValue string `gorm:"column:attribute_value"`
+		}
+		var envs []envAttr
+		r.db.Table("cmdb_server_attributes").
+			Select("server_id, attribute_value").
+			Where("server_id IN ? AND attribute_key = 'env'", serverIDs).
+			Scan(&envs)
+		envMap := make(map[uint]string)
+		for _, e := range envs {
+			envMap[e.ServerID] = e.AttributeValue
+		}
+		for i := range servers {
+			if env, ok := envMap[servers[i].ID]; ok {
+				servers[i].Env = env
+			}
+		}
+	}
 	return servers, err
+}
+
+// populateAttributes 从 cmdb_server_attributes 表批量填充 Server.AttributeValues
+func (r *ServerRepository) populateAttributes(servers []modelcmdb.Server) {
+	if len(servers) == 0 {
+		return
+	}
+	serverIDs := make([]uint, len(servers))
+	for i := range servers {
+		serverIDs[i] = servers[i].ID
+	}
+
+	type attrRow struct {
+		ServerID       uint   `gorm:"column:server_id"`
+		AttributeKey   string `gorm:"column:attribute_key"`
+		AttributeValue string `gorm:"column:attribute_value"`
+	}
+	var rows []attrRow
+	r.db.Table("cmdb_server_attributes").
+		Select("server_id, attribute_key, attribute_value").
+		Where("server_id IN ?", serverIDs).
+		Scan(&rows)
+
+	// 按 serverID 分组
+	attrMap := make(map[uint]map[string]string)
+	for _, row := range rows {
+		if attrMap[row.ServerID] == nil {
+			attrMap[row.ServerID] = make(map[string]string)
+		}
+		attrMap[row.ServerID][row.AttributeKey] = row.AttributeValue
+	}
+	for i := range servers {
+		if attrs, ok := attrMap[servers[i].ID]; ok {
+			servers[i].AttributeValues = attrs
+		}
+	}
 }
 
 // ========== 业务系统管理 ==========

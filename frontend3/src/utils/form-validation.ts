@@ -31,10 +31,6 @@ export const ServerFormRules = {
     ...ValidationRules.port,
     message: '请输入SSH端口（1-65535）'
   },
-  env: {
-    ...ValidationRules.env,
-    message: '请选择环境'
-  },
   status: {
     ...ValidationRules.serverStatus,
     message: '请选择状态'

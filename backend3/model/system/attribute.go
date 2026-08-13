@@ -21,7 +21,7 @@ type AttributeDefinition struct {
 	UpdatedAt    time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
 }
 
-func (AttributeDefinition) TableName() string { return "sys_attribute_definitions" }
+func (AttributeDefinition) TableName() string { return "cmdb_attribute_definitions" }
 
 // AttributeOption 属性选项
 type AttributeOption struct {
@@ -40,10 +40,8 @@ const (
 )
 
 const (
-	AttrTypeText        = "text"
-	AttrTypeSelect      = "select"
-	AttrTypeMultiselect = "multiselect"
-	AttrTypeNumber      = "number"
-	AttrTypeDate        = "date"
-	AttrTypeBoolean     = "boolean"
+	AttrTypeText    = "text"
+	AttrTypeSelect  = "select"
+	AttrTypeNumber  = "number"
+	AttrTypeBoolean = "boolean"
 )

@@ -4,7 +4,7 @@
    * 从 index.vue 拆分：包含分组搜索、树展示、右键菜单、分组创建对话框
    */
 
-  import { ref } from 'vue';
+  import { computed, ref } from 'vue';
   import type { FormInstance, FormRules } from 'element-plus';
   import type { TreeNode } from '../types/server.types';
 
@@ -13,6 +13,7 @@
     filteredGroupTree: TreeNode[];
     groupSearchKeyword: string;
     selectedGroupId: number | undefined;
+    selectedUngrouped: boolean;
     editingNodeId: number | null;
     editingNodeName: string;
     contextMenuVisible: boolean;
@@ -20,6 +21,7 @@
     groupDialogVisible: boolean;
     groupFormData: { name: string; parentId: number };
     groupTree: TreeNode[];
+    contextMenuNodeId: number | null;
     getNodeClass: (node: TreeNode) => string;
   }>();
 
@@ -48,6 +50,11 @@
   const editInputRef = ref<HTMLInputElement | null>(null);
   // @ts-expect-error vue-tsc noUnusedLocals: template ref
   const groupFormRef = ref<FormInstance>();
+
+  // 当前右键节点是否为虚拟节点（根节点/未分组节点），不允增删改
+  const isVirtualNode = computed(() => {
+    return props.contextMenuNodeId === 0 || props.contextMenuNodeId === -1;
+  });
 
   const groupFormRules: FormRules = {
     name: [
@@ -87,7 +94,7 @@
           node-key="id"
           :props="{ label: 'name', children: 'children' }"
           :highlight-current="true"
-          :current-node-key="selectedGroupId"
+          :current-node-key="selectedUngrouped ? -1 : selectedGroupId"
           :expand-on-click-node="false"
           :default-expand-all="true"
           @node-click="(data: TreeNode) => emit('node-click', data)"
@@ -144,22 +151,30 @@
           :style="{ left: contextMenuPosition.x + 'px', top: contextMenuPosition.y + 'px' }"
           @click.stop="emit('context-menu-close')"
         >
-          <div class="context-menu-item" @click.stop="emit('add-group')">
-            <icon-mdi-plus class="mr-8px" />
-            添加分组
-          </div>
-          <div class="context-menu-item primary" @click.stop="emit('add-server')">
-            <icon-mdi-server class="mr-8px" />
-            添加主机
-          </div>
-          <div class="context-menu-item" @click.stop="emit('edit-group')">
-            <icon-mdi-pencil class="mr-8px" />
-            重命名
-          </div>
-          <div class="context-menu-item danger" @click.stop="emit('delete-group')">
-            <icon-mdi-delete class="mr-8px" />
-            删除分组
-          </div>
+          <template v-if="isVirtualNode">
+            <div class="context-menu-item primary" @click.stop="emit('add-server')">
+              <icon-mdi-server class="mr-8px" />
+              添加主机
+            </div>
+          </template>
+          <template v-else>
+            <div class="context-menu-item" @click.stop="emit('add-group')">
+              <icon-mdi-plus class="mr-8px" />
+              添加分组
+            </div>
+            <div class="context-menu-item primary" @click.stop="emit('add-server')">
+              <icon-mdi-server class="mr-8px" />
+              添加主机
+            </div>
+            <div class="context-menu-item" @click.stop="emit('edit-group')">
+              <icon-mdi-pencil class="mr-8px" />
+              重命名
+            </div>
+            <div class="context-menu-item danger" @click.stop="emit('delete-group')">
+              <icon-mdi-delete class="mr-8px" />
+              删除分组
+            </div>
+          </template>
         </div>
       </Transition>
     </Teleport>

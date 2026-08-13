@@ -5,7 +5,8 @@
    */
 
   import { ref, watch } from 'vue';
-  import { fetchCheckConnectPermission, fetchGetSessions } from '@/service/api';
+  import { fetchCheckConnectPermission, fetchGetSessions, fetchGetServerAttributes, fetchGetAttributes } from '@/service/api';
+  import AttributeFormItems from './AttributeFormItems.vue';
 
   const props = defineProps<{
     visible: boolean;
@@ -26,12 +27,36 @@
   const drawerPermission = ref<{ credentials: CMDB.SSHCredential[] }>({ credentials: [] });
   const drawerLoading = ref(false);
 
+  // 扩展属性
+  const detailAttributes = ref<Api.SystemManage.AttributeDefinition[]>([]);
+  const detailServerAttributes = ref<System.ServerAttribute[]>([]);
+  const detailAttrLoading = ref(false);
+
+  function getDetailAttributeValue(id: number): string {
+    const attr = detailServerAttributes.value.find(a => a.attributeId === id);
+    return attr?.attributeValue || '';
+  }
+
+  function parseDetailAttributeOptions(optionsStr: string) {
+    if (!optionsStr) return [];
+    try {
+      return JSON.parse(optionsStr);
+    } catch {
+      return [];
+    }
+  }
+
+  function getDetailUnifiedAttributes() {
+    return detailAttributes.value;
+  }
+
   watch(
     () => props.visible,
     async val => {
       if (val && props.server) {
         drawerActiveTab.value = 'overview';
         await loadDrawerData();
+        await loadDetailAttributes();
       }
     }
   );
@@ -50,6 +75,23 @@
       /* ignore */
     } finally {
       drawerLoading.value = false;
+    }
+  }
+
+  async function loadDetailAttributes() {
+    if (!props.server) return;
+    detailAttrLoading.value = true;
+    try {
+      const [attrRes, serverAttrRes] = await Promise.all([
+        fetchGetAttributes().catch(() => ({ data: [] })),
+        fetchGetServerAttributes(props.server.id).catch(() => ({ data: [] }))
+      ]);
+      detailAttributes.value = (attrRes.data || []) as Api.SystemManage.AttributeDefinition[];
+      detailServerAttributes.value = (serverAttrRes.data || []) as System.ServerAttribute[];
+    } catch {
+      /* ignore */
+    } finally {
+      detailAttrLoading.value = false;
     }
   }
 </script>
@@ -167,6 +209,16 @@
               <ElDescriptionsItem label="创建时间" :span="2">{{ server.createdAt || '-' }}</ElDescriptionsItem>
               <ElDescriptionsItem label="备注" :span="2">{{ server.remarks || '-' }}</ElDescriptionsItem>
             </ElDescriptions>
+          </div>
+          <div class="overview-section">
+            <div class="section-title">扩展属性</div>
+            <AttributeFormItems
+              :attributes="getDetailUnifiedAttributes()"
+              :loading-attributes="detailAttrLoading"
+              :get-attribute-value="getDetailAttributeValue"
+              :parse-attribute-options="parseDetailAttributeOptions"
+              readonly
+            />
           </div>
         </ElTabPane>
 

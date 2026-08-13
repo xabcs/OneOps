@@ -45,6 +45,7 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   cmdb_audit_sessions: () => import("@/views/cmdb/audit/sessions/index.vue"),
   cmdb_business: () => import("@/views/cmdb/business/index.vue"),
   cmdb_config_agents: () => import("@/views/cmdb/config/agents/index.vue"),
+  cmdb_config_attributes: () => import("@/views/cmdb/config/attributes/index.vue"),
   cmdb_config_business: () => import("@/views/cmdb/config/business/index.vue"),
   cmdb_config_rooms: () => import("@/views/cmdb/config/rooms/index.vue"),
   cmdb_config_tags: () => import("@/views/cmdb/config/tags/index.vue"),
@@ -110,7 +111,6 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   plugin_tables_vtable: () => import("@/views/plugin/tables/vtable/index.vue"),
   plugin_typeit: () => import("@/views/plugin/typeit/index.vue"),
   plugin_video: () => import("@/views/plugin/video/index.vue"),
-  system_attributes: () => import("@/views/system_attributes/index.vue"),
   "user-center": () => import("@/views/user-center/index.vue"),
   webterminal: () => import("@/views/webterminal/index.vue"),
 };

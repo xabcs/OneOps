@@ -75,9 +75,10 @@ type ServerGroup struct {
 	UpdatedAt   time.Time `json:"updatedAt" gorm:"autoUpdateTime"`
 
 	// 关联
-	Parent   *ServerGroup  `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
-	Children []ServerGroup `json:"children,omitempty" gorm:"foreignKey:ParentID"`
-	Servers  []Server      `json:"servers,omitempty" gorm:"many2many:cmdb_server_group_relations;joinForeignKey:GroupID;joinReferences:ServerID"`
+	Parent      *ServerGroup  `json:"parent,omitempty" gorm:"foreignKey:ParentID"`
+	Children    []ServerGroup `json:"children,omitempty" gorm:"foreignKey:ParentID"`
+	Servers     []Server      `json:"servers,omitempty" gorm:"many2many:cmdb_server_group_relations;joinForeignKey:GroupID;joinReferences:ServerID"`
+	ServerCount int           `json:"serverCount" gorm:"-"` // 直接关联的主机数量（不递归）
 }
 
 // TableName 指定表名

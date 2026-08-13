@@ -1,15 +1,11 @@
 package routes
 
 import (
-	"oneops/backend3/pkg/database"
 	"oneops/backend3/pkg/middleware"
 
-	cmdbsvc "oneops/backend3/service/cmdb"
 	syssvc "oneops/backend3/service/system"
 
-	cmdbctrl "oneops/backend3/controller/cmdb"
 	sysctrl "oneops/backend3/controller/system"
-	repocmdb "oneops/backend3/repository/cmdb"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,12 +17,7 @@ func SetupSystemRoutes(
 	roleController *sysctrl.RoleController,
 	userController *sysctrl.UserController,
 ) {
-	// 创建属性控制器（属性定义属于 CMDB 模块，路由挂载在 system 下）
-	attributeRepo := repocmdb.NewAttributeRepository(database.GetDB())
-	attributeSvc := cmdbsvc.NewAttributeService(attributeRepo)
-	attributeController := cmdbctrl.NewAttributeController(attributeSvc)
-
-	// 创建权限控制器
+	// 创建 repositories
 	permSvc, err := syssvc.NewPermissionService()
 	if err != nil {
 		panic("failed to create permission service: " + err.Error())
@@ -58,17 +49,6 @@ func SetupSystemRoutes(
 		system.PUT("/users/:id", userController.UpdateUser)
 		system.DELETE("/users/:id", userController.DeleteUser)
 		system.PUT("/users/:id/password", userController.ResetPassword)
-
-		// 属性管理
-		system.GET("/attributes", attributeController.GetAttributeDefinitions)
-		system.POST("/attributes", attributeController.CreateAttributeDefinition)
-		system.PUT("/attributes/:id", attributeController.UpdateAttributeDefinition)
-		system.DELETE("/attributes/:id", attributeController.DeleteAttributeDefinition)
-		system.GET("/attributes/:id", attributeController.GetAttributeDefinitionByID)
-
-		// 主机属性管理
-		system.GET("/server-attributes/:serverId", attributeController.GetServerAttributes)
-		system.POST("/server-attributes/:serverId", attributeController.SaveServerAttributes)
 
 		// 权限管理路由
 		registerPermissionRoutes(system, permController)

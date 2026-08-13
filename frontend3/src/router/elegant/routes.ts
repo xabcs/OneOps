@@ -311,6 +311,15 @@ export const generatedRoutes: GeneratedRoute[] = [
             }
           },
           {
+            name: 'cmdb_config_attributes',
+            path: '/cmdb/config/attributes',
+            component: 'view.cmdb_config_attributes',
+            meta: {
+              title: 'cmdb_config_attributes',
+              i18nKey: 'route.cmdb_config_attributes'
+            }
+          },
+          {
             name: 'cmdb_config_business',
             path: '/cmdb/config/business',
             component: 'view.cmdb_config_business',
@@ -1101,30 +1110,6 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'plugin_video',
           i18nKey: 'route.plugin_video'
-        }
-      }
-    ]
-  },
-  {
-    name: 'system',
-    path: '/system',
-    component: 'layout.base',
-    meta: {
-      title: 'system',
-      i18nKey: 'route.system',
-      icon: 'mdi:cog',
-      order: 10
-    },
-    children: [
-      {
-        name: 'system_attributes',
-        path: '/system/attributes',
-        component: 'view.system_attributes',
-        meta: {
-          title: 'system_attributes',
-          i18nKey: 'route.system_attributes',
-          icon: 'mdi:format-list-bulleted',
-          order: 1
         }
       }
     ]

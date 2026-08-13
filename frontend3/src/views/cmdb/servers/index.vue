@@ -2,7 +2,7 @@
   import { onMounted, onUnmounted, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import { ElMessageBox, ElNotification } from 'element-plus';
-  import { fetchDeleteServer } from '@/service/api';
+  import { fetchDeleteServer, fetchGetServersByAttributes } from '@/service/api';
   import type { TreeNode } from './types/server.types';
 
   // 子组件
@@ -61,7 +61,7 @@
   }
 
   function getEnvDisplayInfo(envValue: string) {
-    const options = getAttributeOptions('server_env');
+    const options = getAttributeOptions('env');
     const option = options.find(opt => opt.value === envValue);
     const label = option?.label || envValue || '-';
     let type: 'success' | 'warning' | 'danger' | 'info' = 'info';
@@ -111,7 +111,7 @@
   }
 
   function getUnifiedAttributes() {
-    return serverDataCtx.attributeDefinitions.value.filter(attr => attr.key !== 'env' && attr.key !== 'server_type');
+    return serverDataCtx.attributeDefinitions.value;
   }
 
   function parseAttributeOptions(optionsStr: string) {
@@ -183,7 +183,9 @@
     return {
       searchType: searchCtx.searchType.value,
       searchKeyword: searchCtx.searchKeyword.value,
-      groupId: groupTreeCtx.selectedGroupId.value
+      groupId: groupTreeCtx.selectedGroupId.value,
+      ungrouped: groupTreeCtx.selectedUngrouped.value,
+      tagId: tagFilterId.value
     };
   }
 
@@ -192,6 +194,40 @@
   }
 
   function handleSearch() {
+    serverDataCtx.pagination.page = 1;
+    refreshServers();
+  }
+
+  // ===== 按属性筛选 =====
+  const attrFilterActive = ref(false);
+
+  // ===== 按标签筛选 =====
+  const tagFilterId = ref<number | undefined>(undefined);
+
+  async function handleAttributeFilter(filters: Record<string, string>) {
+    serverDataCtx.pagination.page = 1;
+    if (Object.keys(filters).length === 0) {
+      attrFilterActive.value = false;
+      refreshServers();
+      return;
+    }
+    attrFilterActive.value = true;
+    serverDataCtx.loading.value = true;
+    try {
+      const res = await fetchGetServersByAttributes(filters, serverDataCtx.pagination.page, serverDataCtx.pagination.pageSize);
+      if (res.data) {
+        serverDataCtx.tableData.value = res.data.list || [];
+        serverDataCtx.total.value = res.data.total || 0;
+      }
+    } catch {
+      /* 全局拦截器处理 */
+    } finally {
+      serverDataCtx.loading.value = false;
+    }
+  }
+
+  function handleTagFilter(tagId: number | undefined) {
+    tagFilterId.value = tagId;
     serverDataCtx.pagination.page = 1;
     refreshServers();
   }
@@ -241,6 +277,7 @@
 
   // ===== 创建/编辑提交（子组件验证通过后触发）=====
   async function onSubmitted() {
+
     const success = await formCtx.submitForm(async (serverId: number) => {
       await serverDataCtx.saveServerAttributes(serverId, serverAttributes.value);
     });
@@ -405,10 +442,12 @@
       :filtered-group-tree="groupTreeCtx.filteredGroupTree.value"
       :group-search-keyword="groupTreeCtx.groupSearchKeyword.value"
       :selected-group-id="groupTreeCtx.selectedGroupId.value"
+      :selected-ungrouped="groupTreeCtx.selectedUngrouped.value"
       :editing-node-id="groupTreeCtx.editingNodeId.value"
       :editing-node-name="groupTreeCtx.editingNodeName.value"
       :context-menu-visible="groupTreeCtx.contextMenuVisible.value"
       :context-menu-position="groupTreeCtx.contextMenuPosition.value"
+      :context-menu-node-id="groupTreeCtx.contextMenuNodeId.value"
       :group-dialog-visible="groupTreeCtx.groupDialogVisible.value"
       :group-form-data="groupTreeCtx.groupFormData.value"
       :group-tree="groupTreeCtx.groupTree.value"
@@ -439,6 +478,8 @@
       :pagination="serverDataCtx.pagination"
       :search-type="searchCtx.searchType.value"
       :search-keyword="searchCtx.searchKeyword.value"
+      :attribute-definitions="serverDataCtx.attributeDefinitions.value"
+      :server-tags="serverDataCtx.serverTags.value"
       :get-env-display-info="getEnvDisplayInfo"
       :get-usage-color="getUsageColor"
       :get-max-disk-partition="getMaxDiskPartition"
@@ -462,6 +503,8 @@
       @more-action="handleMoreAction"
       @batch-command="handleBatchCommand"
       @create-command="handleCreateCommand"
+      @attribute-filter="handleAttributeFilter"
+      @tag-filter="handleTagFilter"
     />
 
     <!-- 创建主机对话框 -->
@@ -484,6 +527,7 @@
       :get-attribute-options="getAttributeOptions"
       :parse-attribute-options="parseAttributeOptions"
       :get-unified-attributes="getUnifiedAttributes"
+      :server-tags="serverDataCtx.serverTags.value"
       @submitted="onSubmitted"
     />
 

@@ -211,6 +211,7 @@ const routeMap: RouteMap = {
   "cmdb_business": "/cmdb/business",
   "cmdb_config": "/cmdb/config",
   "cmdb_config_agents": "/cmdb/config/agents",
+  "cmdb_config_attributes": "/cmdb/config/attributes",
   "cmdb_config_business": "/cmdb/config/business",
   "cmdb_config_rooms": "/cmdb/config/rooms",
   "cmdb_config_tags": "/cmdb/config/tags",
@@ -295,8 +296,6 @@ const routeMap: RouteMap = {
   "plugin_tables_vtable": "/plugin/tables/vtable",
   "plugin_typeit": "/plugin/typeit",
   "plugin_video": "/plugin/video",
-  "system": "/system",
-  "system_attributes": "/system/attributes",
   "user-center": "/user-center",
   "webterminal": "/webterminal"
 };

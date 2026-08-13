@@ -4,6 +4,7 @@
    * 从 index.vue 拆分：搜索栏、表格、分页、批量操作下拉
    */
 
+  import { ref, computed, watch } from 'vue';
   import AlertBadge from './AlertBadge.vue';
   import MiniTrendChart from './MiniTrendChart.vue';
   import ServiceStatusIcon from './ServiceStatusIcon.vue';
@@ -16,6 +17,8 @@
     pagination: { page: number; pageSize: number };
     searchType: string;
     searchKeyword: string;
+    serverTags: CMDB.ServerTag[];
+    attributeDefinitions: Api.SystemManage.AttributeDefinition[];
     getEnvDisplayInfo: (env: string) => { label: string; type: string };
     getUsageColor: (val: number) => string;
     getMaxDiskPartition: (row: CMDB.Server) => { usage: number; mount: string };
@@ -36,7 +39,53 @@
     (e: 'more-action', cmd: string, row: CMDB.Server): void;
     (e: 'batch-command', cmd: string): void;
     (e: 'create-command', cmd: string): void;
+    (e: 'attribute-filter', filters: Record<string, string>): void;
+    (e: 'tag-filter', tagId: number | undefined): void;
   }>();
+
+  // 属性筛选
+  const attrFilterVisible = ref(false);
+  const selectedAttrKey = ref('');
+  const selectedAttrValue = ref('');
+
+  // 标签筛选
+  const selectedTagId = ref<number | undefined>(undefined);
+
+  function getSelectableAttrs() {
+    return props.attributeDefinitions;
+  }
+
+  function parseOptions(optionsStr: string) {
+    if (!optionsStr) return [];
+    try {
+      return JSON.parse(optionsStr);
+    } catch {
+      return [];
+    }
+  }
+
+  const selectedAttrDef = computed(() => {
+    return getSelectableAttrs().find(a => a.key === selectedAttrKey.value);
+  });
+
+  function applyAttrFilter() {
+    if (selectedAttrKey.value && selectedAttrValue.value) {
+      emit('attribute-filter', { [selectedAttrKey.value]: selectedAttrValue.value });
+    }
+    attrFilterVisible.value = false;
+  }
+
+  function clearAttrFilter() {
+    selectedAttrKey.value = '';
+    selectedAttrValue.value = '';
+    emit('attribute-filter', {});
+    attrFilterVisible.value = false;
+  }
+
+  // 标签筛选变化时通知父组件
+  watch(selectedTagId, val => {
+    emit('tag-filter', val);
+  });
 </script>
 
 <template>
@@ -114,6 +163,67 @@
         <ElButton text @click="emit('refresh')">
           <icon-mdi-refresh class="text-18px" :class="{ 'animate-spin': loading }" />
         </ElButton>
+        <ElPopover v-model:visible="attrFilterVisible" placement="bottom" :width="280" trigger="click">
+          <template #reference>
+            <ElButton text>
+              <icon-mdi-filter-variant class="text-18px" :class="{ 'text-primary': selectedAttrKey }" />
+            </ElButton>
+          </template>
+          <div class="flex flex-col gap-12px">
+            <div class="text-14px font-500">按属性筛选</div>
+            <ElSelect v-model="selectedAttrKey" placeholder="选择属性" clearable style="width: 100%">
+              <ElOption
+                v-for="attr in getSelectableAttrs()"
+                :key="attr.id"
+                :label="attr.name"
+                :value="attr.key"
+              />
+            </ElSelect>
+            <ElSelect
+              v-if="selectedAttrDef?.type === 'select'"
+              v-model="selectedAttrValue"
+              placeholder="选择值"
+              clearable
+              style="width: 100%"
+            >
+              <ElOption
+                v-for="opt in parseOptions(selectedAttrDef.options)"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
+              />
+            </ElSelect>
+            <ElInput
+              v-else
+              v-model="selectedAttrValue"
+              placeholder="输入属性值"
+              clearable
+            />
+            <div class="flex justify-end gap-8px">
+              <ElButton size="small" @click="clearAttrFilter">清除</ElButton>
+              <ElButton size="small" type="primary" @click="applyAttrFilter">筛选</ElButton>
+            </div>
+          </div>
+        </ElPopover>
+        <ElSelect
+          v-model="selectedTagId"
+          placeholder="按标签筛选"
+          clearable
+          size="small"
+          style="width: 140px"
+        >
+          <ElOption
+            v-for="tag in serverTags"
+            :key="tag.id"
+            :label="tag.name"
+            :value="tag.id"
+          >
+            <span>{{ tag.name }}</span>
+            <span
+              :style="{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: tag.color, marginLeft: '8px' }"
+            />
+          </ElOption>
+        </ElSelect>
       </div>
     </div>
 
@@ -177,6 +287,22 @@
                 {{ row.groups[0].name }}
                 <span v-if="row.groups.length > 1" class="ml-4px">+{{ row.groups.length - 1 }}</span>
               </ElTag>
+              <span v-else class="text-12px text-gray-400">-</span>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="标签" min-width="120" show-overflow-tooltip>
+            <template #default="{ row }">
+              <div v-if="row.tags && row.tags.length > 0" class="flex flex-wrap gap-2px">
+                <ElTag
+                  v-for="tag in row.tags.slice(0, 3)"
+                  :key="tag.id"
+                  size="small"
+                  :style="{ backgroundColor: tag.color, color: '#fff', border: 'none' }"
+                >
+                  {{ tag.name }}
+                </ElTag>
+                <span v-if="row.tags.length > 3" class="text-12px text-gray-400">+{{ row.tags.length - 3 }}</span>
+              </div>
               <span v-else class="text-12px text-gray-400">-</span>
             </template>
           </ElTableColumn>
