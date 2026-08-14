@@ -82,22 +82,30 @@
     size="80%"
     destroy-on-close
   >
-    <ElTabs v-model="activeTab" type="border-card">
+    <ElTabs v-model="activeTab">
       <!-- 基础信息 Tab -->
       <ElTabPane label="基础信息" name="basic">
-        <ElForm ref="formRef" :model="serverForm" :rules="serverFormRules" label-width="100px" class="edit-form">
-          <div class="edit-form-row">
-            <div class="edit-form-col">
-              <div class="subsection-title">主机信息</div>
-              <ElFormItem label="主机名" prop="hostname" class="hostname-input">
+        <ElForm ref="formRef" :model="serverForm" :rules="serverFormRules" label-width="100px" :style="{ padding: '16px' }">
+          <div :style="{ display: 'flex', gap: '20px', marginBottom: '16px' }">
+            <div :style="{ flex: '1', minWidth: '0' }">
+              <div :style="{ fontSize: '13px', fontWeight: 600, color: 'var(--el-color-primary)', marginBottom: '10px', paddingBottom: '4px', borderBottom: '1px solid #dcdfe6' }">
+                主机信息
+              </div>
+              <ElFormItem label="主机名" prop="hostname" :style="{ marginBottom: '8px' }">
                 <ElInput v-model="serverForm.hostname" placeholder="请输入主机名" />
-                <div v-if="submitError && submitError.includes('主机名')" class="form-error-text">
+                <div
+                  v-if="submitError && submitError.includes('主机名')"
+                  :style="{ color: '#f56c6c', fontSize: '12px', lineHeight: '1', paddingTop: '4px' }"
+                >
                   {{ submitError }}
                 </div>
               </ElFormItem>
-              <ElFormItem label="连接IP" prop="ip" class="ip-input">
+              <ElFormItem label="连接IP" prop="ip" :style="{ marginBottom: '8px' }">
                 <ElInput v-model="serverForm.ip" placeholder="请输入连接IP" />
-                <div v-if="submitError && submitError.includes('IP地址')" class="form-error-text">
+                <div
+                  v-if="submitError && submitError.includes('IP地址')"
+                  :style="{ color: '#f56c6c', fontSize: '12px', lineHeight: '1', paddingTop: '4px' }"
+                >
                   {{ submitError }}
                 </div>
               </ElFormItem>
@@ -108,8 +116,10 @@
                 <ElInputNumber v-model="serverForm.sshPort" :min="1" :max="65535" style="width: 100%" />
               </ElFormItem>
             </div>
-            <div class="edit-form-col">
-              <div class="subsection-title">归属信息</div>
+            <div :style="{ flex: '1', minWidth: '0' }">
+              <div :style="{ fontSize: '13px', fontWeight: 600, color: 'var(--el-color-primary)', marginBottom: '10px', paddingBottom: '4px', borderBottom: '1px solid #dcdfe6' }">
+                归属信息
+              </div>
               <ElFormItem label="业务系统">
                 <ElTreeSelect
                   v-model="serverForm.businessId"
@@ -124,9 +134,11 @@
             </div>
           </div>
 
-          <div class="edit-form-row">
-            <div class="edit-form-col">
-              <div class="subsection-title">凭证配置</div>
+          <div :style="{ display: 'flex', gap: '20px', marginBottom: '16px' }">
+            <div :style="{ flex: '1', minWidth: '0' }">
+              <div :style="{ fontSize: '13px', fontWeight: 600, color: 'var(--el-color-primary)', marginBottom: '10px', paddingBottom: '4px', borderBottom: '1px solid #dcdfe6' }">
+                凭证配置
+              </div>
               <ElFormItem label="用户连接凭证" prop="credentialIds">
                 <ElSelect
                   v-model="serverForm.credentialIds"
@@ -160,8 +172,10 @@
                 </ElSelect>
               </ElFormItem>
             </div>
-            <div class="edit-form-col">
-              <div class="subsection-title">分组与标签</div>
+            <div :style="{ flex: '1', minWidth: '0' }">
+              <div :style="{ fontSize: '13px', fontWeight: 600, color: 'var(--el-color-primary)', marginBottom: '10px', paddingBottom: '4px', borderBottom: '1px solid #dcdfe6' }">
+                分组与标签
+              </div>
               <ElFormItem label="所属分组" prop="groupIds">
                 <ElTreeSelect
                   v-model="serverForm.groupIds"
@@ -203,9 +217,11 @@
             </div>
           </div>
 
-          <div class="edit-form-row">
-            <div class="edit-form-col">
-              <div class="subsection-title">位置信息</div>
+          <div :style="{ display: 'flex', gap: '20px', marginBottom: '16px' }">
+            <div :style="{ flex: '1', minWidth: '0' }">
+              <div :style="{ fontSize: '13px', fontWeight: 600, color: 'var(--el-color-primary)', marginBottom: '10px', paddingBottom: '4px', borderBottom: '1px solid #dcdfe6' }">
+                位置信息
+              </div>
               <ElFormItem label="所在机房">
                 <ElSelect
                   v-model="serverForm.roomId"
@@ -239,8 +255,10 @@
                 </ElSelect>
               </ElFormItem>
             </div>
-            <div class="edit-form-col">
-              <div class="subsection-title">硬件配置</div>
+            <div :style="{ flex: '1', minWidth: '0' }">
+              <div :style="{ fontSize: '13px', fontWeight: 600, color: 'var(--el-color-primary)', marginBottom: '10px', paddingBottom: '4px', borderBottom: '1px solid #dcdfe6' }">
+                硬件配置
+              </div>
               <ElFormItem label="CPU/内存/磁盘">
                 <div style="display: flex; gap: 8px">
                   <ElInputNumber v-model="serverForm.cpu" :min="0" :max="1024" placeholder="CPU" style="flex: 1" />
@@ -284,7 +302,7 @@
 
       <!-- 云主机配置 Tab -->
       <ElTabPane label="云主机配置" name="cloud" :disabled="serverType !== 'cloud'">
-        <div v-if="serverType === 'cloud'" class="edit-form">
+        <div v-if="serverType === 'cloud'" :style="{ padding: '16px' }">
           <ElForm label-width="100px">
             <ElFormItem label="云服务商">
               <ElSelect v-model="cloudForm.provider" style="width: 100%">
@@ -315,9 +333,9 @@
             </ElFormItem>
           </ElForm>
         </div>
-        <div v-else class="py-40px text-center text-gray-400">
-          <icon-mdi-cloud-off-outline class="text-48px" />
-          <div class="mt-16px">当前主机不是云主机，无需配置云服务信息</div>
+        <div v-else :style="{ padding: '40px', textAlign: 'center', color: '#909399' }">
+          <icon-mdi-cloud-off-outline :style="{ fontSize: '48px' }" />
+          <div :style="{ marginTop: '16px' }">当前主机不是云主机，无需配置云服务信息</div>
         </div>
       </ElTabPane>
     </ElTabs>
@@ -329,85 +347,3 @@
     </template>
   </ElDrawer>
 </template>
-
-<style scoped>
-  .edit-form {
-    padding: 16px;
-  }
-  .edit-form-row {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 16px;
-  }
-  .edit-form-col {
-    flex: 1;
-    min-width: 0;
-  }
-  .subsection-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #409eff;
-    margin-bottom: 10px;
-    padding-bottom: 4px;
-    border-bottom: 1px solid #dcdfe6;
-  }
-  .hostname-input,
-  .ip-input {
-    margin-bottom: 8px;
-  }
-  .form-error-text {
-    color: #f56c6c;
-    font-size: 12px;
-    line-height: 1;
-    padding-top: 4px;
-    animation: shake 0.5s;
-  }
-  @keyframes shake {
-    0%,
-    100% {
-      transform: translateX(0);
-    }
-    25% {
-      transform: translateX(-4px);
-    }
-    75% {
-      transform: translateX(4px);
-    }
-  }
-  .attributes-container-drawer {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px 20px;
-    padding: 20px;
-  }
-  .attribute-form-item-compact {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px;
-    background-color: #fafafa;
-    border-radius: 6px;
-    border: 1px solid #e4e7ed;
-  }
-  .attribute-form-item-compact .attribute-label {
-    font-size: 13px;
-    font-weight: 500;
-    color: #303133;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .attribute-form-item-compact .attribute-input {
-    width: 100%;
-  }
-  .required-mark {
-    color: #f56c6c;
-    font-size: 14px;
-  }
-  .attribute-description {
-    font-size: 12px;
-    color: #909399;
-    font-weight: normal;
-    margin-left: 8px;
-  }
-</style>

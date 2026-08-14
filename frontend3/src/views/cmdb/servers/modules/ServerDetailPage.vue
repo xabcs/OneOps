@@ -592,7 +592,7 @@
 
   .back-arrow {
     font-size: 20px;
-    color: #0052d9;
+    color: var(--el-color-primary);
     cursor: pointer;
     transition: opacity 0.2s;
   }
@@ -634,12 +634,12 @@
   }
 
   .tab-item:hover {
-    color: #0052d9;
+    color: var(--el-color-primary);
   }
 
   .tab-item.active {
-    color: #0052d9;
-    border-top-color: #0052d9;
+    color: var(--el-color-primary);
+    border-top-color: var(--el-color-primary);
     border-bottom-color: transparent;
     margin-bottom: -1px;
   }

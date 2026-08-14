@@ -435,158 +435,154 @@
 </script>
 
 <template>
-  <div class="cmdb-servers-page h-full flex gap-12px overflow-hidden">
+  <el-container style="height: 100%">
     <!-- 左侧分组树 -->
-    <GroupTreePanel
-      :group-loading="groupTreeCtx.groupLoading.value"
-      :filtered-group-tree="groupTreeCtx.filteredGroupTree.value"
-      :group-search-keyword="groupTreeCtx.groupSearchKeyword.value"
-      :selected-group-id="groupTreeCtx.selectedGroupId.value"
-      :selected-ungrouped="groupTreeCtx.selectedUngrouped.value"
-      :editing-node-id="groupTreeCtx.editingNodeId.value"
-      :editing-node-name="groupTreeCtx.editingNodeName.value"
-      :context-menu-visible="groupTreeCtx.contextMenuVisible.value"
-      :context-menu-position="groupTreeCtx.contextMenuPosition.value"
-      :context-menu-node-id="groupTreeCtx.contextMenuNodeId.value"
-      :group-dialog-visible="groupTreeCtx.groupDialogVisible.value"
-      :group-form-data="groupTreeCtx.groupFormData.value"
-      :group-tree="groupTreeCtx.groupTree.value"
-      :get-node-class="groupTreeCtx.getNodeClass"
-      @update:group-search-keyword="groupTreeCtx.groupSearchKeyword.value = $event"
-      @update:editing-node-name="groupTreeCtx.editingNodeName.value = $event"
-      @node-click="onNodeClick"
-      @node-contextmenu="groupTreeCtx.handleNodeContextMenu"
-      @context-menu-close="groupTreeCtx.handleContextMenuClose"
-      @add-root-group="groupTreeCtx.handleAddRootGroup"
-      @refresh-groups="onRefreshGroups"
-      @edit-keydown="groupTreeCtx.handleEditKeydown"
-      @save-edit-group="groupTreeCtx.saveEditGroup"
-      @add-group="groupTreeCtx.handleAddGroup"
-      @add-server="onAddServer"
-      @edit-group="groupTreeCtx.handleEditGroup"
-      @delete-group="groupTreeCtx.handleDeleteGroup"
-      @update:group-dialog-visible="groupTreeCtx.groupDialogVisible.value = $event"
-      @save-group="groupTreeCtx.handleSaveGroup"
-    />
+    <el-aside width="220px" style="overflow: hidden;">
+      <GroupTreePanel
+        :group-loading="groupTreeCtx.groupLoading.value"
+        :filtered-group-tree="groupTreeCtx.filteredGroupTree.value"
+        :group-search-keyword="groupTreeCtx.groupSearchKeyword.value"
+        :selected-group-id="groupTreeCtx.selectedGroupId.value"
+        :selected-ungrouped="groupTreeCtx.selectedUngrouped.value"
+        :editing-node-id="groupTreeCtx.editingNodeId.value"
+        :editing-node-name="groupTreeCtx.editingNodeName.value"
+        :context-menu-visible="groupTreeCtx.contextMenuVisible.value"
+        :context-menu-position="groupTreeCtx.contextMenuPosition.value"
+        :context-menu-node-id="groupTreeCtx.contextMenuNodeId.value"
+        :group-dialog-visible="groupTreeCtx.groupDialogVisible.value"
+        :group-form-data="groupTreeCtx.groupFormData.value"
+        :group-tree="groupTreeCtx.groupTree.value"
+        :get-node-class="groupTreeCtx.getNodeClass"
+        @update:group-search-keyword="groupTreeCtx.groupSearchKeyword.value = $event"
+        @update:editing-node-name="groupTreeCtx.editingNodeName.value = $event"
+        @node-click="onNodeClick"
+        @node-contextmenu="groupTreeCtx.handleNodeContextMenu"
+        @context-menu-close="groupTreeCtx.handleContextMenuClose"
+        @add-root-group="groupTreeCtx.handleAddRootGroup"
+        @refresh-groups="onRefreshGroups"
+        @edit-keydown="groupTreeCtx.handleEditKeydown"
+        @save-edit-group="groupTreeCtx.saveEditGroup"
+        @add-group="groupTreeCtx.handleAddGroup"
+        @add-server="onAddServer"
+        @edit-group="groupTreeCtx.handleEditGroup"
+        @delete-group="groupTreeCtx.handleDeleteGroup"
+        @update:group-dialog-visible="groupTreeCtx.groupDialogVisible.value = $event"
+        @save-group="groupTreeCtx.handleSaveGroup"
+      />
+    </el-aside>
 
     <!-- 右侧主机列表 -->
-    <ServerListPanel
-      :loading="serverDataCtx.loading.value"
-      :table-data="serverDataCtx.tableData.value"
-      :total="serverDataCtx.total.value"
-      :selected-ids="serverDataCtx.selectedIds.value"
-      :pagination="serverDataCtx.pagination"
-      :search-type="searchCtx.searchType.value"
-      :search-keyword="searchCtx.searchKeyword.value"
-      :attribute-definitions="serverDataCtx.attributeDefinitions.value"
-      :server-tags="serverDataCtx.serverTags.value"
-      :get-env-display-info="getEnvDisplayInfo"
-      :get-usage-color="getUsageColor"
-      :get-max-disk-partition="getMaxDiskPartition"
-      :format-disk-partitions="formatDiskPartitions"
-      @update:search-type="searchCtx.searchType.value = $event"
-      @update:search-keyword="searchCtx.searchKeyword.value = $event"
-      @search="handleSearch"
-      @refresh="refreshServers"
-      @selection-change="serverDataCtx.handleSelectionChange"
-      @select-all="serverDataCtx.handleSelectAll"
-      @page-change="
-        serverDataCtx.handlePageChange($event);
-        refreshServers();
-      "
-      @page-size-change="
-        serverDataCtx.handlePageSizeChange($event);
-        refreshServers();
-      "
-      @view-detail="handleViewDetail"
-      @connect="handleConnect"
-      @more-action="handleMoreAction"
-      @batch-command="handleBatchCommand"
-      @create-command="handleCreateCommand"
-      @attribute-filter="handleAttributeFilter"
-      @tag-filter="handleTagFilter"
-    />
+    <el-main style="padding: 0; margin-left: 8px;">
+      <ServerListPanel
+        :loading="serverDataCtx.loading.value"
+        :table-data="serverDataCtx.tableData.value"
+        :total="serverDataCtx.total.value"
+        :selected-ids="serverDataCtx.selectedIds.value"
+        :pagination="serverDataCtx.pagination"
+        :search-type="searchCtx.searchType.value"
+        :search-keyword="searchCtx.searchKeyword.value"
+        :attribute-definitions="serverDataCtx.attributeDefinitions.value"
+        :server-tags="serverDataCtx.serverTags.value"
+        :get-env-display-info="getEnvDisplayInfo"
+        :get-usage-color="getUsageColor"
+        :get-max-disk-partition="getMaxDiskPartition"
+        :format-disk-partitions="formatDiskPartitions"
+        @update:search-type="searchCtx.searchType.value = $event"
+        @update:search-keyword="searchCtx.searchKeyword.value = $event"
+        @search="handleSearch"
+        @refresh="refreshServers"
+        @selection-change="serverDataCtx.handleSelectionChange"
+        @select-all="serverDataCtx.handleSelectAll"
+        @page-change="
+          serverDataCtx.handlePageChange($event);
+          refreshServers();
+        "
+        @page-size-change="
+          serverDataCtx.handlePageSizeChange($event);
+          refreshServers();
+        "
+        @view-detail="handleViewDetail"
+        @connect="handleConnect"
+        @more-action="handleMoreAction"
+        @batch-command="handleBatchCommand"
+        @create-command="handleCreateCommand"
+        @attribute-filter="handleAttributeFilter"
+        @tag-filter="handleTagFilter"
+      />
 
-    <!-- 创建主机对话框 -->
-    <ServerFormDialog
-      v-model:visible="formCtx.dialogVisible.value"
-      v-model:active-collapse="formCtx.activeCollapse.value"
-      :server-form="formCtx.serverForm"
-      :server-form-rules="formCtx.serverFormRules"
-      :submit-error="formCtx.submitError.value"
-      :user-credentials="serverDataCtx.userCredentials.value"
-      :system-credentials="serverDataCtx.systemCredentials.value"
-      :group-tree-for-select="groupTreeCtx.groupTreeForSelect.value"
-      :loading-attributes="loadingAttributes"
-      :attribute-definitions="serverDataCtx.attributeDefinitions.value"
-      :server-attributes="serverAttributes"
-      :get-attribute-value="getAttributeValue"
-      :set-attribute-value="setAttributeValue"
-      :get-attribute-multi-value="getAttributeMultiValue"
-      :set-attribute-multi-value="setAttributeMultiValue"
-      :get-attribute-options="getAttributeOptions"
-      :parse-attribute-options="parseAttributeOptions"
-      :get-unified-attributes="getUnifiedAttributes"
-      :server-tags="serverDataCtx.serverTags.value"
-      @submitted="onSubmitted"
-    />
+      <!-- 创建主机对话框 -->
+      <ServerFormDialog
+        v-model:visible="formCtx.dialogVisible.value"
+        v-model:active-collapse="formCtx.activeCollapse.value"
+        :server-form="formCtx.serverForm"
+        :server-form-rules="formCtx.serverFormRules"
+        :submit-error="formCtx.submitError.value"
+        :user-credentials="serverDataCtx.userCredentials.value"
+        :system-credentials="serverDataCtx.systemCredentials.value"
+        :group-tree-for-select="groupTreeCtx.groupTreeForSelect.value"
+        :loading-attributes="loadingAttributes"
+        :attribute-definitions="serverDataCtx.attributeDefinitions.value"
+        :server-attributes="serverAttributes"
+        :get-attribute-value="getAttributeValue"
+        :set-attribute-value="setAttributeValue"
+        :get-attribute-multi-value="getAttributeMultiValue"
+        :set-attribute-multi-value="setAttributeMultiValue"
+        :get-attribute-options="getAttributeOptions"
+        :parse-attribute-options="parseAttributeOptions"
+        :get-unified-attributes="getUnifiedAttributes"
+        :server-tags="serverDataCtx.serverTags.value"
+        @submitted="onSubmitted"
+      />
 
-    <!-- 编辑主机抽屉 -->
-    <ServerEditDrawer
-      v-model:visible="formCtx.editDrawerVisible.value"
-      v-model:active-tab="formCtx.editDrawerActiveTab.value"
-      :server-form="formCtx.serverForm"
-      :server-form-rules="formCtx.serverFormRules"
-      :submit-error="formCtx.submitError.value"
-      :server-type="formCtx.serverType.value"
-      :cloud-form="formCtx.cloudForm"
-      :user-credentials="serverDataCtx.userCredentials.value"
-      :system-credentials="serverDataCtx.systemCredentials.value"
-      :server-tags="serverDataCtx.serverTags.value"
-      :server-rooms="serverDataCtx.serverRooms.value"
-      :cabinets="serverDataCtx.cabinets.value"
-      :business-units="serverDataCtx.businessUnits.value"
-      :group-tree-for-select="groupTreeCtx.groupTreeForSelect.value"
-      :loading-attributes="loadingAttributes"
-      :attribute-definitions="serverDataCtx.attributeDefinitions.value"
-      :get-attribute-options="getAttributeOptions"
-      :get-unified-attributes="getUnifiedAttributes"
-      :get-attribute-value="getAttributeValue"
-      :set-attribute-value="setAttributeValue"
-      :get-attribute-multi-value="getAttributeMultiValue"
-      :set-attribute-multi-value="setAttributeMultiValue"
-      :parse-attribute-options="parseAttributeOptions"
-      :handle-room-change="serverDataCtx.handleRoomChange"
-      @submitted="onSubmitted"
-    />
+      <!-- 编辑主机抽屉 -->
+      <ServerEditDrawer
+        v-model:visible="formCtx.editDrawerVisible.value"
+        v-model:active-tab="formCtx.editDrawerActiveTab.value"
+        :server-form="formCtx.serverForm"
+        :server-form-rules="formCtx.serverFormRules"
+        :submit-error="formCtx.submitError.value"
+        :server-type="formCtx.serverType.value"
+        :cloud-form="formCtx.cloudForm"
+        :user-credentials="serverDataCtx.userCredentials.value"
+        :system-credentials="serverDataCtx.systemCredentials.value"
+        :server-tags="serverDataCtx.serverTags.value"
+        :server-rooms="serverDataCtx.serverRooms.value"
+        :cabinets="serverDataCtx.cabinets.value"
+        :business-units="serverDataCtx.businessUnits.value"
+        :group-tree-for-select="groupTreeCtx.groupTreeForSelect.value"
+        :loading-attributes="loadingAttributes"
+        :attribute-definitions="serverDataCtx.attributeDefinitions.value"
+        :get-attribute-options="getAttributeOptions"
+        :get-unified-attributes="getUnifiedAttributes"
+        :get-attribute-value="getAttributeValue"
+        :set-attribute-value="setAttributeValue"
+        :get-attribute-multi-value="getAttributeMultiValue"
+        :set-attribute-multi-value="setAttributeMultiValue"
+        :parse-attribute-options="parseAttributeOptions"
+        :handle-room-change="serverDataCtx.handleRoomChange"
+        @submitted="onSubmitted"
+      />
 
-    <!-- 主机详情抽屉 -->
-    <ServerDetailDrawer
-      :visible="drawerVisible"
-      :server="drawerServer"
-      :get-usage-color="getUsageColor"
-      :get-env-display-info="getEnvDisplayInfo"
-      :format-time="formatTime"
-      :format-disk-partitions-for-drawer="formatDiskPartitionsForDrawer"
-      :handle-connect="handleConnect"
-      @update:visible="drawerVisible = $event"
-    />
+      <!-- 主机详情抽屉 -->
+      <ServerDetailDrawer
+        :visible="drawerVisible"
+        :server="drawerServer"
+        :get-usage-color="getUsageColor"
+        :get-env-display-info="getEnvDisplayInfo"
+        :format-time="formatTime"
+        :format-disk-partitions-for-drawer="formatDiskPartitionsForDrawer"
+        :handle-connect="handleConnect"
+        @update:visible="drawerVisible = $event"
+      />
 
-    <!-- 连接确认对话框 -->
-    <ServerConnectDialog
-      :visible="connectDialogVisible"
-      :connecting-server="connectingServer"
-      @update:visible="connectDialogVisible = $event"
-      @confirm="confirmConnect"
-      @cancel="connectingServer = null"
-    />
-  </div>
+      <!-- 连接确认对话框 -->
+      <ServerConnectDialog
+        :visible="connectDialogVisible"
+        :connecting-server="connectingServer"
+        @update:visible="connectDialogVisible = $event"
+        @confirm="confirmConnect"
+        @cancel="connectingServer = null"
+      />
+    </el-main>
+  </el-container>
 </template>
-
-<style scoped lang="scss">
-  @use '@/styles/scss/compact-theme.scss' as *;
-
-  .cmdb-servers-page {
-    @extend .compact-form;
-  }
-</style>

@@ -8,6 +8,7 @@
   import AlertBadge from './AlertBadge.vue';
   import MiniTrendChart from './MiniTrendChart.vue';
   import ServiceStatusIcon from './ServiceStatusIcon.vue';
+  import CircleBadge from '@/components/common/CircleBadge.vue';
 
   const props = defineProps<{
     loading: boolean;
@@ -86,24 +87,26 @@
   watch(selectedTagId, val => {
     emit('tag-filter', val);
   });
+
+  const groupTypes = ['primary', 'success', 'warning', 'danger'] as const;
+  function groupType(id: number) {
+    return groupTypes[id % groupTypes.length];
+  }
 </script>
 
 <template>
-  <div class="min-w-0 flex flex-col flex-1">
+  <div style="min-width: 0; height: 100%; display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+    <ElCard
+      shadow="never"
+      body-style="padding: 12px; border-radius: 0; flex: 1; display: flex; flex-direction: column; overflow: hidden;"
+      style="border-radius: 0; flex: 1; display: flex; flex-direction: column; overflow: hidden;"
+    >
     <!-- 头部：搜索和操作按钮 -->
     <div class="mb-8px flex items-center justify-between gap-12px">
       <div class="flex items-center gap-8px">
         <ElDropdown trigger="click" @command="emit('create-command', $event)">
           <ElButton
             type="primary"
-            :style="{
-              backgroundColor: '#0052D9',
-              borderColor: '#0052D9',
-              color: '#fff',
-              borderRadius: '0',
-              fontSize: '12px',
-              height: '30px'
-            }"
           >
             <template #icon><icon-ic-round-plus class="text-icon" /></template>
             创建
@@ -117,7 +120,7 @@
           </template>
         </ElDropdown>
         <ElDropdown trigger="click" :disabled="selectedIds.length === 0" @command="emit('batch-command', $event)">
-          <ElButton plain :style="{ borderRadius: '0', fontSize: '12px', height: '30px' }">
+          <ElButton plain>
             更多操作
             <icon-ic-round-keyboard-arrow-down class="ml-4px text-icon" />
           </ElButton>
@@ -140,10 +143,11 @@
         </ElDropdown>
       </div>
 
-      <div class="search-inputs flex items-center gap-8px">
+      <div :style="{ display: 'flex', alignItems: 'center', gap: '8px' }">
         <ElSelect
           :model-value="searchType"
           placeholder="筛选条件"
+          style="width: 120px"
           @update:model-value="emit('update:searchType', $event)"
         >
           <ElOption label="主机名" value="hostname" />
@@ -235,7 +239,6 @@
           height="100%"
           :data="tableData"
           size="small"
-          class="server-list-table compact-table"
           :row-style="{ height: '48px' }"
           :cell-style="{ padding: '0', borderRight: 'none' }"
           :header-cell-style="{ backgroundColor: '#f5f7fa', borderRight: 'none' }"
@@ -253,14 +256,17 @@
           </ElTableColumn>
           <ElTableColumn label="IP地址" min-width="150" show-overflow-tooltip>
             <template #default="{ row }">
-              <div class="ip-list">
-                <div class="ip-row">
-                  {{ row.ip }}
-                  <span class="ip-tag-outer">外</span>
+              <div :style="{ display: 'flex', flexDirection: 'column', gap: '2px' }">
+                <div :style="{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#606266', fontFamily: 'ui-monospace, SF Mono, Menlo, Monaco, Consolas, Courier New, monospace' }">
+                  <span>{{ row.ip }}</span>
+                  <CircleBadge type="primary">外</CircleBadge>
                 </div>
-                <div v-if="row.innerIp" class="ip-row ip-row-inner">
-                  {{ row.innerIp }}
-                  <span class="ip-tag-inner">内</span>
+                <div
+                  v-if="row.innerIp"
+                  :style="{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#606266', fontFamily: 'ui-monospace, SF Mono, Menlo, Monaco, Consolas, Courier New, monospace' }"
+                >
+                  <span>{{ row.innerIp }}</span>
+                  <CircleBadge type="success">内</CircleBadge>
                 </div>
               </div>
             </template>
@@ -272,7 +278,7 @@
           </ElTableColumn>
           <ElTableColumn label="环境" width="75" align="center">
             <template #default="{ row }">
-              <ElTag :type="getEnvDisplayInfo(row.attributeValues?.env).type" size="small" effect="plain">
+              <ElTag v-if="row.attributeValues?.env" :type="getEnvDisplayInfo(row.attributeValues?.env).type" size="small" effect="dark" round>
                 {{ getEnvDisplayInfo(row.attributeValues?.env).label }}
               </ElTag>
             </template>
@@ -281,13 +287,13 @@
             <template #default="{ row }">
               <ElTag
                 v-if="row.groups && row.groups.length > 0"
-                :style="{ color: row.groups[0].color, borderColor: row.groups[0].color }"
+                :type="groupType(row.groups[0].id)"
                 size="small"
+                effect="dark"
               >
                 {{ row.groups[0].name }}
                 <span v-if="row.groups.length > 1" class="ml-4px">+{{ row.groups.length - 1 }}</span>
               </ElTag>
-              <span v-else class="text-12px text-gray-400">-</span>
             </template>
           </ElTableColumn>
           <ElTableColumn label="标签" min-width="120" show-overflow-tooltip>
@@ -297,13 +303,14 @@
                   v-for="tag in row.tags.slice(0, 3)"
                   :key="tag.id"
                   size="small"
-                  :style="{ backgroundColor: tag.color, color: '#fff', border: 'none' }"
+                  effect="dark"
+                  round
+                  :style="{ backgroundColor: tag.color, borderColor: tag.color }"
                 >
                   {{ tag.name }}
                 </ElTag>
                 <span v-if="row.tags.length > 3" class="text-12px text-gray-400">+{{ row.tags.length - 3 }}</span>
               </div>
-              <span v-else class="text-12px text-gray-400">-</span>
             </template>
           </ElTableColumn>
           <ElTableColumn label="资源使用率" min-width="200" align="center">
@@ -316,23 +323,21 @@
               </template>
               <template v-else-if="row.metricsUpdatedAt">
                 <ElTooltip :content="formatDiskPartitions(row)" placement="top">
-                  <div class="usage-compact">
-                    <span class="usage-item" :style="{ color: getUsageColor(row.cpuUsage) }">
-                      <span class="usage-label">CPU</span>
-                      <span class="usage-value">{{ Math.round(row.cpuUsage || 0) }}%</span>
+                  <div :style="{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12px', whiteSpace: 'nowrap', width: '100%' }">
+                    <span :style="{ display: 'inline-flex', alignItems: 'center', gap: '4px' }">
+                      <span :style="{ color: '#909399', fontSize: '11px' }">CPU</span>
+                      <span :style="{ color: getUsageColor(row.cpuUsage), fontWeight: 600, fontSize: '12px', minWidth: '32px', textAlign: 'center' }">{{ Math.round(row.cpuUsage || 0) }}%</span>
                     </span>
-                    <span class="usage-divider">|</span>
-                    <span class="usage-item" :style="{ color: getUsageColor(row.memoryUsage) }">
-                      <span class="usage-label">内存</span>
-                      <span class="usage-value">{{ Math.round(row.memoryUsage || 0) }}%</span>
+                    <span :style="{ color: '#dcdfe6', margin: '0 2px' }">|</span>
+                    <span :style="{ display: 'inline-flex', alignItems: 'center', gap: '4px' }">
+                      <span :style="{ color: '#909399', fontSize: '11px' }">内存</span>
+                      <span :style="{ color: getUsageColor(row.memoryUsage), fontWeight: 600, fontSize: '12px', minWidth: '32px', textAlign: 'center' }">{{ Math.round(row.memoryUsage || 0) }}%</span>
                     </span>
-                    <span class="usage-divider">|</span>
-                    <span class="usage-item disk-usage">
-                      <span class="usage-label">磁盘</span>
-                      <span class="usage-value" :style="{ color: getUsageColor(getMaxDiskPartition(row).usage) }">
-                        {{ Math.round(getMaxDiskPartition(row).usage) }}%
-                      </span>
-                      <span class="disk-mount">({{ getMaxDiskPartition(row).mount }})</span>
+                    <span :style="{ color: '#dcdfe6', margin: '0 2px' }">|</span>
+                    <span :style="{ display: 'inline-flex', alignItems: 'center', gap: '4px' }">
+                      <span :style="{ color: '#909399', fontSize: '11px' }">磁盘</span>
+                      <span :style="{ color: getUsageColor(getMaxDiskPartition(row).usage), fontWeight: 600, fontSize: '12px', minWidth: '32px', textAlign: 'center' }">{{ Math.round(getMaxDiskPartition(row).usage) }}%</span>
+                      <span :style="{ fontSize: '10px', color: '#909399', marginLeft: '2px' }">({{ getMaxDiskPartition(row).mount }})</span>
                     </span>
                   </div>
                 </ElTooltip>
@@ -462,72 +467,6 @@
         />
       </div>
     </div>
+    </ElCard>
   </div>
 </template>
-
-<style scoped>
-  .search-inputs :deep(.el-select__wrapper) {
-    border-radius: 0 !important;
-  }
-  .search-inputs :deep(.el-input__wrapper) {
-    border-radius: 0 !important;
-  }
-  .usage-compact {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    font-size: 12px;
-    white-space: nowrap;
-    width: 100%;
-  }
-  .usage-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .usage-label {
-    color: #909399;
-    font-size: 11px;
-  }
-  .usage-value {
-    font-weight: 600;
-    font-size: 12px;
-    min-width: 32px;
-    text-align: center;
-  }
-  .usage-divider {
-    color: #dcdfe6;
-    margin: 0 2px;
-  }
-  .disk-mount {
-    font-size: 10px;
-    color: #909399;
-    margin-left: 2px;
-  }
-  .ip-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .ip-row {
-    font-size: 12px;
-    color: #606266;
-    font-family:
-      ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Code', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
-    font-weight: 400;
-    line-height: 1.3;
-  }
-  .ip-row-inner {
-    color: #606266;
-  }
-  .ip-tag-outer,
-  .ip-tag-inner {
-    font-size: 10px;
-    color: #909399;
-    margin-left: 6px;
-    opacity: 0.6;
-    font-weight: normal;
-    letter-spacing: 0.5px;
-  }
-</style>

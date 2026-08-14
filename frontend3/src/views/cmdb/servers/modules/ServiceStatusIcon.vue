@@ -49,60 +49,14 @@
 </script>
 
 <template>
-  <div
-    class="service-status-icon"
-    :class="[`status-${status}`, size, { 'with-text': showText }]"
+  <ElTag
+    :size="size"
+    effect="light"
+    round
     :title="getStatusText()"
+    :style="{ color: getStatusColor(), borderColor: getStatusColor(), display: 'inline-flex', alignItems: 'center', gap: '4px' }"
   >
-    <span class="status-indicator" :style="{ color: getStatusColor() }">{{ getStatusIcon() }}</span>
-    <span v-if="showText" class="status-text">{{ getStatusText() }}</span>
-  </div>
+    <span>{{ getStatusIcon() }}</span>
+    <span v-if="showText">{{ getStatusText() }}</span>
+  </ElTag>
 </template>
-
-<style scoped>
-  .service-status-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-  }
-
-  .status-indicator {
-    font-size: 12px;
-  }
-
-  .status-text {
-    font-size: 12px;
-  }
-
-  .service-status-icon.small .status-indicator {
-    font-size: 10px;
-  }
-
-  .service-status-icon.small .status-text {
-    font-size: 10px;
-  }
-
-  .service-status-icon.default .status-indicator {
-    font-size: 14px;
-  }
-
-  .service-status-icon.default .status-text {
-    font-size: 12px;
-  }
-
-  .status-running,
-  .status-active {
-    color: #52c41a;
-  }
-
-  .status-dead,
-  .status-failed {
-    color: #ff4d4f;
-  }
-
-  .status-offline,
-  .status-unknown {
-    color: #d9d9d9;
-  }
-</style>

@@ -404,15 +404,6 @@ export const generatedRoutes: GeneratedRoute[] = [
         }
       },
       {
-        name: 'cmdb_server',
-        path: '/cmdb/server',
-        component: 'view.cmdb_server',
-        meta: {
-          title: 'cmdb_server',
-          i18nKey: 'route.cmdb_server'
-        }
-      },
-      {
         name: 'cmdb_servers',
         path: '/cmdb/servers',
         component: 'view.cmdb_servers',

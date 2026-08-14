@@ -26,16 +26,10 @@
 </script>
 
 <template>
-  <ElBadge v-if="count > 0" :type="getBadgeType()" :value="formatCount()" :size="size" class="alert-badge">
+  <ElBadge v-if="count > 0" :type="getBadgeType()" :value="formatCount()" :size="size">
     <slot />
   </ElBadge>
-  <div v-else class="alert-badge-placeholder">
+  <span v-else :style="{ display: 'inline-block' }">
     <slot />
-  </div>
+  </span>
 </template>
-
-<style scoped>
-  .alert-badge-placeholder {
-    display: inline-block;
-  }
-</style>

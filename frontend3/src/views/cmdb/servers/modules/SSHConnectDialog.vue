@@ -181,8 +181,10 @@
       <ElRow :gutter="24">
         <!-- 左栏：连接配置 -->
         <ElCol :span="12">
-          <div class="config-section">
-            <div class="section-title">连接配置</div>
+          <div :style="{ padding: '4px 0' }">
+            <div :style="{ fontSize: '14px', fontWeight: 600, color: '#303133', marginBottom: '16px', paddingBottom: '8px', borderBottom: '1px solid #ebeef5' }">
+              连接配置
+            </div>
 
             <ElForm label-position="top" size="default">
               <ElFormItem label="连接协议">
@@ -223,11 +225,13 @@
 
         <!-- 右栏：安全上下文 -->
         <ElCol :span="12">
-          <div class="context-section">
-            <div class="section-title">安全上下文</div>
+          <div :style="{ padding: '4px 0' }">
+            <div :style="{ fontSize: '14px', fontWeight: 600, color: '#303133', marginBottom: '16px', paddingBottom: '8px', borderBottom: '1px solid #ebeef5' }">
+              安全上下文
+            </div>
 
-            <div class="context-item">
-              <span class="context-label">主机环境</span>
+            <div :style="{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px', gap: '8px' }">
+              <span :style="{ fontSize: '13px', color: '#606266', minWidth: '70px', flexShrink: 0, paddingTop: '2px' }">主机环境</span>
               <ElTag
                 :type="props.serverEnv === 'prod' ? 'danger' : props.serverEnv === 'test' ? 'warning' : 'info'"
                 size="small"
@@ -236,16 +240,16 @@
               </ElTag>
             </div>
 
-            <div class="context-item">
-              <span class="context-label">凭证状态</span>
+            <div :style="{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px', gap: '8px' }">
+              <span :style="{ fontSize: '13px', color: '#606266', minWidth: '70px', flexShrink: 0, paddingTop: '2px' }">凭证状态</span>
               <ElTag :type="availableCredentials.length > 0 ? 'success' : 'warning'" size="small">
                 {{ availableCredentials.length > 0 ? `${availableCredentials.length} 个可用` : '未配置' }}
               </ElTag>
             </div>
 
-            <div class="context-item">
-              <span class="context-label">最近连接</span>
-              <span class="context-value">
+            <div :style="{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px', gap: '8px' }">
+              <span :style="{ fontSize: '13px', color: '#606266', minWidth: '70px', flexShrink: 0, paddingTop: '2px' }">最近连接</span>
+              <span :style="{ fontSize: '13px', color: '#303133' }">
                 <template v-if="recentSession">
                   {{ recentSession.username }} · {{ recentSession.startedAt?.substring(0, 16) }}
                 </template>
@@ -253,9 +257,9 @@
               </span>
             </div>
 
-            <div class="context-item">
-              <span class="context-label">登录账号</span>
-              <span class="context-value">
+            <div :style="{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px', gap: '8px' }">
+              <span :style="{ fontSize: '13px', color: '#606266', minWidth: '70px', flexShrink: 0, paddingTop: '2px' }">登录账号</span>
+              <span :style="{ fontSize: '13px', color: '#303133' }">
                 {{ selectedCredential?.username || '—' }}
               </span>
             </div>
@@ -300,39 +304,3 @@
     </template>
   </ElDialog>
 </template>
-
-<style scoped>
-  .config-section,
-  .context-section {
-    padding: 4px 0;
-  }
-
-  .section-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #303133;
-    margin-bottom: 16px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #ebeef5;
-  }
-
-  .context-item {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 12px;
-    gap: 8px;
-  }
-
-  .context-label {
-    font-size: 13px;
-    color: #606266;
-    min-width: 70px;
-    flex-shrink: 0;
-    padding-top: 2px;
-  }
-
-  .context-value {
-    font-size: 13px;
-    color: #303133;
-  }
-</style>

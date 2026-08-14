@@ -36,14 +36,12 @@
 </script>
 
 <template>
-  <div v-if="loadingAttributes" class="py-12px text-center">
+  <div v-if="loadingAttributes" :style="{ padding: '12px 0', textAlign: 'center' }">
     <ElIcon class="is-loading"><icon-mdi-loading /></ElIcon>
-    <span class="ml-8px">加载中...</span>
+    <span :style="{ marginLeft: '8px' }">加载中...</span>
   </div>
-  <div v-else-if="attributes.length === 0" class="py-12px text-center text-gray-400">
-    暂无可用属性，请先在"系统管理 → 属性管理"中配置
-  </div>
-  <div v-else class="attributes-container">
+  <ElEmpty v-else-if="attributes.length === 0" description="暂无可用属性，请先在系统管理-属性管理中配置" />
+  <div v-else :style="{ display: 'flex', flexDirection: 'column', gap: '16px' }">
     <!-- readonly 模式 -->
     <template v-if="readonly">
       <ElDescriptions v-for="attr in attributes" :key="attr.id" :column="1" border size="small">
@@ -57,13 +55,13 @@
 
     <!-- 编辑模式 -->
     <template v-else>
-      <div v-for="attr in attributes" :key="attr.id" class="attribute-item">
-        <div class="attribute-label">
-          <span v-if="attr.required" class="required-mark">*</span>
+      <div v-for="attr in attributes" :key="attr.id" :style="{ display: 'flex', flexDirection: 'column', gap: '8px' }">
+        <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', display: 'flex', alignItems: 'center', gap: '4px' }">
+          <span v-if="attr.required" :style="{ color: '#f56c6c', fontSize: '14px' }">*</span>
           {{ attr.name }}
-          <span v-if="attr.description" class="attribute-description">{{ attr.description }}</span>
+          <span v-if="attr.description" :style="{ fontSize: '12px', color: '#909399', fontWeight: 'normal', marginLeft: '8px' }">{{ attr.description }}</span>
         </div>
-        <div class="attribute-input">
+        <div :style="{ width: '100%' }">
           <ElInput
             v-if="attr.type === 'text'"
             :model-value="getAttributeValue(attr.id)"
@@ -104,37 +102,3 @@
     </template>
   </div>
 </template>
-
-<style scoped>
-  .attributes-container {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .attribute-item {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .attribute-label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #303133;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .required-mark {
-    color: #f56c6c;
-    font-size: 14px;
-  }
-  .attribute-description {
-    font-size: 12px;
-    color: #909399;
-    font-weight: normal;
-    margin-left: 8px;
-  }
-  .attribute-input {
-    width: 100%;
-  }
-</style>

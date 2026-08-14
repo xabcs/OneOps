@@ -78,25 +78,25 @@
 <template>
   <ElDialog v-model="visible" :title="dialogTitle" width="600px">
     <ElForm ref="formRef" :model="serverForm" :rules="serverFormRules" label-width="100px">
-      <div class="form-section-title">基础信息（必填）</div>
+      <div :style="{ fontSize: '14px', fontWeight: 600, color: '#303133', marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #e4e7ed' }">
+        基础信息（必填）
+      </div>
 
-      <ElFormItem label="主机名" prop="hostname" class="hostname-input">
+      <ElFormItem label="主机名" prop="hostname" :style="{ marginBottom: '8px' }">
         <ElInput v-model="serverForm.hostname" placeholder="请输入主机名" />
         <div
           v-if="submitError && submitError.includes('主机名')"
-          class="form-error-text"
-          style="color: #f56c6c; font-size: 12px; line-height: 1; padding-top: 4px"
+          :style="{ color: '#f56c6c', fontSize: '12px', lineHeight: '1', paddingTop: '4px' }"
         >
           {{ submitError }}
         </div>
       </ElFormItem>
 
-      <ElFormItem label="连接IP" prop="ip" class="ip-input">
+      <ElFormItem label="连接IP" prop="ip" :style="{ marginBottom: '8px' }">
         <ElInput v-model="serverForm.ip" placeholder="请输入连接IP" />
         <div
           v-if="submitError && submitError.includes('IP地址')"
-          class="form-error-text"
-          style="color: #f56c6c; font-size: 12px; line-height: 1; padding-top: 4px"
+          :style="{ color: '#f56c6c', fontSize: '12px', lineHeight: '1', paddingTop: '4px' }"
         >
           {{ submitError }}
         </div>
@@ -104,7 +104,7 @@
 
       <ElFormItem label="SSH端口">
         <ElInputNumber v-model="serverForm.sshPort" :min="1" :max="65535" placeholder="默认22" style="width: 100%" />
-        <div class="mt-4px text-12px text-gray-400">SSH 连接端口，默认 22</div>
+        <div :style="{ marginTop: '4px', fontSize: '12px', color: '#909399' }">SSH 连接端口，默认 22</div>
       </ElFormItem>
 
       <ElFormItem label="SSH凭证" prop="credentialIds">
@@ -123,7 +123,7 @@
             :value="cred.id"
           />
         </ElSelect>
-        <div class="mt-4px text-12px text-gray-400">用于堡垒机 SSH 连接，受访问策略约束</div>
+        <div :style="{ marginTop: '4px', fontSize: '12px', color: '#909399' }">用于堡垒机 SSH 连接，受访问策略约束</div>
       </ElFormItem>
 
       <ElFormItem label="系统运维凭证">
@@ -140,7 +140,7 @@
             :value="cred.id"
           />
         </ElSelect>
-        <div class="mt-4px text-12px text-gray-400">用于 Agent 部署、重启、指标采集，需 root/sudo 权限</div>
+        <div :style="{ marginTop: '4px', fontSize: '12px', color: '#909399' }">用于 Agent 部署、重启、指标采集，需 root/sudo 权限</div>
       </ElFormItem>
 
       <ElFormItem label="所属分组" prop="groupIds">
@@ -181,7 +181,7 @@
         </ElSelect>
       </ElFormItem>
 
-      <ElCollapse v-model="activeCollapse" class="mt-16px">
+      <ElCollapse v-model="activeCollapse" :style="{ marginTop: '16px' }">
         <ElCollapseItem title="更多属性（可选）" name="attributes">
           <AttributeFormItems
             :attributes="getUnifiedAttributes()"
@@ -200,33 +200,3 @@
     </template>
   </ElDialog>
 </template>
-
-<style scoped>
-  .form-section-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #303133;
-    margin-bottom: 16px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid #e4e7ed;
-  }
-  .hostname-input,
-  .ip-input {
-    margin-bottom: 8px;
-  }
-  .form-error-text {
-    animation: shake 0.5s;
-  }
-  @keyframes shake {
-    0%,
-    100% {
-      transform: translateX(0);
-    }
-    25% {
-      transform: translateX(-4px);
-    }
-    75% {
-      transform: translateX(4px);
-    }
-  }
-</style>

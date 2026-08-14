@@ -54,7 +54,6 @@ export const views: Record<LastLevelRouteKey, RouteComponent | (() => Promise<Ro
   cmdb_dashboard: () => import("@/views/cmdb/dashboard/index.vue"),
   cmdb_policies: () => import("@/views/cmdb/policies/index.vue"),
   cmdb_rooms: () => import("@/views/cmdb/rooms/index.vue"),
-  cmdb_server: () => import("@/views/cmdb/server/index.vue"),
   cmdb_servers: () => import("@/views/cmdb/servers/index.vue"),
   cmdb_tags: () => import("@/views/cmdb/tags/index.vue"),
   "demo-route_child": () => import("@/views/demo-route/child/[id].vue"),

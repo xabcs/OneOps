@@ -11,7 +11,7 @@ export const themeSettings: App.Theme.ThemeSetting = {
     warning: 'rgb(245, 158, 11)', // 橙色 #f59e0b
     error: 'rgb(239, 68, 68)' // 红色 #ef4444
   },
-  isInfoFollowPrimary: true,
+  isInfoFollowPrimary: false,
   layout: {
     mode: 'vertical',
     scrollMode: 'content',

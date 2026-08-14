@@ -23,7 +23,7 @@
 
 <template>
   <ElDialog :model-value="visible" title="连接主机" width="480px" :close-on-click-modal="true" @close="onCancel">
-    <div v-if="connectingServer" class="connect-dialog-content">
+    <div v-if="connectingServer" :style="{ padding: '16px 0' }">
       <ElDescriptions :column="1" border>
         <ElDescriptionsItem label="主机名">{{ connectingServer.hostname }}</ElDescriptionsItem>
         <ElDescriptionsItem label="IP地址">{{ connectingServer.ip }}</ElDescriptionsItem>
@@ -36,21 +36,8 @@
       </ElDescriptions>
     </div>
     <template #footer>
-      <span class="dialog-footer">
-        <ElButton @click="onCancel">取消</ElButton>
-        <ElButton type="primary" @click="emit('confirm')">连接</ElButton>
-      </span>
+      <ElButton @click="onCancel">取消</ElButton>
+      <ElButton type="primary" @click="emit('confirm')">连接</ElButton>
     </template>
   </ElDialog>
 </template>
-
-<style scoped>
-  .connect-dialog-content {
-    padding: 16px 0;
-  }
-  .dialog-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-  }
-</style>

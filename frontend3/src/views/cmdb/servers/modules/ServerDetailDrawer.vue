@@ -109,8 +109,10 @@
       <ElTabs v-model="drawerActiveTab">
         <!-- 概览 Tab -->
         <ElTabPane label="概览" name="overview">
-          <div class="overview-section">
-            <div class="section-title">基础信息</div>
+          <div :style="{ marginBottom: '24px' }">
+            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+              基础信息
+            </div>
             <ElDescriptions :column="2" border size="small">
               <ElDescriptionsItem label="主机名">{{ server.hostname }}</ElDescriptionsItem>
               <ElDescriptionsItem label="连接IP">{{ server.ip }}</ElDescriptionsItem>
@@ -130,16 +132,20 @@
               </ElDescriptionsItem>
             </ElDescriptions>
           </div>
-          <div class="overview-section">
-            <div class="section-title">硬件配置</div>
+          <div :style="{ marginBottom: '24px' }">
+            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+              硬件配置
+            </div>
             <ElDescriptions :column="3" border size="small">
               <ElDescriptionsItem label="CPU">{{ server.cpu ? `${server.cpu} 核` : '-' }}</ElDescriptionsItem>
               <ElDescriptionsItem label="内存">{{ server.memory ? `${server.memory} GB` : '-' }}</ElDescriptionsItem>
               <ElDescriptionsItem label="磁盘">{{ server.disk ? `${server.disk} GB` : '-' }}</ElDescriptionsItem>
             </ElDescriptions>
           </div>
-          <div v-if="server.serverType === 'cloud' && server.cloudInfo" class="overview-section">
-            <div class="section-title">云主机信息</div>
+          <div v-if="server.serverType === 'cloud' && server.cloudInfo" :style="{ marginBottom: '24px' }">
+            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+              云主机信息
+            </div>
             <ElDescriptions :column="2" border size="small">
               <ElDescriptionsItem label="服务商">
                 <ElTag size="small">{{ server.provider || '-' }}</ElTag>
@@ -150,15 +156,17 @@
               <ElDescriptionsItem label="实例ID" :span="2">{{ server.cloudInfo.instanceId || '-' }}</ElDescriptionsItem>
             </ElDescriptions>
           </div>
-          <div class="overview-section">
-            <div class="section-title">归属信息</div>
+          <div :style="{ marginBottom: '24px' }">
+            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+              归属信息
+            </div>
             <ElDescriptions :column="2" border size="small">
               <ElDescriptionsItem label="业务系统">{{ server.business?.name || '-' }}</ElDescriptionsItem>
               <ElDescriptionsItem label="所属分组">
                 <ElTag v-for="group in server.groups" :key="group.id" size="small" style="margin-right: 4px">
                   {{ group.name }}
                 </ElTag>
-                <span v-if="!server.groups?.length" class="text-gray-400">未分组</span>
+                <span v-if="!server.groups?.length" :style="{ color: '#909399' }">未分组</span>
               </ElDescriptionsItem>
               <ElDescriptionsItem label="标签" :span="2">
                 <ElTag
@@ -170,12 +178,14 @@
                 >
                   {{ tag.name }}
                 </ElTag>
-                <span v-if="!server.tags?.length" class="text-gray-400">无标签</span>
+                <span v-if="!server.tags?.length" :style="{ color: '#909399' }">无标签</span>
               </ElDescriptionsItem>
             </ElDescriptions>
           </div>
-          <div class="overview-section">
-            <div class="section-title">状态信息</div>
+          <div :style="{ marginBottom: '24px' }">
+            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+              状态信息
+            </div>
             <ElDescriptions :column="2" border size="small">
               <ElDescriptionsItem label="Agent 状态">
                 <ElTag v-if="server.agentStatus === 'running'" type="success" size="small">
@@ -210,8 +220,10 @@
               <ElDescriptionsItem label="备注" :span="2">{{ server.remarks || '-' }}</ElDescriptionsItem>
             </ElDescriptions>
           </div>
-          <div class="overview-section">
-            <div class="section-title">扩展属性</div>
+          <div :style="{ marginBottom: '24px' }">
+            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+              扩展属性
+            </div>
             <AttributeFormItems
               :attributes="getDetailUnifiedAttributes()"
               :loading-attributes="detailAttrLoading"
@@ -250,7 +262,7 @@
                 >
                   {{ cred.name }}（{{ cred.username }}）
                 </ElTag>
-                <span v-if="!drawerPermission.credentials?.length" class="text-gray-400">暂无数据</span>
+                <span v-if="!drawerPermission.credentials?.length" :style="{ color: '#909399' }">暂无数据</span>
               </div>
             </ElDescriptionsItem>
           </ElDescriptions>
@@ -283,12 +295,14 @@
 
         <!-- 监控信息 Tab -->
         <ElTabPane label="监控信息" name="monitor">
-          <div class="monitor-section">
-            <div class="section-title">资源使用率</div>
-            <div class="usage-cards">
-              <div class="usage-card">
-                <div class="card-label">CPU</div>
-                <div class="card-value" :style="{ color: getUsageColor(server.cpuUsage || 0) }">
+          <div :style="{ marginBottom: '24px' }">
+            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+              资源使用率
+            </div>
+            <div :style="{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }">
+              <div :style="{ padding: '16px', backgroundColor: '#fafafa', borderRadius: '8px', border: '1px solid #e4e7ed', textAlign: 'center' }">
+                <div :style="{ fontSize: '12px', color: '#909399', marginBottom: '8px' }">CPU</div>
+                <div :style="{ fontSize: '24px', fontWeight: 600, marginBottom: '12px', color: getUsageColor(server.cpuUsage || 0) }">
                   {{ Math.round(server.cpuUsage || 0) }}%
                 </div>
                 <ElProgress
@@ -296,11 +310,11 @@
                   :color="getUsageColor(server.cpuUsage || 0)"
                   :show-text="false"
                 />
-                <div class="card-detail">{{ server.cpu || '-' }} 核</div>
+                <div :style="{ fontSize: '12px', color: '#606266', marginTop: '8px' }">{{ server.cpu || '-' }} 核</div>
               </div>
-              <div class="usage-card">
-                <div class="card-label">内存</div>
-                <div class="card-value" :style="{ color: getUsageColor(server.memoryUsage || 0) }">
+              <div :style="{ padding: '16px', backgroundColor: '#fafafa', borderRadius: '8px', border: '1px solid #e4e7ed', textAlign: 'center' }">
+                <div :style="{ fontSize: '12px', color: '#909399', marginBottom: '8px' }">内存</div>
+                <div :style="{ fontSize: '24px', fontWeight: 600, marginBottom: '12px', color: getUsageColor(server.memoryUsage || 0) }">
                   {{ Math.round(server.memoryUsage || 0) }}%
                 </div>
                 <ElProgress
@@ -308,7 +322,7 @@
                   :color="getUsageColor(server.memoryUsage || 0)"
                   :show-text="false"
                 />
-                <div class="card-detail">
+                <div :style="{ fontSize: '12px', color: '#606266', marginTop: '8px' }">
                   {{
                     server.memory
                       ? ((server.memory * (server.memoryUsage || 0)) / 100).toFixed(1) + ' / ' + server.memory + ' GB'
@@ -316,9 +330,9 @@
                   }}
                 </div>
               </div>
-              <div class="usage-card">
-                <div class="card-label">磁盘</div>
-                <div class="card-value" :style="{ color: getUsageColor(server.diskUsage || 0) }">
+              <div :style="{ padding: '16px', backgroundColor: '#fafafa', borderRadius: '8px', border: '1px solid #e4e7ed', textAlign: 'center' }">
+                <div :style="{ fontSize: '12px', color: '#909399', marginBottom: '8px' }">磁盘</div>
+                <div :style="{ fontSize: '24px', fontWeight: 600, marginBottom: '12px', color: getUsageColor(server.diskUsage || 0) }">
                   {{ Math.round(server.diskUsage || 0) }}%
                 </div>
                 <ElProgress
@@ -326,12 +340,14 @@
                   :color="getUsageColor(server.diskUsage || 0)"
                   :show-text="false"
                 />
-                <div class="card-detail">{{ server.disk || '-' }} GB</div>
+                <div :style="{ fontSize: '12px', color: '#606266', marginTop: '8px' }">{{ server.disk || '-' }} GB</div>
               </div>
             </div>
           </div>
-          <div class="monitor-section">
-            <div class="section-title">磁盘分区详情</div>
+          <div :style="{ marginBottom: '24px' }">
+            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+              磁盘分区详情
+            </div>
             <ElTable :data="formatDiskPartitionsForDrawer(server)" size="small" border>
               <ElTableColumn prop="mount" label="挂载点" width="120" />
               <ElTableColumn label="使用率" width="150">
@@ -347,18 +363,20 @@
             </ElTable>
             <div
               v-if="!server.diskPartitions || server.diskPartitions.length === 0"
-              class="py-12px text-center text-gray-400"
+              :style="{ padding: '12px', textAlign: 'center', color: '#909399' }"
             >
               {{ server.agentStatus === 'running' ? '正在采集...' : '暂无数据，请先部署 Agent' }}
             </div>
           </div>
-          <div class="monitor-section">
-            <div class="section-title">Agent 状态</div>
+          <div :style="{ marginBottom: '24px' }">
+            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+              Agent 状态
+            </div>
             <ElDescriptions :column="2" border size="small">
               <ElDescriptionsItem label="状态">
-                <div v-if="server.agentStatus === 'running'" class="flex items-center gap-2">
+                <div v-if="server.agentStatus === 'running'" :style="{ display: 'flex', alignItems: 'center', gap: '8px' }">
                   <ElTag type="success" size="small">运行中</ElTag>
-                  <span v-if="server.agentVersion" class="text-12px text-gray-500">v{{ server.agentVersion }}</span>
+                  <span v-if="server.agentVersion" :style="{ fontSize: '12px', color: '#909399' }">v{{ server.agentVersion }}</span>
                 </div>
                 <ElTag v-else-if="server.agentStatus === 'offline'" type="warning" size="small">离线</ElTag>
                 <ElTag v-else type="info" size="small">未安装</ElTag>
@@ -366,11 +384,11 @@
               <ElDescriptionsItem label="监听端口">{{ server.agentPort || 9100 }}</ElDescriptionsItem>
               <ElDescriptionsItem label="最后心跳">
                 <span v-if="server.lastHeartbeatAt">{{ formatTime(server.lastHeartbeatAt) }}</span>
-                <span v-else class="text-gray-400">-</span>
+                <span v-else :style="{ color: '#909399' }">-</span>
               </ElDescriptionsItem>
               <ElDescriptionsItem label="指标更新">
                 <span v-if="server.metricsUpdatedAt">{{ formatTime(server.metricsUpdatedAt) }}</span>
-                <span v-else class="text-gray-400">-</span>
+                <span v-else :style="{ color: '#909399' }">-</span>
               </ElDescriptionsItem>
             </ElDescriptions>
           </div>
@@ -379,55 +397,3 @@
     </div>
   </ElDrawer>
 </template>
-
-<style scoped>
-  .overview-section {
-    margin-bottom: 24px;
-  }
-  .overview-section .section-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: #303133;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e4e7ed;
-  }
-  .monitor-section {
-    margin-bottom: 24px;
-  }
-  .monitor-section .section-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: #303133;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e4e7ed;
-  }
-  .usage-cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-  }
-  .usage-card {
-    padding: 16px;
-    background-color: #fafafa;
-    border-radius: 8px;
-    border: 1px solid #e4e7ed;
-    text-align: center;
-  }
-  .usage-card .card-label {
-    font-size: 12px;
-    color: #909399;
-    margin-bottom: 8px;
-  }
-  .usage-card .card-value {
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 12px;
-  }
-  .usage-card .card-detail {
-    font-size: 12px;
-    color: #606266;
-    margin-top: 8px;
-  }
-</style>

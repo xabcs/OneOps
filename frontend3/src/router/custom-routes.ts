@@ -7,7 +7,7 @@ import BaseLayout from '@/layouts/base-layout/index.vue';
 import TerminalLayout from '@/layouts/terminal-layout/index.vue';
 
 // 自定义视图组件导入
-const CMDBServerDetail = () => import('@/views/cmdb/server/detail.vue');
+const CMDBServerDetail = () => import('@/views/cmdb/servers/detail.vue');
 const MonitoringServersDetail = () => import('@/views/monitoring/servers/detail/index.vue');
 const K8sDeploymentDetail = () => import('@/views/k8s/resources/deployments/detail.vue');
 const K8sStatefulSetDetail = () => import('@/views/k8s/resources/statefulsets/detail.vue');

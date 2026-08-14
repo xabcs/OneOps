@@ -66,8 +66,12 @@
 </script>
 
 <template>
-  <div class="group-container w-220px flex flex-col flex-shrink-0">
-    <ElCard class="group-tree-card flex flex-col flex-1" shadow="never" body-style="padding: 12px; border-radius: 0;">
+  <div style="width: 220px; height: 100%; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden;">
+    <ElCard
+      shadow="never"
+      body-style="padding: 12px; border-radius: 0;"
+      style="border-radius: 0; flex: 1; display: flex; flex-direction: column;"
+    >
       <div class="mb-8px flex items-center justify-between">
         <span class="text-14px text-gray-700 font-bold">资产分组</span>
         <div class="flex items-center gap-4px">
@@ -102,19 +106,20 @@
         >
           <template #default="{ node, data }">
             <div :class="getNodeClass(data)" class="w-full">
-              <div class="group-node w-full flex items-center justify-between pr-8px">
+              <div class="w-full flex items-center justify-between pr-8px">
                 <div v-if="editingNodeId === data.id" class="min-w-0 flex flex-1 items-center gap-6px">
                   <component
                     :is="'icon-' + data.icon.replace(':', '-')"
                     class="flex-shrink-0 text-16px"
                     :style="{ color: data.color }"
                   />
-                  <input
+                  <ElInput
                     ref="editInputRef"
-                    :value="editingNodeName"
-                    class="edit-input min-w-0 flex-1"
-                    @input="emit('update:editingNodeName', ($event.target as HTMLInputElement).value)"
-                    @keydown="emit('edit-keydown', $event)"
+                    :model-value="editingNodeName"
+                    size="small"
+                    style="min-width: 0; flex: 1;"
+                    @update:model-value="emit('update:editingNodeName', $event)"
+                    @keydown="emit('edit-keydown', $event as KeyboardEvent)"
                     @blur="emit('save-edit-group')"
                     @click.stop
                   />
@@ -145,37 +150,66 @@
     <!-- 右键菜单 -->
     <Teleport to="body">
       <Transition name="fade">
-        <div
+        <ElMenu
           v-if="contextMenuVisible"
-          class="context-menu"
-          :style="{ left: contextMenuPosition.x + 'px', top: contextMenuPosition.y + 'px' }"
+          :style="{
+            position: 'fixed',
+            left: contextMenuPosition.x + 'px',
+            top: contextMenuPosition.y + 'px',
+            zIndex: 9999,
+            minWidth: '150px',
+            border: '1px solid #e4e7ed',
+            borderRadius: '4px',
+            boxShadow: '0 2px 12px 0 rgba(0, 0, 0, 0.1)',
+            borderRight: 'none',
+          }"
           @click.stop="emit('context-menu-close')"
         >
           <template v-if="isVirtualNode">
-            <div class="context-menu-item primary" @click.stop="emit('add-server')">
+            <ElMenuItem
+              index="add-server"
+              :style="{ height: '36px', lineHeight: '36px' }"
+              @click.stop="emit('add-server')"
+            >
               <icon-mdi-server class="mr-8px" />
-              添加主机
-            </div>
+              <span>添加主机</span>
+            </ElMenuItem>
           </template>
           <template v-else>
-            <div class="context-menu-item" @click.stop="emit('add-group')">
+            <ElMenuItem
+              index="add-group"
+              :style="{ height: '36px', lineHeight: '36px' }"
+              @click.stop="emit('add-group')"
+            >
               <icon-mdi-plus class="mr-8px" />
-              添加分组
-            </div>
-            <div class="context-menu-item primary" @click.stop="emit('add-server')">
+              <span>添加分组</span>
+            </ElMenuItem>
+            <ElMenuItem
+              index="add-server"
+              :style="{ height: '36px', lineHeight: '36px' }"
+              @click.stop="emit('add-server')"
+            >
               <icon-mdi-server class="mr-8px" />
-              添加主机
-            </div>
-            <div class="context-menu-item" @click.stop="emit('edit-group')">
+              <span>添加主机</span>
+            </ElMenuItem>
+            <ElMenuItem
+              index="edit"
+              :style="{ height: '36px', lineHeight: '36px' }"
+              @click.stop="emit('edit-group')"
+            >
               <icon-mdi-pencil class="mr-8px" />
-              重命名
-            </div>
-            <div class="context-menu-item danger" @click.stop="emit('delete-group')">
+              <span>重命名</span>
+            </ElMenuItem>
+            <ElMenuItem
+              index="delete"
+              :style="{ height: '36px', lineHeight: '36px', color: '#f56c6c' }"
+              @click.stop="emit('delete-group')"
+            >
               <icon-mdi-delete class="mr-8px" />
-              删除分组
-            </div>
+              <span>删除分组</span>
+            </ElMenuItem>
           </template>
-        </div>
+        </ElMenu>
       </Transition>
     </Teleport>
 
@@ -220,87 +254,3 @@
     </ElDialog>
   </div>
 </template>
-
-<style scoped>
-  .group-container {
-    border-radius: 0 !important;
-  }
-  .group-container * {
-    border-radius: 0 !important;
-  }
-  .group-tree-card :deep(.el-card) {
-    border-radius: 0 !important;
-  }
-  .group-tree-card :deep(.el-card__header) {
-    border-radius: 0 !important;
-  }
-  .group-tree-card :deep(.el-card__body) {
-    border-radius: 0 !important;
-  }
-  .group-tree-card :deep(.el-tree) {
-    border-radius: 0 !important;
-  }
-  .group-tree-card * {
-    border-radius: 0 !important;
-  }
-  .custom-tree-node .group-node:hover {
-    background-color: #f5f7fa;
-  }
-  .custom-tree-node.disabled {
-    opacity: 0.5;
-  }
-  .edit-input {
-    height: 22px;
-    line-height: 22px;
-    padding: 0 4px;
-    border: 1px solid #409eff;
-    border-radius: 3px;
-    outline: none;
-    font-size: 14px;
-    color: #303133;
-    background: #fff;
-    transition: all 0.2s;
-  }
-  .edit-input:focus {
-    border-color: #409eff;
-    box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
-  }
-  .edit-input::placeholder {
-    color: #c0c4cc;
-  }
-  .context-menu {
-    position: fixed;
-    z-index: 9999;
-    background: white;
-    border: 1px solid #e4e7ed;
-    border-radius: 4px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-    padding: 4px 0;
-    min-width: 150px;
-  }
-  .context-menu-item {
-    padding: 8px 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    font-size: 14px;
-    color: #606266;
-    transition: all 0.2s;
-  }
-  .context-menu-item:hover {
-    background-color: #f5f7fa;
-    color: #409eff;
-  }
-  .context-menu-item.danger:hover {
-    background-color: #fef0f0;
-    color: #f56c6c;
-  }
-  .fade-enter-active,
-  .fade-leave-active {
-    transition: opacity 0.2s;
-  }
-  .fade-enter-from,
-  .fade-leave-to {
-    opacity: 0;
-  }
-</style>

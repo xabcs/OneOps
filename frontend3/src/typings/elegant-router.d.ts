@@ -75,7 +75,6 @@ declare module "@elegant-router/types" {
     "cmdb_dashboard": "/cmdb/dashboard";
     "cmdb_policies": "/cmdb/policies";
     "cmdb_rooms": "/cmdb/rooms";
-    "cmdb_server": "/cmdb/server";
     "cmdb_servers": "/cmdb/servers";
     "cmdb_tags": "/cmdb/tags";
     "demo-route": "/demo-route";
@@ -275,7 +274,6 @@ declare module "@elegant-router/types" {
     | "cmdb_dashboard"
     | "cmdb_policies"
     | "cmdb_rooms"
-    | "cmdb_server"
     | "cmdb_servers"
     | "cmdb_tags"
     | "demo-route_child"

@@ -221,7 +221,6 @@ const routeMap: RouteMap = {
   "cmdb_dashboard": "/cmdb/dashboard",
   "cmdb_policies": "/cmdb/policies",
   "cmdb_rooms": "/cmdb/rooms",
-  "cmdb_server": "/cmdb/server",
   "cmdb_servers": "/cmdb/servers",
   "cmdb_tags": "/cmdb/tags",
   "demo-route": "/demo-route",
