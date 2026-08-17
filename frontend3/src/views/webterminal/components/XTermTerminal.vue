@@ -4,6 +4,7 @@
   import { FitAddon } from '@xterm/addon-fit';
   import { WebLinksAddon } from '@xterm/addon-web-links';
   import '@xterm/xterm/css/xterm.css';
+  import { fetchResizeTerminal } from '@/service/api/cmdb';
 
   interface Props {
     sessionId: number | string;
@@ -24,6 +25,10 @@
 
   // 防抖定时器
   let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  // 记录上次发送的尺寸，避免重复请求
+  let lastSentCols = 0;
+  let lastSentRows = 0;
 
   // 获取 token
   function getToken(): string {
@@ -159,6 +164,15 @@
 
       if (rect.width > 0 && rect.height > 0) {
         fitAddon.fit();
+
+        // 通知后端 PTY 调整窗口大小
+        const cols = terminal.cols;
+        const rows = terminal.rows;
+        if (cols > 0 && rows > 0 && (cols !== lastSentCols || rows !== lastSentRows)) {
+          lastSentCols = cols;
+          lastSentRows = rows;
+          fetchResizeTerminal(Number(props.sessionId), { cols, rows }).catch(() => {});
+        }
       }
     } catch (error) {
       console.warn('调整终端尺寸失败:', error);

@@ -13,6 +13,7 @@ import (
 	"oneops/backend3/pkg/utils"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/ssh"
 )
 
 // BastionController 堡垒机控制器
@@ -327,6 +328,11 @@ func (c *BastionController) TerminateSession(ctx *gin.Context) {
 		return
 	}
 
+	// 先终止内存中的 WebSocket + SSH 连接（如果存在）
+	if sm := GetSessionManager(); sm != nil {
+		sm.TerminateSession(uint(sessionID))
+	}
+
 	// 更新数据库状态
 	if err := c.svc.TerminateSession(uint(sessionID), operatorID); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
@@ -365,22 +371,31 @@ func (c *BastionController) GetActiveSessions(ctx *gin.Context) {
 // @Router       /cmdb/sessions/active-memory [get]
 // @Security     BearerAuth
 func (c *BastionController) GetActiveSessionsFromMemory(ctx *gin.Context) {
-	// 查询数据库中的活跃会话
-	sessions, err := c.svc.GetActiveSessions()
-	if err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
+	sm := GetSessionManager()
+	if sm == nil {
+		ctx.JSON(http.StatusOK, utils.SuccessWithData([]interface{}{}))
 		return
 	}
 
-	// 实时计算会话持续时长
+	activeStates := sm.GetAllActiveSessions()
 	now := time.Now()
-	for i := range sessions {
-		if sessions[i].StartedAt != nil {
-			sessions[i].Duration = int(now.Sub(*sessions[i].StartedAt).Seconds())
-		}
+
+	result := make([]gin.H, 0, len(activeStates))
+	for _, s := range activeStates {
+		result = append(result, gin.H{
+			"sessionId":    s.SessionID,
+			"userId":       s.UserID,
+			"username":     s.Username,
+			"serverName":   s.ServerName,
+			"serverIp":     s.ServerIP,
+			"loginAccount": s.LoginAccount,
+			"createdAt":    s.CreatedAt,
+			"lastActiveAt": s.LastActiveAt,
+			"duration":     int(now.Sub(s.CreatedAt).Seconds()),
+		})
 	}
 
-	ctx.JSON(http.StatusOK, utils.SuccessWithData(sessions))
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(result))
 }
 
 // GetSessionCommands godoc
@@ -559,7 +574,7 @@ func (c *BastionController) GetFileTransfers(ctx *gin.Context) {
 
 // ResizeTerminalPTY godoc
 // @Summary      调整终端大小
-// @Description  调整终端 PTY 大小（实际由 WebSocket handler 直接处理，此 HTTP 接口仅作占位）
+// @Description  调整指定会话的 SSH PTY 窗口大小（通过 SessionManager 获取活跃 SSH 会话发送 window-change 请求）
 // @Tags         CMDB-堡垒机
 // @Produce      json
 // @Param        id  path  int  true  "会话 ID"
@@ -567,8 +582,55 @@ func (c *BastionController) GetFileTransfers(ctx *gin.Context) {
 // @Router       /cmdb/sessions/{id}/resize [post]
 // @Security     BearerAuth
 func (c *BastionController) ResizeTerminalPTY(ctx *gin.Context) {
-	// 这个接口由 WebSocket handler 直接处理
-	ctx.JSON(http.StatusOK, utils.ErrorBadRequest("请使用 WebSocket 连接"))
+	sessionIDStr := ctx.Param("id")
+	sessionID, err := strconv.ParseUint(sessionIDStr, 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的会话ID"))
+		return
+	}
+
+	var req struct {
+		Rows uint `json:"rows" binding:"required"`
+		Cols uint `json:"cols" binding:"required"`
+	}
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
+
+	sm := GetSessionManager()
+	if sm == nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("SessionManager 未初始化"))
+		return
+	}
+
+	sshSession := sm.GetSSHSession(uint(sessionID))
+	if sshSession == nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("会话不存在或已断开"))
+		return
+	}
+
+	type windowChangeMsg struct {
+		Columns uint32
+		Rows    uint32
+		Width   uint32
+		Height  uint32
+	}
+
+	msg := windowChangeMsg{
+		Columns: uint32(req.Cols),
+		Rows:    uint32(req.Rows),
+		Width:   uint32(req.Cols * 8),
+		Height:  uint32(req.Rows * 16),
+	}
+
+	ok, err := sshSession.SendRequest("window-change", false, ssh.Marshal(&msg))
+	if err != nil || !ok {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("调整终端大小失败"))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("终端大小已调整"))
 }
 
 // ========== 访问策略管理 ==========
@@ -726,19 +788,18 @@ func (c *BastionController) GetAccessPolicyByID(ctx *gin.Context) {
 func (c *BastionController) GetSessionStats(ctx *gin.Context) {
 	stats := make(map[string]interface{})
 
-	// 活跃会话数
-	activeSessions, err := c.svc.GetActiveSessions()
-	if err == nil {
-		stats["active"] = len(activeSessions)
+	// 内存中真实活跃的 WebSocket 会话数
+	if sm := GetSessionManager(); sm != nil {
+		stats["active"] = sm.GetActiveSessionCount()
 	}
 
-	// 今日会话数
+	// 今日会话数（用足够大的 pageSize 确保 total 准确）
 	today := time.Now().Format("2006-01-02")
 	todayFilter := modelcmdb.SessionFilter{
 		StartDate: &today,
 	}
-	todaySessions, _, _ := c.svc.GetSessions(todayFilter, 1, 1)
-	stats["today"] = len(todaySessions)
+	_, todayTotal, _ := c.svc.GetSessions(todayFilter, 1, 1000)
+	stats["today"] = todayTotal
 
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(stats))
 }

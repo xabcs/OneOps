@@ -7,7 +7,7 @@
     fetchUpdateAccessPolicy
   } from '@/service/api/cmdb';
   import {
-    fetchGetAllRoles,
+    fetchRoleOptions,
     fetchGetBusinessUnits,
     fetchGetServerGroups,
     fetchGetServerTags,
@@ -36,7 +36,7 @@
 
   // ========== 资产数据（用于列表展示名称解析）==========
   const users = ref<Api.SystemManage.User[]>([]);
-  const roles = ref<Api.SystemManage.AllRole[]>([]);
+  const roles = ref<{ id: number; name: string; code: string }[]>([]);
   const serverGroups = ref<CMDB.ServerGroup[]>([]);
   const businessUnits = ref<CMDB.BusinessUnit[]>([]);
   const serverTags = ref<CMDB.ServerTag[]>([]);
@@ -130,7 +130,7 @@
     try {
       const [usersRes, rolesRes, groupsRes, businessRes, tagsRes] = await Promise.allSettled([
         fetchUserOptions(),
-        fetchGetAllRoles(),
+        fetchRoleOptions(),
         fetchGetServerGroups(),
         fetchGetBusinessUnits(),
         fetchGetServerTags()
@@ -138,7 +138,7 @@
 
       if (usersRes.status === 'fulfilled') users.value = usersRes.value.data || [];
       if (rolesRes.status === 'fulfilled') roles.value = rolesRes.value.data || [];
-      if (groupsRes.status === 'fulfilled') serverGroups.value = groupsRes.value.data || [];
+      if (groupsRes.status === 'fulfilled') serverGroups.value = groupsRes.value.data?.groups || [];
       if (businessRes.status === 'fulfilled') businessUnits.value = businessRes.value.data || [];
       if (tagsRes.status === 'fulfilled') serverTags.value = tagsRes.value.data || [];
     } catch (error) {

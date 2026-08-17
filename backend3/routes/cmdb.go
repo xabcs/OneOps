@@ -28,16 +28,25 @@ func SetupCMDBRoutes(r *gin.Engine) {
 	agentSvc := cmdbsvc.NewAgentService(agentRepo)
 	attributeSvc := cmdbsvc.NewAttributeService(attributeRepo)
 
+	// 初始化 SSH 会话管理器（用于 WebSocket 终端）
+	cmdbctrl.InitSessionManager(bastionSvc)
+
 	// 创建 controllers
 	cmdbController := cmdbctrl.NewCMDBController(cmdbSvc, agentSvc)
 	bastionController := cmdbctrl.NewBastionController(bastionSvc)
 	agentController := cmdbctrl.NewAgentController(agentSvc, cmdbSvc)
 	attributeController := cmdbctrl.NewAttributeController(attributeSvc)
+	sshWSHandler := cmdbctrl.NewSSHWebSocketHandler()
 
 	api := r.Group("/api")
 
 	// Agent 心跳（不经过 Auth 中间件，由 Agent 直接上报）
 	api.POST("/cmdb/agent/heartbeat", agentController.ReceiveAgentHeartbeat)
+
+	// SSH 终端 WebSocket（不经过 Auth 中间件，由 handler 从 query token 验证）
+	api.GET("/cmdb/sessions/:id/ws", func(ctx *gin.Context) {
+		sshWSHandler.HandleWebSocket(ctx)
+	})
 
 	// Agent 版本管理接口（需要认证）
 	agentVersionGroup := api.Group("/cmdb/agent-versions")

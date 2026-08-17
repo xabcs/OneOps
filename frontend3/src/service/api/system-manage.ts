@@ -13,6 +13,16 @@ export function fetchGetAllRoles() {
 }
 
 /**
+ * 获取角色选项列表（不分页，用于选择器）
+ */
+export function fetchRoleOptions() {
+  return request<{ id: number; name: string; code: string }[]>({
+    url: '/system/roles/options',
+    method: 'get'
+  });
+}
+
+/**
  * 获取用户列表
  */
 export function fetchGetUserList(params?: Api.SystemManage.UserSearchParams) {

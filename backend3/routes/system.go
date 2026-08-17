@@ -38,6 +38,7 @@ func SetupSystemRoutes(
 
 		// 角色管理
 		system.GET("/roles", roleController.GetRoles)
+		system.GET("/roles/options", roleController.GetRoleOptions)
 		system.POST("/roles", roleController.CreateRole)
 		system.PUT("/roles/:id", roleController.UpdateRole)
 		system.DELETE("/roles/:id", roleController.DeleteRole)

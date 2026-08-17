@@ -58,6 +58,15 @@ func (r *RoleRepository) FindWithPagination(q RoleQuery) ([]modelsystem.Role, in
 	return roles, total, nil
 }
 
+// FindAllActive 查询所有启用状态的角色（不分页，用于选择器选项）
+func (r *RoleRepository) FindAllActive() ([]modelsystem.Role, error) {
+	var roles []modelsystem.Role
+	if err := r.db.Where("status = ?", 1).Order("id ASC").Find(&roles).Error; err != nil {
+		return nil, err
+	}
+	return roles, nil
+}
+
 // Create 创建角色
 func (r *RoleRepository) Create(role *modelsystem.Role) error {
 	return r.db.Create(role).Error

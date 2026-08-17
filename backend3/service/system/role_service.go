@@ -68,6 +68,11 @@ func (s *RoleService) Search(q RoleSearchQuery) (*RoleSearchResult, error) {
 	return &RoleSearchResult{Records: roles, Total: total}, nil
 }
 
+// GetAllRoleOptions 获取所有启用角色的选项列表（不分页，用于选择器）
+func (s *RoleService) GetAllRoleOptions() ([]modelsystem.Role, error) {
+	return s.repo.FindAllActive()
+}
+
 // Create 创建角色
 func (s *RoleService) Create(role *modelsystem.Role) error {
 	return s.repo.Create(role)

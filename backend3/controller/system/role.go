@@ -66,6 +66,35 @@ func (ctrl *RoleController) GetRoles(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(result.Records, result.Total, params)))
 }
 
+// GetRoleOptions godoc
+// @Summary      获取角色选项列表
+// @Description  获取所有启用角色的精简选项（不分页，用于下拉选择器）
+// @Tags         系统管理-角色
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=[]gin.H}
+// @Failure      200  {object}  utils.Response  "获取角色选项失败"
+// @Router       /system/roles/options [get]
+// @Security     BearerAuth
+func (ctrl *RoleController) GetRoleOptions(c *gin.Context) {
+	roles, err := ctrl.svc.GetAllRoleOptions()
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取角色选项失败"))
+		return
+	}
+
+	// 转换为精简格式
+	options := make([]gin.H, len(roles))
+	for i, r := range roles {
+		options[i] = gin.H{
+			"id":   r.ID,
+			"name": r.Name,
+			"code": r.Code,
+		}
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(options))
+}
+
 // CreateRoleRequest 创建角色请求
 type CreateRoleRequest struct {
 	Name        string `json:"name" binding:"required"`
