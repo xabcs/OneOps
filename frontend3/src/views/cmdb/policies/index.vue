@@ -1,9 +1,10 @@
-<script setup lang="tsx">
-  import { h, onMounted, ref } from 'vue';
+<script setup lang="ts">
+  import { onMounted, ref } from 'vue';
   import { ElMessageBox } from 'element-plus';
   import {
     fetchDeleteAccessPolicy,
     fetchGetAccessPolicies,
+    fetchServerOptions,
     fetchUpdateAccessPolicy
   } from '@/service/api/cmdb';
   import {
@@ -35,11 +36,12 @@
   const editingData = ref<Bastion.AccessPolicy | null>(null);
 
   // ========== 资产数据（用于列表展示名称解析）==========
-  const users = ref<Api.SystemManage.User[]>([]);
+  const users = ref<{ id: number; username: string; nickname: string }[]>([]);
   const roles = ref<{ id: number; name: string; code: string }[]>([]);
   const serverGroups = ref<CMDB.ServerGroup[]>([]);
   const businessUnits = ref<CMDB.BusinessUnit[]>([]);
   const serverTags = ref<CMDB.ServerTag[]>([]);
+  const servers = ref<{ id: number; hostname: string; ip: string }[]>([]);
 
   // 获取策略列表
   async function getPolicies() {
@@ -107,33 +109,27 @@
 
   // 格式化时间窗口
   function formatTimeWindow(timeWindow?: Bastion.AccessPolicy['timeWindow']): string {
-    if (!timeWindow) return '-';
+    if (!timeWindow?.start || !timeWindow?.end) return '不限';
     const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
-    const dayNames = (timeWindow.days || []).map(d => days[d - 1]).join('、');
-    return `${timeWindow.start}-${timeWindow.end} (${dayNames})`;
+    const dayNames = (timeWindow.days || []).map(d => days[d - 1]).filter(Boolean).join('、');
+    return `${timeWindow.start}-${timeWindow.end} (${dayNames || '每天'})`;
   }
 
   // 获取状态标签
   function getStatusTag(policy: Bastion.AccessPolicy) {
-    return h(
-      'el-tag',
-      {
-        type: policy.status === 1 ? 'success' : 'info',
-        size: 'small'
-      },
-      policy.status === 1 ? '启用' : '禁用'
-    );
+    return policy.status === 1 ? '启用' : '禁用';
   }
 
   // ========== 获取资产数据 ==========
   async function getAssetData() {
     try {
-      const [usersRes, rolesRes, groupsRes, businessRes, tagsRes] = await Promise.allSettled([
+      const [usersRes, rolesRes, groupsRes, businessRes, tagsRes, serversRes] = await Promise.allSettled([
         fetchUserOptions(),
         fetchRoleOptions(),
         fetchGetServerGroups(),
         fetchGetBusinessUnits(),
-        fetchGetServerTags()
+        fetchGetServerTags(),
+        fetchServerOptions()
       ]);
 
       if (usersRes.status === 'fulfilled') users.value = usersRes.value.data || [];
@@ -141,6 +137,7 @@
       if (groupsRes.status === 'fulfilled') serverGroups.value = groupsRes.value.data?.groups || [];
       if (businessRes.status === 'fulfilled') businessUnits.value = businessRes.value.data || [];
       if (tagsRes.status === 'fulfilled') serverTags.value = tagsRes.value.data || [];
+      if (serversRes.status === 'fulfilled') servers.value = serversRes.value.data || [];
     } catch (error) {
       console.error('获取资产数据失败:', error);
     }
@@ -171,6 +168,10 @@
   }
 
   function getAssetScopeName(type: string, id: number): string {
+    if (type === 'server') {
+      const server = servers.value.find(s => s.id === id);
+      return server ? `${server.hostname} (${server.ip})` : `ID: ${id}`;
+    }
     if (type === 'group') {
       const findGroup = (groups: CMDB.ServerGroup[], targetId: number): string => {
         for (const group of groups) {
@@ -286,17 +287,11 @@
           </template>
         </ElTableColumn>
 
-        <ElTableColumn label="需要审批" width="100">
-          <template #default="{ row }">
-            <ElTag :type="row.requireApproval ? 'warning' : 'info'" size="small">
-              {{ row.requireApproval ? '是' : '否' }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-
         <ElTableColumn label="状态" width="80">
           <template #default="{ row }">
-            <component :is="() => getStatusTag(row)" />
+            <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
+              {{ getStatusTag(row) }}
+            </ElTag>
           </template>
         </ElTableColumn>
 

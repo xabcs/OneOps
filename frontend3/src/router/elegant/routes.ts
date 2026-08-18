@@ -21,7 +21,7 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: '404',
     path: '/404',
-    component: 'layout.base$view.404',
+    component: 'layout.blank$view.404',
     meta: {
       title: '404',
       i18nKey: 'route.404',
@@ -678,7 +678,7 @@ export const generatedRoutes: GeneratedRoute[] = [
   {
     name: 'login',
     path: '/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?',
-    component: 'layout.base$view.login',
+    component: 'layout.blank$view.login',
     props: true,
     meta: {
       title: 'login',

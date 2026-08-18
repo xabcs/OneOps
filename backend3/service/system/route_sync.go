@@ -15,10 +15,10 @@ import (
 // key 格式: "METHOD:/api/path"
 var routePermOverride = map[string]string{
 	// ========== 路由模块（特殊路径前缀） ==========
-	"GET:/api/route/getUserRoutes":    "system.route.list",
+	// 注意：getUserRoutes / isRouteExist 为登录引导与路由守卫兜底接口，
+	// 所有登录用户必须可访问（仅认证），不在此映射权限
 	"POST:/api/route/invalidateCache": "system.route.invalidate",
 	"GET:/api/route/debugCache":       "system.route.debug",
-	"GET:/api/route/isRouteExist":     "system.route.list",
 
 	// ========== 子资源操作 ==========
 	// 角色权限分配

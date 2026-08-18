@@ -114,69 +114,64 @@ func (s *RouteGenService) GetUserRoutes(userID uint) ([]map[string]interface{}, 
 	// 将菜单转换为前端路由格式
 	routes := s.convertMenusToRoutes(menuTree, isSuper)
 
-	// 添加隐藏路由到对应的父路由下
-	routes = s.appendHiddenRoutesToMenuTree(routes)
+	// web 终端入口与主机管理菜单强耦合（有主机管理菜单才可见终端）
+	routes = s.appendTerminalRoute(routes, menuTree)
 
 	return routes, nil
 }
 
-// IsRouteExist 检查路由是否存在于用户权限中
-func (s *RouteGenService) IsRouteExist(userID uint, routeName string) (bool, error) {
-	permSvc, err := GetPermissionService()
-	if err != nil {
-		return false, err
-	}
+// hiddenRouteSuffixes 隐藏路由（详情页等）的命名后缀，剥离后按父级模块匹配菜单
+var hiddenRouteSuffixes = []string{"_detail_view", "_detail", "_view"}
 
-	// 检查是否为管理员
-	roles, err := permSvc.GetUserRoles(userID)
-	if err == nil {
-		if permSvc.IsAdmin(roles) {
-			// 管理员可以访问所有路由
+// frameworkRouteNames 前端框架内置路由名（router/routes/builtin.ts 固定生成，非业务配置）
+var frameworkRouteNames = map[string]bool{"root": true, "not-found": true}
+
+// derivedRouteNames 派生路由名（不在菜单表，由 GetUserRoutes 按业务规则追加）
+// webterminal 随主机管理菜单派生：页面全局存在，无权限直访时应显示 403 而非 404
+var derivedRouteNames = map[string]bool{"webterminal": true}
+
+// IsRouteExist 检查路由在系统中是否全局存在（与用户权限无关）
+// 用于前端路由守卫区分「路由不存在(404)」与「路由存在但无访问权限(403)」
+func (s *RouteGenService) IsRouteExist(userID uint, routeName string) (bool, error) {
+	// 常量路由：与 GetConstantRoutes 同源，新增常量路由自动被识别
+	for _, r := range s.GetConstantRoutes() {
+		if r["name"] == routeName {
 			return true, nil
 		}
 	}
+	if frameworkRouteNames[routeName] || derivedRouteNames[routeName] {
+		return true, nil
+	}
 
-	// 获取用户权限列表
-	_, permissions, _, err := permSvc.BuildMenuTreeAndPermissions(userID)
-	if err != nil {
+	// 业务路由：以启用菜单为唯一事实来源
+	var paths []string
+	if err := s.db.Model(&modelsystem.Menu{}).Where("status = 1").Pluck("path", &paths).Error; err != nil {
 		return false, err
 	}
 
-	// 检查路由是否在用户权限中
-	// 对于详情页，检查其父路由权限
-	parentRoute := ""
-	switch routeName {
-	case "k8s_deployment_detail", "k8s_deployment_detail_view":
-		parentRoute = "k8s_workload_query"
-	case "k8s_statefulset_detail", "k8s_statefulset_detail_view":
-		parentRoute = "k8s_workload_query"
-	case "k8s_daemonset_detail", "k8s_daemonset_detail_view":
-		parentRoute = "k8s_workload_query"
-	case "k8s_pod_detail", "k8s_pod_detail_view":
-		parentRoute = "k8s_workload_query"
-	case "cmdb_server_detail", "cmdb_server_detail_view":
-		parentRoute = "cmdb:server:query"
-	case "monitoring_servers_detail", "monitoring_servers_detail_view":
-		parentRoute = "monitoring:server:query"
-	default:
-		// 对于其他路由，检查是否直接拥有权限
-		for _, perm := range permissions {
-			if perm == routeName {
-				return true, nil
-			}
-		}
-		return false, nil
-	}
-
-	// 检查父路由权限
-	if parentRoute != "" {
-		for _, perm := range permissions {
-			if perm == parentRoute {
-				return true, nil
-			}
+	// 隐藏路由剥离详情后缀（k8s_deployment_detail → k8s_deployment）
+	base := routeName
+	for _, suffix := range hiddenRouteSuffixes {
+		if strings.HasSuffix(base, suffix) {
+			base = strings.TrimSuffix(base, suffix)
+			break
 		}
 	}
 
+	for _, p := range paths {
+		menuName := s.generateRouteName(p)
+		switch {
+		case menuName == routeName, menuName == base:
+			// 精确命中
+			return true, nil
+		case strings.HasPrefix(base, menuName+"_"):
+			// 命中父级菜单（k8s_deployment → 菜单 k8s）
+			return true, nil
+		case strings.Contains(base, "_") && strings.HasPrefix(menuName, base):
+			// 菜单为隐藏路由的复数形式（cmdb_server_detail → 菜单 cmdb_servers）
+			return true, nil
+		}
+	}
 	return false, nil
 }
 
@@ -198,14 +193,8 @@ func (s *RouteGenService) DebugCache(userID uint) (map[string]interface{}, error
 		return nil, err
 	}
 
-	// 检查是否包含 webterminal
-	hasWebTerminal := false
-	for _, menu := range menuTree {
-		if menu.Path == "/webterminal" {
-			hasWebTerminal = true
-			break
-		}
-	}
+	// 检查是否包含 webterminal（派生路由：随主机管理菜单出现）
+	hasWebTerminal := menuTreeContainsPath(menuTree, "/cmdb/servers")
 
 	return map[string]interface{}{
 		"has_webterminal":  hasWebTerminal,
@@ -240,12 +229,44 @@ func (s *RouteGenService) convertMenusToRoutes(menus []*modelsystem.Menu, isSupe
 	return routes
 }
 
-// appendHiddenRoutesToMenuTree 将隐藏路由添加到菜单树中
-// 注意：详情页路由由前端 Elegant Router 自动生成，不需要后端硬编码
-// 前端文件 src/views/cmdb/server/detail.vue 会自动生成 cmdb_server-detail 路由
-func (s *RouteGenService) appendHiddenRoutesToMenuTree(routes []map[string]interface{}) []map[string]interface{} {
-	// 不需要添加任何硬编码路由，前端 Elegant Router 会根据文件系统自动生成所有路由
-	return routes
+// appendTerminalRoute 追加 web 终端路由（派生入口，不进菜单表）
+// 规则：用户菜单树包含主机管理（/cmdb/servers）时自动获得终端工作台入口，
+// 使「无主机管理菜单则不可见终端」在结构上成立，管理员无需单独绑定终端菜单
+func (s *RouteGenService) appendTerminalRoute(routes []map[string]interface{}, menuTree []*modelsystem.Menu) []map[string]interface{} {
+	for _, r := range routes {
+		if r["name"] == "webterminal" {
+			return routes
+		}
+	}
+	if !menuTreeContainsPath(menuTree, "/cmdb/servers") {
+		return routes
+	}
+	return append(routes, map[string]interface{}{
+		"id":        "webterminal",
+		"name":      "webterminal",
+		"path":      "/webterminal",
+		"component": "layout.terminalLayout$view.webterminal",
+		"meta": map[string]interface{}{
+			"title":   "web终端",
+			"i18nKey": "route.webterminal",
+			"icon":    "mdi:console",
+			"order":   7,
+			"href":    "/webterminal", // 新标签页打开；href === path 时在当前窗口渲染
+		},
+	})
+}
+
+// menuTreeContainsPath 递归检查菜单树中是否存在指定路径
+func menuTreeContainsPath(menus []*modelsystem.Menu, path string) bool {
+	for _, menu := range menus {
+		if menu.Path == path {
+			return true
+		}
+		if len(menu.Children) > 0 && menuTreeContainsPath(menu.Children, path) {
+			return true
+		}
+	}
+	return false
 }
 
 // buildRouteFromMenu 根据菜单构建路由
@@ -282,12 +303,6 @@ func (s *RouteGenService) buildRouteFromMenu(menu *modelsystem.Menu, hasChildren
 		route["meta"].(map[string]interface{})["permission"] = menu.Permission
 	}
 
-	// 特殊处理：Web终端 在新窗口打开（基于路径判断，避免ID变化导致的失效）
-	if menu.Path == "/webterminal" {
-		route["meta"].(map[string]interface{})["href"] = menu.Path
-		route["meta"].(map[string]interface{})["hideInMenu"] = false
-	}
-
 	return route
 }
 
@@ -318,13 +333,6 @@ func (s *RouteGenService) generateComponent(path string, parentID uint, hasChild
 		zap.String("route_name", routeName),
 		zap.Uint("parent_id", parentID),
 		zap.Bool("has_children", hasChildren))
-
-	// 特殊处理：web终端使用独立布局（无导航栏）
-	if path == "/webterminal" {
-		// 使用 terminalLayout 布局，提供纯终端界面体验
-		// 注意：命名需与前端 Elegant Router 自动生成的布局名称一致
-		return "layout.terminalLayout$view." + routeName
-	}
 
 	// 如果是一级菜单（父级为0）
 	if parentID == 0 {

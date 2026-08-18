@@ -63,13 +63,16 @@ func SetupRoutes(r *gin.Engine) {
 		api.GET("/user/info", middleware.Auth(), authController.GetUserInfo)
 		api.POST("/logout", middleware.Auth(), authController.Logout)
 
-		// 动态路由接口（需要认证 + 权限检查）
+		// 动态路由接口（登录后构建菜单必需，仅需认证——返回的本来就是用户自己的路由）
+		api.GET("/route/getUserRoutes", middleware.Auth(), routeController.GetUserRoutes)
+		// 路由存在性检查（前端路由守卫 404 兜底用，仅需认证——全局存在性布尔值无敏感性）
+		api.GET("/route/isRouteExist", middleware.Auth(), routeController.IsRouteExist)
+
+		// 路由管理接口（认证 + 权限检查）
 		routeGroup := api.Group("/route")
 		routeGroup.Use(middleware.Auth())
 		routeGroup.Use(middleware.RequirePermissionFromDB())
 		{
-			routeGroup.GET("/getUserRoutes", routeController.GetUserRoutes)
-			routeGroup.GET("/isRouteExist", routeController.IsRouteExist)
 			routeGroup.POST("/invalidateCache", routeController.InvalidateCache)
 			routeGroup.GET("/debugCache", routeController.DebugCache)
 		}

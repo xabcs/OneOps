@@ -56,8 +56,8 @@ func (i *Initializer) syncMenus() error {
 		{ID: 7, Name: "授权中心", Icon: "mdi:shield-account", Path: "/auth", Permission: "", MenuType: "directory", Sort: 4, Status: 1, ParentID: 0},
 		{ID: 4, Name: "审计中心", Icon: "mdi:file-document", Path: "/audit", Permission: "", MenuType: "directory", Sort: 5, Status: 1, ParentID: 0},
 		{ID: 5, Name: "K8s管理", Icon: "mdi:kubernetes", Path: "/k8s", Permission: "", MenuType: "directory", Sort: 6, Status: 1, ParentID: 0},
-		// web终端作为独立的一级路由（无导航栏），使用 Sort=7
-		{ID: 60, Name: "web终端", Icon: "mdi:console", Path: "/webterminal", Permission: "", MenuType: "menu", Sort: 7, Status: 1, ParentID: 0},
+		// web终端不再作为独立菜单：由 GetUserRoutes 按主机管理菜单（/cmdb/servers）派生，
+		// 保证「无主机管理权限则不可见终端」在结构上成立
 		{ID: 6, Name: "系统管理", Icon: "mdi:cog", Path: "/manage", Permission: "", MenuType: "directory", Sort: 8, Status: 1, ParentID: 0},
 
 		// ========== CMDB 二级菜单 (ID: 20-39) ==========
@@ -240,6 +240,17 @@ func (i *Initializer) syncMenus() error {
 	}
 	if deletedTerminalResult.RowsAffected > 0 {
 		logger.Info("已删除废弃终端菜单", zap.Int64("count", deletedTerminalResult.RowsAffected))
+	}
+
+	// 删除 webterminal 独立菜单：入口已改为随主机管理菜单派生（GetUserRoutes.appendTerminalRoute），
+	// 菜单表中残留会导致管理员误以为需要单独绑定
+	deletedWebTerminalResult := db.Where("path = ?", "/webterminal").Delete(&modelsystem.Menu{})
+	if deletedWebTerminalResult.Error != nil {
+		logger.Error("删除webterminal菜单失败", zap.Error(deletedWebTerminalResult.Error))
+		return deletedWebTerminalResult.Error
+	}
+	if deletedWebTerminalResult.RowsAffected > 0 {
+		logger.Info("已删除webterminal独立菜单（改为随主机管理菜单派生）", zap.Int64("count", deletedWebTerminalResult.RowsAffected))
 	}
 
 	logger.Info("菜单同步完成",

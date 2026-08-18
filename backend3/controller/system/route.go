@@ -63,7 +63,7 @@ func (ctrl *RouteController) GetUserRoutes(ctx *gin.Context) {
 
 // IsRouteExist godoc
 // @Summary      检查路由是否存在
-// @Description  检查当前用户可访问的路由中是否存在指定名称的路由
+// @Description  检查系统中是否存在指定名称的路由（全局存在性，与用户权限无关；前端路由守卫用于区分 404 与 403）
 // @Tags         系统管理-路由
 // @Produce      json
 // @Param        routeName  query     string  true  "路由名称"

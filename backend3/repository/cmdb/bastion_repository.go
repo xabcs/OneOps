@@ -45,23 +45,44 @@ func (r *BastionRepository) FindServerWithUserCredentials(serverID uint) (*model
 	return &server, nil
 }
 
-// FindAccessPoliciesByRoleIDs 根据角色ID获取访问策略
-func (r *BastionRepository) FindAccessPoliciesByRoleIDs(roleIDs []uint) ([]modelcmdb.AssetAccessPolicy, error) {
+// FindAccessPoliciesBySubject 获取命中的启用策略（角色策略 ∨ 用户策略）
+func (r *BastionRepository) FindAccessPoliciesBySubject(userID uint, roleIDs []uint) ([]modelcmdb.AssetAccessPolicy, error) {
 	var policies []modelcmdb.AssetAccessPolicy
-	err := r.db.Where("status = 1 AND subject_type = ? AND subject_id IN (?)",
-		"role", roleIDs,
+	err := r.db.Where(
+		"status = 1 AND ((subject_type = 'role' AND subject_id IN (?)) OR (subject_type = 'user' AND subject_id = ?))",
+		roleIDs, userID,
 	).Find(&policies).Error
 	return policies, err
 }
 
-// FindAccessPoliciesWithHighRiskByRoleIDs 根据角色ID获取含高风险命令的访问策略
-func (r *BastionRepository) FindAccessPoliciesWithHighRiskByRoleIDs(roleIDs []uint) ([]modelcmdb.AssetAccessPolicy, error) {
+// FindAccessPoliciesWithHighRisk 获取含高危命令的启用策略（角色策略 ∨ 用户策略）
+func (r *BastionRepository) FindAccessPoliciesWithHighRisk(userID uint, roleIDs []uint) ([]modelcmdb.AssetAccessPolicy, error) {
 	var policies []modelcmdb.AssetAccessPolicy
-	err := r.db.Where("status = 1 AND subject_type = ? AND subject_id IN (?) AND high_risk_commands IS NOT NULL",
-		"role",
-		roleIDs,
+	err := r.db.Where(
+		"status = 1 AND ((subject_type = 'role' AND subject_id IN (?)) OR (subject_type = 'user' AND subject_id = ?)) "+
+			"AND JSON_LENGTH(high_risk_commands) > 0",
+		roleIDs, userID,
 	).Find(&policies).Error
 	return policies, err
+}
+
+// FindBusinessUnitAncestorIDs 获取业务系统自身及全部祖先 ID（含自身），用于子树匹配
+func (r *BastionRepository) FindBusinessUnitAncestorIDs(businessID uint) ([]uint, error) {
+	ids := make([]uint, 0, 4)
+	current := businessID
+	// 上限防御脏数据造成的父级循环
+	for depth := 0; current != 0 && depth < 32; depth++ {
+		ids = append(ids, current)
+		var parentID uint
+		if err := r.db.Model(&modelcmdb.BusinessUnit{}).
+			Select("parent_id").
+			Where("id = ?", current).
+			Scan(&parentID).Error; err != nil {
+			return nil, err
+		}
+		current = parentID
+	}
+	return ids, nil
 }
 
 // CountServerGroupRelation 统计服务器分组关联数量
@@ -497,4 +518,29 @@ func (r *BastionRepository) FindAccessPolicyByID(id uint) (*modelcmdb.AssetAcces
 		return nil, fmt.Errorf("策略不存在: %w", err)
 	}
 	return &policy, nil
+}
+
+// FindAccessPolicyIDByName 根据策略名称查找策略 ID（用于名称唯一性校验）
+// excludeID 用于更新场景排除自身，传 0 表示不过滤；未找到时返回 0
+func (r *BastionRepository) FindAccessPolicyIDByName(name string, excludeID uint) (uint, error) {
+	var id uint
+	tx := r.db.Model(&modelcmdb.AssetAccessPolicy{}).
+		Select("id").
+		Where("name = ?", name)
+	if excludeID > 0 {
+		tx = tx.Where("id <> ?", excludeID)
+	}
+	if err := tx.Scan(&id).Error; err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
+// ExistsRecord 检查指定模型的表中是否存在给定 ID 的记录（用于外键存在性校验）
+func (r *BastionRepository) ExistsRecord(model interface{}, id uint) (bool, error) {
+	var count int64
+	if err := r.db.Model(model).Where("id = ?", id).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

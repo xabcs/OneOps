@@ -463,9 +463,9 @@ declare namespace Bastion {
     id?: number;
     name: string;
     subjectType: 'user' | 'role' | 'user_group';
-    subjectId: number | number[];
+    subjectId: number;
     assetScopeType: 'server' | 'group' | 'business' | 'tag' | 'all';
-    assetScopeId: number | number[];
+    assetScopeId: number;
     loginAccounts?: string[];
     protocols?: Protocol[];
     allowFileTransfer?: boolean;
