@@ -23,6 +23,17 @@ export function fetchRoleOptions() {
 }
 
 /**
+ * 按角色集合查询可见一级菜单（编辑用户时家目录候选）
+ */
+export function fetchGetRoleMenuPaths(roleIds: number[]) {
+  return request<{ id: number; name: string; path: string }[]>({
+    url: '/system/roles/menu-paths',
+    method: 'get',
+    params: { roleIds: roleIds.join(',') }
+  });
+}
+
+/**
  * 获取用户列表
  */
 export function fetchGetUserList(params?: Api.SystemManage.UserSearchParams) {
@@ -300,7 +311,7 @@ export function fetchGetPermissionById(id: number) {
 /**
  * 新增权限
  */
-export function fetchAddPermission(data: Api.SystemManage.Permission) {
+export function fetchAddPermission(data: Partial<Api.SystemManage.Permission>) {
   return request({
     url: '/system/permissions',
     method: 'post',
@@ -325,6 +336,49 @@ export function fetchUpdatePermission(id: number, data: Partial<Api.SystemManage
 export function fetchDeletePermission(id: number) {
   return request({
     url: `/system/permissions/${id}`,
+    method: 'delete'
+  });
+}
+
+/**
+ * 获取权限路由映射列表（可按权限码过滤）
+ */
+export function fetchGetPermissionRoutes(params?: { permissionCode?: string }) {
+  return request<Api.SystemManage.PermissionRoute[]>({
+    url: '/system/permissions/routes',
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 新增权限路由映射（同一端点只能归属一个权限码，即时生效）
+ */
+export function fetchCreatePermissionRoute(data: Pick<Api.SystemManage.PermissionRoute, 'permissionCode' | 'method' | 'path'>) {
+  return request({
+    url: '/system/permissions/routes',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 修改权限路由映射归属的权限码（method/path 不可改）
+ */
+export function fetchUpdatePermissionRoute(id: number, data: { permissionCode: string }) {
+  return request({
+    url: `/system/permissions/routes/${id}`,
+    method: 'put',
+    data
+  });
+}
+
+/**
+ * 删除权限路由映射（删除后对应端点 fail-closed 拒绝访问）
+ */
+export function fetchDeletePermissionRoute(id: number) {
+  return request({
+    url: `/system/permissions/routes/${id}`,
     method: 'delete'
   });
 }

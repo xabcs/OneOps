@@ -34,7 +34,7 @@
 
   type Model = Pick<
     Api.SystemManage.Permission,
-    'name' | 'code' | 'description' | 'module' | 'resource' | 'action' | 'level' | 'sortOrder' | 'status' | 'routeMethod' | 'routePath'
+    'name' | 'code' | 'description' | 'module' | 'resource' | 'action' | 'level' | 'sortOrder' | 'status'
   >;
 
   function createDefaultModel(): Model {
@@ -47,9 +47,7 @@
       action: '',
       level: 3,
       sortOrder: 0,
-      status: 1,
-      routeMethod: '',
-      routePath: ''
+      status: 1
     };
   }
 
@@ -78,9 +76,6 @@
     { label: '资源', value: 2 },
     { label: '操作', value: 3 }
   ];
-
-  /** HTTP 方法选项 */
-  const methodOptions = ['GET', 'POST', 'PUT', 'DELETE'];
 
   function handleInitModel() {
     model.value = createDefaultModel();
@@ -143,14 +138,6 @@
             {{ opt.label }}
           </ElRadio>
         </ElRadioGroup>
-      </ElFormItem>
-      <ElFormItem label="路由方法" prop="routeMethod">
-        <ElSelect v-model="model.routeMethod" placeholder="选择 HTTP 方法" clearable style="width: 100%">
-          <ElOption v-for="m in methodOptions" :key="m" :label="m" :value="m" />
-        </ElSelect>
-      </ElFormItem>
-      <ElFormItem label="路由路径" prop="routePath">
-        <ElInput v-model="model.routePath" placeholder="如：/api/system/users" />
       </ElFormItem>
       <ElFormItem label="排序" prop="sortOrder">
         <ElInputNumber v-model="model.sortOrder" :min="0" style="width: 100%" />

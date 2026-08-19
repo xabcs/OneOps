@@ -361,3 +361,99 @@ func (ctrl *PermissionController) CheckPermission(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(response))
 }
+
+// GetPermissionRoutes godoc
+// @Summary      获取权限路由映射
+// @Description  查询权限码与 API 路由的映射列表，可按权限码过滤
+// @Tags         系统管理-权限
+// @Produce      json
+// @Param        permissionCode  query  string  false  "权限编码（为空返回全部）"
+// @Success      200  {object}  utils.Response{data=[]modelsystem.PermissionRoute}
+// @Failure      200  {object}  utils.Response  "获取权限路由映射失败"
+// @Router       /system/permissions/routes [get]
+// @Security     BearerAuth
+func (ctrl *PermissionController) GetPermissionRoutes(ctx *gin.Context) {
+	routes, err := ctrl.svc.GetPermissionRoutes(ctx.Query("permissionCode"))
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("获取权限路由映射失败"))
+		return
+	}
+	ctx.JSON(http.StatusOK, utils.SuccessWithData(routes))
+}
+
+// CreatePermissionRoute godoc
+// @Summary      新增权限路由映射
+// @Description  为一个 API 路由配置权限码（同一端点只能归属一个权限码），即时生效
+// @Tags         系统管理-权限
+// @Accept       json
+// @Produce      json
+// @Param        body  body  modelsystem.CreatePermissionRouteRequest  true  "映射信息"
+// @Success      200   {object}  utils.Response
+// @Failure      200   {object}  utils.Response  "参数错误 / 权限码不存在 / 路由已存在映射"
+// @Router       /system/permissions/routes [post]
+// @Security     BearerAuth
+func (ctrl *PermissionController) CreatePermissionRoute(ctx *gin.Context) {
+	var req modelsystem.CreatePermissionRouteRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("参数错误: "+err.Error()))
+		return
+	}
+	if err := ctrl.svc.CreatePermissionRoute(req); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		return
+	}
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("创建成功"))
+}
+
+// UpdatePermissionRoute godoc
+// @Summary      修改权限路由映射
+// @Description  修改映射归属的权限码（端点 method/path 不可改，删除后重建）
+// @Tags         系统管理-权限
+// @Accept       json
+// @Produce      json
+// @Param        id    path  int                                         true  "映射ID"
+// @Param        body  body  modelsystem.UpdatePermissionRouteRequest  true  "目标权限码"
+// @Success      200  {object}  utils.Response
+// @Failure      200  {object}  utils.Response  "参数错误 / 权限码不存在 / 映射不存在"
+// @Router       /system/permissions/routes/{id} [put]
+// @Security     BearerAuth
+func (ctrl *PermissionController) UpdatePermissionRoute(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的映射ID"))
+		return
+	}
+	var req modelsystem.UpdatePermissionRouteRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("参数错误: "+err.Error()))
+		return
+	}
+	if err := ctrl.svc.UpdatePermissionRoute(uint(id), req); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		return
+	}
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("更新成功"))
+}
+
+// DeletePermissionRoute godoc
+// @Summary      删除权限路由映射
+// @Description  删除后对应端点将被拒绝访问（fail-closed）
+// @Tags         系统管理-权限
+// @Produce      json
+// @Param        id  path  int  true  "映射ID"
+// @Success      200  {object}  utils.Response
+// @Failure      200  {object}  utils.Response  "映射不存在"
+// @Router       /system/permissions/routes/{id} [delete]
+// @Security     BearerAuth
+func (ctrl *PermissionController) DeletePermissionRoute(ctx *gin.Context) {
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的映射ID"))
+		return
+	}
+	if err := ctrl.svc.DeletePermissionRoute(uint(id)); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorInternal("删除权限路由映射失败"))
+		return
+	}
+	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("删除成功"))
+}

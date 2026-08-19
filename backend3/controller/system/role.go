@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -93,6 +94,53 @@ func (ctrl *RoleController) GetRoleOptions(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, utils.SuccessWithData(options))
+}
+
+// GetRoleMenuPaths godoc
+// @Summary      按角色集合查询可见一级菜单
+// @Description  编辑用户时用于家目录候选：按 角色→权限→菜单 推导链路返回一级菜单（含 admin 角色返回全部）
+// @Tags         系统管理-角色
+// @Produce      json
+// @Param        roleIds  query  string  false  "角色ID列表（逗号分隔）"
+// @Success      200  {object}  utils.Response{data=[]modelsystem.Menu}
+// @Failure      200  {object}  utils.Response  "获取角色菜单失败"
+// @Router       /system/roles/menu-paths [get]
+// @Security     BearerAuth
+func (ctrl *RoleController) GetRoleMenuPaths(c *gin.Context) {
+	permSvc, err := syssvc.GetPermissionService()
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取权限服务失败"))
+		return
+	}
+
+	roleIDs := make([]uint, 0)
+	if raw := c.Query("roleIds"); raw != "" {
+		for _, part := range strings.Split(raw, ",") {
+			id, err := strconv.ParseUint(strings.TrimSpace(part), 10, 64)
+			if err != nil {
+				c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的角色ID: "+part))
+				return
+			}
+			roleIDs = append(roleIDs, uint(id))
+		}
+	}
+
+	menus, err := permSvc.GetMenuPathsByRoleIDs(roleIDs)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取角色菜单失败"))
+		return
+	}
+
+	// 仅返回家目录所需字段
+	result := make([]gin.H, 0, len(menus))
+	for _, m := range menus {
+		result = append(result, gin.H{
+			"id":   m.ID,
+			"name": m.Name,
+			"path": m.Path,
+		})
+	}
+	c.JSON(http.StatusOK, utils.SuccessWithData(result))
 }
 
 // CreateRoleRequest 创建角色请求

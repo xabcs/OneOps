@@ -19,9 +19,12 @@ func NewClusterRepository(db *gorm.DB) *ClusterRepository {
 
 // ClusterQuery 集群分页查询条件
 type ClusterQuery struct {
-	Filter   *modelk8s.K8sClusterFilter
-	Page     int
-	PageSize int
+	Filter *modelk8s.K8sClusterFilter
+	// AuthorizedIDs 数据权限：用户可见的集群ID集合（nil 表示不限制，如超管）
+	// 非空时 count 与 list 同条件过滤，保证 total 与 list 一致
+	AuthorizedIDs *[]uint
+	Page          int
+	PageSize      int
 }
 
 // FindActiveByID 根据ID和启用状态（status=1）查询集群
@@ -49,6 +52,10 @@ func (r *ClusterRepository) FindWithPagination(q ClusterQuery) ([]modelk8s.K8sCl
 
 	query := r.db.Model(&modelk8s.K8sCluster{})
 
+	if q.AuthorizedIDs != nil {
+		query = query.Where("id IN ?", *q.AuthorizedIDs)
+	}
+
 	if q.Filter != nil {
 		if q.Filter.Name != nil && *q.Filter.Name != "" {
 			query = query.Where("name LIKE ?", "%"+*q.Filter.Name+"%")
@@ -74,6 +81,15 @@ func (r *ClusterRepository) FindWithPagination(q ClusterQuery) ([]modelk8s.K8sCl
 	}
 
 	return clusters, total, nil
+}
+
+// FindAuthorizedClusterIDs 查询用户有角色绑定的全部集群ID（数据权限范围）
+func (r *ClusterRepository) FindAuthorizedClusterIDs(userID uint) ([]uint, error) {
+	var ids []uint
+	err := r.db.Model(&modelk8s.ClusterRoleBinding{}).
+		Where("user_id = ?", userID).
+		Pluck("cluster_id", &ids).Error
+	return ids, err
 }
 
 // Create 创建集群

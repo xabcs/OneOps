@@ -39,6 +39,7 @@ func SetupSystemRoutes(
 		// 角色管理
 		system.GET("/roles", roleController.GetRoles)
 		system.GET("/roles/options", roleController.GetRoleOptions)
+		system.GET("/roles/menu-paths", roleController.GetRoleMenuPaths)
 		system.POST("/roles", roleController.CreateRole)
 		system.PUT("/roles/:id", roleController.UpdateRole)
 		system.DELETE("/roles/:id", roleController.DeleteRole)
@@ -69,6 +70,12 @@ func registerPermissionRoutes(router *gin.RouterGroup, permController *sysctrl.P
 		permGroup.PUT("/:id", permController.UpdatePermission)
 		permGroup.DELETE("/:id", permController.DeletePermission)
 		permGroup.POST("/check", permController.CheckPermission)
+
+		// 权限路由映射管理（运行时权限校验的数据来源，页面维护入口）
+		permGroup.GET("/routes", permController.GetPermissionRoutes)
+		permGroup.POST("/routes", permController.CreatePermissionRoute)
+		permGroup.PUT("/routes/:id", permController.UpdatePermissionRoute)
+		permGroup.DELETE("/routes/:id", permController.DeletePermissionRoute)
 	}
 
 	// 角色权限路由

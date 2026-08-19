@@ -728,6 +728,69 @@ func (s *PermissionService) BuildMenuTreeAndPermissions(userID uint) ([]*modelsy
 	return menuTree, permissions, roles, nil
 }
 
+// GetMenuPathsByRoleIDs 按角色集合推导可见一级菜单（编辑用户时家目录候选的权威来源）
+// 推导链路与 BuildMenuTreeAndPermissions 一致：角色 → 权限码 → resource → 菜单.Resource 匹配，
+// admin 角色返回全部启用菜单。仅返回一级菜单（parentId = 0）且配置了 path 的项。
+func (s *PermissionService) GetMenuPathsByRoleIDs(roleIDs []uint) ([]*modelsystem.Menu, error) {
+	result := make([]*modelsystem.Menu, 0)
+	if len(roleIDs) == 0 {
+		return result, nil
+	}
+
+	var roles []*modelsystem.Role
+	if err := s.db.Where("id IN ?", roleIDs).Find(&roles).Error; err != nil {
+		return nil, err
+	}
+
+	var allMenus []*modelsystem.Menu
+	if err := s.db.Where("status = 1").Order("sort ASC").Find(&allMenus).Error; err != nil {
+		return nil, err
+	}
+
+	menuByID := make(map[uint]*modelsystem.Menu, len(allMenus))
+	for _, m := range allMenus {
+		menuByID[m.ID] = m
+	}
+
+	visible := make(map[uint]bool)
+	if s.IsAdmin(roles) {
+		// 管理员：拥有所有菜单
+		for _, m := range allMenus {
+			visible[m.ID] = true
+		}
+	} else {
+		// 角色权限码 → resource
+		var rolePerms []modelsystem.RolePermission
+		if err := s.db.Where("role_id IN ?", roleIDs).Preload("Permission").Find(&rolePerms).Error; err != nil {
+			return nil, err
+		}
+		allowedResources := make(map[string]bool)
+		for _, rp := range rolePerms {
+			parts := strings.Split(rp.Permission.Code, ".")
+			if len(parts) >= 2 {
+				allowedResources[parts[1]] = true
+			}
+		}
+
+		// resource 匹配菜单，并标记父菜单
+		for _, m := range allMenus {
+			if m.Resource != "" && allowedResources[m.Resource] {
+				visible[m.ID] = true
+				if parent, ok := menuByID[m.ParentID]; ok {
+					visible[parent.ID] = true
+				}
+			}
+		}
+	}
+
+	for _, m := range allMenus {
+		if m.ParentID == 0 && visible[m.ID] && m.Path != "" {
+			result = append(result, m)
+		}
+	}
+	return result, nil
+}
+
 // buildMenuTree 递归构建菜单树
 func (s *PermissionService) buildMenuTree(allMenus []*modelsystem.Menu, menuIDs map[uint]bool, parentID uint) []*modelsystem.Menu {
 	var result []*modelsystem.Menu
@@ -782,14 +845,4 @@ func (s *PermissionService) LogPermissionOperation(userID uint, permissionCode s
 	}
 
 	return s.db.Create(&log).Error
-}
-
-// GetPermissionByRoute 根据路由方法和路径查询权限
-func (s *PermissionService) GetPermissionByRoute(method, path string) (*modelsystem.Permission, error) {
-	var perm modelsystem.Permission
-	err := s.db.Where("route_method = ? AND route_path = ? AND status = 1", method, path).First(&perm).Error
-	if err != nil {
-		return nil, err
-	}
-	return &perm, nil
 }

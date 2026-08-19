@@ -241,10 +241,6 @@ declare namespace Api {
       sortOrder: number;
       /** 状态 */
       status: number;
-      /** 路由方法 (GET/POST/PUT/DELETE) */
-      routeMethod?: string;
-      /** 路由路径 */
-      routePath?: string;
       /** 子权限 */
       children?: Permission[] | null;
     }>;
@@ -256,6 +252,22 @@ declare namespace Api {
 
     /** 权限列表 */
     type PermissionList = Common.PaginatingQueryRecord<Permission>;
+
+    /** 权限路由映射 */
+    type PermissionRoute = {
+      /** 映射ID */
+      id: number;
+      /** 权限编码 */
+      permissionCode: string;
+      /** HTTP 方法 */
+      method: string;
+      /** API 路径 */
+      path: string;
+      /** 是否种子数据（页面维护后置 false，不再被 seed 覆盖） */
+      isSeed: boolean;
+      createdAt: string;
+      updatedAt: string;
+    };
 
     /** 权限树 */
     type PermissionTree = {

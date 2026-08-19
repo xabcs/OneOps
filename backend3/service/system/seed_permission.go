@@ -166,9 +166,9 @@ func (i *Initializer) syncPermissions() error {
 		{Code: "monitor.report.delete", Name: "删除报告", Description: "删除巡检报告", Module: "monitor", Resource: "report", Action: "delete", Level: 3, SortOrder: 114, Status: 1},
 
 		// ========== K8s管理模块（15个） ==========
-		// 集群管理
-		{Code: "k8s.cluster.list", Name: "集群列表", Description: "查看集群列表", Module: "k8s", Resource: "cluster", Action: "list", Level: 3, SortOrder: 115, Status: 1},
-		{Code: "k8s.cluster.view", Name: "查看集群", Description: "查看集群详情", Module: "k8s", Resource: "cluster", Action: "view", Level: 3, SortOrder: 116, Status: 1},
+		// 集群管理（list=单接口权限：仅集群列表端点；view=接口权限集合：列表+详情+nodes+namespaces）
+		{Code: "k8s.cluster.list", Name: "集群列表", Description: "集群列表接口权限（单接口）", Module: "k8s", Resource: "cluster", Action: "list", Level: 3, SortOrder: 115, Status: 1},
+		{Code: "k8s.cluster.view", Name: "查看集群", Description: "查看集群列表与详情（接口集合）", Module: "k8s", Resource: "cluster", Action: "view", Level: 3, SortOrder: 116, Status: 1},
 		{Code: "k8s.cluster.create", Name: "创建集群", Description: "创建新集群", Module: "k8s", Resource: "cluster", Action: "create", Level: 3, SortOrder: 117, Status: 1},
 		{Code: "k8s.cluster.update", Name: "更新集群", Description: "更新集群信息", Module: "k8s", Resource: "cluster", Action: "update", Level: 3, SortOrder: 118, Status: 1},
 		{Code: "k8s.cluster.delete", Name: "删除集群", Description: "删除集群", Module: "k8s", Resource: "cluster", Action: "delete", Level: 3, SortOrder: 119, Status: 1},

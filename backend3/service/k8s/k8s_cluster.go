@@ -39,41 +39,24 @@ func NewK8sClusterService(clusterRepo *repok8s.ClusterRepository, clientPool *K8
 
 // ========== 集群 CRUD 操作 ==========
 
-// GetClusters 获取集群列表（带权限过滤）
+// GetClusters 获取集群列表（数据权限下推 SQL，count 与 list 同条件）
 func (s *K8sClusterService) GetClusters(userID uint, page, pageSize int, filter *modelk8s.K8sClusterFilter) ([]modelk8s.K8sCluster, int64, error) {
-	clusters, total, err := s.clusterRepo.FindWithPagination(repok8s.ClusterQuery{
-		Filter:   filter,
-		Page:     page,
-		PageSize: pageSize,
-	})
-	if err != nil {
-		return nil, 0, err
-	}
-
-	// 权限过滤：只返回用户有权限的集群
-	var filteredClusters []modelk8s.K8sCluster
-	for _, cluster := range clusters {
-		// 超级管理员（角色ID=1）可以看到所有集群
-		if s.isSuperAdmin(userID) {
-			filteredClusters = append(filteredClusters, cluster)
-			continue
-		}
-
-		// 检查用户是否有该集群的访问权限
-		hasAccess, err := s.CheckUserClusterAccess(userID, cluster.ID)
+	// 数据权限：非超管只能看到有角色绑定的集群（超管 AuthorizedIDs=nil 不限制）
+	var authorizedIDs *[]uint
+	if !s.isSuperAdmin(userID) {
+		ids, err := s.clusterRepo.FindAuthorizedClusterIDs(userID)
 		if err != nil {
-			logger.Warn("检查集群访问权限失败",
-				zap.Uint("cluster_id", cluster.ID),
-				zap.Uint("user_id", userID),
-				zap.Error(err))
-			continue
+			return nil, 0, err
 		}
-		if hasAccess {
-			filteredClusters = append(filteredClusters, cluster)
-		}
+		authorizedIDs = &ids
 	}
 
-	return filteredClusters, total, nil
+	return s.clusterRepo.FindWithPagination(repok8s.ClusterQuery{
+		Filter:         filter,
+		AuthorizedIDs:  authorizedIDs,
+		Page:           page,
+		PageSize:       pageSize,
+	})
 }
 
 // GetClusterByID 根据ID获取集群详情（带权限检查）

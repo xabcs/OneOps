@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, nextTick, ref, watch } from 'vue';
-  import { fetchCreateUser, fetchGetMenuTree, fetchUpdateUser } from '@/service/api';
+  import { fetchCreateUser, fetchGetRoleMenuPaths, fetchUpdateUser } from '@/service/api';
   import { useForm, useFormRules } from '@/hooks/common/form';
   import { $t } from '@/locales';
 
@@ -112,52 +112,21 @@
   /** the home directory options */
   const homePathOptions = ref<CommonType.Option<string>[]>([]);
 
+  /** 按选中角色实时拉取可见一级菜单（后端按 角色→权限→菜单 推导，与登录后菜单一致） */
   async function getHomePathOptions() {
-    // 获取所有菜单
-    const { error, data } = await fetchGetMenuTree();
+    const options: CommonType.Option<string>[] = [{ label: '首页（仪表盘）', value: '/' }];
 
-    if (!error && data) {
-      const options: CommonType.Option<string>[] = [{ label: '首页（仪表盘）', value: '/' }];
-
-      // 获取当前用户的角色ID列表
-      const userRoleIds = model.value.roleIds || [];
-
-      if (userRoleIds.length === 0) {
-        // 没有角色时，只能选择首页
-        homePathOptions.value = options;
-        return;
+    const roleIds = model.value.roleIds || [];
+    if (roleIds.length > 0) {
+      const { error, data } = await fetchGetRoleMenuPaths(roleIds);
+      if (!error && data) {
+        data.forEach(menu => {
+          options.push({ label: menu.name, value: menu.path });
+        });
       }
-
-      // 从所有角色中找到用户拥有的角色，收集菜单权限
-      const permittedMenuIds = new Set<number>();
-      const roleMap = new Map(props.allRoles?.map(r => [r.id, r]) || []);
-
-      userRoleIds.forEach(roleId => {
-        const role = roleMap.get(roleId);
-        if (role && role.menuIds) {
-          // menuIds 是字符串格式 "[1,2,3]"
-          try {
-            const menuIds = JSON.parse(role.menuIds);
-            menuIds.forEach((id: number) => permittedMenuIds.add(id));
-          } catch (e) {
-            console.error('解析角色菜单ID失败:', e);
-          }
-        }
-      });
-
-      // 遍历菜单树，添加有权限的一级菜单选项
-      data.forEach((menu: Api.SystemManage.Menu) => {
-        // 只添加一级菜单（parentId === 0）且有权限的菜单
-        if (menu.parentId === 0 && menu.status === 1 && menu.path && permittedMenuIds.has(menu.id)) {
-          options.push({
-            label: menu.name,
-            value: menu.path
-          });
-        }
-      });
-
-      homePathOptions.value = options;
     }
+
+    homePathOptions.value = options;
   }
 
   function handleInitModel() {
@@ -256,14 +225,14 @@
   // 监听角色变化，动态更新家目录选项
   watch(
     () => model.value.roleIds,
-    () => {
-      if (visible.value) {
-        getHomePathOptions();
-        // 如果当前家目录不在新选项中，重置为首页
-        const availablePaths = homePathOptions.value.map(opt => opt.value);
-        if (!availablePaths.includes(model.value.homePath)) {
-          model.value.homePath = '/';
-        }
+    async () => {
+      if (!visible.value) return;
+
+      // 先加载新选项，再校验当前家目录是否仍可用（避免用未加载完成的空列表误重置）
+      await getHomePathOptions();
+      const availablePaths = homePathOptions.value.map(opt => opt.value);
+      if (!availablePaths.includes(model.value.homePath)) {
+        model.value.homePath = '/';
       }
     },
     { deep: true }

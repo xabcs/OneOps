@@ -1,15 +1,13 @@
 <script setup lang="tsx">
   import { onUnmounted, ref } from 'vue';
   import { ElMessage, ElMessageBox } from 'element-plus';
-  import { Key, Plus, Refresh, Search } from '@element-plus/icons-vue';
+  import { Key, Link, Plus, Refresh, Search } from '@element-plus/icons-vue';
   import { fetchDeletePermission, fetchGetPermissionList } from '@/service/api';
-  import { useThemeStore } from '@/store/modules/theme';
   import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
   import PermissionOperateDrawer from './modules/permission-operate-drawer.vue';
+  import PermissionRouteModal from './modules/permission-route-modal.vue';
 
   defineOptions({ name: 'PermissionManage' });
-
-  const themeStore = useThemeStore();
 
   function getInitSearchParams(): Api.SystemManage.PermissionSearchParams {
     return {
@@ -26,8 +24,8 @@
   const searchParams = ref(getInitSearchParams());
 
   /** 模块标签颜色 */
-  const moduleColors: Record<string, string> = {
-    system: '',
+  const moduleColors: Record<string, 'primary' | 'success' | 'warning' | 'info' | 'danger'> = {
+    system: 'primary',
     cmdb: 'success',
     k8s: 'warning',
     monitor: 'info',
@@ -40,14 +38,6 @@
     1: '模块',
     2: '资源',
     3: '操作'
-  };
-
-  /** 方法标签颜色 */
-  const methodColors: Record<string, string> = {
-    GET: 'success',
-    POST: 'primary',
-    PUT: 'warning',
-    DELETE: 'danger'
   };
 
   const { columns, data, getData, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
@@ -96,28 +86,14 @@
         )
       },
       {
-        prop: 'routeMethod',
-        label: '路由方法',
+        prop: 'routeCount',
+        label: '路由映射',
         width: 90,
-        formatter: (row: Api.SystemManage.Permission) =>
-          row.routeMethod ? (
-            <ElTag size="small" type={methodColors[row.routeMethod] || ''}>
-              {row.routeMethod}
-            </ElTag>
-          ) : (
-            <span class="text-gray-400">-</span>
-          )
-      },
-      {
-        prop: 'routePath',
-        label: '路由路径',
-        minWidth: 200,
-        formatter: (row: Api.SystemManage.Permission) =>
-          row.routePath ? (
-            <span style="font-family: monospace; font-size: 12px">{row.routePath}</span>
-          ) : (
-            <span class="text-gray-400">-</span>
-          )
+        formatter: (row: Api.SystemManage.Permission) => (
+          <ElButton text type="primary" size="small" onClick={() => openRouteModal(row.code)}>
+            查看
+          </ElButton>
+        )
       },
       {
         prop: 'status',
@@ -153,6 +129,15 @@
     'id',
     getData
   );
+
+  /** 路由映射管理弹窗 */
+  const routeModalVisible = ref(false);
+  const routeModalCode = ref('');
+
+  function openRouteModal(code?: string) {
+    routeModalCode.value = code || '';
+    routeModalVisible.value = true;
+  }
 
   async function handleDelete(id: number) {
     await ElMessageBox.confirm('确认删除此权限吗？', '提示', {
@@ -226,12 +211,18 @@
       <template #header>
         <div class="flex items-center justify-between">
           <span class="text-16px font-bold">权限列表</span>
-          <ElButton type="primary" size="small" @click="handleAdd">
-            <ElIcon>
-              <Plus />
-            </ElIcon>
-            新增权限
-          </ElButton>
+          <ElSpace size="small">
+            <ElButton size="small" @click="openRouteModal()">
+              <ElIcon><Link /></ElIcon>
+              路由映射
+            </ElButton>
+            <ElButton type="primary" size="small" @click="handleAdd">
+              <ElIcon>
+                <Plus />
+              </ElIcon>
+              新增权限
+            </ElButton>
+          </ElSpace>
         </div>
       </template>
 
@@ -293,6 +284,12 @@
       :operate-type="operateType"
       :row-data="editingData"
       @submitted="getData"
+    />
+
+    <!-- 路由映射管理弹窗 -->
+    <PermissionRouteModal
+      v-model:visible="routeModalVisible"
+      :initial-permission-code="routeModalCode"
     />
   </div>
 </template>

@@ -66,6 +66,7 @@ func (i *Initializer) migrateSchema() error {
 		&modelsystem.Role{},
 		&modelsystem.Menu{},
 		&modelsystem.Permission{},
+		&modelsystem.PermissionRoute{},
 		&modelsystem.RolePermission{},
 		&modelsystem.UserPermission{},
 		&modelsystem.PermissionLog{},
@@ -288,6 +289,11 @@ func (i *Initializer) initSystemData() error {
 	// 同步权限数据
 	if err := i.syncPermissions(); err != nil {
 		logger.Warn("权限数据同步失败", zap.Error(err))
+	}
+
+	// 同步权限路由映射（依赖权限目录，必须在 syncPermissions 之后）
+	if err := i.syncPermissionRoutes(); err != nil {
+		logger.Warn("权限路由映射同步失败", zap.Error(err))
 	}
 
 	// 同步默认角色权限分配

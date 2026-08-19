@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"strings"
+
 	"oneops/backend3/pkg/logger"
 	"oneops/backend3/pkg/utils"
 	"oneops/backend3/service/system"
@@ -10,6 +12,11 @@ import (
 )
 
 // RequirePermissionFromDB 权限检查中间件（数据库驱动，无缓存）
+//
+// 解析顺序：sys_permission_routes 按 (method, path) 匹配权限码集合 → 用户持有任一码即通过（OR 语义）
+// 同一端点可同时配置单接口码与集合码（如 k8s.cluster.list 与 k8s.cluster.view 保护同一列表端点）
+// 映射缺失时拒绝访问（fail-closed）：受保护组内的路由必须有映射，启动对账
+// （AuditRoutePermissions）会列出全部缺失项，新增路由需在权限管理页或 seed 中补映射
 func RequirePermissionFromDB() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userID, exists := c.Get("user_id")
@@ -31,16 +38,25 @@ func RequirePermissionFromDB() gin.HandlerFunc {
 			return
 		}
 
-		// 通过 service 方法查询路由所需权限
-		perm, err := permService.GetPermissionByRoute(method, path)
+		// 通过 service 方法查询路由所需权限码集合（OR 语义）
+		codes, err := permService.GetPermissionCodesByRoute(method, path)
 		if err != nil {
-			// 该路由没有配置权限，默认放行
-			c.Next()
+			c.JSON(500, utils.ErrorInternal("权限映射查询失败"))
+			c.Abort()
+			return
+		}
+		if len(codes) == 0 {
+			// fail-closed：无映射即拒绝，避免新路由在配置前静默放行
+			logger.Error("路由缺少权限映射，已拒绝访问",
+				zap.String("route", method+" "+path),
+				zap.Any("user_id", userID))
+			c.JSON(403, utils.ErrorForbidden("接口未配置权限映射: "+path))
+			c.Abort()
 			return
 		}
 
-		// 检查用户权限（通过 Casbin）
-		hasPermission, err := permService.HasPermission(userID.(uint), perm.Code)
+		// 检查用户是否持有任一权限码（通过 Casbin）
+		hasPermission, err := permService.HasAnyPermission(userID.(uint), codes)
 		if err != nil {
 			c.JSON(500, utils.ErrorInternal("权限检查失败"))
 			c.Abort()
@@ -54,9 +70,9 @@ func RequirePermissionFromDB() gin.HandlerFunc {
 				zap.Any("user_id", userID),
 				zap.Any("username", username),
 				zap.String("route", method+" "+path),
-				zap.String("required_permission", perm.Code))
+				zap.String("required_permissions", strings.Join(codes, " | ")))
 
-			c.JSON(403, utils.ErrorForbidden("权限不足: 需要 "+perm.Code+" 权限"))
+			c.JSON(403, utils.ErrorForbidden("权限不足: 需要 "+strings.Join(codes, " 或 ")+" 权限"))
 			c.Abort()
 			return
 		}

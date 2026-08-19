@@ -11,8 +11,6 @@ type Permission struct {
 	Module      string    `json:"module" gorm:"type:varchar(30);not null;index"`
 	Resource    string    `json:"resource" gorm:"type:varchar(30);not null;index"`
 	Action      string    `json:"action" gorm:"type:varchar(20);not null"`
-	RouteMethod string    `json:"routeMethod" gorm:"type:varchar(10)"`
-	RoutePath   string    `json:"routePath" gorm:"type:varchar(255)"`
 	Level       int       `json:"level" gorm:"type:tinyint;not null;default:3;index"`
 	ParentID    *uint     `json:"parentId,omitempty" gorm:"index"`
 	SortOrder   int       `json:"sortOrder" gorm:"default:0"`
