@@ -29,7 +29,6 @@ type UserQuery struct {
 // FindWithPagination 分页查询用户
 func (r *UserRepository) FindWithPagination(q UserQuery) ([]modelsystem.User, int64, error) {
 	query := r.db.Model(&modelsystem.User{})
-
 	if q.Username != "" {
 		query = query.Where("username LIKE ?", "%"+q.Username+"%")
 	}
@@ -49,7 +48,7 @@ func (r *UserRepository) FindWithPagination(q UserQuery) ([]modelsystem.User, in
 	}
 
 	var users []modelsystem.User
-	if err := query.Offset(q.Offset).Limit(q.Limit).Find(&users).Error; err != nil {
+	if err := query.Preload("Roles").Offset(q.Offset).Limit(q.Limit).Find(&users).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -66,18 +65,35 @@ func (r *UserRepository) UpdateByID(id uint64, updates map[string]interface{}) e
 	return r.db.Model(&modelsystem.User{}).Where("id = ?", id).Updates(updates).Error
 }
 
-// FindByID 根据ID查询用户
+// FindByID 根据ID查询用户（含角色关联）
 func (r *UserRepository) FindByID(id uint64) (*modelsystem.User, error) {
 	var user modelsystem.User
-	if err := r.db.First(&user, id).Error; err != nil {
+	if err := r.db.Preload("Roles").First(&user, id).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
 }
 
-// Delete 根据ID删除用户
+// ReplaceRoles 全量替换用户的角色绑定（many2many）；仅保留实际存在的角色 ID，过滤悬空 ID
+func (r *UserRepository) ReplaceRoles(id uint64, roleIDs []uint) error {
+	var user modelsystem.User
+	if err := r.db.First(&user, id).Error; err != nil {
+		return err
+	}
+
+	var roles []modelsystem.Role
+	if len(roleIDs) > 0 {
+		if err := r.db.Where("id IN ?", roleIDs).Find(&roles).Error; err != nil {
+			return err
+		}
+	}
+
+	return r.db.Model(&user).Association("Roles").Replace(&roles)
+}
+
+// Delete 根据ID删除用户（级联清理 sys_user_roles 关联行）
 func (r *UserRepository) Delete(id uint64) error {
-	return r.db.Delete(&modelsystem.User{}, id).Error
+	return r.db.Select("Roles").Delete(&modelsystem.User{}, id).Error
 }
 
 // CountByUsername 根据用户名统计数量（检查重复）

@@ -1,7 +1,6 @@
 package system
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -97,20 +96,16 @@ func (ctrl *UserController) CreateUser(c *gin.Context) {
 		return
 	}
 
-	roleIDsJSON, err := json.Marshal(req.RoleIDs)
-	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("JSON 序列化失败"))
-		return
-	}
-
 	user := modelsystem.User{
 		Username: req.Username,
 		Nickname: req.Nickname,
 		Avatar:   req.Avatar,
 		Email:    req.Email,
-		RoleIDs:  string(roleIDsJSON),
 		Status:   req.Status,
 		HomePath: req.HomePath,
+	}
+	for _, roleID := range req.RoleIDs {
+		user.Roles = append(user.Roles, modelsystem.Role{ID: roleID})
 	}
 
 	if err := ctrl.svc.Create(&user, req.Password); err != nil {
@@ -172,14 +167,6 @@ func (ctrl *UserController) UpdateUser(c *gin.Context) {
 	if req.Email != "" {
 		updates["email"] = req.Email
 	}
-	if req.RoleIDs != nil {
-		roleIDsJSON, err := json.Marshal(req.RoleIDs)
-		if err != nil {
-			c.JSON(http.StatusOK, utils.ErrorInternal("JSON 序列化失败"))
-			return
-		}
-		updates["role_ids"] = string(roleIDsJSON)
-	}
 	if req.Status != "" {
 		updates["status"] = req.Status
 	}
@@ -188,6 +175,14 @@ func (ctrl *UserController) UpdateUser(c *gin.Context) {
 	}
 	if req.Password != "" {
 		updates["password"] = req.Password
+	}
+
+	// 角色绑定走关联表全量替换，与其他字段分开处理
+	if req.RoleIDs != nil {
+		if err := ctrl.svc.AssignRoles(id, req.RoleIDs); err != nil {
+			c.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+			return
+		}
 	}
 
 	if err := ctrl.svc.Update(id, updates); err != nil {

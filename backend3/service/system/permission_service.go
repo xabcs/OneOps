@@ -1,7 +1,6 @@
 package system
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -185,20 +184,13 @@ func (s *PermissionService) GetUserPermissions(userID uint) ([]string, error) {
 // GetUserRoles 获取用户角色列表（统一方法）
 func (s *PermissionService) GetUserRoles(userID uint) ([]*modelsystem.Role, error) {
 	var user modelsystem.User
-	if err := s.db.First(&user, userID).Error; err != nil {
+	if err := s.db.Preload("Roles", "status = 1").First(&user, userID).Error; err != nil {
 		return nil, err
 	}
 
-	var roleIDs []uint
-	if err := json.Unmarshal([]byte(user.RoleIDs), &roleIDs); err != nil {
-		return []*modelsystem.Role{}, nil
-	}
-
-	var roles []*modelsystem.Role
-	if len(roleIDs) > 0 {
-		if err := s.db.Where("id IN ? AND status = 1", roleIDs).Find(&roles).Error; err != nil {
-			return nil, err
-		}
+	roles := make([]*modelsystem.Role, len(user.Roles))
+	for i := range user.Roles {
+		roles[i] = &user.Roles[i]
 	}
 	return roles, nil
 }

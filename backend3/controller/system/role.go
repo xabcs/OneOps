@@ -64,23 +64,20 @@ func (ctrl *RoleController) GetRoles(c *gin.Context) {
 		return
 	}
 
-	// 附带各角色绑定用户（id/用户名，供列表"绑定用户"列以 tag 展示；查询失败不影响列表）
+	// 附带各角色绑定用户（id/用户名，供列表"绑定用户"列以 tag 展示；Preload 一次带出）
 	records := make([]gin.H, 0, len(result.Records))
 	for _, r := range result.Records {
-		item := gin.H{
+		userItems := make([]gin.H, 0, len(r.Users))
+		for _, u := range r.Users {
+			userItems = append(userItems, gin.H{"id": u.ID, "username": u.Username})
+		}
+		records = append(records, gin.H{
 			"id": r.ID, "name": r.Name, "code": r.Code,
 			"description": r.Description, "status": r.Status,
 			"createdAt": r.CreatedAt, "updatedAt": r.UpdatedAt,
-		}
-		if users, err := ctrl.svc.GetRoleUsers(r.ID); err == nil {
-			userItems := make([]gin.H, 0, len(users))
-			for _, u := range users {
-				userItems = append(userItems, gin.H{"id": u.ID, "username": u.Username})
-			}
-			item["userCount"] = len(userItems)
-			item["users"] = userItems
-		}
-		records = append(records, item)
+			"userCount": len(userItems),
+			"users":     userItems,
+		})
 	}
 
 	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(records, result.Total, params)))

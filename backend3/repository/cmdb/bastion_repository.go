@@ -30,7 +30,7 @@ func (r *BastionRepository) DB() *gorm.DB {
 // FindUserByID 根据ID获取用户
 func (r *BastionRepository) FindUserByID(userID uint) (*modelsystem.User, error) {
 	var user modelsystem.User
-	if err := r.db.First(&user, userID).Error; err != nil {
+	if err := r.db.Preload("Roles").First(&user, userID).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil
@@ -130,6 +130,7 @@ func (r *BastionRepository) FindSessionDetailByID(sessionID uint) (*modelcmdb.Ba
 	err := r.db.Preload("Server").
 		Preload("Server.Cabinet").
 		Preload("User").
+		Preload("User.Roles").
 		Preload("SSHCredential").
 		First(&session, sessionID).Error
 	return &session, err
@@ -355,7 +356,7 @@ func (r *BastionRepository) CreateCommand(cmd *modelcmdb.BastionCommand) error {
 // FindSessionWithServer 获取会话及其服务器（用于命令拦截检查）
 func (r *BastionRepository) FindSessionWithServer(sessionID uint) (*modelcmdb.BastionSession, error) {
 	var session modelcmdb.BastionSession
-	if err := r.db.Preload("Server").First(&session, sessionID).Error; err != nil {
+	if err := r.db.Preload("Server").Preload("User.Roles").First(&session, sessionID).Error; err != nil {
 		return nil, err
 	}
 	return &session, nil

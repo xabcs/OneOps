@@ -44,15 +44,11 @@ func (s *BastionService) CheckConnectPermission(userID uint, serverID uint) (boo
 		return false, nil, fmt.Errorf("服务器未绑定用户凭证，请先在主机编辑页面绑定 credential_type=user 的 SSH 凭证")
 	}
 
-	if isAdminRole(user.RoleIDs) {
+	if hasAdminRole(userRoleIDs(user)) {
 		return true, server.Credentials, nil
 	}
 
-	roleIDs, err := parseRoleIDs(user.RoleIDs)
-	if err != nil {
-		return false, nil, fmt.Errorf("解析用户角色失败: %w", err)
-	}
-
+	roleIDs := userRoleIDs(user)
 	policies, err := s.findApplicablePolicies(userID, roleIDs, serverID, server)
 	if err != nil {
 		return false, nil, err
@@ -85,12 +81,17 @@ func (s *BastionService) findApplicablePolicies(userID uint, roleIDs []uint, ser
 	return applicable, nil
 }
 
-// isAdminRole 判断用户是否持有管理员角色（roleID=1，绕过访问策略）
-func isAdminRole(roleIDsJSON string) bool {
-	roleIDs, err := parseRoleIDs(roleIDsJSON)
-	if err != nil {
-		return false
+// userRoleIDs 从用户角色关联提取角色 ID 列表
+func userRoleIDs(user *modelsystem.User) []uint {
+	roleIDs := make([]uint, 0, len(user.Roles))
+	for _, r := range user.Roles {
+		roleIDs = append(roleIDs, r.ID)
 	}
+	return roleIDs
+}
+
+// hasAdminRole 判断用户是否持有管理员角色（roleID=1，绕过访问策略）
+func hasAdminRole(roleIDs []uint) bool {
 	for _, roleID := range roleIDs {
 		if roleID == 1 {
 			return true
@@ -155,11 +156,8 @@ func (s *BastionService) CreateSSHSession(userID uint, serverID uint, credential
 		return nil, fmt.Errorf("不允许使用该凭证")
 	}
 
-	if !isAdminRole(user.RoleIDs) {
-		roleIDs, err := parseRoleIDs(user.RoleIDs)
-		if err != nil {
-			return nil, fmt.Errorf("解析用户角色失败: %w", err)
-		}
+	if !hasAdminRole(userRoleIDs(user)) {
+		roleIDs := userRoleIDs(user)
 
 		policies, err := s.findApplicablePolicies(userID, roleIDs, serverID, server)
 		if err != nil {
@@ -937,27 +935,10 @@ func (s *BastionService) GetAccessPolicyByID(id uint) (*modelcmdb.AssetAccessPol
 
 // ========== 辅助函数 ==========
 
-// parseRoleIDs 解析用户的角色ID列表
-func parseRoleIDs(roleIDsStr string) ([]uint, error) {
-	if roleIDsStr == "" || roleIDsStr == "[]" {
-		return []uint{}, nil
-	}
-
-	var roleIDs []uint
-	err := json.Unmarshal([]byte(roleIDsStr), &roleIDs)
-	if err != nil {
-		return nil, err
-	}
-	return roleIDs, nil
-}
-
 // getRoleIDsFromSession 从会话中获取角色ID
 func getRoleIDsFromSession(session *modelcmdb.BastionSession) []uint {
 	if session.User != nil {
-		roleIDs, err := parseRoleIDs(session.User.RoleIDs)
-		if err == nil {
-			return roleIDs
-		}
+		return userRoleIDs(session.User)
 	}
 	return []uint{}
 }

@@ -1,8 +1,6 @@
 package system
 
 import (
-	"fmt"
-
 	modelsystem "oneops/backend3/model/system"
 
 	"gorm.io/gorm"
@@ -51,7 +49,7 @@ func (r *RoleRepository) FindWithPagination(q RoleQuery) ([]modelsystem.Role, in
 	}
 
 	var roles []modelsystem.Role
-	if err := query.Offset(q.Offset).Limit(q.Limit).Find(&roles).Error; err != nil {
+	if err := query.Preload("Users").Offset(q.Offset).Limit(q.Limit).Find(&roles).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -95,7 +93,8 @@ func (r *RoleRepository) Delete(id uint64) error {
 func (r *RoleRepository) CountUsersByRoleID(roleID uint) (int64, error) {
 	var count int64
 	err := r.db.Model(&modelsystem.User{}).
-		Where("JSON_CONTAINS(CAST(role_ids AS JSON), ?)", fmt.Sprintf("[%d]", roleID)).
+		Joins("JOIN sys_user_roles ur ON ur.user_id = sys_users.id").
+		Where("ur.role_id = ?", roleID).
 		Count(&count).Error
 	return count, err
 }
@@ -103,9 +102,10 @@ func (r *RoleRepository) CountUsersByRoleID(roleID uint) (int64, error) {
 // FindUsersByRoleID 查询使用指定角色的用户列表（含邮箱/状态，供角色管理页查看绑定用户）
 func (r *RoleRepository) FindUsersByRoleID(roleID uint) ([]modelsystem.User, error) {
 	var users []modelsystem.User
-	err := r.db.Select("id, username, nickname, email, status").
-		Where("JSON_CONTAINS(CAST(role_ids AS JSON), ?)", fmt.Sprintf("[%d]", roleID)).
-		Order("id ASC").
+	err := r.db.Select("sys_users.id, sys_users.username, sys_users.nickname, sys_users.email, sys_users.status").
+		Joins("JOIN sys_user_roles ur ON ur.user_id = sys_users.id").
+		Where("ur.role_id = ?", roleID).
+		Order("sys_users.id ASC").
 		Find(&users).Error
 	return users, err
 }

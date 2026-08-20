@@ -1,7 +1,6 @@
 package k8s
 
 import (
-	"encoding/json"
 	"fmt"
 	modelk8s "oneops/backend3/model/k8s"
 	modelsystem "oneops/backend3/model/system"
@@ -108,20 +107,13 @@ func (r *ClusterRepository) FindAuthorizedClusterIDs(userID uint) ([]uint, error
 // IsSuperAdmin 判定用户是否平台超级管理员（角色 ID=1），
 // 超管是唯一允许以平台身份执行集群操作的白名单
 func (r *ClusterRepository) IsSuperAdmin(userID uint) bool {
-	user, err := r.FindUserByID(userID)
-	if err != nil {
+	var count int64
+	if err := r.db.Table("sys_user_roles").
+		Where("user_id = ? AND role_id = ?", userID, 1).
+		Count(&count).Error; err != nil {
 		return false
 	}
-	var roleIDs []uint
-	if err := json.Unmarshal([]byte(user.RoleIDs), &roleIDs); err != nil {
-		return false
-	}
-	for _, roleID := range roleIDs {
-		if roleID == 1 {
-			return true
-		}
-	}
-	return false
+	return count > 0
 }
 
 // Create 创建集群

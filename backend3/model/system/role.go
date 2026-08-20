@@ -9,6 +9,7 @@ type Role struct {
 	Code        string    `json:"code" gorm:"uniqueIndex;size:50;not null"`
 	Description string    `json:"description" gorm:"size:200"`
 	Status      int       `json:"status" gorm:"default:1"`
+	Users       []User    `json:"-" gorm:"many2many:sys_user_roles"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }

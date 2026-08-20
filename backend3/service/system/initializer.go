@@ -1,6 +1,7 @@
 package system
 
 import (
+	"encoding/json"
 	"fmt"
 
 	modelaudit "oneops/backend3/model/audit"
@@ -29,6 +30,11 @@ func (i *Initializer) Initialize() error {
 	// 阶段1：数据库模式迁移
 	if err := i.migrateSchema(); err != nil {
 		return fmt.Errorf("模式迁移失败: %w", err)
+	}
+
+	// 阶段1.5：用户-角色关系迁移（role_ids JSON 列 → sys_user_roles 关联表）
+	if err := i.migrateUserRoleRelations(); err != nil {
+		return fmt.Errorf("用户角色关系迁移失败: %w", err)
 	}
 
 	// 阶段2：创建监控表
@@ -265,6 +271,64 @@ func (i *Initializer) runMigrations() error {
 	}
 
 	logger.Info("监控表创建完成")
+	return nil
+}
+
+// migrateUserRoleRelations 用户-角色关系迁移：
+// 历史实现将角色 ID 存于 sys_users.role_ids JSON 列，现改为 sys_user_roles 关联表（many2many）。
+// 启动时将 JSON 数据幂等回填至关联表，全部成功后删除旧列。旧列不存在（新库）则跳过。
+func (i *Initializer) migrateUserRoleRelations() error {
+	db := database.GetDB()
+
+	if !db.Migrator().HasTable("sys_users") {
+		return nil
+	}
+	// AutoMigrate 已按 many2many 标签建好关联表；此处仅防御性确认
+	if !db.Migrator().HasTable("sys_user_roles") {
+		if err := db.Exec(`CREATE TABLE IF NOT EXISTS sys_user_roles (
+			user_id BIGINT UNSIGNED NOT NULL,
+			role_id BIGINT UNSIGNED NOT NULL,
+			PRIMARY KEY (user_id, role_id)
+		)`).Error; err != nil {
+			return fmt.Errorf("创建 sys_user_roles 失败: %w", err)
+		}
+	}
+
+	if !db.Migrator().HasColumn("sys_users", "role_ids") {
+		return nil // 新库或已迁移
+	}
+
+	type legacyRow struct {
+		ID      uint   `gorm:"column:id"`
+		RoleIDs string `gorm:"column:role_ids"`
+	}
+	var rows []legacyRow
+	if err := db.Raw("SELECT id, role_ids FROM sys_users WHERE role_ids IS NOT NULL AND role_ids NOT IN ('', 'null', '[]')").Scan(&rows).Error; err != nil {
+		return fmt.Errorf("读取旧 role_ids 失败: %w", err)
+	}
+
+	migrated := 0
+	for _, row := range rows {
+		var roleIDs []uint
+		if err := json.Unmarshal([]byte(row.RoleIDs), &roleIDs); err != nil {
+			logger.Warn("用户 role_ids 解析失败，跳过",
+				zap.Uint("user_id", row.ID), zap.String("role_ids", row.RoleIDs), zap.Error(err))
+			continue
+		}
+		for _, roleID := range roleIDs {
+			if err := db.Exec("INSERT IGNORE INTO sys_user_roles (user_id, role_id) VALUES (?, ?)",
+				row.ID, roleID).Error; err != nil {
+				return fmt.Errorf("写入关联表失败 user_id=%d role_id=%d: %w", row.ID, roleID, err)
+			}
+			migrated++
+		}
+	}
+
+	if err := db.Migrator().DropColumn("sys_users", "role_ids"); err != nil {
+		return fmt.Errorf("删除旧列 sys_users.role_ids 失败: %w", err)
+	}
+
+	logger.Info("用户-角色关系迁移完成", zap.Int("rows", len(rows)), zap.Int("relations", migrated))
 	return nil
 }
 

@@ -1,8 +1,6 @@
 package system
 
 import (
-	"encoding/json"
-
 	modelsystem "oneops/backend3/model/system"
 	"oneops/backend3/pkg/database"
 	"oneops/backend3/pkg/logger"
@@ -84,8 +82,7 @@ func (i *Initializer) syncUsers() error {
 		return err
 	}
 
-	adminRoleIDs := []uint{1}
-	adminRoleIDsJSON, _ := json.Marshal(adminRoleIDs)
+	adminRole := modelsystem.Role{ID: 1}
 
 	var existingUser modelsystem.User
 	if err := db.Where("username = ?", "admin").First(&existingUser).Error; err == nil {
@@ -93,10 +90,11 @@ func (i *Initializer) syncUsers() error {
 			"password":  hashedPassword,
 			"nickname":  "超级管理员",
 			"email":     "admin@example.com",
-			"role_ids":  string(adminRoleIDsJSON),
 			"status":    "active",
 			"home_path": "/home",
 		})
+		// 幂等绑定管理员角色（many2many）
+		db.Exec("INSERT IGNORE INTO sys_user_roles (user_id, role_id) VALUES (?, 1)", existingUser.ID)
 		logger.Info("管理员用户已更新")
 	} else {
 		user := modelsystem.User{
@@ -104,7 +102,7 @@ func (i *Initializer) syncUsers() error {
 			Password: hashedPassword,
 			Nickname: "超级管理员",
 			Email:    "admin@example.com",
-			RoleIDs:  string(adminRoleIDsJSON),
+			Roles:    []modelsystem.Role{adminRole},
 			Status:   "active",
 			HomePath: "/home",
 		}

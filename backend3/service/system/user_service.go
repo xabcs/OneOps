@@ -1,7 +1,6 @@
 package system
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -78,7 +77,7 @@ func (s *UserService) Create(user *modelsystem.User, plainPassword string) error
 	}
 
 	// 验证家目录权限
-	if valid, errMsg := s.validateHomePathPermission(user.HomePath, s.parseRoleIDs(user.RoleIDs)); !valid {
+	if valid, errMsg := s.validateHomePathPermission(user.HomePath, roleIDsFromRoles(user.Roles)); !valid {
 		return errors.New(errMsg)
 	}
 
@@ -96,15 +95,9 @@ func (s *UserService) Create(user *modelsystem.User, plainPassword string) error
 func (s *UserService) Update(id uint64, updates map[string]interface{}) error {
 	// 如果更新家目录，需验证权限
 	if homePath, ok := updates["home_path"].(string); ok && homePath != "" {
-		// 获取角色ID列表
 		var roleIDs []uint
-		if roleIDsVal, exists := updates["role_ids"]; exists {
-			roleIDs = s.parseRoleIDs(roleIDsVal.(string))
-		} else {
-			user, err := s.repo.FindByID(id)
-			if err == nil {
-				roleIDs = s.parseRoleIDs(user.RoleIDs)
-			}
+		if user, err := s.repo.FindByID(id); err == nil {
+			roleIDs = roleIDsFromRoles(user.Roles)
 		}
 		if valid, errMsg := s.validateHomePathPermission(homePath, roleIDs); !valid {
 			return errors.New(errMsg)
@@ -121,6 +114,14 @@ func (s *UserService) Update(id uint64, updates map[string]interface{}) error {
 	}
 
 	return s.repo.UpdateByID(id, updates)
+}
+
+// AssignRoles 全量替换用户的角色绑定
+func (s *UserService) AssignRoles(id uint64, roleIDs []uint) error {
+	if _, err := s.repo.FindByID(id); err != nil {
+		return ErrUserNotFound
+	}
+	return s.repo.ReplaceRoles(id, roleIDs)
 }
 
 // Delete 删除用户（含业务校验）
@@ -159,15 +160,13 @@ func (s *UserService) UserToMap(user modelsystem.User) map[string]interface{} {
 
 // userToMap 内部方法
 func (s *UserService) userToMap(user modelsystem.User) map[string]interface{} {
-	roleIDs := s.parseRoleIDs(user.RoleIDs)
-
 	return map[string]interface{}{
 		"id":        user.ID,
 		"username":  user.Username,
 		"nickname":  user.Nickname,
 		"avatar":    user.Avatar,
 		"email":     user.Email,
-		"roleIds":   roleIDs,
+		"roleIds":   roleIDsFromRoles(user.Roles),
 		"status":    user.Status,
 		"homePath":  user.HomePath,
 		"createdAt": user.CreatedAt.Format("2006-01-02"),
@@ -175,10 +174,12 @@ func (s *UserService) userToMap(user modelsystem.User) map[string]interface{} {
 	}
 }
 
-// parseRoleIDs 解析角色ID JSON字符串
-func (s *UserService) parseRoleIDs(roleIDsStr string) []uint {
-	var roleIDs []uint
-	json.Unmarshal([]byte(roleIDsStr), &roleIDs)
+// roleIDsFromRoles 从角色关联提取角色 ID 列表
+func roleIDsFromRoles(roles []modelsystem.Role) []uint {
+	roleIDs := make([]uint, 0, len(roles))
+	for _, r := range roles {
+		roleIDs = append(roleIDs, r.ID)
+	}
 	return roleIDs
 }
 

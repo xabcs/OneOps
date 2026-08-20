@@ -1,7 +1,6 @@
 package system
 
 import (
-	"encoding/json"
 	"strings"
 	"time"
 
@@ -30,7 +29,7 @@ func (s *AuthService) Login(username, password string) (string, *modelsystem.Use
 	logger.Debug("[登录调试-服务层] 开始查询用户")
 	var user modelsystem.User
 	queryStart := time.Now()
-	result := database.GetDB().Where("username = ?", username).First(&user)
+	result := database.GetDB().Preload("Roles").Where("username = ?", username).First(&user)
 	logger.Debug("[登录调试-服务层] 用户查询完成",
 		zap.Duration("耗时", time.Since(queryStart)),
 		zap.Error(result.Error))
@@ -72,7 +71,7 @@ func (s *AuthService) GetUserInfo(userID uint) (*UserInfo, error) {
 	var user modelsystem.User
 	logger.Debug("[登录调试-服务层] 开始查询用户详情")
 	queryStart := time.Now()
-	result := database.GetDB().First(&user, userID)
+	result := database.GetDB().Preload("Roles").First(&user, userID)
 	logger.Debug("[登录调试-服务层] 用户详情查询完成",
 		zap.Duration("耗时", time.Since(queryStart)),
 		zap.Error(result.Error))
@@ -165,9 +164,10 @@ type UserInfo struct {
 
 // ToMap 转换为 map 格式（用于 JSON 响应）
 func (ui *UserInfo) ToMap() map[string]interface{} {
-	// 解析 roleIds JSON 字符串为数组
-	var roleIDs []uint
-	json.Unmarshal([]byte(ui.User.RoleIDs), &roleIDs)
+	roleIDs := make([]uint, 0, len(ui.User.Roles))
+	for _, r := range ui.User.Roles {
+		roleIDs = append(roleIDs, r.ID)
+	}
 
 	return map[string]interface{}{
 		"id":             ui.User.ID,

@@ -10,7 +10,7 @@ type User struct {
 	Nickname  string    `json:"nickname" gorm:"size:50"`
 	Avatar    string    `json:"avatar" gorm:"size:255"`
 	Email     string    `json:"email" gorm:"size:100"`
-	RoleIDs   string    `json:"roleIds" gorm:"type:json"`
+	Roles     []Role    `json:"-" gorm:"many2many:sys_user_roles"`
 	Status    string    `json:"status" gorm:"size:20;default:active"`
 	HomePath  string    `json:"homePath" gorm:"size:100;default:/"`
 	CreatedAt time.Time `json:"createdAt"`
