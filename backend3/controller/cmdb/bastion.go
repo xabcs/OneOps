@@ -93,7 +93,18 @@ func (c *BastionController) ConnectServer(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(response))
 }
 
-// GetServerSessions 获取服务器的会话列表
+// GetServerSessions godoc
+// @Summary      获取指定服务器的会话列表
+// @Description  分页查询某台服务器关联的堡垒机会话（注意：该 handler 尚未注册路由）
+// @Tags         CMDB-堡垒机
+// @Produce      json
+// @Param        id       path  int  true   "服务器 ID"
+// @Param        page     query int  false  "页码"      default(1)
+// @Param        pageSize query int  false  "每页数量"  default(10)
+// @Success      200  {object}  utils.Response{data=dto.PageResult}  "会话分页列表"
+// @Failure      200  {object}  utils.Response  "无效的服务器ID / 查询失败"
+// @Router       /cmdb/servers/{id}/sessions [get]
+// @Security     BearerAuth
 func (c *BastionController) GetServerSessions(ctx *gin.Context) {
 	serverIDStr := ctx.Param("id")
 	serverID, err := strconv.ParseUint(serverIDStr, 10, 32)

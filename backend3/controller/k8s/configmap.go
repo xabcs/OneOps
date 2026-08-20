@@ -49,7 +49,7 @@ func (ctrl *K8sResourceController) ListConfigMaps(c *gin.Context) {
 		return
 	}
 
-	configMaps, total, err := ctrl.svc.ListConfigMaps(uint(clusterID), params.Namespace, params.Page, params.PageSize)
+	configMaps, total, err := ctrl.svc.ForUser(userID).ListConfigMaps(uint(clusterID), params.Namespace, params.Page, params.PageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 ConfigMap 列表失败: "+err.Error()))
 		return
@@ -94,7 +94,7 @@ func (ctrl *K8sResourceController) GetConfigMap(c *gin.Context) {
 		return
 	}
 
-	configMap, err := ctrl.svc.GetConfigMap(uint(clusterID), namespace, name)
+	configMap, err := ctrl.svc.ForUser(userID).GetConfigMap(uint(clusterID), namespace, name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 ConfigMap 详情失败: "+err.Error()))
 		return
@@ -139,13 +139,13 @@ func (ctrl *K8sResourceController) CreateConfigMap(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.create")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.create）"))
 		return
 	}
 
-	if err := ctrl.svc.CreateConfigMap(uint(clusterID), req.Namespace, req.Manifest); err != nil {
+	if err := ctrl.svc.ForUser(userID).CreateConfigMap(uint(clusterID), req.Namespace, req.Manifest); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("创建 ConfigMap 失败: "+err.Error()))
 		return
 	}
@@ -189,13 +189,13 @@ func (ctrl *K8sResourceController) UpdateConfigMap(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.update")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.update）"))
 		return
 	}
 
-	if err := ctrl.svc.UpdateConfigMap(uint(clusterID), req.Namespace, req.Manifest); err != nil {
+	if err := ctrl.svc.ForUser(userID).UpdateConfigMap(uint(clusterID), req.Namespace, req.Manifest); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("更新 ConfigMap 失败: "+err.Error()))
 		return
 	}
@@ -239,13 +239,13 @@ func (ctrl *K8sResourceController) DeleteConfigMap(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.delete")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.delete）"))
 		return
 	}
 
-	if err := ctrl.svc.DeleteConfigMap(uint(clusterID), req.Namespace, req.Name); err != nil {
+	if err := ctrl.svc.ForUser(userID).DeleteConfigMap(uint(clusterID), req.Namespace, req.Name); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("删除 ConfigMap 失败: "+err.Error()))
 		return
 	}

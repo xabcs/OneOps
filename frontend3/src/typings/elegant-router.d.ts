@@ -102,6 +102,9 @@ declare module "@elegant-router/types" {
     "k8s_resources_pods": "/k8s/resources/pods";
     "k8s_resources_secrets": "/k8s/resources/secrets";
     "k8s_resources_services": "/k8s/resources/services";
+    "k8s_security": "/k8s/security";
+    "k8s_security_authorization": "/k8s/security/authorization";
+    "k8s_security_roles": "/k8s/security/roles";
     "k8s_terminal": "/k8s/terminal";
     "k8s_workloads": "/k8s/workloads";
     "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?";
@@ -111,6 +114,7 @@ declare module "@elegant-router/types" {
     "manage_role": "/manage/role";
     "manage_user": "/manage/user";
     "manage_user-detail": "/manage/user-detail/:id";
+    "manage_user-group": "/manage/user-group";
     "monitoring": "/monitoring";
     "monitoring_alerts": "/monitoring/alerts";
     "monitoring_overview": "/monitoring/overview";
@@ -295,12 +299,15 @@ declare module "@elegant-router/types" {
     | "k8s_resources_pods"
     | "k8s_resources_secrets"
     | "k8s_resources_services"
+    | "k8s_security_authorization"
+    | "k8s_security_roles"
     | "k8s_terminal"
     | "k8s_workloads"
     | "manage_menu"
     | "manage_permission"
     | "manage_role"
     | "manage_user-detail"
+    | "manage_user-group"
     | "manage_user"
     | "monitoring_alerts"
     | "monitoring_overview"

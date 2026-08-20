@@ -16,7 +16,7 @@ import (
 
 // ListServices 获取 Service 列表（支持分页）
 func (s *K8sResourceService) ListServices(clusterID uint, namespace string, page, pageSize int) ([]map[string]interface{}, int64, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -54,7 +54,7 @@ func (s *K8sResourceService) ListServices(clusterID uint, namespace string, page
 
 // GetService 获取 Service 详情
 func (s *K8sResourceService) GetService(clusterID uint, namespace, name string) (map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (s *K8sResourceService) GetService(clusterID uint, namespace, name string) 
 
 // CreateService 创建 Service
 func (s *K8sResourceService) CreateService(clusterID uint, namespace string, manifest map[string]interface{}) error {
-	_, config, err := s.clientPool.GetClient(clusterID)
+	config, err := s.getScopedConfig(clusterID)
 	if err != nil {
 		return err
 	}
@@ -115,7 +115,7 @@ func (s *K8sResourceService) CreateService(clusterID uint, namespace string, man
 
 // UpdateService 更新 Service
 func (s *K8sResourceService) UpdateService(clusterID uint, namespace string, manifest map[string]interface{}) error {
-	_, config, err := s.clientPool.GetClient(clusterID)
+	config, err := s.getScopedConfig(clusterID)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func (s *K8sResourceService) UpdateService(clusterID uint, namespace string, man
 
 // DeleteService 删除 Service
 func (s *K8sResourceService) DeleteService(clusterID uint, namespace, name string) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}

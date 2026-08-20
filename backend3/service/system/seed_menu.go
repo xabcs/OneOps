@@ -117,12 +117,17 @@ func (i *Initializer) syncMenus() error {
 		{ID: 90, Name: "诊断中心", Icon: "mdi:stethoscope", Path: "/k8s/diagnostic", Permission: "k8s:diagnostic:execute", MenuType: "menu", Sort: 3, Status: 1, ParentID: 5},
 		{ID: 88, Name: "网络", Icon: "mdi:network-outline", Path: "/k8s/network", Permission: "k8s:network:query", MenuType: "menu", Sort: 4, Status: 1, ParentID: 5},
 		{ID: 89, Name: "配置管理", Icon: "mdi:cog", Path: "/k8s/config", Permission: "k8s:config:query", MenuType: "menu", Sort: 5, Status: 1, ParentID: 5},
+		// 安全管理目录：集群访问授权的统一入口（与系统管理的平台角色明确分层——此处管理的是集群内 RBAC 权限）
+		{ID: 93, Name: "安全管理", Icon: "mdi:shield-lock", Path: "/k8s/security", Permission: "", MenuType: "directory", Sort: 6, Status: 1, ParentID: 5},
+		{ID: 94, Name: "授权管理", Icon: "mdi:account-key", Path: "/k8s/security/authorization", Permission: "k8s.permission.list", MenuType: "menu", Sort: 1, Status: 1, ParentID: 93},
+		{ID: 92, Name: "角色管理", Icon: "mdi:shield-key", Path: "/k8s/security/roles", Permission: "k8s.rbac.view", MenuType: "menu", Sort: 2, Status: 1, ParentID: 93},
 
 		// ========== 系统管理二级菜单 (ID: 70-79) ==========
 		{ID: 70, Name: "用户管理", Icon: "mdi:account-multiple", Path: "/manage/user", Permission: "system.user.view", MenuType: "menu", Sort: 1, Status: 1, ParentID: 6},
 		{ID: 71, Name: "角色管理", Icon: "mdi:shield-account", Path: "/manage/role", Permission: "system.role.view", MenuType: "menu", Sort: 2, Status: 1, ParentID: 6},
 		{ID: 72, Name: "菜单管理", Icon: "mdi:menu", Path: "/manage/menu", Permission: "system.menu.view", MenuType: "menu", Sort: 3, Status: 1, ParentID: 6},
 		{ID: 73, Name: "权限管理", Icon: "mdi:shield-key", Path: "/manage/permission", Permission: "system.permission.list", MenuType: "menu", Sort: 4, Status: 1, ParentID: 6},
+		{ID: 74, Name: "用户组", Icon: "mdi:account-group", Path: "/manage/user-group", Permission: "system.user.view", MenuType: "menu", Sort: 5, Status: 1, ParentID: 6},
 	}
 
 	addedCount := 0
@@ -183,10 +188,12 @@ func (i *Initializer) syncMenus() error {
 		{"/cmdb/config/attributes", "attribute"},
 		{"/cmdb/config/business", "config_business"},
 		{"/k8s/clusters", "cluster"},
-		{"/k8s/workloads", "workload"},
-		{"/k8s/network", "network"},
-		{"/k8s/config", "k8s_config"},
+		{"/k8s/workloads", "resource"},
+		{"/k8s/network", "resource"},
+		{"/k8s/config", "resource"},
 		{"/k8s/diagnostic", "diagnostic"},
+		{"/k8s/security/authorization", "permission"},
+		{"/k8s/security/roles", "rbac"},
 		{"/monitoring/overview", "overview"},
 		{"/monitoring/servers", "monitoring_servers"},
 		{"/monitoring/alerts", "alerts"},
@@ -251,6 +258,17 @@ func (i *Initializer) syncMenus() error {
 	}
 	if deletedWebTerminalResult.RowsAffected > 0 {
 		logger.Info("已删除webterminal独立菜单（改为随主机管理菜单派生）", zap.Int64("count", deletedWebTerminalResult.RowsAffected))
+	}
+
+	// 删除废弃的集群角色菜单：三档（cluster-viewer/operator/admin）已下线，
+	// 集群授权统一走集群详情-原生授权（native-bindings）
+	deletedClusterRolesResult := db.Where("path = ?", "/k8s/cluster-roles").Delete(&modelsystem.Menu{})
+	if deletedClusterRolesResult.Error != nil {
+		logger.Error("删除废弃集群角色菜单失败", zap.Error(deletedClusterRolesResult.Error))
+		return deletedClusterRolesResult.Error
+	}
+	if deletedClusterRolesResult.RowsAffected > 0 {
+		logger.Info("已删除废弃集群角色菜单", zap.Int64("count", deletedClusterRolesResult.RowsAffected))
 	}
 
 	logger.Info("菜单同步完成",

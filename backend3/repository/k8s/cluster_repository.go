@@ -1,6 +1,8 @@
 package k8s
 
 import (
+	"encoding/json"
+	"fmt"
 	modelk8s "oneops/backend3/model/k8s"
 	modelsystem "oneops/backend3/model/system"
 
@@ -83,13 +85,43 @@ func (r *ClusterRepository) FindWithPagination(q ClusterQuery) ([]modelk8s.K8sCl
 	return clusters, total, nil
 }
 
-// FindAuthorizedClusterIDs 查询用户有角色绑定的全部集群ID（数据权限范围）
+// FindAuthorizedClusterIDs 查询用户可见的全部集群ID（数据权限范围）
+// 三档下线后：直绑/组绑定为历史存量，原生 RBAC 绑定为现行授权，任一存在即可见
 func (r *ClusterRepository) FindAuthorizedClusterIDs(userID uint) ([]uint, error) {
 	var ids []uint
-	err := r.db.Model(&modelk8s.ClusterRoleBinding{}).
-		Where("user_id = ?", userID).
-		Pluck("cluster_id", &ids).Error
+	err := r.db.Raw(`
+		SELECT cluster_id FROM k8s_cluster_role_bindings WHERE user_id = ?
+		UNION
+		SELECT gb.cluster_id FROM k8s_cluster_group_bindings gb
+			JOIN sys_user_group_members m ON m.group_id = gb.group_id
+			WHERE m.user_id = ?
+		UNION
+		SELECT cluster_id FROM k8s_native_role_bindings WHERE subject_type = 'user' AND user_id = ?
+		UNION
+		SELECT nb.cluster_id FROM k8s_native_role_bindings nb
+			JOIN sys_user_group_members m ON m.group_id = nb.group_id
+			WHERE nb.subject_type = 'group' AND m.user_id = ?`,
+		userID, userID, userID, userID).Scan(&ids).Error
 	return ids, err
+}
+
+// IsSuperAdmin 判定用户是否平台超级管理员（角色 ID=1），
+// 超管是唯一允许以平台身份执行集群操作的白名单
+func (r *ClusterRepository) IsSuperAdmin(userID uint) bool {
+	user, err := r.FindUserByID(userID)
+	if err != nil {
+		return false
+	}
+	var roleIDs []uint
+	if err := json.Unmarshal([]byte(user.RoleIDs), &roleIDs); err != nil {
+		return false
+	}
+	for _, roleID := range roleIDs {
+		if roleID == 1 {
+			return true
+		}
+	}
+	return false
 }
 
 // Create 创建集群
@@ -129,52 +161,6 @@ func (r *ClusterRepository) DeleteClusterCascade(clusterID uint, cluster *modelk
 	return tx.Commit().Error
 }
 
-// FindRoleBindingsByCluster 查询集群的角色绑定（预加载用户和角色）
-func (r *ClusterRepository) FindRoleBindingsByCluster(clusterID uint) ([]modelk8s.ClusterRoleBinding, error) {
-	var bindings []modelk8s.ClusterRoleBinding
-	if err := r.db.Where("cluster_id = ?", clusterID).
-		Preload("Role").
-		Preload("User").
-		Find(&bindings).Error; err != nil {
-		return nil, err
-	}
-	return bindings, nil
-}
-
-// FindRoleBinding 查询用户的集群角色绑定
-func (r *ClusterRepository) FindRoleBinding(userID uint, clusterID uint) (*modelk8s.ClusterRoleBinding, error) {
-	var binding modelk8s.ClusterRoleBinding
-	if err := r.db.Where("user_id = ? AND cluster_id = ?", userID, clusterID).First(&binding).Error; err != nil {
-		return nil, err
-	}
-	return &binding, nil
-}
-
-// CreateRoleBinding 创建集群角色绑定
-func (r *ClusterRepository) CreateRoleBinding(binding *modelk8s.ClusterRoleBinding) error {
-	return r.db.Create(binding).Error
-}
-
-// UpdateRoleBindingRole 更新角色绑定的角色ID
-func (r *ClusterRepository) UpdateRoleBindingRole(binding *modelk8s.ClusterRoleBinding, roleID uint) error {
-	return r.db.Model(binding).Update("role_id", roleID).Error
-}
-
-// DeleteRoleBinding 删除用户的集群角色绑定，返回受影响行数
-func (r *ClusterRepository) DeleteRoleBinding(userID uint, clusterID uint) (int64, error) {
-	result := r.db.Where("user_id = ? AND cluster_id = ?", userID, clusterID).Delete(&modelk8s.ClusterRoleBinding{})
-	return result.RowsAffected, result.Error
-}
-
-// CountRoleBindings 统计用户的集群角色绑定数量
-func (r *ClusterRepository) CountRoleBindings(userID uint, clusterID uint) (int64, error) {
-	var count int64
-	err := r.db.Model(&modelk8s.ClusterRoleBinding{}).
-		Where("user_id = ? AND cluster_id = ?", userID, clusterID).
-		Count(&count).Error
-	return count, err
-}
-
 // FindUserByID 根据ID查询用户
 func (r *ClusterRepository) FindUserByID(userID uint) (*modelsystem.User, error) {
 	var user modelsystem.User
@@ -184,11 +170,159 @@ func (r *ClusterRepository) FindUserByID(userID uint) (*modelsystem.User, error)
 	return &user, nil
 }
 
-// FindRoleByID 根据ID查询角色
-func (r *ClusterRepository) FindRoleByID(roleID uint) (*modelsystem.Role, error) {
-	var role modelsystem.Role
-	if err := r.db.First(&role, roleID).Error; err != nil {
+// FindUserGroupByID 根据ID查询平台用户组
+func (r *ClusterRepository) FindUserGroupByID(groupID uint) (*modelsystem.UserGroup, error) {
+	var group modelsystem.UserGroup
+	if err := r.db.First(&group, groupID).Error; err != nil {
 		return nil, err
 	}
-	return &role, nil
+	return &group, nil
+}
+
+// FindSubjectOptions 授权主体候选（k8s 原生授权表单专用，仅返回所需字段）
+// 与系统管理页的 users/options 解耦：授权上下文的权限归属 k8s.permission.*，不借用 system.user.list
+// 用户附带 groupIds：授权管理页用户视角需叠加"经组继承"的有效授权
+func (r *ClusterRepository) FindSubjectOptions() (users []map[string]interface{}, groups []map[string]interface{}, err error) {
+	var userRows []struct {
+		ID       uint
+		Username string
+		Nickname string
+	}
+	if err = r.db.Model(&modelsystem.User{}).
+		Where("status = ?", "active").
+		Select("id, username, nickname").
+		Order("id ASC").
+		Find(&userRows).Error; err != nil {
+		return nil, nil, err
+	}
+
+	if err = r.db.Model(&modelsystem.UserGroup{}).
+		Select("id, name, code").
+		Order("id ASC").
+		Find(&groups).Error; err != nil {
+		return nil, nil, err
+	}
+
+	// 组成员关系 → 用户 groupIds
+	var members []modelsystem.UserGroupMember
+	if err = r.db.Find(&members).Error; err != nil {
+		return nil, nil, err
+	}
+	userGroups := make(map[uint][]uint)
+	for _, m := range members {
+		userGroups[m.UserID] = append(userGroups[m.UserID], m.GroupID)
+	}
+
+	users = make([]map[string]interface{}, 0, len(userRows))
+	for _, u := range userRows {
+		users = append(users, map[string]interface{}{
+			"id":       u.ID,
+			"username": u.Username,
+			"nickname": u.Nickname,
+			"groupIds": userGroups[u.ID],
+		})
+	}
+	return users, groups, nil
+}
+
+// FindClusterOptions 集群候选（授权管理页专用，仅返回 id/名称/状态）
+// 权限归属 k8s.permission.list，与授权查看对齐，不借用 k8s.cluster.list
+func (r *ClusterRepository) FindClusterOptions() ([]map[string]interface{}, error) {
+	var clusters []map[string]interface{}
+	if err := r.db.Model(&modelk8s.K8sCluster{}).
+		Select("id, name, status").
+		Order("id ASC").
+		Find(&clusters).Error; err != nil {
+		return nil, err
+	}
+	return clusters, nil
+}
+
+// ========== 原生 RBAC 绑定（B 模式） ==========
+
+// FindNativeBindingsByCluster 查询集群的原生角色绑定（预加载用户与用户组）
+func (r *ClusterRepository) FindNativeBindingsByCluster(clusterID uint) ([]modelk8s.K8sNativeRoleBinding, error) {
+	var bindings []modelk8s.K8sNativeRoleBinding
+	if err := r.db.Where("cluster_id = ?", clusterID).
+		Preload("User").
+		Preload("Group").
+		Find(&bindings).Error; err != nil {
+		return nil, err
+	}
+	return bindings, nil
+}
+
+// FindAllNativeBindings 全局原生绑定列表（授权管理页）：clusterID=0 表示全部集群
+func (r *ClusterRepository) FindAllNativeBindings(clusterID uint) ([]modelk8s.K8sNativeRoleBinding, error) {
+	var bindings []modelk8s.K8sNativeRoleBinding
+	query := r.db.
+		Preload("User").
+		Preload("Group").
+		Preload("Cluster")
+	if clusterID > 0 {
+		query = query.Where("cluster_id = ?", clusterID)
+	}
+	if err := query.Order("cluster_id ASC, id ASC").Find(&bindings).Error; err != nil {
+		return nil, err
+	}
+	return bindings, nil
+}
+
+// FindNativeBindingByID 根据ID查询原生角色绑定
+func (r *ClusterRepository) FindNativeBindingByID(bindingID uint) (*modelk8s.K8sNativeRoleBinding, error) {
+	var binding modelk8s.K8sNativeRoleBinding
+	if err := r.db.First(&binding, bindingID).Error; err != nil {
+		return nil, err
+	}
+	return &binding, nil
+}
+
+// CreateNativeBinding 创建原生角色绑定记录
+func (r *ClusterRepository) CreateNativeBinding(binding *modelk8s.K8sNativeRoleBinding) error {
+	return r.db.Create(binding).Error
+}
+
+// UpdateNativeBindingK8sName 回写集群内 Binding 资源名
+func (r *ClusterRepository) UpdateNativeBindingK8sName(binding *modelk8s.K8sNativeRoleBinding, k8sName string) error {
+	return r.db.Model(binding).Update("k8s_binding_name", k8sName).Error
+}
+
+// DeleteNativeBinding 删除原生角色绑定记录
+func (r *ClusterRepository) DeleteNativeBinding(bindingID uint) error {
+	return r.db.Delete(&modelk8s.K8sNativeRoleBinding{}, bindingID).Error
+}
+
+// FindNativeImpersonation 查询用户在某集群的原生身份（B 模式执行层依据）
+// 返回：模拟用户名（oneops-{username}）、需附加的模拟组（oneops-group-{code}...）、是否存在任何原生绑定
+func (r *ClusterRepository) FindNativeImpersonation(userID uint, clusterID uint) (string, []string, bool, error) {
+	var groups []string
+	if err := r.db.Raw(`
+		SELECT DISTINCT nb.impersonation_name FROM k8s_native_role_bindings nb
+		JOIN sys_user_group_members m ON m.group_id = nb.group_id
+		WHERE nb.subject_type = 'group' AND nb.cluster_id = ? AND m.user_id = ?`,
+		clusterID, userID).Scan(&groups).Error; err != nil {
+		return "", nil, false, err
+	}
+
+	var cnt int64
+	if err := r.db.Raw(`
+		SELECT COUNT(*) FROM k8s_native_role_bindings
+		WHERE subject_type = 'user' AND user_id = ? AND cluster_id = ?`,
+		userID, clusterID).Scan(&cnt).Error; err != nil {
+		return "", nil, false, err
+	}
+
+	if cnt == 0 && len(groups) == 0 {
+		return "", nil, false, nil
+	}
+
+	var username string
+	if err := r.db.Raw(`SELECT username FROM sys_users WHERE id = ?`, userID).Scan(&username).Error; err != nil {
+		return "", nil, false, err
+	}
+	if username == "" {
+		return "", nil, false, fmt.Errorf("用户不存在: %d", userID)
+	}
+
+	return "oneops-" + username, groups, true, nil
 }

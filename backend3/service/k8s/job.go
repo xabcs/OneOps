@@ -14,7 +14,7 @@ import (
 
 // ListJobs 获取 Job 列表（支持分页）
 func (s *K8sResourceService) ListJobs(clusterID uint, namespace string, page, pageSize int) ([]map[string]interface{}, int64, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -51,7 +51,7 @@ func (s *K8sResourceService) ListJobs(clusterID uint, namespace string, page, pa
 
 // GetJob 获取 Job 详情
 func (s *K8sResourceService) GetJob(clusterID uint, namespace, name string) (map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (s *K8sResourceService) GetJob(clusterID uint, namespace, name string) (map
 
 // ListCronJobs 获取 CronJob 列表（支持分页）
 func (s *K8sResourceService) ListCronJobs(clusterID uint, namespace string, page, pageSize int) ([]map[string]interface{}, int64, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -105,7 +105,7 @@ func (s *K8sResourceService) ListCronJobs(clusterID uint, namespace string, page
 
 // GetCronJob 获取 CronJob 详情
 func (s *K8sResourceService) GetCronJob(clusterID uint, namespace, name string) (map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +257,7 @@ func formatJobDuration(seconds int) string {
 
 // DeleteJob 删除 Job
 func (s *K8sResourceService) DeleteJob(clusterID uint, namespace, name string) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}
@@ -279,7 +279,7 @@ func (s *K8sResourceService) DeleteJob(clusterID uint, namespace, name string) e
 
 // DeleteCronJob 删除 CronJob
 func (s *K8sResourceService) DeleteCronJob(clusterID uint, namespace, name string) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}
@@ -301,7 +301,7 @@ func (s *K8sResourceService) DeleteCronJob(clusterID uint, namespace, name strin
 
 // SuspendCronJob 暂停/恢复 CronJob
 func (s *K8sResourceService) SuspendCronJob(clusterID uint, namespace, name string, suspend bool) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}

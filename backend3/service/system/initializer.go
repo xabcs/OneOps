@@ -67,6 +67,8 @@ func (i *Initializer) migrateSchema() error {
 		&modelsystem.Menu{},
 		&modelsystem.Permission{},
 		&modelsystem.PermissionRoute{},
+		&modelsystem.UserGroup{},
+		&modelsystem.UserGroupMember{},
 		&modelsystem.RolePermission{},
 		&modelsystem.UserPermission{},
 		&modelsystem.PermissionLog{},
@@ -125,7 +127,11 @@ func (i *Initializer) migrateSchema() error {
 	// K8s相关表
 	if err := db.AutoMigrate(
 		&modelk8s.K8sCluster{},
+		&modelk8s.K8sClusterRole{},
+		&modelk8s.K8sClusterRolePermission{},
 		&modelk8s.ClusterRoleBinding{},
+		&modelk8s.ClusterGroupBinding{},
+		&modelk8s.K8sNativeRoleBinding{},
 		&modelk8s.K8sSession{},
 		&modelk8s.K8sCommand{},
 	); err != nil {
@@ -296,6 +302,9 @@ func (i *Initializer) initSystemData() error {
 		logger.Warn("权限路由映射同步失败", zap.Error(err))
 	}
 
+	// 菜单 resource 与权限目录一致性校验（防演进错位：resource 在权限码中无对应项则告警）
+	i.validateMenuResourceConsistency()
+
 	// 同步默认角色权限分配
 	if err := i.syncDefaultPermissions(); err != nil {
 		logger.Warn("默认权限分配失败", zap.Error(err))
@@ -317,4 +326,30 @@ func (i *Initializer) initSystemData() error {
 	}
 
 	return nil
+}
+
+// validateMenuResourceConsistency 校验启用菜单的 resource 在权限目录中存在对应权限码
+// 菜单可见性按"权限码第二段 == 菜单 resource"匹配，resource 错位会导致菜单对所有非管理员不可见
+func (i *Initializer) validateMenuResourceConsistency() {
+	db := database.GetDB()
+
+	var menus []modelsystem.Menu
+	if err := db.Where("status = 1 AND resource != ''").Find(&menus).Error; err != nil {
+		logger.Warn("菜单一致性校验失败：查询菜单失败", zap.Error(err))
+		return
+	}
+
+	for _, m := range menus {
+		var count int64
+		db.Model(&modelsystem.Permission{}).
+			Where("resource = ? AND status = 1", m.Resource).
+			Count(&count)
+		if count == 0 {
+			logger.Warn("菜单 resource 在权限目录中无对应权限码，该菜单对所有非管理员不可见",
+				zap.Uint("menu_id", m.ID),
+				zap.String("menu_name", m.Name),
+				zap.String("menu_path", m.Path),
+				zap.String("resource", m.Resource))
+		}
+	}
 }

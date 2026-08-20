@@ -197,7 +197,17 @@ type ChangePasswordRequest struct {
 	NewPassword string `json:"newPassword" binding:"required"`
 }
 
-// UpdatePassword 修改当前用户密码
+// UpdatePassword godoc
+// @Summary      修改当前用户密码
+// @Description  校验原密码后更新当前登录用户密码（注意：该 handler 尚未注册路由）
+// @Tags         系统管理-认证
+// @Accept       json
+// @Produce      json
+// @Param        request  body  ChangePasswordRequest  true  "原密码与新密码"
+// @Success      200  {object}  utils.Response  "修改成功"
+// @Failure      200  {object}  utils.Response  "请求参数错误 / 原密码错误 / 更新密码失败"
+// @Router       /auth/password [put]
+// @Security     BearerAuth
 func (ctrl *AuthController) UpdatePassword(c *gin.Context) {
 	uid, ok := utils.GetUserIDFromContext(c)
 	if !ok {

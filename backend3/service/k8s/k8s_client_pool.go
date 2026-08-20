@@ -88,6 +88,58 @@ func (p *K8sClientPool) GetClient(clusterID uint) (*kubernetes.Clientset, *rest.
 	return p.createClientLocked(clusterID)
 }
 
+// GetScopedConfig 获取按用户作用域的连接配置（交集模型执行层）：
+// userID=0（平台管理动作）或平台超管 → 共享平台凭据；
+// 其他用户必须存在原生 RBAC 绑定 → impersonation 由 kube-apiserver 判定；
+// 无绑定则直接拒绝（fail-closed），不再以平台身份代执行。
+func (p *K8sClientPool) GetScopedConfig(clusterID uint, userID uint) (*rest.Config, error) {
+	_, config, err := p.GetClient(clusterID)
+	if err != nil {
+		return nil, err
+	}
+	if userID == 0 || p.clusterRepo.IsSuperAdmin(userID) {
+		return config, nil
+	}
+
+	username, groups, has, err := p.clusterRepo.FindNativeImpersonation(userID, clusterID)
+	if err != nil {
+		// 交集模型：查询失败视为无权限（fail-closed），不降级为平台身份
+		logger.Warn("查询原生绑定身份失败，拒绝执行（fail-closed）",
+			zap.Uint("cluster_id", clusterID),
+			zap.Uint("user_id", userID),
+			zap.Error(err))
+		return nil, fmt.Errorf("该用户在此集群的原生 RBAC 绑定校验失败，已拒绝执行: %w", err)
+	}
+	if !has {
+		return nil, fmt.Errorf("该用户在此集群未授予原生 RBAC 角色（集群详情-原生授权），交集模型下平台身份不代执行")
+	}
+
+	impersonated := rest.CopyConfig(config)
+	impersonated.Impersonate = rest.ImpersonationConfig{
+		UserName: username,
+		Groups:   groups,
+	}
+	impersonated.Timeout = 30 * time.Second
+
+	logger.Debug("使用 impersonation 访问集群",
+		zap.Uint("cluster_id", clusterID),
+		zap.Uint("user_id", userID),
+		zap.String("impersonate_user", username),
+		zap.Strings("impersonate_groups", groups))
+
+	return impersonated, nil
+}
+
+// GetScopedClientset 获取按用户作用域的客户端（可能为 impersonated 客户端）
+// impersonated 客户端构建成本低（纯内存），按请求构建、不做长期缓存
+func (p *K8sClientPool) GetScopedClientset(clusterID uint, userID uint) (*kubernetes.Clientset, error) {
+	config, err := p.GetScopedConfig(clusterID, userID)
+	if err != nil {
+		return nil, err
+	}
+	return kubernetes.NewForConfig(config)
+}
+
 // createClient 创建新的K8s客户端连接（公共方法，带锁）
 func (p *K8sClientPool) createClient(clusterID uint) (*kubernetes.Clientset, *rest.Config, error) {
 	p.mu.Lock()

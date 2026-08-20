@@ -49,7 +49,7 @@ func (ctrl *K8sResourceController) ListIngress(c *gin.Context) {
 		return
 	}
 
-	ingresses, total, err := ctrl.svc.ListIngress(uint(clusterID), params.Namespace, params.Page, params.PageSize)
+	ingresses, total, err := ctrl.svc.ForUser(userID).ListIngress(uint(clusterID), params.Namespace, params.Page, params.PageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Ingress 列表失败: "+err.Error()))
 		return
@@ -94,7 +94,7 @@ func (ctrl *K8sResourceController) GetIngress(c *gin.Context) {
 		return
 	}
 
-	ingress, err := ctrl.svc.GetIngress(uint(clusterID), namespace, name)
+	ingress, err := ctrl.svc.ForUser(userID).GetIngress(uint(clusterID), namespace, name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Ingress 详情失败: "+err.Error()))
 		return
@@ -139,13 +139,13 @@ func (ctrl *K8sResourceController) CreateIngress(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.create")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.create）"))
 		return
 	}
 
-	if err := ctrl.svc.CreateIngress(uint(clusterID), req.Namespace, req.Manifest); err != nil {
+	if err := ctrl.svc.ForUser(userID).CreateIngress(uint(clusterID), req.Namespace, req.Manifest); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("创建 Ingress 失败: "+err.Error()))
 		return
 	}
@@ -189,13 +189,13 @@ func (ctrl *K8sResourceController) UpdateIngress(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.update")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.update）"))
 		return
 	}
 
-	if err := ctrl.svc.UpdateIngress(uint(clusterID), req.Namespace, req.Manifest); err != nil {
+	if err := ctrl.svc.ForUser(userID).UpdateIngress(uint(clusterID), req.Namespace, req.Manifest); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("更新 Ingress 失败: "+err.Error()))
 		return
 	}
@@ -239,13 +239,13 @@ func (ctrl *K8sResourceController) DeleteIngress(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.delete")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.delete）"))
 		return
 	}
 
-	if err := ctrl.svc.DeleteIngress(uint(clusterID), req.Namespace, req.Name); err != nil {
+	if err := ctrl.svc.ForUser(userID).DeleteIngress(uint(clusterID), req.Namespace, req.Name); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("删除 Ingress 失败: "+err.Error()))
 		return
 	}

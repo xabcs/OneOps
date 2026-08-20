@@ -49,7 +49,7 @@ func (ctrl *K8sResourceController) ListCronJobs(c *gin.Context) {
 		return
 	}
 
-	cronJobs, total, err := ctrl.svc.ListCronJobs(uint(clusterID), params.Namespace, params.Page, params.PageSize)
+	cronJobs, total, err := ctrl.svc.ForUser(userID).ListCronJobs(uint(clusterID), params.Namespace, params.Page, params.PageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 CronJob 列表失败: "+err.Error()))
 		return
@@ -94,7 +94,7 @@ func (ctrl *K8sResourceController) GetCronJob(c *gin.Context) {
 		return
 	}
 
-	cronJob, err := ctrl.svc.GetCronJob(uint(clusterID), namespace, name)
+	cronJob, err := ctrl.svc.ForUser(userID).GetCronJob(uint(clusterID), namespace, name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 CronJob 详情失败: "+err.Error()))
 		return
@@ -139,13 +139,13 @@ func (ctrl *K8sResourceController) DeleteCronJob(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.delete")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.delete）"))
 		return
 	}
 
-	if err := ctrl.svc.DeleteCronJob(uint(clusterID), req.Namespace, req.Name); err != nil {
+	if err := ctrl.svc.ForUser(userID).DeleteCronJob(uint(clusterID), req.Namespace, req.Name); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("删除 CronJob 失败: "+err.Error()))
 		return
 	}
@@ -190,13 +190,13 @@ func (ctrl *K8sResourceController) SuspendCronJob(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.update")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.update）"))
 		return
 	}
 
-	if err := ctrl.svc.SuspendCronJob(uint(clusterID), req.Namespace, req.Name, req.Suspend); err != nil {
+	if err := ctrl.svc.ForUser(userID).SuspendCronJob(uint(clusterID), req.Namespace, req.Name, req.Suspend); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("暂停 CronJob 失败: "+err.Error()))
 		return
 	}

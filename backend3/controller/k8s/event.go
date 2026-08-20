@@ -44,7 +44,7 @@ func (ctrl *K8sResourceController) ListEvents(c *gin.Context) {
 		return
 	}
 
-	events, err := ctrl.svc.ListEvents(uint(clusterID), namespace, fieldSelector)
+	events, err := ctrl.svc.ForUser(userID).ListEvents(uint(clusterID), namespace, fieldSelector)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Event 列表失败: "+err.Error()))
 		return

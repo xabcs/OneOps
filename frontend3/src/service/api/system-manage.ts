@@ -403,3 +403,92 @@ export function fetchAssignRolePermissions(roleId: number, data: { permissionIds
     data
   });
 }
+
+// ==================== 用户组管理相关接口 ====================
+
+/**
+ * 获取用户组列表（分页，含成员数）
+ */
+export function fetchGetUserGroupList(params?: Api.SystemManage.UserGroupSearchParams) {
+  return request<Api.SystemManage.UserGroupList>({
+    url: '/system/user-groups',
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取用户组选项（不分页，用于选择器）
+ */
+export function fetchUserGroupOptions() {
+  return request<Api.SystemManage.UserGroupOption[]>({
+    url: '/system/user-groups/options',
+    method: 'get'
+  });
+}
+
+/**
+ * 创建用户组
+ */
+export function fetchCreateUserGroup(data: { code: string; name: string; description?: string }) {
+  return request({
+    url: '/system/user-groups',
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 更新用户组（code 不可改；name 必传）
+ */
+export function fetchUpdateUserGroup(
+  id: number,
+  data: { name: string; description?: string; status?: number }
+) {
+  return request({
+    url: `/system/user-groups/${id}`,
+    method: 'put',
+    data
+  });
+}
+
+/**
+ * 删除用户组（级联删除组成员与集群组绑定）
+ */
+export function fetchDeleteUserGroup(id: number) {
+  return request({
+    url: `/system/user-groups/${id}`,
+    method: 'delete'
+  });
+}
+
+/**
+ * 获取组成员列表
+ */
+export function fetchGetGroupMembers(id: number) {
+  return request<Api.SystemManage.GroupMember[]>({
+    url: `/system/user-groups/${id}/members`,
+    method: 'get'
+  });
+}
+
+/**
+ * 批量添加组成员
+ */
+export function fetchAddGroupMembers(id: number, userIds: number[]) {
+  return request({
+    url: `/system/user-groups/${id}/members`,
+    method: 'post',
+    data: { userIds }
+  });
+}
+
+/**
+ * 移除组成员
+ */
+export function fetchRemoveGroupMember(id: number, userId: number) {
+  return request({
+    url: `/system/user-groups/${id}/members/${userId}`,
+    method: 'delete'
+  });
+}

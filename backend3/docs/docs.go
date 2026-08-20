@@ -431,6 +431,45 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/password": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "校验原密码后更新当前登录用户密码（注意：该 handler 尚未注册路由）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-认证"
+                ],
+                "summary": "修改当前用户密码",
+                "parameters": [
+                    {
+                        "description": "原密码与新密码",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controller_system.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "请求参数错误 / 原密码错误 / 更新密码失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/cmdb/access-policies": {
             "get": {
                 "security": [
@@ -1173,6 +1212,225 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "获取资产树失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/cmdb/attributes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取属性定义列表，支持按分类筛选",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CMDB-属性"
+                ],
+                "summary": "获取属性定义列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "属性分类",
+                        "name": "category",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取属性列表失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "创建一个新的属性定义（需要管理员权限）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CMDB-属性"
+                ],
+                "summary": "创建属性定义",
+                "parameters": [
+                    {
+                        "description": "属性定义信息",
+                        "name": "attr",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_model_system.AttributeDefinition"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "请求参数错误 / 无权限 / 创建失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/cmdb/attributes/validate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "验证给定属性 ID 的值是否符合属性定义的规则",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CMDB-属性"
+                ],
+                "summary": "验证主机属性值",
+                "parameters": [
+                    {
+                        "description": "验证请求",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "验证失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/cmdb/attributes/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据属性 ID 获取属性定义详情",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CMDB-属性"
+                ],
+                "summary": "获取属性定义详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "属性 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "无效的 ID / 属性不存在",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据属性 ID 更新属性定义信息（部分字段更新，需要管理员权限）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CMDB-属性"
+                ],
+                "summary": "更新属性定义",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "属性 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "需要更新的字段",
+                        "name": "attr",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_model_system.AttributeDefinition"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "无效的 ID / 请求参数错误 / 无权限 / 更新失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据属性 ID 删除属性定义（需要管理员权限）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CMDB-属性"
+                ],
+                "summary": "删除属性定义",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "属性 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "无效的 ID / 无权限 / 删除失败",
                         "schema": {
                             "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
                         }
@@ -1939,6 +2197,87 @@ const docTemplate = `{
                 }
             }
         },
+        "/cmdb/server-attributes/{serverId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据主机 ID 获取主机的属性列表",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CMDB-属性"
+                ],
+                "summary": "获取主机属性列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "主机 ID",
+                        "name": "serverId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "无效的主机 ID / 获取主机属性失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "保存指定主机的属性列表（覆盖更新）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CMDB-属性"
+                ],
+                "summary": "保存主机属性",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "主机 ID",
+                        "name": "serverId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "属性列表",
+                        "name": "attributes",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/oneops_backend3_model_cmdb.ServerAttribute"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "无效的主机 ID / 请求参数错误 / 保存失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/cmdb/server-tags/{serverId}/{tagId}": {
             "delete": {
                 "security": [
@@ -2065,9 +2404,9 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "标签（逗号分隔）",
-                        "name": "tags",
+                        "type": "integer",
+                        "description": "标签 ID",
+                        "name": "tagId",
                         "in": "query"
                     }
                 ],
@@ -2111,6 +2450,53 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "请求参数错误 / 主机名或 IP 重复 / 创建失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/cmdb/servers-by-attributes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据属性键值对筛选主机列表",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CMDB-属性"
+                ],
+                "summary": "按属性筛选主机",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "属性筛选条件（JSON 格式，如 {\\",
+                        "name": "filters",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "主机列表",
                         "schema": {
                             "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
                         }
@@ -2611,6 +2997,54 @@ const docTemplate = `{
                 }
             }
         },
+        "/cmdb/servers/{id}/sessions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "分页查询某台服务器关联的堡垒机会话（注意：该 handler 尚未注册路由）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CMDB-堡垒机"
+                ],
+                "summary": "获取指定服务器的会话列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "服务器 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "无效的服务器ID / 查询失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/cmdb/servers/{id}/sync-metrics": {
             "post": {
                 "security": [
@@ -3041,7 +3475,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "调整终端 PTY 大小（实际由 WebSocket handler 直接处理，此 HTTP 接口仅作占位）",
+                "description": "调整指定会话的 SSH PTY 窗口大小（通过 SessionManager 获取活跃 SSH 会话发送 window-change 请求）",
                 "produces": [
                     "application/json"
                 ],
@@ -3095,6 +3529,48 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "无效的会话 ID / 未认证 / 断开失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/cmdb/sessions/{id}/ws": {
+            "get": {
+                "description": "通过 WebSocket 连接到堡垒机会话，实现交互式 SSH 终端。认证通过 query 参数 token 完成，不经过 Auth 中间件；会话需先经创建接口建立",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CMDB-堡垒机"
+                ],
+                "summary": "SSH 终端 WebSocket",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "会话 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "JWT token",
+                        "name": "token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "101": {
+                        "description": "升级为 WebSocket 连接",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "200": {
+                        "description": "无效的会话ID / 未认证 / SessionManager 未初始化",
                         "schema": {
                             "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
                         }
@@ -5232,6 +5708,137 @@ const docTemplate = `{
                 }
             }
         },
+        "/k8s/clusters/{id}/native-bindings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "列出 OneOps 主体（用户/用户组）与 K8s 原生角色的绑定记录（B 模式）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s-集群权限"
+                ],
+                "summary": "获取集群的原生 RBAC 绑定列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "集群 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "为 OneOps 用户/用户组绑定 K8s 原生角色（ClusterRole/Role）：落库并在集群内创建真实 Binding；此后该主体在此集群的操作经 impersonation 由原生 RBAC 判定",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s-集群权限"
+                ],
+                "summary": "创建原生 RBAC 绑定",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "集群 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "原生绑定请求",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_model_k8s.AssignNativeRoleBindingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "绑定成功",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/k8s/clusters/{id}/native-bindings/{bindingId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "删除集群内对应 Binding 与平台记录，主体失去经原生 RBAC 获得的权限",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s-集群权限"
+                ],
+                "summary": "撤销原生 RBAC 绑定",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "集群 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "原生绑定 ID",
+                        "name": "bindingId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "撤销成功",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/k8s/clusters/{id}/nodes": {
             "get": {
                 "security": [
@@ -5266,24 +5873,21 @@ const docTemplate = `{
                 }
             }
         },
-        "/k8s/clusters/{id}/permissions": {
-            "post": {
+        "/k8s/clusters/{id}/permission/role-options": {
+            "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "为指定用户在指定集群中分配角色",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "原生授权表单专用：返回目标集群的 ClusterRole/Role 名称列表；权限归属 k8s.permission.list（不借用 k8s.rbac.view）",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "K8s-集群权限"
                 ],
-                "summary": "分配集群角色",
+                "summary": "获取集群内角色候选",
                 "parameters": [
                     {
                         "type": "integer",
@@ -5293,18 +5897,15 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "分配集群角色请求",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controller_k8s.AssignClusterRoleRequest"
-                        }
+                        "type": "string",
+                        "description": "ClusterRole（默认）| Role",
+                        "name": "kind",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "分配角色失败",
+                        "description": "无效的集群ID / 获取角色候选失败",
                         "schema": {
                             "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
                         }
@@ -5312,40 +5913,24 @@ const docTemplate = `{
                 }
             }
         },
-        "/k8s/clusters/{id}/permissions/{userId}": {
-            "delete": {
+        "/k8s/clusters/{id}/permission/subject-options": {
+            "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "撤销指定用户在指定集群中的角色授权",
+                "description": "原生授权表单专用轻量接口，仅返回 id/用户名/昵称；权限归属 k8s.permission.list，与绑定查看对齐（不借用 system.user.list）",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "K8s-集群权限"
                 ],
-                "summary": "撤销集群角色",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "集群 ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "用户 ID",
-                        "name": "userId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
+                "summary": "获取授权主体候选（用户+用户组）",
                 "responses": {
                     "200": {
-                        "description": "撤销角色失败",
+                        "description": "获取授权主体候选失败",
                         "schema": {
                             "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
                         }
@@ -5605,6 +6190,544 @@ const docTemplate = `{
                         "description": "无效的集群ID / 无权访问 / 获取失败",
                         "schema": {
                             "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/k8s/clusters/{id}/rbac/clusterrolebindings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s-RBAC管理"
+                ],
+                "summary": "获取 ClusterRoleBinding 列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "集群 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "按名称/主体搜索",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/k8s/clusters/{id}/rbac/clusterrolebindings/{name}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s-RBAC管理"
+                ],
+                "summary": "获取 ClusterRoleBinding 详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "集群 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "名称",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/k8s/clusters/{id}/rbac/clusterroles": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "列出集群内原生 RBAC ClusterRole（精简视图，含 Helm 管理标记）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s-RBAC管理"
+                ],
+                "summary": "获取 ClusterRole 列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "集群 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "按名称搜索",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "以 manifest 更新集群内原生 ClusterRole（rules 整体替换）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s-RBAC管理"
+                ],
+                "summary": "更新 ClusterRole",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "集群 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "ClusterRole manifest",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/k8s/clusters/{id}/rbac/clusterroles/{name}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取集群内原生 ClusterRole 的完整 rules",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s-RBAC管理"
+                ],
+                "summary": "获取 ClusterRole 详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "集群 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ClusterRole 名称",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/k8s/clusters/{id}/rbac/rolebindings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s-RBAC管理"
+                ],
+                "summary": "获取 RoleBinding 列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "集群 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "命名空间（空=全部）",
+                        "name": "namespace",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "按名称/主体搜索",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/k8s/clusters/{id}/rbac/rolebindings/{namespace}/{name}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s-RBAC管理"
+                ],
+                "summary": "获取 RoleBinding 详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "集群 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "命名空间",
+                        "name": "namespace",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "名称",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/k8s/clusters/{id}/rbac/roles": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "列出命名空间（为空则全集群）内原生 RBAC Role",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s-RBAC管理"
+                ],
+                "summary": "获取 Role 列表",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "集群 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "命名空间（空=全部）",
+                        "name": "namespace",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "按名称搜索",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/k8s/clusters/{id}/rbac/roles/{namespace}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "以 manifest 更新命名空间内原生 Role",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s-RBAC管理"
+                ],
+                "summary": "更新 Role",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "集群 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "命名空间",
+                        "name": "namespace",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Role manifest",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/k8s/clusters/{id}/rbac/roles/{namespace}/{name}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "K8s-RBAC管理"
+                ],
+                "summary": "获取 Role 详情",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "集群 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "命名空间",
+                        "name": "namespace",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Role 名称",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -6262,81 +7385,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/k8s/clusters/{id}/users": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "获取指定 K8s 集群下的用户列表及权限信息",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "K8s-集群管理"
-                ],
-                "summary": "获取集群用户列表",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "集群 ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "获取集群用户列表失败",
-                        "schema": {
-                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/k8s/clusters/{id}/users/{userId}/role": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "查询指定用户在指定集群中的角色绑定信息",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "K8s-集群权限"
-                ],
-                "summary": "获取用户在集群中的角色",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "集群 ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "用户 ID",
-                        "name": "userId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "无效的集群ID / 无效的用户ID / 获取失败",
-                        "schema": {
-                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
-                        }
-                    }
-                }
-            }
-        },
         "/k8s/diagnostic/commands": {
             "get": {
                 "security": [
@@ -6545,45 +7593,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "无效的集群ID / 内部错误",
-                        "schema": {
-                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/k8s/permissions/batch-assign": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "为多个用户批量分配同一集群的同一角色",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "K8s-集群权限"
-                ],
-                "summary": "批量分配集群角色",
-                "parameters": [
-                    {
-                        "description": "批量分配请求",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "参数错误 / 分配失败",
                         "schema": {
                             "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
                         }
@@ -7536,6 +8545,272 @@ const docTemplate = `{
                 }
             }
         },
+        "/monitoring/servers/{id}/extended-metrics": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "返回指定主机的扩展监控指标（注意：该 handler 尚未注册路由）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "监控-主机"
+                ],
+                "summary": "获取主机扩展指标",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "主机 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "无效的主机ID / 获取失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/monitoring/servers/{id}/hardware": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "返回指定主机的硬件资产信息（CPU/内存/磁盘等）（注意：该 handler 尚未注册路由）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "监控-主机"
+                ],
+                "summary": "获取主机硬件信息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "主机 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "无效的主机ID / 获取失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/monitoring/servers/{id}/metrics-history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "按指标类型与时间范围查询指定主机的历史指标序列（注意：该 handler 尚未注册路由）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "监控-主机"
+                ],
+                "summary": "查询主机历史指标",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "主机 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "指标类型",
+                        "name": "metricType",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "开始时间（RFC3339）",
+                        "name": "startTime",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "结束时间（RFC3339）",
+                        "name": "endTime",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "5m",
+                        "description": "聚合间隔",
+                        "name": "interval",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "无效的主机ID / 缺少必要参数 / 时间格式错误 / 查询失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/monitoring/servers/{id}/network": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "返回指定主机的网络接口与配置信息（注意：该 handler 尚未注册路由）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "监控-主机"
+                ],
+                "summary": "获取主机网络配置",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "主机 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "无效的主机ID / 获取失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/monitoring/servers/{id}/processes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "返回指定主机运行中的进程列表（注意：该 handler 尚未注册路由）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "监控-主机"
+                ],
+                "summary": "获取主机进程信息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "主机 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "无效的主机ID / 获取失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/monitoring/servers/{id}/security": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "返回指定主机的安全状况汇总（防火墙/登录记录/补丁等）（注意：该 handler 尚未注册路由）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "监控-主机"
+                ],
+                "summary": "获取主机安全信息",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "主机 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "无效的主机ID / 获取失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/monitoring/servers/{id}/services": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "返回指定主机的系统服务运行状态（注意：该 handler 尚未注册路由）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "监控-主机"
+                ],
+                "summary": "获取主机服务状态",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "主机 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "无效的主机ID / 获取失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/monitoring/ws": {
             "get": {
                 "description": "升级 HTTP 连接为 WebSocket，用于实时推送监控概览与告警事件。鉴权通过 query 参数 token（或 Authorization 头）完成，不经过 Auth 中间件",
@@ -7563,6 +8838,31 @@ const docTemplate = `{
                         "description": "缺少认证 Token 或 无效的 Token",
                         "schema": {
                             "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/monitoring/ws/clients": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "返回监控推送 Hub 当前在线客户端（注意：该 handler 尚未注册路由）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "监控-实时推送"
+                ],
+                "summary": "获取已连接的 WebSocket 客户端列表",
+                "responses": {
+                    "200": {
+                        "description": "客户端列表与总数",
+                        "schema": {
+                            "type": "object"
                         }
                     }
                 }
@@ -7682,7 +8982,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "检查当前用户可访问的路由中是否存在指定名称的路由",
+                "description": "检查系统中是否存在指定名称的路由（全局存在性，与用户权限无关；前端路由守卫用于区分 404 与 403）",
                 "produces": [
                     "application/json"
                 ],
@@ -8280,186 +9580,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "获取用户列表失败",
-                        "schema": {
-                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/system/attributes": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "获取属性定义列表，支持按分类筛选",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CMDB-属性"
-                ],
-                "summary": "获取属性定义列表",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "属性分类",
-                        "name": "category",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "获取属性列表失败",
-                        "schema": {
-                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "创建一个新的属性定义（需要管理员权限）",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CMDB-属性"
-                ],
-                "summary": "创建属性定义",
-                "parameters": [
-                    {
-                        "description": "属性定义信息",
-                        "name": "attr",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/oneops_backend3_model_system.AttributeDefinition"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "请求参数错误 / 无权限 / 创建失败",
-                        "schema": {
-                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/system/attributes/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "根据属性 ID 获取属性定义详情",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CMDB-属性"
-                ],
-                "summary": "获取属性定义详情",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "属性 ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "无效的 ID / 属性不存在",
-                        "schema": {
-                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "根据属性 ID 更新属性定义信息（部分字段更新，需要管理员权限）",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CMDB-属性"
-                ],
-                "summary": "更新属性定义",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "属性 ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "需要更新的字段",
-                        "name": "attr",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/oneops_backend3_model_system.AttributeDefinition"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "无效的 ID / 请求参数错误 / 无权限 / 更新失败",
-                        "schema": {
-                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "根据属性 ID 删除属性定义（需要管理员权限）",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CMDB-属性"
-                ],
-                "summary": "删除属性定义",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "属性 ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "无效的 ID / 无权限 / 删除失败",
                         "schema": {
                             "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
                         }
@@ -9352,6 +10472,179 @@ const docTemplate = `{
                 }
             }
         },
+        "/system/permissions/options": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "不分页返回全部权限的精简选项（id/名称/编码/模块/资源/动作/层级），用于角色授权选择器与权限树",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-权限"
+                ],
+                "summary": "获取权限选项列表",
+                "responses": {
+                    "200": {
+                        "description": "获取权限选项失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/system/permissions/routes": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "查询权限码与 API 路由的映射列表，可按权限码过滤",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-权限"
+                ],
+                "summary": "获取权限路由映射",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "权限编码（为空返回全部）",
+                        "name": "permissionCode",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取权限路由映射失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "为一个 API 路由配置权限码（同一端点只能归属一个权限码），即时生效",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-权限"
+                ],
+                "summary": "新增权限路由映射",
+                "parameters": [
+                    {
+                        "description": "映射信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_model_system.CreatePermissionRouteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "参数错误 / 权限码不存在 / 路由已存在映射",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/system/permissions/routes/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "修改映射归属的权限码（端点 method/path 不可改，删除后重建）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-权限"
+                ],
+                "summary": "修改权限路由映射",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "映射ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "目标权限码",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_model_system.UpdatePermissionRouteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "参数错误 / 权限码不存在 / 映射不存在",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "删除后对应端点将被拒绝访问（fail-closed）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-权限"
+                ],
+                "summary": "删除权限路由映射",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "映射ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "映射不存在",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/system/permissions/tree": {
             "get": {
                 "security": [
@@ -9557,6 +10850,64 @@ const docTemplate = `{
                 }
             }
         },
+        "/system/roles/menu-paths": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "编辑用户时用于家目录候选：按 角色→权限→菜单 推导链路返回一级菜单（含 admin 角色返回全部）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-角色"
+                ],
+                "summary": "按角色集合查询可见一级菜单",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "角色ID列表（逗号分隔）",
+                        "name": "roleIds",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "获取角色菜单失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/system/roles/options": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取所有启用角色的精简选项（不分页，用于下拉选择器）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-角色"
+                ],
+                "summary": "获取角色选项列表",
+                "responses": {
+                    "200": {
+                        "description": "获取角色选项失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/system/roles/{id}": {
             "put": {
                 "security": [
@@ -9713,35 +11064,71 @@ const docTemplate = `{
                 }
             }
         },
-        "/system/server-attributes/{serverId}": {
+        "/system/user-groups": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "根据主机 ID 获取主机的属性列表",
+                "description": "分页获取平台用户组，支持按名称/编码过滤，含成员数",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "CMDB-属性"
+                    "系统管理-用户组"
                 ],
-                "summary": "获取主机属性列表",
+                "summary": "获取用户组列表",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "主机 ID",
-                        "name": "serverId",
-                        "in": "path",
-                        "required": true
+                        "default": 1,
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "每页数量",
+                        "name": "pageSize",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "名称/编码模糊过滤",
+                        "name": "keyword",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "无效的主机 ID / 获取主机属性失败",
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "list": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "total": {
+                                                    "type": "integer"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -9752,7 +11139,6 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "保存指定主机的属性列表（覆盖更新）",
                 "consumes": [
                     "application/json"
                 ],
@@ -9760,33 +11146,271 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "CMDB-属性"
+                    "系统管理-用户组"
                 ],
-                "summary": "保存主机属性",
+                "summary": "创建用户组",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "主机 ID",
-                        "name": "serverId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "属性列表",
-                        "name": "attributes",
+                        "description": "用户组信息",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/oneops_backend3_model_cmdb.ServerAttribute"
-                            }
+                            "$ref": "#/definitions/oneops_backend3_model_system.CreateUserGroupRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "无效的主机 ID / 请求参数错误 / 保存失败",
+                        "description": "创建成功",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/system/user-groups/options": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "获取全部启用用户组的 id/code/name（供选择器）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-用户组"
+                ],
+                "summary": "获取用户组选项",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/system/user-groups/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-用户组"
+                ],
+                "summary": "更新用户组",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "用户组 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "用户组信息",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_model_system.UpdateUserGroupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "更新成功",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "级联删除组成员与集群组绑定",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-用户组"
+                ],
+                "summary": "删除用户组",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "用户组 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "删除成功",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/system/user-groups/{id}/members": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-用户组"
+                ],
+                "summary": "获取组成员",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "用户组 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-用户组"
+                ],
+                "summary": "批量添加组成员",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "用户组 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "用户ID集合",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "添加成功",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/system/user-groups/{id}/members/{userId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-用户组"
+                ],
+                "summary": "移除组成员",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "用户组 ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "用户 ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "移除成功",
                         "schema": {
                             "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
                         }
@@ -10140,6 +11764,31 @@ const docTemplate = `{
                 }
             }
         },
+        "/system/users/options": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "不分页返回全部启用用户的精简选项（id/用户名/昵称），用于各业务模块的选人下拉框",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "系统管理-用户"
+                ],
+                "summary": "获取用户选项列表",
+                "responses": {
+                    "200": {
+                        "description": "获取用户选项失败",
+                        "schema": {
+                            "$ref": "#/definitions/oneops_backend3_pkg_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/system/users/{id}": {
             "put": {
                 "security": [
@@ -10366,21 +12015,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "controller_k8s.AssignClusterRoleRequest": {
-            "type": "object",
-            "required": [
-                "roleId",
-                "userId"
-            ],
-            "properties": {
-                "roleId": {
-                    "type": "integer"
-                },
-                "userId": {
-                    "type": "integer"
-                }
-            }
-        },
         "controller_k8s.CreateClusterRequest": {
             "type": "object",
             "required": [
@@ -10801,6 +12435,21 @@ const docTemplate = `{
                 }
             }
         },
+        "controller_system.ChangePasswordRequest": {
+            "type": "object",
+            "required": [
+                "newPassword",
+                "oldPassword"
+            ],
+            "properties": {
+                "newPassword": {
+                    "type": "string"
+                },
+                "oldPassword": {
+                    "type": "string"
+                }
+            }
+        },
         "controller_system.CreateMenuRequest": {
             "type": "object",
             "required": [
@@ -10990,6 +12639,10 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "gin.H": {
+            "type": "object",
+            "additionalProperties": {}
         },
         "oneops_backend3_model_authorization.Application": {
             "type": "object",
@@ -11855,6 +13508,13 @@ const docTemplate = `{
                     "description": "资产编号",
                     "type": "string"
                 },
+                "attributeValues": {
+                    "description": "属性键值对（从 cmdb_server_attributes 填充）",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "attributes": {
                     "type": "array",
                     "items": {
@@ -11923,10 +13583,6 @@ const docTemplate = `{
                 },
                 "diskUsage": {
                     "type": "number"
-                },
-                "env": {
-                    "description": "环境",
-                    "type": "string"
                 },
                 "expireWarranty": {
                     "description": "保修到期",
@@ -12181,6 +13837,10 @@ const docTemplate = `{
                     "description": "父分组ID",
                     "type": "integer"
                 },
+                "serverCount": {
+                    "description": "直接关联的主机数量（不递归）",
+                    "type": "integer"
+                },
                 "servers": {
                     "type": "array",
                     "items": {
@@ -12312,6 +13972,50 @@ const docTemplate = `{
                 "start": {
                     "description": "HH:mm格式",
                     "type": "string"
+                }
+            }
+        },
+        "oneops_backend3_model_k8s.AssignNativeRoleBindingRequest": {
+            "type": "object",
+            "required": [
+                "roleKind",
+                "roleName",
+                "subjectType"
+            ],
+            "properties": {
+                "groupId": {
+                    "type": "integer"
+                },
+                "namespace": {
+                    "description": "兼容单命名空间；与 Namespaces 合并去重",
+                    "type": "string"
+                },
+                "namespaces": {
+                    "description": "多命名空间批量授权：每个 ns 创建一条绑定 + 集群内 RoleBinding",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "roleKind": {
+                    "type": "string",
+                    "enum": [
+                        "ClusterRole",
+                        "Role"
+                    ]
+                },
+                "roleName": {
+                    "type": "string"
+                },
+                "subjectType": {
+                    "type": "string",
+                    "enum": [
+                        "user",
+                        "group"
+                    ]
+                },
+                "userId": {
+                    "type": "integer"
                 }
             }
         },
@@ -12458,6 +14162,55 @@ const docTemplate = `{
                 }
             }
         },
+        "oneops_backend3_model_system.CreatePermissionRouteRequest": {
+            "type": "object",
+            "required": [
+                "method",
+                "path",
+                "permissionCode"
+            ],
+            "properties": {
+                "method": {
+                    "type": "string",
+                    "enum": [
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "DELETE",
+                        "PATCH"
+                    ]
+                },
+                "path": {
+                    "type": "string",
+                    "maxLength": 255
+                },
+                "permissionCode": {
+                    "type": "string",
+                    "maxLength": 100
+                }
+            }
+        },
+        "oneops_backend3_model_system.CreateUserGroupRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "name"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "maxLength": 50
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 50
+                }
+            }
+        },
         "oneops_backend3_model_system.Menu": {
             "type": "object",
             "properties": {
@@ -12547,17 +14300,38 @@ const docTemplate = `{
                 "resource": {
                     "type": "string"
                 },
-                "routeMethod": {
-                    "type": "string"
-                },
-                "routePath": {
-                    "type": "string"
-                },
                 "sortOrder": {
                     "type": "integer"
                 },
                 "status": {
                     "type": "integer"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "oneops_backend3_model_system.PermissionRoute": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isSeed": {
+                    "description": "IsSeed 是否由启动种子管理：true 时随代码修正更新；页面新建/修改后置 false，此后种子不再覆盖（页面优先）",
+                    "type": "boolean"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "path": {
+                    "type": "string"
+                },
+                "permissionCode": {
+                    "type": "string"
                 },
                 "updatedAt": {
                     "type": "string"
@@ -12663,6 +14437,41 @@ const docTemplate = `{
                 },
                 "sortOrder": {
                     "type": "integer"
+                },
+                "status": {
+                    "type": "integer",
+                    "enum": [
+                        0,
+                        1
+                    ]
+                }
+            }
+        },
+        "oneops_backend3_model_system.UpdatePermissionRouteRequest": {
+            "type": "object",
+            "required": [
+                "permissionCode"
+            ],
+            "properties": {
+                "permissionCode": {
+                    "type": "string",
+                    "maxLength": 100
+                }
+            }
+        },
+        "oneops_backend3_model_system.UpdateUserGroupRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string",
+                    "maxLength": 200
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 50
                 },
                 "status": {
                     "type": "integer",

@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"oneops/backend3/pkg/database"
 	"oneops/backend3/pkg/middleware"
 
 	syssvc "oneops/backend3/service/system"
@@ -23,6 +24,7 @@ func SetupSystemRoutes(
 		panic("failed to create permission service: " + err.Error())
 	}
 	permController := sysctrl.NewPermissionController(permSvc)
+	userGroupController := sysctrl.NewUserGroupController(syssvc.NewUserGroupService(database.GetDB()))
 
 	api := r.Group("/api")
 	system := api.Group("/system")
@@ -40,6 +42,7 @@ func SetupSystemRoutes(
 		system.GET("/roles", roleController.GetRoles)
 		system.GET("/roles/options", roleController.GetRoleOptions)
 		system.GET("/roles/menu-paths", roleController.GetRoleMenuPaths)
+		system.GET("/roles/:id/users", roleController.GetRoleUsers)
 		system.POST("/roles", roleController.CreateRole)
 		system.PUT("/roles/:id", roleController.UpdateRole)
 		system.DELETE("/roles/:id", roleController.DeleteRole)
@@ -51,6 +54,16 @@ func SetupSystemRoutes(
 		system.PUT("/users/:id", userController.UpdateUser)
 		system.DELETE("/users/:id", userController.DeleteUser)
 		system.PUT("/users/:id/password", userController.ResetPassword)
+
+		// 用户组管理（组成员为平台用户，组用于集群等资源的批量授权）
+		system.GET("/user-groups", userGroupController.GetUserGroups)
+		system.GET("/user-groups/options", userGroupController.GetUserGroupOptions)
+		system.POST("/user-groups", userGroupController.CreateUserGroup)
+		system.PUT("/user-groups/:id", userGroupController.UpdateUserGroup)
+		system.DELETE("/user-groups/:id", userGroupController.DeleteUserGroup)
+		system.GET("/user-groups/:id/members", userGroupController.GetGroupMembers)
+		system.POST("/user-groups/:id/members", userGroupController.AddGroupMembers)
+		system.DELETE("/user-groups/:id/members/:userId", userGroupController.RemoveGroupMember)
 
 		// 权限管理路由
 		registerPermissionRoutes(system, permController)
@@ -78,8 +91,8 @@ func registerPermissionRoutes(router *gin.RouterGroup, permController *sysctrl.P
 		permGroup.DELETE("/routes/:id", permController.DeletePermissionRoute)
 	}
 
-	// 角色权限路由
-	rolePermGroup := router.Group("/roles/:roleId/permissions")
+	// 角色权限路由（段名统一 :id，与 /roles/:id 保持一致，避免 gin 通配符冲突）
+	rolePermGroup := router.Group("/roles/:id/permissions")
 	rolePermGroup.Use(middleware.RequirePermissionFromDB())
 	{
 		rolePermGroup.GET("", permController.GetRolePermissions)

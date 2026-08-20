@@ -1,6 +1,9 @@
 /**
  * 用户表格列定义 & 角色颜色辅助函数
  */
+// tsx 文件不受 unplugin-vue-components 自动注册覆盖（仅 .vue），必须显式 import 组件，
+// 否则 JSX 编译降级为 resolveComponent("ElTag")，运行时解析不到会渲染成无样式的原生元素
+import { ElButton, ElTag } from 'element-plus';
 
 // 预定义颜色列表
 const COLOR_PALETTE: Array<{ type: UI.ThemeColor; customClass?: string }> = [

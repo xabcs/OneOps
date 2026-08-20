@@ -554,25 +554,21 @@ const local: App.I18n.Schema = {
         }
       },
       role: {
-        title: 'User Groups',
+        title: 'Role Management',
         roleName: 'Role Name',
         roleCode: 'Role Code',
-        groupName: 'Group Name',
-        groupCode: 'Group Code',
-        roleStatus: 'Group Status',
-        roleDesc: 'Group Description',
+        roleStatus: 'Role Status',
+        roleDesc: 'Role Description',
         menuAuth: 'Menu Auth',
         buttonAuth: 'Button Auth',
         form: {
           roleName: 'Please enter role name',
           roleCode: 'Please enter role code',
-          groupName: 'Please enter group name',
-          groupCode: 'Please enter group code',
-          roleStatus: 'Please select group status',
-          roleDesc: 'Please enter group description'
+          roleStatus: 'Please select role status',
+          roleDesc: 'Please enter role description'
         },
-        addGroup: 'Add Group',
-        editGroup: 'Edit Group'
+        addRole: 'Add Role',
+        editRole: 'Edit Role'
       },
       permission: {
         title: 'Permission Management',

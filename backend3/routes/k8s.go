@@ -24,13 +24,15 @@ func SetupK8sRoutes(r *gin.Engine) {
 	clusterSvc := k8ssvc.NewK8sClusterService(clusterRepo, clientPool, identitySvc)
 	resourceSvc := k8ssvc.NewK8sResourceService(clientPool)
 	diagnosticSvc := k8ssvc.NewDiagnosticService(clusterSvc, diagnosticRepo)
+	rbacSvc := k8ssvc.NewK8sRbacService(clientPool)
 
 	// 创建 controllers
 	k8sClusterController := k8sctrl.NewK8sClusterController(clusterSvc)
 	k8sResourceController := k8sctrl.NewK8sResourceController(resourceSvc, clusterSvc)
 	k8sPermissionController := k8sctrl.NewK8sPermissionController(clusterSvc)
-	diagnosticController := k8sctrl.NewDiagnosticController(diagnosticSvc)
+	diagnosticController := k8sctrl.NewDiagnosticController(diagnosticSvc, clusterSvc)
 	terminalController := k8sctrl.NewTerminalController(clusterSvc)
+	rbacController := k8sctrl.NewK8sRbacController(rbacSvc)
 
 	api := r.Group("/api")
 
@@ -58,15 +60,31 @@ func SetupK8sRoutes(r *gin.Engine) {
 		k8s.GET("/clusters/:id/nodes", k8sClusterController.GetClusterNodes)
 		k8s.GET("/clusters/:id/namespaces", k8sClusterController.GetClusterNamespaces)
 
-		// 集群用户管理
-		k8s.GET("/clusters/:id/users", k8sClusterController.GetClusterUsers)
-
-		// 权限管理
-		k8s.POST("/clusters/:id/permissions", k8sPermissionController.AssignClusterRole)
-		k8s.DELETE("/clusters/:id/permissions/:userId", k8sPermissionController.RevokeClusterRole)
+		// 当前用户可访问的集群
 		k8s.GET("/users/clusters", k8sPermissionController.GetUserClusters)
-		k8s.GET("/clusters/:id/users/:userId/role", k8sPermissionController.GetUserRoleInCluster)
-		k8s.POST("/permissions/batch-assign", k8sPermissionController.BatchAssignClusterRoles)
+
+		// 原生 RBAC 绑定（授权执行层，impersonation）
+		k8s.GET("/native-bindings", k8sPermissionController.GetAllNativeBindings)
+		k8s.GET("/clusters/options", k8sPermissionController.GetClusterOptions)
+		k8s.GET("/clusters/:id/native-bindings", k8sPermissionController.GetNativeBindings)
+		k8s.POST("/clusters/:id/native-bindings", k8sPermissionController.AssignNativeBinding)
+		k8s.DELETE("/clusters/:id/native-bindings/:bindingId", k8sPermissionController.RevokeNativeBinding)
+
+		// 授权表单候选（归属 k8s.permission.list，不借用 system.user.list / k8s.rbac.view）
+		k8s.GET("/clusters/:id/permission/subject-options", k8sPermissionController.GetSubjectOptions)
+		k8s.GET("/clusters/:id/permission/role-options", k8sPermissionController.GetRoleOptions)
+
+		// 原生 RBAC 对象代管（A 模式）
+		k8s.GET("/clusters/:id/rbac/clusterroles", rbacController.ListClusterRoles)
+		k8s.GET("/clusters/:id/rbac/clusterroles/:name", rbacController.GetClusterRole)
+		k8s.PUT("/clusters/:id/rbac/clusterroles", rbacController.UpdateClusterRole)
+		k8s.GET("/clusters/:id/rbac/roles", rbacController.ListRoles)
+		k8s.GET("/clusters/:id/rbac/roles/:namespace/:name", rbacController.GetRole)
+		k8s.PUT("/clusters/:id/rbac/roles/:namespace", rbacController.UpdateRole)
+		k8s.GET("/clusters/:id/rbac/clusterrolebindings", rbacController.ListClusterRoleBindings)
+		k8s.GET("/clusters/:id/rbac/clusterrolebindings/:name", rbacController.GetClusterRoleBinding)
+		k8s.GET("/clusters/:id/rbac/rolebindings", rbacController.ListRoleBindings)
+		k8s.GET("/clusters/:id/rbac/rolebindings/:namespace/:name", rbacController.GetRoleBinding)
 
 		// Workloads - Deployments
 		k8s.GET("/clusters/:id/deployments", k8sResourceController.ListDeployments)

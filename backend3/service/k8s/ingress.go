@@ -16,7 +16,7 @@ import (
 
 // ListIngress 获取 Ingress 列表（支持分页）
 func (s *K8sResourceService) ListIngress(clusterID uint, namespace string, page, pageSize int) ([]map[string]interface{}, int64, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -57,7 +57,7 @@ func (s *K8sResourceService) ListIngress(clusterID uint, namespace string, page,
 
 // GetIngress 获取 Ingress 详情
 func (s *K8sResourceService) GetIngress(clusterID uint, namespace, name string) (map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,11 @@ func (s *K8sResourceService) GetIngress(clusterID uint, namespace, name string) 
 
 // CreateIngress 创建 Ingress
 func (s *K8sResourceService) CreateIngress(clusterID uint, namespace string, manifest map[string]interface{}) error {
-	clientset, config, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
+	if err != nil {
+		return err
+	}
+	config, err := s.getScopedConfig(clusterID)
 	if err != nil {
 		return err
 	}
@@ -124,7 +128,7 @@ func (s *K8sResourceService) CreateIngress(clusterID uint, namespace string, man
 
 // UpdateIngress 更新 Ingress
 func (s *K8sResourceService) UpdateIngress(clusterID uint, namespace string, manifest map[string]interface{}) error {
-	_, config, err := s.clientPool.GetClient(clusterID)
+	config, err := s.getScopedConfig(clusterID)
 	if err != nil {
 		return err
 	}
@@ -160,7 +164,7 @@ func (s *K8sResourceService) UpdateIngress(clusterID uint, namespace string, man
 
 // DeleteIngress 删除 Ingress
 func (s *K8sResourceService) DeleteIngress(clusterID uint, namespace, name string) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}

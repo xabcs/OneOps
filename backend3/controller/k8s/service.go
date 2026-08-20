@@ -49,7 +49,7 @@ func (ctrl *K8sResourceController) ListServices(c *gin.Context) {
 		return
 	}
 
-	services, total, err := ctrl.svc.ListServices(uint(clusterID), params.Namespace, params.Page, params.PageSize)
+	services, total, err := ctrl.svc.ForUser(userID).ListServices(uint(clusterID), params.Namespace, params.Page, params.PageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Service 列表失败: "+err.Error()))
 		return
@@ -94,7 +94,7 @@ func (ctrl *K8sResourceController) GetService(c *gin.Context) {
 		return
 	}
 
-	service, err := ctrl.svc.GetService(uint(clusterID), namespace, name)
+	service, err := ctrl.svc.ForUser(userID).GetService(uint(clusterID), namespace, name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Service 详情失败: "+err.Error()))
 		return
@@ -139,13 +139,13 @@ func (ctrl *K8sResourceController) CreateService(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.create")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.create）"))
 		return
 	}
 
-	if err := ctrl.svc.CreateService(uint(clusterID), req.Namespace, req.Manifest); err != nil {
+	if err := ctrl.svc.ForUser(userID).CreateService(uint(clusterID), req.Namespace, req.Manifest); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("创建 Service 失败: "+err.Error()))
 		return
 	}
@@ -189,13 +189,13 @@ func (ctrl *K8sResourceController) UpdateService(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.update")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.update）"))
 		return
 	}
 
-	if err := ctrl.svc.UpdateService(uint(clusterID), req.Namespace, req.Manifest); err != nil {
+	if err := ctrl.svc.ForUser(userID).UpdateService(uint(clusterID), req.Namespace, req.Manifest); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("更新 Service 失败: "+err.Error()))
 		return
 	}
@@ -239,13 +239,13 @@ func (ctrl *K8sResourceController) DeleteService(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.delete")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.delete）"))
 		return
 	}
 
-	if err := ctrl.svc.DeleteService(uint(clusterID), req.Namespace, req.Name); err != nil {
+	if err := ctrl.svc.ForUser(userID).DeleteService(uint(clusterID), req.Namespace, req.Name); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("删除 Service 失败: "+err.Error()))
 		return
 	}

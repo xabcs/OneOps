@@ -100,11 +100,12 @@ func (r *RoleRepository) CountUsersByRoleID(roleID uint) (int64, error) {
 	return count, err
 }
 
-// FindUsersByRoleID 查询使用指定角色的用户列表
+// FindUsersByRoleID 查询使用指定角色的用户列表（含邮箱/状态，供角色管理页查看绑定用户）
 func (r *RoleRepository) FindUsersByRoleID(roleID uint) ([]modelsystem.User, error) {
 	var users []modelsystem.User
-	err := r.db.Select("id, username, nickname").
+	err := r.db.Select("id, username, nickname, email, status").
 		Where("JSON_CONTAINS(CAST(role_ids AS JSON), ?)", fmt.Sprintf("[%d]", roleID)).
+		Order("id ASC").
 		Find(&users).Error
 	return users, err
 }

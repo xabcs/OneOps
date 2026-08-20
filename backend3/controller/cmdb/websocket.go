@@ -11,8 +11,8 @@ import (
 	"time"
 
 	modelcmdb "oneops/backend3/model/cmdb"
-	cmdbsvc "oneops/backend3/service/cmdb"
 	"oneops/backend3/pkg/utils"
+	cmdbsvc "oneops/backend3/service/cmdb"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -196,7 +196,16 @@ func NewSSHWebSocketHandler() *SSHWebSocketHandler {
 	return &SSHWebSocketHandler{}
 }
 
-// HandleWebSocket 处理 WebSocket 连接
+// HandleWebSocket godoc
+// @Summary      SSH 终端 WebSocket
+// @Description  通过 WebSocket 连接到堡垒机会话，实现交互式 SSH 终端。认证通过 query 参数 token 完成，不经过 Auth 中间件；会话需先经创建接口建立
+// @Tags         CMDB-堡垒机
+// @Produce      json
+// @Param        id    path     string  true  "会话 ID"
+// @Param        token query    string  true  "JWT token"
+// @Success      101   {string} string   "升级为 WebSocket 连接"
+// @Failure      200   {object} utils.Response  "无效的会话ID / 未认证 / SessionManager 未初始化"
+// @Router       /cmdb/sessions/{id}/ws [get]
 func (h *SSHWebSocketHandler) HandleWebSocket(ctx *gin.Context) {
 	// 获取会话 ID
 	sessionIDStr := ctx.Param("id")

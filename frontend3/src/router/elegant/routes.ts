@@ -656,6 +656,34 @@ export const generatedRoutes: GeneratedRoute[] = [
         ]
       },
       {
+        name: 'k8s_security',
+        path: '/k8s/security',
+        meta: {
+          title: 'k8s_security',
+          i18nKey: 'route.k8s_security'
+        },
+        children: [
+          {
+            name: 'k8s_security_authorization',
+            path: '/k8s/security/authorization',
+            component: 'view.k8s_security_authorization',
+            meta: {
+              title: 'k8s_security_authorization',
+              i18nKey: 'route.k8s_security_authorization'
+            }
+          },
+          {
+            name: 'k8s_security_roles',
+            path: '/k8s/security/roles',
+            component: 'view.k8s_security_roles',
+            meta: {
+              title: 'k8s_security_roles',
+              i18nKey: 'route.k8s_security_roles'
+            }
+          }
+        ]
+      },
+      {
         name: 'k8s_terminal',
         path: '/k8s/terminal',
         component: 'view.k8s_terminal',
@@ -745,6 +773,15 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'manage_user-detail',
           i18nKey: 'route.manage_user-detail'
+        }
+      },
+      {
+        name: 'manage_user-group',
+        path: '/manage/user-group',
+        component: 'view.manage_user-group',
+        meta: {
+          title: 'manage_user-group',
+          i18nKey: 'route.manage_user-group'
         }
       }
     ]

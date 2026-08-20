@@ -91,39 +91,6 @@ export function fetchK8sClusterNamespaces(clusterId: number) {
   });
 }
 
-/**
- * 获取集群用户列表
- */
-export function fetchK8sClusterUsers(clusterId: number) {
-  return request<K8s.ClusterUser[]>({
-    url: `/k8s/clusters/${clusterId}/users`,
-    method: 'get'
-  });
-}
-
-// ========== Permission Management ==========
-
-/**
- * 分配集群角色
- */
-export function assignK8sClusterRole(clusterId: number, data: { userId: number; roleId: number }) {
-  return request({
-    url: `/k8s/clusters/${clusterId}/permissions`,
-    method: 'post',
-    data
-  });
-}
-
-/**
- * 撤销集群角色
- */
-export function revokeK8sClusterRole(clusterId: number, userId: number) {
-  return request({
-    url: `/k8s/clusters/${clusterId}/permissions/${userId}`,
-    method: 'delete'
-  });
-}
-
 // ========== Workloads - Deployments ==========
 
 /**
@@ -770,5 +737,195 @@ export function terminateK8sTerminalSession(sessionId: number) {
   return request({
     url: `/k8s/terminal/sessions/${sessionId}/terminate`,
     method: 'post'
+  });
+}
+
+// ========== Native RBAC（A：集群内原生 RBAC 对象代管） ==========
+
+/**
+ * 获取集群内原生 ClusterRole 列表
+ */
+export function fetchK8sNativeClusterRoles(clusterId: number, search?: string) {
+  return request<K8s.NativeRoleItem[]>({
+    url: `/k8s/clusters/${clusterId}/rbac/clusterroles`,
+    method: 'get',
+    params: { search }
+  });
+}
+
+/**
+ * 获取集群内原生 ClusterRole 详情（含完整 rules）
+ */
+export function getK8sNativeClusterRole(clusterId: number, name: string) {
+  return request<K8s.NativeRoleDetail>({
+    url: `/k8s/clusters/${clusterId}/rbac/clusterroles/${name}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 更新集群内原生 ClusterRole（manifest 整体替换 rules）
+ */
+export function updateK8sNativeClusterRole(clusterId: number, manifest: Record<string, unknown>) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/rbac/clusterroles`,
+    method: 'put',
+    data: manifest
+  });
+}
+
+/**
+ * 获取集群内原生 Role 列表（namespace 为空则全集群）
+ */
+export function fetchK8sNativeRoles(clusterId: number, params?: { namespace?: string; search?: string }) {
+  return request<K8s.NativeRoleItem[]>({
+    url: `/k8s/clusters/${clusterId}/rbac/roles`,
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取集群内原生 Role 详情
+ */
+export function getK8sNativeRole(clusterId: number, namespace: string, name: string) {
+  return request<K8s.NativeRoleDetail>({
+    url: `/k8s/clusters/${clusterId}/rbac/roles/${namespace}/${name}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 更新命名空间内原生 Role
+ */
+export function updateK8sNativeRole(
+  clusterId: number,
+  namespace: string,
+  manifest: Record<string, unknown>
+) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/rbac/roles/${namespace}`,
+    method: 'put',
+    data: manifest
+  });
+}
+
+/**
+ * 获取集群内原生 ClusterRoleBinding 列表
+ */
+export function fetchK8sNativeClusterRoleBindings(clusterId: number, search?: string) {
+  return request<K8s.NativeBindingItem[]>({
+    url: `/k8s/clusters/${clusterId}/rbac/clusterrolebindings`,
+    method: 'get',
+    params: { search }
+  });
+}
+
+/**
+ * 获取集群内原生 ClusterRoleBinding 详情
+ */
+export function getK8sNativeClusterRoleBinding(clusterId: number, name: string) {
+  return request<K8s.NativeBindingItem>({
+    url: `/k8s/clusters/${clusterId}/rbac/clusterrolebindings/${name}`,
+    method: 'get'
+  });
+}
+
+/**
+ * 获取集群内原生 RoleBinding 列表（namespace 为空则全集群）
+ */
+export function fetchK8sNativeRoleBindings(clusterId: number, params?: { namespace?: string; search?: string }) {
+  return request<K8s.NativeBindingItem[]>({
+    url: `/k8s/clusters/${clusterId}/rbac/rolebindings`,
+    method: 'get',
+    params
+  });
+}
+
+/**
+ * 获取集群内原生 RoleBinding 详情
+ */
+export function getK8sNativeRoleBinding(clusterId: number, namespace: string, name: string) {
+  return request<K8s.NativeBindingItem>({
+    url: `/k8s/clusters/${clusterId}/rbac/rolebindings/${namespace}/${name}`,
+    method: 'get'
+  });
+}
+
+// ========== 访问授权（B：OneOps 主体 × K8s 原生角色绑定；入口：K8s管理-安全管理-授权管理） ==========
+
+/**
+ * 获取全部集群的访问授权记录（授权管理页列表，可按集群筛选）
+ */
+export function fetchK8sAllNativeBindings(clusterId?: number) {
+  return request<K8s.NativeRoleBinding[]>({
+    url: '/k8s/native-bindings',
+    method: 'get',
+    params: clusterId ? { clusterId } : {}
+  });
+}
+
+/**
+ * 集群候选（授权管理页筛选与表单，权限归属 k8s.permission.list）
+ */
+export function fetchK8sClusterOptions() {
+  return request<{ id: number; name: string; status: string }[]>({
+    url: '/k8s/clusters/options',
+    method: 'get'
+  });
+}
+
+/**
+ * 获取集群的访问授权绑定列表
+ */
+export function fetchK8sNativeBindings(clusterId: number) {
+  return request<K8s.NativeRoleBinding[]>({
+    url: `/k8s/clusters/${clusterId}/native-bindings`,
+    method: 'get'
+  });
+}
+
+/**
+ * 创建访问授权（落库 + 集群内创建真实 Binding，主体经 impersonation 生效）
+ */
+export function assignK8sNativeBinding(clusterId: number, data: K8s.NativeRoleBindingForm) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/native-bindings`,
+    method: 'post',
+    data
+  });
+}
+
+/**
+ * 撤销访问授权（删除集群内 Binding 与平台记录）
+ */
+export function revokeK8sNativeBinding(clusterId: number, bindingId: number) {
+  return request({
+    url: `/k8s/clusters/${clusterId}/native-bindings/${bindingId}`,
+    method: 'delete'
+  });
+}
+
+/**
+ * 授权主体候选（用户+用户组，授权表单专用，权限归属 k8s.permission.list）
+ */
+export function fetchK8sSubjectOptions(clusterId: number) {
+  return request<{
+    users: { id: number; username: string; nickname: string; groupIds?: number[] }[];
+    groups: { id: number; name: string; code: string }[];
+  }>({
+    url: `/k8s/clusters/${clusterId}/permission/subject-options`,
+    method: 'get'
+  });
+}
+
+/**
+ * 集群内角色候选（授权表单专用，权限归属 k8s.permission.list）
+ */
+export function fetchK8sRoleOptions(clusterId: number, kind: 'ClusterRole' | 'Role') {
+  return request<string[]>({
+    url: `/k8s/clusters/${clusterId}/permission/role-options`,
+    method: 'get',
+    params: { kind }
   });
 }

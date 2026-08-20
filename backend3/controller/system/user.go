@@ -274,8 +274,15 @@ func (ctrl *UserController) ResetPassword(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("密码重置成功"))
 }
 
-// GetUserOptions 获取用户选项列表（不分页，用于选择器）
-// GET /api/v1/users/options
+// GetUserOptions godoc
+// @Summary      获取用户选项列表
+// @Description  不分页返回全部启用用户的精简选项（id/用户名/昵称），用于各业务模块的选人下拉框
+// @Tags         系统管理-用户
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=[]object}  "用户选项列表"
+// @Failure      200  {object}  utils.Response  "获取用户选项失败"
+// @Router       /system/users/options [get]
+// @Security     BearerAuth
 func (ctrl *UserController) GetUserOptions(c *gin.Context) {
 	users, err := ctrl.svc.GetAllUserOptions()
 	if err != nil {

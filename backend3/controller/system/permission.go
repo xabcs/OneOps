@@ -22,8 +22,15 @@ func NewPermissionController(svc *system.PermissionService) *PermissionControlle
 	return &PermissionController{svc: svc}
 }
 
-// GetPermissionOptions 获取权限选项列表（不分页，用于选择器/权限树）
-// GET /api/v1/permissions/options
+// GetPermissionOptions godoc
+// @Summary      获取权限选项列表
+// @Description  不分页返回全部权限的精简选项（id/名称/编码/模块/资源/动作/层级），用于角色授权选择器与权限树
+// @Tags         系统管理-权限
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=[]object}  "权限选项列表"
+// @Failure      200  {object}  utils.Response  "获取权限选项失败"
+// @Router       /system/permissions/options [get]
+// @Security     BearerAuth
 func (ctrl *PermissionController) GetPermissionOptions(ctx *gin.Context) {
 	permissions, err := ctrl.svc.GetAllPermissionOptions()
 	if err != nil {
@@ -239,7 +246,7 @@ func (ctrl *PermissionController) DeletePermission(ctx *gin.Context) {
 // @Router       /system/roles/{roleId}/permissions [get]
 // @Security     BearerAuth
 func (ctrl *PermissionController) GetRolePermissions(ctx *gin.Context) {
-	roleIDStr := ctx.Param("roleId")
+	roleIDStr := ctx.Param("id")
 	roleID, err := strconv.ParseUint(roleIDStr, 10, 32)
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的角色ID"))
@@ -275,7 +282,7 @@ func (ctrl *PermissionController) GetRolePermissions(ctx *gin.Context) {
 // @Security     BearerAuth
 func (ctrl *PermissionController) AssignRolePermissions(ctx *gin.Context) {
 	// 从URL路径参数获取角色ID（符合项目规范）
-	roleIDStr := ctx.Param("roleId")
+	roleIDStr := ctx.Param("id")
 	roleID, err := strconv.ParseUint(roleIDStr, 10, 32)
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的角色ID"))

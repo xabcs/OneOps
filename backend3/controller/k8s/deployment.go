@@ -49,7 +49,7 @@ func (ctrl *K8sResourceController) ListDeployments(c *gin.Context) {
 		return
 	}
 
-	deployments, total, err := ctrl.svc.ListDeployments(uint(clusterID), params.Namespace, params.Page, params.PageSize)
+	deployments, total, err := ctrl.svc.ForUser(userID).ListDeployments(uint(clusterID), params.Namespace, params.Page, params.PageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Deployment 列表失败: "+err.Error()))
 		return
@@ -94,7 +94,7 @@ func (ctrl *K8sResourceController) GetDeployment(c *gin.Context) {
 		return
 	}
 
-	deployment, err := ctrl.svc.GetDeployment(uint(clusterID), namespace, name)
+	deployment, err := ctrl.svc.ForUser(userID).GetDeployment(uint(clusterID), namespace, name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Deployment 详情失败: "+err.Error()))
 		return
@@ -136,7 +136,7 @@ func (ctrl *K8sResourceController) GetDeploymentPods(c *gin.Context) {
 		return
 	}
 
-	pods, err := ctrl.svc.GetDeploymentPods(uint(clusterID), namespace, name)
+	pods, err := ctrl.svc.ForUser(userID).GetDeploymentPods(uint(clusterID), namespace, name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Deployment Pods 失败: "+err.Error()))
 		return
@@ -181,13 +181,13 @@ func (ctrl *K8sResourceController) CreateDeployment(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.create")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.create）"))
 		return
 	}
 
-	if err := ctrl.svc.CreateDeployment(uint(clusterID), req.Namespace, req.Manifest); err != nil {
+	if err := ctrl.svc.ForUser(userID).CreateDeployment(uint(clusterID), req.Namespace, req.Manifest); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("创建 Deployment 失败: "+err.Error()))
 		return
 	}
@@ -231,13 +231,13 @@ func (ctrl *K8sResourceController) UpdateDeployment(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.update")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.update）"))
 		return
 	}
 
-	if err := ctrl.svc.UpdateDeployment(uint(clusterID), req.Namespace, req.Manifest); err != nil {
+	if err := ctrl.svc.ForUser(userID).UpdateDeployment(uint(clusterID), req.Namespace, req.Manifest); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("更新 Deployment 失败: "+err.Error()))
 		return
 	}
@@ -281,13 +281,13 @@ func (ctrl *K8sResourceController) DeleteDeployment(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.delete")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.delete）"))
 		return
 	}
 
-	if err := ctrl.svc.DeleteDeployment(uint(clusterID), req.Namespace, req.Name); err != nil {
+	if err := ctrl.svc.ForUser(userID).DeleteDeployment(uint(clusterID), req.Namespace, req.Name); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("删除 Deployment 失败: "+err.Error()))
 		return
 	}
@@ -332,13 +332,13 @@ func (ctrl *K8sResourceController) ScaleDeployment(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.update")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.update）"))
 		return
 	}
 
-	if err := ctrl.svc.ScaleDeployment(uint(clusterID), req.Namespace, req.Name, req.Replicas); err != nil {
+	if err := ctrl.svc.ForUser(userID).ScaleDeployment(uint(clusterID), req.Namespace, req.Name, req.Replicas); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("扩缩容 Deployment 失败: "+err.Error()))
 		return
 	}
@@ -382,13 +382,13 @@ func (ctrl *K8sResourceController) RestartDeployment(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.update")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.update）"))
 		return
 	}
 
-	if err := ctrl.svc.RestartDeployment(uint(clusterID), req.Namespace, req.Name); err != nil {
+	if err := ctrl.svc.ForUser(userID).RestartDeployment(uint(clusterID), req.Namespace, req.Name); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("重启 Deployment 失败: "+err.Error()))
 		return
 	}

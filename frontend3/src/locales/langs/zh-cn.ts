@@ -409,6 +409,9 @@ const local: App.I18n.Schema = {
     k8s_network: '网络',
     k8s_config: '配置管理',
     k8s_diagnostic: '诊断中心',
+    k8s_security: '安全管理',
+    k8s_security_authorization: '授权管理',
+    k8s_security_roles: '角色管理',
     plugin_copy: '剪贴板',
     plugin_charts: '图表',
     plugin_charts_echarts: 'ECharts',
@@ -639,25 +642,21 @@ const local: App.I18n.Schema = {
         }
       },
       role: {
-        title: '用户组列表',
+        title: '角色管理',
         roleName: '角色名称',
         roleCode: '角色编码',
-        groupName: '用户组名称',
-        groupCode: '用户组编码',
-        roleStatus: '用户组状态',
-        roleDesc: '用户组描述',
+        roleStatus: '角色状态',
+        roleDesc: '角色描述',
         menuAuth: '菜单权限',
         buttonAuth: '按钮权限',
         form: {
           roleName: '请输入角色名称',
           roleCode: '请输入角色编码',
-          groupName: '请输入用户组名称',
-          groupCode: '请输入用户组编码',
-          roleStatus: '请选择用户组状态',
-          roleDesc: '请输入用户组描述'
+          roleStatus: '请选择角色状态',
+          roleDesc: '请输入角色描述'
         },
-        addGroup: '新增用户组',
-        editGroup: '编辑用户组'
+        addRole: '新增角色',
+        editRole: '编辑角色'
       },
       permission: {
         title: '权限管理',

@@ -64,7 +64,61 @@ func (ctrl *RoleController) GetRoles(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(result.Records, result.Total, params)))
+	// 附带各角色绑定用户（id/用户名，供列表"绑定用户"列以 tag 展示；查询失败不影响列表）
+	records := make([]gin.H, 0, len(result.Records))
+	for _, r := range result.Records {
+		item := gin.H{
+			"id": r.ID, "name": r.Name, "code": r.Code,
+			"description": r.Description, "status": r.Status,
+			"createdAt": r.CreatedAt, "updatedAt": r.UpdatedAt,
+		}
+		if users, err := ctrl.svc.GetRoleUsers(r.ID); err == nil {
+			userItems := make([]gin.H, 0, len(users))
+			for _, u := range users {
+				userItems = append(userItems, gin.H{"id": u.ID, "username": u.Username})
+			}
+			item["userCount"] = len(userItems)
+			item["users"] = userItems
+		}
+		records = append(records, item)
+	}
+
+	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(records, result.Total, params)))
+}
+
+// GetRoleUsers godoc
+// @Summary      获取角色绑定的用户列表
+// @Description  查询绑定了指定角色的所有用户（用户名/昵称/邮箱/状态），供角色管理"查看用户"弹窗
+// @Tags         系统管理-角色
+// @Produce      json
+// @Param        id  path  int  true  "角色 ID"
+// @Success      200  {object}  utils.Response{data=[]modelsystem.User}
+// @Failure      200  {object}  utils.Response  "无效的角色ID / 获取用户列表失败"
+// @Router       /system/roles/{id}/users [get]
+// @Security     BearerAuth
+func (ctrl *RoleController) GetRoleUsers(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的角色ID"))
+		return
+	}
+
+	users, err := ctrl.svc.GetRoleUsers(uint(id))
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户列表失败"))
+		return
+	}
+
+	// 仅输出弹窗所需字段，避免泄漏密码哈希等敏感字段
+	items := make([]gin.H, 0, len(users))
+	for _, u := range users {
+		items = append(items, gin.H{
+			"id": u.ID, "username": u.Username, "nickname": u.Nickname,
+			"email": u.Email, "status": u.Status,
+		})
+	}
+	c.JSON(http.StatusOK, utils.SuccessWithData(items))
 }
 
 // GetRoleOptions godoc

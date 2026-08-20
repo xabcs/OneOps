@@ -49,7 +49,7 @@ func (ctrl *K8sResourceController) ListStatefulSets(c *gin.Context) {
 		return
 	}
 
-	statefulSets, total, err := ctrl.svc.ListStatefulSets(uint(clusterID), params.Namespace, params.Page, params.PageSize)
+	statefulSets, total, err := ctrl.svc.ForUser(userID).ListStatefulSets(uint(clusterID), params.Namespace, params.Page, params.PageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 StatefulSet 列表失败: "+err.Error()))
 		return
@@ -94,7 +94,7 @@ func (ctrl *K8sResourceController) GetStatefulSet(c *gin.Context) {
 		return
 	}
 
-	statefulSet, err := ctrl.svc.GetStatefulSet(uint(clusterID), namespace, name)
+	statefulSet, err := ctrl.svc.ForUser(userID).GetStatefulSet(uint(clusterID), namespace, name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 StatefulSet 详情失败: "+err.Error()))
 		return
@@ -136,7 +136,7 @@ func (ctrl *K8sResourceController) GetStatefulSetPods(c *gin.Context) {
 		return
 	}
 
-	pods, err := ctrl.svc.GetStatefulSetPods(uint(clusterID), namespace, name)
+	pods, err := ctrl.svc.ForUser(userID).GetStatefulSetPods(uint(clusterID), namespace, name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 StatefulSet Pods 失败: "+err.Error()))
 		return
@@ -184,7 +184,7 @@ func (ctrl *K8sResourceController) ListDaemonSets(c *gin.Context) {
 		return
 	}
 
-	daemonSets, total, err := ctrl.svc.ListDaemonSets(uint(clusterID), params.Namespace, params.Page, params.PageSize)
+	daemonSets, total, err := ctrl.svc.ForUser(userID).ListDaemonSets(uint(clusterID), params.Namespace, params.Page, params.PageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 DaemonSet 列表失败: "+err.Error()))
 		return
@@ -229,7 +229,7 @@ func (ctrl *K8sResourceController) GetDaemonSet(c *gin.Context) {
 		return
 	}
 
-	daemonSet, err := ctrl.svc.GetDaemonSet(uint(clusterID), namespace, name)
+	daemonSet, err := ctrl.svc.ForUser(userID).GetDaemonSet(uint(clusterID), namespace, name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 DaemonSet 详情失败: "+err.Error()))
 		return
@@ -271,7 +271,7 @@ func (ctrl *K8sResourceController) GetDaemonSetPods(c *gin.Context) {
 		return
 	}
 
-	pods, err := ctrl.svc.GetDaemonSetPods(uint(clusterID), namespace, name)
+	pods, err := ctrl.svc.ForUser(userID).GetDaemonSetPods(uint(clusterID), namespace, name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 DaemonSet Pods 失败: "+err.Error()))
 		return
@@ -313,7 +313,7 @@ func (ctrl *K8sResourceController) GetJobPods(c *gin.Context) {
 		return
 	}
 
-	pods, err := ctrl.svc.GetJobPods(uint(clusterID), namespace, name)
+	pods, err := ctrl.svc.ForUser(userID).GetJobPods(uint(clusterID), namespace, name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Job Pods 失败: "+err.Error()))
 		return
@@ -355,7 +355,7 @@ func (ctrl *K8sResourceController) GetCronJobPods(c *gin.Context) {
 		return
 	}
 
-	pods, err := ctrl.svc.GetCronJobPods(uint(clusterID), namespace, name)
+	pods, err := ctrl.svc.ForUser(userID).GetCronJobPods(uint(clusterID), namespace, name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 CronJob Pods 失败: "+err.Error()))
 		return

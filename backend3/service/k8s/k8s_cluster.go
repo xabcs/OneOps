@@ -2,7 +2,6 @@ package k8s
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -52,10 +51,10 @@ func (s *K8sClusterService) GetClusters(userID uint, page, pageSize int, filter 
 	}
 
 	return s.clusterRepo.FindWithPagination(repok8s.ClusterQuery{
-		Filter:         filter,
-		AuthorizedIDs:  authorizedIDs,
-		Page:           page,
-		PageSize:       pageSize,
+		Filter:        filter,
+		AuthorizedIDs: authorizedIDs,
+		Page:          page,
+		PageSize:      pageSize,
 	})
 }
 
@@ -74,14 +73,6 @@ func (s *K8sClusterService) GetClusterByID(clusterID uint, userID uint) (*modelk
 	cluster, err := s.clusterRepo.FindByID(clusterID)
 	if err != nil {
 		return nil, fmt.Errorf("集群不存在: %w", err)
-	}
-
-	// 加载角色绑定信息
-	bindings, err := s.clusterRepo.FindRoleBindingsByCluster(clusterID)
-	if err != nil {
-		logger.Warn("加载集群角色绑定失败", zap.Error(err))
-	} else {
-		cluster.RoleBindings = bindings
 	}
 
 	return cluster, nil
@@ -190,6 +181,24 @@ func (s *K8sClusterService) GetClient(clusterID uint) (*kubernetes.Clientset, er
 	return clientset, err
 }
 
+// GetScopedClient 获取按用户作用域的 K8s 客户端（存在原生绑定时为 impersonated 客户端）
+func (s *K8sClusterService) GetScopedClient(clusterID uint, userID uint) (*kubernetes.Clientset, error) {
+	return s.clientPool.GetScopedClientset(clusterID, userID)
+}
+
+// GetScopedClientWithConfig 获取按用户作用域的客户端和 rest.Config（用于 exec 等 SPDY 操作）
+func (s *K8sClusterService) GetScopedClientWithConfig(clusterID uint, userID uint) (*kubernetes.Clientset, *rest.Config, error) {
+	config, err := s.clientPool.GetScopedConfig(clusterID, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, nil, err
+	}
+	return clientset, config, nil
+}
+
 // GetClientWithConfig 获取 K8s 客户端和 rest.Config（用于 exec 等 SPDY 操作）
 func (s *K8sClusterService) GetClientWithConfig(clusterID uint) (*kubernetes.Clientset, *rest.Config, error) {
 	return s.clientPool.GetClient(clusterID)
@@ -202,9 +211,9 @@ func (s *K8sClusterService) TestConnection(clusterID uint) error {
 	return s.clientPool.TestConnection(clusterID)
 }
 
-// GetClusterNodes 获取集群节点列表
-func (s *K8sClusterService) GetClusterNodes(clusterID uint) ([]map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+// GetClusterNodes 获取集群节点列表（按用户作用域：原生绑定用户经 impersonation 由 apiserver 过滤）
+func (s *K8sClusterService) GetClusterNodes(clusterID uint, userID uint) ([]map[string]interface{}, error) {
+	clientset, err := s.GetScopedClient(clusterID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -233,9 +242,9 @@ func (s *K8sClusterService) GetClusterNodes(clusterID uint) ([]map[string]interf
 	return result, nil
 }
 
-// GetClusterNamespaces 获取集群命名空间列表
-func (s *K8sClusterService) GetClusterNamespaces(clusterID uint) ([]map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+// GetClusterNamespaces 获取集群命名空间列表（按用户作用域：原生绑定用户经 impersonation 由 apiserver 过滤）
+func (s *K8sClusterService) GetClusterNamespaces(clusterID uint, userID uint) ([]map[string]interface{}, error) {
+	clientset, err := s.GetScopedClient(clusterID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -260,130 +269,51 @@ func (s *K8sClusterService) GetClusterNamespaces(clusterID uint) ([]map[string]i
 }
 
 // ========== 权限管理 ==========
-
-// AssignClusterRole 为用户分配集群角色
-func (s *K8sClusterService) AssignClusterRole(userID uint, clusterID uint, roleID uint, operatorID uint) error {
-	// 检查用户、集群、角色是否存在
-	if _, err := s.clusterRepo.FindUserByID(userID); err != nil {
-		return fmt.Errorf("用户不存在: %w", err)
-	}
-
-	if _, err := s.clusterRepo.FindByID(clusterID); err != nil {
-		return fmt.Errorf("集群不存在: %w", err)
-	}
-
-	if _, err := s.clusterRepo.FindRoleByID(roleID); err != nil {
-		return fmt.Errorf("角色不存在: %w", err)
-	}
-
-	// 检查是否已存在绑定
-	existingBinding, err := s.clusterRepo.FindRoleBinding(userID, clusterID)
-	if err == nil {
-		// 已存在，更新角色
-		if err := s.clusterRepo.UpdateRoleBindingRole(existingBinding, roleID); err != nil {
-			return fmt.Errorf("更新角色绑定失败: %w", err)
-		}
-	} else {
-		// 不存在，创建新绑定
-		binding := modelk8s.ClusterRoleBinding{
-			UserID:    userID,
-			ClusterID: clusterID,
-			RoleID:    roleID,
-		}
-		if err := s.clusterRepo.CreateRoleBinding(&binding); err != nil {
-			return fmt.Errorf("创建角色绑定失败: %w", err)
-		}
-	}
-
-	logger.Info("分配集群角色",
-		zap.Uint("user_id", userID),
-		zap.Uint("cluster_id", clusterID),
-		zap.Uint("role_id", roleID),
-		zap.Uint("operator_id", operatorID))
-
-	return nil
-}
-
-// RevokeClusterRole 撤销用户的集群角色
-func (s *K8sClusterService) RevokeClusterRole(userID uint, clusterID uint, operatorID uint) error {
-	rowsAffected, err := s.clusterRepo.DeleteRoleBinding(userID, clusterID)
-	if err != nil {
-		return fmt.Errorf("撤销角色绑定失败: %w", err)
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("角色绑定不存在")
-	}
-
-	logger.Info("撤销集群角色",
-		zap.Uint("user_id", userID),
-		zap.Uint("cluster_id", clusterID),
-		zap.Uint("operator_id", operatorID))
-
-	return nil
-}
-
-// GetClusterUsers 获取集群用户列表（有权限的用户）
-func (s *K8sClusterService) GetClusterUsers(clusterID uint) ([]map[string]interface{}, error) {
-	bindings, err := s.clusterRepo.FindRoleBindingsByCluster(clusterID)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]map[string]interface{}, len(bindings))
-	for i, binding := range bindings {
-		result[i] = map[string]interface{}{
-			"user_id":    binding.UserID,
-			"username":   binding.User.Username,
-			"nickname":   binding.User.Nickname,
-			"role_id":    binding.RoleID,
-			"role_name":  binding.Role.Name,
-			"created_at": binding.CreatedAt.Format("2006-01-02 15:04:05"),
-		}
-	}
-
-	return result, nil
-}
+// 注：平台三档（cluster-viewer/operator/admin）已下线，集群授权统一走原生 RBAC 绑定
+// （集群详情-原生授权）；可见性与操作预检见 CheckUserClusterAccess / CheckClusterOperation。
 
 // ========== 辅助方法 ==========
 
-// isSuperAdmin 检查用户是否为超级管理员
+// isSuperAdmin 检查用户是否为超级管理员（委托 repo，与 client pool 白名单共用同一判定）
 func (s *K8sClusterService) isSuperAdmin(userID uint) bool {
-	user, err := s.clusterRepo.FindUserByID(userID)
-	if err != nil {
-		return false
-	}
-
-	// 解析角色ID
-	var roleIDs []uint
-	if err := json.Unmarshal([]byte(user.RoleIDs), &roleIDs); err != nil {
-		return false
-	}
-
-	// 检查是否包含超级管理员角色（ID=1）
-	for _, roleID := range roleIDs {
-		if roleID == 1 {
-			return true
-		}
-	}
-
-	return false
+	return s.clusterRepo.IsSuperAdmin(userID)
 }
 
-// CheckUserClusterAccess 检查用户是否有集群访问权限
+// CheckUserClusterAccess 数据权限校验（③层）：用户对集群是否可见
+// 可见 = 存在任一授权载体：平台直绑/组绑定（历史）∪ 原生 RBAC 绑定（现行）；
+// 实际由 FindAuthorizedClusterIDs 的 UNION 实现；超管全可见
 func (s *K8sClusterService) CheckUserClusterAccess(userID uint, clusterID uint) (bool, error) {
 	// 超级管理员拥有所有权限
 	if s.isSuperAdmin(userID) {
 		return true, nil
 	}
 
-	// 检查是否存在角色绑定
-	count, err := s.clusterRepo.CountRoleBindings(userID, clusterID)
+	ids, err := s.clusterRepo.FindAuthorizedClusterIDs(userID)
 	if err != nil {
 		return false, err
 	}
+	for _, id := range ids {
+		if id == clusterID {
+			return true, nil
+		}
+	}
+	return false, nil
+}
 
-	return count > 0, nil
+// CheckClusterOperation 集群内操作级校验（④层）：三档下线后的简化预检
+// ②中间件已用系统权限码判定"岗位能否调这类 API"；
+// 此处只校验"用户在该集群是否存在原生 RBAC 绑定"（fail-closed 的执行前置），
+// 资源粒度终判由执行层 impersonation 交给 kube-apiserver；超管全放行。
+// permissionCode 参数保留以兼容既有调用方签名，不再参与比对
+func (s *K8sClusterService) CheckClusterOperation(userID uint, clusterID uint, permissionCode string) (bool, error) {
+	if s.isSuperAdmin(userID) {
+		return true, nil
+	}
+	_, _, hasNative, err := s.clusterRepo.FindNativeImpersonation(userID, clusterID)
+	if err != nil {
+		return false, err
+	}
+	return hasNative, nil
 }
 
 // validateKubeconfig 验证 kubeconfig 有效性

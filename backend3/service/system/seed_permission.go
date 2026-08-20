@@ -182,9 +182,15 @@ func (i *Initializer) syncPermissions() error {
 		{Code: "k8s.resource.create", Name: "创建资源", Description: "创建新的K8s资源", Module: "k8s", Resource: "resource", Action: "create", Level: 3, SortOrder: 125, Status: 1},
 		{Code: "k8s.resource.update", Name: "更新资源", Description: "更新K8s资源信息", Module: "k8s", Resource: "resource", Action: "update", Level: 3, SortOrder: 126, Status: 1},
 		{Code: "k8s.resource.delete", Name: "删除资源", Description: "删除K8s资源", Module: "k8s", Resource: "resource", Action: "delete", Level: 3, SortOrder: 127, Status: 1},
+
+		// 终端
+		{Code: "k8s.terminal.connect", Name: "终端连接", Description: "连接Pod终端与会话管理", Module: "k8s", Resource: "terminal", Action: "connect", Level: 3, SortOrder: 127, Status: 1},
 		// K8s诊断
 		{Code: "k8s.diagnostic.execute", Name: "执行诊断", Description: "执行K8s诊断命令", Module: "k8s", Resource: "diagnostic", Action: "execute", Level: 3, SortOrder: 128, Status: 1},
 		{Code: "k8s.diagnostic.view", Name: "查看诊断结果", Description: "查看K8s诊断结果和历史", Module: "k8s", Resource: "diagnostic", Action: "view", Level: 3, SortOrder: 129, Status: 1},
+		// K8s原生 RBAC 代管（A 模式）
+		{Code: "k8s.rbac.view", Name: "查看原生RBAC", Description: "查看集群内原生 ClusterRole/Role/Binding", Module: "k8s", Resource: "rbac", Action: "view", Level: 3, SortOrder: 130, Status: 1},
+		{Code: "k8s.rbac.manage", Name: "管理原生RBAC", Description: "编辑集群内原生 ClusterRole/Role 规则", Module: "k8s", Resource: "rbac", Action: "manage", Level: 3, SortOrder: 131, Status: 1},
 	}
 
 	for _, perm := range permissions {
@@ -239,7 +245,10 @@ func (i *Initializer) syncDefaultPermissions() error {
 			"monitor.task.list", "monitor.task.view", "monitor.task.create", "monitor.task.update", "monitor.task.delete", "monitor.task.execute",
 			"k8s.cluster.list", "k8s.cluster.view", "k8s.cluster.create", "k8s.cluster.update", "k8s.cluster.delete", "k8s.cluster.connect",
 			"k8s.resource.view", "k8s.resource.create", "k8s.resource.update", "k8s.resource.delete",
+			"k8s.terminal.connect",
+			"k8s.diagnostic.view", "k8s.diagnostic.execute",
 			"k8s.permission.list", "k8s.permission.assign", "k8s.permission.revoke",
+			"k8s.rbac.view", "k8s.rbac.manage",
 			"audit.login_log.list", "audit.login_log.export",
 			"audit.operation_log.list", "audit.operation_log.export",
 			"audit.system_event.list",
@@ -267,6 +276,13 @@ func (i *Initializer) syncDefaultPermissions() error {
 			"cmdb.server.list",
 			"monitor.data.view",
 		},
+		"k8s_view": {
+			// K8s 只读：可看集群/资源/诊断与授权绑定列表；授权操作（assign/revoke）归管理员角色
+			"k8s.cluster.list", "k8s.cluster.view",
+			"k8s.resource.view",
+			"k8s.diagnostic.view",
+			"k8s.permission.list",
+		},
 		"user": {
 			"monitor.data.view",
 		},
@@ -293,7 +309,9 @@ func (i *Initializer) syncDefaultPermissions() error {
 		}
 
 		assignedCount := 0
+		permIDs := make([]uint, 0, len(permissions))
 		for _, perm := range permissions {
+			permIDs = append(permIDs, perm.ID)
 			var rolePerm modelsystem.RolePermission
 			err := db.Where("role_id = ? AND permission_id = ?", role.ID, perm.ID).First(&rolePerm).Error
 			if err != nil {
@@ -303,6 +321,20 @@ func (i *Initializer) syncDefaultPermissions() error {
 				} else {
 					assignedCount++
 				}
+			}
+		}
+
+		// 收敛式同步：删除内置角色上不在 seed 清单中的历史绑定。
+		// 曾因"只增不删"导致角色定义收紧后旧权限残留（如 k8s_view 历史上含
+		// k8s.resource.update，固化只读后仍持码放行扩缩容），此处以 seed 为准收敛
+		if len(permIDs) > 0 {
+			result := db.Where("role_id = ? AND permission_id NOT IN ?", role.ID, permIDs).Delete(&modelsystem.RolePermission{})
+			if result.Error != nil {
+				logger.Error("清理角色历史权限失败", zap.String("role", roleCode), zap.Error(result.Error))
+			} else if result.RowsAffected > 0 {
+				logger.Warn("已收敛内置角色历史权限（删除 seed 清单外的绑定）",
+					zap.String("role", roleCode),
+					zap.Int64("removed", result.RowsAffected))
 			}
 		}
 

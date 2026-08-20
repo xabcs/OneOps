@@ -55,14 +55,82 @@ declare namespace K8s {
     labels?: Record<string, string>;
   };
 
-  /** 集群用户 */
-  type ClusterUser = {
-    user_id: number;
-    username: string;
-    nickname: string;
-    role_id: number;
-    role_name: string;
-    created_at: string;
+  /** K8s 原生 RBAC 规则（PolicyRule） */
+  type RbacRule = {
+    apiGroups: string[];
+    resources: string[];
+    verbs: string[];
+    nonResourceURLs: string[];
+  };
+
+  /** K8s 原生 RBAC 主体 */
+  type RbacSubject = {
+    kind: string;
+    name: string;
+    namespace: string;
+  };
+
+  /** 集群内原生 ClusterRole / Role 列表项 */
+  type NativeRoleItem = {
+    name: string;
+    namespace?: string;
+    labels?: Record<string, string>;
+    managedBy: string;
+    rules: number;
+    createdAt: string;
+  };
+
+  /** 集群内原生 ClusterRole / Role 详情（含完整 rules） */
+  type NativeRoleDetail = {
+    name: string;
+    namespace?: string;
+    labels?: Record<string, string>;
+    managedBy: string;
+    rules: RbacRule[];
+    createdAt: string;
+  };
+
+  /** 集群内原生 ClusterRoleBinding / RoleBinding */
+  type NativeBindingItem = {
+    name: string;
+    namespace?: string;
+    labels?: Record<string, string>;
+    managedBy: string;
+    subjects: RbacSubject[];
+    roleKind: string;
+    roleName: string;
+    createdAt: string;
+  };
+
+  /** 平台访问授权记录（B 模式：落库 + 集群内真实 Binding；授权管理页含集群列） */
+  type NativeRoleBinding = {
+    id: number;
+    clusterId?: number;
+    clusterName?: string;
+    subjectType: 'user' | 'group';
+    userId?: number;
+    groupId?: number;
+    subjectName: string;
+    subjectNickname?: string;
+    subjectCode?: string;
+    roleKind: 'ClusterRole' | 'Role';
+    roleName: string;
+    namespace: string;
+    impersonationName: string;
+    k8sBindingName: string;
+    createdAt: string;
+  };
+
+  /** 访问授权请求 */
+  type NativeRoleBindingForm = {
+    subjectType: 'user' | 'group';
+    userId?: number;
+    groupId?: number;
+    roleKind: 'ClusterRole' | 'Role';
+    roleName: string;
+    namespace?: string;
+    /** 多命名空间批量授权（与 namespace 合并去重；ClusterRole 时非空 = ns 级 RoleBinding 引用该 CR） */
+    namespaces?: string[];
   };
 
   /** 工作负载条件 */

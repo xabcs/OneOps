@@ -9,7 +9,7 @@ import (
 
 // ListEvents 获取 Event 列表
 func (s *K8sResourceService) ListEvents(clusterID uint, namespace string, fieldSelector string) ([]map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}

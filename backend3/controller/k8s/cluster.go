@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // K8sClusterController K8s集群控制器
@@ -389,8 +390,13 @@ func (ctrl *K8sClusterController) GetClusterNodes(c *gin.Context) {
 		return
 	}
 
-	nodes, err := ctrl.svc.GetClusterNodes(uint(clusterID))
+	nodes, err := ctrl.svc.GetClusterNodes(uint(clusterID), userID)
 	if err != nil {
+		// apiserver 终判拒绝（原生绑定角色未包含 nodes，如 K8s 内置 view）转业务码 40300，供前端空态提示
+		if apierrors.IsForbidden(err) {
+			c.JSON(http.StatusOK, utils.ErrorResponse(40300, "当前用户在集群内无节点查看权限（原生绑定角色未包含 nodes 资源），可联系管理员调整授权"))
+			return
+		}
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取节点列表失败: "+err.Error()))
 		return
 	}
@@ -426,48 +432,11 @@ func (ctrl *K8sClusterController) GetClusterNamespaces(c *gin.Context) {
 		return
 	}
 
-	namespaces, err := ctrl.svc.GetClusterNamespaces(uint(clusterID))
+	namespaces, err := ctrl.svc.GetClusterNamespaces(uint(clusterID), userID)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取命名空间列表失败: "+err.Error()))
 		return
 	}
 
 	c.JSON(http.StatusOK, utils.SuccessWithData(namespaces))
-}
-
-// GetClusterUsers godoc
-// @Summary      获取集群用户列表
-// @Description  获取指定 K8s 集群下的用户列表及权限信息
-// @Tags         K8s-集群管理
-// @Produce      json
-// @Param        id   path      int  true  "集群 ID"
-// @Success      200  {object}  utils.Response{data=object}
-// @Failure      200  {object}  utils.Response  "获取集群用户列表失败"
-// @Router       /k8s/clusters/{id}/users [get]
-// @Security     BearerAuth
-func (ctrl *K8sClusterController) GetClusterUsers(c *gin.Context) {
-	userID, ok := utils.GetUserIDFromContext(c)
-	if !ok {
-		return
-	}
-
-	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
-		return
-	}
-
-	hasAccess, err := ctrl.svc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
-		return
-	}
-
-	users, err := ctrl.svc.GetClusterUsers(uint(clusterID))
-	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群用户列表失败: "+err.Error()))
-		return
-	}
-
-	c.JSON(http.StatusOK, utils.SuccessWithData(users))
 }

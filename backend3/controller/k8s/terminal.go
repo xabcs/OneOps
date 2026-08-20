@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"sync"
@@ -82,7 +83,9 @@ type k8sStreamSize struct {
 
 // k8sTerminalSizeQueue 实现 TerminalSizeQueue 接口
 type k8sTerminalSizeQueue struct {
-	sizes chan remotecommand.TerminalSize
+	mu     sync.Mutex
+	closed bool
+	sizes  chan remotecommand.TerminalSize
 }
 
 func newK8sTerminalSizeQueue() *k8sTerminalSizeQueue {
@@ -99,7 +102,26 @@ func (q *k8sTerminalSizeQueue) Next() *remotecommand.TerminalSize {
 	return &size
 }
 
+// TrySend 非阻塞推送终端尺寸；Stop 后静默丢弃（避免向已关闭 channel 发送 panic）
+func (q *k8sTerminalSizeQueue) TrySend(size remotecommand.TerminalSize) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	if q.closed {
+		return
+	}
+	select {
+	case q.sizes <- size:
+	default:
+	}
+}
+
 func (q *k8sTerminalSizeQueue) Stop() {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	if q.closed {
+		return
+	}
+	q.closed = true
 	close(q.sizes)
 }
 
@@ -147,13 +169,13 @@ func (ctrl *TerminalController) HandleWebSocket(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.svc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, gin.H{"code": 403, "success": false, "message": "无权访问该集群"})
+	allowed, err := ctrl.svc.CheckClusterOperation(userID, uint(clusterID), "k8s.terminal.connect")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, gin.H{"code": 403, "success": false, "message": "无权执行该操作（需要集群角色操作集包含 k8s.terminal.connect）"})
 		return
 	}
 
-	clientset, _, err := ctrl.svc.GetClientWithConfig(uint(clusterID))
+	clientset, _, err := ctrl.svc.GetScopedClientWithConfig(uint(clusterID), userID)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"code": 500, "success": false, "message": "获取集群连接失败"})
 		return
@@ -184,7 +206,12 @@ func (ctrl *TerminalController) HandleWebSocket(c *gin.Context) {
 		logger.Error("升级 WebSocket 连接失败", zap.Error(err))
 		return
 	}
-	defer wsConn.Close()
+	defer func() {
+		// 先发 Close 帧再关 TCP，使前端 onclose.wasClean=true（正常断开而非"连接异常关闭"）
+		_ = wsConn.WriteControl(websocket.CloseMessage,
+			websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second))
+		wsConn.Close()
+	}()
 
 	sessionCtx, cancel := context.WithCancel(context.Background())
 
@@ -227,9 +254,17 @@ func (ctrl *TerminalController) HandleWebSocket(c *gin.Context) {
 	}()
 
 	size := &k8sStreamSize{Width: 80, Height: 24}
-	executor, err := ctrl.createExecutor(terminalSession, size)
+	shellCmd, probeErr := ctrl.probeShellCommand(terminalSession)
+	if probeErr != nil {
+		logger.Error("探测容器 shell 失败", zap.Error(probeErr))
+		ctrl.sendTerminalMessage(terminalSession.wsConn, "\r\n\x1b[31m✗ 终端初始化失败: "+probeErr.Error()+"\x1b[0m\r\n")
+		ctrl.closeSession(session, "初始化失败: "+probeErr.Error())
+		return
+	}
+	executor, err := ctrl.createExecutor(terminalSession, shellCmd)
 	if err != nil {
 		logger.Error("初始化 K8s executor 失败", zap.Error(err))
+		ctrl.sendTerminalMessage(terminalSession.wsConn, "\r\n\x1b[31m✗ 终端初始化失败: "+err.Error()+"\x1b[0m\r\n")
 		ctrl.closeSession(session, "初始化失败")
 		return
 	}
@@ -256,14 +291,62 @@ func (ctrl *TerminalController) HandleWebSocket(c *gin.Context) {
 	ctrl.closeSession(session, "会话结束")
 }
 
-// createExecutor 创建 K8s executor
-func (ctrl *TerminalController) createExecutor(session *k8sSession, size *k8sStreamSize) (remotecommand.Executor, error) {
+// probeShellCommand 探测容器内可用的交互 shell：依次尝试 /bin/bash、/bin/sh，
+// 用一次性非交互 exec（exit 0）验证二进制存在；均不可用时返回错误。
+func (ctrl *TerminalController) probeShellCommand(session *k8sSession) ([]string, error) {
 	clientset, config, err := ctrl.svc.GetClientWithConfig(session.clusterID)
 	if err != nil {
 		return nil, fmt.Errorf("获取集群连接失败: %w", err)
 	}
 
-	command := []string{"/bin/bash", "-l"}
+	var lastErr error
+	for _, shell := range []string{"/bin/bash", "/bin/sh"} {
+		req := clientset.CoreV1().RESTClient().Post().
+			Resource("pods").
+			Name(session.podName).
+			Namespace(session.namespace).
+			SubResource("exec").
+			VersionedParams(&v1.PodExecOptions{
+				Container: session.containerName,
+				Command:   []string{shell, "-c", "exit 0"},
+				Stdout:    true,
+				Stderr:    true,
+			}, scheme.ParameterCodec)
+
+		executor, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		if err := executor.StreamWithContext(session.ctx, remotecommand.StreamOptions{
+			Stdout: io.Discard,
+			Stderr: io.Discard,
+		}); err != nil {
+			lastErr = err
+			continue
+		}
+		if shell == "/bin/bash" {
+			return []string{shell, "-l"}, nil
+		}
+		return []string{shell}, nil
+	}
+	return nil, fmt.Errorf("容器内无可用 shell（/bin/bash、/bin/sh 均执行失败）: %v", lastErr)
+}
+
+// sendTerminalMessage 向终端 WebSocket 推送一条终端内可见的文本消息
+func (ctrl *TerminalController) sendTerminalMessage(ws *websocket.Conn, text string) {
+	if ws == nil {
+		return
+	}
+	_ = ws.WriteJSON(K8sTerminalMessage{Type: "output", Data: text})
+}
+
+// createExecutor 创建 K8s executor
+func (ctrl *TerminalController) createExecutor(session *k8sSession, command []string) (remotecommand.Executor, error) {
+	clientset, config, err := ctrl.svc.GetClientWithConfig(session.clusterID)
+	if err != nil {
+		return nil, fmt.Errorf("获取集群连接失败: %w", err)
+	}
 
 	req := clientset.CoreV1().RESTClient().Post().
 		Resource("pods").
@@ -300,7 +383,6 @@ func (ctrl *TerminalController) handleSession(session *k8sSession, dbSession *mo
 	}
 
 	go streamer.handleStdout()
-	go streamer.handleResize()
 	go streamer.handleWebSocketMessages()
 
 	err := session.k8sExecutor.StreamWithContext(session.ctx, remotecommand.StreamOptions{
@@ -313,6 +395,8 @@ func (ctrl *TerminalController) handleSession(session *k8sSession, dbSession *mo
 
 	if err != nil {
 		logger.Error("执行远程命令失败", zap.Error(err))
+		// 透传断开原因到前端终端，避免用户只看到"连接异常关闭"
+		ctrl.sendTerminalMessage(session.wsConn, "\r\n\x1b[31m✗ 终端已断开: "+err.Error()+"\x1b[0m\r\n")
 	}
 
 	close(streamer.stdinDone)
@@ -491,7 +575,13 @@ func (s *k8sTerminalStreamer) handleWebSocketMessages() {
 
 			switch msg.Type {
 			case "resize":
-				// 调整终端大小
+				// 调整终端大小（非阻塞推送，SPDY 流实时生效）
+				if msg.Cols > 0 && msg.Rows > 0 {
+					s.sizeQueue.TrySend(remotecommand.TerminalSize{
+						Width:  uint16(msg.Cols),
+						Height: uint16(msg.Rows),
+					})
+				}
 			case "close":
 				s.session.cancel()
 				return
@@ -504,9 +594,4 @@ func (s *k8sTerminalStreamer) handleWebSocketMessages() {
 			}
 		}
 	}
-}
-
-// handleResize 处理终端大小调整
-func (s *k8sTerminalStreamer) handleResize() {
-	// 实现终端大小调整逻辑
 }

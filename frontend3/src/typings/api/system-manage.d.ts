@@ -19,6 +19,10 @@ declare namespace Api {
       menuIds: string;
       /** status */
       status: number;
+      /** 绑定用户数（列表接口附带） */
+      userCount?: number;
+      /** 绑定用户（列表接口附带，仅 id/用户名，tag 展示） */
+      users?: { id: number; username: string }[];
     }>;
 
     /** role search params */
@@ -31,6 +35,44 @@ declare namespace Api {
 
     /** all role */
     type AllRole = Pick<Role, 'id' | 'name' | 'code' | 'menuIds'>;
+
+    /** user group（平台用户组，用于集群等资源批量授权） */
+    type UserGroup = Common.CommonRecord<{
+      /** group code */
+      code: string;
+      /** group name */
+      name: string;
+      /** group description */
+      description: string;
+      /** status: 1 enabled / 0 disabled */
+      status: number;
+      /** member count */
+      memberCount: number;
+    }>;
+
+    /** user group search params */
+    type UserGroupSearchParams = CommonType.RecordNullable<
+      {
+        keyword?: string;
+      } & CommonSearchParams
+    >;
+
+    /** user group list */
+    type UserGroupList = {
+      list: UserGroup[];
+      total: number;
+    };
+
+    /** user group option（选择器用） */
+    type UserGroupOption = Pick<UserGroup, 'id' | 'code' | 'name'>;
+
+    /** user group member */
+    type GroupMember = {
+      userId: number;
+      username: string;
+      nickname: string;
+      createdAt: string;
+    };
 
     /**
      * user gender

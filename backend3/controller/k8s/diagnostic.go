@@ -15,13 +15,15 @@ import (
 
 // DiagnosticController 诊断控制器
 type DiagnosticController struct {
-	svc *k8ssvc.DiagnosticService
+	svc        *k8ssvc.DiagnosticService
+	clusterSvc *k8ssvc.K8sClusterService
 }
 
 // NewDiagnosticController 创建诊断控制器
-func NewDiagnosticController(svc *k8ssvc.DiagnosticService) *DiagnosticController {
+func NewDiagnosticController(svc *k8ssvc.DiagnosticService, clusterSvc *k8ssvc.K8sClusterService) *DiagnosticController {
 	return &DiagnosticController{
-		svc: svc,
+		svc:        svc,
+		clusterSvc: clusterSvc,
 	}
 }
 
@@ -55,6 +57,11 @@ func (ctrl *DiagnosticController) GetDiagnosticCommands(c *gin.Context) {
 // @Router       /k8s/diagnostic/pods/{clusterId}/{namespace} [get]
 // @Security     BearerAuth
 func (ctrl *DiagnosticController) GetJavaPods(c *gin.Context) {
+	userID, ok := utils.GetUserIDFromContext(c)
+	if !ok {
+		return
+	}
+
 	clusterIDStr := c.Param("clusterId")
 	namespace := c.Param("namespace")
 
@@ -64,7 +71,7 @@ func (ctrl *DiagnosticController) GetJavaPods(c *gin.Context) {
 		return
 	}
 
-	javaPods, err := ctrl.svc.GetJavaPods(uint(clusterID), namespace)
+	javaPods, err := ctrl.svc.GetJavaPods(uint(clusterID), namespace, userID)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -88,6 +95,11 @@ func (ctrl *DiagnosticController) GetJavaPods(c *gin.Context) {
 // @Router       /k8s/diagnostic/namespaces/{clusterId} [get]
 // @Security     BearerAuth
 func (ctrl *DiagnosticController) GetNamespaces(c *gin.Context) {
+	userID, ok := utils.GetUserIDFromContext(c)
+	if !ok {
+		return
+	}
+
 	clusterIDStr := c.Param("clusterId")
 
 	clusterID, err := strconv.ParseUint(clusterIDStr, 10, 32)
@@ -96,7 +108,7 @@ func (ctrl *DiagnosticController) GetNamespaces(c *gin.Context) {
 		return
 	}
 
-	namespaces, err := ctrl.svc.GetNamespaces(uint(clusterID))
+	namespaces, err := ctrl.svc.GetNamespaces(uint(clusterID), userID)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -151,6 +163,12 @@ func (ctrl *DiagnosticController) ExecuteDiagnostic(c *gin.Context) {
 		return
 	}
 
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.diagnostic.execute")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.diagnostic.execute）"))
+		return
+	}
+
 	result, err := ctrl.svc.ExecuteDiagnostic(&k8ssvc.DiagnosticExecRequest{
 		ClusterID:    uint(clusterID),
 		ClusterIDStr: request.ClusterID,
@@ -161,7 +179,7 @@ func (ctrl *DiagnosticController) ExecuteDiagnostic(c *gin.Context) {
 		Timeout:      request.Timeout,
 		UserID:       userID,
 		Username:     username,
-	})
+	}, userID)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return

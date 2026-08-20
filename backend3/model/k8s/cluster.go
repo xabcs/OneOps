@@ -20,9 +20,6 @@ type K8sCluster struct {
 	Status      int       `gorm:"default:1" json:"status"` // 1=正常, 0=禁用
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
-
-	// 关联数据（不存储在数据库）
-	RoleBindings []ClusterRoleBinding `gorm:"-" json:"roleBindings,omitempty"`
 }
 
 // TableName 指定表名
@@ -30,16 +27,17 @@ func (K8sCluster) TableName() string {
 	return "k8s_clusters"
 }
 
-// ClusterRoleBinding 集群角色绑定
+// ClusterRoleBinding 用户与集群的直绑授权（用户在该集群的集群角色档位）
+// ClusterRoleID 指向 k8s_cluster_roles（集群内角色），与全局功能角色 sys_roles 无关
 type ClusterRoleBinding struct {
-	ID        uint              `gorm:"primaryKey" json:"id"`
-	UserID    uint              `gorm:"not null" json:"userId"`
-	User      *modelsystem.User `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	ClusterID uint              `gorm:"not null" json:"clusterId"`
-	Cluster   *K8sCluster       `gorm:"foreignKey:ClusterID" json:"cluster,omitempty"`
-	RoleID    uint              `gorm:"not null" json:"roleId"`
-	Role      *modelsystem.Role `gorm:"foreignKey:RoleID" json:"role,omitempty"`
-	CreatedAt time.Time         `json:"createdAt"`
+	ID            uint              `gorm:"primaryKey" json:"id"`
+	UserID        uint              `gorm:"not null;uniqueIndex:uk_cluster_user_binding" json:"userId"`
+	User          *modelsystem.User `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	ClusterID     uint              `gorm:"not null;uniqueIndex:uk_cluster_user_binding" json:"clusterId"`
+	Cluster       *K8sCluster       `gorm:"foreignKey:ClusterID" json:"cluster,omitempty"`
+	ClusterRoleID uint              `gorm:"not null" json:"clusterRoleId"`
+	ClusterRole   *K8sClusterRole   `gorm:"foreignKey:ClusterRoleID" json:"clusterRole,omitempty"`
+	CreatedAt     time.Time         `json:"createdAt"`
 }
 
 // TableName 指定表名

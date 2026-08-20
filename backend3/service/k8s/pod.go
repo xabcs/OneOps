@@ -16,7 +16,7 @@ import (
 
 // ListPods 获取 Pod 列表（支持分页）
 func (s *K8sResourceService) ListPods(clusterID uint, namespace string, labelSelector string, page, pageSize int) ([]map[string]interface{}, int64, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -56,7 +56,7 @@ func (s *K8sResourceService) ListPods(clusterID uint, namespace string, labelSel
 
 // GetPod 获取 Pod 详情
 func (s *K8sResourceService) GetPod(clusterID uint, namespace, name string) (map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (s *K8sResourceService) GetPod(clusterID uint, namespace, name string) (map
 
 // UpdatePod 更新 Pod（使用 dynamic client）
 func (s *K8sResourceService) UpdatePod(clusterID uint, namespace string, manifest map[string]interface{}) error {
-	_, config, err := s.clientPool.GetClient(clusterID)
+	config, err := s.getScopedConfig(clusterID)
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (s *K8sResourceService) UpdatePod(clusterID uint, namespace string, manifes
 
 // GetPodLogs 获取 Pod 日志
 func (s *K8sResourceService) GetPodLogs(clusterID uint, namespace, name, container string, tailLines int64) (string, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return "", err
 	}
@@ -138,7 +138,7 @@ func (s *K8sResourceService) GetPodLogs(clusterID uint, namespace, name, contain
 
 // DeletePod 删除 Pod
 func (s *K8sResourceService) DeletePod(clusterID uint, namespace, name string) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}

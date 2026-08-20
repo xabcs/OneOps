@@ -3,6 +3,7 @@ package system
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	modelsystem "oneops/backend3/model/system"
@@ -186,49 +187,39 @@ func (s *UserService) GetAllUserOptions() ([]modelsystem.User, error) {
 	return s.repo.FindAllOptions()
 }
 
-// validateHomePathPermission 验证家目录权限
+// validateHomePathPermission 验证家目录权限：家目录必须落在该角色集合可见的叶子菜单内
+// homePath 为 "/" 或空时归一为首页菜单（/home）；首页无 resource，非 admin 角色未显式
+// 授权首页权限时不可选，避免登录后重定向到无权限页面导致 403
 func (s *UserService) validateHomePathPermission(homePath string, roleIDs []uint) (bool, string) {
-	if homePath == "" || homePath == "/" {
-		return true, ""
-	}
-
 	if len(roleIDs) == 0 {
+		if homePath == "" || homePath == "/" {
+			return true, ""
+		}
 		return false, "未分配角色的用户家目录必须为根路径"
 	}
 
-	// 获取所有指定角色的权限
-	permissionSet := make(map[string]bool)
-	for _, roleID := range roleIDs {
-		rps, err := s.repo.FindRolePermissions(roleID)
-		if err != nil {
-			continue
-		}
-		for _, rp := range rps {
-			if rp.Permission.Code != "" {
-				permissionSet[rp.Permission.Code] = true
-			}
-		}
-	}
-
-	if len(permissionSet) == 0 {
-		return true, ""
-	}
-
-	menu, err := s.repo.FindMenuByPath(homePath)
+	permSvc, err := GetPermissionService()
 	if err != nil {
-		return true, ""
+		return false, "权限服务不可用，无法校验家目录"
 	}
 
-	if menu.Resource != "" {
-		hasPermission := false
-		for permCode := range permissionSet {
-			if strings.Contains(permCode, menu.Resource+".") {
-				hasPermission = true
-				break
-			}
+	menus, err := permSvc.GetMenuPathsByRoleIDs(roleIDs)
+	if err != nil {
+		return false, "获取角色可见菜单失败: " + err.Error()
+	}
+
+	normalized := homePath
+	if normalized == "" || normalized == "/" {
+		normalized = "/home"
+	}
+
+	paths := make([]string, 0, len(menus))
+	for _, m := range menus {
+		paths = append(paths, m.Path)
+		if m.Path == normalized {
+			return true, ""
 		}
-		_ = hasPermission
 	}
 
-	return true, ""
+	return false, fmt.Sprintf("家目录 %s 不在所选角色的可见菜单内，可选：%s", homePath, strings.Join(paths, "、"))
 }

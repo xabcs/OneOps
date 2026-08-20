@@ -17,7 +17,7 @@ import (
 
 // ListDeployments 获取 Deployment 列表（支持分页）
 func (s *K8sResourceService) ListDeployments(clusterID uint, namespace string, page, pageSize int) ([]map[string]interface{}, int64, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -56,7 +56,7 @@ func (s *K8sResourceService) ListDeployments(clusterID uint, namespace string, p
 
 // GetDeployment 获取 Deployment 详情
 func (s *K8sResourceService) GetDeployment(clusterID uint, namespace, name string) (map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (s *K8sResourceService) GetDeployment(clusterID uint, namespace, name strin
 
 // GetDeploymentPods 获取 Deployment 管理的 Pods
 func (s *K8sResourceService) GetDeploymentPods(clusterID uint, namespace, deploymentName string) ([]map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func (s *K8sResourceService) GetDeploymentPods(clusterID uint, namespace, deploy
 
 // CreateDeployment 创建 Deployment
 func (s *K8sResourceService) CreateDeployment(clusterID uint, namespace string, manifest map[string]interface{}) error {
-	_, config, err := s.clientPool.GetClient(clusterID)
+	config, err := s.getScopedConfig(clusterID)
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func (s *K8sResourceService) CreateDeployment(clusterID uint, namespace string, 
 
 // UpdateDeployment 更新 Deployment
 func (s *K8sResourceService) UpdateDeployment(clusterID uint, namespace string, manifest map[string]interface{}) error {
-	_, config, err := s.clientPool.GetClient(clusterID)
+	config, err := s.getScopedConfig(clusterID)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func (s *K8sResourceService) UpdateDeployment(clusterID uint, namespace string, 
 
 // DeleteDeployment 删除 Deployment
 func (s *K8sResourceService) DeleteDeployment(clusterID uint, namespace, name string) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}
@@ -211,7 +211,7 @@ func (s *K8sResourceService) DeleteDeployment(clusterID uint, namespace, name st
 
 // ScaleDeployment 扩缩容 Deployment
 func (s *K8sResourceService) ScaleDeployment(clusterID uint, namespace, name string, replicas int32) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}
@@ -240,7 +240,7 @@ func (s *K8sResourceService) ScaleDeployment(clusterID uint, namespace, name str
 
 // RestartDeployment 重启 Deployment
 func (s *K8sResourceService) RestartDeployment(clusterID uint, namespace, name string) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}

@@ -73,6 +73,11 @@ func (s *RoleService) GetAllRoleOptions() ([]modelsystem.Role, error) {
 	return s.repo.FindAllActive()
 }
 
+// GetRoleUsers 获取角色绑定的用户列表（角色列表"绑定用户"列 tag 与"查看用户"弹窗共用）
+func (s *RoleService) GetRoleUsers(roleID uint) ([]modelsystem.User, error) {
+	return s.repo.FindUsersByRoleID(roleID)
+}
+
 // Create 创建角色
 func (s *RoleService) Create(role *modelsystem.Role) error {
 	return s.repo.Create(role)

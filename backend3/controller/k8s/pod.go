@@ -50,7 +50,7 @@ func (ctrl *K8sResourceController) ListPods(c *gin.Context) {
 		return
 	}
 
-	pods, total, err := ctrl.svc.ListPods(uint(clusterID), params.Namespace, params.LabelSelector, params.Page, params.PageSize)
+	pods, total, err := ctrl.svc.ForUser(userID).ListPods(uint(clusterID), params.Namespace, params.LabelSelector, params.Page, params.PageSize)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Pod 列表失败: "+err.Error()))
 		return
@@ -95,7 +95,7 @@ func (ctrl *K8sResourceController) GetPod(c *gin.Context) {
 		return
 	}
 
-	pod, err := ctrl.svc.GetPod(uint(clusterID), namespace, name)
+	pod, err := ctrl.svc.ForUser(userID).GetPod(uint(clusterID), namespace, name)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Pod 详情失败: "+err.Error()))
 		return
@@ -147,7 +147,7 @@ func (ctrl *K8sResourceController) GetPodLogs(c *gin.Context) {
 		return
 	}
 
-	logs, err := ctrl.svc.GetPodLogs(uint(clusterID), namespace, name, container, tailLines)
+	logs, err := ctrl.svc.ForUser(userID).GetPodLogs(uint(clusterID), namespace, name, container, tailLines)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("获取 Pod 日志失败: "+err.Error()))
 		return
@@ -194,13 +194,13 @@ func (ctrl *K8sResourceController) UpdatePod(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.update")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.update）"))
 		return
 	}
 
-	if err := ctrl.svc.UpdatePod(uint(clusterID), req.Namespace, req.Manifest); err != nil {
+	if err := ctrl.svc.ForUser(userID).UpdatePod(uint(clusterID), req.Namespace, req.Manifest); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("更新 Pod 失败: "+err.Error()))
 		return
 	}
@@ -244,13 +244,13 @@ func (ctrl *K8sResourceController) DeletePod(c *gin.Context) {
 		return
 	}
 
-	hasAccess, err := ctrl.clusterSvc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
+	allowed, err := ctrl.clusterSvc.CheckClusterOperation(userID, uint(clusterID), "k8s.resource.delete")
+	if err != nil || !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权执行该操作（需要集群角色操作集包含 k8s.resource.delete）"))
 		return
 	}
 
-	if err := ctrl.svc.DeletePod(uint(clusterID), req.Namespace, req.Name); err != nil {
+	if err := ctrl.svc.ForUser(userID).DeletePod(uint(clusterID), req.Namespace, req.Name); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal("删除 Pod 失败: "+err.Error()))
 		return
 	}

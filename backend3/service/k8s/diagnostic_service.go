@@ -104,8 +104,8 @@ func (s *DiagnosticService) GetDiagnosticCommands() []map[string]interface{} {
 }
 
 // GetJavaPods 获取Java应用Pod列表
-func (s *DiagnosticService) GetJavaPods(clusterID uint, namespace string) ([]map[string]interface{}, error) {
-	client, err := s.clusterSvc.GetClient(clusterID)
+func (s *DiagnosticService) GetJavaPods(clusterID uint, namespace string, userID uint) ([]map[string]interface{}, error) {
+	client, err := s.clusterSvc.GetScopedClient(clusterID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("获取K8s客户端失败: %w", err)
 	}
@@ -127,8 +127,8 @@ func (s *DiagnosticService) GetJavaPods(clusterID uint, namespace string) ([]map
 }
 
 // GetNamespaces 获取命名空间列表
-func (s *DiagnosticService) GetNamespaces(clusterID uint) ([]map[string]interface{}, error) {
-	client, err := s.clusterSvc.GetClient(clusterID)
+func (s *DiagnosticService) GetNamespaces(clusterID uint, userID uint) ([]map[string]interface{}, error) {
+	client, err := s.clusterSvc.GetScopedClient(clusterID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("获取K8s客户端失败: %w", err)
 	}
@@ -152,12 +152,12 @@ func (s *DiagnosticService) GetNamespaces(clusterID uint) ([]map[string]interfac
 // ExecuteDiagnostic 执行诊断
 // 返回的 error 表示客户端或 Pod 获取阶段的失败（不记录历史）；
 // 当诊断 Agent 执行完成（无论成功或失败），历史已记录，结果通过 *DiagnosticExecResult 返回。
-func (s *DiagnosticService) ExecuteDiagnostic(req *DiagnosticExecRequest) (*DiagnosticExecResult, error) {
+func (s *DiagnosticService) ExecuteDiagnostic(req *DiagnosticExecRequest, userID uint) (*DiagnosticExecResult, error) {
 	if req.Timeout == 0 {
 		req.Timeout = 60
 	}
 
-	client, err := s.clusterSvc.GetClient(req.ClusterID)
+	client, err := s.clusterSvc.GetScopedClient(req.ClusterID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("获取K8s客户端失败: %w", err)
 	}

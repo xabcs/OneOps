@@ -14,7 +14,7 @@ import (
 
 // ListStatefulSets 获取 StatefulSet 列表（支持分页）
 func (s *K8sResourceService) ListStatefulSets(clusterID uint, namespace string, page, pageSize int) ([]map[string]interface{}, int64, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -51,7 +51,7 @@ func (s *K8sResourceService) ListStatefulSets(clusterID uint, namespace string, 
 
 // GetStatefulSet 获取 StatefulSet 详情
 func (s *K8sResourceService) GetStatefulSet(clusterID uint, namespace, name string) (map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (s *K8sResourceService) GetStatefulSet(clusterID uint, namespace, name stri
 
 // GetStatefulSetPods 获取 StatefulSet 管理的 Pods
 func (s *K8sResourceService) GetStatefulSetPods(clusterID uint, namespace, name string) ([]map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (s *K8sResourceService) GetStatefulSetPods(clusterID uint, namespace, name 
 
 // ListDaemonSets 获取 DaemonSet 列表（支持分页）
 func (s *K8sResourceService) ListDaemonSets(clusterID uint, namespace string, page, pageSize int) ([]map[string]interface{}, int64, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -146,7 +146,7 @@ func (s *K8sResourceService) ListDaemonSets(clusterID uint, namespace string, pa
 
 // GetDaemonSet 获取 DaemonSet 详情
 func (s *K8sResourceService) GetDaemonSet(clusterID uint, namespace, name string) (map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (s *K8sResourceService) GetDaemonSet(clusterID uint, namespace, name string
 
 // GetDaemonSetPods 获取 DaemonSet 管理的 Pods
 func (s *K8sResourceService) GetDaemonSetPods(clusterID uint, namespace, name string) ([]map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (s *K8sResourceService) GetDaemonSetPods(clusterID uint, namespace, name st
 
 // GetJobPods 获取 Job 关联的 Pods
 func (s *K8sResourceService) GetJobPods(clusterID uint, namespace, jobName string) ([]map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +233,7 @@ func (s *K8sResourceService) GetJobPods(clusterID uint, namespace, jobName strin
 
 // GetCronJobPods 获取 CronJob 关联的 Pods
 func (s *K8sResourceService) GetCronJobPods(clusterID uint, namespace, cronJobName string) ([]map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -370,7 +370,7 @@ func (s *K8sResourceService) formatDaemonSetConditions(ds *appsv1.DaemonSet) []m
 
 // RestartStatefulSet 重启 StatefulSet
 func (s *K8sResourceService) RestartStatefulSet(clusterID uint, namespace, name string) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}
@@ -403,7 +403,7 @@ func (s *K8sResourceService) RestartStatefulSet(clusterID uint, namespace, name 
 
 // DeleteStatefulSet 删除 StatefulSet
 func (s *K8sResourceService) DeleteStatefulSet(clusterID uint, namespace, name string) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}
@@ -425,7 +425,7 @@ func (s *K8sResourceService) DeleteStatefulSet(clusterID uint, namespace, name s
 
 // RestartDaemonSet 重启 DaemonSet
 func (s *K8sResourceService) RestartDaemonSet(clusterID uint, namespace, name string) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}
@@ -458,7 +458,7 @@ func (s *K8sResourceService) RestartDaemonSet(clusterID uint, namespace, name st
 
 // DeleteDaemonSet 删除 DaemonSet
 func (s *K8sResourceService) DeleteDaemonSet(clusterID uint, namespace, name string) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}

@@ -1,125 +1,26 @@
 package k8s
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
 	modelk8s "oneops/backend3/model/k8s"
-	"oneops/backend3/pkg/database"
-	"oneops/backend3/pkg/logger"
 	"oneops/backend3/pkg/utils"
 	. "oneops/backend3/service/k8s"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 // K8sPermissionController K8s权限控制器
 type K8sPermissionController struct {
 	svc *K8sClusterService
-	db  *gorm.DB
 }
 
 // NewK8sPermissionController 创建K8s权限控制器
 func NewK8sPermissionController(svc *K8sClusterService) *K8sPermissionController {
 	return &K8sPermissionController{
 		svc: svc,
-		db:  database.GetDB(),
 	}
-}
-
-// AssignClusterRoleRequest 分配集群角色请求
-type AssignClusterRoleRequest struct {
-	UserID uint `json:"userId" binding:"required"`
-	RoleID uint `json:"roleId" binding:"required"`
-}
-
-// AssignClusterRole godoc
-// @Summary      分配集群角色
-// @Description  为指定用户在指定集群中分配角色
-// @Tags         K8s-集群权限
-// @Accept       json
-// @Produce      json
-// @Param        id    path      int                       true  "集群 ID"
-// @Param        body  body      AssignClusterRoleRequest  true  "分配集群角色请求"
-// @Success      200  {object}  utils.Response  "分配角色成功"
-// @Failure      200  {object}  utils.Response  "分配角色失败"
-// @Router       /k8s/clusters/{id}/permissions [post]
-// @Security     BearerAuth
-func (ctrl *K8sPermissionController) AssignClusterRole(c *gin.Context) {
-	operatorID, ok := utils.GetUserIDFromContext(c)
-	if !ok {
-		return
-	}
-
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
-		return
-	}
-
-	var req AssignClusterRoleRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
-		return
-	}
-
-	if err := ctrl.svc.AssignClusterRole(req.UserID, uint(clusterID), req.RoleID, operatorID); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("分配角色失败: " + err.Error()))
-		return
-	}
-
-	logger.Info("分配K8s集群角色",
-		zap.Uint("operator_id", operatorID),
-		zap.Uint("cluster_id", uint(clusterID)),
-		zap.Uint("user_id", req.UserID),
-		zap.Uint("role_id", req.RoleID))
-
-	c.JSON(http.StatusOK, utils.SuccessWithMessage("分配角色成功"))
-}
-
-// RevokeClusterRole godoc
-// @Summary      撤销集群角色
-// @Description  撤销指定用户在指定集群中的角色授权
-// @Tags         K8s-集群权限
-// @Produce      json
-// @Param        id      path      int  true  "集群 ID"
-// @Param        userId  path      int  true  "用户 ID"
-// @Success      200  {object}  utils.Response  "撤销角色成功"
-// @Failure      200  {object}  utils.Response  "撤销角色失败"
-// @Router       /k8s/clusters/{id}/permissions/{userId} [delete]
-// @Security     BearerAuth
-func (ctrl *K8sPermissionController) RevokeClusterRole(c *gin.Context) {
-	operatorID, ok := utils.GetUserIDFromContext(c)
-	if !ok {
-		return
-	}
-
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
-		return
-	}
-
-	userID, err := strconv.ParseUint(c.Param("userId"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的用户ID"))
-		return
-	}
-
-	if err := ctrl.svc.RevokeClusterRole(uint(userID), uint(clusterID), operatorID); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("撤销角色失败: " + err.Error()))
-		return
-	}
-
-	logger.Info("撤销K8s集群角色",
-		zap.Uint("operator_id", operatorID),
-		zap.Uint("cluster_id", uint(clusterID)),
-		zap.Uint("user_id", uint(userID)))
-
-	c.JSON(http.StatusOK, utils.SuccessWithMessage("撤销角色成功"))
 }
 
 // GetUserClusters godoc
@@ -144,7 +45,7 @@ func (ctrl *K8sPermissionController) GetUserClusters(c *gin.Context) {
 
 	clusters, total, err := ctrl.svc.GetClusters(userID, page, pageSize, nil)
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群列表失败: " + err.Error()))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群列表失败: "+err.Error()))
 		return
 	}
 
@@ -176,149 +77,195 @@ func (ctrl *K8sPermissionController) GetUserClusters(c *gin.Context) {
 	})
 }
 
-// GetClusterUsers 获取集群用户列表（权限详情）
-func (ctrl *K8sPermissionController) GetClusterUsers(c *gin.Context) {
-	userID, ok := utils.GetUserIDFromContext(c)
-	if !ok {
-		return
-	}
+// ========== 原生 RBAC 绑定（授权与执行层） ==========
 
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
-	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
-		return
-	}
-
-	hasAccess, err := ctrl.svc.CheckUserClusterAccess(userID, uint(clusterID))
-	if err != nil || !hasAccess {
-		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群"))
-		return
-	}
-
-	users, err := ctrl.svc.GetClusterUsers(uint(clusterID))
-	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群用户列表失败: " + err.Error()))
-		return
-	}
-
-	c.JSON(http.StatusOK, utils.SuccessWithData(users))
-}
-
-// GetUserRoleInCluster godoc
-// @Summary      获取用户在集群中的角色
-// @Description  查询指定用户在指定集群中的角色绑定信息
+// GetNativeBindings godoc
+// @Summary      获取集群的原生 RBAC 绑定列表
+// @Description  列出 OneOps 主体（用户/用户组）与 K8s 原生角色的绑定记录（B 模式）
 // @Tags         K8s-集群权限
 // @Produce      json
-// @Param        id       path      int  true  "集群 ID"
-// @Param        userId   path      int  true  "用户 ID"
-// @Success      200  {object}  utils.Response{data=object{hasAccess=bool,role=object}}
-// @Failure      200  {object}  utils.Response  "无效的集群ID / 无效的用户ID / 获取失败"
-// @Router       /k8s/clusters/{id}/users/{userId}/role [get]
+// @Param        id  path  int  true  "集群 ID"
+// @Success      200  {object}  utils.Response{data=object}
+// @Router       /k8s/clusters/{id}/native-bindings [get]
 // @Security     BearerAuth
-func (ctrl *K8sPermissionController) GetUserRoleInCluster(c *gin.Context) {
-	_, ok := utils.GetUserIDFromContext(c)
-	if !ok {
-		return
-	}
-
-	clusterID, err := strconv.ParseUint(c.Param("clusterId"), 10, 32)
+func (ctrl *K8sPermissionController) GetNativeBindings(c *gin.Context) {
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
 	}
 
-	userID, err := strconv.ParseUint(c.Param("userId"), 10, 32)
+	bindings, err := ctrl.svc.GetNativeBindings(uint(clusterID))
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的用户ID"))
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取原生绑定失败: "+err.Error()))
 		return
 	}
 
-	var binding modelk8s.ClusterRoleBinding
-	err = ctrl.db.Where("user_id = ? AND cluster_id = ?", userID, clusterID).
-		Preload("Role").
-		First(&binding).Error
-
-	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取用户角色失败: " + err.Error()))
-		return
-	}
-
-	if binding.ID == 0 {
-		c.JSON(http.StatusOK, utils.SuccessWithData(map[string]interface{}{
-			"hasAccess": false,
-			"role":      nil,
-		}))
-		return
-	}
-
-	result := map[string]interface{}{
-		"hasAccess": true,
-		"role": map[string]interface{}{
-			"id":          binding.Role.ID,
-			"name":        binding.Role.Name,
-			"code":        binding.Role.Code,
-			"description": binding.Role.Description,
-		},
-		"createdAt": binding.CreatedAt.Format("2006-01-02 15:04:05"),
-	}
-
-	c.JSON(http.StatusOK, utils.SuccessWithData(result))
+	c.JSON(http.StatusOK, utils.SuccessWithData(bindings))
 }
 
-// BatchAssignClusterRoles godoc
-// @Summary      批量分配集群角色
-// @Description  为多个用户批量分配同一集群的同一角色
+// AssignNativeBinding godoc
+// @Summary      创建原生 RBAC 绑定
+// @Description  为 OneOps 用户/用户组绑定 K8s 原生角色（ClusterRole/Role）：落库并在集群内创建真实 Binding；此后该主体在此集群的操作经 impersonation 由原生 RBAC 判定
 // @Tags         K8s-集群权限
 // @Accept       json
 // @Produce      json
-// @Param        body  body      object  true  "批量分配请求"  examples({\"clusterId\":1,\"userIds\":[1,2],\"roleId\":3})
-// @Success      200   {object}  utils.Response{data=object{total=int,success=int,failed=int}}
-// @Failure      200   {object}  utils.Response  "参数错误 / 分配失败"
-// @Router       /k8s/permissions/batch-assign [post]
+// @Param        id    path      int                                         true  "集群 ID"
+// @Param        body  body      modelk8s.AssignNativeRoleBindingRequest     true  "原生绑定请求"
+// @Success      200   {object}  utils.Response  "绑定成功"
+// @Router       /k8s/clusters/{id}/native-bindings [post]
 // @Security     BearerAuth
-func (ctrl *K8sPermissionController) BatchAssignClusterRoles(c *gin.Context) {
+func (ctrl *K8sPermissionController) AssignNativeBinding(c *gin.Context) {
 	operatorID, ok := utils.GetUserIDFromContext(c)
 	if !ok {
 		return
 	}
 
-	var req struct {
-		ClusterID uint    `json:"clusterId" binding:"required"`
-		UserIDs   []uint  `json:"userIds" binding:"required"`
-		RoleID    uint    `json:"roleId" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: " + err.Error()))
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
 		return
 	}
 
-	successCount := 0
-	for _, userID := range req.UserIDs {
-		if err := ctrl.svc.AssignClusterRole(userID, req.ClusterID, req.RoleID, operatorID); err != nil {
-			logger.Warn("批量分配角色失败",
-				zap.Uint("user_id", userID),
-				zap.Uint("cluster_id", req.ClusterID),
-				zap.Error(err))
-		} else {
-			successCount++
-		}
+	var req modelk8s.AssignNativeRoleBindingRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
+		return
 	}
 
-	logger.Info("批量分配K8s集群角色",
-		zap.Uint("operator_id", operatorID),
-		zap.Uint("cluster_id", req.ClusterID),
-		zap.Int("total", len(req.UserIDs)),
-		zap.Int("success", successCount))
+	if err := ctrl.svc.AssignNativeBinding(operatorID, uint(clusterID), &req); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("创建原生绑定失败: "+err.Error()))
+		return
+	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"success": true,
-		"data": gin.H{
-			"total":   len(req.UserIDs),
-			"success": successCount,
-			"failed":  len(req.UserIDs) - successCount,
-		},
-		"message": fmt.Sprintf("批量分配完成，成功 %d/%d", successCount, len(req.UserIDs)),
-	})
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("绑定成功"))
+}
+
+// RevokeNativeBinding godoc
+// @Summary      撤销原生 RBAC 绑定
+// @Description  删除集群内对应 Binding 与平台记录，主体失去经原生 RBAC 获得的权限
+// @Tags         K8s-集群权限
+// @Produce      json
+// @Param        id          path  int  true  "集群 ID"
+// @Param        bindingId   path  int  true  "原生绑定 ID"
+// @Success      200  {object}  utils.Response  "撤销成功"
+// @Router       /k8s/clusters/{id}/native-bindings/{bindingId} [delete]
+// @Security     BearerAuth
+func (ctrl *K8sPermissionController) RevokeNativeBinding(c *gin.Context) {
+	operatorID, ok := utils.GetUserIDFromContext(c)
+	if !ok {
+		return
+	}
+
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	bindingID, err := strconv.ParseUint(c.Param("bindingId"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的绑定ID"))
+		return
+	}
+
+	if err := ctrl.svc.RevokeNativeBinding(operatorID, uint(clusterID), uint(bindingID)); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("撤销原生绑定失败: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("撤销成功"))
+}
+
+// GetAllNativeBindings godoc
+// @Summary      获取全部集群的原生 RBAC 绑定列表（授权管理页）
+// @Description  列出 OneOps 主体（用户/用户组）与 K8s 原生角色的绑定记录，可按集群筛选；支持集群/用户双视角审计
+// @Tags         K8s-集群权限
+// @Produce      json
+// @Param        clusterId  query  int  false  "集群 ID（不传 = 全部集群）"
+// @Success      200  {object}  utils.Response{data=object}
+// @Router       /k8s/native-bindings [get]
+// @Security     BearerAuth
+func (ctrl *K8sPermissionController) GetAllNativeBindings(c *gin.Context) {
+	clusterID := uint(0)
+	if v := c.Query("clusterId"); v != "" {
+		id, err := strconv.ParseUint(v, 10, 32)
+		if err != nil {
+			c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+			return
+		}
+		clusterID = uint(id)
+	}
+
+	bindings, err := ctrl.svc.GetAllNativeBindings(clusterID)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取授权记录失败: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(bindings))
+}
+
+// GetClusterOptions godoc
+// @Summary      获取集群候选（授权管理页）
+// @Description  返回全部集群的 id/名称/状态，供授权管理页筛选与表单选择；权限归属 k8s.permission.list（不借用 k8s.cluster.list）
+// @Tags         K8s-集群权限
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=[]object}
+// @Router       /k8s/clusters/options [get]
+// @Security     BearerAuth
+func (ctrl *K8sPermissionController) GetClusterOptions(c *gin.Context) {
+	clusters, err := ctrl.svc.GetClusterOptions()
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取集群候选失败: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(clusters))
+}
+
+// GetSubjectOptions godoc
+// @Summary      获取授权主体候选（用户+用户组）
+// @Description  原生授权表单专用轻量接口，仅返回 id/用户名/昵称；权限归属 k8s.permission.list，与绑定查看对齐（不借用 system.user.list）
+// @Tags         K8s-集群权限
+// @Produce      json
+// @Success      200  {object}  utils.Response{data=object{users=[]object,groups=[]object}}
+// @Failure      200  {object}  utils.Response  "获取授权主体候选失败"
+// @Router       /k8s/clusters/{id}/permission/subject-options [get]
+// @Security     BearerAuth
+func (ctrl *K8sPermissionController) GetSubjectOptions(c *gin.Context) {
+	data, err := ctrl.svc.GetSubjectOptions()
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取授权主体候选失败: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(data))
+}
+
+// GetRoleOptions godoc
+// @Summary      获取集群内角色候选
+// @Description  原生授权表单专用：返回目标集群的 ClusterRole/Role 名称列表；权限归属 k8s.permission.list（不借用 k8s.rbac.view）
+// @Tags         K8s-集群权限
+// @Produce      json
+// @Param        id    path     int    true   "集群 ID"
+// @Param        kind  query    string false  "ClusterRole（默认）| Role"
+// @Success      200  {object}  utils.Response{data=[]string}
+// @Failure      200  {object}  utils.Response  "无效的集群ID / 获取角色候选失败"
+// @Router       /k8s/clusters/{id}/permission/role-options [get]
+// @Security     BearerAuth
+func (ctrl *K8sPermissionController) GetRoleOptions(c *gin.Context) {
+	clusterID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("无效的集群ID"))
+		return
+	}
+
+	names, err := ctrl.svc.GetRoleOptions(uint(clusterID), c.DefaultQuery("kind", "ClusterRole"))
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("获取角色候选失败: "+err.Error()))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.SuccessWithData(names))
 }

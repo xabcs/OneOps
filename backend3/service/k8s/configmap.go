@@ -16,7 +16,7 @@ import (
 
 // ListConfigMaps 获取 ConfigMap 列表（支持分页）
 func (s *K8sResourceService) ListConfigMaps(clusterID uint, namespace string, page, pageSize int) ([]map[string]interface{}, int64, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -54,7 +54,7 @@ func (s *K8sResourceService) ListConfigMaps(clusterID uint, namespace string, pa
 
 // GetConfigMap 获取 ConfigMap 详情
 func (s *K8sResourceService) GetConfigMap(clusterID uint, namespace, name string) (map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (s *K8sResourceService) GetConfigMap(clusterID uint, namespace, name string
 
 // CreateConfigMap 创建 ConfigMap
 func (s *K8sResourceService) CreateConfigMap(clusterID uint, namespace string, manifest map[string]interface{}) error {
-	_, config, err := s.clientPool.GetClient(clusterID)
+	config, err := s.getScopedConfig(clusterID)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (s *K8sResourceService) CreateConfigMap(clusterID uint, namespace string, m
 
 // UpdateConfigMap 更新 ConfigMap
 func (s *K8sResourceService) UpdateConfigMap(clusterID uint, namespace string, manifest map[string]interface{}) error {
-	_, config, err := s.clientPool.GetClient(clusterID)
+	config, err := s.getScopedConfig(clusterID)
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func (s *K8sResourceService) UpdateConfigMap(clusterID uint, namespace string, m
 
 // DeleteConfigMap 删除 ConfigMap
 func (s *K8sResourceService) DeleteConfigMap(clusterID uint, namespace, name string) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func (s *K8sResourceService) DeleteConfigMap(clusterID uint, namespace, name str
 
 // ListSecrets 获取 Secret 列表（支持分页）
 func (s *K8sResourceService) ListSecrets(clusterID uint, namespace string, page, pageSize int) ([]map[string]interface{}, int64, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -206,7 +206,7 @@ func (s *K8sResourceService) ListSecrets(clusterID uint, namespace string, page,
 
 // GetSecret 获取 Secret 详情
 func (s *K8sResourceService) GetSecret(clusterID uint, namespace, name string) (map[string]interface{}, error) {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func (s *K8sResourceService) GetSecret(clusterID uint, namespace, name string) (
 
 // CreateSecret 创建 Secret
 func (s *K8sResourceService) CreateSecret(clusterID uint, namespace string, manifest map[string]interface{}) error {
-	_, config, err := s.clientPool.GetClient(clusterID)
+	config, err := s.getScopedConfig(clusterID)
 	if err != nil {
 		return err
 	}
@@ -262,7 +262,7 @@ func (s *K8sResourceService) CreateSecret(clusterID uint, namespace string, mani
 
 // UpdateSecret 更新 Secret
 func (s *K8sResourceService) UpdateSecret(clusterID uint, namespace string, manifest map[string]interface{}) error {
-	_, config, err := s.clientPool.GetClient(clusterID)
+	config, err := s.getScopedConfig(clusterID)
 	if err != nil {
 		return err
 	}
@@ -298,7 +298,7 @@ func (s *K8sResourceService) UpdateSecret(clusterID uint, namespace string, mani
 
 // DeleteSecret 删除 Secret
 func (s *K8sResourceService) DeleteSecret(clusterID uint, namespace, name string) error {
-	clientset, _, err := s.clientPool.GetClient(clusterID)
+	clientset, err := s.getScopedClientset(clusterID)
 	if err != nil {
 		return err
 	}

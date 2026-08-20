@@ -728,9 +728,10 @@ func (s *PermissionService) BuildMenuTreeAndPermissions(userID uint) ([]*modelsy
 	return menuTree, permissions, roles, nil
 }
 
-// GetMenuPathsByRoleIDs 按角色集合推导可见一级菜单（编辑用户时家目录候选的权威来源）
+// GetMenuPathsByRoleIDs 按角色集合推导可见叶子菜单（编辑用户时家目录候选的权威来源）
 // 推导链路与 BuildMenuTreeAndPermissions 一致：角色 → 权限码 → resource → 菜单.Resource 匹配，
-// admin 角色返回全部启用菜单。仅返回一级菜单（parentId = 0）且配置了 path 的项。
+// admin 角色可见全部启用菜单。仅返回叶子菜单（无子菜单且配置了 path），家目录只能落在其中，
+// 首页（/home）无 resource，仅 admin 或显式授权首页权限的角色可见。
 func (s *PermissionService) GetMenuPathsByRoleIDs(roleIDs []uint) ([]*modelsystem.Menu, error) {
 	result := make([]*modelsystem.Menu, 0)
 	if len(roleIDs) == 0 {
@@ -783,12 +784,26 @@ func (s *PermissionService) GetMenuPathsByRoleIDs(roleIDs []uint) ([]*modelsyste
 		}
 	}
 
+	return visibleLeafMenus(allMenus, visible), nil
+}
+
+// visibleLeafMenus 从可见集合中筛出叶子菜单（无子菜单的项，含一级单页与二级页面）
+// 家目录必须落在用户实际可访问的页面，目录节点（有子菜单）不可作为首页
+func visibleLeafMenus(allMenus []*modelsystem.Menu, visible map[uint]bool) []*modelsystem.Menu {
+	hasChild := make(map[uint]bool, len(allMenus))
 	for _, m := range allMenus {
-		if m.ParentID == 0 && visible[m.ID] && m.Path != "" {
+		if m.ParentID != 0 {
+			hasChild[m.ParentID] = true
+		}
+	}
+
+	result := make([]*modelsystem.Menu, 0)
+	for _, m := range allMenus {
+		if visible[m.ID] && m.Path != "" && !hasChild[m.ID] {
 			result = append(result, m)
 		}
 	}
-	return result, nil
+	return result
 }
 
 // buildMenuTree 递归构建菜单树

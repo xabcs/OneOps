@@ -40,7 +40,16 @@ func (ctrl *MonitoringController) GetOverview(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(overview))
 }
 
-// GetServerExtendedMetrics 获取主机扩展指标
+// GetServerExtendedMetrics godoc
+// @Summary      获取主机扩展指标
+// @Description  返回指定主机的扩展监控指标（注意：该 handler 尚未注册路由）
+// @Tags         监控-主机
+// @Produce      json
+// @Param        id  path  int  true  "主机 ID"
+// @Success      200  {object}  utils.Response{data=object}  "扩展指标数据"
+// @Failure      200  {object}  utils.Response  "无效的主机ID / 获取失败"
+// @Router       /monitoring/servers/{id}/extended-metrics [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetServerExtendedMetrics(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -57,7 +66,16 @@ func (ctrl *MonitoringController) GetServerExtendedMetrics(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(metrics))
 }
 
-// GetServerProcesses 获取主机进程信息
+// GetServerProcesses godoc
+// @Summary      获取主机进程信息
+// @Description  返回指定主机运行中的进程列表（注意：该 handler 尚未注册路由）
+// @Tags         监控-主机
+// @Produce      json
+// @Param        id  path  int  true  "主机 ID"
+// @Success      200  {object}  utils.Response{data=[]object}  "进程列表"
+// @Failure      200  {object}  utils.Response  "无效的主机ID / 获取失败"
+// @Router       /monitoring/servers/{id}/processes [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetServerProcesses(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -74,7 +92,16 @@ func (ctrl *MonitoringController) GetServerProcesses(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(processes))
 }
 
-// GetServerServices 获取主机服务状态
+// GetServerServices godoc
+// @Summary      获取主机服务状态
+// @Description  返回指定主机的系统服务运行状态（注意：该 handler 尚未注册路由）
+// @Tags         监控-主机
+// @Produce      json
+// @Param        id  path  int  true  "主机 ID"
+// @Success      200  {object}  utils.Response{data=[]object}  "服务状态列表"
+// @Failure      200  {object}  utils.Response  "无效的主机ID / 获取失败"
+// @Router       /monitoring/servers/{id}/services [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetServerServices(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -91,7 +118,16 @@ func (ctrl *MonitoringController) GetServerServices(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(services))
 }
 
-// GetServerHardware 获取主机硬件信息
+// GetServerHardware godoc
+// @Summary      获取主机硬件信息
+// @Description  返回指定主机的硬件资产信息（CPU/内存/磁盘等）（注意：该 handler 尚未注册路由）
+// @Tags         监控-主机
+// @Produce      json
+// @Param        id  path  int  true  "主机 ID"
+// @Success      200  {object}  utils.Response{data=object}  "硬件信息"
+// @Failure      200  {object}  utils.Response  "无效的主机ID / 获取失败"
+// @Router       /monitoring/servers/{id}/hardware [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetServerHardware(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -108,7 +144,16 @@ func (ctrl *MonitoringController) GetServerHardware(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(hardware))
 }
 
-// GetServerNetwork 获取主机网络配置
+// GetServerNetwork godoc
+// @Summary      获取主机网络配置
+// @Description  返回指定主机的网络接口与配置信息（注意：该 handler 尚未注册路由）
+// @Tags         监控-主机
+// @Produce      json
+// @Param        id  path  int  true  "主机 ID"
+// @Success      200  {object}  utils.Response{data=object}  "网络配置"
+// @Failure      200  {object}  utils.Response  "无效的主机ID / 获取失败"
+// @Router       /monitoring/servers/{id}/network [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetServerNetwork(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -125,7 +170,16 @@ func (ctrl *MonitoringController) GetServerNetwork(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(network))
 }
 
-// GetServerSecurity 获取主机安全信息
+// GetServerSecurity godoc
+// @Summary      获取主机安全信息
+// @Description  返回指定主机的安全状况汇总（防火墙/登录记录/补丁等）（注意：该 handler 尚未注册路由）
+// @Tags         监控-主机
+// @Produce      json
+// @Param        id  path  int  true  "主机 ID"
+// @Success      200  {object}  utils.Response{data=object}  "安全信息"
+// @Failure      200  {object}  utils.Response  "无效的主机ID / 获取失败"
+// @Router       /monitoring/servers/{id}/security [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetServerSecurity(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {
@@ -142,7 +196,20 @@ func (ctrl *MonitoringController) GetServerSecurity(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.SuccessWithData(security))
 }
 
-// GetServerMetricsHistory 查询主机历史指标
+// GetServerMetricsHistory godoc
+// @Summary      查询主机历史指标
+// @Description  按指标类型与时间范围查询指定主机的历史指标序列（注意：该 handler 尚未注册路由）
+// @Tags         监控-主机
+// @Produce      json
+// @Param        id          path      string  true   "主机 ID"
+// @Param        metricType  query     string  true   "指标类型"
+// @Param        startTime   query     string  true   "开始时间（RFC3339）"
+// @Param        endTime     query     string  true   "结束时间（RFC3339）"
+// @Param        interval    query     string  false  "聚合间隔"  default(5m)
+// @Success      200  {object}  utils.Response{data=object}  "历史指标序列"
+// @Failure      200  {object}  utils.Response  "无效的主机ID / 缺少必要参数 / 时间格式错误 / 查询失败"
+// @Router       /monitoring/servers/{id}/metrics-history [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetServerMetricsHistory(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
 	if err != nil {

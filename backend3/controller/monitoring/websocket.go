@@ -148,7 +148,14 @@ func (ctrl *MonitoringController) BroadcastAlert(alert interface{}) {
 		zap.Int("client_count", hub.GetClientCount()))
 }
 
-// GetConnectedClients 获取已连接的客户端列表
+// GetConnectedClients godoc
+// @Summary      获取已连接的 WebSocket 客户端列表
+// @Description  返回监控推送 Hub 当前在线客户端（注意：该 handler 尚未注册路由）
+// @Tags         监控-实时推送
+// @Produce      json
+// @Success      200  {object}  object  "客户端列表与总数"
+// @Router       /monitoring/ws/clients [get]
+// @Security     BearerAuth
 func (ctrl *MonitoringController) GetConnectedClients(c *gin.Context) {
 	hub := GetMonitoringHub()
 

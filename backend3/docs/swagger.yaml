@@ -1,15 +1,5 @@
 basePath: /api
 definitions:
-  controller_k8s.AssignClusterRoleRequest:
-    properties:
-      roleId:
-        type: integer
-      userId:
-        type: integer
-    required:
-    - roleId
-    - userId
-    type: object
   controller_k8s.CreateClusterRequest:
     properties:
       clusterType:
@@ -294,6 +284,16 @@ definitions:
     - manifest
     - namespace
     type: object
+  controller_system.ChangePasswordRequest:
+    properties:
+      newPassword:
+        type: string
+      oldPassword:
+        type: string
+    required:
+    - newPassword
+    - oldPassword
+    type: object
   controller_system.CreateMenuRequest:
     properties:
       icon:
@@ -418,6 +418,9 @@ definitions:
         type: array
       status:
         type: string
+    type: object
+  gin.H:
+    additionalProperties: {}
     type: object
   oneops_backend3_model_authorization.Application:
     properties:
@@ -1014,6 +1017,11 @@ definitions:
       assetNumber:
         description: 资产编号
         type: string
+      attributeValues:
+        additionalProperties:
+          type: string
+        description: 属性键值对（从 cmdb_server_attributes 填充）
+        type: object
       attributes:
         items:
           $ref: '#/definitions/oneops_backend3_model_cmdb.ServerAttribute'
@@ -1062,9 +1070,6 @@ definitions:
         type: array
       diskUsage:
         type: number
-      env:
-        description: 环境
-        type: string
       expireWarranty:
         description: 保修到期
         type: string
@@ -1240,6 +1245,9 @@ definitions:
       parentId:
         description: 父分组ID
         type: integer
+      serverCount:
+        description: 直接关联的主机数量（不递归）
+        type: integer
       servers:
         items:
           $ref: '#/definitions/oneops_backend3_model_cmdb.Server'
@@ -1334,6 +1342,37 @@ definitions:
       start:
         description: HH:mm格式
         type: string
+    type: object
+  oneops_backend3_model_k8s.AssignNativeRoleBindingRequest:
+    properties:
+      groupId:
+        type: integer
+      namespace:
+        description: 兼容单命名空间；与 Namespaces 合并去重
+        type: string
+      namespaces:
+        description: 多命名空间批量授权：每个 ns 创建一条绑定 + 集群内 RoleBinding
+        items:
+          type: string
+        type: array
+      roleKind:
+        enum:
+        - ClusterRole
+        - Role
+        type: string
+      roleName:
+        type: string
+      subjectType:
+        enum:
+        - user
+        - group
+        type: string
+      userId:
+        type: integer
+    required:
+    - roleKind
+    - roleName
+    - subjectType
     type: object
   oneops_backend3_model_system.AssignRolePermissionsRequest:
     properties:
@@ -1434,6 +1473,42 @@ definitions:
     - name
     - resource
     type: object
+  oneops_backend3_model_system.CreatePermissionRouteRequest:
+    properties:
+      method:
+        enum:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - PATCH
+        type: string
+      path:
+        maxLength: 255
+        type: string
+      permissionCode:
+        maxLength: 100
+        type: string
+    required:
+    - method
+    - path
+    - permissionCode
+    type: object
+  oneops_backend3_model_system.CreateUserGroupRequest:
+    properties:
+      code:
+        maxLength: 50
+        type: string
+      description:
+        maxLength: 200
+        type: string
+      name:
+        maxLength: 50
+        type: string
+    required:
+    - code
+    - name
+    type: object
   oneops_backend3_model_system.Menu:
     properties:
       children:
@@ -1493,14 +1568,28 @@ definitions:
         type: integer
       resource:
         type: string
-      routeMethod:
-        type: string
-      routePath:
-        type: string
       sortOrder:
         type: integer
       status:
         type: integer
+      updatedAt:
+        type: string
+    type: object
+  oneops_backend3_model_system.PermissionRoute:
+    properties:
+      createdAt:
+        type: string
+      id:
+        type: integer
+      isSeed:
+        description: IsSeed 是否由启动种子管理：true 时随代码修正更新；页面新建/修改后置 false，此后种子不再覆盖（页面优先）
+        type: boolean
+      method:
+        type: string
+      path:
+        type: string
+      permissionCode:
+        type: string
       updatedAt:
         type: string
     type: object
@@ -1576,6 +1665,30 @@ definitions:
         type: integer
     required:
     - level
+    - name
+    type: object
+  oneops_backend3_model_system.UpdatePermissionRouteRequest:
+    properties:
+      permissionCode:
+        maxLength: 100
+        type: string
+    required:
+    - permissionCode
+    type: object
+  oneops_backend3_model_system.UpdateUserGroupRequest:
+    properties:
+      description:
+        maxLength: 200
+        type: string
+      name:
+        maxLength: 50
+        type: string
+      status:
+        enum:
+        - 0
+        - 1
+        type: integer
+    required:
     - name
     type: object
   oneops_backend3_pkg_dto.PageResult:
@@ -1958,6 +2071,30 @@ paths:
       summary: 获取系统事件日志
       tags:
       - 审计日志
+  /auth/password:
+    put:
+      consumes:
+      - application/json
+      description: 校验原密码后更新当前登录用户密码（注意：该 handler 尚未注册路由）
+      parameters:
+      - description: 原密码与新密码
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller_system.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 原密码错误 / 更新密码失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 修改当前用户密码
+      tags:
+      - 系统管理-认证
   /cmdb/access-policies:
     get:
       description: 分页获取访问策略列表
@@ -2427,6 +2564,142 @@ paths:
       summary: 获取资产树
       tags:
       - CMDB-分组
+  /cmdb/attributes:
+    get:
+      description: 获取属性定义列表，支持按分类筛选
+      parameters:
+      - description: 属性分类
+        in: query
+        name: category
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取属性列表失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取属性定义列表
+      tags:
+      - CMDB-属性
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的属性定义（需要管理员权限）
+      parameters:
+      - description: 属性定义信息
+        in: body
+        name: attr
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_system.AttributeDefinition'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 请求参数错误 / 无权限 / 创建失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建属性定义
+      tags:
+      - CMDB-属性
+  /cmdb/attributes/{id}:
+    delete:
+      description: 根据属性 ID 删除属性定义（需要管理员权限）
+      parameters:
+      - description: 属性 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 无权限 / 删除失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除属性定义
+      tags:
+      - CMDB-属性
+    get:
+      description: 根据属性 ID 获取属性定义详情
+      parameters:
+      - description: 属性 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 属性不存在
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取属性定义详情
+      tags:
+      - CMDB-属性
+    put:
+      consumes:
+      - application/json
+      description: 根据属性 ID 更新属性定义信息（部分字段更新，需要管理员权限）
+      parameters:
+      - description: 属性 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 需要更新的字段
+        in: body
+        name: attr
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_system.AttributeDefinition'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的 ID / 请求参数错误 / 无权限 / 更新失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新属性定义
+      tags:
+      - CMDB-属性
+  /cmdb/attributes/validate:
+    post:
+      consumes:
+      - application/json
+      description: 验证给定属性 ID 的值是否符合属性定义的规则
+      parameters:
+      - description: 验证请求
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 验证失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 验证主机属性值
+      tags:
+      - CMDB-属性
   /cmdb/business-units:
     get:
       description: 获取业务系统列表（树形结构）
@@ -2903,6 +3176,57 @@ paths:
       summary: 更新机房
       tags:
       - CMDB-机房
+  /cmdb/server-attributes/{serverId}:
+    get:
+      description: 根据主机 ID 获取主机的属性列表
+      parameters:
+      - description: 主机 ID
+        in: path
+        name: serverId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的主机 ID / 获取主机属性失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取主机属性列表
+      tags:
+      - CMDB-属性
+    post:
+      consumes:
+      - application/json
+      description: 保存指定主机的属性列表（覆盖更新）
+      parameters:
+      - description: 主机 ID
+        in: path
+        name: serverId
+        required: true
+        type: integer
+      - description: 属性列表
+        in: body
+        name: attributes
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/oneops_backend3_model_cmdb.ServerAttribute'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的主机 ID / 请求参数错误 / 保存失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 保存主机属性
+      tags:
+      - CMDB-属性
   /cmdb/server-tags/{serverId}/{tagId}:
     delete:
       description: 移除指定服务器的指定标签
@@ -2979,10 +3303,10 @@ paths:
         in: query
         name: businessUnitId
         type: integer
-      - description: 标签（逗号分隔）
+      - description: 标签 ID
         in: query
-        name: tags
-        type: string
+        name: tagId
+        type: integer
       produces:
       - application/json
       responses:
@@ -3018,6 +3342,36 @@ paths:
       summary: 创建服务器
       tags:
       - CMDB-服务器
+  /cmdb/servers-by-attributes:
+    get:
+      description: 根据属性键值对筛选主机列表
+      parameters:
+      - description: 属性筛选条件（JSON 格式，如 {\
+        in: query
+        name: filters
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 主机列表
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 按属性筛选主机
+      tags:
+      - CMDB-属性
   /cmdb/servers/{id}:
     delete:
       description: 根据服务器 ID 删除服务器记录
@@ -3270,6 +3624,37 @@ paths:
       summary: 检查连接权限
       tags:
       - CMDB-堡垒机
+  /cmdb/servers/{id}/sessions:
+    get:
+      description: 分页查询某台服务器关联的堡垒机会话（注意：该 handler 尚未注册路由）
+      parameters:
+      - description: 服务器 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的服务器ID / 查询失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取指定服务器的会话列表
+      tags:
+      - CMDB-堡垒机
   /cmdb/servers/{id}/sync-metrics:
     post:
       description: 手动触发单台主机的指标采集（仅通过 Agent HTTP 拉取）
@@ -3489,7 +3874,8 @@ paths:
       - CMDB-堡垒机
   /cmdb/sessions/{id}/resize:
     post:
-      description: 调整终端 PTY 大小（实际由 WebSocket handler 直接处理，此 HTTP 接口仅作占位）
+      description: 调整指定会话的 SSH PTY 窗口大小（通过 SessionManager 获取活跃 SSH 会话发送 window-change
+        请求）
       parameters:
       - description: 会话 ID
         in: path
@@ -3527,6 +3913,35 @@ paths:
       security:
       - BearerAuth: []
       summary: 强制断开会话
+      tags:
+      - CMDB-堡垒机
+  /cmdb/sessions/{id}/ws:
+    get:
+      description: 通过 WebSocket 连接到堡垒机会话，实现交互式 SSH 终端。认证通过 query 参数 token 完成，不经过 Auth
+        中间件；会话需先经创建接口建立
+      parameters:
+      - description: 会话 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: JWT token
+        in: query
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "101":
+          description: 升级为 WebSocket 连接
+          schema:
+            type: string
+        "200":
+          description: 无效的会话ID / 未认证 / SessionManager 未初始化
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      summary: SSH 终端 WebSocket
       tags:
       - CMDB-堡垒机
   /cmdb/sessions/active:
@@ -4988,6 +5403,87 @@ paths:
       summary: 获取集群命名空间列表
       tags:
       - K8s-集群管理
+  /k8s/clusters/{id}/native-bindings:
+    get:
+      description: 列出 OneOps 主体（用户/用户组）与 K8s 原生角色的绑定记录（B 模式）
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取集群的原生 RBAC 绑定列表
+      tags:
+      - K8s-集群权限
+    post:
+      consumes:
+      - application/json
+      description: 为 OneOps 用户/用户组绑定 K8s 原生角色（ClusterRole/Role）：落库并在集群内创建真实 Binding；此后该主体在此集群的操作经
+        impersonation 由原生 RBAC 判定
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 原生绑定请求
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_k8s.AssignNativeRoleBindingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 绑定成功
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建原生 RBAC 绑定
+      tags:
+      - K8s-集群权限
+  /k8s/clusters/{id}/native-bindings/{bindingId}:
+    delete:
+      description: 删除集群内对应 Binding 与平台记录，主体失去经原生 RBAC 获得的权限
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 原生绑定 ID
+        in: path
+        name: bindingId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 撤销成功
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 撤销原生 RBAC 绑定
+      tags:
+      - K8s-集群权限
   /k8s/clusters/{id}/nodes:
     get:
       description: 获取指定 K8s 集群的节点列表
@@ -5009,59 +5505,46 @@ paths:
       summary: 获取集群节点列表
       tags:
       - K8s-集群管理
-  /k8s/clusters/{id}/permissions:
-    post:
-      consumes:
-      - application/json
-      description: 为指定用户在指定集群中分配角色
+  /k8s/clusters/{id}/permission/role-options:
+    get:
+      description: 原生授权表单专用：返回目标集群的 ClusterRole/Role 名称列表；权限归属 k8s.permission.list（不借用
+        k8s.rbac.view）
       parameters:
       - description: 集群 ID
         in: path
         name: id
         required: true
         type: integer
-      - description: 分配集群角色请求
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/controller_k8s.AssignClusterRoleRequest'
+      - description: ClusterRole（默认）| Role
+        in: query
+        name: kind
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: 分配角色失败
+          description: 无效的集群ID / 获取角色候选失败
           schema:
             $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
       security:
       - BearerAuth: []
-      summary: 分配集群角色
+      summary: 获取集群内角色候选
       tags:
       - K8s-集群权限
-  /k8s/clusters/{id}/permissions/{userId}:
-    delete:
-      description: 撤销指定用户在指定集群中的角色授权
-      parameters:
-      - description: 集群 ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: 用户 ID
-        in: path
-        name: userId
-        required: true
-        type: integer
+  /k8s/clusters/{id}/permission/subject-options:
+    get:
+      description: 原生授权表单专用轻量接口，仅返回 id/用户名/昵称；权限归属 k8s.permission.list，与绑定查看对齐（不借用
+        system.user.list）
       produces:
       - application/json
       responses:
         "200":
-          description: 撤销角色失败
+          description: 获取授权主体候选失败
           schema:
             $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
       security:
       - BearerAuth: []
-      summary: 撤销集群角色
+      summary: 获取授权主体候选（用户+用户组）
       tags:
       - K8s-集群权限
   /k8s/clusters/{id}/pods:
@@ -5230,6 +5713,325 @@ paths:
       summary: 获取 Pod 日志
       tags:
       - K8s-Pod
+  /k8s/clusters/{id}/rbac/clusterrolebindings:
+    get:
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 按名称/主体搜索
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取 ClusterRoleBinding 列表
+      tags:
+      - K8s-RBAC管理
+  /k8s/clusters/{id}/rbac/clusterrolebindings/{name}:
+    get:
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取 ClusterRoleBinding 详情
+      tags:
+      - K8s-RBAC管理
+  /k8s/clusters/{id}/rbac/clusterroles:
+    get:
+      description: 列出集群内原生 RBAC ClusterRole（精简视图，含 Helm 管理标记）
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 按名称搜索
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取 ClusterRole 列表
+      tags:
+      - K8s-RBAC管理
+    put:
+      consumes:
+      - application/json
+      description: 以 manifest 更新集群内原生 ClusterRole（rules 整体替换）
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ClusterRole manifest
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新 ClusterRole
+      tags:
+      - K8s-RBAC管理
+  /k8s/clusters/{id}/rbac/clusterroles/{name}:
+    get:
+      description: 获取集群内原生 ClusterRole 的完整 rules
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ClusterRole 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取 ClusterRole 详情
+      tags:
+      - K8s-RBAC管理
+  /k8s/clusters/{id}/rbac/rolebindings:
+    get:
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间（空=全部）
+        in: query
+        name: namespace
+        type: string
+      - description: 按名称/主体搜索
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取 RoleBinding 列表
+      tags:
+      - K8s-RBAC管理
+  /k8s/clusters/{id}/rbac/rolebindings/{namespace}/{name}:
+    get:
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取 RoleBinding 详情
+      tags:
+      - K8s-RBAC管理
+  /k8s/clusters/{id}/rbac/roles:
+    get:
+      description: 列出命名空间（为空则全集群）内原生 RBAC Role
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间（空=全部）
+        in: query
+        name: namespace
+        type: string
+      - description: 按名称搜索
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取 Role 列表
+      tags:
+      - K8s-RBAC管理
+  /k8s/clusters/{id}/rbac/roles/{namespace}:
+    put:
+      consumes:
+      - application/json
+      description: 以 manifest 更新命名空间内原生 Role
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: Role manifest
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新 Role
+      tags:
+      - K8s-RBAC管理
+  /k8s/clusters/{id}/rbac/roles/{namespace}/{name}:
+    get:
+      parameters:
+      - description: 集群 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 命名空间
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: Role 名称
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取 Role 详情
+      tags:
+      - K8s-RBAC管理
   /k8s/clusters/{id}/secrets:
     delete:
       consumes:
@@ -5648,53 +6450,6 @@ paths:
       summary: 测试集群连接
       tags:
       - K8s-集群管理
-  /k8s/clusters/{id}/users:
-    get:
-      description: 获取指定 K8s 集群下的用户列表及权限信息
-      parameters:
-      - description: 集群 ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 获取集群用户列表失败
-          schema:
-            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
-      security:
-      - BearerAuth: []
-      summary: 获取集群用户列表
-      tags:
-      - K8s-集群管理
-  /k8s/clusters/{id}/users/{userId}/role:
-    get:
-      description: 查询指定用户在指定集群中的角色绑定信息
-      parameters:
-      - description: 集群 ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: 用户 ID
-        in: path
-        name: userId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 无效的集群ID / 无效的用户ID / 获取失败
-          schema:
-            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
-      security:
-      - BearerAuth: []
-      summary: 获取用户在集群中的角色
-      tags:
-      - K8s-集群权限
   /k8s/diagnostic/commands:
     get:
       description: 返回所有可用的 Java 诊断命令及其参数定义
@@ -5827,30 +6582,6 @@ paths:
       summary: 获取 Java 应用 Pod 列表
       tags:
       - K8s-诊断
-  /k8s/permissions/batch-assign:
-    post:
-      consumes:
-      - application/json
-      description: 为多个用户批量分配同一集群的同一角色
-      parameters:
-      - description: 批量分配请求
-        in: body
-        name: body
-        required: true
-        schema:
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 参数错误 / 分配失败
-          schema:
-            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
-      security:
-      - BearerAuth: []
-      summary: 批量分配集群角色
-      tags:
-      - K8s-集群权限
   /k8s/terminal/active:
     get:
       description: 返回当前用户的活跃 K8s 终端会话列表
@@ -6443,6 +7174,173 @@ paths:
       summary: 导出巡检报告
       tags:
       - 监控-报表
+  /monitoring/servers/{id}/extended-metrics:
+    get:
+      description: 返回指定主机的扩展监控指标（注意：该 handler 尚未注册路由）
+      parameters:
+      - description: 主机 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的主机ID / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取主机扩展指标
+      tags:
+      - 监控-主机
+  /monitoring/servers/{id}/hardware:
+    get:
+      description: 返回指定主机的硬件资产信息（CPU/内存/磁盘等）（注意：该 handler 尚未注册路由）
+      parameters:
+      - description: 主机 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的主机ID / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取主机硬件信息
+      tags:
+      - 监控-主机
+  /monitoring/servers/{id}/metrics-history:
+    get:
+      description: 按指标类型与时间范围查询指定主机的历史指标序列（注意：该 handler 尚未注册路由）
+      parameters:
+      - description: 主机 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 指标类型
+        in: query
+        name: metricType
+        required: true
+        type: string
+      - description: 开始时间（RFC3339）
+        in: query
+        name: startTime
+        required: true
+        type: string
+      - description: 结束时间（RFC3339）
+        in: query
+        name: endTime
+        required: true
+        type: string
+      - default: 5m
+        description: 聚合间隔
+        in: query
+        name: interval
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的主机ID / 缺少必要参数 / 时间格式错误 / 查询失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 查询主机历史指标
+      tags:
+      - 监控-主机
+  /monitoring/servers/{id}/network:
+    get:
+      description: 返回指定主机的网络接口与配置信息（注意：该 handler 尚未注册路由）
+      parameters:
+      - description: 主机 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的主机ID / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取主机网络配置
+      tags:
+      - 监控-主机
+  /monitoring/servers/{id}/processes:
+    get:
+      description: 返回指定主机运行中的进程列表（注意：该 handler 尚未注册路由）
+      parameters:
+      - description: 主机 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的主机ID / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取主机进程信息
+      tags:
+      - 监控-主机
+  /monitoring/servers/{id}/security:
+    get:
+      description: 返回指定主机的安全状况汇总（防火墙/登录记录/补丁等）（注意：该 handler 尚未注册路由）
+      parameters:
+      - description: 主机 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的主机ID / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取主机安全信息
+      tags:
+      - 监控-主机
+  /monitoring/servers/{id}/services:
+    get:
+      description: 返回指定主机的系统服务运行状态（注意：该 handler 尚未注册路由）
+      parameters:
+      - description: 主机 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 无效的主机ID / 获取失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取主机服务状态
+      tags:
+      - 监控-主机
   /monitoring/ws:
     get:
       description: 升级 HTTP 连接为 WebSocket，用于实时推送监控概览与告警事件。鉴权通过 query 参数 token（或 Authorization
@@ -6465,6 +7363,21 @@ paths:
       summary: 监控 WebSocket 连接
       tags:
       - 监控-WebSocket
+  /monitoring/ws/clients:
+    get:
+      description: 返回监控推送 Hub 当前在线客户端（注意：该 handler 尚未注册路由）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 客户端列表与总数
+          schema:
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取已连接的 WebSocket 客户端列表
+      tags:
+      - 监控-实时推送
   /route/debugCache:
     get:
       description: 返回当前用户路由缓存的详细内容（仅用于调试）
@@ -6530,7 +7443,7 @@ paths:
       - 系统管理-路由
   /route/isRouteExist:
     get:
-      description: 检查当前用户可访问的路由中是否存在指定名称的路由
+      description: 检查系统中是否存在指定名称的路由（全局存在性，与用户权限无关；前端路由守卫用于区分 404 与 403）
       parameters:
       - description: 路由名称
         in: query
@@ -6906,118 +7819,6 @@ paths:
       summary: 获取应用类型配置模板
       tags:
       - 应用授权-应用类型
-  /system/attributes:
-    get:
-      description: 获取属性定义列表，支持按分类筛选
-      parameters:
-      - description: 属性分类
-        in: query
-        name: category
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 获取属性列表失败
-          schema:
-            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
-      security:
-      - BearerAuth: []
-      summary: 获取属性定义列表
-      tags:
-      - CMDB-属性
-    post:
-      consumes:
-      - application/json
-      description: 创建一个新的属性定义（需要管理员权限）
-      parameters:
-      - description: 属性定义信息
-        in: body
-        name: attr
-        required: true
-        schema:
-          $ref: '#/definitions/oneops_backend3_model_system.AttributeDefinition'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 请求参数错误 / 无权限 / 创建失败
-          schema:
-            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
-      security:
-      - BearerAuth: []
-      summary: 创建属性定义
-      tags:
-      - CMDB-属性
-  /system/attributes/{id}:
-    delete:
-      description: 根据属性 ID 删除属性定义（需要管理员权限）
-      parameters:
-      - description: 属性 ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 无效的 ID / 无权限 / 删除失败
-          schema:
-            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
-      security:
-      - BearerAuth: []
-      summary: 删除属性定义
-      tags:
-      - CMDB-属性
-    get:
-      description: 根据属性 ID 获取属性定义详情
-      parameters:
-      - description: 属性 ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 无效的 ID / 属性不存在
-          schema:
-            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
-      security:
-      - BearerAuth: []
-      summary: 获取属性定义详情
-      tags:
-      - CMDB-属性
-    put:
-      consumes:
-      - application/json
-      description: 根据属性 ID 更新属性定义信息（部分字段更新，需要管理员权限）
-      parameters:
-      - description: 属性 ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: 需要更新的字段
-        in: body
-        name: attr
-        required: true
-        schema:
-          $ref: '#/definitions/oneops_backend3_model_system.AttributeDefinition'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: 无效的 ID / 请求参数错误 / 无权限 / 更新失败
-          schema:
-            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
-      security:
-      - BearerAuth: []
-      summary: 更新属性定义
-      tags:
-      - CMDB-属性
   /system/auth-groups:
     get:
       description: 返回全部授权中心用户组（不分页，用于下拉选择等）
@@ -7619,6 +8420,113 @@ paths:
       summary: 检查权限
       tags:
       - 系统管理-权限
+  /system/permissions/options:
+    get:
+      description: 不分页返回全部权限的精简选项（id/名称/编码/模块/资源/动作/层级），用于角色授权选择器与权限树
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取权限选项失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取权限选项列表
+      tags:
+      - 系统管理-权限
+  /system/permissions/routes:
+    get:
+      description: 查询权限码与 API 路由的映射列表，可按权限码过滤
+      parameters:
+      - description: 权限编码（为空返回全部）
+        in: query
+        name: permissionCode
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取权限路由映射失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取权限路由映射
+      tags:
+      - 系统管理-权限
+    post:
+      consumes:
+      - application/json
+      description: 为一个 API 路由配置权限码（同一端点只能归属一个权限码），即时生效
+      parameters:
+      - description: 映射信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_system.CreatePermissionRouteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 权限码不存在 / 路由已存在映射
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 新增权限路由映射
+      tags:
+      - 系统管理-权限
+  /system/permissions/routes/{id}:
+    delete:
+      description: 删除后对应端点将被拒绝访问（fail-closed）
+      parameters:
+      - description: 映射ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 映射不存在
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除权限路由映射
+      tags:
+      - 系统管理-权限
+    put:
+      consumes:
+      - application/json
+      description: 修改映射归属的权限码（端点 method/path 不可改，删除后重建）
+      parameters:
+      - description: 映射ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 目标权限码
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_system.UpdatePermissionRouteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 参数错误 / 权限码不存在 / 映射不存在
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 修改权限路由映射
+      tags:
+      - 系统管理-权限
   /system/permissions/tree:
     get:
       description: 返回全部权限的树形结构
@@ -7797,57 +8705,254 @@ paths:
       summary: 分配角色权限
       tags:
       - 系统管理-权限
-  /system/server-attributes/{serverId}:
+  /system/roles/menu-paths:
     get:
-      description: 根据主机 ID 获取主机的属性列表
+      description: 编辑用户时用于家目录候选：按 角色→权限→菜单 推导链路返回一级菜单（含 admin 角色返回全部）
       parameters:
-      - description: 主机 ID
-        in: path
-        name: serverId
-        required: true
-        type: integer
+      - description: 角色ID列表（逗号分隔）
+        in: query
+        name: roleIds
+        type: string
       produces:
       - application/json
       responses:
         "200":
-          description: 无效的主机 ID / 获取主机属性失败
+          description: 获取角色菜单失败
           schema:
             $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
       security:
       - BearerAuth: []
-      summary: 获取主机属性列表
+      summary: 按角色集合查询可见一级菜单
       tags:
-      - CMDB-属性
+      - 系统管理-角色
+  /system/roles/options:
+    get:
+      description: 获取所有启用角色的精简选项（不分页，用于下拉选择器）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取角色选项失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取角色选项列表
+      tags:
+      - 系统管理-角色
+  /system/user-groups:
+    get:
+      description: 分页获取平台用户组，支持按名称/编码过滤，含成员数
+      parameters:
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页数量
+        in: query
+        name: pageSize
+        type: integer
+      - description: 名称/编码模糊过滤
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  properties:
+                    list:
+                      items:
+                        type: object
+                      type: array
+                    total:
+                      type: integer
+                  type: object
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取用户组列表
+      tags:
+      - 系统管理-用户组
     post:
       consumes:
       - application/json
-      description: 保存指定主机的属性列表（覆盖更新）
       parameters:
-      - description: 主机 ID
-        in: path
-        name: serverId
-        required: true
-        type: integer
-      - description: 属性列表
+      - description: 用户组信息
         in: body
-        name: attributes
+        name: body
         required: true
         schema:
-          items:
-            $ref: '#/definitions/oneops_backend3_model_cmdb.ServerAttribute'
-          type: array
+          $ref: '#/definitions/oneops_backend3_model_system.CreateUserGroupRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: 无效的主机 ID / 请求参数错误 / 保存失败
+          description: 创建成功
           schema:
             $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
       security:
       - BearerAuth: []
-      summary: 保存主机属性
+      summary: 创建用户组
       tags:
-      - CMDB-属性
+      - 系统管理-用户组
+  /system/user-groups/{id}:
+    delete:
+      description: 级联删除组成员与集群组绑定
+      parameters:
+      - description: 用户组 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 删除用户组
+      tags:
+      - 系统管理-用户组
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 用户组 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 用户组信息
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/oneops_backend3_model_system.UpdateUserGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 更新用户组
+      tags:
+      - 系统管理-用户组
+  /system/user-groups/{id}/members:
+    get:
+      parameters:
+      - description: 用户组 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  items:
+                    type: object
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取组成员
+      tags:
+      - 系统管理-用户组
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 用户组 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 用户ID集合
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 添加成功
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 批量添加组成员
+      tags:
+      - 系统管理-用户组
+  /system/user-groups/{id}/members/{userId}:
+    delete:
+      parameters:
+      - description: 用户组 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 用户 ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 移除成功
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 移除组成员
+      tags:
+      - 系统管理-用户组
+  /system/user-groups/options:
+    get:
+      description: 获取全部启用用户组的 id/code/name（供选择器）
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+            - properties:
+                data:
+                  items:
+                    type: object
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 获取用户组选项
+      tags:
+      - 系统管理-用户组
   /system/user-identity-mappings:
     get:
       description: 分页获取用户身份映射，支持按用户名、应用 ID、状态筛选
@@ -8191,6 +9296,21 @@ paths:
       summary: 分配用户到用户组
       tags:
       - 应用授权-用户组成员
+  /system/users/options:
+    get:
+      description: 不分页返回全部启用用户的精简选项（id/用户名/昵称），用于各业务模块的选人下拉框
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 获取用户选项失败
+          schema:
+            $ref: '#/definitions/oneops_backend3_pkg_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: 获取用户选项列表
+      tags:
+      - 系统管理-用户
   /user/info:
     get:
       description: 根据登录态获取当前登录用户的详细信息（含角色、权限、菜单）
