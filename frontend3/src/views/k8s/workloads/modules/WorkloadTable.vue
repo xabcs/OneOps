@@ -160,22 +160,22 @@
       background-color: transparent !important;
     }
 
-    .operation-buttons {
+    /* 操作列内容来自各 Tab 组件的插槽（scoped 属性不落在插槽内容上，必须 :deep 穿透），
+       flex + align-items:center 保证详情/伸缩/更多处于同一水平线 */
+    :deep(.operation-buttons) {
       display: flex;
       align-items: center;
       gap: 8px;
 
       .el-button {
         margin: 0;
-        padding: 0;
-        font-size: var(--el-font-size-base) !important;
-        font-weight: 400 !important;
       }
 
       .dropdown-link {
         display: inline-flex;
         align-items: center;
         gap: 2px;
+        line-height: 1;
         cursor: pointer;
         color: var(--el-color-primary);
         font-size: var(--el-font-size-base) !important;

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"oneops/backend3/pkg/database"
 	"oneops/backend3/pkg/utils"
 
 	"github.com/gin-gonic/gin"
@@ -32,6 +33,16 @@ func Auth() gin.HandlerFunc {
 		claims, err := utils.ParseToken(parts[1])
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, utils.ErrorUnauthorized("认证令牌无效或已过期"))
+			c.Abort()
+			return
+		}
+
+		// 用户状态校验（H4）：禁用用户即使 token 未过期也立即失效，
+		// 避免引入 token 黑名单；主键查询开销可接受。查询失败按禁用处理（fail-closed）
+		var status string
+		if err := database.GetDB().Table("sys_users").
+			Select("status").Where("id = ?", claims.UserID).Scan(&status).Error; err != nil || status != "active" {
+			c.JSON(http.StatusUnauthorized, utils.ErrorUnauthorized("用户已被禁用或不存在"))
 			c.Abort()
 			return
 		}

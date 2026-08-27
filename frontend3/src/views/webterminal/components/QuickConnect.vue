@@ -58,7 +58,7 @@
                 ip: server.ip,
                 agentStatus: server.agentStatus,
                 credentials: server.credentials,
-                canConnect: permission.data?.allowed || false
+                canConnect: permission.data?.hasPermission || false
               };
             } catch {
               return {

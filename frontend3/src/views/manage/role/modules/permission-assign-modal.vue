@@ -509,7 +509,7 @@
         <template #footer>
             <div class="dialog-footer">
                 <ElButton @click="closeModal">取消</ElButton>
-                <ElButton type="primary" :loading="loading" @click="handleSubmit">确定</ElButton>
+                <PermissionButton code="system.role.assign_permissions" type="primary" :loading="loading" @click="handleSubmit">确定</PermissionButton>
             </div>
         </template>
     </ElDialog>

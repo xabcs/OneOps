@@ -153,6 +153,10 @@ declare module "@elegant-router/types" {
     "plugin_tables_vtable": "/plugin/tables/vtable";
     "plugin_typeit": "/plugin/typeit";
     "plugin_video": "/plugin/video";
+    "ticket": "/ticket";
+    "ticket_center": "/ticket/center";
+    "ticket_types": "/ticket/types";
+    "ticket_workflows": "/ticket/workflows";
     "user-center": "/user-center";
     "webterminal": "/webterminal";
   };
@@ -220,6 +224,7 @@ declare module "@elegant-router/types" {
     | "monitoring"
     | "multi-menu"
     | "plugin"
+    | "ticket"
     | "user-center"
     | "webterminal"
   >;
@@ -337,6 +342,9 @@ declare module "@elegant-router/types" {
     | "plugin_tables_vtable"
     | "plugin_typeit"
     | "plugin_video"
+    | "ticket_center"
+    | "ticket_types"
+    | "ticket_workflows"
     | "user-center"
     | "webterminal"
   >;

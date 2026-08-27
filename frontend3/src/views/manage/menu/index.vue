@@ -208,12 +208,12 @@
             <span class="text-16px font-bold">菜单列表</span>
             <span class="text-13px opacity-70">管理菜单层级结构、路由配置与权限标识</span>
           </div>
-          <ElButton type="primary" size="small" @click="handleAdd">
+          <PermissionButton code="system.menu.create" type="primary" size="small" @click="handleAdd">
             <ElIcon>
               <Plus />
             </ElIcon>
             新增菜单
-          </ElButton>
+          </PermissionButton>
         </div>
       </template>
 

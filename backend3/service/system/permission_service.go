@@ -25,6 +25,9 @@ var (
 type PermissionService struct {
 	db       *gorm.DB
 	enforcer *casbin.Enforcer
+	// syncMu 串行化 Casbin 策略同步：界面重复提交等并发同步会交错删/插，
+	// 轻则撞唯一键报"分配权限失败"，重则留下策略被清空的不一致状态
+	syncMu sync.Mutex
 }
 
 // GetPermissionService 获取权限服务单例
@@ -59,8 +62,12 @@ func GetPermissionService() (*PermissionService, error) {
 func NewPermissionService() (*PermissionService, error) {
 	db := database.GetDB()
 
-	// 初始化 Casbin GORM 适配器
-	adapter, err := gormadapter.NewAdapterByDBUsePrefix(db, "sys_")
+	// 初始化 Casbin GORM 适配器。
+	// 注意：必须用 NewAdapterByDBUseTableName（v3.41.0）——旧版 v3.0.2 的
+	// NewAdapterByDBUsePrefix 返回的 db 会话被所有请求复用，Delete 的 WHERE
+	// 条件逐次累积（WHERE v0='admin' AND v0='ops' AND ... 恒假），
+	// 导致策略删除静默失效、只增不减
+	adapter, err := gormadapter.NewAdapterByDBUseTableName(db, "sys_", "casbin_rule")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create casbin adapter: %w", err)
 	}
@@ -205,6 +212,22 @@ func (s *PermissionService) IsAdmin(roles []*modelsystem.Role) bool {
 	return false
 }
 
+// IsSystemAdmin 统一的超管判定（批次三：消除三套实现分叉）。
+// 判定标准：用户绑定了 code=admin 且处于启用状态的角色。
+// 系统 RBAC、K8s（cluster_repository）、堡垒机（bastion）均应调用此函数，
+// 不得再各自硬编码 role_id=1 或单独按角色码判断。
+func IsSystemAdmin(db *gorm.DB, userID uint) bool {
+	if userID == 0 {
+		return false
+	}
+	var count int64
+	db.Table("sys_user_roles").
+		Joins("JOIN sys_roles r ON r.id = sys_user_roles.role_id").
+		Where("sys_user_roles.user_id = ? AND r.code = ? AND r.status = 1", userID, "admin").
+		Count(&count)
+	return count > 0
+}
+
 // getAllPermissionCodes 获取所有权限编码（用于超级管理员）
 func (s *PermissionService) getAllPermissionCodes() []string {
 	var permissions []modelsystem.Permission
@@ -288,7 +311,13 @@ func (s *PermissionService) RevokePermissionFromRole(roleID uint, permissionID u
 
 // BatchAssignPermissions 批量分配权限
 func (s *PermissionService) BatchAssignPermissions(roleID uint, permissionIDs []uint) error {
-	return s.db.Transaction(func(tx *gorm.DB) error {
+	// 绑定表事务 + Casbin 同步全程持锁串行化：
+	// 1) 并发重复提交（界面连点）的绑定事务会互相死锁（Error 1213）；
+	// 2) 同步失败路径会留下"casbin 已删未插回"的不一致中间态
+	s.syncMu.Lock()
+	defer s.syncMu.Unlock()
+
+	if err := s.db.Transaction(func(tx *gorm.DB) error {
 		// 删除现有权限
 		if err := tx.Where("role_id = ?", roleID).Delete(&modelsystem.RolePermission{}).Error; err != nil {
 			return err
@@ -304,19 +333,19 @@ func (s *PermissionService) BatchAssignPermissions(roleID uint, permissionIDs []
 				return err
 			}
 		}
-
-		// 同步到 Casbin
-		var role modelsystem.Role
-		if err := tx.First(&role, roleID).Error; err != nil {
-			return err
-		}
-
-		if err := s.syncRoleToCasbin(&role); err != nil {
-			return err
-		}
-
 		return nil
-	})
+	}); err != nil {
+		return err
+	}
+
+	// 同步到 Casbin：必须在事务提交后执行（syncRoleToCasbin 经 s.db 读绑定，
+	// 事务未提交时读不到，会先删旧策略却加不进新策略）。
+	// 此处已持锁，调用无锁版本避免自锁
+	var role modelsystem.Role
+	if err := s.db.First(&role, roleID).Error; err != nil {
+		return err
+	}
+	return s.syncRoleToCasbinLocked(&role)
 }
 
 // ======================================
@@ -551,7 +580,10 @@ func (s *PermissionService) GetRoleAPIPermissions(roleCode string) ([]struct {
 	Path   string
 	Method string
 }, error) {
-	policies := s.enforcer.GetFilteredPolicy(0, roleCode)
+	policies, err := s.enforcer.GetFilteredPolicy(0, roleCode)
+	if err != nil {
+		return nil, err
+	}
 
 	result := make([]struct {
 		Path   string
@@ -580,7 +612,7 @@ func (s *PermissionService) ClearAllPolicies() error {
 }
 
 // GetAllPolicies 获取所有Casbin策略
-func (s *PermissionService) GetAllPolicies() [][]string {
+func (s *PermissionService) GetAllPolicies() ([][]string, error) {
 	return s.enforcer.GetPolicy()
 }
 
@@ -588,10 +620,19 @@ func (s *PermissionService) GetAllPolicies() [][]string {
 // Casbin 同步相关方法
 // ======================================
 
-// syncRoleToCasbin 同步角色权限到 Casbin
+// syncRoleToCasbin 同步角色权限到 Casbin（拿锁入口）
 func (s *PermissionService) syncRoleToCasbin(role *modelsystem.Role) error {
-	// 删除角色的所有旧策略
-	s.enforcer.RemoveFilteredPolicy(0, role.Code)
+	s.syncMu.Lock()
+	defer s.syncMu.Unlock()
+	return s.syncRoleToCasbinLocked(role)
+}
+
+// syncRoleToCasbinLocked 同步角色权限到 Casbin 的实现（调用方须已持有 syncMu）
+func (s *PermissionService) syncRoleToCasbinLocked(role *modelsystem.Role) error {
+	// 删除角色的所有旧策略（gorm-adapter 直接写库，已持久化）
+	if _, err := s.enforcer.RemoveFilteredPolicy(0, role.Code); err != nil {
+		return err
+	}
 
 	// 获取角色的权限
 	permissions, err := s.GetRolePermissions(role.ID)
@@ -599,15 +640,21 @@ func (s *PermissionService) syncRoleToCasbin(role *modelsystem.Role) error {
 		return err
 	}
 
-	// 添加新策略
-	for _, perm := range permissions {
-		if _, err := s.enforcer.AddPolicy(role.Code, perm.Code, "*"); err != nil {
+	// 批量添加（单事务）。逐条 AddPolicy 每条独立事务，远程库慢，
+	// 且长窗口内与其他请求的删/插交错会撞唯一键
+	if len(permissions) > 0 {
+		rules := make([][]string, 0, len(permissions))
+		for _, perm := range permissions {
+			rules = append(rules, []string{role.Code, perm.Code, "*"})
+		}
+		if _, err := s.enforcer.AddPolicies(rules); err != nil {
 			return err
 		}
 	}
 
-	// 保存策略
-	return s.enforcer.SavePolicy()
+	// 注：不调 SavePolicy——它是全表删除重写（慢），且 adapter 的增删已直接持久化；
+	// 全表重写期间还会与其他同步交错，制造"分配权限失败"的并发窗口
+	return nil
 }
 
 // SyncAllRolesToCasbin 同步所有角色到 Casbin
@@ -624,6 +671,29 @@ func (s *PermissionService) SyncAllRolesToCasbin() error {
 	}
 
 	return nil
+}
+
+// SyncRoleToCasbin 同步指定角色权限到 Casbin（角色更新后调用）。
+// 角色被禁用时清除其全部策略，避免禁用角色继续持有 API 放行能力
+func (s *PermissionService) SyncRoleToCasbin(roleID uint) error {
+	var role modelsystem.Role
+	if err := s.db.First(&role, roleID).Error; err != nil {
+		return err
+	}
+	if role.Status != 1 {
+		return s.RemoveRolePolicies(role.Code)
+	}
+	return s.syncRoleToCasbin(&role)
+}
+
+// RemoveRolePolicies 删除角色的全部 Casbin 策略（角色改码清旧码/删除角色时调用），
+// 防止孤儿策略继续放行
+func (s *PermissionService) RemoveRolePolicies(roleCode string) error {
+	s.syncMu.Lock()
+	defer s.syncMu.Unlock()
+	// RemoveFilteredPolicy 已直接持久化，无需 SavePolicy 全表重写
+	_, err := s.enforcer.RemoveFilteredPolicy(0, roleCode)
+	return err
 }
 
 // InitializeCasbinPolicies 初始化 Casbin 策略
@@ -731,7 +801,8 @@ func (s *PermissionService) GetMenuPathsByRoleIDs(roleIDs []uint) ([]*modelsyste
 	}
 
 	var roles []*modelsystem.Role
-	if err := s.db.Where("id IN ?", roleIDs).Find(&roles).Error; err != nil {
+	// 与 BuildMenuTreeAndPermissions 口径一致：禁用角色不参与家目录推导
+	if err := s.db.Where("id IN ? AND status = 1", roleIDs).Find(&roles).Error; err != nil {
 		return nil, err
 	}
 

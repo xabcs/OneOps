@@ -180,12 +180,12 @@
                         <span class="text-16px font-bold">用户组列表</span>
                         <span class="text-13px opacity-70">维护用户组与组成员，供集群授权时按组绑定</span>
                     </div>
-                    <ElButton type="primary" size="small" @click="handleAddClick">
+                    <PermissionButton code="system.user.create" type="primary" size="small" @click="handleAddClick">
                         <ElIcon>
                             <Plus />
                         </ElIcon>
                         新增用户组
-                    </ElButton>
+                    </PermissionButton>
                 </div>
             </template>
 
@@ -224,8 +224,8 @@
                         <ElButton type="primary" size="small" link @click="handleManageMembers(row.id)">
                             成员管理
                         </ElButton>
-                        <ElButton type="primary" size="small" link @click="handleEditClick(row.id)">编辑</ElButton>
-                        <ElButton type="danger" size="small" link @click="handleDelete(row.id)">删除</ElButton>
+                        <PermissionButton code="system.user.update" type="primary" size="small" link @click="handleEditClick(row.id)">编辑</PermissionButton>
+                        <PermissionButton code="system.user.delete" type="danger" size="small" link @click="handleDelete(row.id)">删除</PermissionButton>
                     </template>
                 </ElTableColumn>
             </ElTable>

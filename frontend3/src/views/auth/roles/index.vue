@@ -3,6 +3,7 @@
   import { Delete, Edit, Plus } from '@element-plus/icons-vue';
   import { deleteAuthGroup, fetchAuthGroups } from '@/service/api/application-permission';
   import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
+  import PermissionButton from '@/components/common/PermissionButton.vue';
   import RoleSearch from './modules/role-search.vue';
   import RoleOperateDrawer from './modules/role-operate-drawer.vue';
 
@@ -56,15 +57,15 @@
         fixed: 'right',
         formatter: row => (
           <ElSpace>
-            <ElButton size="small" type="warning" icon={Edit} onClick={() => handleEdit(row.id)}>
+            <PermissionButton code="auth.group.update" size="small" type="warning" icon={Edit} onClick={() => handleEdit(row.id)}>
               编辑
-            </ElButton>
+            </PermissionButton>
             <ElPopconfirm title="确认删除该用户组？" onConfirm={() => handleDelete(row.id)}>
               {{
                 reference: () => (
-                  <ElButton size="small" type="danger" icon={Delete}>
+                  <PermissionButton code="auth.group.delete" size="small" type="danger" icon={Delete}>
                     删除
-                  </ElButton>
+                  </PermissionButton>
                 )
               }}
             </ElPopconfirm>
@@ -107,7 +108,7 @@
       <template #header>
         <div class="flex items-center justify-between">
           <span class="text-lg font-medium">授权中心用户组列表</span>
-          <ElButton type="primary" :icon="Plus" @click="handleAdd">添加用户组</ElButton>
+          <PermissionButton code="auth.group.create" type="primary" :icon="Plus" @click="handleAdd">添加用户组</PermissionButton>
         </div>
       </template>
 

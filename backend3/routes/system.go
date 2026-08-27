@@ -19,9 +19,11 @@ func SetupSystemRoutes(
 	userController *sysctrl.UserController,
 ) {
 	// 创建 repositories
-	permSvc, err := syssvc.NewPermissionService()
+	// 必须使用单例：中间件鉴权用的是 GetPermissionService()，
+	// 若此处新建实例，运行期分配/撤销权限只会写入新实例内存，鉴权侧不生效（H1）
+	permSvc, err := syssvc.GetPermissionService()
 	if err != nil {
-		panic("failed to create permission service: " + err.Error())
+		panic("failed to get permission service: " + err.Error())
 	}
 	permController := sysctrl.NewPermissionController(permSvc)
 	userGroupController := sysctrl.NewUserGroupController(syssvc.NewUserGroupService(database.GetDB()))

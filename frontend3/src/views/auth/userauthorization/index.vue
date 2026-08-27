@@ -95,9 +95,9 @@
             :value="user.id"
           />
         </ElSelect>
-        <ElButton type="primary" :icon="Plus" :disabled="!selectedUserId" @click="handleAssignGroup">
+        <PermissionButton code="auth.user.update" type="primary" :icon="Plus" :disabled="!selectedUserId" @click="handleAssignGroup">
           分配用户组
-        </ElButton>
+        </PermissionButton>
       </ElSpace>
     </ElCard>
 
@@ -116,7 +116,7 @@
           <ElTableColumn prop="grantedAt" label="授权时间" align="center" min-width="160" />
           <ElTableColumn label="操作" align="center" width="100">
             <template #default="{ row }">
-              <ElButton size="small" type="danger" :icon="Delete" @click="handleDelete(row.groupId)">删除</ElButton>
+              <PermissionButton code="auth.user.update" size="small" type="danger" :icon="Delete" @click="handleDelete(row.groupId)">删除</PermissionButton>
             </template>
           </ElTableColumn>
         </ElTable>

@@ -240,7 +240,8 @@ type UpdateRoleRequest struct {
 	Name        string `json:"name"`
 	Code        string `json:"code"`
 	Description string `json:"description"`
-	Status      int    `json:"status"`
+	// Status 用指针区分"未传"与"显式传 0（禁用）"，否则禁用请求会被静默丢弃
+	Status *int `json:"status"`
 }
 
 // UpdateRole godoc
@@ -279,8 +280,8 @@ func (ctrl *RoleController) UpdateRole(c *gin.Context) {
 	if req.Description != "" {
 		updates["description"] = req.Description
 	}
-	if req.Status != 0 {
-		updates["status"] = req.Status
+	if req.Status != nil {
+		updates["status"] = *req.Status
 	}
 
 	if err := ctrl.svc.Update(id, updates); err != nil {

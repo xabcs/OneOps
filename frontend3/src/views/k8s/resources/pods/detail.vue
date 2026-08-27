@@ -240,7 +240,7 @@
       :back-path="backPath"
       :actions="[
         ...(resource?.phase === 'Running'
-          ? [{ label: '终端', type: 'primary', handler: () => handleTerminal(), tooltip: '打开容器终端' }]
+          ? [{ label: '终端', type: 'primary' as const, handler: () => handleTerminal(), tooltip: '打开容器终端', permission: 'k8s.terminal.connect' }]
           : []),
         { label: '日志', handler: () => handleLogs(), tooltip: '查看容器日志' },
         { label: '编辑YAML', handler: handleEditYaml, tooltip: '编辑 YAML 配置' }
@@ -387,7 +387,7 @@
               <ElTableColumn prop="image" label="镜像" min-width="250" show-overflow-tooltip />
               <ElTableColumn label="操作" width="180" fixed="right">
                 <template #default="{ row }">
-                  <ElButton size="small" type="primary" link @click="handleTerminal(row.name)">终端</ElButton>
+                  <PermissionButton code="k8s.terminal.connect" size="small" type="primary" link @click="handleTerminal(row.name)">终端</PermissionButton>
                   <ElButton size="small" link @click="handleLogs(row.name)">日志</ElButton>
                 </template>
               </ElTableColumn>

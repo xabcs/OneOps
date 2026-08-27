@@ -30,7 +30,8 @@ func (r *BastionRepository) DB() *gorm.DB {
 // FindUserByID 根据ID获取用户
 func (r *BastionRepository) FindUserByID(userID uint) (*modelsystem.User, error) {
 	var user modelsystem.User
-	if err := r.db.Preload("Roles").First(&user, userID).Error; err != nil {
+	// 只预加载启用角色：禁用角色的授权策略不应再对跳板机生效
+	if err := r.db.Preload("Roles", "status = 1").First(&user, userID).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil

@@ -19,10 +19,8 @@ const K8sConfigMapDetail = () => import('@/views/k8s/resources/configmaps/detail
 const K8sSecretDetail = () => import('@/views/k8s/resources/secrets/detail.vue');
 const K8sServiceDetail = () => import('@/views/k8s/resources/services/detail.vue');
 const K8sIngressDetail = () => import('@/views/k8s/resources/ingresses/detail.vue');
-const K8sWorkloads = () => import('@/views/k8s/workloads/index.vue');
-const K8sNetwork = () => import('@/views/k8s/network/index.vue');
-const K8sConfig = () => import('@/views/k8s/config/index.vue');
 const K8sTerminal = () => import('@/views/k8s/terminal/index.vue');
+const TicketDetail = () => import('@/views/ticket/center/detail.vue');
 
 /**
  * 自定义路由列表
@@ -34,8 +32,8 @@ export const customRoutes: RouteRecordRaw[] = [
     path: '/cmdb/server/detail',
     component: BaseLayout,
     meta: {
-      title: 'cmdb_server_detail',
-      i18nKey: 'route.cmdb_server_detail',
+      title: '主机详情',
+      i18nKey: null,
       hideInMenu: true,
       activeMenu: 'cmdb_servers'
     },
@@ -173,42 +171,6 @@ export const customRoutes: RouteRecordRaw[] = [
       }
     ]
   },
-  {
-    name: 'k8s_workloads',
-    path: '/k8s/workloads',
-    component: BaseLayout,
-    meta: {
-      title: '工作负载',
-      i18nKey: null,
-      hideInMenu: false,
-      activeMenu: 'k8s_workloads'
-    },
-    children: [
-      {
-        name: 'k8s_workloads_view',
-        path: '',
-        component: K8sWorkloads
-      }
-    ]
-  },
-  {
-    name: 'k8s_network',
-    path: '/k8s/network',
-    component: BaseLayout,
-    meta: {
-      title: '网络',
-      i18nKey: null,
-      hideInMenu: false,
-      activeMenu: 'k8s_network'
-    },
-    children: [
-      {
-        name: 'k8s_network_view',
-        path: '',
-        component: K8sNetwork
-      }
-    ]
-  },
   // ConfigMap 详情页
   {
     name: 'k8s_configmap_detail',
@@ -289,24 +251,6 @@ export const customRoutes: RouteRecordRaw[] = [
     ]
   },
 
-  {
-    name: 'k8s_config',
-    path: '/k8s/config',
-    component: BaseLayout,
-    meta: {
-      title: '配置管理',
-      i18nKey: null,
-      hideInMenu: false,
-      activeMenu: 'k8s_config'
-    },
-    children: [
-      {
-        name: 'k8s_config_view',
-        path: '',
-        component: K8sConfig
-      }
-    ]
-  },
   // K8s 终端页面 - 使用 TerminalLayout，无菜单栏
   {
     name: 'k8s_terminal',
@@ -323,6 +267,25 @@ export const customRoutes: RouteRecordRaw[] = [
         name: 'k8s_terminal_view',
         path: '',
         component: K8sTerminal
+      }
+    ]
+  },
+  // 工单详情页（隐藏路由，随工单中心菜单高亮）
+  {
+    name: 'ticket_detail',
+    path: '/ticket/center/detail',
+    component: BaseLayout,
+    meta: {
+      title: '工单详情',
+      i18nKey: null,
+      hideInMenu: true,
+      activeMenu: 'ticket_center'
+    },
+    children: [
+      {
+        name: 'ticket_detail_view',
+        path: '',
+        component: TicketDetail
       }
     ]
   }

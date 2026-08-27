@@ -23,8 +23,10 @@ func NewK8sRbacService(clientPool *K8sClientPool) *K8sRbacService {
 	return &K8sRbacService{clientPool: clientPool}
 }
 
-func (s *K8sRbacService) client(clusterID uint) (*kubernetes.Clientset, error) {
-	return s.clientPool.GetScopedClientset(clusterID, 0)
+// client 获取集群客户端（H3：按操作者身份 scoped 化——
+// 超管/平台任务落平台凭据；普通用户走 impersonation，由集群原生 RBAC 终判可读/可写的 RBAC 对象）
+func (s *K8sRbacService) client(clusterID uint, userID uint) (*kubernetes.Clientset, error) {
+	return s.clientPool.GetScopedClientset(clusterID, userID)
 }
 
 func ctxTimeout() (context.Context, context.CancelFunc) {
@@ -45,8 +47,8 @@ func managedBy(labels map[string]string, annotations map[string]string) string {
 // ========== ClusterRole ==========
 
 // ListClusterRoles 列出集群内全部 ClusterRole（精简视图）
-func (s *K8sRbacService) ListClusterRoles(clusterID uint, search string) ([]map[string]interface{}, error) {
-	clientset, err := s.client(clusterID)
+func (s *K8sRbacService) ListClusterRoles(clusterID uint, userID uint, search string) ([]map[string]interface{}, error) {
+	clientset, err := s.client(clusterID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -79,8 +81,8 @@ func (s *K8sRbacService) ListClusterRoles(clusterID uint, search string) ([]map[
 }
 
 // GetClusterRole 获取 ClusterRole 详情（含完整 rules）
-func (s *K8sRbacService) GetClusterRole(clusterID uint, name string) (map[string]interface{}, error) {
-	clientset, err := s.client(clusterID)
+func (s *K8sRbacService) GetClusterRole(clusterID uint, userID uint, name string) (map[string]interface{}, error) {
+	clientset, err := s.client(clusterID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -95,8 +97,8 @@ func (s *K8sRbacService) GetClusterRole(clusterID uint, name string) (map[string
 }
 
 // UpdateClusterRole 更新 ClusterRole（manifest 需含 metadata.name，rules 整体替换）
-func (s *K8sRbacService) UpdateClusterRole(clusterID uint, manifest map[string]interface{}) error {
-	clientset, err := s.client(clusterID)
+func (s *K8sRbacService) UpdateClusterRole(clusterID uint, userID uint, manifest map[string]interface{}) error {
+	clientset, err := s.client(clusterID, userID)
 	if err != nil {
 		return err
 	}
@@ -117,8 +119,8 @@ func (s *K8sRbacService) UpdateClusterRole(clusterID uint, manifest map[string]i
 // ========== Role（命名空间级） ==========
 
 // ListRoles 列出命名空间（或全集群）的 Role
-func (s *K8sRbacService) ListRoles(clusterID uint, namespace string, search string) ([]map[string]interface{}, error) {
-	clientset, err := s.client(clusterID)
+func (s *K8sRbacService) ListRoles(clusterID uint, userID uint, namespace string, search string) ([]map[string]interface{}, error) {
+	clientset, err := s.client(clusterID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -152,8 +154,8 @@ func (s *K8sRbacService) ListRoles(clusterID uint, namespace string, search stri
 }
 
 // GetRole 获取 Role 详情
-func (s *K8sRbacService) GetRole(clusterID uint, namespace string, name string) (map[string]interface{}, error) {
-	clientset, err := s.client(clusterID)
+func (s *K8sRbacService) GetRole(clusterID uint, userID uint, namespace string, name string) (map[string]interface{}, error) {
+	clientset, err := s.client(clusterID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -168,8 +170,8 @@ func (s *K8sRbacService) GetRole(clusterID uint, namespace string, name string) 
 }
 
 // UpdateRole 更新 Role
-func (s *K8sRbacService) UpdateRole(clusterID uint, namespace string, manifest map[string]interface{}) error {
-	clientset, err := s.client(clusterID)
+func (s *K8sRbacService) UpdateRole(clusterID uint, userID uint, namespace string, manifest map[string]interface{}) error {
+	clientset, err := s.client(clusterID, userID)
 	if err != nil {
 		return err
 	}
@@ -193,8 +195,8 @@ func (s *K8sRbacService) UpdateRole(clusterID uint, namespace string, manifest m
 // ========== ClusterRoleBinding ==========
 
 // ListClusterRoleBindings 列出集群内全部 ClusterRoleBinding
-func (s *K8sRbacService) ListClusterRoleBindings(clusterID uint, search string) ([]map[string]interface{}, error) {
-	clientset, err := s.client(clusterID)
+func (s *K8sRbacService) ListClusterRoleBindings(clusterID uint, userID uint, search string) ([]map[string]interface{}, error) {
+	clientset, err := s.client(clusterID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -221,8 +223,8 @@ func (s *K8sRbacService) ListClusterRoleBindings(clusterID uint, search string) 
 }
 
 // GetClusterRoleBinding 获取 ClusterRoleBinding 详情
-func (s *K8sRbacService) GetClusterRoleBinding(clusterID uint, name string) (map[string]interface{}, error) {
-	clientset, err := s.client(clusterID)
+func (s *K8sRbacService) GetClusterRoleBinding(clusterID uint, userID uint, name string) (map[string]interface{}, error) {
+	clientset, err := s.client(clusterID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -239,8 +241,8 @@ func (s *K8sRbacService) GetClusterRoleBinding(clusterID uint, name string) (map
 // ========== RoleBinding ==========
 
 // ListRoleBindings 列出命名空间（或全集群）的 RoleBinding
-func (s *K8sRbacService) ListRoleBindings(clusterID uint, namespace string, search string) ([]map[string]interface{}, error) {
-	clientset, err := s.client(clusterID)
+func (s *K8sRbacService) ListRoleBindings(clusterID uint, userID uint, namespace string, search string) ([]map[string]interface{}, error) {
+	clientset, err := s.client(clusterID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -268,8 +270,8 @@ func (s *K8sRbacService) ListRoleBindings(clusterID uint, namespace string, sear
 }
 
 // GetRoleBinding 获取 RoleBinding 详情
-func (s *K8sRbacService) GetRoleBinding(clusterID uint, namespace string, name string) (map[string]interface{}, error) {
-	clientset, err := s.client(clusterID)
+func (s *K8sRbacService) GetRoleBinding(clusterID uint, userID uint, namespace string, name string) (map[string]interface{}, error) {
+	clientset, err := s.client(clusterID, userID)
 	if err != nil {
 		return nil, err
 	}

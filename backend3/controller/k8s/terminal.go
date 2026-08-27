@@ -14,6 +14,7 @@ import (
 	"oneops/backend3/pkg/logger"
 	"oneops/backend3/pkg/utils"
 	. "oneops/backend3/service/k8s"
+	syssvc "oneops/backend3/service/system"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -148,6 +149,28 @@ func (ctrl *TerminalController) HandleWebSocket(c *gin.Context) {
 	userID, err := ctrl.validateToken(token)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"code": 401, "success": false, "message": "token验证失败"})
+		return
+	}
+
+	// 用户状态校验（H4）：WS 不走 Auth 中间件，此处自查
+	var userStatus string
+	if err := ctrl.db.Table("sys_users").Select("status").
+		Where("id = ?", userID).Scan(&userStatus).Error; err != nil || userStatus != "active" {
+		c.JSON(http.StatusOK, gin.H{"code": 401, "success": false, "message": "用户已被禁用或不存在"})
+		return
+	}
+
+	// 系统权限码校验（H8）：该端点在 Auth/权限中间件组外，必须自查 k8s.terminal.connect
+	permSvc, err := syssvc.GetPermissionService()
+	if err == nil {
+		hasPerm, permErr := permSvc.HasPermission(userID, "k8s.terminal.connect")
+		if permErr != nil || !hasPerm {
+			c.JSON(http.StatusOK, gin.H{"code": 403, "success": false, "message": "无终端连接权限（k8s.terminal.connect）"})
+			return
+		}
+	} else {
+		// 权限服务不可用时 fail-closed
+		c.JSON(http.StatusOK, gin.H{"code": 500, "success": false, "message": "权限服务不可用"})
 		return
 	}
 
@@ -293,8 +316,10 @@ func (ctrl *TerminalController) HandleWebSocket(c *gin.Context) {
 
 // probeShellCommand 探测容器内可用的交互 shell：依次尝试 /bin/bash、/bin/sh，
 // 用一次性非交互 exec（exit 0）验证二进制存在；均不可用时返回错误。
+// 注意：必须用 scoped 凭据（H2）——与预检/正式 exec 同一身份，
+// 否则只读绑定（无 pods/exec）的用户也会因平台凭据探测成功而获得 shell
 func (ctrl *TerminalController) probeShellCommand(session *k8sSession) ([]string, error) {
-	clientset, config, err := ctrl.svc.GetClientWithConfig(session.clusterID)
+	clientset, config, err := ctrl.svc.GetScopedClientWithConfig(session.clusterID, session.userID)
 	if err != nil {
 		return nil, fmt.Errorf("获取集群连接失败: %w", err)
 	}
@@ -342,8 +367,10 @@ func (ctrl *TerminalController) sendTerminalMessage(ws *websocket.Conn, text str
 }
 
 // createExecutor 创建 K8s executor
+// 注意：必须用 scoped 凭据（H2）——exec 是否放行由集群原生 RBAC（pods/exec）终判，
+// 不能用平台管理员凭据，否则集群 RBAC 对 exec 的限制被架空
 func (ctrl *TerminalController) createExecutor(session *k8sSession, command []string) (remotecommand.Executor, error) {
-	clientset, config, err := ctrl.svc.GetClientWithConfig(session.clusterID)
+	clientset, config, err := ctrl.svc.GetScopedClientWithConfig(session.clusterID, session.userID)
 	if err != nil {
 		return nil, fmt.Errorf("获取集群连接失败: %w", err)
 	}

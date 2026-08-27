@@ -105,16 +105,16 @@
     <div class="mb-8px flex items-center justify-between gap-12px">
       <div class="flex items-center gap-8px">
         <ElDropdown trigger="click" @command="emit('create-command', $event)">
-          <ElButton
+          <PermissionButton code="cmdb.server.create"
             type="primary"
           >
             <template #icon><icon-ic-round-plus class="text-icon" /></template>
             创建
             <icon-ic-round-keyboard-arrow-down class="ml-4px text-icon" />
-          </ElButton>
+          </PermissionButton>
           <template #dropdown>
             <ElDropdownMenu>
-              <ElDropdownItem command="add">新增主机</ElDropdownItem>
+              <ElDropdownItem v-permission="'cmdb.server.create'" command="add">新增主机</ElDropdownItem>
               <ElDropdownItem command="import">批量导入</ElDropdownItem>
             </ElDropdownMenu>
           </template>
@@ -126,16 +126,16 @@
           </ElButton>
           <template #dropdown>
             <ElDropdownMenu>
-              <ElDropdownItem command="test-connection" :disabled="selectedIds.length === 0">
+              <ElDropdownItem v-permission="'cmdb.server.create'" command="test-connection" :disabled="selectedIds.length === 0">
                 测试连接 ({{ selectedIds.length }})
               </ElDropdownItem>
-              <ElDropdownItem command="batch-deploy" :disabled="selectedIds.length === 0">
+              <ElDropdownItem v-permission="'cmdb.agents.deploy'" command="batch-deploy" :disabled="selectedIds.length === 0">
                 批量部署 ({{ selectedIds.length }})
               </ElDropdownItem>
-              <ElDropdownItem command="batch-uninstall" :disabled="selectedIds.length === 0">
+              <ElDropdownItem v-permission="'cmdb.agents.uninstall'" command="batch-uninstall" :disabled="selectedIds.length === 0">
                 批量卸载 ({{ selectedIds.length }})
               </ElDropdownItem>
-              <ElDropdownItem command="batch-delete" :disabled="selectedIds.length === 0" style="color: #f56c6c">
+              <ElDropdownItem v-permission="'cmdb.server.delete'" command="batch-delete" :disabled="selectedIds.length === 0" style="color: #f56c6c">
                 批量删除 ({{ selectedIds.length }})
               </ElDropdownItem>
             </ElDropdownMenu>
@@ -380,7 +380,7 @@
           <ElTableColumn label="操作" width="100" align="center" fixed="right">
             <template #default="{ row }">
               <div style="display: flex; align-items: center; justify-content: center; gap: 12px">
-                <a title="连接终端" style="cursor: pointer" @click="emit('connect', row)">
+                <a v-permission="'cmdb.server.connect'" title="连接终端" style="cursor: pointer" @click="emit('connect', row)">
                   <icon-lucide-terminal class="text-14px" style="color: #909399" />
                 </a>
                 <ElDropdown trigger="click" @command="emit('more-action', $event, row)">
@@ -417,32 +417,32 @@
                         <icon-ic-round-info class="mr-8px" />
                         主机详情
                       </ElDropdownItem>
-                      <ElDropdownItem command="edit">
+                      <ElDropdownItem v-permission="'cmdb.server.update'" command="edit">
                         <icon-ic-round-edit class="mr-8px" />
                         编辑
                       </ElDropdownItem>
-                      <ElDropdownItem
+                      <ElDropdownItem v-permission="'cmdb.agents.deploy'"
                         v-if="!row.agentStatus || row.agentStatus === 'uninstalled' || row.agentStatus === 'failed'"
                         command="agent-deploy"
                       >
                         <icon-mdi-download class="mr-8px" />
                         部署 Agent
                       </ElDropdownItem>
-                      <ElDropdownItem
+                      <ElDropdownItem v-permission="'cmdb.agents.restart'"
                         v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'"
                         command="agent-restart"
                       >
                         <icon-mdi-restart class="mr-8px" />
                         重启 Agent
                       </ElDropdownItem>
-                      <ElDropdownItem
+                      <ElDropdownItem v-permission="'cmdb.agents.uninstall'"
                         v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'"
                         command="agent-uninstall"
                       >
                         <icon-mdi-delete-forever class="mr-8px" />
                         卸载 Agent
                       </ElDropdownItem>
-                      <ElDropdownItem divided command="delete" style="color: #f56c6c">
+                      <ElDropdownItem v-permission="'cmdb.server.delete'" divided command="delete" style="color: #f56c6c">
                         <icon-ic-round-delete class="mr-8px" />
                         删除主机
                       </ElDropdownItem>

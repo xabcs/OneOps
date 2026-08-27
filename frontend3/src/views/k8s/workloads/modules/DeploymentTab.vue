@@ -61,7 +61,7 @@
       <template #default="{ row }">
         <span class="operation-buttons">
           <ElButton link type="primary" size="default" @click="emit('go-to-detail', row)">详情</ElButton>
-          <ElButton link type="primary" size="default" @click="emit('scale', row)">伸缩</ElButton>
+          <PermissionButton code="k8s.resource.update" link type="primary" size="default" @click="emit('scale', row)">伸缩</PermissionButton>
           <ElDropdown trigger="click" @command="cmd => emit('more-command', cmd, row)">
             <span class="dropdown-link">
               更多
@@ -69,9 +69,9 @@
             </span>
             <template #dropdown>
               <ElDropdownMenu>
-                <ElDropdownItem command="edit">编辑YAML</ElDropdownItem>
-                <ElDropdownItem command="restart">重启</ElDropdownItem>
-                <ElDropdownItem command="delete">删除</ElDropdownItem>
+                <ElDropdownItem v-permission="'k8s.resource.update'" command="edit">编辑YAML</ElDropdownItem>
+                <ElDropdownItem v-permission="'k8s.resource.update'" command="restart">重启</ElDropdownItem>
+                <ElDropdownItem v-permission="'k8s.resource.delete'" command="delete">删除</ElDropdownItem>
               </ElDropdownMenu>
             </template>
           </ElDropdown>

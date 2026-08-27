@@ -283,18 +283,18 @@
                     <span class="toolbar-desc">共 {{ total }} 个集群</span>
                 </div>
                 <div class="toolbar-actions">
-                    <ElButton type="primary" size="small" @click="handleAdd">
+                    <PermissionButton code="k8s.cluster.create" type="primary" size="small" @click="handleAdd">
                         <ElIcon>
                             <Plus />
                         </ElIcon>
                         添加集群
-                    </ElButton>
-                    <ElButton type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
+                    </PermissionButton>
+                    <PermissionButton code="k8s.cluster.delete" type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
                         <ElIcon>
                             <Delete />
                         </ElIcon>
                         批量删除
-                    </ElButton>
+                    </PermissionButton>
                 </div>
             </div>
 
@@ -362,11 +362,11 @@
                         <template #default="{ row }">
                             <div class="flex-center gap-8px">
                                 <ElButton link type="primary" @click="handleDetail(row)">详情</ElButton>
-                                <ElButton link type="primary" @click="handleEdit(row)">编辑</ElButton>
-                                <ElButton link class="text-accent" @click="handleTestConnection(row)">测试</ElButton>
+                                <PermissionButton code="k8s.cluster.update" link type="primary" @click="handleEdit(row)">编辑</PermissionButton>
+                                <PermissionButton code="k8s.cluster.connect" link class="text-accent" @click="handleTestConnection(row)">测试</PermissionButton>
                                 <ElPopconfirm title="确定要删除集群吗？" @confirm="handleDelete(row)">
                                     <template #reference>
-                                        <ElButton link type="danger">删除</ElButton>
+                                        <PermissionButton code="k8s.cluster.delete" link type="danger">删除</PermissionButton>
                                     </template>
                                 </ElPopconfirm>
                             </div>

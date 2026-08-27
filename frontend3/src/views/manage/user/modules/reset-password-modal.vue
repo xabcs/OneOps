@@ -102,7 +102,7 @@
     <template #footer>
       <ElSpace :size="16">
         <ElButton @click="closeModal">{{ $t('common.cancel') }}</ElButton>
-        <ElButton type="primary" @click="handleSubmit">{{ $t('common.confirm') }}</ElButton>
+        <PermissionButton code="system.user.reset_password" type="primary" @click="handleSubmit">{{ $t('common.confirm') }}</PermissionButton>
       </ElSpace>
     </template>
   </ElDialog>

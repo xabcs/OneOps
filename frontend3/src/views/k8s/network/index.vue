@@ -458,8 +458,8 @@
                     </span>
                     <template #dropdown>
                       <ElDropdownMenu>
-                        <ElDropdownItem command="edit">编辑YAML</ElDropdownItem>
-                        <ElDropdownItem command="delete">删除</ElDropdownItem>
+                        <ElDropdownItem v-permission="'k8s.resource.update'" command="edit">编辑YAML</ElDropdownItem>
+                        <ElDropdownItem v-permission="'k8s.resource.delete'" command="delete">删除</ElDropdownItem>
                       </ElDropdownMenu>
                     </template>
                   </ElDropdown>
@@ -531,8 +531,8 @@
                     </span>
                     <template #dropdown>
                       <ElDropdownMenu>
-                        <ElDropdownItem command="edit">编辑YAML</ElDropdownItem>
-                        <ElDropdownItem command="delete">删除</ElDropdownItem>
+                        <ElDropdownItem v-permission="'k8s.resource.update'" command="edit">编辑YAML</ElDropdownItem>
+                        <ElDropdownItem v-permission="'k8s.resource.delete'" command="delete">删除</ElDropdownItem>
                       </ElDropdownMenu>
                     </template>
                   </ElDropdown>

@@ -511,7 +511,7 @@
             </ElForm>
 
             <div class="action-buttons">
-              <ElButton
+              <PermissionButton code="k8s.diagnostic.execute"
                 type="primary"
                 :icon="VideoPlay"
                 :loading="executing"
@@ -519,7 +519,7 @@
                 @click="executeDiagnostic"
               >
                 执行诊断
-              </ElButton>
+              </PermissionButton>
 
               <ElButton :icon="Clock" :disabled="!hasHistory" @click="showHistory">历史记录</ElButton>
             </div>

@@ -357,7 +357,7 @@
                         <ElTag v-if="roleDetail.namespace" size="small">{{ roleDetail.namespace }}</ElTag>
                         <ElTag type="info" size="small" effect="plain">{{ roleDetail.rules.length }} 条规则</ElTag>
                         <span class="text-12px opacity-60">创建于 {{ roleDetail.createdAt }}</span>
-                        <ElButton type="primary" size="small" class="ml-auto" @click="openEdit">编辑 rules</ElButton>
+                        <PermissionButton code="k8s.rbac.manage" type="primary" size="small" class="ml-auto" @click="openEdit">编辑 rules</PermissionButton>
                     </div>
                     <ElTable :data="roleDetail.rules" stripe border>
                         <ElTableColumn label="API Groups" min-width="140">

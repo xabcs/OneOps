@@ -153,7 +153,7 @@
             </template>
           </ElTabPane>
         </ElTabs>
-        <ElButton type="primary" @click="handleAdd">新增凭证</ElButton>
+        <PermissionButton code="cmdb.credential.create" type="primary" @click="handleAdd">新增凭证</PermissionButton>
       </div>
 
       <!-- 凭证用途说明 -->
@@ -202,9 +202,9 @@
         </ElTableColumn>
         <ElTableColumn label="操作" width="230" align="center" fixed="right">
           <template #default="{ row }">
-            <ElButton type="success" size="small" :loading="testLoading" @click="handleTest(row)">测试</ElButton>
-            <ElButton type="primary" size="small" @click="handleEdit(row)">编辑</ElButton>
-            <ElButton type="danger" size="small" @click="handleDelete(row)">删除</ElButton>
+            <PermissionButton code="cmdb.credential.test" type="success" size="small" :loading="testLoading" @click="handleTest(row)">测试</PermissionButton>
+            <PermissionButton code="cmdb.credential.update" type="primary" size="small" @click="handleEdit(row)">编辑</PermissionButton>
+            <PermissionButton code="cmdb.credential.delete" type="danger" size="small" @click="handleDelete(row)">删除</PermissionButton>
           </template>
         </ElTableColumn>
       </ElTable>

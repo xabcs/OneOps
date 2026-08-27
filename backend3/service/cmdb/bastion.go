@@ -11,6 +11,7 @@ import (
 	modelsystem "oneops/backend3/model/system"
 	"oneops/backend3/pkg/database"
 	repocmdb "oneops/backend3/repository/cmdb"
+	syssvc "oneops/backend3/service/system"
 )
 
 // BastionService 堡垒机服务
@@ -44,7 +45,7 @@ func (s *BastionService) CheckConnectPermission(userID uint, serverID uint) (boo
 		return false, nil, fmt.Errorf("服务器未绑定用户凭证，请先在主机编辑页面绑定 credential_type=user 的 SSH 凭证")
 	}
 
-	if hasAdminRole(userRoleIDs(user)) {
+	if syssvc.IsSystemAdmin(s.repo.DB(), user.ID) {
 		return true, server.Credentials, nil
 	}
 
@@ -57,7 +58,25 @@ func (s *BastionService) CheckConnectPermission(userID uint, serverID uint) (boo
 		return false, nil, fmt.Errorf("没有访问权限")
 	}
 
-	return true, server.Credentials, nil
+	// 批次三：按命中策略过滤可展示的凭证（LoginAccounts 白名单），
+	// 与 CreateSSHSession 的实连校验同口径，不再把全部凭证暴露给无相应权限的用户
+	allowedAccounts := map[string]bool{}
+	for _, p := range policies {
+		for _, account := range p.LoginAccounts {
+			allowedAccounts[strings.ToLower(account)] = true
+		}
+	}
+	filtered := make([]modelcmdb.SSHCredential, 0, len(server.Credentials))
+	for _, cred := range server.Credentials {
+		if allowedAccounts[strings.ToLower(cred.Username)] {
+			filtered = append(filtered, cred)
+		}
+	}
+	if len(filtered) == 0 {
+		return false, nil, fmt.Errorf("策略未授权任何登录账号")
+	}
+
+	return true, filtered, nil
 }
 
 // findApplicablePolicies 返回主体（角色/用户）与资产范围都命中的启用策略
@@ -88,16 +107,6 @@ func userRoleIDs(user *modelsystem.User) []uint {
 		roleIDs = append(roleIDs, r.ID)
 	}
 	return roleIDs
-}
-
-// hasAdminRole 判断用户是否持有管理员角色（roleID=1，绕过访问策略）
-func hasAdminRole(roleIDs []uint) bool {
-	for _, roleID := range roleIDs {
-		if roleID == 1 {
-			return true
-		}
-	}
-	return false
 }
 
 // matchesPolicy 检查策略资产范围是否覆盖服务器（businessAncestors 为服务器所属业务系统及全部祖先 ID）
@@ -156,7 +165,8 @@ func (s *BastionService) CreateSSHSession(userID uint, serverID uint, credential
 		return nil, fmt.Errorf("不允许使用该凭证")
 	}
 
-	if !hasAdminRole(userRoleIDs(user)) {
+	// 批次三：统一超管判定（code=admin 且启用），不再硬编码 roleID=1
+	if !syssvc.IsSystemAdmin(s.repo.DB(), user.ID) {
 		roleIDs := userRoleIDs(user)
 
 		policies, err := s.findApplicablePolicies(userID, roleIDs, serverID, server)
@@ -341,6 +351,14 @@ func (s *BastionService) GetActiveSessions() ([]modelcmdb.BastionSession, error)
 
 // TerminateSession 强制断开会话
 func (s *BastionService) TerminateSession(sessionID uint, operatorID uint) error {
+	// 属主校验：仅会话属主或系统管理员可强制断开，防越权终止他人会话
+	session, err := s.repo.FindSessionByID(sessionID)
+	if err != nil {
+		return fmt.Errorf("会话不存在: %w", err)
+	}
+	if session.UserID != operatorID && !syssvc.IsSystemAdmin(s.repo.DB(), operatorID) {
+		return fmt.Errorf("无权终止他人的会话")
+	}
 	return s.CloseSession(sessionID, fmt.Sprintf("被用户 %d 强制断开", operatorID), "terminated")
 }
 
@@ -433,6 +451,11 @@ func (s *BastionService) analyzeCommandRisk(command string) string {
 	}
 
 	return "safe"
+}
+
+// IsCommandBlocked 判断命令是否命中拦截（H7：供 WS 转发层在写入 SSH 之前调用，实现先判后执行）
+func (s *BastionService) IsCommandBlocked(command string, sessionID uint) bool {
+	return s.isCommandBlocked(command, sessionID)
 }
 
 // isCommandBlocked 检查命令是否被拦截

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	modelk8s "oneops/backend3/model/k8s"
 	modelsystem "oneops/backend3/model/system"
+	syssvc "oneops/backend3/service/system"
 
 	"gorm.io/gorm"
 )
@@ -104,16 +105,12 @@ func (r *ClusterRepository) FindAuthorizedClusterIDs(userID uint) ([]uint, error
 	return ids, err
 }
 
-// IsSuperAdmin 判定用户是否平台超级管理员（角色 ID=1），
-// 超管是唯一允许以平台身份执行集群操作的白名单
+// IsSuperAdmin 判定用户是否平台超级管理员，
+// 超管是唯一允许以平台身份执行集群操作的白名单。
+// 批次三：统一走 syssvc.IsSystemAdmin（code=admin 且启用），
+// 不再硬编码 role_id=1，避免角色重建/改码后与系统权限层判定分叉
 func (r *ClusterRepository) IsSuperAdmin(userID uint) bool {
-	var count int64
-	if err := r.db.Table("sys_user_roles").
-		Where("user_id = ? AND role_id = ?", userID, 1).
-		Count(&count).Error; err != nil {
-		return false
-	}
-	return count > 0
+	return syssvc.IsSystemAdmin(r.db, userID)
 }
 
 // Create 创建集群

@@ -32,7 +32,7 @@ func SetupK8sRoutes(r *gin.Engine) {
 	k8sPermissionController := k8sctrl.NewK8sPermissionController(clusterSvc)
 	diagnosticController := k8sctrl.NewDiagnosticController(diagnosticSvc, clusterSvc)
 	terminalController := k8sctrl.NewTerminalController(clusterSvc)
-	rbacController := k8sctrl.NewK8sRbacController(rbacSvc)
+	rbacController := k8sctrl.NewK8sRbacController(rbacSvc, clusterSvc)
 
 	api := r.Group("/api")
 

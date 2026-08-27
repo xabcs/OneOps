@@ -127,7 +127,7 @@
         <template #footer>
             <ElSpace :size="16">
                 <ElButton @click="closeDrawer">{{ $t('common.cancel') }}</ElButton>
-                <ElButton type="primary" @click="handleSubmit">{{ $t('common.confirm') }}</ElButton>
+                <PermissionButton :code="isEdit ? 'system.user.update' : 'system.user.create'" type="primary" @click="handleSubmit">{{ $t('common.confirm') }}</PermissionButton>
             </ElSpace>
         </template>
     </ElDrawer>

@@ -360,9 +360,9 @@
         <template #default="{ row }">
           <ElSpace>
             <ElButton size="small" @click="handleViewDetail(row)">详情</ElButton>
-            <ElButton size="small" type="primary" @click="handleScale(row)">缩放</ElButton>
-            <ElButton size="small" type="warning" @click="handleRestart(row)">重启</ElButton>
-            <ElButton size="small" type="danger" @click="handleDelete(row)">删除</ElButton>
+            <PermissionButton code="k8s.resource.update" size="small" type="primary" @click="handleScale(row)">缩放</PermissionButton>
+            <PermissionButton code="k8s.resource.update" size="small" type="warning" @click="handleRestart(row)">重启</PermissionButton>
+            <PermissionButton code="k8s.resource.delete" size="small" type="danger" @click="handleDelete(row)">删除</PermissionButton>
           </ElSpace>
         </template>
       </ElTableColumn>

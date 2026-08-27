@@ -268,18 +268,18 @@
                         <span class="text-13px opacity-70">管理系统角色、分配菜单权限与用户关联</span>
                     </div>
                     <div class="flex items-center gap-8px">
-                        <ElButton type="primary" size="small" @click="handleAddClick">
+                        <PermissionButton code="system.role.create" type="primary" size="small" @click="handleAddClick">
                             <ElIcon>
                                 <Plus />
                             </ElIcon>
                             新增角色
-                        </ElButton>
-                        <ElButton type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
+                        </PermissionButton>
+                        <PermissionButton code="system.role.delete" type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
                             <ElIcon>
                                 <Delete />
                             </ElIcon>
                             批量删除
-                        </ElButton>
+                        </PermissionButton>
                     </div>
                 </div>
             </template>

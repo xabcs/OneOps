@@ -65,8 +65,8 @@
             <template #dropdown>
               <ElDropdownMenu>
                 <ElDropdownItem command="edit">编辑YAML</ElDropdownItem>
-                <ElDropdownItem command="terminal">终端</ElDropdownItem>
-                <ElDropdownItem command="delete">删除</ElDropdownItem>
+                <ElDropdownItem v-permission="'k8s.terminal.connect'" command="terminal">终端</ElDropdownItem>
+                <ElDropdownItem v-permission="'k8s.resource.delete'" command="delete">删除</ElDropdownItem>
               </ElDropdownMenu>
             </template>
           </ElDropdown>

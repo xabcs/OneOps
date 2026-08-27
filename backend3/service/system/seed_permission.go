@@ -142,6 +142,14 @@ func (i *Initializer) syncPermissions() error {
 		{Code: "cmdb.access_policy.create", Name: "创建访问策略", Description: "创建新的访问策略", Module: "cmdb", Resource: "access_policy", Action: "create", Level: 3, SortOrder: 96, Status: 1},
 		{Code: "cmdb.access_policy.update", Name: "更新访问策略", Description: "更新访问策略信息", Module: "cmdb", Resource: "access_policy", Action: "update", Level: 3, SortOrder: 97, Status: 1},
 		{Code: "cmdb.access_policy.delete", Name: "删除访问策略", Description: "删除访问策略", Module: "cmdb", Resource: "access_policy", Action: "delete", Level: 3, SortOrder: 98, Status: 1},
+		// 凭据管理
+		{Code: "cmdb.credential.create", Name: "创建凭据", Description: "创建SSH/访问凭据", Module: "cmdb", Resource: "credential", Action: "create", Level: 3, SortOrder: 132, Status: 1},
+		{Code: "cmdb.credential.update", Name: "更新凭据", Description: "更新凭据信息", Module: "cmdb", Resource: "credential", Action: "update", Level: 3, SortOrder: 133, Status: 1},
+		{Code: "cmdb.credential.delete", Name: "删除凭据", Description: "删除凭据", Module: "cmdb", Resource: "credential", Action: "delete", Level: 3, SortOrder: 134, Status: 1},
+		{Code: "cmdb.credential.test", Name: "测试凭据", Description: "测试凭据连通性", Module: "cmdb", Resource: "credential", Action: "test", Level: 3, SortOrder: 135, Status: 1},
+		// Agent 记录与版本管理
+		{Code: "cmdb.agents.delete", Name: "删除Agent记录", Description: "删除Agent记录（仅清记录，不卸载）", Module: "cmdb", Resource: "agents", Action: "delete", Level: 3, SortOrder: 136, Status: 1},
+		{Code: "cmdb.agent_version.manage", Name: "管理Agent版本", Description: "新增/更新/删除Agent版本记录", Module: "cmdb", Resource: "agent_version", Action: "manage", Level: 3, SortOrder: 137, Status: 1},
 
 		// ========== 监控中心模块（16个） ==========
 		// 监控数据
@@ -164,6 +172,15 @@ func (i *Initializer) syncPermissions() error {
 		{Code: "monitor.report.view", Name: "查看报告", Description: "查看巡检报告详情", Module: "monitor", Resource: "report", Action: "view", Level: 3, SortOrder: 112, Status: 1},
 		{Code: "monitor.report.create", Name: "创建报告", Description: "创建新的巡检报告", Module: "monitor", Resource: "report", Action: "create", Level: 3, SortOrder: 113, Status: 1},
 		{Code: "monitor.report.delete", Name: "删除报告", Description: "删除巡检报告", Module: "monitor", Resource: "report", Action: "delete", Level: 3, SortOrder: 114, Status: 1},
+		// 告警规则管理
+		{Code: "monitor.alert_rule.create", Name: "创建告警规则", Description: "创建告警规则", Module: "monitor", Resource: "alert_rule", Action: "create", Level: 3, SortOrder: 138, Status: 1},
+		{Code: "monitor.alert_rule.update", Name: "更新告警规则", Description: "更新/启停告警规则", Module: "monitor", Resource: "alert_rule", Action: "update", Level: 3, SortOrder: 139, Status: 1},
+		{Code: "monitor.alert_rule.delete", Name: "删除告警规则", Description: "删除告警规则", Module: "monitor", Resource: "alert_rule", Action: "delete", Level: 3, SortOrder: 140, Status: 1},
+		// 通知渠道管理
+		{Code: "monitor.notification.create", Name: "创建通知渠道", Description: "创建通知渠道", Module: "monitor", Resource: "notification", Action: "create", Level: 3, SortOrder: 141, Status: 1},
+		{Code: "monitor.notification.update", Name: "更新通知渠道", Description: "更新/启停通知渠道", Module: "monitor", Resource: "notification", Action: "update", Level: 3, SortOrder: 142, Status: 1},
+		{Code: "monitor.notification.delete", Name: "删除通知渠道", Description: "删除通知渠道", Module: "monitor", Resource: "notification", Action: "delete", Level: 3, SortOrder: 143, Status: 1},
+		{Code: "monitor.notification.test", Name: "测试通知渠道", Description: "发送测试通知", Module: "monitor", Resource: "notification", Action: "test", Level: 3, SortOrder: 144, Status: 1},
 
 		// ========== K8s管理模块（15个） ==========
 		// 集群管理（list=单接口权限：仅集群列表端点；view=接口权限集合：列表+详情+nodes+namespaces）
@@ -191,6 +208,21 @@ func (i *Initializer) syncPermissions() error {
 		// K8s原生 RBAC 代管（A 模式）
 		{Code: "k8s.rbac.view", Name: "查看原生RBAC", Description: "查看集群内原生 ClusterRole/Role/Binding", Module: "k8s", Resource: "rbac", Action: "view", Level: 3, SortOrder: 130, Status: 1},
 		{Code: "k8s.rbac.manage", Name: "管理原生RBAC", Description: "编辑集群内原生 ClusterRole/Role 规则", Module: "k8s", Resource: "rbac", Action: "manage", Level: 3, SortOrder: 131, Status: 1},
+
+		// ========== 工单中心模块（11个） ==========
+		// 工单：view=工单中心菜单可见（发起/待办/我相关工单）；list=查看全部工单（scope=all 与任意详情）
+		{Code: "ticket.ticket.view", Name: "工单中心入口", Description: "查看工单中心菜单，发起与处理自己相关的工单", Module: "ticket", Resource: "ticket", Action: "view", Level: 3, SortOrder: 150, Status: 1},
+		{Code: "ticket.ticket.list", Name: "查看全部工单", Description: "查看全部工单列表与任意工单详情", Module: "ticket", Resource: "ticket", Action: "list", Level: 3, SortOrder: 151, Status: 1},
+		// 工单类型管理
+		{Code: "ticket.type.list", Name: "工单类型列表", Description: "查看工单类型列表", Module: "ticket", Resource: "type", Action: "list", Level: 3, SortOrder: 152, Status: 1},
+		{Code: "ticket.type.create", Name: "创建工单类型", Description: "创建新的工单类型（场景）", Module: "ticket", Resource: "type", Action: "create", Level: 3, SortOrder: 153, Status: 1},
+		{Code: "ticket.type.update", Name: "更新工单类型", Description: "更新工单类型信息", Module: "ticket", Resource: "type", Action: "update", Level: 3, SortOrder: 154, Status: 1},
+		{Code: "ticket.type.delete", Name: "删除工单类型", Description: "删除工单类型", Module: "ticket", Resource: "type", Action: "delete", Level: 3, SortOrder: 155, Status: 1},
+		// 流程定义管理
+		{Code: "ticket.workflow.list", Name: "流程定义列表", Description: "查看审批流程定义列表", Module: "ticket", Resource: "workflow", Action: "list", Level: 3, SortOrder: 156, Status: 1},
+		{Code: "ticket.workflow.create", Name: "创建流程", Description: "创建审批流程定义", Module: "ticket", Resource: "workflow", Action: "create", Level: 3, SortOrder: 157, Status: 1},
+		{Code: "ticket.workflow.update", Name: "更新流程", Description: "更新审批流程定义", Module: "ticket", Resource: "workflow", Action: "update", Level: 3, SortOrder: 158, Status: 1},
+		{Code: "ticket.workflow.delete", Name: "删除流程", Description: "删除审批流程定义", Module: "ticket", Resource: "workflow", Action: "delete", Level: 3, SortOrder: 159, Status: 1},
 	}
 
 	for _, perm := range permissions {
@@ -219,6 +251,134 @@ func (i *Initializer) syncPermissions() error {
 	db.Model(&modelsystem.Permission{}).Count(&count)
 	logger.Info("权限数据同步完成", zap.Int64("total_permissions", count))
 
+	return nil
+}
+
+// permissionModuleNames 模块（Level 1）节点中文名
+var permissionModuleNames = map[string]string{
+	"system":  "系统管理",
+	"cmdb":    "资产管理",
+	"audit":   "审计中心",
+	"auth":    "授权中心",
+	"monitor": "监控中心",
+	"k8s":     "K8s管理",
+	"ticket":  "工单中心",
+}
+
+// permissionResourceNames 资源（Level 2）节点中文名，键为 module.resource
+var permissionResourceNames = map[string]string{
+	"system.menu": "菜单管理", "system.role": "角色管理", "system.user": "用户管理",
+	"system.permission": "权限管理", "system.route": "路由管理",
+	"audit.login_log": "登录日志", "audit.operation_log": "操作日志",
+	"audit.system_event": "系统事件", "audit.stats": "审计统计",
+	"auth.application": "应用管理", "auth.user": "授权用户", "auth.group": "用户组",
+	"auth.group_binding": "用户组绑定", "auth.user_group": "用户组成员",
+	"auth.identity_mapping": "身份映射", "auth.permission": "权限查询",
+	"auth.binding_execution": "执行记录",
+	"cmdb.attribute":         "属性管理", "cmdb.server": "服务器管理", "cmdb.agents": "Agent管理",
+	"cmdb.group": "主机分组", "cmdb.business": "业务管理", "cmdb.rooms": "机房管理",
+	"cmdb.tags": "标签管理", "cmdb.session": "会话管理", "cmdb.access_policy": "访问策略",
+	"monitor.data": "监控数据", "monitor.alert": "告警管理",
+	"monitor.task": "监控任务", "monitor.report": "巡检报告",
+	"k8s.cluster": "集群管理", "k8s.permission": "K8s权限", "k8s.resource": "资源管理",
+	"k8s.terminal": "终端连接", "k8s.diagnostic": "诊断中心", "k8s.rbac": "原生RBAC",
+	"ticket.ticket": "工单管理", "ticket.type": "工单类型", "ticket.workflow": "流程定义",
+}
+
+// syncPermissionHierarchy 补齐权限树层级并回填 parent_id（幂等）：
+// Level 3 按钮权限由 seed 平铺写入，此处按 module / module.resource 约定
+// 补建 Level 1 模块、Level 2 资源分组节点，并把 Level 3 挂到对应资源节点下。
+// 分组节点仅作树形展示，不参与鉴权（角色只绑定 Level 3 权限）。
+func (i *Initializer) syncPermissionHierarchy() error {
+	db := database.GetDB()
+
+	// 1. 按模块去重，补建 Level 1 节点（code = module）
+	var modules []string
+	if err := db.Model(&modelsystem.Permission{}).Where("level = 3").
+		Distinct().Pluck("module", &modules).Error; err != nil {
+		return err
+	}
+
+	moduleIDs := make(map[string]uint, len(modules))
+	for idx, module := range modules {
+		name := permissionModuleNames[module]
+		if name == "" {
+			name = module
+		}
+		var node modelsystem.Permission
+		if err := db.Where("code = ? AND level = 1", module).First(&node).Error; err != nil {
+			node = modelsystem.Permission{
+				Code: module, Name: name, Module: module, Resource: module,
+				Level: 1, SortOrder: idx + 1, Status: 1,
+			}
+			if err := db.Create(&node).Error; err != nil {
+				logger.Error("创建模块权限节点失败", zap.String("module", module), zap.Error(err))
+				continue
+			}
+		}
+		moduleIDs[module] = node.ID
+	}
+
+	// 2. 按 module.resource 去重，补建 Level 2 节点（code = module.resource）
+	type resourceGroup struct {
+		Module   string
+		Resource string
+		MinSort  int
+	}
+	var groups []resourceGroup
+	if err := db.Model(&modelsystem.Permission{}).Where("level = 3").
+		Select("module, resource, MIN(sort_order) AS min_sort").
+		Group("module, resource").Order("min_sort ASC").Scan(&groups).Error; err != nil {
+		return err
+	}
+
+	resourceIDs := make(map[string]uint, len(groups))
+	for _, g := range groups {
+		code := g.Module + "." + g.Resource
+		name := permissionResourceNames[code]
+		if name == "" {
+			name = g.Resource
+		}
+		parentID := moduleIDs[g.Module]
+
+		var node modelsystem.Permission
+		err := db.Where("code = ? AND level = 2", code).First(&node).Error
+		if err != nil {
+			node = modelsystem.Permission{
+				Code: code, Name: name, Module: g.Module, Resource: g.Resource,
+				Level: 2, ParentID: &parentID, SortOrder: g.MinSort, Status: 1,
+			}
+			if err := db.Create(&node).Error; err != nil {
+				logger.Error("创建资源权限节点失败", zap.String("code", code), zap.Error(err))
+				continue
+			}
+		} else if node.ParentID == nil || *node.ParentID != parentID {
+			// 已存在但父级缺失/错位，修正
+			db.Model(&node).Update("parent_id", parentID)
+		}
+		resourceIDs[code] = node.ID
+	}
+
+	// 3. 回填 Level 3 的 parent_id
+	var pending []modelsystem.Permission
+	if err := db.Where("level = 3 AND parent_id IS NULL").Find(&pending).Error; err != nil {
+		return err
+	}
+	backfilled := 0
+	for _, p := range pending {
+		parentID, ok := resourceIDs[p.Module+"."+p.Resource]
+		if !ok {
+			continue
+		}
+		if err := db.Model(&modelsystem.Permission{ID: p.ID}).Update("parent_id", parentID).Error; err == nil {
+			backfilled++
+		}
+	}
+
+	logger.Info("权限层级同步完成",
+		zap.Int("modules", len(moduleIDs)),
+		zap.Int("resources", len(resourceIDs)),
+		zap.Int("backfilled", backfilled))
 	return nil
 }
 
@@ -253,6 +413,10 @@ func (i *Initializer) syncDefaultPermissions() error {
 			"audit.operation_log.list", "audit.operation_log.export",
 			"audit.system_event.list",
 			"audit.stats.view",
+			// 工单中心：入口 + 全部工单查看 + 类型/流程管理
+			"ticket.ticket.view", "ticket.ticket.list",
+			"ticket.type.list", "ticket.type.create", "ticket.type.update", "ticket.type.delete",
+			"ticket.workflow.list", "ticket.workflow.create", "ticket.workflow.update", "ticket.workflow.delete",
 		},
 		"auditor": {
 			"cmdb.server.list", "cmdb.server.view",
@@ -271,6 +435,8 @@ func (i *Initializer) syncDefaultPermissions() error {
 			"audit.operation_log.list",
 			"audit.system_event.list",
 			"audit.stats.view",
+			// 工单中心：审计视角可看全部工单
+			"ticket.ticket.view", "ticket.ticket.list",
 		},
 		"viewer": {
 			"cmdb.server.list",
@@ -285,6 +451,8 @@ func (i *Initializer) syncDefaultPermissions() error {
 		},
 		"user": {
 			"monitor.data.view",
+			// 工单中心入口（发起/待办/我相关的工单）
+			"ticket.ticket.view",
 		},
 		"test": {
 			"system.user.list", "system.user.create",
@@ -309,9 +477,7 @@ func (i *Initializer) syncDefaultPermissions() error {
 		}
 
 		assignedCount := 0
-		permIDs := make([]uint, 0, len(permissions))
 		for _, perm := range permissions {
-			permIDs = append(permIDs, perm.ID)
 			var rolePerm modelsystem.RolePermission
 			err := db.Where("role_id = ? AND permission_id = ?", role.ID, perm.ID).First(&rolePerm).Error
 			if err != nil {
@@ -324,20 +490,9 @@ func (i *Initializer) syncDefaultPermissions() error {
 			}
 		}
 
-		// 收敛式同步：删除内置角色上不在 seed 清单中的历史绑定。
-		// 曾因"只增不删"导致角色定义收紧后旧权限残留（如 k8s_view 历史上含
-		// k8s.resource.update，固化只读后仍持码放行扩缩容），此处以 seed 为准收敛
-		if len(permIDs) > 0 {
-			result := db.Where("role_id = ? AND permission_id NOT IN ?", role.ID, permIDs).Delete(&modelsystem.RolePermission{})
-			if result.Error != nil {
-				logger.Error("清理角色历史权限失败", zap.String("role", roleCode), zap.Error(result.Error))
-			} else if result.RowsAffected > 0 {
-				logger.Warn("已收敛内置角色历史权限（删除 seed 清单外的绑定）",
-					zap.String("role", roleCode),
-					zap.Int64("removed", result.RowsAffected))
-			}
-		}
-
+		// 只增不删：保留管理员对内置角色的手工授权调整，
+		// 避免每次重启把 seed 清单外的绑定清空（角色定义收紧请走角色管理界面，
+		// 改动会经 RoleService 同步 Casbin）
 		logger.Info("角色权限分配完成",
 			zap.String("role", roleCode),
 			zap.Int("总权限数", len(permissions)),
@@ -367,7 +522,11 @@ func (i *Initializer) syncAPIPermissions() error {
 		return err
 	}
 
-	policies := permService.GetAllPolicies()
+	policies, err := permService.GetAllPolicies()
+	if err != nil {
+		logger.Error("获取Casbin策略失败", zap.Error(err))
+		return err
+	}
 	logger.Info("Casbin权限初始化完成", zap.Int("总策略数", len(policies)))
 
 	return nil

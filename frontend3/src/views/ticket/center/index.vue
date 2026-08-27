@@ -1,0 +1,227 @@
+<script setup lang="tsx">
+  import { computed, ref } from 'vue';
+  import { Plus } from '@element-plus/icons-vue';
+  import { useRouter } from 'vue-router';
+  import type { TabPaneName } from 'element-plus';
+  import { useAuthStore } from '@/store/modules/auth';
+  import { fetchTicketTypeOptions, fetchTickets } from '@/service/api';
+  import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
+  import TicketCreateDialog from './modules/ticket-create-dialog.vue';
+
+  defineOptions({ name: 'TicketCenter' });
+
+  const router = useRouter();
+  const authStore = useAuthStore();
+
+  interface SearchParams {
+    page: number;
+    pageSize: number;
+    scope: 'todo' | 'created' | 'done' | 'all';
+    status: string;
+    typeId: number | undefined;
+    keyword: string;
+  }
+
+  function getInitSearchParams(): SearchParams {
+    return { page: 1, pageSize: 10, scope: 'todo', status: '', typeId: undefined, keyword: '' };
+  }
+
+  const searchParams = ref<SearchParams>(getInitSearchParams());
+
+  // 全部工单 tab 仅对有权限者可见
+  const canViewAll = computed(() => authStore.hasPermission('ticket.ticket.list'));
+
+  const statusMap: Record<string, { label: string; type: 'primary' | 'success' | 'danger' | 'info' }> = {
+    pending: { label: '审批中', type: 'primary' },
+    approved: { label: '已通过', type: 'success' },
+    rejected: { label: '已驳回', type: 'danger' },
+    canceled: { label: '已撤销', type: 'info' }
+  };
+
+  const priorityMap: Record<string, { label: string; type: 'info' | 'primary' | 'warning' | 'danger' }> = {
+    low: { label: '低', type: 'info' },
+    normal: { label: '中', type: 'primary' },
+    high: { label: '高', type: 'warning' },
+    urgent: { label: '紧急', type: 'danger' }
+  };
+
+  // 工单类型选项（筛选 + 发起）
+  const typeOptions = ref<Api.Ticket.TicketTypeOption[]>([]);
+  async function loadTypeOptions() {
+    const { data, error } = await fetchTicketTypeOptions();
+    if (!error && data) {
+      typeOptions.value = data;
+    }
+  }
+  loadTypeOptions();
+
+  const { columns, data, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
+    paginationProps: {
+      currentPage: searchParams.value.page,
+      pageSize: searchParams.value.pageSize,
+      pageSizes: [10, 20, 50, 100]
+    },
+    api: () => fetchTickets(searchParams.value),
+    transform: response => defaultTransform(response),
+    onPaginationParamsChange: params => {
+      searchParams.value.page = params.currentPage ?? 1;
+      searchParams.value.pageSize = params.pageSize ?? 10;
+    },
+    columns: () => [
+      { prop: 'ticketNo', label: '工单号', width: 150, align: 'center' },
+      { prop: 'title', label: '标题', minWidth: 180, align: 'center', showOverflowTooltip: true },
+      { prop: 'typeName', label: '类型', width: 110, align: 'center' },
+      {
+        prop: 'priority',
+        label: '优先级',
+        width: 80,
+        align: 'center',
+        formatter: row => {
+          const item = priorityMap[row.priority] ?? priorityMap.normal;
+          return <ElTag type={item.type}>{item.label}</ElTag>;
+        }
+      },
+      {
+        prop: 'status',
+        label: '状态',
+        width: 90,
+        align: 'center',
+        formatter: row => {
+          const item = statusMap[row.status] ?? statusMap.pending;
+          return <ElTag type={item.type}>{item.label}</ElTag>;
+        }
+      },
+      {
+        prop: 'currentNodeName',
+        label: '当前节点',
+        minWidth: 140,
+        align: 'center',
+        formatter: row => (
+          <div>
+            <div>{row.status === 'pending' ? row.currentNodeName || '-' : '已结束'}</div>
+            {row.status === 'pending' && row.currentApprovers ? (
+              <div class="text-12px text-gray-400">待审批：{row.currentApprovers}</div>
+            ) : null}
+          </div>
+        )
+      },
+      { prop: 'creatorName', label: '发起人', width: 100, align: 'center' },
+      { prop: 'createdAt', label: '创建时间', width: 170, align: 'center' },
+      {
+        prop: 'operate',
+        label: '操作',
+        width: 90,
+        fixed: 'right',
+        align: 'center',
+        formatter: row => (
+          <ElButton
+            size="small"
+            type={row.canApprove ? 'primary' : 'default'}
+            onClick={() => handleView(row.id)}
+          >
+            {row.canApprove ? '去审批' : '查看'}
+          </ElButton>
+        )
+      }
+    ]
+  });
+
+  function handleView(id: number) {
+    // 注意：必须用 path 导航。按 name 导航 vue-router 不会深入空 path 子路由，详情页会空白
+    router.push({ path: '/ticket/center/detail', query: { id: String(id) } });
+  }
+
+  function handleTabChange(name: TabPaneName) {
+    searchParams.value.scope = name as SearchParams['scope'];
+    getDataByPage(1);
+  }
+
+  function handleSearch() {
+    getDataByPage(1);
+  }
+
+  function handleReset() {
+    const scope = searchParams.value.scope;
+    searchParams.value = getInitSearchParams();
+    searchParams.value.scope = scope;
+    getDataByPage(1);
+  }
+
+  // 发起工单弹窗
+  const createVisible = ref(false);
+  function handleCreated() {
+    // 新工单出现在"我发起的"，也可能立即需要自己审批（发起人节点）
+    searchParams.value.scope = 'created';
+    getDataByPage(1);
+  }
+</script>
+
+<template>
+  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
+    <ElCard class="card-wrapper sm:flex-1-hidden">
+      <template #header>
+        <div class="flex items-center justify-between">
+          <span class="text-lg font-medium">工单中心</span>
+          <ElButton type="primary" :icon="Plus" @click="createVisible = true">发起工单</ElButton>
+        </div>
+      </template>
+
+      <!-- 视图切换 -->
+      <ElTabs :model-value="searchParams.scope" class="mb-12px" @tab-change="handleTabChange">
+        <ElTabPane label="待我审批" name="todo" />
+        <ElTabPane label="我发起的" name="created" />
+        <ElTabPane label="我已审批" name="done" />
+        <ElTabPane v-if="canViewAll" label="全部工单" name="all" />
+      </ElTabs>
+
+      <!-- 搜索区 -->
+      <ElForm inline class="mb-12px" @submit.prevent>
+        <ElFormItem label="关键词">
+          <ElInput
+            v-model="searchParams.keyword"
+            placeholder="标题/工单号/发起人"
+            clearable
+            class="w-200px"
+            @keyup.enter="handleSearch"
+          />
+        </ElFormItem>
+        <ElFormItem label="状态">
+          <ElSelect v-model="searchParams.status" clearable placeholder="全部" class="w-130px">
+            <ElOption label="审批中" value="pending" />
+            <ElOption label="已通过" value="approved" />
+            <ElOption label="已驳回" value="rejected" />
+            <ElOption label="已撤销" value="canceled" />
+          </ElSelect>
+        </ElFormItem>
+        <ElFormItem label="类型">
+          <ElSelect v-model="searchParams.typeId" clearable placeholder="全部" class="w-150px">
+            <ElOption v-for="t in typeOptions" :key="t.id" :label="t.name" :value="t.id" />
+          </ElSelect>
+        </ElFormItem>
+        <ElFormItem>
+          <ElButton type="primary" @click="handleSearch">搜索</ElButton>
+          <ElButton @click="handleReset">重置</ElButton>
+        </ElFormItem>
+      </ElForm>
+
+      <div class="h-[calc(100%-160px)]">
+        <ElTable v-loading="loading" height="100%" :data="data" :border="false" class="sm:h-full" row-key="id">
+          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+        </ElTable>
+
+        <div class="mt-20px flex justify-end">
+          <ElPagination
+            v-if="mobilePagination.total"
+            layout="total, sizes, prev, pager, next, jumper"
+            v-bind="mobilePagination"
+            @current-change="mobilePagination['current-change']"
+            @size-change="mobilePagination['size-change']"
+          />
+        </div>
+      </div>
+
+      <!-- 发起工单 -->
+      <TicketCreateDialog v-model:visible="createVisible" :type-options="typeOptions" @created="handleCreated" />
+    </ElCard>
+  </div>
+</template>

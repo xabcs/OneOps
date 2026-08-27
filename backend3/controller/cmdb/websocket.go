@@ -7,10 +7,12 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	modelcmdb "oneops/backend3/model/cmdb"
+	"oneops/backend3/pkg/database"
 	"oneops/backend3/pkg/utils"
 	cmdbsvc "oneops/backend3/service/cmdb"
 
@@ -226,6 +228,14 @@ func (h *SSHWebSocketHandler) HandleWebSocket(ctx *gin.Context) {
 	}
 	if userID == 0 {
 		ctx.JSON(http.StatusOK, utils.ErrorUnauthorized("未认证"))
+		return
+	}
+
+	// 用户状态校验（H4）：WS 不走 Auth 中间件，此处自查，禁用用户不能接入会话
+	var userStatus string
+	if err := database.GetDB().Table("sys_users").
+		Select("status").Where("id = ?", userID).Scan(&userStatus).Error; err != nil || userStatus != "active" {
+		ctx.JSON(http.StatusOK, utils.ErrorUnauthorized("用户已被禁用或不存在"))
 		return
 	}
 
@@ -473,20 +483,39 @@ func (h *SSHWebSocketHandler) forwardWebSocketToSSH(conn *wsConn, stdinPipe io.W
 			sm.UpdateLastActiveAt(session.ID)
 		}
 
+		// 命令拦截（H7）：以回车结尾的消息视为一次命令提交，先评估再转发。
+		// 命中策略黑名单时不把回车写入 SSH（命令不执行），并向远端行缓冲发送
+		// Ctrl-U 清行，防止已透传的命令字符在下次回车时被补执行
+		terminated := len(message) > 0 && (message[len(message)-1] == '\n' || message[len(message)-1] == '\r')
+		if terminated {
+			commandBuffer = append(commandBuffer, message...)
+			command := strings.TrimSpace(string(cleanCommand(commandBuffer)))
+			commandBuffer = nil
+
+			if command != "" && sm != nil && sm.svc.IsCommandBlocked(command, session.ID) {
+				_, _ = stdinPipe.Write([]byte("\x15")) // Ctrl-U：清除远端未执行行
+				_ = conn.safeWrite(websocket.TextMessage,
+					[]byte("\r\n\x1b[31m[OneOps] 命令已被安全策略拦截，未执行: "+command+"\x1b[0m\r\n"))
+				log.Printf("[SSH 拦截] 会话 %d 用户 %d 命令被拦截: %s", session.ID, session.UserID, command)
+				_ = sm.svc.RecordCommand(session.ID, command, -1, "[已拦截，未执行]")
+				continue
+			}
+
+			if _, err := stdinPipe.Write(message); err != nil {
+				log.Printf("SSH 写入错误: %v", err)
+				return
+			}
+			if command != "" && sm != nil {
+				_ = sm.svc.RecordCommand(session.ID, command, 0, "")
+			}
+			continue
+		}
+
 		if _, err := stdinPipe.Write(message); err != nil {
 			log.Printf("SSH 写入错误: %v", err)
 			return
 		}
-
-		// 累积命令并记录审计
 		commandBuffer = append(commandBuffer, message...)
-		if len(message) > 0 && (message[len(message)-1] == '\n' || message[len(message)-1] == '\r') {
-			command := string(cleanCommand(commandBuffer))
-			if command != "" && sm != nil {
-				_ = sm.svc.RecordCommand(session.ID, command, 0, "")
-			}
-			commandBuffer = nil
-		}
 	}
 }
 

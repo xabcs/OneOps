@@ -85,4 +85,5 @@ func SetupRoutes(r *gin.Engine) {
 	SetupAuditRoutes(r, auditController)
 	SetupMonitoringRoutes(r)
 	SetupAuthorizationRoutes(r)
+	SetupTicketRoutes(r)
 }

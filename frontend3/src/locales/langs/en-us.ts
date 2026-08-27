@@ -316,7 +316,6 @@ const local: App.I18n.Schema = {
     manage_permission: 'Permission Manage',
     // 'manage_api-permission': 'API Permission Manage', // 已废弃，使用层级权限代码管理
     manage_menu: 'Menu Manage',
-    auth_center: 'Auth Center',
     auth: 'Auth Center',
     auth_users: 'Users',
     auth_roles: 'User Groups',
@@ -369,7 +368,6 @@ const local: App.I18n.Schema = {
     cmdb_config_agents: 'Agent Management',
     cmdb_terminal: 'SSH Terminal',
     cmdb_webterminal: 'Web Terminal',
-    webterminal: 'Web Terminal',
     plugin: 'Plugin',
     plugin_copy: 'Copy',
     plugin_charts: 'Charts',
@@ -402,6 +400,10 @@ const local: App.I18n.Schema = {
     monitoring_servers_detail: 'Host Detail',
     'monitoring_servers-detail': 'Host Detail',
     monitoring_alerts: 'Alerts',
+    ticket: 'Ticket Center',
+    ticket_center: 'My Tickets',
+    ticket_types: 'Ticket Types',
+    ticket_workflows: 'Workflows',
     webterminal: 'Terminal Workbench'
   },
   page: {

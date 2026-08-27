@@ -12,12 +12,13 @@ import (
 
 // K8sRbacController K8s 原生 RBAC 对象代管（A 模式）
 type K8sRbacController struct {
-	svc *k8ssvc.K8sRbacService
+	svc        *k8ssvc.K8sRbacService
+	clusterSvc *k8ssvc.K8sClusterService
 }
 
 // NewK8sRbacController 创建 RBAC 代管控制器
-func NewK8sRbacController(svc *k8ssvc.K8sRbacService) *K8sRbacController {
-	return &K8sRbacController{svc: svc}
+func NewK8sRbacController(svc *k8ssvc.K8sRbacService, clusterSvc *k8ssvc.K8sClusterService) *K8sRbacController {
+	return &K8sRbacController{svc: svc, clusterSvc: clusterSvc}
 }
 
 func clusterIDFromPath(c *gin.Context) (uint, bool) {
@@ -27,6 +28,32 @@ func clusterIDFromPath(c *gin.Context) (uint, bool) {
 		return 0, false
 	}
 	return uint(id), true
+}
+
+// checkRbacAccess 集群级授权校验（H3）：此前 handler 只解析 clusterID 不查归属，
+// 任何持有 k8s.rbac.* 系统码的用户可以平台管理员身份读写任意集群的 RBAC，构成提权链。
+// 现：读类要求目标集群可见（CheckUserClusterAccess），写类要求集群内具备操作绑定
+// （CheckClusterOperation），实际客户端再走 impersonation，由集群原生 RBAC 终判。
+func (ctrl *K8sRbacController) checkRbacAccess(c *gin.Context, clusterID uint, write bool) bool {
+	userID := c.GetUint("user_id")
+	var (
+		allowed bool
+		err     error
+	)
+	if write {
+		allowed, err = ctrl.clusterSvc.CheckClusterOperation(userID, clusterID, "k8s.rbac.manage")
+	} else {
+		allowed, err = ctrl.clusterSvc.CheckUserClusterAccess(userID, clusterID)
+	}
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("集群授权校验失败"))
+		return false
+	}
+	if !allowed {
+		c.JSON(http.StatusOK, utils.ErrorForbidden("无权访问该集群的 RBAC 资源"))
+		return false
+	}
+	return true
 }
 
 // ListClusterRoles godoc
@@ -44,7 +71,11 @@ func (ctrl *K8sRbacController) ListClusterRoles(c *gin.Context) {
 	if !ok {
 		return
 	}
-	list, err := ctrl.svc.ListClusterRoles(clusterID, c.Query("search"))
+	userID := c.GetUint("user_id")
+	if !ctrl.checkRbacAccess(c, clusterID, false) {
+		return
+	}
+	list, err := ctrl.svc.ListClusterRoles(clusterID, userID, c.Query("search"))
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -67,7 +98,11 @@ func (ctrl *K8sRbacController) GetClusterRole(c *gin.Context) {
 	if !ok {
 		return
 	}
-	role, err := ctrl.svc.GetClusterRole(clusterID, c.Param("name"))
+	userID := c.GetUint("user_id")
+	if !ctrl.checkRbacAccess(c, clusterID, false) {
+		return
+	}
+	role, err := ctrl.svc.GetClusterRole(clusterID, userID, c.Param("name"))
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -91,12 +126,16 @@ func (ctrl *K8sRbacController) UpdateClusterRole(c *gin.Context) {
 	if !ok {
 		return
 	}
+	userID := c.GetUint("user_id")
+	if !ctrl.checkRbacAccess(c, clusterID, true) {
+		return
+	}
 	var manifest map[string]interface{}
 	if err := c.ShouldBindJSON(&manifest); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
 		return
 	}
-	if err := ctrl.svc.UpdateClusterRole(clusterID, manifest); err != nil {
+	if err := ctrl.svc.UpdateClusterRole(clusterID, userID, manifest); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -119,7 +158,11 @@ func (ctrl *K8sRbacController) ListRoles(c *gin.Context) {
 	if !ok {
 		return
 	}
-	list, err := ctrl.svc.ListRoles(clusterID, c.Query("namespace"), c.Query("search"))
+	userID := c.GetUint("user_id")
+	if !ctrl.checkRbacAccess(c, clusterID, false) {
+		return
+	}
+	list, err := ctrl.svc.ListRoles(clusterID, userID, c.Query("namespace"), c.Query("search"))
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -142,7 +185,11 @@ func (ctrl *K8sRbacController) GetRole(c *gin.Context) {
 	if !ok {
 		return
 	}
-	role, err := ctrl.svc.GetRole(clusterID, c.Param("namespace"), c.Param("name"))
+	userID := c.GetUint("user_id")
+	if !ctrl.checkRbacAccess(c, clusterID, false) {
+		return
+	}
+	role, err := ctrl.svc.GetRole(clusterID, userID, c.Param("namespace"), c.Param("name"))
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -167,12 +214,16 @@ func (ctrl *K8sRbacController) UpdateRole(c *gin.Context) {
 	if !ok {
 		return
 	}
+	userID := c.GetUint("user_id")
+	if !ctrl.checkRbacAccess(c, clusterID, true) {
+		return
+	}
 	var manifest map[string]interface{}
 	if err := c.ShouldBindJSON(&manifest); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误: "+err.Error()))
 		return
 	}
-	if err := ctrl.svc.UpdateRole(clusterID, c.Param("namespace"), manifest); err != nil {
+	if err := ctrl.svc.UpdateRole(clusterID, userID, c.Param("namespace"), manifest); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
 	}
@@ -193,7 +244,11 @@ func (ctrl *K8sRbacController) ListClusterRoleBindings(c *gin.Context) {
 	if !ok {
 		return
 	}
-	list, err := ctrl.svc.ListClusterRoleBindings(clusterID, c.Query("search"))
+	userID := c.GetUint("user_id")
+	if !ctrl.checkRbacAccess(c, clusterID, false) {
+		return
+	}
+	list, err := ctrl.svc.ListClusterRoleBindings(clusterID, userID, c.Query("search"))
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -215,7 +270,11 @@ func (ctrl *K8sRbacController) GetClusterRoleBinding(c *gin.Context) {
 	if !ok {
 		return
 	}
-	binding, err := ctrl.svc.GetClusterRoleBinding(clusterID, c.Param("name"))
+	userID := c.GetUint("user_id")
+	if !ctrl.checkRbacAccess(c, clusterID, false) {
+		return
+	}
+	binding, err := ctrl.svc.GetClusterRoleBinding(clusterID, userID, c.Param("name"))
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -238,7 +297,11 @@ func (ctrl *K8sRbacController) ListRoleBindings(c *gin.Context) {
 	if !ok {
 		return
 	}
-	list, err := ctrl.svc.ListRoleBindings(clusterID, c.Query("namespace"), c.Query("search"))
+	userID := c.GetUint("user_id")
+	if !ctrl.checkRbacAccess(c, clusterID, false) {
+		return
+	}
+	list, err := ctrl.svc.ListRoleBindings(clusterID, userID, c.Query("namespace"), c.Query("search"))
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
@@ -261,7 +324,11 @@ func (ctrl *K8sRbacController) GetRoleBinding(c *gin.Context) {
 	if !ok {
 		return
 	}
-	binding, err := ctrl.svc.GetRoleBinding(clusterID, c.Param("namespace"), c.Param("name"))
+	userID := c.GetUint("user_id")
+	if !ctrl.checkRbacAccess(c, clusterID, false) {
+		return
+	}
+	binding, err := ctrl.svc.GetRoleBinding(clusterID, userID, c.Param("namespace"), c.Param("name"))
 	if err != nil {
 		c.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return

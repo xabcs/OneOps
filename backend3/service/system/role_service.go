@@ -83,9 +83,45 @@ func (s *RoleService) Create(role *modelsystem.Role) error {
 	return s.repo.Create(role)
 }
 
-// Update 根据ID更新指定字段
+// Update 根据ID更新指定字段。
+// code/status 变更会影响 Casbin 策略：改码需清旧码策略（防孤儿策略放行），
+// 禁用/启用按角色最新状态重同步
 func (s *RoleService) Update(id uint64, updates map[string]interface{}) error {
-	return s.repo.UpdateByID(id, updates)
+	oldRole, err := s.repo.FindByID(id)
+	if err != nil {
+		return ErrRoleNotFound
+	}
+
+	if err := s.repo.UpdateByID(id, updates); err != nil {
+		return err
+	}
+
+	codeChanged := false
+	if v, ok := updates["code"].(string); ok && v != "" && v != oldRole.Code {
+		codeChanged = true
+	}
+	statusChanged := false
+	if v, ok := updates["status"].(int); ok && v != oldRole.Status {
+		statusChanged = true
+	}
+	if !codeChanged && !statusChanged {
+		return nil
+	}
+
+	permSvc, err := GetPermissionService()
+	if err != nil {
+		// 权限服务不可用不回滚角色更新，策略由下次全量同步收敛
+		return nil
+	}
+	if codeChanged {
+		if err := permSvc.RemoveRolePolicies(oldRole.Code); err != nil {
+			return fmt.Errorf("角色已更新，但清理旧 Casbin 策略失败: %w", err)
+		}
+	}
+	if err := permSvc.SyncRoleToCasbin(uint(id)); err != nil {
+		return fmt.Errorf("角色已更新，但同步 Casbin 策略失败: %w", err)
+	}
+	return nil
 }
 
 // Delete 删除角色（含业务校验）
@@ -118,6 +154,14 @@ func (s *RoleService) Delete(id uint) error {
 	// 检查是否为内置角色
 	if builtinRoleCodes[role.Code] {
 		return ErrBuiltinRoleProtected
+	}
+
+	// 删除前清理权限绑定与 Casbin 策略，防孤儿数据/孤儿策略继续放行
+	if err := s.repo.DeleteRolePermissions(id); err != nil {
+		return err
+	}
+	if permSvc, err := GetPermissionService(); err == nil {
+		_ = permSvc.RemoveRolePolicies(role.Code)
 	}
 
 	return s.repo.Delete(uint64(id))

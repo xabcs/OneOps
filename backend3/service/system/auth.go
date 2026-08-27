@@ -39,6 +39,12 @@ func (s *AuthService) Login(username, password string) (string, *modelsystem.Use
 		return "", nil, result.Error
 	}
 
+	// 禁用用户禁止登录（H4）
+	if user.Status != "active" {
+		logger.Warn("禁用用户尝试登录", zap.String("username", username), zap.Uint("user_id", user.ID))
+		return "", nil, ErrUserDisabled
+	}
+
 	logger.Debug("[登录调试-服务层] 开始验证密码")
 
 	// 验证密码
@@ -78,6 +84,11 @@ func (s *AuthService) GetUserInfo(userID uint) (*UserInfo, error) {
 
 	if result.Error != nil {
 		return nil, result.Error
+	}
+
+	// 禁用用户不返回信息（H4：与中间件拦截形成双保险）
+	if user.Status != "active" {
+		return nil, ErrUserDisabled
 	}
 
 	logger.Debug("[登录调试-服务层] 开始获取角色信息")
@@ -123,8 +134,10 @@ func (s *AuthService) GetUserInfo(userID uint) (*UserInfo, error) {
 		zap.Duration("总耗时", time.Since(startTime)))
 
 	// 查询权限详细信息（用于前端显示权限名称）
+	// 批次三：通配符与 BuildMenuTreeAndPermissions 对齐（*:*:*，冒号分隔）。
+	// 此前误用 *.*.* 永不命中，导致 admin 每次登录多执行一次无效的 IN 查询
 	var permissionInfos []PermissionInfo
-	if len(permissions) > 0 && !strings.Contains(permissions[0], "*.*.*") {
+	if len(permissions) > 0 && !strings.Contains(permissions[0], "*:*:*") {
 		// 非管理员，查询权限详情
 		var perms []modelsystem.Permission
 		err := database.GetDB().Where("code IN ?", permissions).Find(&perms).Error
@@ -190,6 +203,7 @@ func (ui *UserInfo) ToMap() map[string]interface{} {
 // 错误定义
 var (
 	ErrInvalidPassword = &AuthError{Message: "密码错误"}
+	ErrUserDisabled    = &AuthError{Message: "账号已被禁用，请联系管理员"}
 )
 
 // AuthError 认证错误

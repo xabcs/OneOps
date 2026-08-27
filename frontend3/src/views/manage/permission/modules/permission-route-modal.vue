@@ -173,12 +173,12 @@
                 <ElInput v-model="addModel.path" placeholder="如：/api/system/users" style="width: 320px" @keyup.enter="handleAdd" />
             </ElFormItem>
             <ElFormItem>
-                <ElButton type="primary" @click="handleAdd">
+                <PermissionButton code="system.permission.create" type="primary" @click="handleAdd">
                     <ElIcon>
                         <Plus />
                     </ElIcon>
                     添加映射
-                </ElButton>
+                </PermissionButton>
             </ElFormItem>
         </ElForm>
 
@@ -224,8 +224,8 @@
             <ElTableColumn label="操作" width="150" fixed="right">
                 <template #default="{ row }">
                     <ElSpace size="small">
-                        <ElButton text type="primary" size="small" @click="openEdit(row)">改权限码</ElButton>
-                        <ElButton text type="danger" size="small" @click="handleDelete(row)">删除</ElButton>
+                        <PermissionButton code="system.permission.update" text type="primary" size="small" @click="openEdit(row)">改权限码</PermissionButton>
+                        <PermissionButton code="system.permission.delete" text type="danger" size="small" @click="handleDelete(row)">删除</PermissionButton>
                     </ElSpace>
                 </template>
             </ElTableColumn>

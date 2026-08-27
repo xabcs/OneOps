@@ -83,7 +83,7 @@
     </ElForm>
     <template #footer>
       <ElButton @click="visible = false">取消</ElButton>
-      <ElButton type="primary" :loading="submitting" @click="handleSubmit">确定</ElButton>
+      <PermissionButton code="k8s.resource.update" type="primary" :loading="submitting" @click="handleSubmit">确定</PermissionButton>
     </template>
   </ElDialog>
 </template>

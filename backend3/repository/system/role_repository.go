@@ -89,6 +89,11 @@ func (r *RoleRepository) Delete(id uint64) error {
 	return r.db.Delete(&modelsystem.Role{}, id).Error
 }
 
+// DeleteRolePermissions 清理角色的权限绑定（删除角色前调用，防孤儿绑定）
+func (r *RoleRepository) DeleteRolePermissions(roleID uint) error {
+	return r.db.Where("role_id = ?", roleID).Delete(&modelsystem.RolePermission{}).Error
+}
+
 // CountUsersByRoleID 统计使用指定角色的用户数量
 func (r *RoleRepository) CountUsersByRoleID(roleID uint) (int64, error) {
 	var count int64

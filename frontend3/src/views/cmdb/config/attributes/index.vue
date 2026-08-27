@@ -266,10 +266,10 @@
       <template #header>
         <div class="card-header">
           <span class="title">属性管理</span>
-          <ElButton type="primary" @click="handleCreate">
+          <PermissionButton code="cmdb.attribute.create" type="primary" @click="handleCreate">
             <icon-mdi-plus class="text-icon" />
             新增属性
-          </ElButton>
+          </PermissionButton>
         </div>
       </template>
 
@@ -338,8 +338,8 @@
         </ElTableColumn>
         <ElTableColumn label="操作" width="150" align="center" fixed="right">
           <template #default="{ row }">
-            <ElButton type="primary" size="small" @click="handleEdit(row)">编辑</ElButton>
-            <ElButton type="danger" size="small" @click="handleDelete(row)">删除</ElButton>
+            <PermissionButton code="cmdb.attribute.update" type="primary" size="small" @click="handleEdit(row)">编辑</PermissionButton>
+            <PermissionButton code="cmdb.attribute.delete" type="danger" size="small" @click="handleDelete(row)">删除</PermissionButton>
           </template>
         </ElTableColumn>
       </ElTable>

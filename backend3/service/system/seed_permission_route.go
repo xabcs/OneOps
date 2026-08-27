@@ -33,6 +33,20 @@ func (i *Initializer) syncPermissionRoutes() error {
 		{"POST", "/api/route/invalidateCache", "system.route.invalidate"},
 		{"GET", "/api/route/debugCache", "system.route.debug"},
 
+		// ========== 工单中心：流程定义管理 ==========
+		// 说明：工单发起/审批/详情/评论及 /ticket/types/options 仅需登录（审批权由流程节点配置决定），
+		// 不在本表登记；此处仅登记管理端 CRUD 的权限映射。
+		{"GET", "/api/ticket/workflows", "ticket.workflow.list"},
+		{"GET", "/api/ticket/workflows/:id", "ticket.workflow.list"},
+		{"POST", "/api/ticket/workflows", "ticket.workflow.create"},
+		{"PUT", "/api/ticket/workflows/:id", "ticket.workflow.update"},
+		{"DELETE", "/api/ticket/workflows/:id", "ticket.workflow.delete"},
+		// 工单类型管理
+		{"GET", "/api/ticket/types", "ticket.type.list"},
+		{"POST", "/api/ticket/types", "ticket.type.create"},
+		{"PUT", "/api/ticket/types/:id", "ticket.type.update"},
+		{"DELETE", "/api/ticket/types/:id", "ticket.type.delete"},
+
 		// ========== 系统管理：菜单/角色/用户/权限 ==========
 		{"GET", "/api/system/menus", "system.menu.list"},
 		{"GET", "/api/system/menus/tree", "system.menu.list"},
@@ -136,13 +150,13 @@ func (i *Initializer) syncPermissionRoutes() error {
 		{"GET", "/api/cmdb/agents", "cmdb.agents.list"},
 		{"POST", "/api/cmdb/agents/batch-deploy", "cmdb.agents.deploy"},
 		{"POST", "/api/cmdb/agents/batch-uninstall", "cmdb.agents.uninstall"},
-		{"DELETE", "/api/cmdb/agents/:id", "cmdb.agents.list"},
+		{"DELETE", "/api/cmdb/agents/:id", "cmdb.agents.delete"},
 		{"GET", "/api/cmdb/agent-versions", "cmdb.agents.list"},
 		{"GET", "/api/cmdb/agent-versions/latest", "cmdb.agents.list"},
 		{"GET", "/api/cmdb/agent-versions/:id", "cmdb.agents.list"},
-		{"POST", "/api/cmdb/agent-versions", "cmdb.agents.list"},
-		{"PUT", "/api/cmdb/agent-versions/:id", "cmdb.agents.list"},
-		{"DELETE", "/api/cmdb/agent-versions/:id", "cmdb.agents.list"},
+		{"POST", "/api/cmdb/agent-versions", "cmdb.agent_version.manage"},
+		{"PUT", "/api/cmdb/agent-versions/:id", "cmdb.agent_version.manage"},
+		{"DELETE", "/api/cmdb/agent-versions/:id", "cmdb.agent_version.manage"},
 		{"GET", "/api/cmdb/agent-upgrade-tasks", "cmdb.agents.upgrade"},
 		{"GET", "/api/cmdb/agent-upgrade-tasks/:id", "cmdb.agents.upgrade"},
 
@@ -175,10 +189,10 @@ func (i *Initializer) syncPermissionRoutes() error {
 		// ========== CMDB：SSH凭证/资产变更 ==========
 		{"GET", "/api/cmdb/ssh-credentials", "cmdb.server.list"},
 		{"GET", "/api/cmdb/ssh-credentials/:id", "cmdb.server.list"},
-		{"POST", "/api/cmdb/ssh-credentials", "cmdb.server.list"},
-		{"PUT", "/api/cmdb/ssh-credentials/:id", "cmdb.server.list"},
-		{"DELETE", "/api/cmdb/ssh-credentials/:id", "cmdb.server.list"},
-		{"POST", "/api/cmdb/ssh-credentials/:id/test", "cmdb.server.list"},
+		{"POST", "/api/cmdb/ssh-credentials", "cmdb.credential.create"},
+		{"PUT", "/api/cmdb/ssh-credentials/:id", "cmdb.credential.update"},
+		{"DELETE", "/api/cmdb/ssh-credentials/:id", "cmdb.credential.delete"},
+		{"POST", "/api/cmdb/ssh-credentials/:id/test", "cmdb.credential.test"},
 		{"GET", "/api/cmdb/asset-changes", "cmdb.server.list"},
 
 		// ========== CMDB：会话/审计/访问策略 ==========
@@ -319,20 +333,20 @@ func (i *Initializer) syncPermissionRoutes() error {
 		{"POST", "/api/monitoring/alerts/:id/acknowledge", "monitor.alert.ack"},
 		{"GET", "/api/monitoring/alerts/stats", "monitor.alert.list"},
 		{"GET", "/api/monitoring/alerts/rules", "monitor.alert.list"},
-		{"POST", "/api/monitoring/alerts/rules", "monitor.alert.list"},
-		{"PUT", "/api/monitoring/alerts/rules/:id", "monitor.alert.list"},
-		{"DELETE", "/api/monitoring/alerts/rules/:id", "monitor.alert.list"},
-		{"PUT", "/api/monitoring/alerts/rules/:id/status", "monitor.alert.list"},
+		{"POST", "/api/monitoring/alerts/rules", "monitor.alert_rule.create"},
+		{"PUT", "/api/monitoring/alerts/rules/:id", "monitor.alert_rule.update"},
+		{"DELETE", "/api/monitoring/alerts/rules/:id", "monitor.alert_rule.delete"},
+		{"PUT", "/api/monitoring/alerts/rules/:id/status", "monitor.alert_rule.update"},
 		{"GET", "/api/monitoring/notifications/channels", "monitor.alert.list"},
-		{"POST", "/api/monitoring/notifications/channels", "monitor.alert.list"},
-		{"PUT", "/api/monitoring/notifications/channels/:id", "monitor.alert.list"},
-		{"DELETE", "/api/monitoring/notifications/channels/:id", "monitor.alert.list"},
-		{"POST", "/api/monitoring/notifications/channels/:id/test", "monitor.alert.list"},
+		{"POST", "/api/monitoring/notifications/channels", "monitor.notification.create"},
+		{"PUT", "/api/monitoring/notifications/channels/:id", "monitor.notification.update"},
+		{"DELETE", "/api/monitoring/notifications/channels/:id", "monitor.notification.delete"},
+		{"POST", "/api/monitoring/notifications/channels/:id/test", "monitor.notification.test"},
 		{"GET", "/api/monitoring/reports", "monitor.report.list"},
 		{"POST", "/api/monitoring/reports", "monitor.report.create"},
 		{"GET", "/api/monitoring/reports/:id", "monitor.report.list"},
 		{"GET", "/api/monitoring/reports/:id/export", "monitor.report.list"},
-		{"DELETE", "/api/monitoring/reports/:id", "monitor.report.list"},
+		{"DELETE", "/api/monitoring/reports/:id", "monitor.report.delete"},
 
 		// ========== 审计中心 ==========
 		{"GET", "/api/audit/login-logs", "audit.login_log.list"},
@@ -402,6 +416,33 @@ func (i *Initializer) syncPermissionRoutes() error {
 		zap.Int("total", len(routes)),
 		zap.Int("inserted", inserted),
 		zap.Int("page_managed", updated))
+
+	// 清理孤儿 seed 映射：代码中已移除/改码的旧 (method,path,code) 若仍以 is_seed=1 留库，
+	// 在 OR 语义下会继续放行（写接口从读码改为专码后，残留旧行等于后门），必须同步删除。
+	// 只清 is_seed=1 的行，页面手工维护（IsSeed=false）的映射不受影响
+	var seedRoutes []modelsystem.PermissionRoute
+	if err := db.Where("is_seed = ?", true).Find(&seedRoutes).Error; err != nil {
+		logger.Warn("查询 seed 权限映射失败，跳过孤儿清理", zap.Error(err))
+		return nil
+	}
+	current := make(map[string]bool, len(routes))
+	for _, r := range routes {
+		current[r.Method+"|"+r.Path+"|"+r.Code] = true
+	}
+	removed := 0
+	for _, sr := range seedRoutes {
+		key := sr.Method + "|" + sr.Path + "|" + sr.PermissionCode
+		if !current[key] {
+			if err := db.Delete(&sr).Error; err != nil {
+				logger.Warn("清理孤儿 seed 权限映射失败", zap.String("route", key), zap.Error(err))
+			} else {
+				removed++
+			}
+		}
+	}
+	if removed > 0 {
+		logger.Info("已清理孤儿 seed 权限映射", zap.Int("removed", removed))
+	}
 
 	return nil
 }

@@ -104,7 +104,7 @@
             <ElSelect v-model="selectedUserIds" multiple filterable clearable placeholder="选择要添加的用户" style="width: 420px">
                 <ElOption v-for="u in userOptions" :key="u.id" :value="u.id" :label="`${u.username}（${u.nickname || u.username}）`" />
             </ElSelect>
-            <ElButton type="primary" :loading="submitting" @click="handleAddMembers">添加成员</ElButton>
+            <PermissionButton code="system.user.update" type="primary" :loading="submitting" @click="handleAddMembers">添加成员</PermissionButton>
         </div>
         <ElTable v-loading="loading" :data="members" stripe max-height="420">
             <ElTableColumn prop="userId" label="用户ID" width="80" />
@@ -113,7 +113,7 @@
             <ElTableColumn prop="createdAt" label="加入时间" width="170" />
             <ElTableColumn label="操作" width="100">
                 <template #default="{ row }">
-                    <ElButton type="danger" size="small" link @click="handleRemoveMember(row)">移除</ElButton>
+                    <PermissionButton code="system.user.update" type="danger" size="small" link @click="handleRemoveMember(row)">移除</PermissionButton>
                 </template>
             </ElTableColumn>
         </ElTable>

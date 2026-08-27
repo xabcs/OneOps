@@ -299,6 +299,16 @@ export function fetchPermissionOptions() {
 }
 
 /**
+ * 获取权限树（模块→资源→按钮三层，服务端按 parent_id 组装）
+ */
+export function fetchGetPermissionTree() {
+  return request<Api.SystemManage.Permission[]>({
+    url: '/system/permissions/tree',
+    method: 'get'
+  });
+}
+
+/**
  * 获取权限详情
  */
 export function fetchGetPermissionById(id: number) {

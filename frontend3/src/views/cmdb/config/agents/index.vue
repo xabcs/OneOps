@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-  import { computed, onMounted, ref } from 'vue';
+  import { computed, onMounted, ref, resolveDirective, withDirectives } from 'vue';
   import {
     fetchBatchUninstallAgent,
     fetchDeleteAgentRecord,
@@ -13,8 +13,12 @@
   } from '@/service/api/cmdb';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
   import type { FlatResponseData } from '@sa/axios';
+  import PermissionButton from '@/components/common/PermissionButton.vue';
 
   defineOptions({ name: 'CmdbConfigAgents' });
+
+  // JSX 中自定义指令不生效（v-permission 会被当作普通 prop），用 withDirectives 手动挂载
+  const vPermission = resolveDirective('permission')!;
 
   // ========== 搜索参数 ==========
   interface SearchParams {
@@ -127,19 +131,21 @@
         formatter: row => {
           if (!row.agentStatus || row.agentStatus === 'uninstalled') {
             return (
-              <ElButton type="primary" size="small" onClick={() => handleDeploy(row)}>
+              <PermissionButton code="cmdb.agents.deploy" type="primary" size="small" onClick={() => handleDeploy(row)}>
                 部署
-              </ElButton>
+              </PermissionButton>
             );
           }
           return (
             <span class="actions-wrapper">
-              {row.agentStatus === 'running' && !isLatestVersion(row.agentVersion) && (
-                <a class="action-link upgrade-link" onClick={() => handleUpgrade(row)}>
-                  <icon-mdi-arrow-up-bold />
-                  <span>升级</span>
-                </a>
-              )}
+              {row.agentStatus === 'running' && !isLatestVersion(row.agentVersion) &&
+                withDirectives(
+                  <a class="action-link upgrade-link" onClick={() => handleUpgrade(row)}>
+                    <icon-mdi-arrow-up-bold />
+                    <span>升级</span>
+                  </a>,
+                  [[vPermission, 'cmdb.agents.upgrade']]
+                )}
               <ElDropdown trigger="click">
                 {{
                   default: () => (
@@ -149,24 +155,33 @@
                   ),
                   dropdown: () => (
                     <ElDropdownMenu>
-                      <ElDropdownItem onClick={() => handleRestart(row)}>
-                        <ElIcon class="el-icon--left">
-                          <icon-mdi-refresh />
-                        </ElIcon>
-                        重启
-                      </ElDropdownItem>
-                      <ElDropdownItem onClick={() => handleUninstall(row)}>
-                        <ElIcon class="el-icon--left">
-                          <icon-mdi-delete />
-                        </ElIcon>
-                        卸载
-                      </ElDropdownItem>
-                      <ElDropdownItem onClick={() => handleDeleteRecord(row)}>
-                        <ElIcon class="el-icon--left">
-                          <icon-mdi-trash-can />
-                        </ElIcon>
-                        删除记录
-                      </ElDropdownItem>
+                      {withDirectives(
+                        <ElDropdownItem onClick={() => handleRestart(row)}>
+                          <ElIcon class="el-icon--left">
+                            <icon-mdi-refresh />
+                          </ElIcon>
+                          重启
+                        </ElDropdownItem>,
+                        [[vPermission, 'cmdb.agents.restart']]
+                      )}
+                      {withDirectives(
+                        <ElDropdownItem onClick={() => handleUninstall(row)}>
+                          <ElIcon class="el-icon--left">
+                            <icon-mdi-delete />
+                          </ElIcon>
+                          卸载
+                        </ElDropdownItem>,
+                        [[vPermission, 'cmdb.agents.uninstall']]
+                      )}
+                      {withDirectives(
+                        <ElDropdownItem onClick={() => handleDeleteRecord(row)}>
+                          <ElIcon class="el-icon--left">
+                            <icon-mdi-trash-can />
+                          </ElIcon>
+                          删除记录
+                        </ElDropdownItem>,
+                        [[vPermission, 'cmdb.agents.delete']]
+                      )}
                     </ElDropdownMenu>
                   )
                 }}
@@ -477,21 +492,21 @@
             <span v-if="batchProgress.running" class="batch-progress-text">
               批量部署中：{{ batchProgress.current }} / {{ batchProgress.total }} 台
             </span>
-            <ElButton type="primary" plain :disabled="batchDeployable.length === 0" @click="handleBatchDeploy">
+            <PermissionButton code="cmdb.agents.deploy" type="primary" plain :disabled="batchDeployable.length === 0" @click="handleBatchDeploy">
               <template #icon><icon-mdi-rocket-launch class="text-icon" /></template>
               批量部署
               <span v-if="batchDeployable.length > 0">（{{ batchDeployable.length }}）</span>
-            </ElButton>
-            <ElButton type="danger" plain :disabled="batchUninstallable.length === 0" @click="handleBatchUninstall">
+            </PermissionButton>
+            <PermissionButton code="cmdb.agents.uninstall" type="danger" plain :disabled="batchUninstallable.length === 0" @click="handleBatchUninstall">
               <template #icon><icon-mdi-delete class="text-icon" /></template>
               批量卸载
               <span v-if="batchUninstallable.length > 0">（{{ batchUninstallable.length }}）</span>
-            </ElButton>
-            <ElButton type="success" plain :disabled="batchUpgradeable.length === 0" @click="handleBatchUpgrade">
+            </PermissionButton>
+            <PermissionButton code="cmdb.agents.upgrade" type="success" plain :disabled="batchUpgradeable.length === 0" @click="handleBatchUpgrade">
               <template #icon><icon-mdi-arrow-up-bold class="text-icon" /></template>
               批量升级
               <span v-if="batchUpgradeable.length > 0">（{{ batchUpgradeable.length }}）</span>
-            </ElButton>
+            </PermissionButton>
             <ElButton plain @click="getData">
               <template #icon>
                 <icon-mdi-refresh class="text-icon" :class="{ 'animate-spin': loading }" />

@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { ref, watch } from 'vue';
     import { ElTag, ElTree } from 'element-plus';
-    import { fetchGetRolePermissions, fetchPermissionOptions } from '@/service/api';
+    import { fetchGetPermissionTree, fetchGetRolePermissions } from '@/service/api';
     import { getRoleTagType } from '../../user/modules/user-columns';
 
     defineOptions({ name: 'RoleDetailDrawer' });
@@ -29,68 +29,59 @@
     const permissionCount = ref(0);
     const loading = ref(false);
 
-    /** 将角色已有权限列表组装为 模块→页面→按钮 三层树（只读展示） */
-    function buildPermTree(perms: Api.SystemManage.Permission[]): PermNode[] {
-      const tree: PermNode[] = [];
-      const modules = new Map<string, PermNode>();
-      const pages = new Map<string, PermNode>();
-
-      for (const p of perms) {
-        if (p.level === 1) {
-          const node: PermNode = { id: p.id, label: p.name, code: p.code, level: 1, children: [] };
-          modules.set(p.module, node);
-          tree.push(node);
-        } else if (p.level === 2) {
-          let mod = modules.get(p.module);
-          if (!mod) {
-            mod = { id: -modules.size - 1, label: p.module, code: p.module, level: 1, children: [] };
-            modules.set(p.module, mod);
-            tree.push(mod);
+    /**
+     * 从全量权限树中裁出角色拥有的子树（只读展示）：
+     * 叶子（Level 3）按已绑定 ID 勾选保留，分组节点保留含勾选叶子的路径
+     */
+    function filterPermTree(nodes: Api.SystemManage.Permission[], idSet: Set<number>): PermNode[] {
+      const result: PermNode[] = [];
+      for (const node of nodes) {
+        if (!node.children || node.children.length === 0) {
+          if (idSet.has(node.id)) {
+            result.push({ id: node.id, label: node.name, code: node.code, level: node.level });
           }
-          const page: PermNode = { id: p.id, label: p.name, code: p.code, level: 2, children: [] };
-          pages.set(p.code, page);
-          mod.children!.push(page);
-        } else if (p.level === 3) {
-          const parentCode = `${p.module}.${p.resource}`;
-          const page = pages.get(parentCode);
-          const node: PermNode = { id: p.id, label: p.name, code: p.code, level: 3 };
-          if (page) {
-            page.children!.push(node);
-          } else {
-            // 父页面权限未单独分配时挂到模块节点下
-            let mod = modules.get(p.module);
-            if (!mod) {
-              mod = { id: -modules.size - 1, label: p.module, code: p.module, level: 1, children: [] };
-              modules.set(p.module, mod);
-              tree.push(mod);
-            }
-            mod.children!.push(node);
+        } else {
+          const children = filterPermTree(node.children, idSet);
+          if (children.length > 0) {
+            result.push({ id: node.id, label: node.name, code: node.code, level: node.level, children });
           }
         }
       }
-      return tree;
+      return result;
     }
 
     /**
      * 加载角色权限：
-     * 后端 /roles/:id/permissions 只返回权限 ID 数组，
-     * 需再拉全量权限选项（含 name/code/module/level）按 ID 过滤后组装树
+     * 后端 /roles/:id/permissions 返回权限 ID 数组，
+     * 与全量权限树（模块→资源→按钮）求交，裁出已拥有权限的子树
      */
     async function loadPermissions(roleId: number) {
       loading.value = true;
-      const [permRes, idsRes] = await Promise.all([fetchPermissionOptions(), fetchGetRolePermissions(roleId)]);
+      const [treeRes, idsRes] = await Promise.all([fetchGetPermissionTree(), fetchGetRolePermissions(roleId)]);
       loading.value = false;
 
-      if (permRes.error || !permRes.data || idsRes.error || !idsRes.data) {
+      if (treeRes.error || !treeRes.data || idsRes.error || !idsRes.data) {
         permissionCount.value = 0;
         permissionTree.value = [];
         return;
       }
 
-      const idSet = new Set<number>(idsRes.data);
-      const rolePerms = permRes.data.filter((p: Api.SystemManage.Permission) => idSet.has(p.id));
-      permissionCount.value = rolePerms.length;
-      permissionTree.value = buildPermTree(rolePerms);
+      // 角色只绑定叶子（Level 3）权限，分组节点不计入数量
+      const leafIds = new Set<number>();
+      const collectLeaves = (nodes: Api.SystemManage.Permission[]) => {
+        for (const node of nodes) {
+          if (!node.children || node.children.length === 0) {
+            leafIds.add(node.id);
+          } else {
+            collectLeaves(node.children);
+          }
+        }
+      };
+      collectLeaves(treeRes.data);
+
+      const idSet = new Set<number>(idsRes.data.filter(id => leafIds.has(id)));
+      permissionCount.value = idSet.size;
+      permissionTree.value = filterPermTree(treeRes.data, idSet);
     }
 
     watch(

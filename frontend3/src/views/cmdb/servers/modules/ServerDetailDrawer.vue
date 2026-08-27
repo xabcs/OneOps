@@ -267,10 +267,10 @@
             </ElDescriptionsItem>
           </ElDescriptions>
           <div style="margin-top: 16px">
-            <ElButton type="success" @click="handleConnect(server)">
+            <PermissionButton code="cmdb.server.connect" type="success" @click="handleConnect(server)">
               <icon-mdi-console-line style="margin-right: 4px" />
               连接此主机
-            </ElButton>
+            </PermissionButton>
           </div>
         </ElTabPane>
 

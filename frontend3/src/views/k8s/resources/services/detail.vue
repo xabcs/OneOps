@@ -190,7 +190,7 @@
 
       <ElTabPane label="YAML" name="yaml">
         <div class="tab-toolbar">
-          <ElButton type="primary" size="small" @click="showYamlEditor = true">编辑 YAML</ElButton>
+          <PermissionButton code="k8s.resource.update" type="primary" size="small" @click="showYamlEditor = true">编辑 YAML</PermissionButton>
         </div>
         <div class="yaml-viewer">
           <pre>{{ yamlContent }}</pre>

@@ -334,18 +334,18 @@
             </span>
           </div>
           <ElSpace>
-            <ElButton type="primary" size="small" @click="handleAddClick">
+            <PermissionButton code="system.user.create" type="primary" size="small" @click="handleAddClick">
               <template #icon>
                 <ElIcon><Plus /></ElIcon>
               </template>
               新增用户
-            </ElButton>
-            <ElButton type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
+            </PermissionButton>
+            <PermissionButton code="system.user.delete" type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
               <template #icon>
                 <ElIcon><Delete /></ElIcon>
               </template>
               批量删除
-            </ElButton>
+            </PermissionButton>
           </ElSpace>
         </div>
       </template>

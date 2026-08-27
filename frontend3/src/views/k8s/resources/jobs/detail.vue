@@ -178,8 +178,8 @@
         <ElTag :type="statusType">{{ statusText }}</ElTag>
       </div>
       <div class="header-actions">
-        <ElButton type="primary" @click="showYamlEditor = true">编辑YAML</ElButton>
-        <ElButton type="danger" @click="handleDelete">删除</ElButton>
+        <PermissionButton code="k8s.resource.update" type="primary" @click="showYamlEditor = true">编辑YAML</PermissionButton>
+        <PermissionButton code="k8s.resource.delete" type="danger" @click="handleDelete">删除</PermissionButton>
       </div>
     </div>
 

@@ -121,14 +121,18 @@
             </span>
             <template #dropdown>
               <ElDropdownMenu>
-                <ElDropdownItem command="edit">编辑YAML</ElDropdownItem>
-                <ElDropdownItem v-if="columns === 'statefulset' || columns === 'daemonset'" command="restart">
+                <ElDropdownItem v-permission="'k8s.resource.update'" command="edit">编辑YAML</ElDropdownItem>
+                <ElDropdownItem
+                  v-if="columns === 'statefulset' || columns === 'daemonset'"
+                  v-permission="'k8s.resource.update'"
+                  command="restart"
+                >
                   重启
                 </ElDropdownItem>
-                <ElDropdownItem v-if="columns === 'cronjob'" command="suspend">
+                <ElDropdownItem v-if="columns === 'cronjob'" v-permission="'k8s.resource.update'" command="suspend">
                   {{ row.suspend ? '恢复' : '暂停' }}
                 </ElDropdownItem>
-                <ElDropdownItem command="delete">删除</ElDropdownItem>
+                <ElDropdownItem v-permission="'k8s.resource.delete'" command="delete">删除</ElDropdownItem>
               </ElDropdownMenu>
             </template>
           </ElDropdown>

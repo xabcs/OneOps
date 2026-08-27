@@ -128,6 +128,12 @@ func (i *Initializer) syncMenus() error {
 		{ID: 72, Name: "菜单管理", Icon: "mdi:menu", Path: "/manage/menu", Permission: "system.menu.view", MenuType: "menu", Sort: 3, Status: 1, ParentID: 6},
 		{ID: 73, Name: "权限管理", Icon: "mdi:shield-key", Path: "/manage/permission", Permission: "system.permission.list", MenuType: "menu", Sort: 4, Status: 1, ParentID: 6},
 		{ID: 74, Name: "用户组", Icon: "mdi:account-group", Path: "/manage/user-group", Permission: "system.user.view", MenuType: "menu", Sort: 5, Status: 1, ParentID: 6},
+
+		// ========== 工单中心 (ID: 110-119) ==========
+		{ID: 110, Name: "工单中心", Icon: "mdi:clipboard-text-clock", Path: "/ticket", Permission: "ticket.ticket.view", MenuType: "directory", Sort: 7, Status: 1, ParentID: 0},
+		{ID: 111, Name: "我的工单", Icon: "mdi:ticket-confirmation", Path: "/ticket/center", Permission: "ticket.ticket.view", MenuType: "menu", Sort: 1, Status: 1, ParentID: 110},
+		{ID: 112, Name: "工单类型", Icon: "mdi:format-list-checks", Path: "/ticket/types", Permission: "ticket.type.list", MenuType: "menu", Sort: 2, Status: 1, ParentID: 110},
+		{ID: 113, Name: "流程定义", Icon: "mdi:source-branch", Path: "/ticket/workflows", Permission: "ticket.workflow.list", MenuType: "menu", Sort: 3, Status: 1, ParentID: 110},
 	}
 
 	addedCount := 0
@@ -203,6 +209,10 @@ func (i *Initializer) syncMenus() error {
 		{"/audit/login", "login_audit"},
 		{"/audit/operation", "operation_audit"},
 		{"/audit/system", "system_audit"},
+		// 工单中心
+		{"/ticket/center", "ticket"},
+		{"/ticket/types", "type"},
+		{"/ticket/workflows", "workflow"},
 	}
 
 	for _, mapping := range resourceMappings {

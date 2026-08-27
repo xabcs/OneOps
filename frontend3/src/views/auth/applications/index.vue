@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-  import { ref } from 'vue';
+  import { ref, resolveDirective, withDirectives } from 'vue';
   import { ArrowDown, Plus } from '@element-plus/icons-vue';
   import {
     deleteApplication,
@@ -14,10 +14,14 @@
     syncApplicationUsers
   } from '@/service/api/application-permission';
   import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
+  import PermissionButton from '@/components/common/PermissionButton.vue';
   import ApplicationSearch from './modules/application-search.vue';
   import ApplicationOperateDrawer from './modules/application-operate-drawer.vue';
 
   defineOptions({ name: 'AuthCenterApplications' });
+
+  // JSX 中自定义指令不生效（v-permission 会被当作普通 prop），用 withDirectives 手动挂载
+  const vPermission = resolveDirective('permission')!;
 
   interface SearchParams {
     page: number;
@@ -76,16 +80,16 @@
         fixed: 'right',
         formatter: row => (
           <ElSpace wrap>
-            <ElButton size="small" type="primary" onClick={() => handleSyncUsers(row)}>
+            <PermissionButton code="auth.application.sync" size="small" type="primary" onClick={() => handleSyncUsers(row)}>
               同步用户
-            </ElButton>
-            <ElButton size="small" type="success" onClick={() => handleSyncGroups(row)}>
+            </PermissionButton>
+            <PermissionButton code="auth.application.sync" size="small" type="success" onClick={() => handleSyncGroups(row)}>
               同步用户组
-            </ElButton>
+            </PermissionButton>
             {row.type === 'jumpserver' && (
-              <ElButton size="small" type="warning" onClick={() => handleSyncRules(row)}>
+              <PermissionButton code="auth.application.sync" size="small" type="warning" onClick={() => handleSyncRules(row)}>
                 同步授权规则
-              </ElButton>
+              </PermissionButton>
             )}
             <ElDropdown onCommand={(cmd: string) => handleCommand(cmd, row)}>
               <ElButton size="small">
@@ -101,13 +105,22 @@
                     <ElDropdownItem command="viewGroups">查看用户组</ElDropdownItem>
                     {row.type === 'jumpserver' && <ElDropdownItem command="viewRules">查看授权规则</ElDropdownItem>}
                     {row.type !== 'jumpserver' && <ElDropdownItem command="viewRoles">查看角色</ElDropdownItem>}
-                    {row.type !== 'jumpserver' && <ElDropdownItem command="syncRoles">同步角色</ElDropdownItem>}
-                    <ElDropdownItem divided command="edit">
-                      编辑
-                    </ElDropdownItem>
-                    <ElDropdownItem command="delete" style="color: #f56c6c">
-                      删除
-                    </ElDropdownItem>
+                    {row.type !== 'jumpserver' &&
+                      withDirectives(<ElDropdownItem command="syncRoles">同步角色</ElDropdownItem>, [
+                        [vPermission, 'auth.application.sync']
+                      ])}
+                    {withDirectives(
+                      <ElDropdownItem divided command="edit">
+                        编辑
+                      </ElDropdownItem>,
+                      [[vPermission, 'auth.application.update']]
+                    )}
+                    {withDirectives(
+                      <ElDropdownItem command="delete" style="color: #f56c6c">
+                        删除
+                      </ElDropdownItem>,
+                      [[vPermission, 'auth.application.delete']]
+                    )}
                   </ElDropdownMenu>
                 )
               }}
@@ -298,7 +311,7 @@
       <template #header>
         <div class="flex items-center justify-between">
           <span class="text-lg font-medium">应用列表</span>
-          <ElButton type="primary" :icon="Plus" @click="handleAdd">添加应用</ElButton>
+          <PermissionButton code="auth.application.create" type="primary" :icon="Plus" @click="handleAdd">添加应用</PermissionButton>
         </div>
       </template>
 

@@ -3,10 +3,11 @@
   import { Delete, Refresh, Search } from '@element-plus/icons-vue';
   import {
     deleteUserIdentityMapping,
-    fetchApplications,
+    fetchApplicationOptions,
     fetchUserIdentityMappings
   } from '@/service/api/application-permission';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
+  import PermissionButton from '@/components/common/PermissionButton.vue';
   import type { FlatResponseData } from '@sa/axios';
 
   defineOptions({ name: 'AuthUserIdentities' });
@@ -25,7 +26,7 @@
 
   const searchParams = ref<SearchParams>(getInitSearchParams());
 
-  const applications = ref<Api.ApplicationPermission.Application[]>([]);
+  const applications = ref<{ id: number; name: string; code: string; type: string }[]>([]);
 
   async function getApplications() {
     const { data, error } = await fetchApplicationOptions();
@@ -126,9 +127,9 @@
         width: 100,
         fixed: 'right',
         formatter: row => (
-          <ElButton size="small" type="danger" icon={Delete} onClick={() => handleDelete(row.id)}>
+          <PermissionButton code="auth.user.delete" size="small" type="danger" icon={Delete} onClick={() => handleDelete(row.id)}>
             删除
-          </ElButton>
+          </PermissionButton>
         )
       }
     ]

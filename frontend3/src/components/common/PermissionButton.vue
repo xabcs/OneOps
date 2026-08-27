@@ -1,113 +1,89 @@
 <script setup lang="ts">
   import { computed } from 'vue';
+  import { ElButton, ElMessage } from 'element-plus';
+  import type { ButtonProps } from 'element-plus';
   import { useAuthStore } from '@/store/modules/auth';
 
+  /**
+   * 权限按钮组件（置灰模式）
+   *
+   * 设计原则：无权限一律置灰显示，不做隐藏——用户能看到功能入口，
+   * 通过 tooltip / 点击提示得知缺失的权限码，便于向管理员申请开通。
+   *
+   * ElButton 的属性（type/size/link/icon/loading/disabled 等）声明在 props 中，
+   * 经 buttonAttrs 透传；@click 经 emits 转发——template 与 TSX 中均可通过类型检查。
+   */
   interface Props {
-    permission: string | string[];
-    mode?: 'hidden' | 'disabled' | 'request' | 'placeholder';
-    icon?: string;
-    tooltip?: string;
-    placeholder?: string;
+    /** 单个权限码 */
+    code?: string;
+    /** 多个权限码，任一/全部满足（取决于 mode） */
+    codes?: string[];
+    /** 多权限码判定方式：any 任一满足即可，all 需全部满足 */
+    mode?: 'any' | 'all';
   }
 
-  const props = withDefaults(defineProps<Props>(), {
-    mode: 'hidden'
+  const props = withDefaults(defineProps<Props & Partial<ButtonProps>>(), {
+    mode: 'any'
   });
 
-  const emit = defineEmits<{
-    click: [event: MouseEvent];
-    requestPermission: [];
-  }>();
+  const emit = defineEmits<{ click: [evt: MouseEvent] }>();
 
   const authStore = useAuthStore();
 
-  const hasPermission = computed(() => {
-    if (typeof props.permission === 'string') {
-      return authStore.hasPermission(props.permission);
+  /** 提示文案中的权限描述 */
+  const permLabel = computed(() => props.code || (props.codes || []).join(' 或 ') || '所需权限');
+
+  /** 是否缺少权限 */
+  const missing = computed(() => {
+    if (props.code) return !authStore.hasPermission(props.code);
+    if (props.codes?.length) {
+      return props.mode === 'all'
+        ? !authStore.hasAllPermissions(props.codes)
+        : !authStore.hasAnyPermission(props.codes);
     }
-    return authStore.hasAnyPermission(props.permission);
+    return false;
   });
 
-  const handleClick = (event: MouseEvent) => {
-    if (hasPermission.value) {
-      emit('click', event);
-    }
-  };
+  const tip = computed(() => `缺少权限：${permLabel.value}\n请联系管理员在角色管理中开通`);
 
-  const handleRequestPermission = () => {
-    emit('requestPermission');
+  /** 剔除权限字段后，其余（含 ElButton 属性）透传给 ElButton */
+  const buttonAttrs = computed(() => {
+    const { code, codes, mode, ...rest } = props;
+    return rest;
+  });
+
+  // 原生 disabled button 不派发 click，由外层 span 承接点击并提示
+  const notifyMissing = () => {
+    ElMessage({
+      type: 'warning',
+      message: `缺少权限：${permLabel.value}，请联系管理员在角色管理中开通`,
+      grouping: true,
+      showClose: true
+    });
   };
 </script>
 
 <template>
-  <div class="smart-permission-button">
-    <!-- 有权限：显示按钮 -->
-    <ElButton v-if="hasPermission" v-bind="$attrs" @click="handleClick">
-      <slot name="icon">
-        <ElIcon v-if="icon"><component :is="icon" /></ElIcon>
-      </slot>
-      <slot></slot>
+  <span v-if="missing" class="perm-btn-wrap" :title="tip" @click="notifyMissing">
+    <ElButton v-bind="{ ...$attrs, ...buttonAttrs, disabled: true }">
+      <slot />
     </ElButton>
-
-    <!-- 无权限：根据模式显示不同内容 -->
-    <template v-else>
-      <!-- 模式1：完全隐藏 -->
-      <div v-if="mode === 'hidden'" class="hidden-content"></div>
-
-      <!-- 模式2：禁用 + 提示 -->
-      <ElTooltip v-else-if="mode === 'disabled'" :content="tooltip || '您没有此操作权限'" placement="top">
-        <ElButton v-bind="$attrs" disabled class="permission-disabled">
-          <slot name="icon">
-            <ElIcon v-if="icon"><component :is="icon" /></ElIcon>
-          </slot>
-          <slot></slot>
-        </ElButton>
-      </ElTooltip>
-
-      <!-- 模式3：显示申请按钮 -->
-      <div v-else-if="mode === 'request'" class="permission-request">
-        <ElText type="info" size="small">
-          <ElIcon><Lock /></ElIcon>
-          需要权限
-        </ElText>
-        <ElButton type="text" size="small" @click="handleRequestPermission">申请</ElButton>
-      </div>
-
-      <!-- 模式4：显示提示信息 -->
-      <div v-else-if="mode === 'placeholder'" class="permission-placeholder">
-        <ElText type="info" size="small">
-          <ElIcon><Lock /></ElIcon>
-          {{ placeholder || '暂无权限' }}
-        </ElText>
-      </div>
-    </template>
-  </div>
+  </span>
+  <ElButton v-else v-bind="{ ...$attrs, ...buttonAttrs }" @click="emit('click', $event)">
+    <slot />
+  </ElButton>
 </template>
 
 <style scoped>
-  .permission-disabled {
-    opacity: 0.5;
+  .perm-btn-wrap {
+    display: inline-flex;
+    /* 与 .el-button 默认的 vertical-align 保持一致，行内环境下与相邻按钮对齐 */
+    vertical-align: middle;
     cursor: not-allowed;
   }
 
-  .permission-request {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background-color: #f5f7fa;
-    border-radius: 4px;
-  }
-
-  .permission-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 32px;
-    color: #909399;
-  }
-
-  .hidden-content {
-    display: none;
+  /* 原生 disabled button 不派发 click 也不冒泡，穿透到外层 span 才能触发提示 */
+  .perm-btn-wrap :deep(.el-button.is-disabled) {
+    pointer-events: none;
   }
 </style>

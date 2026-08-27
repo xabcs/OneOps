@@ -75,7 +75,7 @@
       <div class="mb-8px flex items-center justify-between">
         <span class="text-14px text-gray-700 font-bold">资产分组</span>
         <div class="flex items-center gap-4px">
-          <ElButton link size="small" @click="emit('add-root-group')"><icon-mdi-plus class="text-16px" /></ElButton>
+          <PermissionButton code="cmdb.group.create" link size="small" @click="emit('add-root-group')"><icon-mdi-plus class="text-16px" /></PermissionButton>
           <ElButton link size="small" @click="emit('refresh-groups')"><icon-mdi-refresh class="text-16px" /></ElButton>
         </div>
       </div>
@@ -167,6 +167,7 @@
         >
           <template v-if="isVirtualNode">
             <ElMenuItem
+              v-permission="'cmdb.server.create'"
               index="add-server"
               :style="{ height: '36px', lineHeight: '36px' }"
               @click.stop="emit('add-server')"
@@ -177,6 +178,7 @@
           </template>
           <template v-else>
             <ElMenuItem
+              v-permission="'cmdb.group.create'"
               index="add-group"
               :style="{ height: '36px', lineHeight: '36px' }"
               @click.stop="emit('add-group')"
@@ -185,6 +187,7 @@
               <span>添加分组</span>
             </ElMenuItem>
             <ElMenuItem
+              v-permission="'cmdb.server.create'"
               index="add-server"
               :style="{ height: '36px', lineHeight: '36px' }"
               @click.stop="emit('add-server')"
@@ -193,6 +196,7 @@
               <span>添加主机</span>
             </ElMenuItem>
             <ElMenuItem
+              v-permission="'cmdb.group.update'"
               index="edit"
               :style="{ height: '36px', lineHeight: '36px' }"
               @click.stop="emit('edit-group')"
@@ -201,6 +205,7 @@
               <span>重命名</span>
             </ElMenuItem>
             <ElMenuItem
+              v-permission="'cmdb.group.delete'"
               index="delete"
               :style="{ height: '36px', lineHeight: '36px', color: '#f56c6c' }"
               @click.stop="emit('delete-group')"

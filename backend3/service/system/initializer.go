@@ -9,6 +9,7 @@ import (
 	modelcmdb "oneops/backend3/model/cmdb"
 	modelk8s "oneops/backend3/model/k8s"
 	modelsystem "oneops/backend3/model/system"
+	modelticket "oneops/backend3/model/ticket"
 	"oneops/backend3/pkg/database"
 	"oneops/backend3/pkg/logger"
 
@@ -104,6 +105,13 @@ func (i *Initializer) migrateSchema() error {
 		&modelauth.UserIdentityMapping{},
 		&modelauth.GroupBindingExecution{},
 		&modelauth.PermissionAssignmentStatus{},
+		// 工单系统
+		&modelticket.Workflow{},
+		&modelticket.WorkflowNode{},
+		&modelticket.TicketType{},
+		&modelticket.Ticket{},
+		&modelticket.TicketNodeRecord{},
+		&modelticket.TicketFlowLog{},
 	); err != nil {
 		return fmt.Errorf("基础表迁移失败: %w", err)
 	}
@@ -356,9 +364,19 @@ func (i *Initializer) initSystemData() error {
 		logger.Warn("属性定义同步失败", zap.Error(err))
 	}
 
+	// 同步工单示例数据（流程定义/工单类型）
+	if err := i.syncTicketSeeds(); err != nil {
+		logger.Warn("工单示例数据同步失败", zap.Error(err))
+	}
+
 	// 同步权限数据
 	if err := i.syncPermissions(); err != nil {
 		logger.Warn("权限数据同步失败", zap.Error(err))
+	}
+
+	// 同步权限树层级（Level 1/2 分组节点 + Level 3 parent_id 回填，依赖权限目录）
+	if err := i.syncPermissionHierarchy(); err != nil {
+		logger.Warn("权限层级同步失败", zap.Error(err))
 	}
 
 	// 同步权限路由映射（依赖权限目录，必须在 syncPermissions 之后）

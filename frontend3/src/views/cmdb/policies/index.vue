@@ -222,7 +222,7 @@
             <template #header>
                 <div class="card-header">
                     <span class="title">访问策略管理</span>
-                    <ElButton type="primary" @click="handleCreate">新增策略</ElButton>
+                    <PermissionButton code="cmdb.access_policy.create" type="primary" @click="handleCreate">新增策略</PermissionButton>
                 </div>
             </template>
 
@@ -289,11 +289,11 @@
 
                 <ElTableColumn label="操作" width="200" fixed="right">
                     <template #default="{ row }">
-                        <ElButton type="primary" size="small" @click="handleEdit(row)">编辑</ElButton>
-                        <ElButton :type="row.status === 1 ? 'warning' : 'success'" size="small" @click="handleToggleStatus(row)">
+                        <PermissionButton code="cmdb.access_policy.update" type="primary" size="small" @click="handleEdit(row)">编辑</PermissionButton>
+                        <PermissionButton code="cmdb.access_policy.update" :type="row.status === 1 ? 'warning' : 'success'" size="small" @click="handleToggleStatus(row)">
                             {{ row.status === 1 ? '禁用' : '启用' }}
-                        </ElButton>
-                        <ElButton type="danger" size="small" @click="handleDelete(row)">删除</ElButton>
+                        </PermissionButton>
+                        <PermissionButton code="cmdb.access_policy.delete" type="danger" size="small" @click="handleDelete(row)">删除</PermissionButton>
                     </template>
                 </ElTableColumn>
             </ElTable>

@@ -1143,6 +1143,44 @@ export const generatedRoutes: GeneratedRoute[] = [
     ]
   },
   {
+    name: 'ticket',
+    path: '/ticket',
+    component: 'layout.base',
+    meta: {
+      title: 'ticket',
+      i18nKey: 'route.ticket'
+    },
+    children: [
+      {
+        name: 'ticket_center',
+        path: '/ticket/center',
+        component: 'view.ticket_center',
+        meta: {
+          title: 'ticket_center',
+          i18nKey: 'route.ticket_center'
+        }
+      },
+      {
+        name: 'ticket_types',
+        path: '/ticket/types',
+        component: 'view.ticket_types',
+        meta: {
+          title: 'ticket_types',
+          i18nKey: 'route.ticket_types'
+        }
+      },
+      {
+        name: 'ticket_workflows',
+        path: '/ticket/workflows',
+        component: 'view.ticket_workflows',
+        meta: {
+          title: 'ticket_workflows',
+          i18nKey: 'route.ticket_workflows'
+        }
+      }
+    ]
+  },
+  {
     name: 'user-center',
     path: '/user-center',
     component: 'layout.base$view.user-center',

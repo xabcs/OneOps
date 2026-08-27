@@ -255,7 +255,7 @@
         </ElTableColumn>
         <ElTableColumn label="操作" width="100" align="center" fixed="right">
           <template #default="{ row }">
-            <ElButton
+            <PermissionButton code="monitor.alert.ack"
               v-if="!row.acknowledged && !row.resolvedAt"
               type="primary"
               link
@@ -263,7 +263,7 @@
               @click="handleAcknowledge(row)"
             >
               确认
-            </ElButton>
+            </PermissionButton>
             <span v-else class="text-sm text-gray-400">-</span>
           </template>
         </ElTableColumn>

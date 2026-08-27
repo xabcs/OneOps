@@ -219,7 +219,7 @@
         <ElTableColumn prop="last_activity" label="最后活动" width="160" />
         <ElTableColumn label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <ElButton size="small" type="danger" @click="handleTerminate(row)">终止</ElButton>
+            <PermissionButton code="k8s.terminal.connect" size="small" type="danger" @click="handleTerminate(row)">终止</PermissionButton>
           </template>
         </ElTableColumn>
       </ElTable>

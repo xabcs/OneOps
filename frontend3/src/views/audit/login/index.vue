@@ -152,7 +152,7 @@
         <ElFormItem>
           <ElButton type="primary" :icon="Search" @click="handleSearch">搜索</ElButton>
           <ElButton :icon="Refresh" @click="handleReset">重置</ElButton>
-          <ElButton type="success" @click="handleExport">导出</ElButton>
+          <PermissionButton code="audit.login_log.export" type="success" @click="handleExport">导出</PermissionButton>
         </ElFormItem>
       </ElForm>
 

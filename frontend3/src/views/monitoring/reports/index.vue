@@ -212,7 +212,7 @@
 
           <ElCol :xs="24">
             <ElFormItem>
-              <ElButton
+              <PermissionButton code="monitor.report.create"
                 type="primary"
                 :loading="generating"
                 :disabled="reportForm.serverIds.length === 0"
@@ -220,7 +220,7 @@
               >
                 <ElIcon :size="16"><Document /></ElIcon>
                 {{ generating ? '生成中...' : '生成报告' }}
-              </ElButton>
+              </PermissionButton>
             </ElFormItem>
           </ElCol>
         </ElRow>

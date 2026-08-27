@@ -216,12 +216,12 @@
               <ElIcon><Link /></ElIcon>
               路由映射
             </ElButton>
-            <ElButton type="primary" size="small" @click="handleAdd">
+            <PermissionButton code="system.permission.create" type="primary" size="small" @click="handleAdd">
               <ElIcon>
                 <Plus />
               </ElIcon>
               新增权限
-            </ElButton>
+            </PermissionButton>
           </ElSpace>
         </div>
       </template>

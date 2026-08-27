@@ -96,7 +96,7 @@
         <ElSelect v-model="selectedGroupId" placeholder="请选择用户组" class="w-300px" @change="handleGroupChange">
           <ElOption v-for="group in groups" :key="group.id" :label="group.name" :value="group.id" />
         </ElSelect>
-        <ElButton type="primary" :icon="Plus" :disabled="!selectedGroupId" @click="handleAdd">添加映射</ElButton>
+        <PermissionButton code="auth.group.create" type="primary" :icon="Plus" :disabled="!selectedGroupId" @click="handleAdd">添加映射</PermissionButton>
       </ElSpace>
     </ElCard>
 
@@ -135,7 +135,7 @@
               <ElButton size="small" type="primary" :icon="View" @click="handleViewExecutionDetail(row.id)">
                 执行详情
               </ElButton>
-              <ElButton size="small" type="danger" :icon="Delete" @click="handleDelete(row.id)">删除</ElButton>
+              <PermissionButton code="auth.group.delete" size="small" type="danger" :icon="Delete" @click="handleDelete(row.id)">删除</PermissionButton>
             </template>
           </ElTableColumn>
         </ElTable>

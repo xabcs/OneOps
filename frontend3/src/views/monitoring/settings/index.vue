@@ -3,6 +3,7 @@
   import type { Component } from 'vue';
   import { ElMessage, ElMessageBox } from 'element-plus';
   import { Bell, ChatDotRound, Message, Plus } from '@element-plus/icons-vue';
+  import { useAuthStore } from '@/store/modules/auth';
   import {
     deleteAlertRule,
     deleteNotificationChannel,
@@ -18,7 +19,20 @@
     name: 'MonitoringSettings'
   });
 
+  const authStore = useAuthStore();
   const activeTab = ref('rules');
+
+  // 无权限时点击置灰开关的提示（disabled 的 ElSwitch 不拦截原生 click 冒泡）
+  function handleDisabledSwitchClick(code: string) {
+    if (!authStore.hasPermission(code)) {
+      ElMessage({
+        type: 'warning',
+        message: `缺少权限：${code}，请联系管理员在角色管理中开通`,
+        grouping: true,
+        showClose: true
+      });
+    }
+  }
 
   // ============================================
   // 告警规则管理
@@ -269,12 +283,12 @@
           <div class="max-w-6xl">
             <div class="mb-4 flex items-center justify-between">
               <ElText type="info">配置触发告警的规则条件</ElText>
-              <ElButton type="primary" @click="handleCreateRule">
+              <PermissionButton code="monitor.alert_rule.create" type="primary" @click="handleCreateRule">
                 <ElIcon :size="16">
                   <Plus />
                 </ElIcon>
                 新增规则
-              </ElButton>
+              </PermissionButton>
             </div>
 
             <ElTable v-loading="alertRulesLoading" :data="alertRules" border stripe>
@@ -304,13 +318,19 @@
               </ElTableColumn>
               <ElTableColumn label="状态" width="90" align="center">
                 <template #default="{ row }">
-                  <ElSwitch :model-value="row.enabled" @change="handleToggleRuleStatus(row)" />
+                  <ElSwitch
+                    :model-value="row.enabled"
+                    :disabled="!authStore.hasPermission('monitor.alert_rule.update')"
+                    title="缺少权限：monitor.alert_rule.update"
+                    @click="handleDisabledSwitchClick('monitor.alert_rule.update')"
+                    @change="handleToggleRuleStatus(row)"
+                  />
                 </template>
               </ElTableColumn>
               <ElTableColumn label="操作" width="150" align="center" fixed="right">
                 <template #default="{ row }">
-                  <ElButton type="primary" link size="small" @click="handleEditRule(row)">编辑</ElButton>
-                  <ElButton type="danger" link size="small" @click="handleDeleteRule(row)">删除</ElButton>
+                  <PermissionButton code="monitor.alert_rule.update" type="primary" link size="small" @click="handleEditRule(row)">编辑</PermissionButton>
+                  <PermissionButton code="monitor.alert_rule.delete" type="danger" link size="small" @click="handleDeleteRule(row)">删除</PermissionButton>
                 </template>
               </ElTableColumn>
             </ElTable>
@@ -324,12 +344,12 @@
           <div class="max-w-4xl">
             <div class="mb-4 flex items-center justify-between">
               <ElText type="info">配置告警通知渠道</ElText>
-              <ElButton type="primary" @click="handleCreateChannel">
+              <PermissionButton code="monitor.notification.create" type="primary" @click="handleCreateChannel">
                 <ElIcon :size="16">
                   <Plus />
                 </ElIcon>
                 新增渠道
-              </ElButton>
+              </PermissionButton>
             </div>
 
             <ElTable v-loading="notificationLoading" :data="notificationChannelsData" border stripe>
@@ -362,16 +382,22 @@
               </ElTableColumn>
               <ElTableColumn label="状态" width="90" align="center">
                 <template #default="{ row }">
-                  <ElSwitch :model-value="row.enabled" @change="row.enabled = !row.enabled" />
+                  <ElSwitch
+                    :model-value="row.enabled"
+                    :disabled="!authStore.hasPermission('monitor.notification.update')"
+                    title="缺少权限：monitor.notification.update"
+                    @click="handleDisabledSwitchClick('monitor.notification.update')"
+                    @change="row.enabled = !row.enabled"
+                  />
                 </template>
               </ElTableColumn>
               <ElTableColumn label="操作" width="200" align="center" fixed="right">
                 <template #default="{ row }">
-                  <ElButton type="primary" link size="small" @click="handleEditChannel(row)">编辑</ElButton>
-                  <ElButton type="success" link size="small" :disabled="!row.enabled" @click="handleTestChannel(row)">
+                  <PermissionButton code="monitor.notification.update" type="primary" link size="small" @click="handleEditChannel(row)">编辑</PermissionButton>
+                  <PermissionButton code="monitor.notification.test" type="success" link size="small" :disabled="!row.enabled" @click="handleTestChannel(row)">
                     测试
-                  </ElButton>
-                  <ElButton type="danger" link size="small" @click="handleDeleteChannel(row)">删除</ElButton>
+                  </PermissionButton>
+                  <PermissionButton code="monitor.notification.delete" type="danger" link size="small" @click="handleDeleteChannel(row)">删除</PermissionButton>
                 </template>
               </ElTableColumn>
             </ElTable>

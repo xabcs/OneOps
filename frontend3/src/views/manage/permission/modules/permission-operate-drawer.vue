@@ -151,7 +151,7 @@
         <template #footer>
             <ElSpace :size="16">
                 <ElButton @click="closeDrawer">取消</ElButton>
-                <ElButton type="primary" @click="handleSubmit">确认</ElButton>
+                <PermissionButton :code="isEdit ? 'system.permission.update' : 'system.permission.create'" type="primary" @click="handleSubmit">确认</PermissionButton>
             </ElSpace>
         </template>
     </ElDrawer>

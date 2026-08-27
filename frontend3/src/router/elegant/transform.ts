@@ -299,6 +299,10 @@ const routeMap: RouteMap = {
   "plugin_tables_vtable": "/plugin/tables/vtable",
   "plugin_typeit": "/plugin/typeit",
   "plugin_video": "/plugin/video",
+  "ticket": "/ticket",
+  "ticket_center": "/ticket/center",
+  "ticket_types": "/ticket/types",
+  "ticket_workflows": "/ticket/workflows",
   "user-center": "/user-center",
   "webterminal": "/webterminal"
 };
