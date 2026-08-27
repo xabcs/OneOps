@@ -213,6 +213,7 @@ func (i *Initializer) syncPermissions() error {
 		// 工单：view=工单中心菜单可见（发起/待办/我相关工单）；list=查看全部工单（scope=all 与任意详情）
 		{Code: "ticket.ticket.view", Name: "工单中心入口", Description: "查看工单中心菜单，发起与处理自己相关的工单", Module: "ticket", Resource: "ticket", Action: "view", Level: 3, SortOrder: 150, Status: 1},
 		{Code: "ticket.ticket.list", Name: "查看全部工单", Description: "查看全部工单列表与任意工单详情", Module: "ticket", Resource: "ticket", Action: "list", Level: 3, SortOrder: 151, Status: 1},
+		{Code: "ticket.ticket.reassign", Name: "改派审批人", Description: "改派工单当前节点的审批人（处理审批人离职/请假导致的节点卡死）", Module: "ticket", Resource: "ticket", Action: "reassign", Level: 3, SortOrder: 160, Status: 1},
 		// 工单类型管理
 		{Code: "ticket.type.list", Name: "工单类型列表", Description: "查看工单类型列表", Module: "ticket", Resource: "type", Action: "list", Level: 3, SortOrder: 152, Status: 1},
 		{Code: "ticket.type.create", Name: "创建工单类型", Description: "创建新的工单类型（场景）", Module: "ticket", Resource: "type", Action: "create", Level: 3, SortOrder: 153, Status: 1},
@@ -413,8 +414,8 @@ func (i *Initializer) syncDefaultPermissions() error {
 			"audit.operation_log.list", "audit.operation_log.export",
 			"audit.system_event.list",
 			"audit.stats.view",
-			// 工单中心：入口 + 全部工单查看 + 类型/流程管理
-			"ticket.ticket.view", "ticket.ticket.list",
+			// 工单中心：入口 + 全部工单查看 + 类型/流程管理 + 改派审批人
+			"ticket.ticket.view", "ticket.ticket.list", "ticket.ticket.reassign",
 			"ticket.type.list", "ticket.type.create", "ticket.type.update", "ticket.type.delete",
 			"ticket.workflow.list", "ticket.workflow.create", "ticket.workflow.update", "ticket.workflow.delete",
 		},

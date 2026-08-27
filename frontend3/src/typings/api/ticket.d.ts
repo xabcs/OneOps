@@ -133,6 +133,7 @@ declare namespace Api {
       creatorId: number;
       creatorName: string;
       finishedAt: string | null;
+      lastUrgeAt: string | null;
       createdAt: string;
       updatedAt: string;
       currentApprovers?: string;
@@ -158,13 +159,20 @@ declare namespace Api {
       formData: Record<string, unknown>;
     };
 
+    /** 驳回后重新提交请求（可修改标题/优先级/表单） */
+    type TicketResubmitRequest = {
+      title: string;
+      priority?: TicketPriority;
+      formData: Record<string, unknown>;
+    };
+
     /** 工单节点审批记录 */
     type TicketNodeRecord = {
       id: number;
       ticketId: number;
       nodeKey: string;
       nodeName: string;
-      status: 'waiting' | 'pending' | 'approved' | 'rejected' | 'skipped';
+      status: 'waiting' | 'pending' | 'approved' | 'rejected' | 'skipped' | 'canceled';
       approverIds: string;
       approverNames: string;
       approvedIds: string;
@@ -179,7 +187,17 @@ declare namespace Api {
     type TicketFlowLog = {
       id: number;
       ticketId: number;
-      action: 'submit' | 'approve' | 'reject' | 'cancel' | 'comment' | 'skip' | 'auto';
+      action:
+        | 'submit'
+        | 'approve'
+        | 'reject'
+        | 'cancel'
+        | 'resubmit'
+        | 'reassign'
+        | 'comment'
+        | 'skip'
+        | 'urge'
+        | 'auto';
       nodeName: string;
       operatorId: number;
       operatorName: string;
@@ -196,6 +214,9 @@ declare namespace Api {
       logs: TicketFlowLog[];
       canApprove: boolean;
       canCancel: boolean;
+      canResubmit: boolean;
+      /** 审批中且发起人可催办（冷却已结束） */
+      canUrge: boolean;
     };
   }
 }

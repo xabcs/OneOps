@@ -410,7 +410,18 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'cmdb_servers',
           i18nKey: 'route.cmdb_servers'
-        }
+        },
+        children: [
+          {
+            name: 'cmdb_servers_detail',
+            path: '/cmdb/servers/detail',
+            component: 'view.cmdb_servers_detail',
+            meta: {
+              title: 'cmdb_servers_detail',
+              i18nKey: 'route.cmdb_servers_detail'
+            }
+          }
+        ]
       },
       {
         name: 'cmdb_tags',
@@ -615,7 +626,56 @@ export const generatedRoutes: GeneratedRoute[] = [
             meta: {
               title: 'k8s_resources_configmaps',
               i18nKey: 'route.k8s_resources_configmaps'
-            }
+            },
+            children: [
+              {
+                name: 'k8s_resources_configmaps_detail',
+                path: '/k8s/resources/configmaps/detail',
+                component: 'view.k8s_resources_configmaps_detail',
+                meta: {
+                  title: 'k8s_resources_configmaps_detail',
+                  i18nKey: 'route.k8s_resources_configmaps_detail'
+                }
+              }
+            ]
+          },
+          {
+            name: 'k8s_resources_cronjobs',
+            path: '/k8s/resources/cronjobs',
+            meta: {
+              title: 'k8s_resources_cronjobs',
+              i18nKey: 'route.k8s_resources_cronjobs'
+            },
+            children: [
+              {
+                name: 'k8s_resources_cronjobs_detail',
+                path: '/k8s/resources/cronjobs/detail',
+                component: 'view.k8s_resources_cronjobs_detail',
+                meta: {
+                  title: 'k8s_resources_cronjobs_detail',
+                  i18nKey: 'route.k8s_resources_cronjobs_detail'
+                }
+              }
+            ]
+          },
+          {
+            name: 'k8s_resources_daemonsets',
+            path: '/k8s/resources/daemonsets',
+            meta: {
+              title: 'k8s_resources_daemonsets',
+              i18nKey: 'route.k8s_resources_daemonsets'
+            },
+            children: [
+              {
+                name: 'k8s_resources_daemonsets_detail',
+                path: '/k8s/resources/daemonsets/detail',
+                component: 'view.k8s_resources_daemonsets_detail',
+                meta: {
+                  title: 'k8s_resources_daemonsets_detail',
+                  i18nKey: 'route.k8s_resources_daemonsets_detail'
+                }
+              }
+            ]
           },
           {
             name: 'k8s_resources_deployments',
@@ -624,7 +684,56 @@ export const generatedRoutes: GeneratedRoute[] = [
             meta: {
               title: 'k8s_resources_deployments',
               i18nKey: 'route.k8s_resources_deployments'
-            }
+            },
+            children: [
+              {
+                name: 'k8s_resources_deployments_detail',
+                path: '/k8s/resources/deployments/detail',
+                component: 'view.k8s_resources_deployments_detail',
+                meta: {
+                  title: 'k8s_resources_deployments_detail',
+                  i18nKey: 'route.k8s_resources_deployments_detail'
+                }
+              }
+            ]
+          },
+          {
+            name: 'k8s_resources_ingresses',
+            path: '/k8s/resources/ingresses',
+            meta: {
+              title: 'k8s_resources_ingresses',
+              i18nKey: 'route.k8s_resources_ingresses'
+            },
+            children: [
+              {
+                name: 'k8s_resources_ingresses_detail',
+                path: '/k8s/resources/ingresses/detail',
+                component: 'view.k8s_resources_ingresses_detail',
+                meta: {
+                  title: 'k8s_resources_ingresses_detail',
+                  i18nKey: 'route.k8s_resources_ingresses_detail'
+                }
+              }
+            ]
+          },
+          {
+            name: 'k8s_resources_jobs',
+            path: '/k8s/resources/jobs',
+            meta: {
+              title: 'k8s_resources_jobs',
+              i18nKey: 'route.k8s_resources_jobs'
+            },
+            children: [
+              {
+                name: 'k8s_resources_jobs_detail',
+                path: '/k8s/resources/jobs/detail',
+                component: 'view.k8s_resources_jobs_detail',
+                meta: {
+                  title: 'k8s_resources_jobs_detail',
+                  i18nKey: 'route.k8s_resources_jobs_detail'
+                }
+              }
+            ]
           },
           {
             name: 'k8s_resources_pods',
@@ -633,7 +742,18 @@ export const generatedRoutes: GeneratedRoute[] = [
             meta: {
               title: 'k8s_resources_pods',
               i18nKey: 'route.k8s_resources_pods'
-            }
+            },
+            children: [
+              {
+                name: 'k8s_resources_pods_detail',
+                path: '/k8s/resources/pods/detail',
+                component: 'view.k8s_resources_pods_detail',
+                meta: {
+                  title: 'k8s_resources_pods_detail',
+                  i18nKey: 'route.k8s_resources_pods_detail'
+                }
+              }
+            ]
           },
           {
             name: 'k8s_resources_secrets',
@@ -642,7 +762,18 @@ export const generatedRoutes: GeneratedRoute[] = [
             meta: {
               title: 'k8s_resources_secrets',
               i18nKey: 'route.k8s_resources_secrets'
-            }
+            },
+            children: [
+              {
+                name: 'k8s_resources_secrets_detail',
+                path: '/k8s/resources/secrets/detail',
+                component: 'view.k8s_resources_secrets_detail',
+                meta: {
+                  title: 'k8s_resources_secrets_detail',
+                  i18nKey: 'route.k8s_resources_secrets_detail'
+                }
+              }
+            ]
           },
           {
             name: 'k8s_resources_services',
@@ -651,7 +782,37 @@ export const generatedRoutes: GeneratedRoute[] = [
             meta: {
               title: 'k8s_resources_services',
               i18nKey: 'route.k8s_resources_services'
-            }
+            },
+            children: [
+              {
+                name: 'k8s_resources_services_detail',
+                path: '/k8s/resources/services/detail',
+                component: 'view.k8s_resources_services_detail',
+                meta: {
+                  title: 'k8s_resources_services_detail',
+                  i18nKey: 'route.k8s_resources_services_detail'
+                }
+              }
+            ]
+          },
+          {
+            name: 'k8s_resources_statefulsets',
+            path: '/k8s/resources/statefulsets',
+            meta: {
+              title: 'k8s_resources_statefulsets',
+              i18nKey: 'route.k8s_resources_statefulsets'
+            },
+            children: [
+              {
+                name: 'k8s_resources_statefulsets_detail',
+                path: '/k8s/resources/statefulsets/detail',
+                component: 'view.k8s_resources_statefulsets_detail',
+                meta: {
+                  title: 'k8s_resources_statefulsets_detail',
+                  i18nKey: 'route.k8s_resources_statefulsets_detail'
+                }
+              }
+            ]
           }
         ]
       },
@@ -1158,7 +1319,18 @@ export const generatedRoutes: GeneratedRoute[] = [
         meta: {
           title: 'ticket_center',
           i18nKey: 'route.ticket_center'
-        }
+        },
+        children: [
+          {
+            name: 'ticket_center_detail',
+            path: '/ticket/center/detail',
+            component: 'view.ticket_center_detail',
+            meta: {
+              title: 'ticket_center_detail',
+              i18nKey: 'route.ticket_center_detail'
+            }
+          }
+        ]
       },
       {
         name: 'ticket_types',

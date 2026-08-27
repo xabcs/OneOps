@@ -23,7 +23,7 @@
   import K8sEventsTable from '@/components/k8s/K8sEventsTable.vue';
   import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
   import YamlEditor from '@/components/k8s/YamlEditor.vue';
-  import ScaleDialog from './modules/ScaleDialog.vue';
+  import ScaleDialog from '../modules/ScaleDialog.vue';
 
   defineOptions({ name: 'K8sDeploymentDetail' });
 

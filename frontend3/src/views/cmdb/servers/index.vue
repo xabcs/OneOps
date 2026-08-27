@@ -375,7 +375,7 @@
 
   // ===== 详情 =====
   function handleViewDetail(row: CMDB.Server) {
-    router.push({ path: '/cmdb/server/detail', query: { id: row.id.toString() } });
+    router.push({ path: '/cmdb/servers/detail', query: { id: row.id.toString() } });
   }
 
   function handleViewMonitoring(row: CMDB.Server) {

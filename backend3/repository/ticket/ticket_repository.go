@@ -2,8 +2,10 @@ package repositoryticket
 
 import (
 	modelticket "oneops/backend3/model/ticket"
+	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // TicketRepository 工单数据访问
@@ -42,15 +44,17 @@ func (r *TicketRepository) FindTickets(q TicketQuery) ([]modelticket.Ticket, int
 		query = query.Where("creator_id = ?", q.UserID)
 	case "todo":
 		// 当前节点审批中，且我是审批人，且我还没审过（会签场景）
-		query = query.Where(`status = 'pending' AND id IN (
+		query = query.Where(`status = ? AND id IN (
 			SELECT ticket_id FROM ticket_node_records
-			WHERE status = 'pending'
+			WHERE status = ?
 			  AND FIND_IN_SET(?, approver_ids)
-			  AND NOT FIND_IN_SET(?, approved_ids))`, q.UserID, q.UserID)
+			  AND NOT FIND_IN_SET(?, approved_ids))`,
+			modelticket.TicketStatusPending, modelticket.NodeStatusPending, q.UserID, q.UserID)
 	case "done":
 		query = query.Where(`id IN (
 			SELECT ticket_id FROM ticket_flow_logs
-			WHERE operator_id = ? AND action IN ('approve','reject'))`, q.UserID)
+			WHERE operator_id = ? AND action IN (?))`,
+			q.UserID, []string{modelticket.FlowActionApprove, modelticket.FlowActionReject})
 	}
 
 	if q.Status != "" {
@@ -84,6 +88,18 @@ func (r *TicketRepository) FindTicketByID(id uint) (*modelticket.Ticket, error) 
 	return &t, nil
 }
 
+// FindTicketByIDForUpdate 按 ID 查工单并加行锁（SELECT ... FOR UPDATE）
+// 必须在事务内调用：审批/驳回/撤销操作先锁工单行，串行化并发操作，
+// 防止会签丢票（ApprovedIDs 后写覆盖先写）、或签双推、防重检查被并发双击绕过
+func (r *TicketRepository) FindTicketByIDForUpdate(id uint) (*modelticket.Ticket, error) {
+	var t modelticket.Ticket
+	err := r.db.Clauses(clause.Locking{Strength: "UPDATE"}).First(&t, id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
 // CreateTicket 创建工单
 func (r *TicketRepository) CreateTicket(t *modelticket.Ticket) error {
 	return r.db.Create(t).Error
@@ -94,11 +110,11 @@ func (r *TicketRepository) UpdateTicketFields(id uint, fields map[string]interfa
 	return r.db.Model(&modelticket.Ticket{}).Where("id = ?", id).Updates(fields).Error
 }
 
-// CountTodayTickets 当日工单数（生成单号用）
-func (r *TicketRepository) CountTodayTickets(prefix string) (int64, error) {
+// TicketNoExists 工单单号是否已存在（随机后缀单号冲突检测用）
+func (r *TicketRepository) TicketNoExists(no string) (bool, error) {
 	var count int64
-	err := r.db.Model(&modelticket.Ticket{}).Where("ticket_no LIKE ?", prefix+"%").Count(&count).Error
-	return count, err
+	err := r.db.Model(&modelticket.Ticket{}).Where("ticket_no = ?", no).Count(&count).Error
+	return count > 0, err
 }
 
 // ────────────────────────── 节点记录 ──────────────────────────
@@ -133,13 +149,34 @@ func (r *TicketRepository) FindPendingRecordsByTicketIDs(ticketIDs []uint) ([]mo
 		return nil, nil
 	}
 	var list []modelticket.TicketNodeRecord
-	err := r.db.Where("ticket_id IN ? AND status = 'pending'", ticketIDs).Find(&list).Error
+	err := r.db.Where("ticket_id IN ? AND status = ?", ticketIDs, modelticket.NodeStatusPending).Find(&list).Error
 	return list, err
 }
 
 // UpdateNodeRecord 更新节点记录
 func (r *TicketRepository) UpdateNodeRecord(rec *modelticket.TicketNodeRecord) error {
 	return r.db.Save(rec).Error
+}
+
+// CloseNodeRecords 将工单中仍处指定状态的节点记录统一置为 canceled
+// 驳回/撤销时清理残留（避免 pending/waiting 记录与工单终态不一致）
+func (r *TicketRepository) CloseNodeRecords(ticketID uint, statuses []string, finishedAt time.Time) error {
+	return r.db.Model(&modelticket.TicketNodeRecord{}).
+		Where("ticket_id = ? AND status IN ?", ticketID, statuses).
+		Updates(map[string]interface{}{"status": modelticket.NodeStatusCanceled, "finished_at": finishedAt}).Error
+}
+
+// ResetNodeRecords 重新提交时重置全部节点记录为 waiting（清空进度与时间戳）
+func (r *TicketRepository) ResetNodeRecords(ticketID uint) error {
+	return r.db.Model(&modelticket.TicketNodeRecord{}).
+		Where("ticket_id = ?", ticketID).
+		Updates(map[string]interface{}{
+			"status":       modelticket.NodeStatusWaiting,
+			"started_at":   nil,
+			"finished_at":  nil,
+			"approved_ids": "",
+			"comment":      "",
+		}).Error
 }
 
 // ────────────────────────── 流转日志 ──────────────────────────

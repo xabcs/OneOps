@@ -7,7 +7,7 @@
   import { formatAnnotations, formatLabels } from '@/views/k8s/shared/k8s-formatters';
   import YamlEditor from '@/components/k8s/YamlEditor.vue';
   import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
-  import PodLogDialog from './modules/PodLogDialog.vue';
+  import PodLogDialog from '../modules/PodLogDialog.vue';
 
   defineOptions({ name: 'K8sPodDetail' });
 

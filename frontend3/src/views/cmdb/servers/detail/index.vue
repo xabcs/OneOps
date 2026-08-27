@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import ServerDetailPage from './modules/ServerDetailPage.vue';
+  import ServerDetailPage from '../modules/ServerDetailPage.vue';
 
   defineOptions({ name: 'CMDBServerDetail' });
 </script>

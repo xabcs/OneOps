@@ -88,6 +88,20 @@ func (s *RouteGenService) GetConstantRoutes() []map[string]interface{} {
 				"keepAlive":  true,
 			},
 		},
+		// k8s Pod 终端：新窗口打开的独立工作台（TerminalLayout 无侧边栏），携带 token 直连 ws，免登录
+		// 注意：name 用连字符（无下划线）才会被前端 transform 视为单层路由，
+		// 从而把 "layout.terminalLayout$view.k8s_terminal" 按 $ 拆分为布局+视图
+		{
+			"id":        "k8s_terminal",
+			"name":      "k8s-terminal",
+			"path":      "/k8s/terminal",
+			"component": "layout.terminalLayout$view.k8s_terminal",
+			"meta": map[string]interface{}{
+				"title":      "Pod终端",
+				"hideInMenu": true,
+				"constant":   true,
+			},
+		},
 	}
 }
 
@@ -117,11 +131,100 @@ func (s *RouteGenService) GetUserRoutes(userID uint) ([]map[string]interface{}, 
 	// web 终端入口与主机管理菜单强耦合（有主机管理菜单才可见终端）
 	routes = s.appendTerminalRoute(routes, menuTree)
 
+	// 隐藏详情页路由下发（可见性跟随锚点菜单）
+	routes = s.appendHiddenDetailRoutes(routes, menuTree)
+
 	return routes, nil
 }
 
-// hiddenRouteSuffixes 隐藏路由（详情页等）的命名后缀，剥离后按父级模块匹配菜单
-var hiddenRouteSuffixes = []string{"_detail_view", "_detail", "_view"}
+// hiddenDetailRoute 隐藏详情路由登记项
+// 组件映射由前端 gen-route 按 views/<...>/detail/index.vue 约定生成，
+// 路由本体在此登记并由后端下发（官方动态路由模式，替代前端 custom-routes 手写）
+type hiddenDetailRoute struct {
+	Name       string // 路由名 = 前端 imports.ts 的视图键
+	Path       string
+	Title      string
+	AnchorPath string // 锚点菜单路径：用户菜单含该路径（能看到列表页）才下发对应详情路由
+	ActiveMenu string // 菜单高亮目标（列表页路由名）
+}
+
+// hiddenDetailRoutes 隐藏详情路由登记表（新增详情页：前端建 detail/index.vue + gen-route，再在此登记）
+var hiddenDetailRoutes = []hiddenDetailRoute{
+	{Name: "cmdb_servers_detail", Path: "/cmdb/servers/detail", Title: "主机详情", AnchorPath: "/cmdb/servers", ActiveMenu: "cmdb_servers"},
+	{Name: "monitoring_servers_detail", Path: "/monitoring/servers/detail", Title: "主机监控详情", AnchorPath: "/monitoring/servers", ActiveMenu: "monitoring_servers"},
+	{Name: "k8s_resources_deployments_detail", Path: "/k8s/resources/deployments/detail", Title: "Deployment详情", AnchorPath: "/k8s/workloads", ActiveMenu: "k8s_workloads"},
+	{Name: "k8s_resources_statefulsets_detail", Path: "/k8s/resources/statefulsets/detail", Title: "StatefulSet详情", AnchorPath: "/k8s/workloads", ActiveMenu: "k8s_workloads"},
+	{Name: "k8s_resources_daemonsets_detail", Path: "/k8s/resources/daemonsets/detail", Title: "DaemonSet详情", AnchorPath: "/k8s/workloads", ActiveMenu: "k8s_workloads"},
+	{Name: "k8s_resources_pods_detail", Path: "/k8s/resources/pods/detail", Title: "Pod详情", AnchorPath: "/k8s/workloads", ActiveMenu: "k8s_workloads"},
+	{Name: "k8s_resources_jobs_detail", Path: "/k8s/resources/jobs/detail", Title: "Job详情", AnchorPath: "/k8s/workloads", ActiveMenu: "k8s_workloads"},
+	{Name: "k8s_resources_cronjobs_detail", Path: "/k8s/resources/cronjobs/detail", Title: "CronJob详情", AnchorPath: "/k8s/workloads", ActiveMenu: "k8s_workloads"},
+	{Name: "k8s_resources_configmaps_detail", Path: "/k8s/resources/configmaps/detail", Title: "ConfigMap详情", AnchorPath: "/k8s/workloads", ActiveMenu: "k8s_workloads"},
+	{Name: "k8s_resources_secrets_detail", Path: "/k8s/resources/secrets/detail", Title: "Secret详情", AnchorPath: "/k8s/workloads", ActiveMenu: "k8s_workloads"},
+	{Name: "k8s_resources_services_detail", Path: "/k8s/resources/services/detail", Title: "Service详情", AnchorPath: "/k8s/network", ActiveMenu: "k8s_network"},
+	{Name: "k8s_resources_ingresses_detail", Path: "/k8s/resources/ingresses/detail", Title: "Ingress详情", AnchorPath: "/k8s/network", ActiveMenu: "k8s_network"},
+	{Name: "ticket_center_detail", Path: "/ticket/center/detail", Title: "工单详情", AnchorPath: "/ticket/center", ActiveMenu: "ticket_center"},
+}
+
+// appendHiddenDetailRoutes 按锚点菜单追加隐藏详情路由
+// 详情路由挂在路径前缀匹配的一级路由（layout.base）之下，
+// 由前端 transform 嵌入基础布局渲染；hideInMenu 保证不进入菜单
+func (s *RouteGenService) appendHiddenDetailRoutes(routes []map[string]interface{}, menuTree []*modelsystem.Menu) []map[string]interface{} {
+	for _, spec := range hiddenDetailRoutes {
+		// 菜单表已显式配置同名路由时以下发数据为准，避免重复
+		if routeTreeContainsName(routes, spec.Name) {
+			continue
+		}
+		// 可见性跟随锚点菜单：无锚点（看不到列表页）则不发放对应详情路由
+		if !menuTreeContainsPath(menuTree, spec.AnchorPath) {
+			continue
+		}
+		parent := findFirstLevelRouteByPathPrefix(routes, spec.Path)
+		if parent == nil {
+			logger.Warn("[appendHiddenDetailRoutes] 未找到一级父路由，跳过", zap.String("path", spec.Path))
+			continue
+		}
+		hidden := map[string]interface{}{
+			"name":      spec.Name,
+			"path":      spec.Path,
+			"component": "view." + spec.Name,
+			"meta": map[string]interface{}{
+				"title":      spec.Title,
+				"hideInMenu": true,
+				"activeMenu": spec.ActiveMenu,
+			},
+		}
+		children, _ := parent["children"].([]map[string]interface{})
+		parent["children"] = append(children, hidden)
+	}
+	return routes
+}
+
+// findFirstLevelRouteByPathPrefix 在一级路由中查找路径前缀匹配的布局路由
+func findFirstLevelRouteByPathPrefix(routes []map[string]interface{}, path string) map[string]interface{} {
+	for _, r := range routes {
+		p, ok := r["path"].(string)
+		if !ok || p == "" || p == "/" {
+			continue
+		}
+		if strings.HasPrefix(path, p+"/") {
+			return r
+		}
+	}
+	return nil
+}
+
+// routeTreeContainsName 递归检查路由树中是否已存在同名路由
+func routeTreeContainsName(routes []map[string]interface{}, name string) bool {
+	for _, r := range routes {
+		if r["name"] == name {
+			return true
+		}
+		if children, ok := r["children"].([]map[string]interface{}); ok && routeTreeContainsName(children, name) {
+			return true
+		}
+	}
+	return false
+}
 
 // frameworkRouteNames 前端框架内置路由名（router/routes/builtin.ts 固定生成，非业务配置）
 var frameworkRouteNames = map[string]bool{"root": true, "not-found": true}
@@ -143,32 +246,21 @@ func (s *RouteGenService) IsRouteExist(userID uint, routeName string) (bool, err
 		return true, nil
 	}
 
+	// 隐藏详情路由：全局登记，存在性以此为准（权限可见性由锚点菜单另行控制）
+	for _, spec := range hiddenDetailRoutes {
+		if spec.Name == routeName {
+			return true, nil
+		}
+	}
+
 	// 业务路由：以启用菜单为唯一事实来源
 	var paths []string
 	if err := s.db.Model(&modelsystem.Menu{}).Where("status = 1").Pluck("path", &paths).Error; err != nil {
 		return false, err
 	}
 
-	// 隐藏路由剥离详情后缀（k8s_deployment_detail → k8s_deployment）
-	base := routeName
-	for _, suffix := range hiddenRouteSuffixes {
-		if strings.HasSuffix(base, suffix) {
-			base = strings.TrimSuffix(base, suffix)
-			break
-		}
-	}
-
 	for _, p := range paths {
-		menuName := s.generateRouteName(p)
-		switch {
-		case menuName == routeName, menuName == base:
-			// 精确命中
-			return true, nil
-		case strings.HasPrefix(base, menuName+"_"):
-			// 命中父级菜单（k8s_deployment → 菜单 k8s）
-			return true, nil
-		case strings.Contains(base, "_") && strings.HasPrefix(menuName, base):
-			// 菜单为隐藏路由的复数形式（cmdb_server_detail → 菜单 cmdb_servers）
+		if s.generateRouteName(p) == routeName {
 			return true, nil
 		}
 	}

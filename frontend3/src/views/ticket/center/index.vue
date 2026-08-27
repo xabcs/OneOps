@@ -1,11 +1,13 @@
 <script setup lang="tsx">
   import { computed, ref } from 'vue';
+  import dayjs from 'dayjs';
   import { Plus } from '@element-plus/icons-vue';
   import { useRouter } from 'vue-router';
   import type { TabPaneName } from 'element-plus';
   import { useAuthStore } from '@/store/modules/auth';
   import { fetchTicketTypeOptions, fetchTickets } from '@/service/api';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
+  import { ticketStatusMap, ticketStatusOptions, ticketPriorityMap } from '../constants';
   import TicketCreateDialog from './modules/ticket-create-dialog.vue';
 
   defineOptions({ name: 'TicketCenter' });
@@ -30,20 +32,6 @@
 
   // 全部工单 tab 仅对有权限者可见
   const canViewAll = computed(() => authStore.hasPermission('ticket.ticket.list'));
-
-  const statusMap: Record<string, { label: string; type: 'primary' | 'success' | 'danger' | 'info' }> = {
-    pending: { label: '审批中', type: 'primary' },
-    approved: { label: '已通过', type: 'success' },
-    rejected: { label: '已驳回', type: 'danger' },
-    canceled: { label: '已撤销', type: 'info' }
-  };
-
-  const priorityMap: Record<string, { label: string; type: 'info' | 'primary' | 'warning' | 'danger' }> = {
-    low: { label: '低', type: 'info' },
-    normal: { label: '中', type: 'primary' },
-    high: { label: '高', type: 'warning' },
-    urgent: { label: '紧急', type: 'danger' }
-  };
 
   // 工单类型选项（筛选 + 发起）
   const typeOptions = ref<Api.Ticket.TicketTypeOption[]>([]);
@@ -77,7 +65,7 @@
         width: 80,
         align: 'center',
         formatter: row => {
-          const item = priorityMap[row.priority] ?? priorityMap.normal;
+          const item = ticketPriorityMap[row.priority] ?? ticketPriorityMap.normal;
           return <ElTag type={item.type}>{item.label}</ElTag>;
         }
       },
@@ -87,7 +75,7 @@
         width: 90,
         align: 'center',
         formatter: row => {
-          const item = statusMap[row.status] ?? statusMap.pending;
+          const item = ticketStatusMap[row.status] ?? ticketStatusMap.pending;
           return <ElTag type={item.type}>{item.label}</ElTag>;
         }
       },
@@ -106,7 +94,13 @@
         )
       },
       { prop: 'creatorName', label: '发起人', width: 100, align: 'center' },
-      { prop: 'createdAt', label: '创建时间', width: 170, align: 'center' },
+      {
+        prop: 'createdAt',
+        label: '创建时间',
+        width: 170,
+        align: 'center',
+        formatter: row => dayjs(row.createdAt).format('YYYY-MM-DD HH:mm:ss')
+      },
       {
         prop: 'operate',
         label: '操作',
@@ -187,10 +181,7 @@
         </ElFormItem>
         <ElFormItem label="状态">
           <ElSelect v-model="searchParams.status" clearable placeholder="全部" class="w-130px">
-            <ElOption label="审批中" value="pending" />
-            <ElOption label="已通过" value="approved" />
-            <ElOption label="已驳回" value="rejected" />
-            <ElOption label="已撤销" value="canceled" />
+            <ElOption v-for="opt in ticketStatusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
           </ElSelect>
         </ElFormItem>
         <ElFormItem label="类型">

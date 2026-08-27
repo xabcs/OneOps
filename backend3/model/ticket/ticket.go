@@ -24,6 +24,7 @@ func (TicketType) TableName() string { return "ticket_types" }
 // Status     : pending=审批中 / approved=已通过 / rejected=已驳回 / canceled=已撤销
 // FormData   : 发起时填写的动态表单数据（JSON object）
 // WorkflowSnapshot: 发起时的流程节点定义快照（JSON array，见 modelticket.WorkflowSnapshotNode）
+// LastUrgeAt : 发起人最近一次催办时间（用于催办频控，见 UrgeCooldown）
 type Ticket struct {
 	ID               uint       `json:"id" gorm:"primaryKey"`
 	TicketNo         string     `json:"ticketNo" gorm:"uniqueIndex;size:50;not null"`
@@ -41,6 +42,7 @@ type Ticket struct {
 	CreatorID        uint       `json:"creatorId" gorm:"index"`
 	CreatorName      string     `json:"creatorName" gorm:"size:50"`
 	FinishedAt       *time.Time `json:"finishedAt"`
+	LastUrgeAt       *time.Time `json:"lastUrgeAt"`
 	CreatedAt        time.Time  `json:"createdAt"`
 	UpdatedAt        time.Time  `json:"updatedAt"`
 }
@@ -49,7 +51,7 @@ func (Ticket) TableName() string { return "tickets" }
 
 // TicketNodeRecord 工单节点审批记录 → 表 ticket_node_records
 // 每个工单每经过一个节点生成一条记录（跳过的节点记为 skipped）。
-// Status      : waiting=未到达 / pending=审批中 / approved=通过 / rejected=驳回 / skipped=条件跳过
+// Status      : waiting=未到达 / pending=审批中 / approved=通过 / rejected=驳回 / skipped=条件跳过 / canceled=工单终止未走完
 // ApproverIDs : 该节点实际可审批的用户 ID（逗号分隔，发起时已按角色解析展开）
 // ApprovedIDs : 已通过该节点的用户 ID（逗号分隔，会签进度）
 type TicketNodeRecord struct {

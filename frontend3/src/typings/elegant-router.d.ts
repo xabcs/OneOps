@@ -76,6 +76,7 @@ declare module "@elegant-router/types" {
     "cmdb_policies": "/cmdb/policies";
     "cmdb_rooms": "/cmdb/rooms";
     "cmdb_servers": "/cmdb/servers";
+    "cmdb_servers_detail": "/cmdb/servers/detail";
     "cmdb_tags": "/cmdb/tags";
     "demo-route": "/demo-route";
     "demo-route_child": "/demo-route/child/:id";
@@ -98,10 +99,25 @@ declare module "@elegant-router/types" {
     "k8s_network": "/k8s/network";
     "k8s_resources": "/k8s/resources";
     "k8s_resources_configmaps": "/k8s/resources/configmaps";
+    "k8s_resources_configmaps_detail": "/k8s/resources/configmaps/detail";
+    "k8s_resources_cronjobs": "/k8s/resources/cronjobs";
+    "k8s_resources_cronjobs_detail": "/k8s/resources/cronjobs/detail";
+    "k8s_resources_daemonsets": "/k8s/resources/daemonsets";
+    "k8s_resources_daemonsets_detail": "/k8s/resources/daemonsets/detail";
     "k8s_resources_deployments": "/k8s/resources/deployments";
+    "k8s_resources_deployments_detail": "/k8s/resources/deployments/detail";
+    "k8s_resources_ingresses": "/k8s/resources/ingresses";
+    "k8s_resources_ingresses_detail": "/k8s/resources/ingresses/detail";
+    "k8s_resources_jobs": "/k8s/resources/jobs";
+    "k8s_resources_jobs_detail": "/k8s/resources/jobs/detail";
     "k8s_resources_pods": "/k8s/resources/pods";
+    "k8s_resources_pods_detail": "/k8s/resources/pods/detail";
     "k8s_resources_secrets": "/k8s/resources/secrets";
+    "k8s_resources_secrets_detail": "/k8s/resources/secrets/detail";
     "k8s_resources_services": "/k8s/resources/services";
+    "k8s_resources_services_detail": "/k8s/resources/services/detail";
+    "k8s_resources_statefulsets": "/k8s/resources/statefulsets";
+    "k8s_resources_statefulsets_detail": "/k8s/resources/statefulsets/detail";
     "k8s_security": "/k8s/security";
     "k8s_security_authorization": "/k8s/security/authorization";
     "k8s_security_roles": "/k8s/security/roles";
@@ -155,6 +171,7 @@ declare module "@elegant-router/types" {
     "plugin_video": "/plugin/video";
     "ticket": "/ticket";
     "ticket_center": "/ticket/center";
+    "ticket_center_detail": "/ticket/center/detail";
     "ticket_types": "/ticket/types";
     "ticket_workflows": "/ticket/workflows";
     "user-center": "/user-center";
@@ -283,6 +300,7 @@ declare module "@elegant-router/types" {
     | "cmdb_dashboard"
     | "cmdb_policies"
     | "cmdb_rooms"
+    | "cmdb_servers_detail"
     | "cmdb_servers"
     | "cmdb_tags"
     | "demo-route_child"
@@ -299,11 +317,21 @@ declare module "@elegant-router/types" {
     | "k8s_config"
     | "k8s_diagnostic"
     | "k8s_network"
+    | "k8s_resources_configmaps_detail"
     | "k8s_resources_configmaps"
+    | "k8s_resources_cronjobs_detail"
+    | "k8s_resources_daemonsets_detail"
+    | "k8s_resources_deployments_detail"
     | "k8s_resources_deployments"
+    | "k8s_resources_ingresses_detail"
+    | "k8s_resources_jobs_detail"
+    | "k8s_resources_pods_detail"
     | "k8s_resources_pods"
+    | "k8s_resources_secrets_detail"
     | "k8s_resources_secrets"
+    | "k8s_resources_services_detail"
     | "k8s_resources_services"
+    | "k8s_resources_statefulsets_detail"
     | "k8s_security_authorization"
     | "k8s_security_roles"
     | "k8s_terminal"
@@ -342,6 +370,7 @@ declare module "@elegant-router/types" {
     | "plugin_tables_vtable"
     | "plugin_typeit"
     | "plugin_video"
+    | "ticket_center_detail"
     | "ticket_center"
     | "ticket_types"
     | "ticket_workflows"

@@ -2,6 +2,7 @@
   import { computed, ref, watch } from 'vue';
   import { ArrowLeft } from '@element-plus/icons-vue';
   import { createTicket, fetchWorkflowsByType } from '@/service/api';
+  import { ticketPriorityOptions } from '../../constants';
   import { useForm } from '@/hooks/common/form';
 
   defineOptions({ name: 'TicketCreateDialog' });
@@ -209,10 +210,9 @@
         </ElFormItem>
         <ElFormItem label="优先级" prop="priority">
           <ElRadioGroup v-model="model.priority">
-            <ElRadioButton value="low">低</ElRadioButton>
-            <ElRadioButton value="normal">中</ElRadioButton>
-            <ElRadioButton value="high">高</ElRadioButton>
-            <ElRadioButton value="urgent">紧急</ElRadioButton>
+            <ElRadioButton v-for="opt in ticketPriorityOptions" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </ElRadioButton>
           </ElRadioGroup>
         </ElFormItem>
 

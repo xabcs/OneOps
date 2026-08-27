@@ -55,6 +55,10 @@
 
   const fields = ref<FieldModel[]>([]);
 
+  /** 编辑态原表单配置损坏时置位：阻断编辑，防止保存空 schema 覆盖原配置 */
+  const schemaBroken = ref(false);
+  const rawSchema = ref('');
+
   const rules: Record<'name' | 'code', App.Global.FormRule> = {
     name: defaultRequiredRule,
     code: defaultRequiredRule
@@ -75,6 +79,8 @@
   function handleInitModel() {
     baseModel.value = { name: '', code: '', icon: '', description: '', status: 1 };
     fields.value = [createField()];
+    schemaBroken.value = false;
+    rawSchema.value = '';
 
     if (props.operateType === 'edit' && props.rowData) {
       Object.assign(baseModel.value, {
@@ -85,20 +91,30 @@
         status: props.rowData.status
       });
 
+      const raw = props.rowData.formSchema ?? '';
       try {
-        const parsed = props.rowData.formSchema ? JSON.parse(props.rowData.formSchema) : [];
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          fields.value = parsed.map((f: Api.Ticket.FormField) => ({
-            key: f.key ?? '',
-            label: f.label ?? '',
-            type: f.type ?? 'input',
-            required: Boolean(f.required),
-            optionsText: Array.isArray(f.options) ? f.options.join('\n') : '',
-            placeholder: f.placeholder ?? ''
-          }));
+        const parsed = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(parsed)) {
+          throw new TypeError('formSchema 不是合法的数组');
         }
-      } catch {
-        fields.value = [createField()];
+        fields.value =
+          parsed.length > 0
+            ? parsed.map((f: Api.Ticket.FormField) => ({
+                key: f.key ?? '',
+                label: f.label ?? '',
+                type: f.type ?? 'input',
+                required: Boolean(f.required),
+                optionsText: Array.isArray(f.options) ? f.options.join('\n') : '',
+                placeholder: f.placeholder ?? ''
+              }))
+            : [createField()];
+      } catch (e) {
+        // 原配置损坏：不得静默回退为空字段（保存会覆盖摧毁原配置），改为阻断编辑
+        schemaBroken.value = true;
+        rawSchema.value = raw;
+        fields.value = [];
+        ElMessage.error('该类型的表单配置已损坏，为防止覆盖丢失已禁用编辑');
+        console.warn('[ticket-type] formSchema 解析失败:', e);
       }
     }
   }
@@ -228,7 +244,21 @@
 
     <ElDivider content-position="left">表单字段设计（发起工单时渲染）</ElDivider>
 
-    <div class="flex flex-col gap-12px">
+    <ElAlert
+      v-if="schemaBroken"
+      type="error"
+      :closable="false"
+      show-icon
+      title="该类型的表单配置 JSON 已损坏，无法安全解析"
+      class="mb-12px"
+    >
+      <div class="text-12px">
+        为防止保存空配置覆盖原始数据，已禁用表单设计器与保存按钮。请点击「取消」，并联系管理员参照下方原始内容修复数据库：
+        <pre class="mt-8px max-h-160px overflow-auto rounded-4px bg-gray-100 p-8px dark:bg-gray-800">{{ rawSchema || '(空)' }}</pre>
+      </div>
+    </ElAlert>
+
+    <div v-if="!schemaBroken" class="flex flex-col gap-12px">
       <div v-for="(field, index) in fields" :key="index" class="rounded-6px border border-gray-200 p-12px">
         <div class="mb-8px flex items-center justify-between">
           <ElTag size="small" type="primary">字段 {{ index + 1 }}</ElTag>
@@ -273,7 +303,7 @@
 
     <template #footer>
       <ElButton @click="visible = false">取消</ElButton>
-      <ElButton type="primary" :loading="submitLoading" @click="handleSubmit">保存</ElButton>
+      <ElButton type="primary" :loading="submitLoading" :disabled="schemaBroken" @click="handleSubmit">保存</ElButton>
     </template>
   </ElDialog>
 </template>

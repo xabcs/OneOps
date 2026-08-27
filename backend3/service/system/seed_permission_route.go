@@ -46,6 +46,8 @@ func (i *Initializer) syncPermissionRoutes() error {
 		{"POST", "/api/ticket/types", "ticket.type.create"},
 		{"PUT", "/api/ticket/types/:id", "ticket.type.update"},
 		{"DELETE", "/api/ticket/types/:id", "ticket.type.delete"},
+		// 工单治理：改派审批人（管理员能力，解决审批人离职卡死）
+		{"POST", "/api/ticket/tickets/:id/reassign", "ticket.ticket.reassign"},
 
 		// ========== 系统管理：菜单/角色/用户/权限 ==========
 		{"GET", "/api/system/menus", "system.menu.list"},
@@ -367,7 +369,11 @@ func (i *Initializer) syncPermissionRoutes() error {
 			codes[r.Code] = true
 		}
 		var perms []modelsystem.Permission
-		if err := db.Where("code IN ?", codes).Find(&perms).Error; err == nil {
+		codeList := make([]string, 0, len(codes))
+		for code := range codes {
+			codeList = append(codeList, code)
+		}
+		if err := db.Where("code IN ?", codeList).Find(&perms).Error; err == nil {
 			existing := make(map[string]bool, len(perms))
 			for _, p := range perms {
 				existing[p.Code] = true

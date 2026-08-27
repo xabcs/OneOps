@@ -65,7 +65,7 @@ func (s *EmailService) Send(to []string, subject, body string, isHTML bool) erro
 	}
 
 	fromAddr := fmt.Sprintf("%s <%s>", s.config.FromName, s.config.From)
-	smtpAddr := fmt.Sprintf("%s:%d", s.config.SMTPHost, s.config.SMTPPort)
+	smtpAddr := net.JoinHostPort(s.config.SMTPHost, fmt.Sprintf("%d", s.config.SMTPPort))
 
 	var contentType string
 	if isHTML {

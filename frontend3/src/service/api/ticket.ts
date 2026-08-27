@@ -58,6 +58,32 @@ export function cancelTicket(id: number, comment: string) {
   });
 }
 
+/** 驳回后重新提交（仅发起人，可修改标题/优先级/表单） */
+export function resubmitTicket(id: number, data: Api.Ticket.TicketResubmitRequest) {
+  return request<boolean>({
+    url: `/ticket/tickets/${id}/resubmit`,
+    method: 'post',
+    data
+  });
+}
+
+/** 改派当前节点审批人（需 ticket.ticket.reassign 权限） */
+export function reassignTicket(id: number, approverIds: number[]) {
+  return request<boolean>({
+    url: `/ticket/tickets/${id}/reassign`,
+    method: 'post',
+    data: { approverIds }
+  });
+}
+
+/** 发起人催办（30 分钟冷却） */
+export function urgeTicket(id: number) {
+  return request<boolean>({
+    url: `/ticket/tickets/${id}/urge`,
+    method: 'post'
+  });
+}
+
 /** 工单评论 */
 export function commentTicket(id: number, comment: string) {
   return request<boolean>({

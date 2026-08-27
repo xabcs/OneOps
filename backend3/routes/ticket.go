@@ -26,7 +26,8 @@ func SetupTicketRoutes(r *gin.Engine) {
 	ticketRepo := repoticket.NewTicketRepository(db)
 
 	wfSvc := serviceticket.NewWorkflowService(wfRepo)
-	ticketSvc := serviceticket.NewTicketService(ticketRepo, wfRepo)
+	// 通知器：复用 mon_notification_channels 中的邮件渠道，异步发送不阻断审批
+	ticketSvc := serviceticket.NewTicketService(ticketRepo, wfRepo, serviceticket.NewTicketNotifier(db))
 
 	wfController := controllerticket.NewWorkflowController(wfSvc)
 	ticketController := controllerticket.NewTicketController(ticketSvc)
@@ -42,6 +43,8 @@ func SetupTicketRoutes(r *gin.Engine) {
 		ticket.POST("/tickets/:id/approve", ticketController.ApproveTicket)
 		ticket.POST("/tickets/:id/reject", ticketController.RejectTicket)
 		ticket.POST("/tickets/:id/cancel", ticketController.CancelTicket)
+		ticket.POST("/tickets/:id/resubmit", ticketController.ResubmitTicket)
+		ticket.POST("/tickets/:id/urge", ticketController.UrgeTicket)
 		ticket.POST("/tickets/:id/comment", ticketController.CommentTicket)
 
 		// 发起工单时的类型选项与场景下流程选项（仅需登录）
@@ -54,6 +57,9 @@ func SetupTicketRoutes(r *gin.Engine) {
 	manage.Use(middleware.Auth())
 	manage.Use(middleware.RequirePermissionFromDB())
 	{
+		// 工单治理：改派当前节点审批人（权限码 ticket.ticket.reassign）
+		manage.POST("/tickets/:id/reassign", ticketController.ReassignTicket)
+
 		// 流程定义
 		manage.GET("/workflows", wfController.GetWorkflows)
 		manage.GET("/workflows/:id", wfController.GetWorkflow)
