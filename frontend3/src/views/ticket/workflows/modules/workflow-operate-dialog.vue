@@ -35,6 +35,8 @@
     multiType: Api.Ticket.MultiType;
     conditions: Api.Ticket.ConditionItem[];
     conditionEnabled: boolean;
+    /** 审批超时阈值（小时），0=不启用；超时提醒审批人，2倍阈值升级管理员 */
+    timeoutHours: number;
   }
 
   interface BaseModel {
@@ -96,7 +98,8 @@
       approverIds: [],
       multiType: 'any',
       conditions: [],
-      conditionEnabled: false
+      conditionEnabled: false,
+      timeoutHours: 0
     };
   }
 
@@ -138,7 +141,8 @@
                   : [],
                 multiType: (node.multiType || 'any') as Api.Ticket.MultiType,
                 conditions,
-                conditionEnabled: conditions.length > 0
+                conditionEnabled: conditions.length > 0,
+                timeoutHours: node.timeoutHours || 0
               };
             });
         }
@@ -205,7 +209,8 @@
         approverType: node.approverType,
         approverIds: node.approverType === 'initiator' ? [] : node.approverIds,
         multiType: node.approverType === 'initiator' ? 'any' : node.multiType,
-        condition: node.conditionEnabled ? node.conditions : []
+        condition: node.conditionEnabled ? node.conditions : [],
+        timeoutHours: node.approverType === 'initiator' ? 0 : node.timeoutHours || 0
       }))
     };
 
@@ -236,7 +241,7 @@
 <template>
   <ElDialog v-model="visible" :title="title" :width="720" top="6vh" destroy-on-close>
     <ElForm ref="formRef" :model="baseModel" :rules="rules" label-width="90px">
-      <ElFormItem label="所属场景" prop="typeId">
+      <ElFormItem label="工单类型" prop="typeId">
         <ElSelect v-model="baseModel.typeId" placeholder="选择该流程服务的工单场景" class="w-260px">
           <ElOption v-for="t in typeOptions" :key="t.id" :label="t.name" :value="t.id" />
         </ElSelect>
@@ -322,6 +327,22 @@
             <ElRadioGroup v-model="node.multiType">
               <ElRadio v-for="opt in multiTypeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</ElRadio>
             </ElRadioGroup>
+          </ElFormItem>
+
+          <ElFormItem v-if="node.approverType !== 'initiator'" label="审批超时">
+            <div class="w-full">
+              <ElInputNumber
+                v-model="node.timeoutHours"
+                :min="0"
+                :max="8760"
+                :step="1"
+                controls-position="right"
+                class="w-160px"
+              />
+              <span class="ml-8px text-12px text-gray-400">
+                小时（0=不启用）；超时自动提醒审批人，超过 2 倍阈值升级通知管理员
+              </span>
+            </div>
           </ElFormItem>
 
           <ElFormItem label="激活条件">

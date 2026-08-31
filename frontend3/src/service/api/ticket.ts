@@ -196,3 +196,81 @@ export function deleteWorkflow(id: number) {
     method: 'delete'
   });
 }
+
+// ─────────────── 通知设置（事件矩阵，RBAC） ───────────────
+
+/** 获取工单通知事件矩阵（事件 × 渠道绑定） */
+export function fetchNotifyPolicies() {
+  return request<Api.Ticket.NotifyPolicy[]>({
+    url: '/ticket/notify-policies',
+    method: 'get'
+  });
+}
+
+/** 保存某通知事件的渠道绑定与启用状态 */
+export function updateNotifyPolicy(
+  event: string,
+  data: { channels: number[]; enabled: number; titleTpl?: string; bodyTpl?: string }
+) {
+  return request<boolean>({
+    url: `/ticket/notify-policies/${event}`,
+    method: 'put',
+    data
+  });
+}
+
+/** 分页查询通知发送记录（排障：谁、哪个渠道、成功/失败） */
+export function fetchNotifyLogs(params: PaginationParam & { event?: string; status?: number }) {
+  return request<Api.Ticket.NotifyLog[]>({
+    url: '/ticket/notify-logs',
+    method: 'get',
+    params
+  });
+}
+
+// ─────────────── 站内消息（登录用户本人） ───────────────
+
+/** 分页查询本人站内消息 */
+export function fetchTicketMessages(params: PaginationParam & { unreadOnly?: number }) {
+  return request<Api.Ticket.TicketMessage[]>({
+    url: '/ticket/messages',
+    method: 'get',
+    params
+  });
+}
+
+/** 本人未读消息数 */
+export function fetchUnreadMessageCount() {
+  return request<number>({
+    url: '/ticket/messages/unread-count',
+    method: 'get'
+  });
+}
+
+/** 标记消息已读（ids 为空=全部已读） */
+export function markTicketMessagesRead(ids: number[]) {
+  return request<boolean>({
+    url: '/ticket/messages/read',
+    method: 'put',
+    data: { ids }
+  });
+}
+
+// ─────────────── 用户通知偏好（本人自助） ───────────────
+
+/** 读取本人通知偏好 */
+export function fetchMyNotifySetting() {
+  return request<Api.Ticket.UserNotifySetting>({
+    url: '/ticket/my-notify-setting',
+    method: 'get'
+  });
+}
+
+/** 保存本人通知偏好 */
+export function updateMyNotifySetting(data: Api.Ticket.UserNotifySetting) {
+  return request<boolean>({
+    url: '/ticket/my-notify-setting',
+    method: 'put',
+    data
+  });
+}

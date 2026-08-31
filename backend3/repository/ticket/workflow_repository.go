@@ -37,7 +37,36 @@ func (r *WorkflowRepository) FindWorkflows(keyword string, status int, typeID ui
 	if err := query.Order("id DESC").Offset(offset).Limit(limit).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
+	r.fillNodeCounts(list)
 	return list, total, nil
+}
+
+// fillNodeCounts 批量填充流程的审批节点数量（单条 COUNT 查询，避免逐行子查询）
+func (r *WorkflowRepository) fillNodeCounts(list []modelticket.Workflow) {
+	if len(list) == 0 {
+		return
+	}
+	ids := make([]uint, len(list))
+	for i, wf := range list {
+		ids[i] = wf.ID
+	}
+	var rows []struct {
+		WorkflowID uint
+		Cnt        int
+	}
+	if err := r.db.Table("ticket_workflow_nodes").
+		Select("workflow_id, COUNT(*) AS cnt").
+		Where("workflow_id IN ?", ids).
+		Group("workflow_id").Scan(&rows).Error; err != nil {
+		return
+	}
+	counts := make(map[uint]int, len(rows))
+	for _, row := range rows {
+		counts[row.WorkflowID] = row.Cnt
+	}
+	for i := range list {
+		list[i].NodeCount = counts[list[i].ID]
+	}
 }
 
 // FindEnabledWorkflowsByTypeID 某场景下启用的流程（发起工单选择用，含节点数）
@@ -141,7 +170,36 @@ func (r *WorkflowRepository) FindTypes(keyword string, status int, offset, limit
 	if err := query.Order("id DESC").Offset(offset).Limit(limit).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
+	r.fillWorkflowCounts(list)
 	return list, total, nil
+}
+
+// fillWorkflowCounts 批量填充场景下启用的审批流程数量（单条 COUNT 查询；0=发起工单时无流程可选）
+func (r *WorkflowRepository) fillWorkflowCounts(list []modelticket.TicketType) {
+	if len(list) == 0 {
+		return
+	}
+	ids := make([]uint, len(list))
+	for i, t := range list {
+		ids[i] = t.ID
+	}
+	var rows []struct {
+		TypeID uint
+		Cnt    int
+	}
+	if err := r.db.Table("ticket_workflows").
+		Select("type_id, COUNT(*) AS cnt").
+		Where("type_id IN ? AND status = 1", ids).
+		Group("type_id").Scan(&rows).Error; err != nil {
+		return
+	}
+	counts := make(map[uint]int, len(rows))
+	for _, row := range rows {
+		counts[row.TypeID] = row.Cnt
+	}
+	for i := range list {
+		list[i].WorkflowCount = counts[list[i].ID]
+	}
 }
 
 // FindEnabledTypes 启用的类型（发起工单下拉用）

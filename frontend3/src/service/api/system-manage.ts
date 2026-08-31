@@ -67,7 +67,7 @@ export function fetchGetUserById(id: number) {
 /**
  * 创建用户
  */
-export function fetchCreateUser(data: Api.SystemManage.User) {
+export function fetchCreateUser(data: Partial<Api.SystemManage.User>) {
   return request({
     url: '/system/users',
     method: 'post',

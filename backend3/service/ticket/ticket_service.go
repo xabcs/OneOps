@@ -32,6 +32,7 @@ type WorkflowSnapshotNode struct {
 	ApproverNames []string        `json:"approverNames"`
 	MultiType     string          `json:"multiType"`
 	Condition     []ConditionItem `json:"condition"`
+	TimeoutHours  int             `json:"timeoutHours"` // 审批超时阈值（小时），0=不启用（超时升级链读取）
 	SortOrder     int             `json:"sortOrder"`
 }
 
@@ -179,6 +180,7 @@ func (s *TicketService) buildSnapshot(wf *modelticket.Workflow, creatorID uint, 
 			Name:         node.Name,
 			ApproverType: node.ApproverType,
 			MultiType:    node.MultiType,
+			TimeoutHours: node.TimeoutHours,
 			SortOrder:    i + 1,
 		}
 		// 条件解析失败必须报错：静默忽略会导致节点退化为无条件激活，改变审批路径

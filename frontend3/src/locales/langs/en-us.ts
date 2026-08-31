@@ -403,7 +403,9 @@ const local: App.I18n.Schema = {
     ticket: 'Ticket Center',
     ticket_center: 'My Tickets',
     ticket_types: 'Ticket Types',
-    ticket_workflows: 'Workflows',
+    ticket_workflows: 'Approval Workflows',
+    'ticket_notify-settings': 'Notification Settings',
+    'manage_notification-channels': 'Notification Channels',
     webterminal: 'Terminal Workbench'
   },
   page: {

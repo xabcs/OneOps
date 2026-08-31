@@ -25,6 +25,12 @@ var publicRoutes = map[string]bool{
 	"GET:/api/cmdb/sessions/:id/ws":    true,
 	"GET:/api/k8s/terminal/ws":         true,
 	"GET:/api/monitoring/ws":           true,
+	// 工单站内消息：仅认证（本人收件箱数据，无角色维度）
+	"GET:/api/ticket/messages":              true,
+	"GET:/api/ticket/messages/unread-count": true,
+	"PUT:/api/ticket/messages/read":         true,
+	"GET:/api/ticket/my-notify-setting":     true, // 用户通知偏好（本人自助）
+	"PUT:/api/ticket/my-notify-setting":     true,
 }
 
 // AuditRoutePermissions 启动对账（只读，不写库）：

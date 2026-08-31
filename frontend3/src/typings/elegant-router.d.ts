@@ -126,6 +126,7 @@ declare module "@elegant-router/types" {
     "login": "/login/:module(pwd-login|code-login|register|reset-pwd|bind-wechat)?";
     "manage": "/manage";
     "manage_menu": "/manage/menu";
+    "manage_notification-channels": "/manage/notification-channels";
     "manage_permission": "/manage/permission";
     "manage_role": "/manage/role";
     "manage_user": "/manage/user";
@@ -172,6 +173,7 @@ declare module "@elegant-router/types" {
     "ticket": "/ticket";
     "ticket_center": "/ticket/center";
     "ticket_center_detail": "/ticket/center/detail";
+    "ticket_notify-settings": "/ticket/notify-settings";
     "ticket_types": "/ticket/types";
     "ticket_workflows": "/ticket/workflows";
     "user-center": "/user-center";
@@ -337,6 +339,7 @@ declare module "@elegant-router/types" {
     | "k8s_terminal"
     | "k8s_workloads"
     | "manage_menu"
+    | "manage_notification-channels"
     | "manage_permission"
     | "manage_role"
     | "manage_user-detail"
@@ -372,6 +375,7 @@ declare module "@elegant-router/types" {
     | "plugin_video"
     | "ticket_center_detail"
     | "ticket_center"
+    | "ticket_notify-settings"
     | "ticket_types"
     | "ticket_workflows"
     | "user-center"

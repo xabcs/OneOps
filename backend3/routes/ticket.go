@@ -26,11 +26,13 @@ func SetupTicketRoutes(r *gin.Engine) {
 	ticketRepo := repoticket.NewTicketRepository(db)
 
 	wfSvc := serviceticket.NewWorkflowService(wfRepo)
-	// 通知器：复用 mon_notification_channels 中的邮件渠道，异步发送不阻断审批
+	// 通知器：渠道来自 mon_notification_channels（平台级渠道池），
+	// 按事件矩阵（ticket_notify_policies）路由，异步发送不阻断审批
 	ticketSvc := serviceticket.NewTicketService(ticketRepo, wfRepo, serviceticket.NewTicketNotifier(db))
 
 	wfController := controllerticket.NewWorkflowController(wfSvc)
 	ticketController := controllerticket.NewTicketController(ticketSvc)
+	npController := controllerticket.NewNotifyPolicyController(serviceticket.NewNotifyPolicyService(db))
 
 	api := r.Group("/api")
 	ticket := api.Group("/ticket")
@@ -72,5 +74,21 @@ func SetupTicketRoutes(r *gin.Engine) {
 		manage.POST("/types", wfController.CreateType)
 		manage.PUT("/types/:id", wfController.UpdateType)
 		manage.DELETE("/types/:id", wfController.DeleteType)
+
+		// 通知设置（事件矩阵：事件 × 渠道绑定）
+		manage.GET("/notify-policies", npController.GetPolicies)
+		manage.PUT("/notify-policies/:event", npController.SavePolicy)
+		manage.GET("/notify-logs", npController.GetLogs)
+
+		// 站内消息（本人收件箱，仅需认证，见 route_sync.publicRoutes）
+		msgController := controllerticket.NewTicketMessageController(serviceticket.NewTicketMessageService(db))
+		ticket.GET("/messages", msgController.ListMessages)
+		ticket.GET("/messages/unread-count", msgController.UnreadCount)
+		ticket.PUT("/messages/read", msgController.MarkRead)
+
+		// 用户通知偏好（本人自助，仅需认证，见 route_sync.publicRoutes）
+		unsController := controllerticket.NewUserNotifySettingController(serviceticket.NewUserNotifySettingService(db))
+		ticket.GET("/my-notify-setting", unsController.GetMySetting)
+		ticket.PUT("/my-notify-setting", unsController.SaveMySetting)
 	}
 }

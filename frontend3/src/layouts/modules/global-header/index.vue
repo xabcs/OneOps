@@ -1,9 +1,18 @@
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
+  import { computed, onMounted, onUnmounted, ref } from 'vue';
   import { useFullscreen } from '@vueuse/core';
+  import { useRouter } from 'vue-router';
+  import { ElMessage } from 'element-plus';
   import { GLOBAL_HEADER_MENU_ID } from '@/constants/app';
   import { useAppStore } from '@/store/modules/app';
   import { useThemeStore } from '@/store/modules/theme';
+  import {
+    fetchMyNotifySetting,
+    fetchTicketMessages,
+    fetchUnreadMessageCount,
+    markTicketMessagesRead,
+    updateMyNotifySetting
+  } from '@/service/api';
   import GlobalLogo from '../global-logo/index.vue';
   import GlobalBreadcrumb from '../global-breadcrumb/index.vue';
   import GlobalSearch from '../global-search/index.vue';
@@ -25,6 +34,7 @@
 
   const appStore = useAppStore();
   const themeStore = useThemeStore();
+  const router = useRouter();
   const { isFullscreen, toggle } = useFullscreen();
 
   // 计算 Header 的自定义背景样式
@@ -52,8 +62,7 @@
   const systemStatus = ref({
     api: true, // API连接状态
     db: true, // 数据库连接状态
-    agents: 15, // 在线Agent数量
-    alerts: 3 // 未读告警数量
+    agents: 15 // 在线Agent数量
   });
 
   const systemInfo = computed(() => ({
@@ -120,47 +129,177 @@
   // 通知显示状态
   const showNotifications = ref(false);
 
-  interface AppNotification {
-    id: number;
-    title: string;
-    message: string;
-    type: 'warning' | 'error' | 'info';
-    time: string;
+  // ─────────────────────────────────────────────
+  // 通知中心：工单站内消息（本人收件箱，后端兜底渠道）
+  // ─────────────────────────────────────────────
+  const unreadCount = ref(0);
+  const notifications = ref<Api.Ticket.TicketMessage[]>([]);
+  let unreadTimer: ReturnType<typeof setInterval> | null = null;
+
+  async function loadUnread() {
+    try {
+      const { data } = await fetchUnreadMessageCount();
+      unreadCount.value = typeof data === 'number' ? data : 0;
+    } catch {
+      // 静默降级：未登录/接口异常时徽标归零
+    }
   }
 
-  // 模拟通知数据
-  const notifications = computed<AppNotification[]>(() => [
-    {
-      id: 1,
-      title: '服务器告警',
-      message: 'server-01 CPU使用率超过80%',
-      type: 'warning',
-      time: '2分钟前'
-    },
-    {
-      id: 2,
-      title: '安全提醒',
-      message: '发现3个待处理的安全漏洞',
-      type: 'error',
-      time: '15分钟前'
-    },
-    {
-      id: 3,
-      title: '系统通知',
-      message: '定期维护计划于今晚23:00开始',
-      type: 'info',
-      time: '1小时前'
+  async function loadNotifications() {
+    try {
+      const { data } = await fetchTicketMessages({ page: 1, pageSize: 10 });
+      notifications.value = data || [];
+    } catch {
+      notifications.value = [];
     }
-  ]);
+  }
+
+  // 事件类型 → 图标/语义
+  const eventIconMap: Record<string, string> = {
+    pending: 'mdi:file-document-edit-outline',
+    result: 'mdi:check-circle-outline',
+    reassign: 'mdi:account-switch-outline',
+    cancel: 'mdi:file-cancel-outline',
+    urge: 'mdi:alarm-light-outline',
+    timeout: 'mdi:timer-alert-outline',
+    escalation: 'mdi:arrow-up-bold-circle-outline'
+  };
+
+  function eventIcon(event: string) {
+    return eventIconMap[event] || 'mdi:bell-outline';
+  }
+
+  // 相对时间展示
+  function relativeTime(iso: string) {
+    const ts = new Date(iso).getTime();
+    if (Number.isNaN(ts)) return '';
+    const diff = Date.now() - ts;
+    if (diff < 60_000) return '刚刚';
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}分钟前`;
+    if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}小时前`;
+    return `${Math.floor(diff / 86_400_000)}天前`;
+  }
+
+  // 点击消息：标记已读并跳转工单中心
+  async function handleNotificationClick(notif: Api.Ticket.TicketMessage) {
+    showNotifications.value = false;
+    if (!notif.isRead) {
+      markTicketMessagesRead([notif.id]).then(loadUnread);
+    }
+    router.push('/ticket/center');
+  }
+
+  // 全部已读
+  async function handleMarkAllRead() {
+    if (unreadCount.value === 0) return;
+    await markTicketMessagesRead([]);
+    await loadUnread();
+    await loadNotifications();
+  }
+
+  // ─────────────────────────────────────────────
+  // 通知偏好（本人自助）：IM userid 绑定 + 事件/渠道开关
+  // 语义：事件关=完全静音（含站内）；渠道关=不推送该渠道（站内保留）
+  // ─────────────────────────────────────────────
+  const showPrefDialog = ref(false);
+  const prefLoading = ref(false);
+  const prefSaving = ref(false);
+  const prefForm = ref<Api.Ticket.UserNotifySetting>({
+    dingtalkId: '',
+    wechatId: '',
+    mutedEvents: [],
+    offChannels: []
+  });
+
+  // 事件与渠道文案（与后端 notifyEventMetas / 渠道池一致）
+  const prefEvents: Array<{ value: string; label: string }> = [
+    { value: 'pending', label: '待审批' },
+    { value: 'result', label: '审批结果' },
+    { value: 'reassign', label: '改派给我' },
+    { value: 'cancel', label: '工单撤销' },
+    { value: 'urge', label: '催办提醒' },
+    { value: 'timeout', label: '审批超时提醒' },
+    { value: 'escalation', label: '超时升级' }
+  ];
+  const prefChannels: Array<{ value: string; label: string }> = [
+    { value: 'email', label: '邮件' },
+    { value: 'wechat', label: '企业微信' },
+    { value: 'dingtalk', label: '钉钉' }
+  ];
+
+  // 勾选语义取反：勾=接收/启用，未勾=屏蔽/停用（后端存的是屏蔽/停用列表）
+  const receiveEvents = computed<string[]>({
+    get: () => prefEvents.map(e => e.value).filter(v => !prefForm.value.mutedEvents.includes(v)),
+    set: checked => {
+      prefForm.value.mutedEvents = prefEvents.map(e => e.value).filter(v => !checked.includes(v));
+    }
+  });
+  const pushChannels = computed<string[]>({
+    get: () => prefChannels.map(c => c.value).filter(v => !prefForm.value.offChannels.includes(v)),
+    set: checked => {
+      prefForm.value.offChannels = prefChannels.map(c => c.value).filter(v => !checked.includes(v));
+    }
+  });
+
+  async function openPrefDialog() {
+    showNotifications.value = false;
+    showPrefDialog.value = true;
+    prefLoading.value = true;
+    try {
+      const { data } = await fetchMyNotifySetting();
+      if (data) {
+        prefForm.value = {
+          dingtalkId: data.dingtalkId || '',
+          wechatId: data.wechatId || '',
+          mutedEvents: data.mutedEvents || [],
+          offChannels: data.offChannels || []
+        };
+      }
+    } catch {
+      // 读取失败保留空默认（跟随全局）
+    } finally {
+      prefLoading.value = false;
+    }
+  }
+
+  async function savePref() {
+    prefSaving.value = true;
+    try {
+      const { error } = await updateMyNotifySetting(prefForm.value);
+      if (!error) {
+        ElMessage.success('通知偏好已保存');
+        showPrefDialog.value = false;
+      } else {
+        ElMessage.error('保存失败');
+      }
+    } catch {
+      ElMessage.error('保存失败');
+    } finally {
+      prefSaving.value = false;
+    }
+  }
+
+  // 打开面板时刷新列表
+  function toggleNotifications() {
+    showNotifications.value = !showNotifications.value;
+    if (showNotifications.value) {
+      loadNotifications();
+      loadUnread();
+    }
+  }
+
+  onMounted(() => {
+    loadUnread();
+    unreadTimer = setInterval(loadUnread, 60_000); // 每分钟刷新未读徽标
+  });
+
+  onUnmounted(() => {
+    if (unreadTimer) clearInterval(unreadTimer);
+  });
 
   // 点击外部关闭下拉菜单
   const handleClickOutside = () => {
     showQuickMenu.value = false;
-    showNotifications.value = false;
-  };
-
-  // 处理通知点击
-  const handleNotificationClick = (_notification: AppNotification) => {
     showNotifications.value = false;
   };
 </script>
@@ -214,47 +353,95 @@
 
     <!-- 右侧操作区域 -->
     <div class="h-full flex-y-center justify-end gap-6px">
-      <!-- 通知中心 -->
+      <!-- 通知中心：工单站内消息 -->
       <div v-if="!appStore.isMobile" class="header-action-item">
-        <div class="relative" @click.stop="showNotifications = !showNotifications">
+        <div class="relative" @click.stop="toggleNotifications">
           <ButtonIcon icon="mdi:bell-outline" tooltip-content="通知中心" />
-          <span v-if="systemStatus.alerts > 0" class="notification-badge">{{ systemStatus.alerts }}</span>
+          <span v-if="unreadCount > 0" class="notification-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
           <!-- 通知下拉面板 -->
           <div v-if="showNotifications" class="dropdown-panel notification-dropdown">
             <div class="dropdown-header">
               <span>通知中心</span>
-              <span class="text-xs text-gray-500">({{ notifications.length }}条)</span>
+              <button
+                type="button"
+                class="text-xs text-blue-500 hover:text-blue-600"
+                :disabled="unreadCount === 0"
+                @click.stop="handleMarkAllRead"
+              >
+                全部已读
+              </button>
             </div>
             <div class="dropdown-content">
               <div
                 v-for="notif in notifications"
                 :key="notif.id"
                 class="notification-item"
-                :class="'notification-' + notif.type"
+                :class="notif.isRead === 0 ? 'notification-unread' : ''"
                 @click="handleNotificationClick(notif)"
               >
                 <div class="notification-icon">
-                  <Icon
-                    :icon="
-                      notif.type === 'warning'
-                        ? 'mdi:alert'
-                        : notif.type === 'error'
-                          ? 'mdi:alert-circle'
-                          : 'mdi:information'
-                    "
-                  />
+                  <Icon :icon="eventIcon(notif.event)" />
                 </div>
                 <div class="notification-content">
-                  <div class="notification-title">{{ notif.title }}</div>
-                  <div class="notification-message">{{ notif.message }}</div>
-                  <div class="notification-time">{{ notif.time }}</div>
+                  <div class="notification-title">
+                    {{ notif.title }}
+                    <span v-if="notif.isRead === 0" class="unread-dot"></span>
+                  </div>
+                  <div class="notification-message">{{ notif.content }}</div>
+                  <div class="notification-time">{{ relativeTime(notif.createdAt) }}</div>
                 </div>
               </div>
               <div v-if="notifications.length === 0" class="py-12px text-center text-gray-500">暂无通知</div>
             </div>
+            <div class="dropdown-footer" @click.stop="openPrefDialog">
+              <Icon icon="mdi:cog-outline" />
+              <span>通知偏好</span>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- 通知偏好弹窗（本人自助） -->
+      <ElDialog v-model="showPrefDialog" title="通知偏好" width="480px" append-to-body>
+        <div v-loading="prefLoading" class="flex flex-col gap-16px">
+          <div>
+            <div class="pref-section-title">IM 账号绑定</div>
+            <div class="mb-8px text-xs text-gray-400">配置后群消息按 userid @你，不再依赖手机号</div>
+            <ElInput v-model="prefForm.dingtalkId" placeholder="钉钉 userid（选填）" class="mb-8px">
+              <template #prefix><Icon icon="mdi:chat-outline" /></template>
+            </ElInput>
+            <ElInput v-model="prefForm.wechatId" placeholder="企业微信 userid（选填）">
+              <template #prefix><Icon icon="mdi:wechat" /></template>
+            </ElInput>
+          </div>
+          <div>
+            <div class="pref-section-title">接收事件</div>
+            <div class="mb-8px text-xs text-gray-400">取消勾选的事件将完全不通知（含站内消息）</div>
+            <ElCheckboxGroup v-model="receiveEvents">
+              <div class="flex flex-col gap-4px">
+                <ElCheckbox v-for="ev in prefEvents" :key="ev.value" :label="ev.value">
+                  {{ ev.label }}
+                </ElCheckbox>
+              </div>
+            </ElCheckboxGroup>
+          </div>
+          <div>
+            <div class="pref-section-title">推送渠道</div>
+            <div class="mb-8px text-xs text-gray-400">取消勾选的渠道不再推送（站内消息保留）</div>
+            <ElCheckboxGroup v-model="pushChannels">
+              <div class="flex flex-col gap-4px">
+                <ElCheckbox v-for="ch in prefChannels" :key="ch.value" :label="ch.value">
+                  {{ ch.label }}
+                </ElCheckbox>
+              </div>
+            </ElCheckboxGroup>
+          </div>
+        </div>
+        <template #footer>
+          <ElButton @click="showPrefDialog = false">取消</ElButton>
+          <ElButton type="primary" :loading="prefSaving" @click="savePref">保存</ElButton>
+        </template>
+      </ElDialog>
 
       <!-- 快速操作菜单 -->
       <div v-if="!appStore.isMobile" class="header-action-item">
@@ -421,6 +608,34 @@
     overflow-y: auto;
   }
 
+  .dropdown-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--el-border-color-light);
+    font-size: 13px;
+    color: var(--el-text-color-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .dropdown-footer:hover {
+    color: var(--el-color-primary);
+    background: var(--el-fill-color-light);
+  }
+
+  .pref-section-title {
+    margin-bottom: 4px;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .pref-section-title + .el-checkbox-group .el-checkbox {
+    display: flex;
+  }
+
   .notification-item {
     display: flex;
     gap: 12px;
@@ -462,6 +677,25 @@
   .notification-info .notification-icon {
     background: rgba(64, 158, 255, 0.1);
     color: var(--el-color-primary);
+  }
+
+  .notification-unread .notification-icon {
+    background: rgba(64, 158, 255, 0.12);
+    color: var(--el-color-primary);
+  }
+
+  .notification-unread .notification-title {
+    color: var(--el-color-primary);
+  }
+
+  .unread-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-left: 4px;
+    border-radius: 50%;
+    background: var(--el-color-danger);
+    vertical-align: middle;
   }
 
   .notification-content {

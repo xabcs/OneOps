@@ -56,11 +56,12 @@
       { prop: 'name', label: '流程名称', minWidth: 150, align: 'center' },
       {
         prop: 'typeId',
-        label: '所属场景',
+        label: '工单类型',
         width: 120,
         align: 'center',
         formatter: row => typeNameMap.value[row.typeId] || '-'
       },
+      { prop: 'nodeCount', label: '审批节点数', width: 100, align: 'center' },
       { prop: 'code', label: '流程编码', width: 140, align: 'center' },
       { prop: 'description', label: '描述', minWidth: 200, align: 'center', showOverflowTooltip: true },
       { prop: 'version', label: '版本', width: 70, align: 'center' },
@@ -134,7 +135,7 @@
     <ElCard class="card-wrapper sm:flex-1-hidden">
       <template #header>
         <div class="flex items-center justify-between">
-          <span class="text-lg font-medium">审批流程定义</span>
+          <span class="text-lg font-medium">审批流程</span>
           <PermissionButton code="ticket.workflow.create" type="primary" :icon="Plus" @click="handleAdd">
             新建流程
           </PermissionButton>

@@ -61,6 +61,7 @@
       username: string;
       nickname: string;
       email: string;
+      phone: string;
       roleIds: number[];
       status: string;
       homePath: string;
@@ -74,6 +75,7 @@
         username: '',
         nickname: '',
         email: '',
+        phone: '',
         roleIds: [],
         status: 'active',
         homePath: '',
@@ -148,6 +150,7 @@
           username: props.rowData.username || '',
           nickname: props.rowData.nickname || '',
           email: props.rowData.email || '',
+          phone: props.rowData.phone || '',
           roleIds: props.rowData.roleIds || [],
           status: props.rowData.status || 'active',
           homePath: props.rowData.homePath || '',
@@ -161,6 +164,7 @@
           username: '',
           nickname: '',
           email: '',
+          phone: '',
           roleIds: [],
           status: 'active',
           homePath: '',
@@ -177,6 +181,7 @@
         ? {
             nickname: model.value.nickname,
             email: model.value.email,
+            phone: model.value.phone,
             roleIds: model.value.roleIds,
             status: model.value.status,
             homePath: model.value.homePath
@@ -185,6 +190,7 @@
             username: model.value.username,
             nickname: model.value.nickname,
             email: model.value.email,
+            phone: model.value.phone,
             roleIds: model.value.roleIds,
             status: model.value.status,
             homePath: model.value.homePath,
@@ -193,7 +199,7 @@
 
       const { error } = isEdit.value
         ? await fetchUpdateUser(userId.value, submitData)
-        : await fetchCreateUser(submitData as Api.SystemManage.User);
+        : await fetchCreateUser(submitData);
 
       if (!error) {
         window.$message?.success(isEdit.value ? $t('common.updateSuccess') : '添加成功');
@@ -254,6 +260,9 @@
             </ElFormItem>
             <ElFormItem :label="$t('page.manage.user.userEmail')" prop="email">
                 <ElInput v-model="model.email" :placeholder="$t('page.manage.user.form.userEmail')" autocomplete="off" name="new-email" />
+            </ElFormItem>
+            <ElFormItem :label="$t('page.manage.user.userPhone')" prop="phone">
+                <ElInput v-model="model.phone" :placeholder="$t('page.manage.user.form.userPhone')" autocomplete="off" maxlength="11" />
             </ElFormItem>
             <ElFormItem :label="$t('page.manage.user.userStatus')" prop="status">
                 <ElRadioGroup v-model="model.status">

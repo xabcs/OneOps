@@ -87,6 +87,12 @@
         ElMessage.warning('请输入企业微信 Webhook URL');
         return;
       }
+    } else if (form.value.channelType === 'dingtalk') {
+      const config = form.value.config as Monitoring.DingTalkConfig;
+      if (!config.webhookUrl) {
+        ElMessage.warning('请输入钉钉 Webhook URL');
+        return;
+      }
     }
 
     submitting.value = true;
@@ -227,9 +233,21 @@
           />
         </ElFormItem>
 
+        <!-- 钉钉加签密钥 -->
+        <ElFormItem v-if="form.channelType === 'dingtalk'" label="加签密钥">
+          <ElInput
+            v-model="(form.config as Monitoring.DingTalkConfig).secret"
+            placeholder="SEC 开头，机器人安全设置选择「加签」时必填"
+            clearable
+          />
+        </ElFormItem>
+
         <ElAlert title="提示" type="info" :closable="false" show-icon>
           <template #default>
             <div>在对应的平台群聊中添加自定义机器人，获取 Webhook 地址。</div>
+            <div v-if="form.channelType === 'dingtalk'">
+              机器人安全设置选择「加签」时需填写加签密钥（SEC 开头），发送时自动签名；支持 @ 提醒有手机号的用户。
+            </div>
           </template>
         </ElAlert>
       </template>

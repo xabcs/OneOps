@@ -898,6 +898,15 @@ export const generatedRoutes: GeneratedRoute[] = [
         }
       },
       {
+        name: 'manage_notification-channels',
+        path: '/manage/notification-channels',
+        component: 'view.manage_notification-channels',
+        meta: {
+          title: 'manage_notification-channels',
+          i18nKey: 'route.manage_notification-channels'
+        }
+      },
+      {
         name: 'manage_permission',
         path: '/manage/permission',
         component: 'view.manage_permission',
@@ -1331,6 +1340,15 @@ export const generatedRoutes: GeneratedRoute[] = [
             }
           }
         ]
+      },
+      {
+        name: 'ticket_notify-settings',
+        path: '/ticket/notify-settings',
+        component: 'view.ticket_notify-settings',
+        meta: {
+          title: 'ticket_notify-settings',
+          i18nKey: 'route.ticket_notify-settings'
+        }
       },
       {
         name: 'ticket_types',

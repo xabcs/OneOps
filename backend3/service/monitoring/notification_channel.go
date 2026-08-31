@@ -3,9 +3,11 @@ package monitoring
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"oneops/backend3/pkg/logger"
+	"oneops/backend3/service/monitoring/notification"
 
 	"go.uber.org/zap"
 )
@@ -104,7 +106,18 @@ func (s *MonitoringService) TestNotificationChannel(id uint) error {
 	case "wechat":
 		logger.Info("发送企业微信测试通知", zap.Uint("channel_id", id))
 	case "dingtalk":
-		logger.Info("发送钉钉测试通知", zap.Uint("channel_id", id))
+		var cfg notification.DingTalkConfig
+		if err := json.Unmarshal(channel.Config, &cfg); err != nil {
+			return fmt.Errorf("钉钉渠道配置格式错误: %w", err)
+		}
+		if strings.TrimSpace(cfg.WebhookURL) == "" {
+			return fmt.Errorf("钉钉 Webhook URL 未配置")
+		}
+		svc := notification.NewDingTalkService(cfg)
+		if err := svc.SendText("【OneOps】钉钉通知渠道测试消息"); err != nil {
+			return fmt.Errorf("钉钉测试通知发送失败: %w", err)
+		}
+		logger.Info("发送钉钉测试通知成功", zap.Uint("channel_id", id))
 	default:
 		return fmt.Errorf("不支持的通知渠道类型: %s", channel.ChannelType)
 	}

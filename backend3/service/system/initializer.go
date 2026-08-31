@@ -3,6 +3,7 @@ package system
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	modelaudit "oneops/backend3/model/audit"
 	modelauth "oneops/backend3/model/authorization"
@@ -12,6 +13,7 @@ import (
 	modelticket "oneops/backend3/model/ticket"
 	"oneops/backend3/pkg/database"
 	"oneops/backend3/pkg/logger"
+	serviceticket "oneops/backend3/service/ticket"
 
 	"go.uber.org/zap"
 )
@@ -112,6 +114,10 @@ func (i *Initializer) migrateSchema() error {
 		&modelticket.Ticket{},
 		&modelticket.TicketNodeRecord{},
 		&modelticket.TicketFlowLog{},
+		&modelticket.NotifyPolicy{},
+		&modelticket.NotifyLog{},
+		&modelticket.TicketMessage{},
+		&modelticket.UserNotifySetting{},
 	); err != nil {
 		return fmt.Errorf("基础表迁移失败: %w", err)
 	}
@@ -407,7 +413,36 @@ func (i *Initializer) initSystemData() error {
 		logger.Warn("Casbin策略同步失败", zap.Error(err))
 	}
 
+	// 启动通知记录定期清理（发送记录留 30 天，站内消息留 90 天）
+	i.startNotifyRecordCleanup()
+
+	// 启动审批超时升级链扫描（超阈值提醒审批人，2 倍阈值升级管理员，蓝图④）
+	serviceticket.StartTicketTimeoutScanner(serviceticket.NewTicketNotifier(database.GetDB()))
+
 	return nil
+}
+
+// startNotifyRecordCleanup 启动时清理一次过期的通知记录，之后每天清理一次
+func (i *Initializer) startNotifyRecordCleanup() {
+	db := database.GetDB()
+	cleanup := func() {
+		if err := db.Where("created_at < ?", time.Now().AddDate(0, 0, -30)).
+			Delete(&modelticket.NotifyLog{}).Error; err != nil {
+			logger.Warn("清理通知发送记录失败", zap.Error(err))
+		}
+		if err := db.Where("created_at < ?", time.Now().AddDate(0, 0, -90)).
+			Delete(&modelticket.TicketMessage{}).Error; err != nil {
+			logger.Warn("清理站内消息失败", zap.Error(err))
+		}
+	}
+	go func() {
+		cleanup()
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			cleanup()
+		}
+	}()
 }
 
 // validateMenuResourceConsistency 校验启用菜单的 resource 在权限目录中存在对应权限码

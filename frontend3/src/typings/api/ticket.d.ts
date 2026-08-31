@@ -48,6 +48,8 @@ declare namespace Api {
       approverIds: string;
       multiType: MultiType;
       condition: string;
+      /** 审批超时阈值（小时），0=不启用 */
+      timeoutHours: number;
       sortOrder: number;
     };
 
@@ -60,9 +62,65 @@ declare namespace Api {
       description: string;
       status: number;
       version: number;
+      /** 审批节点数量（列表接口批量填充） */
+      nodeCount?: number;
       createdAt: string;
       updatedAt: string;
       nodes?: WorkflowNode[];
+    };
+
+    /** 工单通知事件策略（事件矩阵一行：事件 × 渠道绑定） */
+    type NotifyPolicy = {
+      event: string;
+      name: string;
+      desc: string;
+      /** 是否已定制（false=默认：该事件走全部启用渠道） */
+      configured: boolean;
+      enabled: number;
+      channels: number[];
+      /** 标题模板（空=内置默认文案） */
+      titleTpl: string;
+      /** 正文模板（空=内置默认文案） */
+      bodyTpl: string;
+      /** 是否已自定义模板 */
+      hasTpl: boolean;
+    };
+
+    /** 通知发送记录（外部渠道投递结果） */
+    type NotifyLog = {
+      id: number;
+      event: string;
+      ticketId: number;
+      ticketNo: string;
+      channelType: string;
+      channelName: string;
+      recipient: string;
+      status: number;
+      error: string;
+      createdAt: string;
+    };
+
+    /** 工单站内消息（本人收件箱） */
+    type TicketMessage = {
+      id: number;
+      userId: number;
+      ticketId: number;
+      ticketNo: string;
+      event: string;
+      title: string;
+      content: string;
+      isRead: number;
+      createdAt: string;
+    };
+
+    /** 用户通知偏好（本人自助） */
+    type UserNotifySetting = {
+      dingtalkId: string;
+      wechatId: string;
+      /** 完全屏蔽的事件（站内与外部渠道均不发） */
+      mutedEvents: string[];
+      /** 停用的外部渠道（站内消息照常落） */
+      offChannels: string[];
     };
 
     /** 流程保存请求 */
@@ -78,6 +136,7 @@ declare namespace Api {
         approverIds: number[];
         multiType: MultiType;
         condition: ConditionItem[];
+        timeoutHours: number;
       }[];
     };
 
@@ -101,6 +160,8 @@ declare namespace Api {
       description: string;
       formSchema: string;
       status: number;
+      /** 该场景下启用的审批流程数量（0=发起工单时无流程可选） */
+      workflowCount: number;
       createdAt: string;
       updatedAt: string;
     };

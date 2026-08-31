@@ -101,6 +101,68 @@
     return `${done.length}/${total.length}`;
   }
 
+  /** 节点记录状态 → 步骤条状态 */
+  const stepStatusMap: Record<string, 'wait' | 'process' | 'finish' | 'error' | 'success'> = {
+    waiting: 'wait',
+    pending: 'process',
+    approved: 'finish',
+    rejected: 'error',
+    skipped: 'wait',
+    canceled: 'wait'
+  };
+
+  /** 已等待时长（当前节点 startedAt → now，由 nowTick 每 30s 驱动刷新） */
+  function waitedText(startedAt?: string | null): string {
+    if (!startedAt) return '';
+    const min = Math.floor((nowTick.value - new Date(startedAt).getTime()) / 60000);
+    if (min < 1) return '刚刚';
+    if (min < 60) return `已等待 ${min} 分钟`;
+    const hour = Math.floor(min / 60);
+    if (hour < 24) return `已等待 ${hour} 小时 ${min % 60} 分`;
+    return `已等待 ${Math.floor(hour / 24)} 天 ${hour % 24} 小时`;
+  }
+
+  interface FlowStep {
+    key: string;
+    title: string;
+    status: 'wait' | 'process' | 'finish' | 'error' | 'success';
+    desc: string;
+  }
+
+  /** 流程进度步骤条：发起 → 各审批节点 →（工单结束后）终点；细节历史仍由时间线承载 */
+  const flowSteps = computed<FlowStep[]>(() => {
+    const t = ticket.value;
+    if (!t) return [];
+    const steps: FlowStep[] = [{ key: 'submit', title: '发起', status: 'finish', desc: fmt(t.createdAt) }];
+    nodes.value.forEach(n => {
+      const segs: string[] = [];
+      const names = approverList(n);
+      if (names.length) segs.push(names.join('、'));
+      const sp = signProgress(n);
+      if (sp) segs.push(`会签 ${sp}`);
+      if (n.status === 'pending') {
+        const w = waitedText(n.startedAt);
+        if (w) segs.push(w);
+      }
+      steps.push({
+        key: `node-${n.id}`,
+        title: n.nodeName,
+        status: stepStatusMap[n.status] ?? 'wait',
+        desc: segs.join(' · ')
+      });
+    });
+    if (t.status !== 'pending') {
+      const tone = ticketStatusMap[t.status];
+      steps.push({
+        key: 'finish',
+        title: tone ? `工单${tone.label}` : '结束',
+        status: t.status === 'approved' ? 'success' : t.status === 'rejected' ? 'error' : 'wait',
+        desc: fmt(t.finishedAt)
+      });
+    }
+    return steps;
+  });
+
   /** 时间格式化：统一用 new Date 解析一次（正确处理后端时区偏移），输出浏览器本地时间。
    *  与时间线排序（new Date().getTime()）保持同一解析口径，避免显示与穿插顺序矛盾 */
   function fmt(t?: string | null): string {
@@ -168,6 +230,23 @@
     }
   }
 
+  /** 事件条目文案：改派/催办带节点名前缀，重提用固定文案 */
+  function logEventContent(log: Api.Ticket.TicketFlowLog, meta: { text: string }): string {
+    const nodePrefix = log.nodeName ? `「${log.nodeName}」` : '';
+    switch (log.action) {
+      case 'reassign':
+        return `${nodePrefix}${log.comment || meta.text}`;
+      case 'urge':
+        return `${nodePrefix}催办提醒`;
+      default:
+        return meta.text;
+    }
+  }
+
+  /** 同刻排序权重：节点（按流程定义序，0 起）< 事件 < 评论 */
+  const ORDER_EVENT = 9000;
+  const ORDER_COMMENT = 10000;
+
   const timelineItems = computed<TimelineItem[]>(() => {
     const t = ticket.value;
     if (!t) return [];
@@ -195,7 +274,7 @@
           evs.push({
             key: `comment-${l.id}`,
             time: new Date(l.createdAt).getTime(),
-            order: 10000,
+            order: ORDER_COMMENT,
             item: {
               key: `comment-${l.id}`,
               kind: 'comment',
@@ -212,22 +291,14 @@
         evs.push({
           key: `event-${l.id}`,
           time: new Date(l.createdAt).getTime(),
-          order: 9999,
+          order: ORDER_EVENT,
           item: {
             key: `event-${l.id}`,
             kind: 'event',
             icon: meta.icon,
             color: meta.color,
             timeText: fmt(l.createdAt),
-            event: {
-              name: l.operatorName,
-              content:
-                l.action === 'reassign'
-                  ? `${l.nodeName ? `「${l.nodeName}」` : ''}${l.comment || meta.text}`
-                  : l.action === 'urge'
-                    ? `${l.nodeName ? `「${l.nodeName}」` : ''}催办提醒`
-                    : meta.text
-            }
+            event: { name: l.operatorName, content: logEventContent(l, meta) }
           }
         });
       });
@@ -420,6 +491,13 @@
       </ElDescriptions>
     </ElCard>
 
+    <!-- 流程进度概览：一眼看清走到哪一步（完整历史见下方时间线），窄屏转纵向 -->
+    <ElCard v-if="flowSteps.length" class="card-wrapper" title="流程进度">
+      <ElSteps :active="flowSteps.length" :direction="vw < 768 ? 'vertical' : 'horizontal'" align-center>
+        <ElStep v-for="s in flowSteps" :key="s.key" :title="s.title" :status="s.status" :description="s.desc" />
+      </ElSteps>
+    </ElCard>
+
     <!-- 审批操作条：待我审批（行内意见 + 通过/驳回），吸顶保证长表单下始终可达 -->
     <ElCard v-if="detail?.canApprove" class="card-wrapper sticky top-0 z-10" shadow="never">
       <div class="flex flex-wrap items-center justify-between gap-12px">
@@ -496,6 +574,7 @@
             v-for="item in timelineItems"
             :key="item.key"
             :timestamp="item.timeText"
+            :hide-timestamp="!item.timeText"
             placement="top"
           >
             <template #dot>

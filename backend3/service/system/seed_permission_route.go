@@ -48,6 +48,10 @@ func (i *Initializer) syncPermissionRoutes() error {
 		{"DELETE", "/api/ticket/types/:id", "ticket.type.delete"},
 		// 工单治理：改派审批人（管理员能力，解决审批人离职卡死）
 		{"POST", "/api/ticket/tickets/:id/reassign", "ticket.ticket.reassign"},
+		// 工单通知设置（事件矩阵）
+		{"GET", "/api/ticket/notify-policies", "ticket.notify.list"},
+		{"PUT", "/api/ticket/notify-policies/:event", "ticket.notify.update"},
+		{"GET", "/api/ticket/notify-logs", "ticket.notify.list"},
 
 		// ========== 系统管理：菜单/角色/用户/权限 ==========
 		{"GET", "/api/system/menus", "system.menu.list"},

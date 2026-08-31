@@ -166,6 +166,7 @@ func (s *UserService) userToMap(user modelsystem.User) map[string]interface{} {
 		"nickname":  user.Nickname,
 		"avatar":    user.Avatar,
 		"email":     user.Email,
+		"phone":     user.Phone,
 		"roleIds":   roleIDsFromRoles(user.Roles),
 		"status":    user.Status,
 		"homePath":  user.HomePath,

@@ -73,6 +73,7 @@ type CreateUserRequest struct {
 	Nickname string `json:"nickname"`
 	Avatar   string `json:"avatar"`
 	Email    string `json:"email"`
+	Phone    string `json:"phone"`
 	RoleIDs  []uint `json:"roleIds"`
 	Status   string `json:"status"`
 	HomePath string `json:"homePath"`
@@ -101,6 +102,7 @@ func (ctrl *UserController) CreateUser(c *gin.Context) {
 		Nickname: req.Nickname,
 		Avatar:   req.Avatar,
 		Email:    req.Email,
+		Phone:    req.Phone,
 		Status:   req.Status,
 		HomePath: req.HomePath,
 	}
@@ -125,6 +127,7 @@ type UpdateUserRequest struct {
 	Nickname string `json:"nickname"`
 	Avatar   string `json:"avatar"`
 	Email    string `json:"email"`
+	Phone    string `json:"phone"`
 	RoleIDs  []uint `json:"roleIds"`
 	Status   string `json:"status"`
 	HomePath string `json:"homePath"`
@@ -166,6 +169,9 @@ func (ctrl *UserController) UpdateUser(c *gin.Context) {
 	}
 	if req.Email != "" {
 		updates["email"] = req.Email
+	}
+	if req.Phone != "" {
+		updates["phone"] = req.Phone
 	}
 	if req.Status != "" {
 		updates["status"] = req.Status

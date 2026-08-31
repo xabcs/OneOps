@@ -119,6 +119,13 @@ declare namespace Monitoring {
     mentionedList?: string[];
   };
 
+  /** 钉钉配置 */
+  type DingTalkConfig = {
+    webhookUrl: string;
+    /** 加签密钥（SEC 开头，机器人安全设置选"加签"时必填） */
+    secret?: string;
+  };
+
   /** 主机扩展指标 */
   type ExtendedMetrics = {
     performance: PerformanceMetrics;

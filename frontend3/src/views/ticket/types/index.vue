@@ -49,6 +49,24 @@
       { prop: 'code', label: '类型编码', width: 130, align: 'center' },
       { prop: 'description', label: '描述', minWidth: 180, align: 'center', showOverflowTooltip: true },
       {
+        prop: 'workflowCount',
+        label: '审批流程',
+        width: 110,
+        align: 'center',
+        formatter: row =>
+          row.status !== 1 ? '' : row.workflowCount > 0 ? (
+            <ElTag type="success">{row.workflowCount} 个</ElTag>
+          ) : (
+            <ElTooltip content="该场景未配置审批流程，发起工单时将无流程可选，请前往「审批流程」新建并选择所属场景">
+              {{
+                default: () => (
+                  <ElTag type="danger">未配置</ElTag>
+                )
+              }}
+            </ElTooltip>
+          )
+      },
+      {
         prop: 'status',
         label: '状态',
         width: 80,

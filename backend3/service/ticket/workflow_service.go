@@ -36,6 +36,7 @@ type WorkflowNodeSave struct {
 	ApproverIDs  []uint          `json:"approverIds"`
 	MultiType    string          `json:"multiType"`
 	Condition    []ConditionItem `json:"condition"`
+	TimeoutHours int             `json:"timeoutHours" binding:"gte=0,lte=8760"` // 审批超时阈值（小时），0=不启用
 }
 
 // ConditionItem 节点激活条件：工单表单字段比较
@@ -134,6 +135,7 @@ func (s *WorkflowService) buildWorkflow(id uint, req WorkflowSaveRequest) (*mode
 			ApproverType: n.ApproverType,
 			ApproverIDs:  joinUintIDs(n.ApproverIDs),
 			MultiType:    n.MultiType,
+			TimeoutHours: n.TimeoutHours,
 			SortOrder:    i + 1,
 		}
 		wf.Nodes = append(wf.Nodes, node)

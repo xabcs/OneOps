@@ -224,6 +224,8 @@ func (i *Initializer) syncPermissions() error {
 		{Code: "ticket.workflow.create", Name: "创建流程", Description: "创建审批流程定义", Module: "ticket", Resource: "workflow", Action: "create", Level: 3, SortOrder: 157, Status: 1},
 		{Code: "ticket.workflow.update", Name: "更新流程", Description: "更新审批流程定义", Module: "ticket", Resource: "workflow", Action: "update", Level: 3, SortOrder: 158, Status: 1},
 		{Code: "ticket.workflow.delete", Name: "删除流程", Description: "删除审批流程定义", Module: "ticket", Resource: "workflow", Action: "delete", Level: 3, SortOrder: 159, Status: 1},
+		{Code: "ticket.notify.list", Name: "通知设置查看", Description: "查看工单通知事件矩阵", Module: "ticket", Resource: "notify", Action: "list", Level: 3, SortOrder: 160, Status: 1},
+		{Code: "ticket.notify.update", Name: "通知设置更新", Description: "配置工单通知事件矩阵", Module: "ticket", Resource: "notify", Action: "update", Level: 3, SortOrder: 161, Status: 1},
 	}
 
 	for _, perm := range permissions {
@@ -414,10 +416,11 @@ func (i *Initializer) syncDefaultPermissions() error {
 			"audit.operation_log.list", "audit.operation_log.export",
 			"audit.system_event.list",
 			"audit.stats.view",
-			// 工单中心：入口 + 全部工单查看 + 类型/流程管理 + 改派审批人
+			// 工单中心：入口 + 全部工单查看 + 类型/流程管理 + 改派审批人 + 通知设置
 			"ticket.ticket.view", "ticket.ticket.list", "ticket.ticket.reassign",
 			"ticket.type.list", "ticket.type.create", "ticket.type.update", "ticket.type.delete",
 			"ticket.workflow.list", "ticket.workflow.create", "ticket.workflow.update", "ticket.workflow.delete",
+			"ticket.notify.list", "ticket.notify.update",
 		},
 		"auditor": {
 			"cmdb.server.list", "cmdb.server.view",

@@ -92,6 +92,8 @@ declare namespace Api {
       avatar: string;
       /** user email */
       email: string;
+      /** user phone（企微/钉钉 @人） */
+      phone: string;
       /** user role id collection */
       roleIds: number[];
       /** user status */

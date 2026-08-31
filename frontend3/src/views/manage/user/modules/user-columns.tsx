@@ -51,6 +51,7 @@ export function createUserColumns(handlers: {
     { prop: 'username', label: '用户名', minWidth: 100 },
     { prop: 'nickname', label: '昵称', minWidth: 100 },
     { prop: 'email', label: '邮箱', minWidth: 200 },
+    { prop: 'phone', label: '手机号', width: 130 },
     {
       prop: 'roleIds',
       label: '分配角色',
