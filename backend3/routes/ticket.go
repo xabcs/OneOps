@@ -80,6 +80,10 @@ func SetupTicketRoutes(r *gin.Engine) {
 		manage.PUT("/notify-policies/:event", npController.SavePolicy)
 		manage.GET("/notify-logs", npController.GetLogs)
 
+		// 防轰炸（蓝图⑥）：夜间静默期配置
+		manage.GET("/notify-quiet", npController.GetQuietConfig)
+		manage.PUT("/notify-quiet", npController.SaveQuietConfig)
+
 		// 站内消息（本人收件箱，仅需认证，见 route_sync.publicRoutes）
 		msgController := controllerticket.NewTicketMessageController(serviceticket.NewTicketMessageService(db))
 		ticket.GET("/messages", msgController.ListMessages)

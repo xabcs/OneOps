@@ -207,6 +207,23 @@ export function fetchNotifyPolicies() {
   });
 }
 
+/** 读取夜间静默期配置（防轰炸） */
+export function fetchNotifyQuiet() {
+  return request<Api.Ticket.NotifyQuietConfig>({
+    url: '/ticket/notify-quiet',
+    method: 'get'
+  });
+}
+
+/** 保存夜间静默期配置（防轰炸） */
+export function updateNotifyQuiet(data: { quietEnabled: number; quietStartHour: number; quietEndHour: number }) {
+  return request<null>({
+    url: '/ticket/notify-quiet',
+    method: 'put',
+    data
+  });
+}
+
 /** 保存某通知事件的渠道绑定与启用状态 */
 export function updateNotifyPolicy(
   event: string,
@@ -220,8 +237,8 @@ export function updateNotifyPolicy(
 }
 
 /** 分页查询通知发送记录（排障：谁、哪个渠道、成功/失败） */
-export function fetchNotifyLogs(params: PaginationParam & { event?: string; status?: number }) {
-  return request<Api.Ticket.NotifyLog[]>({
+export function fetchNotifyLogs(params: Api.Common.CommonSearchParams & { event?: string; status?: number }) {
+  return request<Api.Common.PaginatingQueryRecord<Api.Ticket.NotifyLog>>({
     url: '/ticket/notify-logs',
     method: 'get',
     params
@@ -231,8 +248,8 @@ export function fetchNotifyLogs(params: PaginationParam & { event?: string; stat
 // ─────────────── 站内消息（登录用户本人） ───────────────
 
 /** 分页查询本人站内消息 */
-export function fetchTicketMessages(params: PaginationParam & { unreadOnly?: number }) {
-  return request<Api.Ticket.TicketMessage[]>({
+export function fetchTicketMessages(params: Api.Common.PaginatingCommonParams & { unreadOnly?: number }) {
+  return request<Api.Common.PaginatingQueryRecord<Api.Ticket.TicketMessage>>({
     url: '/ticket/messages',
     method: 'get',
     params

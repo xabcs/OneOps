@@ -148,7 +148,7 @@
   async function loadNotifications() {
     try {
       const { data } = await fetchTicketMessages({ page: 1, pageSize: 10 });
-      notifications.value = data || [];
+      notifications.value = Array.isArray(data?.list) ? data.list : [];
     } catch {
       notifications.value = [];
     }

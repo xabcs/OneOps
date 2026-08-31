@@ -115,6 +115,7 @@ func (i *Initializer) migrateSchema() error {
 		&modelticket.TicketNodeRecord{},
 		&modelticket.TicketFlowLog{},
 		&modelticket.NotifyPolicy{},
+		&modelticket.NotifyGlobal{},
 		&modelticket.NotifyLog{},
 		&modelticket.TicketMessage{},
 		&modelticket.UserNotifySetting{},

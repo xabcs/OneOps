@@ -52,6 +52,8 @@ func (i *Initializer) syncPermissionRoutes() error {
 		{"GET", "/api/ticket/notify-policies", "ticket.notify.list"},
 		{"PUT", "/api/ticket/notify-policies/:event", "ticket.notify.update"},
 		{"GET", "/api/ticket/notify-logs", "ticket.notify.list"},
+		{"GET", "/api/ticket/notify-quiet", "ticket.notify.list"},
+		{"PUT", "/api/ticket/notify-quiet", "ticket.notify.update"},
 
 		// ========== 系统管理：菜单/角色/用户/权限 ==========
 		{"GET", "/api/system/menus", "system.menu.list"},

@@ -323,6 +323,14 @@ func (n *TicketNotifier) sendAsync(event string, ticket *modelticket.Ticket, use
 		return
 	}
 
+	// 防轰炸①：同工单同事件同收件人去重窗口（站内与外部渠道均生效）
+	active = n.dedupeUsers(event, ticket.ID, active)
+	if len(active) == 0 {
+		logger.Info("工单通知：去重窗口内重复通知，跳过",
+			zap.String("event", event), zap.Uint("ticket_id", ticket.ID))
+		return
+	}
+
 	// 站内消息兜底：不依赖外部渠道可达性，事件启用即为每个收件人落一条
 	msgs := make([]modelticket.TicketMessage, 0, len(active))
 	for _, u := range active {
@@ -341,17 +349,29 @@ func (n *TicketNotifier) sendAsync(event string, ticket *modelticket.Ticket, use
 		return
 	}
 
+	// 防轰炸②：夜间静默期，外部渠道暂停（站内消息不受影响；超时升级穿透静默）
+	if n.quietActive(event) {
+		logger.Info("工单通知：夜间静默期，外部渠道暂停发送（仅站内消息）",
+			zap.String("event", event), zap.String("subject", subject))
+		return
+	}
+
 	for _, ch := range ec.channels {
-		// 用户停用该渠道 → 不参与推送（不出现在收件人/点名/@ 列表）
+		// 用户停用该渠道 → 不参与推送；防轰炸③：单人小时频控超限 → 该用户本轮不推外部渠道
 		chUsers := make([]mentionUser, 0, len(active))
 		for _, u := range active {
 			if s := pref[u.ID]; s != nil && s.OffChannel(ch.ChannelType) {
 				continue
 			}
+			if !n.allowExternal(u.ID, 1) {
+				logger.Info("工单通知：单人小时频控超限，暂停该收件人外部推送",
+					zap.Uint("user_id", u.ID), zap.String("event", event))
+				continue
+			}
 			chUsers = append(chUsers, u)
 		}
 		if len(chUsers) == 0 {
-			logger.Info("工单通知：收件人已全部停用该渠道，跳过",
+			logger.Info("工单通知：收件人已全部停用该渠道或频控超限，跳过",
 				zap.String("event", event), zap.String("channel", ch.ChannelType))
 			continue
 		}

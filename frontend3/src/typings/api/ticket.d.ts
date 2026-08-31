@@ -86,6 +86,13 @@ declare namespace Api {
       hasTpl: boolean;
     };
 
+    /** 夜间静默期配置（防轰炸，单行配置） */
+    type NotifyQuietConfig = {
+      quietEnabled: number;
+      quietStartHour: number;
+      quietEndHour: number;
+    };
+
     /** 通知发送记录（外部渠道投递结果） */
     type NotifyLog = {
       id: number;

@@ -4,7 +4,7 @@ export const themeSettings: App.Theme.ThemeSetting = {
   grayscale: false,
   colourWeakness: false,
   recommendColor: false,
-  themeColor: 'rgb(255, 6, 6)', // 主色默认值 rgb(255, 6, 6) - 红色
+  themeColor: '#8b5cf6', // 主色默认值 rgb(255, 6, 6) - 红色
   otherColor: {
     info: 'rgb(99, 102, 241)', // 与主色保持一致
     success: 'rgb(16, 185, 129)', // 绿色 #10b981

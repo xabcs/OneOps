@@ -2,7 +2,14 @@
   import { computed, onMounted, reactive, ref } from 'vue';
   import { ElMessage } from 'element-plus';
   import { useAuthStore } from '@/store/modules/auth';
-  import { fetchNotificationChannels, fetchNotifyLogs, fetchNotifyPolicies, updateNotifyPolicy } from '@/service/api';
+  import {
+  fetchNotificationChannels,
+  fetchNotifyLogs,
+  fetchNotifyPolicies,
+  fetchNotifyQuiet,
+  updateNotifyPolicy,
+  updateNotifyQuiet
+} from '@/service/api';
 
   defineOptions({
     name: 'TicketNotifySettings'
@@ -150,6 +157,46 @@
     tplDialog.bodyTpl = '';
   }
 
+  // ============================================
+  // 防轰炸（蓝图⑥：夜间静默期，可配置；去重/频控为固定规则）
+  // ============================================
+
+  const quiet = reactive({ quietEnabled: 0, quietStartHour: 22, quietEndHour: 8 });
+  const savingQuiet = ref(false);
+  const hourOptions = Array.from({ length: 24 }, (_, i) => ({ label: `${String(i).padStart(2, '0')}:00`, value: i }));
+
+  async function loadQuiet() {
+    const { data, error } = await fetchNotifyQuiet();
+    if (!error && data) {
+      quiet.quietEnabled = data.quietEnabled;
+      quiet.quietStartHour = data.quietStartHour;
+      quiet.quietEndHour = data.quietEndHour;
+    }
+  }
+
+  async function handleSaveQuiet() {
+    savingQuiet.value = true;
+    try {
+      const { error } = await updateNotifyQuiet({ ...quiet });
+      if (!error) {
+        ElMessage.success('防轰炸设置已保存（5 分钟内生效）');
+      } else {
+        ElMessage.error('保存失败');
+      }
+    } catch {
+      ElMessage.error('保存失败');
+    } finally {
+      savingQuiet.value = false;
+    }
+  }
+
+  function init() {
+    loadPolicies();
+    loadChannels();
+    loadQuiet();
+  }
+  onMounted(init);
+
   // 行内变更（选择渠道/开关）标记为"已定制"，提示需保存
   function markDirty(row: Api.Ticket.NotifyPolicy) {
     row.configured = true;
@@ -205,11 +252,6 @@
     logQuery.page = 1;
     loadLogs();
   }
-
-  onMounted(() => {
-    loadPolicies();
-    loadChannels();
-  });
 </script>
 
 <template>
@@ -230,6 +272,31 @@
       <ElTabs v-model="activeTab" @tab-change="(name: string | number) => name === 'logs' && loadLogs()">
         <!-- 事件矩阵 -->
         <ElTabPane label="事件矩阵" name="matrix">
+          <!-- 防轰炸设置（蓝图⑥） -->
+          <div class="mb-4 flex flex-wrap items-center gap-4 rounded border border-dashed border-gray-300 p-3 dark:border-gray-600">
+            <span class="text-sm font-medium">防轰炸</span>
+            <ElTooltip
+              content="静默时段内：邮件/企微/钉钉等外部渠道暂停推送，站内消息不受影响；超时升级通知不受静默限制"
+              placement="top"
+            >
+              <span class="i-material-symbols:info-outline cursor-help text-gray-400"></span>
+            </ElTooltip>
+            <ElSwitch v-model="quiet.quietEnabled" :active-value="1" :inactive-value="0" active-text="夜间静默期" />
+            <template v-if="quiet.quietEnabled === 1">
+              <ElSelect v-model="quiet.quietStartHour" class="w-28">
+                <ElOption v-for="h in hourOptions" :key="h.value" :label="h.label" :value="h.value" />
+              </ElSelect>
+              <span class="text-gray-400">至</span>
+              <ElSelect v-model="quiet.quietEndHour" class="w-28">
+                <ElOption v-for="h in hourOptions" :key="h.value" :label="h.label" :value="h.value" />
+              </ElSelect>
+            </template>
+            <PermissionButton code="ticket.notify.update" type="primary" size="small" :loading="savingQuiet" @click="handleSaveQuiet">
+              保存
+            </PermissionButton>
+            <span class="ml-auto text-xs text-gray-400">固定规则：同工单同事件 10 分钟内去重 · 单人外部推送每小时上限 30 条</span>
+          </div>
+
           <ElTable v-loading="loading" :data="policies" border stripe>
             <ElTableColumn label="通知事件" width="130">
               <template #default="{ row }">

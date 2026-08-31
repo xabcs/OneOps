@@ -93,3 +93,48 @@ func (ctrl *NotifyPolicyController) GetLogs(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, utils.PageSuccess(dto.NewPageResult(rows, total, dto.BasePageQuery{Page: page, PageSize: pageSize})))
 }
+
+// SaveQuietRequest 保存夜间静默期配置请求体
+type SaveQuietRequest struct {
+	QuietEnabled   int `json:"quietEnabled"`
+	QuietStartHour int `json:"quietStartHour"`
+	QuietEndHour   int `json:"quietEndHour"`
+}
+
+// GetQuietConfig godoc
+// @Summary      读取夜间静默期配置（防轰炸）
+// @Tags         工单-通知设置
+// @Produce      json
+// @Success      200  {object}  utils.Response
+// @Router       /ticket/notify-quiet [get]
+// @Security     BearerAuth
+func (ctrl *NotifyPolicyController) GetQuietConfig(c *gin.Context) {
+	cfg, err := ctrl.svc.GetQuietConfig()
+	if err != nil {
+		c.JSON(http.StatusOK, utils.ErrorInternal("读取静默期配置失败"))
+		return
+	}
+	c.JSON(http.StatusOK, utils.SuccessWithData(cfg))
+}
+
+// SaveQuietConfig godoc
+// @Summary      保存夜间静默期配置（防轰炸）
+// @Tags         工单-通知设置
+// @Accept       json
+// @Produce      json
+// @Param        body  body  SaveQuietRequest  true  "启用状态与起止小时"
+// @Success      200  {object}  utils.Response
+// @Router       /ticket/notify-quiet [put]
+// @Security     BearerAuth
+func (ctrl *NotifyPolicyController) SaveQuietConfig(c *gin.Context) {
+	var req SaveQuietRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("参数错误"))
+		return
+	}
+	if err := ctrl.svc.SaveQuietConfig(req.QuietEnabled, req.QuietStartHour, req.QuietEndHour); err != nil {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, utils.SuccessWithMessage("保存成功（5 分钟内生效）"))
+}
