@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"oneops/backend3/config"
 	"oneops/backend3/pkg/database"
 	"oneops/backend3/pkg/middleware"
 
@@ -12,17 +13,16 @@ import (
 	repoaudit "oneops/backend3/repository/audit"
 	reposystem "oneops/backend3/repository/system"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 // SetupRoutes 设置路由
-func SetupRoutes(r *gin.Engine) {
+func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 	// 应用中间件
 	r.Use(gin.Recovery())
 	r.Use(middleware.RequestLogger())
 	r.Use(middleware.ErrorHandler())
-	r.Use(cors.New(middleware.CORS()))
+	r.Use(middleware.CORSMiddleware(cfg.CORS))
 
 	// 创建审计中间件并应用操作日志审计
 	auditMiddleware := middleware.NewAuditMiddleware()

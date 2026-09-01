@@ -86,16 +86,11 @@ func (i *Initializer) syncUsers() error {
 
 	var existingUser modelsystem.User
 	if err := db.Where("username = ?", "admin").First(&existingUser).Error; err == nil {
-		db.Model(&existingUser).Updates(map[string]interface{}{
-			"password":  hashedPassword,
-			"nickname":  "超级管理员",
-			"email":     "admin@example.com",
-			"status":    "active",
-			"home_path": "/home",
-		})
+		// 安全约束：已存在的 admin 用户不得在启动时被覆盖任何字段——
+		// 否则管理员修改过的密码会被重置回初始弱口令，被封禁的账号（status!=active）也会被自动解封
 		// 幂等绑定管理员角色（many2many）
 		db.Exec("INSERT IGNORE INTO sys_user_roles (user_id, role_id) VALUES (?, 1)", existingUser.ID)
-		logger.Info("管理员用户已更新")
+		logger.Info("管理员用户已存在，仅同步角色绑定（不重置密码/状态）")
 	} else {
 		user := modelsystem.User{
 			Username: "admin",
@@ -109,7 +104,8 @@ func (i *Initializer) syncUsers() error {
 		if err := db.Create(&user).Error; err != nil {
 			return err
 		}
-		logger.Info("管理员用户已创建", zap.Uint("id", user.ID))
+		logger.Warn("已创建管理员初始账号 admin/123456（弱口令），请立即登录修改密码",
+			zap.Uint("id", user.ID))
 	}
 
 	return nil

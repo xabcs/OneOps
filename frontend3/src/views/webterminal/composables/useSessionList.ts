@@ -85,7 +85,7 @@ export function useSessionList() {
       if (activeTab.value === 'active') {
         const { data, error } = await fetchGetActiveSessionsFromMemory();
         if (!error && data) {
-          console.table(data);
+          // console.table(data) 在 devtools 打开时渲染大表极慢，是"在线会话"加载卡顿的元凶之一
           dataSource.value = data;
         } else {
           dataSource.value = [];

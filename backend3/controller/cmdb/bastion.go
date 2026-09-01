@@ -1,6 +1,7 @@
 package cmdb
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,6 +27,38 @@ func NewBastionController(svc *BastionService) *BastionController {
 	return &BastionController{
 		svc: svc,
 	}
+}
+
+// applySessionAuditScope 会话审计属主过滤：非系统管理员强制只查询自己的会话，请求中的 userId 参数被忽略。
+// 返回 false 表示未认证（调用方应直接返回 401）
+func (c *BastionController) applySessionAuditScope(ctx *gin.Context, filter *modelcmdb.SessionFilter) bool {
+	userID := ctx.GetUint("user_id")
+	if userID == 0 {
+		return false
+	}
+	if !c.svc.CanViewAllSessionAudits(userID) {
+		filter.UserID = &userID
+	}
+	return true
+}
+
+// authorizeSessionView 校验查看指定会话审计数据的权限（属主或系统管理员），无副作用
+func (c *BastionController) authorizeSessionView(ctx *gin.Context, sessionID uint) error {
+	userID := ctx.GetUint("user_id")
+	if userID == 0 {
+		return fmt.Errorf("未认证")
+	}
+	if c.svc.CanViewAllSessionAudits(userID) {
+		return nil
+	}
+	session, err := c.svc.GetSessionByID(sessionID)
+	if err != nil {
+		return fmt.Errorf("会话不存在")
+	}
+	if session.UserID != userID {
+		return fmt.Errorf("无权查看他人的会话")
+	}
+	return nil
 }
 
 // ========== 连接相关 ==========
@@ -123,6 +156,10 @@ func (c *BastionController) GetServerSessions(ctx *gin.Context) {
 	filter := modelcmdb.SessionFilter{
 		ServerID: &serverIDUint,
 	}
+	if !c.applySessionAuditScope(ctx, &filter) {
+		ctx.JSON(http.StatusOK, utils.ErrorUnauthorized("未认证"))
+		return
+	}
 
 	sessions, total, err := c.svc.GetSessions(filter, params.GetPage(), params.GetPageSize())
 	if err != nil {
@@ -202,6 +239,12 @@ func (c *BastionController) GetSessions(ctx *gin.Context) {
 		filter.EndDate = &endDate
 	}
 
+	// 属主过滤：非管理员忽略 userId 参数，只能看自己的会话
+	if !c.applySessionAuditScope(ctx, &filter) {
+		ctx.JSON(http.StatusOK, utils.ErrorUnauthorized("未认证"))
+		return
+	}
+
 	sessions, total, err := c.svc.GetSessions(filter, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
@@ -278,6 +321,12 @@ func (c *BastionController) GetSessionsList(ctx *gin.Context) {
 		filter.EndDate = &endDate
 	}
 
+	// 属主过滤：非管理员忽略 userId 参数，只能看自己的会话
+	if !c.applySessionAuditScope(ctx, &filter) {
+		ctx.JSON(http.StatusOK, utils.ErrorUnauthorized("未认证"))
+		return
+	}
+
 	sessions, total, err := c.svc.GetSessionsList(filter, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
@@ -302,6 +351,16 @@ func (c *BastionController) GetSessionByID(ctx *gin.Context) {
 	sessionID, err := strconv.ParseUint(sessionIDStr, 10, 32)
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的会话ID"))
+		return
+	}
+
+	// 属主校验：非管理员只能查看自己的会话详情
+	if err := c.authorizeSessionView(ctx, uint(sessionID)); err != nil {
+		if err.Error() == "未认证" {
+			ctx.JSON(http.StatusOK, utils.ErrorUnauthorized(err.Error()))
+			return
+		}
+		ctx.JSON(http.StatusOK, utils.ErrorForbidden(err.Error()))
 		return
 	}
 
@@ -339,7 +398,13 @@ func (c *BastionController) TerminateSession(ctx *gin.Context) {
 		return
 	}
 
-	// 先终止内存中的 WebSocket + SSH 连接（如果存在）
+	// 鉴权先行：权限校验必须发生在拆除连接之前，否则校验失败时他人会话已被误杀（不可回滚）
+	if err := c.svc.AuthorizeTerminateSession(uint(sessionID), operatorID); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorForbidden(err.Error()))
+		return
+	}
+
+	// 终止内存中的 WebSocket + SSH 连接（如果存在）
 	if sm := GetSessionManager(); sm != nil {
 		sm.TerminateSession(uint(sessionID))
 	}
@@ -363,10 +428,28 @@ func (c *BastionController) TerminateSession(ctx *gin.Context) {
 // @Router       /cmdb/sessions/active [get]
 // @Security     BearerAuth
 func (c *BastionController) GetActiveSessions(ctx *gin.Context) {
+	userID := ctx.GetUint("user_id")
+	if userID == 0 {
+		ctx.JSON(http.StatusOK, utils.ErrorUnauthorized("未认证"))
+		return
+	}
+	viewAll := c.svc.CanViewAllSessionAudits(userID)
+
 	sessions, err := c.svc.GetActiveSessions()
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
 		return
+	}
+
+	// 属主过滤：非管理员只返回自己的活跃会话
+	if !viewAll {
+		own := make([]modelcmdb.BastionSession, 0, len(sessions))
+		for _, s := range sessions {
+			if s.UserID == userID {
+				own = append(own, s)
+			}
+		}
+		sessions = own
 	}
 
 	ctx.JSON(http.StatusOK, utils.SuccessWithData(sessions))
@@ -382,6 +465,13 @@ func (c *BastionController) GetActiveSessions(ctx *gin.Context) {
 // @Router       /cmdb/sessions/active-memory [get]
 // @Security     BearerAuth
 func (c *BastionController) GetActiveSessionsFromMemory(ctx *gin.Context) {
+	userID := ctx.GetUint("user_id")
+	if userID == 0 {
+		ctx.JSON(http.StatusOK, utils.ErrorUnauthorized("未认证"))
+		return
+	}
+	viewAll := c.svc.CanViewAllSessionAudits(userID)
+
 	sm := GetSessionManager()
 	if sm == nil {
 		ctx.JSON(http.StatusOK, utils.SuccessWithData([]interface{}{}))
@@ -393,13 +483,26 @@ func (c *BastionController) GetActiveSessionsFromMemory(ctx *gin.Context) {
 
 	result := make([]gin.H, 0, len(activeStates))
 	for _, s := range activeStates {
+		// 属主过滤：非管理员只返回自己的活跃会话
+		if !viewAll && s.UserID != userID {
+			continue
+		}
+		// 字段结构对齐 DB 会话接口（GetSessions）的表格渲染需求：
+		// id/protocol/status/startedAt/server 嵌套结构，前端 SessionTable 无需感知数据来源
 		result = append(result, gin.H{
+			"id":           s.SessionID,
 			"sessionId":    s.SessionID,
 			"userId":       s.UserID,
 			"username":     s.Username,
+			"server":       gin.H{"hostname": s.ServerName, "ip": s.ServerIP},
 			"serverName":   s.ServerName,
 			"serverIp":     s.ServerIP,
+			"serverId":     nil,
+			"protocol":     s.Protocol,
+			"status":       "active",
 			"loginAccount": s.LoginAccount,
+			"clientIp":     s.ClientIP,
+			"startedAt":    s.CreatedAt,
 			"createdAt":    s.CreatedAt,
 			"lastActiveAt": s.LastActiveAt,
 			"duration":     int(now.Sub(s.CreatedAt).Seconds()),
@@ -424,6 +527,16 @@ func (c *BastionController) GetSessionCommands(ctx *gin.Context) {
 	sessionID, err := strconv.ParseUint(sessionIDStr, 10, 32)
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的会话ID"))
+		return
+	}
+
+	// 属主校验：非管理员只能查看自己会话的命令审计
+	if err := c.authorizeSessionView(ctx, uint(sessionID)); err != nil {
+		if err.Error() == "未认证" {
+			ctx.JSON(http.StatusOK, utils.ErrorUnauthorized(err.Error()))
+			return
+		}
+		ctx.JSON(http.StatusOK, utils.ErrorForbidden(err.Error()))
 		return
 	}
 
@@ -489,6 +602,11 @@ func (c *BastionController) GetCommands(ctx *gin.Context) {
 		filter.EndDate = &endDate
 	}
 
+	// 属主过滤：非管理员只能查看自己会话的命令审计
+	if userID := ctx.GetUint("user_id"); userID != 0 && !c.svc.CanViewAllSessionAudits(userID) {
+		filter.UserID = &userID
+	}
+
 	commands, total, err := c.svc.GetCommands(filter, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
@@ -513,6 +631,16 @@ func (c *BastionController) GetSessionFileTransfers(ctx *gin.Context) {
 	sessionID, err := strconv.ParseUint(sessionIDStr, 10, 32)
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的会话ID"))
+		return
+	}
+
+	// 属主校验：非管理员只能查看自己会话的文件传输记录
+	if err := c.authorizeSessionView(ctx, uint(sessionID)); err != nil {
+		if err.Error() == "未认证" {
+			ctx.JSON(http.StatusOK, utils.ErrorUnauthorized(err.Error()))
+			return
+		}
+		ctx.JSON(http.StatusOK, utils.ErrorForbidden(err.Error()))
 		return
 	}
 
@@ -574,6 +702,11 @@ func (c *BastionController) GetFileTransfers(ctx *gin.Context) {
 		filter.EndDate = &endDate
 	}
 
+	// 属主过滤：非管理员只能查看自己会话的传输记录
+	if userID := ctx.GetUint("user_id"); userID != 0 && !c.svc.CanViewAllSessionAudits(userID) {
+		filter.UserID = &userID
+	}
+
 	transfers, total, err := c.svc.GetFileTransfers(filter, params.GetPage(), params.GetPageSize())
 	if err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))
@@ -617,18 +750,21 @@ func (c *BastionController) ResizeTerminalPTY(ctx *gin.Context) {
 
 	sshSession := sm.GetSSHSession(uint(sessionID))
 	if sshSession == nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("会话不存在或已断开"))
+		// 竞态容错：前端在终端组件初始化时立即发送 resize，而 WS 通道内 SSH
+		// 握手（dialSSH）可能尚未完成、会话还没注册进 SessionManager。
+		// 回查 DB：会话仍为 active 则暂存尺寸（注册完成后自动补发 window-change），
+		// 避免初始化 resize 被误报为"会话不存在或已断开"（实际终端随后可正常打开）
+		session, err := c.svc.GetSessionByID(uint(sessionID))
+		if err != nil || session == nil || session.Status != "active" {
+			ctx.JSON(http.StatusOK, utils.ErrorBadRequest("会话不存在或已断开"))
+			return
+		}
+		sm.SetPendingResize(uint(sessionID), req.Cols, req.Rows)
+		ctx.JSON(http.StatusOK, utils.SuccessWithMessage("会话建立中，终端尺寸将在连接完成后自动同步"))
 		return
 	}
 
-	type windowChangeMsg struct {
-		Columns uint32
-		Rows    uint32
-		Width   uint32
-		Height  uint32
-	}
-
-	msg := windowChangeMsg{
+	msg := PTYSize{
 		Columns: uint32(req.Cols),
 		Rows:    uint32(req.Rows),
 		Width:   uint32(req.Cols * 8),
@@ -799,15 +935,27 @@ func (c *BastionController) GetAccessPolicyByID(ctx *gin.Context) {
 func (c *BastionController) GetSessionStats(ctx *gin.Context) {
 	stats := make(map[string]interface{})
 
-	// 内存中真实活跃的 WebSocket 会话数
+	userID := ctx.GetUint("user_id")
+	viewAll := userID != 0 && c.svc.CanViewAllSessionAudits(userID)
+
+	// 内存中真实活跃的 WebSocket 会话数（非管理员只统计自己的）
 	if sm := GetSessionManager(); sm != nil {
-		stats["active"] = sm.GetActiveSessionCount()
+		activeCount := 0
+		for _, s := range sm.GetAllActiveSessions() {
+			if viewAll || s.UserID == userID {
+				activeCount++
+			}
+		}
+		stats["active"] = activeCount
 	}
 
-	// 今日会话数（用足够大的 pageSize 确保 total 准确）
+	// 今日会话数（非管理员只统计自己的；用足够大的 pageSize 确保 total 准确）
 	today := time.Now().Format("2006-01-02")
 	todayFilter := modelcmdb.SessionFilter{
 		StartDate: &today,
+	}
+	if !viewAll {
+		todayFilter.UserID = &userID
 	}
 	_, todayTotal, _ := c.svc.GetSessions(todayFilter, 1, 1000)
 	stats["today"] = todayTotal

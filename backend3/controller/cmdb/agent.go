@@ -3,14 +3,17 @@ package cmdb
 import (
 	"net/http"
 	"strconv"
+	"sync"
 
 	. "oneops/backend3/service/cmdb"
 
 	modelcmdb "oneops/backend3/model/cmdb"
 	"oneops/backend3/pkg/dto"
+	"oneops/backend3/pkg/logger"
 	"oneops/backend3/pkg/utils"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // AgentController Agent控制器
@@ -264,10 +267,21 @@ func (c *AgentController) BatchUninstallAgent(ctx *gin.Context) {
 		return
 	}
 
+	sem := make(chan struct{}, 10)
+	var wg sync.WaitGroup
 	for _, id := range req.ServerIDs {
 		serverID := id
-		go c.svc.UninstallAgent(serverID)
+		wg.Add(1)
+		sem <- struct{}{}
+		utils.SafeGo("agent-batch-uninstall", func() {
+			defer wg.Done()
+			defer func() { <-sem }()
+			if err := c.svc.UninstallAgent(serverID); err != nil {
+				logger.Error("批量卸载 Agent 失败", zap.Uint("server_id", serverID), zap.Error(err))
+			}
+		})
 	}
+	utils.SafeGo("agent-batch-uninstall-wait", wg.Wait)
 
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("批量 Agent 卸载任务已提交"))
 }

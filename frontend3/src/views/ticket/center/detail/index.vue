@@ -548,105 +548,112 @@
       </div>
     </ElCard>
 
-    <div class="grid grid-cols-[1fr_480px] gap-16px lt-xl:grid-cols-1">
+    <div class="ticket-detail-grid grid grid-cols-[1fr_480px] gap-16px lt-xl:grid-cols-1">
       <!-- 申请内容 -->
-      <ElCard class="card-wrapper" title="申请内容">
-        <ElDescriptions v-if="detail" :column="1" border size="small">
-          <ElDescriptionsItem
-            v-for="field in detail.formSchema"
-            :key="field.key"
-            :label="field.label"
-            :label-width="140"
-          >
-            <pre v-if="field.type === 'textarea'" class="m-0 whitespace-pre-wrap break-all font-mono text-13px">{{
-              (detail.formData[field.key] as string) || '-'
-            }}</pre>
-            <template v-else>{{ detail.formData[field.key] ?? '-' }}</template>
-          </ElDescriptionsItem>
-        </ElDescriptions>
-        <ElEmpty v-else-if="!loading" description="暂无表单数据" />
+      <ElCard class="card-wrapper ticket-form-card" title="申请内容">
+        <div class="ticket-card-body">
+          <ElDescriptions v-if="detail" :column="1" border size="small">
+            <ElDescriptionsItem
+              v-for="field in detail.formSchema"
+              :key="field.key"
+              :label="field.label"
+              :label-width="140"
+            >
+              <pre v-if="field.type === 'textarea'" class="m-0 whitespace-pre-wrap break-all font-mono text-13px">{{
+                (detail.formData[field.key] as string) || '-'
+              }}</pre>
+              <template v-else>{{ detail.formData[field.key] ?? '-' }}</template>
+            </ElDescriptionsItem>
+          </ElDescriptions>
+          <ElEmpty v-else-if="!loading" description="暂无表单数据" />
+        </div>
       </ElCard>
 
       <!-- 审批记录（发起 → 节点/评论/事件 → 结束，统一时间线） -->
-      <ElCard class="card-wrapper" title="审批记录">
-        <ElTimeline v-if="timelineItems.length" class="pl-2px">
-          <ElTimelineItem
-            v-for="item in timelineItems"
-            :key="item.key"
-            :timestamp="item.timeText"
-            :hide-timestamp="!item.timeText"
-            placement="top"
-          >
-            <template #dot>
-              <ElIcon :size="16" :color="item.color" class="bg-white">
-                <component :is="item.icon" />
-              </ElIcon>
-            </template>
+      <ElCard class="card-wrapper ticket-timeline-card" title="审批记录">
+        <div class="ticket-card-body">
+          <ElTimeline v-if="timelineItems.length" class="pl-2px">
+            <ElTimelineItem
+              v-for="item in timelineItems"
+              :key="item.key"
+              :timestamp="item.timeText"
+              :hide-timestamp="!item.timeText"
+              placement="top"
+            >
+              <template #dot>
+                <ElIcon :size="16" :color="item.color" class="bg-white">
+                  <component :is="item.icon" />
+                </ElIcon>
+              </template>
 
-            <!-- 发起 -->
-            <div v-if="item.kind === 'submit'" class="flex items-center gap-8px pb-4px">
-              <span class="font-medium">发起申请</span>
-              <span class="text-13px text-gray-500">{{ ticket?.creatorName }}</span>
-            </div>
-
-            <!-- 审批节点 -->
-            <div v-else-if="item.kind === 'node' && item.node" class="pb-4px">
-              <div class="flex flex-wrap items-center gap-8px">
-                <span class="font-medium">{{ item.node.nodeName }}</span>
-                <ElTag size="small" :type="nodeTagType[item.node.status] ?? 'info'">
-                  {{ nodeStatusMap[item.node.status]?.label ?? item.node.status }}
-                </ElTag>
-                <span v-if="signProgress(item.node)" class="text-12px text-primary">
-                  会签 {{ signProgress(item.node) }}
-                </span>
+              <!-- 发起 -->
+              <div v-if="item.kind === 'submit'" class="flex items-center gap-8px pb-4px">
+                <span class="font-medium">发起申请</span>
+                <span class="text-13px text-gray-500">{{ ticket?.creatorName }}</span>
               </div>
-              <div class="mt-6px flex flex-wrap items-center gap-10px">
-                <div v-for="name in approverList(item.node)" :key="name" class="flex items-center gap-4px">
-                  <span
-                    class="flex h-22px w-22px items-center justify-center rounded-full text-12px text-white"
-                    :style="avatarStyle(name)"
-                  >
-                    {{ name.slice(0, 1) }}
+
+              <!-- 审批节点 -->
+              <div v-else-if="item.kind === 'node' && item.node" class="pb-4px">
+                <div class="flex flex-wrap items-center gap-8px">
+                  <span class="font-medium">{{ item.node.nodeName }}</span>
+                  <ElTag size="small" :type="nodeTagType[item.node.status] ?? 'info'">
+                    {{ nodeStatusMap[item.node.status]?.label ?? item.node.status }}
+                  </ElTag>
+                  <span v-if="signProgress(item.node)" class="text-12px text-primary">
+                    会签 {{ signProgress(item.node) }}
                   </span>
-                  <span class="text-13px text-gray-600">{{ name }}</span>
                 </div>
-                <span v-if="!approverList(item.node).length" class="text-13px text-gray-400">-</span>
+                <div class="mt-6px flex flex-wrap items-center gap-10px">
+                  <div v-for="name in approverList(item.node)" :key="name" class="flex items-center gap-4px">
+                    <span
+                      class="flex h-22px w-22px items-center justify-center rounded-full text-12px text-white"
+                      :style="avatarStyle(name)"
+                    >
+                      {{ name.slice(0, 1) }}
+                    </span>
+                    <span class="text-13px text-gray-600">{{ name }}</span>
+                  </div>
+                  <span v-if="!approverList(item.node).length" class="text-13px text-gray-400">-</span>
+                </div>
+                <div v-if="item.node.finishedAt" class="mt-4px text-12px text-gray-400">
+                  {{ item.node.status === 'canceled' ? '终止于' : '审批于' }} {{ fmt(item.node.finishedAt) }}
+                </div>
+                <div
+                  v-if="item.node.comment"
+                  class="mt-6px rounded-6px bg-gray-100 px-10px py-6px text-13px text-gray-700"
+                >
+                  {{ item.node.comment }}
+                </div>
               </div>
-              <div v-if="item.node.finishedAt" class="mt-4px text-12px text-gray-400">
-                {{ item.node.status === 'canceled' ? '终止于' : '审批于' }} {{ fmt(item.node.finishedAt) }}
+
+              <!-- 评论 -->
+              <div v-else-if="item.kind === 'comment' && item.comment" class="pb-4px">
+                <div class="flex items-center gap-8px">
+                  <span class="text-13px text-gray-500">{{ item.comment.name }}</span>
+                  <span class="text-12px text-gray-400">添加了评论</span>
+                </div>
+                <div class="mt-4px rounded-6px bg-gray-100 px-10px py-6px text-13px text-gray-700">
+                  {{ item.comment.content }}
+                </div>
               </div>
+
+              <!-- 事件（重新提交/改派/催办） -->
               <div
-                v-if="item.node.comment"
-                class="mt-6px rounded-6px bg-gray-100 px-10px py-6px text-13px text-gray-700"
+                v-else-if="item.kind === 'event' && item.event"
+                class="flex flex-wrap items-center gap-8px pb-4px"
               >
-                {{ item.node.comment }}
+                <span class="text-13px text-gray-500">{{ item.event.name }}</span>
+                <span class="text-13px font-medium" :style="{ color: item.color }">{{ item.event.content }}</span>
               </div>
-            </div>
 
-            <!-- 评论 -->
-            <div v-else-if="item.kind === 'comment' && item.comment" class="pb-4px">
-              <div class="flex items-center gap-8px">
-                <span class="text-13px text-gray-500">{{ item.comment.name }}</span>
-                <span class="text-12px text-gray-400">添加了评论</span>
+              <!-- 结束 -->
+              <div v-else-if="item.kind === 'finish'" class="flex items-center gap-8px">
+                <span class="font-medium">{{ item.finishLabel }}</span>
               </div>
-              <div class="mt-4px rounded-6px bg-gray-100 px-10px py-6px text-13px text-gray-700">
-                {{ item.comment.content }}
-              </div>
-            </div>
-
-            <!-- 事件（重新提交/改派/催办） -->
-            <div v-else-if="item.kind === 'event' && item.event" class="flex flex-wrap items-center gap-8px pb-4px">
-              <span class="text-13px text-gray-500">{{ item.event.name }}</span>
-              <span class="text-13px font-medium" :style="{ color: item.color }">{{ item.event.content }}</span>
-            </div>
-
-            <!-- 结束 -->
-            <div v-else-if="item.kind === 'finish'" class="flex items-center gap-8px">
-              <span class="font-medium">{{ item.finishLabel }}</span>
-            </div>
-          </ElTimelineItem>
-        </ElTimeline>
-        <ElEmpty v-else description="暂无审批记录" />
+            </ElTimelineItem>
+          </ElTimeline>
+          <ElEmpty v-else description="暂无审批记录" />
+        </div>
       </ElCard>
     </div>
 
@@ -673,3 +680,33 @@
     />
   </div>
 </template>
+
+<style scoped>
+/**
+ * 工单详情页布局稳定性：
+ * 当评论/审批记录很多时，右列 timeline 会把 Grid 行无限撑高，
+ * 进而导致左列「申请内容」也被等比拉伸、顶部信息和操作条与主体脱节（用户感知为"其他元素被压缩/遮挡"）。
+ * 以下规则给卡片主体建立最大高度 + 局部滚动，保证整体页面长度保持在合理范围。
+ */
+
+/* ≥1200px 宽屏：左右两栏布局，给两个卡片主体相同的视口相对最大高度，保持等高且局部滚动 */
+@media (min-width: 1200px) {
+  .ticket-card-body {
+    max-height: calc(100vh - 360px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+  }
+}
+
+/* <1200px 窄屏：单列堆叠，只约束"审批记录"卡片，避免大量评论把页面顶到无穷远；
+   申请内容保持自然高度以便阅读表单 */
+@media (max-width: 1199.98px) {
+  .ticket-timeline-card .ticket-card-body {
+    max-height: 70vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+  }
+}
+</style>

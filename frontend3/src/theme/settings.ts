@@ -199,7 +199,7 @@ export const themeSettings: App.Theme.ThemeSetting = {
     },
     // 数据表格配置
     dataTable: {
-      headerBg: '#fee3e3',
+      headerBg: '#fcf2ff',
       headerTextColor: '#000000',
       headerBorderColor: 'rgba(148, 163, 184, 0.16)',
       rowHoverBg: '#f8fbff',

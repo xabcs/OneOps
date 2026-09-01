@@ -598,15 +598,23 @@
     background: transparent;
   }
 
-  .wb-tree :deep(.el-tree-node__content) {
+  /* 非 scoped 样式中 :deep() 编译后选择器永不匹配（无 data-v 属性可挂），改用全局选择器；
+     悬停/聚焦背景改为 VS Code 风格微亮白，替代 EP 默认浅白 #f5f7fa——
+     在 #252526 深色侧栏上默认浅白会呈现为刺眼的纯白色块 */
+  .wb-tree.el-tree {
+    --el-tree-node-hover-bg-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .wb-tree .el-tree-node__content {
     height: 24px;
     background: transparent;
     border-radius: 2px;
     margin: 1px 4px;
   }
 
-  .wb-tree :deep(.el-tree-node__content:hover) {
-    background: rgba(0, 0, 0, 0.2) !important;
+  .wb-tree .el-tree-node__content:hover,
+  .wb-tree .el-tree-node:focus > .el-tree-node__content {
+    background: rgba(255, 255, 255, 0.08) !important;
   }
 
   .wb-tree :deep(.el-tree-node__expand-icon) {

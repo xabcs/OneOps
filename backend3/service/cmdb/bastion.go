@@ -205,72 +205,68 @@ func (s *BastionService) CreateSSHSession(userID uint, serverID uint, credential
 	return session, nil
 }
 
-// selectSessionPolicy 从适用策略中筛选同时满足协议、登录账号、时间窗口的策略，
-// 任一条策略全部通过即放行；失败时返回具体的拒绝原因
+// selectSessionPolicy 逐条策略做全维度校验：协议、登录账号、时间窗口必须由**同一条**策略同时允许才放行。
+// （历史实现按维度分别扫描策略集合，可组合出单条策略都不允许的授权，属授权绕过，已修复。）
+// 拒绝时返回具体原因，便于用户与排障定位
 func selectSessionPolicy(policies []modelcmdb.AssetAccessPolicy, protocol string, loginAccount string, now time.Time) (bool, string) {
-	// 协议（空列表视为不限，兼容历史数据）
-	hasProtocolMatch := false
+	protocolOK, accountOK, windowOK := false, false, false
 	for _, policy := range policies {
-		if len(policy.Protocols) == 0 {
-			hasProtocolMatch = true
-			break
+		if !policyAllowsProtocol(policy, protocol) {
+			continue
 		}
-		for _, p := range policy.Protocols {
-			if p == protocol {
-				hasProtocolMatch = true
-				break
-			}
+		protocolOK = true
+		if !policyAllowsAccount(policy, loginAccount) {
+			continue
 		}
-		if hasProtocolMatch {
-			break
+		accountOK = true
+		if !isWithinTimeWindow(policy.TimeWindow, now) {
+			continue
 		}
+		windowOK = true
+		return true, ""
 	}
-	if !hasProtocolMatch {
+	switch {
+	case !protocolOK:
 		return false, fmt.Sprintf("访问策略不允许使用协议 %s", protocol)
-	}
-
-	// 登录账号（空列表视为不限，兼容历史数据）
-	hasAccountMatch := false
-	for _, policy := range policies {
-		if len(policy.LoginAccounts) == 0 {
-			hasAccountMatch = true
-			break
-		}
-		for _, account := range policy.LoginAccounts {
-			if account == loginAccount {
-				hasAccountMatch = true
-				break
-			}
-		}
-		if hasAccountMatch {
-			break
-		}
-	}
-	if !hasAccountMatch {
+	case !accountOK:
 		return false, fmt.Sprintf("访问策略不允许使用登录账号 %s", loginAccount)
+	default:
+		_ = windowOK
+		return false, "当前时间不在策略允许的访问时段内"
 	}
+}
 
-	// 时间窗口（至少一条策略处于窗口内）
-	for _, policy := range policies {
-		if isWithinTimeWindow(policy.TimeWindow, now) {
-			return true, ""
+// policyAllowsProtocol 该策略是否允许指定协议（空列表视为不限，兼容历史数据）
+func policyAllowsProtocol(policy modelcmdb.AssetAccessPolicy, protocol string) bool {
+	if len(policy.Protocols) == 0 {
+		return true
+	}
+	for _, p := range policy.Protocols {
+		if p == protocol {
+			return true
 		}
 	}
-	return false, "当前时间不在策略允许的访问时段内"
+	return false
+}
+
+// policyAllowsAccount 该策略是否允许指定登录账号（空列表视为不限；大小写不敏感）
+func policyAllowsAccount(policy modelcmdb.AssetAccessPolicy, loginAccount string) bool {
+	if len(policy.LoginAccounts) == 0 {
+		return true
+	}
+	for _, account := range policy.LoginAccounts {
+		if strings.EqualFold(account, loginAccount) {
+			return true
+		}
+	}
+	return false
 }
 
 // isWithinTimeWindow 检查时间是否落在策略时间窗口内
-// 约定：start/end 为空表示不限时；days 为空表示每天（1=周一 ... 7=周日）
+// 约定：start/end 为空表示不限时；days 非空时星期限制独立生效（1=周一 ... 7=周日）；
+// start > end 表示跨天窗口（如 22:00-06:00 值班时段）
 func isWithinTimeWindow(tw modelcmdb.TimeWindow, now time.Time) bool {
-	if tw.Start == "" || tw.End == "" {
-		return true
-	}
-
-	current := now.Format("15:04")
-	if current < tw.Start || current > tw.End {
-		return false
-	}
-
+	// 星期限制独立生效：仅配置 days（时间留空）表示"仅这些天的全天"
 	if len(tw.Days) > 0 {
 		// Go: Sunday=0...Saturday=6 → 转为 1=周一...7=周日
 		goDay := int(now.Weekday())
@@ -288,7 +284,17 @@ func isWithinTimeWindow(tw modelcmdb.TimeWindow, now time.Time) bool {
 			return false
 		}
 	}
-	return true
+
+	if tw.Start == "" || tw.End == "" {
+		return true
+	}
+
+	current := now.Format("15:04")
+	if tw.Start <= tw.End {
+		return current >= tw.Start && current <= tw.End
+	}
+	// 跨天窗口：22:00-06:00 → 当前 >= 22:00 或 <= 06:00
+	return current >= tw.Start || current <= tw.End
 }
 
 // CloseSession 关闭会话
@@ -352,6 +358,15 @@ func (s *BastionService) GetActiveSessions() ([]modelcmdb.BastionSession, error)
 // TerminateSession 强制断开会话
 func (s *BastionService) TerminateSession(sessionID uint, operatorID uint) error {
 	// 属主校验：仅会话属主或系统管理员可强制断开，防越权终止他人会话
+	if err := s.AuthorizeTerminateSession(sessionID, operatorID); err != nil {
+		return err
+	}
+	return s.CloseSession(sessionID, fmt.Sprintf("被用户 %d 强制断开", operatorID), "terminated")
+}
+
+// AuthorizeTerminateSession 仅校验终止会话的权限（属主或系统管理员），无任何副作用。
+// 调用方必须**先**通过本校验，再拆除内存中的 WS/SSH 连接——避免"先杀连接、后发现无权"的不可回滚副作用
+func (s *BastionService) AuthorizeTerminateSession(sessionID uint, operatorID uint) error {
 	session, err := s.repo.FindSessionByID(sessionID)
 	if err != nil {
 		return fmt.Errorf("会话不存在: %w", err)
@@ -359,7 +374,12 @@ func (s *BastionService) TerminateSession(sessionID uint, operatorID uint) error
 	if session.UserID != operatorID && !syssvc.IsSystemAdmin(s.repo.DB(), operatorID) {
 		return fmt.Errorf("无权终止他人的会话")
 	}
-	return s.CloseSession(sessionID, fmt.Sprintf("被用户 %d 强制断开", operatorID), "terminated")
+	return nil
+}
+
+// CanViewAllSessionAudits 判断用户是否可查看全部会话审计数据（系统管理员）；普通用户只能查看自己的
+func (s *BastionService) CanViewAllSessionAudits(userID uint) bool {
+	return syssvc.IsSystemAdmin(s.repo.DB(), userID)
 }
 
 // GetSessionsList 获取会话列表（轻量级）
@@ -391,10 +411,10 @@ func (s *BastionService) GetSessionByID(sessionID uint) (*modelcmdb.BastionSessi
 
 // ========== 命令审计 ==========
 
-// RecordCommand 记录命令
-func (s *BastionService) RecordCommand(sessionID uint, command string, exitCode int, output string) error {
+// RecordCommand 记录命令。blocked 由调用方（WS 转发层）传入拦截判定结果，
+// 避免同一条命令重复执行"会话+策略"两次 DB 查询
+func (s *BastionService) RecordCommand(sessionID uint, command string, exitCode int, output string, blocked bool) error {
 	riskLevel := s.analyzeCommandRisk(command)
-	blocked := s.isCommandBlocked(command, sessionID)
 
 	cmd := &modelcmdb.BastionCommand{
 		SessionID:     sessionID,
@@ -455,11 +475,6 @@ func (s *BastionService) analyzeCommandRisk(command string) string {
 
 // IsCommandBlocked 判断命令是否命中拦截（H7：供 WS 转发层在写入 SSH 之前调用，实现先判后执行）
 func (s *BastionService) IsCommandBlocked(command string, sessionID uint) bool {
-	return s.isCommandBlocked(command, sessionID)
-}
-
-// isCommandBlocked 检查命令是否被拦截
-func (s *BastionService) isCommandBlocked(command string, sessionID uint) bool {
 	session, err := s.repo.FindSessionWithServer(sessionID)
 	if err != nil {
 		return false
@@ -469,17 +484,98 @@ func (s *BastionService) isCommandBlocked(command string, sessionID uint) bool {
 	if err != nil || len(policies) == 0 {
 		return false
 	}
+	return matchBlockedCommand(policies, command)
+}
 
+// IsCommandBlockedForUser 按用户判定命令是否命中高危命令策略（供 K8s 容器终端等
+// 非堡垒机会话场景复用，与 SSH 终端同口径：策略黑名单 + 归一化匹配）
+func (s *BastionService) IsCommandBlockedForUser(userID uint, command string) bool {
+	user, err := s.repo.FindUserByID(userID)
+	if err != nil {
+		return false
+	}
+	policies, err := s.repo.FindAccessPoliciesWithHighRisk(userID, userRoleIDs(user))
+	if err != nil || len(policies) == 0 {
+		return false
+	}
+	return matchBlockedCommand(policies, command)
+}
+
+// matchBlockedCommand 黑名单匹配：原始文本子串 + 归一化文本子串双路匹配
+func matchBlockedCommand(policies []modelcmdb.AssetAccessPolicy, command string) bool {
 	commandLower := strings.ToLower(command)
+	normalizedCommand := normalizeCommandForMatch(command)
 	for _, policy := range policies {
 		for _, blockedCmd := range policy.HighRiskCommands {
+			// 先按原始文本子串匹配（兼容常规场景），再按归一化文本匹配（对抗混淆绕过）
 			if strings.Contains(commandLower, strings.ToLower(blockedCmd)) {
+				return true
+			}
+			if nb := normalizeCommandForMatch(blockedCmd); nb != "" && strings.Contains(normalizedCommand, nb) {
 				return true
 			}
 		}
 	}
-
 	return false
+}
+
+// normalizeCommandForMatch 将命令/策略串归一化后用于黑名单匹配，对抗常见混淆绕过：
+// - 剥 ANSI 转义序列与不可见控制字符（含 bracketed paste 标记）
+// - ${IFS}/$IFS → 空格（shell 默认分隔符替换）
+// - 反斜杠续行（行尾 \ + 换行）→ 直接拼接
+// - \t、\r、\n → 空格；连续空白压缩为单个空格
+// - 删除引号与反斜杠（对抗 'r'm、r\m、""拼接混淆）
+// 归一化以"宁可误拦"为原则，仅用于拦截匹配；审计记录仍保留原始文本
+func normalizeCommandForMatch(cmd string) string {
+	// 剥 ANSI 转义序列与控制字符（保留可打印 ASCII 与高位 UTF-8 字节）
+	var b strings.Builder
+	inEscape := false
+	for i := 0; i < len(cmd); i++ {
+		c := cmd[i]
+		if c == 0x1b { // ESC
+			inEscape = true
+			continue
+		}
+		if inEscape {
+			// CSI 序列终止符：字母或 '~'（如 bracketed paste 标记 \x1b[200~）
+			if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c == '~' {
+				inEscape = false
+			}
+			continue
+		}
+		if c >= 32 && c <= 126 || c == '\t' || c >= 0x80 { // 可打印 + Tab + UTF-8 续字节
+			b.WriteByte(c)
+		}
+	}
+	s := b.String()
+
+	s = strings.ReplaceAll(s, "${IFS}", " ")
+	s = strings.ReplaceAll(s, "$IFS", " ")
+	s = strings.ReplaceAll(s, "\\\r\n", "")
+	s = strings.ReplaceAll(s, "\\\n", "")
+	s = strings.ReplaceAll(s, "\\\r", "")
+	for _, ch := range []string{"\t", "\r", "\n"} {
+		s = strings.ReplaceAll(s, ch, " ")
+	}
+	for _, ch := range []string{"'", "\"", "\\"} {
+		s = strings.ReplaceAll(s, ch, "")
+	}
+
+	// 压缩连续空白
+	var out strings.Builder
+	inSpace := false
+	for _, r := range s {
+		if r == ' ' || r == '\t' {
+			inSpace = true
+			continue
+		}
+		if inSpace && out.Len() > 0 {
+			out.WriteByte(' ')
+		}
+		inSpace = false
+		out.WriteRune(r)
+	}
+	return strings.ToLower(strings.TrimSpace(out.String()))
 }
 
 // GetSessionCommands 获取会话的命令列表
@@ -731,9 +827,10 @@ func validatePolicyTimeWindow(tw modelcmdb.TimeWindow) error {
 	if _, err := time.Parse("15:04", tw.End); err != nil {
 		return fmt.Errorf("结束时间格式错误，应为 HH:mm")
 	}
-	if tw.Start >= tw.End {
-		return fmt.Errorf("开始时间必须早于结束时间")
+	if tw.Start == tw.End {
+		return fmt.Errorf("开始时间不能等于结束时间")
 	}
+	// start > end 视为跨天窗口（如 22:00-06:00 值班时段），允许配置
 	for _, d := range tw.Days {
 		if d < 1 || d > 7 {
 			return fmt.Errorf("星期取值必须在 1-7 之间")

@@ -201,6 +201,7 @@ type SessionFilter struct {
 // CommandFilter 命令筛选条件
 type CommandFilter struct {
 	SessionID   *uint   `json:"sessionId"`
+	UserID      *uint   `json:"userId"` // 属主过滤：非管理员只允许查看自己会话的命令
 	RiskLevel   *string `json:"riskLevel"`
 	Blocked     *bool   `json:"blocked"`
 	StartDate   *string `json:"startDate"`
@@ -211,6 +212,7 @@ type CommandFilter struct {
 // FileTransferFilter 文件传输筛选条件
 type FileTransferFilter struct {
 	SessionID *uint   `json:"sessionId"`
+	UserID    *uint   `json:"userId"` // 属主过滤：非管理员只允许查看自己会话的传输记录
 	Direction *string `json:"direction"`
 	Status    *string `json:"status"`
 	StartDate *string `json:"startDate"`

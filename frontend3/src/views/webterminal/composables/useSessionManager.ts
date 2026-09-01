@@ -19,8 +19,19 @@ export function useSessionManager() {
   const connectingServer = ref<CMDB.Server | null>(null);
   const selectedCredentialId = ref<number | null>(null);
 
-  // 当前会话的 serverId 列表
-  const currentSessionIds = computed(() => sessions.value.map(s => s.serverId));
+  // 当前会话的 serverId 列表（仅统计真实在线的会话：断开后从资产树"已连接"标记中移除）
+  const currentSessionIds = computed(() =>
+    sessions.value.filter(s => s.connected && s.status === 'connected').map(s => s.serverId)
+  );
+
+  // 连接断开回调：同步左侧资产树"已连接"标记与侧栏状态点（由终端组件 WS onclose/onerror 触发）
+  function handleSessionDisconnected(sessionId: number | string) {
+    const session = sessions.value.find(s => s.id === sessionId);
+    if (session && (session.connected || session.status === 'connected')) {
+      session.connected = false;
+      session.status = 'closed';
+    }
+  }
 
   // 切换会话
   function switchSession(sessionId: number | string) {
@@ -160,6 +171,7 @@ export function useSessionManager() {
     removeSession,
     cancelConnect,
     handleConnected,
-    handleConnect
+    handleConnect,
+    handleSessionDisconnected
   };
 }

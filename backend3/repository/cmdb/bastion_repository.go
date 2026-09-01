@@ -46,23 +46,31 @@ func (r *BastionRepository) FindServerWithUserCredentials(serverID uint) (*model
 	return &server, nil
 }
 
-// FindAccessPoliciesBySubject 获取命中的启用策略（角色策略 ∨ 用户策略）
+// userGroupScopeSQL user_group 主体策略的子查询：用户所在且仍启用的用户组 ID 集合
+// （历史实现只查 role/user 主体，策略创建侧允许的 user_group 主体策略从不生效，已修复）
+const userGroupScopeSQL = "SELECT m.group_id FROM sys_user_group_members m " +
+	"JOIN sys_user_groups g ON g.id = m.group_id " +
+	"WHERE m.user_id = ? AND g.status = 1"
+
+// FindAccessPoliciesBySubject 获取命中的启用策略（角色 ∨ 用户 ∨ 用户组）
 func (r *BastionRepository) FindAccessPoliciesBySubject(userID uint, roleIDs []uint) ([]modelcmdb.AssetAccessPolicy, error) {
 	var policies []modelcmdb.AssetAccessPolicy
 	err := r.db.Where(
-		"status = 1 AND ((subject_type = 'role' AND subject_id IN (?)) OR (subject_type = 'user' AND subject_id = ?))",
-		roleIDs, userID,
+		"status = 1 AND ((subject_type = 'role' AND subject_id IN (?)) OR (subject_type = 'user' AND subject_id = ?) "+
+			"OR (subject_type = 'user_group' AND subject_id IN ("+userGroupScopeSQL+"))",
+		roleIDs, userID, userID,
 	).Find(&policies).Error
 	return policies, err
 }
 
-// FindAccessPoliciesWithHighRisk 获取含高危命令的启用策略（角色策略 ∨ 用户策略）
+// FindAccessPoliciesWithHighRisk 获取含高危命令的启用策略（角色 ∨ 用户 ∨ 用户组）
 func (r *BastionRepository) FindAccessPoliciesWithHighRisk(userID uint, roleIDs []uint) ([]modelcmdb.AssetAccessPolicy, error) {
 	var policies []modelcmdb.AssetAccessPolicy
 	err := r.db.Where(
-		"status = 1 AND ((subject_type = 'role' AND subject_id IN (?)) OR (subject_type = 'user' AND subject_id = ?)) "+
+		"status = 1 AND ((subject_type = 'role' AND subject_id IN (?)) OR (subject_type = 'user' AND subject_id = ?) "+
+			"OR (subject_type = 'user_group' AND subject_id IN ("+userGroupScopeSQL+"))) "+
 			"AND JSON_LENGTH(high_risk_commands) > 0",
-		roleIDs, userID,
+		roleIDs, userID, userID,
 	).Find(&policies).Error
 	return policies, err
 }
@@ -382,6 +390,10 @@ func (r *BastionRepository) FindCommands(filter modelcmdb.CommandFilter, page, p
 	if filter.SessionID != nil {
 		tx = tx.Where("session_id = ?", *filter.SessionID)
 	}
+	if filter.UserID != nil {
+		// 属主过滤：仅统计/返回该用户名下会话的命令
+		tx = tx.Where("session_id IN (SELECT id FROM cmdb_bastion_sessions WHERE user_id = ?)", *filter.UserID)
+	}
 	if filter.RiskLevel != nil {
 		tx = tx.Where("risk_level = ?", *filter.RiskLevel)
 	}
@@ -445,6 +457,10 @@ func (r *BastionRepository) FindFileTransfers(filter modelcmdb.FileTransferFilte
 
 	if filter.SessionID != nil {
 		tx = tx.Where("session_id = ?", *filter.SessionID)
+	}
+	if filter.UserID != nil {
+		// 属主过滤：仅统计/返回该用户名下会话的传输记录
+		tx = tx.Where("session_id IN (SELECT id FROM cmdb_bastion_sessions WHERE user_id = ?)", *filter.UserID)
 	}
 	if filter.Direction != nil {
 		tx = tx.Where("direction = ?", *filter.Direction)

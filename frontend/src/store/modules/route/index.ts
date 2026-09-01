@@ -245,6 +245,12 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
 
     handleConstantAndAuthRoutes();
 
+    // Sync home path to userInfo so logo click navigates to correct user home
+    const homePathFromKey = getRoutePath(routeHome.value as LastLevelRouteKey);
+    if (!authStore.userInfo.homePath || authStore.userInfo.homePath === '/') {
+      authStore.userInfo.homePath = homePathFromKey || '/';
+    }
+
     setIsInitAuthRoute(true);
   }
 
@@ -275,6 +281,14 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
       setRouteHome(home);
 
       handleUpdateRootRouteRedirect(home);
+
+      // Sync home path to userInfo so logo click navigates to correct user home
+      // Only use the route-key-derived home path when user does not have a
+      // custom homePath configured in DB (i.e. still default "/" or empty)
+      const homePathFromKey = getRoutePath(home);
+      if (homePathFromKey && (!authStore.userInfo.homePath || authStore.userInfo.homePath === '/')) {
+        authStore.userInfo.homePath = homePathFromKey;
+      }
 
       setIsInitAuthRoute(true);
 

@@ -57,11 +57,22 @@ var wsUpgrader = websocket.Upgrader{
 
 var globalSessionManager *SessionManager
 
+// PTYSize PTY 窗口尺寸（像素按字符 8x16 估算）
+type PTYSize struct {
+	Columns uint32
+	Rows    uint32
+	Width   uint32
+	Height  uint32
+}
+
 // SessionManager 管理 SSH WebSocket 会话
 type SessionManager struct {
 	mu       sync.RWMutex
 	sessions map[uint]*SessionState
-	svc      *cmdbsvc.BastionService
+	// pendingResizes SSH 握手期间到达的 resize 暂存（sessionID → 尺寸），
+	// 会话注册进 sessions 时补发 window-change，防止前端初始化尺寸丢失
+	pendingResizes map[uint]PTYSize
+	svc            *cmdbsvc.BastionService
 }
 
 // SessionState 会话状态
@@ -74,6 +85,8 @@ type SessionState struct {
 	ServerName   string
 	ServerIP     string
 	LoginAccount string
+	Protocol     string
+	ClientIP     string
 	CreatedAt    time.Time
 	LastActiveAt time.Time
 }
@@ -82,8 +95,9 @@ type SessionState struct {
 func InitSessionManager(svc *cmdbsvc.BastionService) {
 	if globalSessionManager == nil {
 		globalSessionManager = &SessionManager{
-			sessions: make(map[uint]*SessionState),
-			svc:      svc,
+			sessions:       make(map[uint]*SessionState),
+			pendingResizes: make(map[uint]PTYSize),
+			svc:            svc,
 		}
 	}
 }
@@ -93,10 +107,34 @@ func GetSessionManager() *SessionManager {
 	return globalSessionManager
 }
 
-// Add 添加会话
-func (m *SessionManager) Add(sessionID uint, conn *wsConn, sshSession *ssh.Session, userID uint, serverName, serverIP, loginAccount, username string) {
+// SetPendingResize 暂存 SSH 握手期间到达的终端尺寸
+func (m *SessionManager) SetPendingResize(sessionID uint, cols, rows uint) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
+	m.pendingResizes[sessionID] = PTYSize{
+		Columns: uint32(cols),
+		Rows:    uint32(rows),
+		Width:   uint32(cols * 8),
+		Height:  uint32(rows * 16),
+	}
+	m.mu.Unlock()
+}
+
+// applyPendingResize 会话注册后补发暂存的终端尺寸（若有）
+func (m *SessionManager) applyPendingResize(sessionID uint, sshSession *ssh.Session) {
+	m.mu.Lock()
+	size, ok := m.pendingResizes[sessionID]
+	if ok {
+		delete(m.pendingResizes, sessionID)
+	}
+	m.mu.Unlock()
+	if ok && sshSession != nil {
+		_, _ = sshSession.SendRequest("window-change", false, ssh.Marshal(&size))
+	}
+}
+
+// Add 添加会话
+func (m *SessionManager) Add(sessionID uint, conn *wsConn, sshSession *ssh.Session, userID uint, serverName, serverIP, loginAccount, username, protocol, clientIP string) {
+	m.mu.Lock()
 	now := time.Now()
 	m.sessions[sessionID] = &SessionState{
 		SessionID:    sessionID,
@@ -107,9 +145,15 @@ func (m *SessionManager) Add(sessionID uint, conn *wsConn, sshSession *ssh.Sessi
 		ServerName:   serverName,
 		ServerIP:     serverIP,
 		LoginAccount: loginAccount,
+		Protocol:     protocol,
+		ClientIP:     clientIP,
 		CreatedAt:    now,
 		LastActiveAt: now,
 	}
+	m.mu.Unlock()
+
+	// 补发 SSH 握手期间暂存的终端尺寸（锁外发送避免死锁）
+	m.applyPendingResize(sessionID, sshSession)
 }
 
 // Remove 移除会话并更新数据库状态
@@ -119,6 +163,7 @@ func (m *SessionManager) Remove(sessionID uint) {
 	if exists {
 		delete(m.sessions, sessionID)
 	}
+	delete(m.pendingResizes, sessionID) // 清理暂存尺寸，防泄漏
 	m.mu.Unlock()
 
 	// 在锁外更新数据库（幂等，多次调用安全）
@@ -336,7 +381,7 @@ func (h *SSHWebSocketHandler) HandleWebSocket(ctx *gin.Context) {
 		serverName = session.Server.Hostname
 		serverIP = session.Server.IP
 	}
-	sm.Add(session.ID, conn, sshSession, userID, serverName, serverIP, session.LoginAccount, session.Username)
+	sm.Add(session.ID, conn, sshSession, userID, serverName, serverIP, session.LoginAccount, session.Username, session.Protocol, session.ClientIP)
 	defer sm.Remove(session.ID)
 
 	// 创建可取消的 context
@@ -483,21 +528,39 @@ func (h *SSHWebSocketHandler) forwardWebSocketToSSH(conn *wsConn, stdinPipe io.W
 			sm.UpdateLastActiveAt(session.ID)
 		}
 
-		// 命令拦截（H7）：以回车结尾的消息视为一次命令提交，先评估再转发。
-		// 命中策略黑名单时不把回车写入 SSH（命令不执行），并向远端行缓冲发送
-		// Ctrl-U 清行，防止已透传的命令字符在下次回车时被补执行
-		terminated := len(message) > 0 && (message[len(message)-1] == '\n' || message[len(message)-1] == '\r')
-		if terminated {
-			commandBuffer = append(commandBuffer, message...)
-			command := strings.TrimSpace(string(cleanCommand(commandBuffer)))
-			commandBuffer = nil
+		// 命令拦截（H7）：消息中任何位置出现回车/换行即视为命令提交，逐行送检。
+		// 历史实现仅检查"消息末字节是回车"，帧内回车（原生 WS 客户端单帧 "rm -rf /\rls"）
+		// 与整块粘贴（bracketed paste，末字节非回车）会被整帧透传直接执行，属授权绕过，已修复。
+		// 送检文本经行编辑回放（Ctrl-C/Ctrl-U/退格/ANSI 剥离）后与远端实际行内容一致，
+		// 避免"输入一半又删除"造成的误拦/漏拦错位
+		combined := append(commandBuffer, message...)
+		lines, pending, hasSubmit := utils.ExtractSubmittedLines(combined)
+		if hasSubmit {
+			commandBuffer = pending
 
-			if command != "" && sm != nil && sm.svc.IsCommandBlocked(command, session.ID) {
+			blockedCmd := ""
+			if sm != nil {
+				for _, raw := range lines {
+					cmd := strings.TrimSpace(string(raw))
+					if cmd == "" {
+						continue
+					}
+					if sm.svc.IsCommandBlocked(cmd, session.ID) {
+						blockedCmd = cmd
+						break
+					}
+				}
+			}
+
+			if blockedCmd != "" {
+				// 整帧拦截不透传（安全优先）：远端未收到本帧任何字节，
+				// 本地缓冲必须同步清空，否则残留远端不存在的字符导致后续失同步
+				commandBuffer = nil
 				_, _ = stdinPipe.Write([]byte("\x15")) // Ctrl-U：清除远端未执行行
 				_ = conn.safeWrite(websocket.TextMessage,
-					[]byte("\r\n\x1b[31m[OneOps] 命令已被安全策略拦截，未执行: "+command+"\x1b[0m\r\n"))
-				log.Printf("[SSH 拦截] 会话 %d 用户 %d 命令被拦截: %s", session.ID, session.UserID, command)
-				_ = sm.svc.RecordCommand(session.ID, command, -1, "[已拦截，未执行]")
+					[]byte("\r\n\x1b[31m[OneOps] 命令已被安全策略拦截，未执行: "+blockedCmd+"\x1b[0m\r\n"))
+				log.Printf("[SSH 拦截] 会话 %d 用户 %d 命令被拦截: %s", session.ID, session.UserID, blockedCmd)
+				_ = sm.svc.RecordCommand(session.ID, blockedCmd, -1, "[已拦截，未执行]", true)
 				continue
 			}
 
@@ -505,8 +568,13 @@ func (h *SSHWebSocketHandler) forwardWebSocketToSSH(conn *wsConn, stdinPipe io.W
 				log.Printf("SSH 写入错误: %v", err)
 				return
 			}
-			if command != "" && sm != nil {
-				_ = sm.svc.RecordCommand(session.ID, command, 0, "")
+			if sm != nil {
+				for _, raw := range lines {
+					cmd := strings.TrimSpace(string(raw))
+					if cmd != "" {
+						_ = sm.svc.RecordCommand(session.ID, cmd, 0, "", false)
+					}
+				}
 			}
 			continue
 		}
@@ -515,7 +583,8 @@ func (h *SSHWebSocketHandler) forwardWebSocketToSSH(conn *wsConn, stdinPipe io.W
 			log.Printf("SSH 写入错误: %v", err)
 			return
 		}
-		commandBuffer = append(commandBuffer, message...)
+		// pending 已经过行编辑回放，直接作为本地行缓冲
+		commandBuffer = pending
 	}
 }
 
@@ -588,28 +657,4 @@ func (h *SSHWebSocketHandler) heartbeat(sessionID uint, conn *wsConn, stop chan 
 			return
 		}
 	}
-}
-
-// cleanCommand 清理命令中的控制字符
-func cleanCommand(cmd []byte) []byte {
-	result := make([]byte, 0, len(cmd))
-	inEscape := false
-
-	for _, b := range cmd {
-		if b == 0x1b { // ESC
-			inEscape = true
-			continue
-		}
-		if inEscape {
-			if b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' {
-				inEscape = false
-			}
-			continue
-		}
-		if b >= 32 && b <= 126 || b == '\n' || b == '\r' || b == '\t' {
-			result = append(result, b)
-		}
-	}
-
-	return result
 }

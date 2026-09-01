@@ -341,28 +341,28 @@ func StartAgentMetricsScheduler() {
 
 	logger.Info("Agent 指标采集调度器已启动")
 
-	go func() {
+	utils.SafeGo("agent-heartbeat-check", func() {
 		for range heartbeatTicker.C {
-			checkHeartbeatTimeout()
+			utils.SafeRun("agent-heartbeat-check", checkHeartbeatTimeout)
 		}
-	}()
+	})
 
 	fastMetricsTicker := time.NewTicker(30 * time.Second)
-	go func() {
+	utils.SafeGo("agent-fast-metrics", func() {
 		for range fastMetricsTicker.C {
-			collectAllAgentServers()
+			utils.SafeRun("agent-fast-metrics", collectAllAgentServers)
 		}
-	}()
+	})
 
 	regularMetricsTicker := time.NewTicker(5 * time.Minute)
-	go func() {
+	utils.SafeGo("agent-regular-metrics", func() {
 		for range regularMetricsTicker.C {
-			collectRegularMetrics()
+			utils.SafeRun("agent-regular-metrics", collectRegularMetrics)
 		}
-	}()
+	})
 
-	go collectAllAgentServers()
-	go collectRegularMetrics()
+	utils.SafeGo("agent-fast-metrics-init", collectAllAgentServers)
+	utils.SafeGo("agent-regular-metrics-init", collectRegularMetrics)
 }
 
 // collectAllAgentServers 对所有可能运行Agent的主机并发拉取指标
@@ -390,9 +390,11 @@ func collectAllAgentServers() {
 		go func(sid uint) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			if err := svc.PullMetrics(sid); err != nil {
-				logger.Debug("Agent 指标拉取失败", zap.Uint("server_id", sid), zap.Error(err))
-			}
+			utils.SafeRun("agent-pull-metrics", func() {
+				if err := svc.PullMetrics(sid); err != nil {
+					logger.Debug("Agent 指标拉取失败", zap.Uint("server_id", sid), zap.Error(err))
+				}
+			})
 		}(id)
 	}
 	wg.Wait()
@@ -852,7 +854,7 @@ func (s *AgentService) UpgradeAgent(serverID uint, targetVersion string) error {
 		return fmt.Errorf("启动新版本失败: %w", err)
 	}
 
-	go func() {
+	utils.SafeGo("agent-upgrade-verify", func() {
 		db := database.GetDB()
 		agentRepo := repocmdb.NewAgentRepository(db)
 		for i := 0; i < 20; i++ {
@@ -874,7 +876,7 @@ func (s *AgentService) UpgradeAgent(serverID uint, targetVersion string) error {
 		logger.Error("Agent 升级超时",
 			zap.Uint("server_id", serverID),
 			zap.String("target_version", targetVersion))
-	}()
+	})
 
 	logger.Info("Agent 升级任务已提交",
 		zap.Uint("server_id", serverID),

@@ -8,6 +8,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// ErrJWTSecretNotSet 未设置 JWT 密钥（须通过 SetJWTSecret 或 JWT_SECRET 环境变量配置）
+var ErrJWTSecretNotSet = errors.New("JWT secret not set, refusing to sign/verify with empty key")
+
 // Claims JWT 声明
 type Claims struct {
 	UserID   uint   `json:"user_id"`
@@ -15,7 +18,9 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-var jwtSecret = []byte("oneops-jwt-secret-key-2024") // 默认密钥，应该被环境变量覆盖
+// jwtSecret 默认为空：绝不内置弱默认密钥——否则任何绕过主入口校验的路径
+// （测试二进制、新增 cmd 入口）都会用公开的默认密钥签发/接受 token，属伪造凭证风险
+var jwtSecret []byte
 
 // SetJWTSecret 设置 JWT 密钥
 func SetJWTSecret(secret string) {
@@ -37,6 +42,9 @@ func init() {
 
 // GenerateToken 生成 JWT token
 func GenerateToken(userID uint, username string, expireHours int) (string, error) {
+	if len(jwtSecret) == 0 {
+		return "", ErrJWTSecretNotSet
+	}
 	claims := Claims{
 		UserID:   userID,
 		Username: username,
@@ -53,6 +61,9 @@ func GenerateToken(userID uint, username string, expireHours int) (string, error
 
 // ParseToken 解析 JWT token
 func ParseToken(tokenString string) (*Claims, error) {
+	if len(jwtSecret) == 0 {
+		return nil, ErrJWTSecretNotSet
+	}
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return jwtSecret, nil
 	})

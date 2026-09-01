@@ -205,30 +205,39 @@ func (r *ServerRepository) FindServers(query map[string]interface{}, page, pageS
 
 	for i := range servers {
 		if servers[i].GroupNames != "[]" && servers[i].GroupNames != "" && servers[i].GroupNames != "null" {
-			var groupData []map[string]interface{}
-			json.Unmarshal([]byte(servers[i].GroupNames), &groupData)
-			for _, item := range groupData {
-				servers[i].Groups = append(servers[i].Groups, modelcmdb.ServerGroup{
-					ID:   uint(item["id"].(float64)),
-					Name: item["name"].(string),
-				})
+			var groupData []struct {
+				ID   uint   `json:"id"`
+				Name string `json:"name"`
+			}
+			if err := json.Unmarshal([]byte(servers[i].GroupNames), &groupData); err == nil {
+				for _, item := range groupData {
+					servers[i].Groups = append(servers[i].Groups, modelcmdb.ServerGroup{
+						ID:   item.ID,
+						Name: item.Name,
+					})
+				}
 			}
 		}
 
 		if servers[i].CredentialNames != "[]" && servers[i].CredentialNames != "" && servers[i].CredentialNames != "null" {
-			var credData []map[string]interface{}
-			json.Unmarshal([]byte(servers[i].CredentialNames), &credData)
-			for _, item := range credData {
-				cred := modelcmdb.SSHCredential{
-					ID:   uint(item["id"].(float64)),
-					Name: item["name"].(string),
+			var credData []struct {
+				ID             uint   `json:"id"`
+				Name           string `json:"name"`
+				CredentialType string `json:"credential_type"`
+			}
+			if err := json.Unmarshal([]byte(servers[i].CredentialNames), &credData); err == nil {
+				for _, item := range credData {
+					cred := modelcmdb.SSHCredential{
+						ID:   item.ID,
+						Name: item.Name,
+					}
+					if item.CredentialType != "" {
+						cred.CredentialType = modelcmdb.CredentialType(item.CredentialType)
+					} else {
+						cred.CredentialType = modelcmdb.CredentialTypeUser
+					}
+					servers[i].Credentials = append(servers[i].Credentials, cred)
 				}
-				if credentialType, ok := item["credential_type"]; ok {
-					cred.CredentialType = modelcmdb.CredentialType(credentialType.(string))
-				} else {
-					cred.CredentialType = modelcmdb.CredentialTypeUser
-				}
-				servers[i].Credentials = append(servers[i].Credentials, cred)
 			}
 		}
 

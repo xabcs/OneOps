@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -9,6 +10,16 @@ import (
 
 	"gopkg.in/yaml.v3"
 )
+
+// appendUniqueOrigin 向白名单追加 origin（去重；保持顺序稳定便于配置对账）
+func appendUniqueOrigin(origins []string, origin string) []string {
+	for _, o := range origins {
+		if o == origin {
+			return origins
+		}
+	}
+	return append(origins, origin)
+}
 
 // LoadConfig 从配置文件加载配置
 // 支持环境变量覆盖配置文件中的值，格式：${ENV_VAR}
@@ -163,6 +174,18 @@ func setDefaults(cfg *Config) {
 	}
 	if cfg.CORS.MaxAge == 0 {
 		cfg.CORS.MaxAge = 86400
+	}
+
+	// 自动并入常见同源访问源，避免部署后前端页面源与白名单不一致导致跨域 403：
+	// - external_url 的源（部署对外地址）
+	// - localhost / 127.0.0.1 同端口变体（本机浏览器 localhost 与 127.0.0.1 混用是常态）
+	if cfg.Server.ExternalURL != "" {
+		if u, err := url.Parse(cfg.Server.ExternalURL); err == nil && u.Scheme != "" && u.Host != "" {
+			cfg.CORS.AllowOrigins = appendUniqueOrigin(cfg.CORS.AllowOrigins, u.Scheme+"://"+u.Host)
+		}
+	}
+	for _, host := range []string{"localhost", "127.0.0.1"} {
+		cfg.CORS.AllowOrigins = appendUniqueOrigin(cfg.CORS.AllowOrigins, "http://"+host+":"+cfg.Server.Port)
 	}
 
 	// 应用默认值

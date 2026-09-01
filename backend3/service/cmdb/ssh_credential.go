@@ -13,45 +13,71 @@ import (
 
 // ========== SSH凭证管理 ==========
 
-// GetSSHCredentials 获取SSH凭证列表
-func (s *CMDBService) GetSSHCredentials(credentialType string) ([]modelcmdb.SSHCredential, error) {
-	return s.credRepo.FindSSHCredentials(credentialType)
+// credentialMask 敏感字段掩码：任何 API 出口（列表/详情）都不允许明文或密文出网
+const credentialMask = "******"
+
+// maskCredentialSensitive 将凭证敏感字段替换为掩码（在返回 API 前调用）
+func maskCredentialSensitive(c *modelcmdb.SSHCredential) {
+	if c.Password != "" {
+		c.Password = credentialMask
+	}
+	if c.PrivateKey != "" {
+		c.PrivateKey = credentialMask
+	}
+	if c.Passphrase != "" {
+		c.Passphrase = credentialMask
+	}
 }
 
-// GetSSHCredentialByID 根据ID获取SSH凭证
+// decryptCredential 将凭证解密到局部副本，仅供连接路径（dialSSH/Test）内部使用，绝不返回给 API 层
+func (s *CMDBService) decryptCredential(c *modelcmdb.SSHCredential) (*modelcmdb.SSHCredential, error) {
+	cp := *c
+	if cp.Password != "" {
+		decrypted, err := utils.DecryptString(cp.Password)
+		if err != nil {
+			logger.Warn("SSH凭证密码解密失败", zap.Uint("credential_id", c.ID), zap.Error(err))
+			return nil, fmt.Errorf("密码解密失败: %w", err)
+		}
+		cp.Password = decrypted
+	}
+	if cp.PrivateKey != "" {
+		decrypted, err := utils.DecryptString(cp.PrivateKey)
+		if err != nil {
+			logger.Warn("SSH凭证私钥解密失败", zap.Uint("credential_id", c.ID), zap.Error(err))
+			return nil, fmt.Errorf("私钥解密失败: %w", err)
+		}
+		cp.PrivateKey = decrypted
+	}
+	if cp.Passphrase != "" {
+		decrypted, err := utils.DecryptString(cp.Passphrase)
+		if err != nil {
+			logger.Warn("SSH凭证passphrase解密失败", zap.Uint("credential_id", c.ID), zap.Error(err))
+			return nil, fmt.Errorf("passphrase解密失败: %w", err)
+		}
+		cp.Passphrase = decrypted
+	}
+	return &cp, nil
+}
+
+// GetSSHCredentials 获取SSH凭证列表（敏感字段以掩码返回，不出网）
+func (s *CMDBService) GetSSHCredentials(credentialType string) ([]modelcmdb.SSHCredential, error) {
+	credentials, err := s.credRepo.FindSSHCredentials(credentialType)
+	if err != nil {
+		return nil, err
+	}
+	for i := range credentials {
+		maskCredentialSensitive(&credentials[i])
+	}
+	return credentials, nil
+}
+
+// GetSSHCredentialByID 根据ID获取SSH凭证（敏感字段以掩码返回，不出网）
 func (s *CMDBService) GetSSHCredentialByID(id uint) (*modelcmdb.SSHCredential, error) {
 	credential, err := s.credRepo.FindSSHCredentialByID(id)
 	if err != nil {
 		return nil, err
 	}
-
-	if credential.Password != "" {
-		decrypted, err := utils.DecryptString(credential.Password)
-		if err != nil {
-			logger.Warn("SSH凭证密码解密失败", zap.Uint("credential_id", id), zap.Error(err))
-		} else {
-			credential.Password = decrypted
-		}
-	}
-
-	if credential.PrivateKey != "" {
-		decrypted, err := utils.DecryptString(credential.PrivateKey)
-		if err != nil {
-			logger.Warn("SSH凭证私钥解密失败", zap.Uint("credential_id", id), zap.Error(err))
-		} else {
-			credential.PrivateKey = decrypted
-		}
-	}
-
-	if credential.Passphrase != "" {
-		decrypted, err := utils.DecryptString(credential.Passphrase)
-		if err != nil {
-			logger.Warn("SSH凭证passphrase解密失败", zap.Uint("credential_id", id), zap.Error(err))
-		} else {
-			credential.Passphrase = decrypted
-		}
-	}
-
+	maskCredentialSensitive(credential)
 	return credential, nil
 }
 
@@ -86,7 +112,11 @@ func (s *CMDBService) CreateSSHCredential(credential *modelcmdb.SSHCredential) e
 
 // UpdateSSHCredential 更新SSH凭证
 func (s *CMDBService) UpdateSSHCredential(id uint, updates map[string]interface{}) error {
-	if password, ok := updates["password"]; ok && password != "" {
+	// 敏感字段防误伤：值等于掩码（列表/详情回显值被原样回传）或空串（编辑表单"不修改请留空"）一律视为"不修改"，
+	// 必须先从更新集中剔除——否则掩码会被二次加密写库覆盖真实密码，空串会把密文清空
+	dropUnchangedSensitiveFields(updates)
+
+	if password, ok := updates["password"]; ok {
 		if passwordStr, ok := password.(string); ok {
 			encrypted, err := utils.EncryptString(passwordStr)
 			if err != nil {
@@ -96,7 +126,7 @@ func (s *CMDBService) UpdateSSHCredential(id uint, updates map[string]interface{
 		}
 	}
 
-	if privateKey, ok := updates["private_key"]; ok && privateKey != "" {
+	if privateKey, ok := updates["private_key"]; ok {
 		if privateKeyStr, ok := privateKey.(string); ok {
 			encrypted, err := utils.EncryptString(privateKeyStr)
 			if err != nil {
@@ -106,7 +136,7 @@ func (s *CMDBService) UpdateSSHCredential(id uint, updates map[string]interface{
 		}
 	}
 
-	if passphrase, ok := updates["passphrase"]; ok && passphrase != "" {
+	if passphrase, ok := updates["passphrase"]; ok {
 		if passphraseStr, ok := passphrase.(string); ok {
 			encrypted, err := utils.EncryptString(passphraseStr)
 			if err != nil {
@@ -119,6 +149,20 @@ func (s *CMDBService) UpdateSSHCredential(id uint, updates map[string]interface{
 	return s.credRepo.UpdateSSHCredential(id, updates)
 }
 
+// dropUnchangedSensitiveFields 剔除更新请求中不应触发变更的敏感字段（值非字符串、空串或等于掩码）
+func dropUnchangedSensitiveFields(updates map[string]interface{}) {
+	for _, key := range []string{"password", "private_key", "passphrase"} {
+		v, ok := updates[key]
+		if !ok {
+			continue
+		}
+		str, isStr := v.(string)
+		if !isStr || str == "" || str == credentialMask {
+			delete(updates, key)
+		}
+	}
+}
+
 // DeleteSSHCredential 删除SSH凭证
 func (s *CMDBService) DeleteSSHCredential(id uint) error {
 	return s.credRepo.DeleteSSHCredential(id)
@@ -126,15 +170,19 @@ func (s *CMDBService) DeleteSSHCredential(id uint) error {
 
 // TestSSHCredential 测试SSH凭证连接
 func (s *CMDBService) TestSSHCredential(id uint, testIP string, testPort int) (map[string]interface{}, error) {
-	credential, err := s.GetSSHCredentialByID(id)
+	stored, err := s.credRepo.FindSSHCredentialByID(id)
 	if err != nil {
+		return nil, err
+	}
+	// 解密仅发生在内部副本上，用于后续真实连接，不进入返回值
+	if _, err := s.decryptCredential(stored); err != nil {
 		return nil, err
 	}
 
 	result := make(map[string]interface{})
 	result["success"] = true
 	result["message"] = "连接测试功能开发中"
-	result["credential"] = credential.Username
+	result["credential"] = stored.Username
 	result["test_ip"] = testIP
 	result["test_port"] = testPort
 

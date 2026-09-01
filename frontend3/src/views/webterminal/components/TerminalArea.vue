@@ -12,10 +12,11 @@
 
   interface Emits {
     (e: 'toggleFullscreen'): void;
+    (e: 'session-disconnected', sessionId: number | string): void;
   }
 
   const props = defineProps<Props>();
-  defineEmits<Emits>();
+  const emit = defineEmits<Emits>();
 
   // 判断当前是否为会话列表视图
   const isSessionListView = computed(() => {
@@ -66,8 +67,10 @@
 
         <div v-else class="terminal-sessions">
           <template v-for="session in sessions" :key="session.id">
+            <!-- 按会话类型渲染（而非连接状态）：断开后保留终端视图展示"连接已关闭"信息，
+                 左侧"已连接"标记由 session-disconnected 事件另行同步 -->
             <XTermTerminal
-              v-if="session.connected && session.status === 'connected'"
+              v-if="!session.isSessionListView && session.websocketUrl"
               v-show="activeSession && session.id === activeSession.id"
               :session-id="session.id"
               :server-id="session.serverId"
@@ -75,6 +78,7 @@
               :server-ip="session.serverIp"
               :login-account="session.loginAccount"
               :websocket-url="session.websocketUrl"
+              @disconnected="id => emit('session-disconnected', id)"
             />
           </template>
         </div>

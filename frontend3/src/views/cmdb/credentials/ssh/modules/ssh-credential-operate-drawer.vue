@@ -136,15 +136,30 @@
       </ElFormItem>
       <template v-if="model.authType === 'password'">
         <ElFormItem label="密码" prop="password">
-          <ElInput v-model="model.password" type="password" placeholder="请输入密码" show-password />
+          <ElInput
+            v-model="model.password"
+            type="password"
+            :placeholder="isEdit ? '不修改请留空' : '请输入密码'"
+            show-password
+          />
         </ElFormItem>
       </template>
       <template v-if="model.authType === 'key'">
         <ElFormItem label="私钥" prop="privateKey">
-          <ElInput v-model="model.privateKey" type="textarea" :rows="6" placeholder="请输入私钥内容" />
+          <ElInput
+            v-model="model.privateKey"
+            type="textarea"
+            :rows="6"
+            :placeholder="isEdit ? '不修改请留空' : '请输入私钥内容'"
+          />
         </ElFormItem>
         <ElFormItem label="私钥密码">
-          <ElInput v-model="model.passphrase" type="password" placeholder="如果私钥有密码请输入" show-password />
+          <ElInput
+            v-model="model.passphrase"
+            type="password"
+            :placeholder="isEdit ? '不修改请留空' : '如果私钥有密码请输入'"
+            show-password
+          />
         </ElFormItem>
       </template>
       <ElFormItem label="描述">

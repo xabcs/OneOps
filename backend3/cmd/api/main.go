@@ -74,19 +74,18 @@ func main() {
 	logger.Info("数据库连接成功")
 
 	// 6. 初始化加密模块（敏感数据加密）
+	// 安全约束：初始化失败直接终止启动——若降级继续运行，SSH 凭证等敏感数据将以明文落库
 	encryptionKey := cfg.Encryption.Key
 	if encryptionKey != "" {
 		if err := utils.InitEncryptionWithKey(encryptionKey); err != nil {
-			logger.Warn("加密模块初始化失败，SSH凭证将以明文存储", zap.Error(err))
-		} else {
-			logger.Info("加密模块初始化成功（使用配置文件密钥）")
+			logger.Fatal("加密模块初始化失败（拒绝以明文降级运行，请检查 encryption.key 配置）", zap.Error(err))
 		}
+		logger.Info("加密模块初始化成功（使用配置文件密钥）")
 	} else {
 		if err := utils.InitEncryption(); err != nil {
-			logger.Warn("加密模块初始化失败，SSH凭证将以明文存储", zap.Error(err))
-		} else {
-			logger.Info("加密模块初始化成功（使用环境变量）")
+			logger.Fatal("加密模块初始化失败（拒绝以明文降级运行，请配置 encryption.key 或 ENCRYPTION_KEY 环境变量）", zap.Error(err))
 		}
+		logger.Info("加密模块初始化成功（使用环境变量）")
 	}
 
 	// 7. 设置 JWT 密钥
@@ -119,7 +118,7 @@ func main() {
 	r.Use(logger.GinRecovery())
 
 	// 13. 注册路由
-	routes.SetupRoutes(r)
+	routes.SetupRoutes(r, cfg)
 
 	// 13.1 路由权限对账：列出缺少映射的受保护路由（会被中间件拒绝）与指向已删路由的死映射
 	if err := syssvc.AuditRoutePermissions(r); err != nil {

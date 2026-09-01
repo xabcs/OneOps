@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 	"oneops/backend3/pkg/database"
 	"oneops/backend3/pkg/logger"
 	"oneops/backend3/pkg/utils"
+	repocmdb "oneops/backend3/repository/cmdb"
+	"oneops/backend3/service/cmdb"
 	. "oneops/backend3/service/k8s"
 	syssvc "oneops/backend3/service/system"
 
@@ -537,13 +540,14 @@ func (ctrl *TerminalController) TerminateSession(c *gin.Context) {
 
 // k8sTerminalStreamer 实现 remotecommand.Streamer 接口
 type k8sTerminalStreamer struct {
-	session    *k8sSession
-	dbSession  *modelk8s.K8sSession
-	controller *TerminalController
-	stdin      chan []byte
-	stdinDone  chan struct{}
-	stdoutDone chan struct{}
-	sizeQueue  *k8sTerminalSizeQueue
+	session       *k8sSession
+	dbSession     *modelk8s.K8sSession
+	controller    *TerminalController
+	stdin         chan []byte
+	stdinDone     chan struct{}
+	stdoutDone    chan struct{}
+	sizeQueue     *k8sTerminalSizeQueue
+	commandBuffer []byte // 已键入未提交的命令行缓冲（审计用）
 }
 
 // Write 实现 io.Writer 接口 (stdout/stderr)
@@ -613,8 +617,13 @@ func (s *k8sTerminalStreamer) handleWebSocketMessages() {
 				s.session.cancel()
 				return
 			case "stdin":
+				data := []byte(msg.Data)
+				// 命令拦截 + 审计（与 SSH 终端同口径）：命中高危策略的帧不写入容器 stdin
+				if s.auditStdin(data) {
+					continue
+				}
 				select {
-				case s.stdin <- []byte(msg.Data):
+				case s.stdin <- data:
 				case <-s.session.ctx.Done():
 					return
 				}
@@ -622,3 +631,105 @@ func (s *k8sTerminalStreamer) handleWebSocketMessages() {
 		}
 	}
 }
+
+// bastionSvcOnce 惰性构造堡垒机服务（复用策略黑名单拦截，与 SSH 终端同口径）
+var (
+	bastionSvcOnce sync.Once
+	bastionSvc     *cmdb.BastionService
+)
+
+func getBastionService() *cmdb.BastionService {
+	bastionSvcOnce.Do(func() {
+		bastionSvc = cmdb.NewBastionService(repocmdb.NewBastionRepository(database.GetDB()))
+	})
+	return bastionSvc
+}
+
+// auditStdin 命令拦截与审计（与 SSH 终端同口径）：
+// 用行编辑感知的行提取（Ctrl-C/Ctrl-U/退格回放、Tab 转空格、CRLF 单次提交），
+// 消息中任何位置出现回车即视为提交（防帧内回车/整块粘贴漏审计）；
+// 命中高危命令策略时整帧拦截返回 true（调用方不得写入 stdin），并异步落 k8s_commands 审计
+func (s *k8sTerminalStreamer) auditStdin(data []byte) (blocked bool) {
+	if s.dbSession == nil || s.dbSession.ID == 0 {
+		return false
+	}
+
+	combined := append(s.commandBuffer, data...)
+	lines, pending, hasSubmit := utils.ExtractSubmittedLines(combined)
+	if !hasSubmit {
+		s.commandBuffer = pending
+		return false
+	}
+	s.commandBuffer = pending
+
+	blockedCmd := ""
+	if svc := getBastionService(); svc != nil {
+		for _, raw := range lines {
+			cmd := strings.TrimSpace(string(raw))
+			if cmd == "" {
+				continue
+			}
+			if svc.IsCommandBlockedForUser(s.dbSession.UserID, cmd) {
+				blockedCmd = cmd
+				break
+			}
+		}
+	}
+
+	if blockedCmd != "" {
+		// 整帧不写入容器 stdin：远端未收到本帧任何字节，本地缓冲同步清空防失同步
+		s.commandBuffer = nil
+		blocked = true
+		_ = s.session.wsConn.WriteJSON(K8sTerminalMessage{
+			Type: "output",
+			Data: "\r\n\x1b[31m[OneOps] 命令已被安全策略拦截，未执行: " + blockedCmd + "\x1b[0m\r\n",
+		})
+		logger.Warn("K8s 命令拦截",
+			zap.Uint("sessionID", s.dbSession.ID),
+			zap.Uint("userID", s.dbSession.UserID),
+			zap.String("command", blockedCmd))
+		s.writeCommandAudit(blockedCmd, true)
+		return true
+	}
+
+	for _, raw := range lines {
+		cmd := strings.TrimSpace(string(raw))
+		if cmd == "" {
+			continue
+		}
+		s.writeCommandAudit(cmd, false)
+	}
+	return false
+}
+
+// writeCommandAudit 异步写命令审计（失败仅告警，不阻断终端转发）
+func (s *k8sTerminalStreamer) writeCommandAudit(cmd string, blocked bool) {
+	if len(cmd) > 2000 {
+		cmd = cmd[:2000]
+	}
+	exitCode := 0
+	output := ""
+	if blocked {
+		output = "[已拦截，未执行]"
+		exitCode = -1
+	}
+	record := &modelk8s.K8sCommand{
+		SessionID:     s.dbSession.ID,
+		Command:       cmd,
+		ExecutedAt:    time.Now(),
+		ExitCode:      &exitCode,
+		OutputSummary: output,
+	}
+	sessionID := s.dbSession.ID
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Warn("K8s 命令审计 goroutine panic", zap.Any("recover", r))
+			}
+		}()
+		if err := database.GetDB().Create(record).Error; err != nil {
+			logger.Warn("K8s 命令审计落库失败", zap.Uint("sessionID", sessionID), zap.Error(err))
+		}
+	}()
+}
+

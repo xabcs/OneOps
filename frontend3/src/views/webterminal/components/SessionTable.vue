@@ -107,7 +107,7 @@
             <template v-if="session.server">{{ session.server.hostname }} ({{ session.server.ip }})</template>
             <template v-else>服务器ID: {{ session.serverId }}</template>
           </td>
-          <td>{{ session.protocol.toUpperCase() }}</td>
+          <td>{{ session.protocol?.toUpperCase() || 'SSH' }}</td>
           <td>
             <span
               :class="{

@@ -26,7 +26,8 @@
     removeSession,
     cancelConnect,
     handleConnected,
-    handleConnect
+    handleConnect,
+    handleSessionDisconnected
   } = useSessionManager();
 
   // 布局管理
@@ -180,7 +181,11 @@
             @toggle-fullscreen="toggleFullscreen"
           />
           <div class="wb-terminal-area-wrapper">
-            <TerminalArea :active-session="activeSession" :sessions="sessions" />
+            <TerminalArea
+              :active-session="activeSession"
+              :sessions="sessions"
+              @session-disconnected="handleSessionDisconnected"
+            />
           </div>
         </div>
       </template>
@@ -202,8 +207,11 @@
   @use '@/styles/scss/terminal-workbench.scss' as *;
   @import '@vscode/codicons/dist/codicon.css';
 
-  /* 覆盖 Element Plus 树节点的悬停背景色变量 */
-  .terminal-workbench {
+  /* 覆盖 Element Plus 树节点的悬停背景色变量。
+     注意：本 style 块非 scoped，:deep() 编译后选择器永不匹配（历史写法全部失效），
+     必须用全局选择器；悬停色用 VS Code 风格微亮白，与深色工作台协调 */
+  .terminal-workbench .el-tree {
+    --el-tree-node-hover-bg-color: rgba(255, 255, 255, 0.08) !important;
     --el-fill-color-light: rgba(0, 0, 0, 0.2) !important;
     --el-fill-color-lighter: rgba(0, 0, 0, 0.2) !important;
     --el-fill-color-extra-light: rgba(0, 0, 0, 0.15) !important;
@@ -211,16 +219,12 @@
     --el-fill-color-dark: rgba(0, 0, 0, 0.3) !important;
   }
 
-  .terminal-workbench :deep(.el-tree-node__content:hover) {
-    background-color: rgba(0, 0, 0, 0.2) !important;
-  }
-
-  .terminal-workbench :deep(.el-tree-node__content) {
+  .terminal-workbench .el-tree-node__content {
     background-color: transparent !important;
   }
 
-  .terminal-workbench :deep(.el-tree-node:hover > .el-tree-node__content) {
-    background-color: rgba(0, 0, 0, 0.2) !important;
+  .terminal-workbench .el-tree-node__content:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
   }
 
   .terminal-workbench.is-fullscreen {

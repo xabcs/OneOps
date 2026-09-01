@@ -17,6 +17,9 @@
 
   const props = defineProps<Props>();
 
+  // 连接断开时通知父级（左侧资产树"已连接"标记/侧栏状态点依赖此事件同步，否则永久残留）
+  const emit = defineEmits<{ (e: 'disconnected', sessionId: number | string): void }>();
+
   let terminal: Terminal | null = null;
   let fitAddon: FitAddon | null = null;
   let ws: WebSocket | null = null;
@@ -146,12 +149,14 @@
         terminal.writeln(`\r\n\x1B[1;31m✗ 连接错误，会话可能已关闭\x1B[0m`);
         terminal.writeln(`\x1B[1;33m请重新连接主机\x1B[0m`);
       }
+      emit('disconnected', props.sessionId);
     };
 
     ws.onclose = event => {
       if (terminal) {
         terminal.writeln(`\r\n\x1B[1;31m✗ 连接已关闭 (code: ${event.code})\x1B[0m`);
       }
+      emit('disconnected', props.sessionId);
     };
   }
 
