@@ -142,6 +142,7 @@ func (s *ArthasWebhookService) webhookPort() string {
 }
 
 // SaveWebhookConfig 保存注入配置（clusterID=0 为全局默认）
+// 保存回调地址后自动同步所有已启用集群的 MWC（url/caBundle），改地址保存即生效，无需重新拨开关
 func (s *ArthasWebhookService) SaveWebhookConfig(clusterID uint, tunnelWS, initImage, webhookURL, tunnelURL, tunnelSession string) error {
 	if tunnelWS != "" {
 		if err := s.diagnosticRepo.SetConfigValue(clusterKey(clusterID), ConfigKeyTunnelWS, tunnelWS, "Arthas agent 反连 tunnel-server 地址"); err != nil {
@@ -171,7 +172,41 @@ func (s *ArthasWebhookService) SaveWebhookConfig(clusterID uint, tunnelWS, initI
 			return err
 		}
 	}
+
+	// 回调地址变化时同步已启用集群的 MWC，避免"MWC 指向旧地址 + failurePolicy=Ignore 静默失效"
+	// 同步失败不影响保存结果（配置已落库，下次启用/保存会再次同步），仅记警告日志
+	if webhookURL != "" {
+		s.syncEnabledMWCs()
+	}
 	return nil
+}
+
+// syncEnabledMWCs 对所有已创建 MWC 的集群重建 webhook 配置（url/caBundle 同步）
+// 仅处理已启用（MWC 存在）的集群，未启用的不代为开启
+func (s *ArthasWebhookService) syncEnabledMWCs() {
+	clusterIDs, err := s.clusterSvc.ListAllClusterIDs()
+	if err != nil {
+		logger.Warn("查询集群列表失败，跳过 MWC 同步", zap.Error(err))
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	for _, id := range clusterIDs {
+		client, err := s.clusterSvc.GetClient(id)
+		if err != nil {
+			continue
+		}
+		if _, err := client.AdmissionregistrationV1().MutatingWebhookConfigurations().
+			Get(ctx, MWCName, metav1.GetOptions{}); err != nil {
+			continue // 未启用（NotFound）或查询失败，跳过
+		}
+		if err := s.EnableWebhook(id); err != nil {
+			logger.Warn("同步 MWC 失败（回调地址已保存，下次启用/保存时重试）",
+				zap.Uint64("clusterID", uint64(id)), zap.Error(err))
+		} else {
+			logger.Info("MWC 已同步（回调地址更新生效）", zap.Uint64("clusterID", uint64(id)))
+		}
+	}
 }
 
 // ========== Patch 构建（核心注入逻辑） ==========
@@ -372,20 +407,27 @@ func (s *ArthasWebhookService) HandleAdmissionReview(c *gin.Context) {
 		if err := json.Unmarshal(review.Request.Object.Raw, pod); err != nil {
 			resp.Allowed = false
 			resp.Result = &metav1.Status{Message: fmt.Sprintf("decode pod failed: %v", err)}
-		} else if ShouldInject(pod) {
-			// 注入配置取全局默认（admission 回调不携带集群上下文）
-			if patches, err := BuildInjectionPatch(pod, s.GetTunnelWS(0), s.GetInitImage(0)); err != nil {
-				resp.Allowed = false
-				resp.Result = &metav1.Status{Message: err.Error()}
-			} else if len(patches) > 0 {
-				patchBytes, err := json.Marshal(patches)
-				if err != nil {
+		} else {
+			// 请求到达即记录（排查 apiserver 是否回调及注入判定依据）
+			logger.Info("webhook 收到 admission 请求",
+				zap.String("namespace", pod.Namespace), zap.String("pod", pod.Name),
+				zap.String("injectLabel", pod.Labels[InjectLabel]),
+				zap.Bool("shouldInject", ShouldInject(pod)))
+			if ShouldInject(pod) {
+				// 注入配置取全局默认（admission 回调不携带集群上下文）
+				if patches, err := BuildInjectionPatch(pod, s.GetTunnelWS(0), s.GetInitImage(0)); err != nil {
 					resp.Allowed = false
-					resp.Result = &metav1.Status{Message: fmt.Sprintf("marshal patch failed: %v", err)}
-				} else {
-					patchType := admissionv1.PatchTypeJSONPatch
-					resp.PatchType = &patchType
-					resp.Patch = []byte(base64.StdEncoding.EncodeToString(patchBytes))
+					resp.Result = &metav1.Status{Message: err.Error()}
+				} else if len(patches) > 0 {
+					patchBytes, err := json.Marshal(patches)
+					if err != nil {
+						resp.Allowed = false
+						resp.Result = &metav1.Status{Message: fmt.Sprintf("marshal patch failed: %v", err)}
+					} else {
+						patchType := admissionv1.PatchTypeJSONPatch
+						resp.PatchType = &patchType
+						resp.Patch = []byte(base64.StdEncoding.EncodeToString(patchBytes))
+					}
 				}
 			}
 		}

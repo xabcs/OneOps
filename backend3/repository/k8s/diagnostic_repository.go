@@ -62,8 +62,21 @@ func (r *DiagnosticRepository) FindHistoryWithPagination(q DiagnosticHistoryQuer
 // ========== Agent 注册表 ==========
 
 // UpsertAgent 按 agentId 插入或更新 agent 记录
+// 更新走指定列（不覆盖 created_at）：Save 全字段更新会把调用方未回填的
+// CreatedAt 零值写成 '0000-00-00'，MySQL 严格模式报 Error 1292
 func (r *DiagnosticRepository) UpsertAgent(agent *modelk8s.DiagnosticAgent) error {
-	return r.db.Save(agent).Error
+	if agent.ID == 0 {
+		return r.db.Create(agent).Error
+	}
+	return r.db.Model(agent).Updates(map[string]interface{}{
+		"cluster_id":    agent.ClusterID,
+		"app_name":      agent.AppName,
+		"namespace":     agent.Namespace,
+		"pod_name":      agent.PodName,
+		"agent_version": agent.AgentVersion,
+		"online":        agent.Online,
+		"last_seen":     agent.LastSeen,
+	}).Error
 }
 
 // FindAgentByAgentID 按 agentId 查询

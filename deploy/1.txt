@@ -186,17 +186,73 @@ kubectl exec -n test <pod> -- cat /root/logs/arthas/arthas.log | tail -50
 
 ### 8. 命令执行超时（banner 收到但命令无响应）
 - 现象：banner collect 成功（1312 字节，含 [arthas@ 提示符，217ms），
-  command collect 8s idle 超时，outputLen=0，错误"命令执行超时"
-- 排查：wscat 直连输入命令同样无响应，排除平台独有问题
-- 根因：**Arthas tunnel-server 的 WS 会话不是纯文本透传，而是 relay 通道协议**
-  - 每条消息是 JSON 对象 `{"action":"read","data":"<char>"}`
-  - data 是**单个字符**，命令需逐字符发送
-  - 最后单独发 `{"action":"read","data":"\r"}` 作为回车
-  - 直接发纯文本帧（command+"\r\n"）tunnel-server 不认识，命令到达不了 agent
-  - banner 能收到是因为那是 tunnel-server 主动推送的输出帧，不经过 relay 协议
-- 修复：命令发送改为 relay 协议逐字符发送，reset 同样用 relay 协议
-- 参考：https://www.cnblogs.com/10ng/p/22741967 （Go+Vue3+K8s+Arthas tunnel 诊断平台）
-- 关键代码：diagnostic_service.go `runCommandOverTunnel()` 中 `sendRelay()` + 逐字符循环
+  command collect 8s idle 超时，outputLen=0，错误"命令执行超时"；
+  wscat 直连输入命令同样无响应
+- 根因（已读官方源码确认）：**Arthas WS 会话输入/输出两个方向协议不同**
+  - 输出方向（agent→平台）：纯文本（banner/命令结果都是纯文本透传）
+  - 输入方向（平台→agent）：JSON 协议，termd HttpTtyConnection.writeToDecoder：
+    - {"action":"read","data":"<用户输入>"}：data 可一次带整条命令 + \r
+    - {"action":"resize","cols":120,"rows":40}
+    - 纯文本帧在 agent 端 JSON.parseObject 失败，catch 后直接 return
+      **静默丢弃**，所以命令无响应也无错误
+  - 源码链路：tunnel-server RelayHandler 纯转发 → agent ForwardClient →
+    LocalChannel → arthas core TtyWebSocketFrameHandler.channelRead0 →
+    writeToDecoder(msg.text())
+  - 源码位置：github.com/alibaba/termd 的 HttpTtyConnection.java（类注释
+    明确写了 json messages 协议）
+- 修复：命令发送改为 {"action":"read","data":"<command>\r"} 一条 JSON 消息，
+  reset 同样
+- 关键代码：diagnostic_service.go `runCommandOverTunnel()` 中 `sendRead()`
+- 同源问题：交互式终端 WS 桥（controller/k8s/diagnostic_ws.go）同样把用户
+  输入以纯文本发给 tunnel，导致"终端不能键入"，已一并改为 JSON read 协议；
+  resize 消息也由忽略改为转发（termd 支持 {"action":"resize","cols":..,"rows":..}，
+  表格按终端宽度渲染不折行）
+
+### 9. 会话与诊断目标解耦（交互设计变更）
+- 原设计：专家终端 watch currentAgent，切换左侧目标强制断开会话
+  （"已切换诊断目标，会话已断开"），与 Arthas 官方多客户端语义不符
+  （官方 quit 只影响当前客户端，多客户端可并发 attach 同一进程）
+- 新设计（对齐 Arthas 官方语义 + 通用终端产品惯例）：
+  - ExpertTerminalPanel：会话建立时快照目标（sessionAgent），此后切换左侧
+    目标不影响进行中的会话；工具栏显示会话目标，目标不一致时提示
+    "左侧已切换目标，会话保持"；断开仅由用户显式操作/连接异常触发
+  - 场景跳转（autoCommand）：命令归属于左侧当前目标，若终端会话连在
+    其他实例上则先断开再连命令目标（避免发错实例）
+  - ScenarioPanel / CommandCatalogPanel：执行结果带"目标: <pod>"标记，
+    切换左侧目标不清空已有结果，结果归属明确
+- 效果：终端开着 watch/trace 监控时，可切到场景诊断执行 one-shot 命令、
+  或切换其他实例查看信息，返回时会话仍活着
+- 涉及文件：
+  - frontend3/src/views/k8s/diagnostic/modules/ExpertTerminalPanel.vue
+  - frontend3/src/views/k8s/diagnostic/modules/ScenarioPanel.vue
+  - frontend3/src/views/k8s/diagnostic/modules/CommandCatalogPanel.vue
+- 验证：vue-tsc 无 diagnostic 相关新增错误
+
+### 10. thread -n 5 输出验证（JSON read 协议生效）
+- 场景诊断执行 thread -n 5 成功返回 CPU Top 线程 + 完整堆栈，483ms
+- 输出首线程为 arthas-command-execute（执行命令自身线程，正常现象）
+
+### 11. webhook 静默不注入排查与修复（demo2 验证发现）
+- 现象：demo2.yml（仅 label 的干净版）部署后 Pod 无 initContainer/env，无 FailedMutatingWebhook 事件
+- 根因：治理页保存回调地址（9443→39443 端口映射变化）只写 DB 不更新 MWC，
+  MWC 仍指向旧地址；apiserver 调不通 + failurePolicy=Ignore → 静默跳过注入
+- 修复：SaveWebhookConfig 保存回调地址后调用 syncEnabledMWCs()，
+  对所有已启用（MWC 存在）的集群自动 EnableWebhook 重建（url/caBundle 同步，
+  host 变化时证书自动重签）；未启用集群不代为开启；同步失败仅警告不影响保存
+- 效果：治理页改回调地址保存即生效，无需关闭再打开注入开关
+- 代码：backend3/service/k8s/arthas_webhook.go `syncEnabledMWCs()`
+- 验证：go build exit 0；治理页保存 39443 后 MWC url 应更新，
+  rollout restart test-java2 后 initContainer=oneops-arthas-agent 被注入
+
+### 12. agent 注册表保存失败（Error 1292: Incorrect datetime value '0000-00-00'）
+- 现象：upsertAgentRecord 更新已有记录报错，created_at='0000-00-00 00:00:00'
+- 根因：service 更新路径只回填 ID 不回填 CreatedAt，repository 用 Save()
+  全字段更新，time.Time 零值被写成 '0000-00-00'，MySQL 严格模式拒绝
+- 修复：UpsertAgent 更新路径改 Updates(map) 指定业务列（cluster_id/app_name/
+  namespace/pod_name/agent_version/online/last_seen），不碰 created_at；
+  ID=0 时 Create（GORM 自动维护时间戳）
+- 代码：repository/k8s/diagnostic_repository.go `UpsertAgent()`
+- 验证：go build exit 0；SyncAgents 后无 "保存 agent 注册信息失败" 警告
 
 
 ## 九、验收结果

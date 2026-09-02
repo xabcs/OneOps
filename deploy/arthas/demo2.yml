@@ -1,0 +1,29 @@
+# 干净版测试应用：只打注入 label，其余全部由 OneOps webhook 自动注入
+# 前提：治理页已启用 Arthas 注入开关（webhook 9443 已就绪），且已配置 tunnel 地址
+#
+# webhook 自动注入内容（无需手写）：
+#   - initContainer arthas-agent：复制 /opt/arthas 全量文件到共享卷
+#   - volume arthas（emptyDir）+ 主容器挂载 /arthas
+#   - env：ARTHAS_TUNNEL_SERVER（治理页配置值）/ POD_NAME / POD_NAMESPACE（downward API）
+#   - JAVA_TOOL_OPTIONS：-javaagent + -Darthas.tunnelServer + -Darthas.agentId
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-java2
+  namespace: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-java2
+  template:
+    metadata:
+      labels:
+        app: test-java2
+        oneops-arthas-injection: enabled # 唯一需要的配置
+    spec:
+      containers:
+        - name: app
+          image: mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/tomcat:9.0-jre8
+          ports:
+            - containerPort: 8080

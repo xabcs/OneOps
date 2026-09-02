@@ -468,29 +468,25 @@ func (s *DiagnosticService) runCommandOverTunnel(sessionURL, agentID, command st
 		zap.NamedError("err", bannerErr))
 
 	// 2) 发送命令
-	//    Arthas tunnel-server 的 WS 会话使用 relay 通道协议，不是纯文本透传：
-	//    - 每条消息是 JSON 对象 {"action":"read","data":"<char>"}
-	//    - data 是单个字符，命令需逐字符发送
-	//    - 最后单独发 {"action":"read","data":"\r"} 作为回车
-	//    直接发纯文本帧（command+"\r\n"）tunnel-server 不认识，命令到达不了 agent
+	//    Arthas WS 会话的输入协议是 JSON（termd HttpTtyConnection.writeToDecoder，
+	//    官方源码 alibaba/termd 确认），输出方向才是纯文本：
+	//    - {"action":"read","data":"<用户输入>"}：data 可一次带整条命令 + \r 回车
+	//    - {"action":"resize","cols":120,"rows":40}：调整终端尺寸
+	//    纯文本帧会在 agent 端 JSON 解析失败被静默丢弃（writeToDecoder catch 后
+	//    直接 return），表现为命令无响应——这就是之前 banner 能收（输出方向
+	//    纯文本）但命令不执行（输入方向要 JSON）的根因
 	type relayMsg struct {
 		Action string `json:"action"`
 		Data   string `json:"data"`
 	}
-	sendRelay := func(data string) error {
-		msg, _ := json.Marshal(relayMsg{Action: "read", Data: data})
-		return conn.WriteMessage(websocket.TextMessage, msg)
+	sendRead := func(data string) error {
+		payload, _ := json.Marshal(relayMsg{Action: "read", Data: data})
+		return conn.WriteMessage(websocket.TextMessage, payload)
 	}
-	for _, ch := range command {
-		if err := sendRelay(string(ch)); err != nil {
-			return "", fmt.Errorf("发送命令失败: %w", err)
-		}
-		time.Sleep(1 * time.Millisecond)
+	if err := sendRead(command + "\r"); err != nil {
+		return "", fmt.Errorf("发送命令失败: %w", err)
 	}
-	if err := sendRelay("\r"); err != nil {
-		return "", fmt.Errorf("发送回车失败: %w", err)
-	}
-	logger.Info("tunnel 命令已发送(relay逐字符)",
+	logger.Info("tunnel 命令已发送(JSON read 协议)",
 		zap.String("agentId", agentID), zap.String("command", command))
 
 	// 3) 收集命令输出：直到出现下一个 [arthas@ 提示符（命令完成），或 idle 超时
@@ -503,12 +499,8 @@ func (s *DiagnosticService) runCommandOverTunnel(sessionURL, agentID, command st
 		zap.Duration("cost", time.Since(cmdStart)),
 		zap.NamedError("err", err))
 
-	// 4) 执行 reset 清理字节码增强（幂等，用 relay 协议逐字符发送）
-	for _, ch := range "reset" {
-		_ = sendRelay(string(ch))
-		time.Sleep(1 * time.Millisecond)
-	}
-	_ = sendRelay("\r")
+	// 4) 执行 reset 清理字节码增强（幂等，JSON read 协议）
+	_ = sendRead("reset\r")
 
 	// 5) 剥离末尾的 [arthas@N]$ 提示符（命令完成标志，非命令输出）
 	output = trimArthasPrompt(output)

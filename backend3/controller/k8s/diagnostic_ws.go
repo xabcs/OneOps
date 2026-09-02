@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -286,11 +287,20 @@ func (ctrl *DiagnosticWSController) bridge(browser, tunnel *websocket.Conn, conn
 					lineBuf.WriteRune(r)
 				}
 			}
-			if err := tunnel.WriteMessage(websocket.TextMessage, []byte(msg.Data)); err != nil {
+			// Arthas WS 输入协议是 JSON（termd HttpTtyConnection.writeToDecoder）：
+			// {"action":"read","data":"<输入>"}；纯文本会被 agent 端 JSON 解析失败
+			// 静默丢弃，表现为终端不能键入
+			inputPayload, _ := json.Marshal(map[string]string{"action": "read", "data": msg.Data})
+			if err := tunnel.WriteMessage(websocket.TextMessage, inputPayload); err != nil {
 				return
 			}
 		case "resize":
-			// arthas telnet 协议不支持动态 resize，忽略
+			// termd 协议支持 resize：{"action":"resize","cols":..,"rows":..}
+			// 让 thread/dashboard 等表格按终端宽度渲染，避免固定 80 列折行
+			if msg.Cols > 0 && msg.Rows > 0 {
+				resizePayload, _ := json.Marshal(map[string]interface{}{"action": "resize", "cols": msg.Cols, "rows": msg.Rows})
+				_ = tunnel.WriteMessage(websocket.TextMessage, resizePayload)
+			}
 		case "ping":
 			_ = browser.WriteJSON(DiagnosticTerminalMessage{Type: "pong"})
 		}

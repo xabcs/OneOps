@@ -43,6 +43,8 @@
   const activeCommand = ref('');
   const result = ref<DiagnosticOneShotResult | null>(null);
   const resultCommand = ref('');
+  /** 执行目标快照：结果归属于执行时的实例，切换左侧目标不改变已有结果归属 */
+  const resultTarget = ref('');
 
   async function runCommand(item: { command: string; riskLevel: string; streaming: boolean }) {
     const agent = diagStore.currentAgent;
@@ -104,6 +106,7 @@
       if (!error && data) {
         result.value = data;
         resultCommand.value = command;
+        resultTarget.value = agent.podName || agent.agentId;
       }
     } finally {
       executingCommand.value = '';
@@ -174,6 +177,7 @@
       <div class="result-head">
         <code>{{ resultCommand }}</code>
         <span class="result-meta">
+          <ElTag v-if="resultTarget" size="small" type="warning">目标: {{ resultTarget }}</ElTag>
           <ElTag size="small" :type="result.status === 'success' ? 'success' : 'danger'">{{ result.status }}</ElTag>
           <ElTag size="small" type="info">{{ formatDuration(result.duration) }}</ElTag>
           <ElButton size="small" text type="primary" @click="result = null">关闭</ElButton>

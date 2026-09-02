@@ -28,28 +28,29 @@
   let pingTimer: ReturnType<typeof setInterval> | null = null;
   let resizeHandler: (() => void) | null = null;
 
-  // 目标变化时断开当前会话（每 agent 互斥一个会话）
-  watch(
-    () => diagStore.currentAgent?.agentId,
-    (val, old) => {
-      if (val !== old && connected.value) {
-        disconnect();
-        writeSystem(`\r\n\x1B[33m已切换诊断目标，会话已断开\x1B[0m\r\n`);
-      }
-    }
-  );
+  /**
+   * 会话与目标解耦（对齐 Arthas 官方多客户端语义：quit 只影响当前客户端）：
+   * 会话建立时快照目标，此后左侧切换诊断目标不影响进行中的会话，
+   * 断开仅由用户显式操作或连接异常触发。
+   */
+  const sessionAgent = ref<{ podName: string; agentId: string } | null>(null);
 
-  // 场景跳转预填命令
+  // 场景跳转预填命令：命令归属于左侧当前目标；
+  // 若终端会话连在其他实例上，先断开再连命令目标，避免发错实例
   watch(
     () => props.autoCommand,
     cmd => {
       if (!cmd) return;
+      const targetId = diagStore.currentAgent?.agentId;
+      if (connected.value && sessionAgent.value && sessionAgent.value.agentId !== targetId) {
+        writeSystem(`\r\n\x1B[33m命令目标(${diagStore.currentAgent?.podName})与会话目标(${sessionAgent.value.podName})不同，切换会话\x1B[0m\r\n`);
+        disconnect();
+      }
+      emit('update:autoCommand', '');
       if (connected.value) {
         sendCommand(cmd);
-        emit('update:autoCommand', '');
       } else {
         pendingCommand.value = cmd;
-        emit('update:autoCommand', '');
         connect();
       }
     }
@@ -151,6 +152,8 @@
       }
       connected.value = true;
       connecting.value = false;
+      // 快照会话目标：此后左侧切换目标不影响本会话
+      sessionAgent.value = { podName: agent.podName || agent.agentId, agentId: agent.agentId };
       startPing();
       writeSystem('\x1B[32m✓ 已建立 Arthas 诊断会话（tunnel 透传，全量命令可用）\x1B[0m\r\n');
       writeSystem('\x1B[90m提示：q 或 Ctrl+C 退出流式命令；stop 结束会话；会话空闲 10 分钟自动断开\x1B[0m\r\n\r\n');
@@ -191,6 +194,7 @@
       if (!mounted) return;
       connected.value = false;
       connecting.value = false;
+      sessionAgent.value = null;
       stopPing();
       if (ev.wasClean) {
         writeSystem(`\r\n\x1B[33m连接已关闭 (code: ${ev.code})\x1B[0m\r\n`);
@@ -202,6 +206,7 @@
 
   function disconnect() {
     stopPing();
+    sessionAgent.value = null;
     ws.value?.close();
     ws.value = null;
     connected.value = false;
@@ -238,11 +243,14 @@
       <div class="toolbar-left">
         <span :class="['conn-dot', { online: connected }]"></span>
         <span class="target-name">
-          {{ diagStore.currentAgent?.podName || diagStore.currentAgent?.agentId || '未选择诊断目标' }}
+          {{ connected && sessionAgent ? sessionAgent.podName : diagStore.currentAgent?.podName || diagStore.currentAgent?.agentId || '未选择诊断目标' }}
         </span>
         <ElTag v-if="connected" size="small" type="success">会话中</ElTag>
         <ElTag v-else-if="connecting" size="small" type="warning">连接中</ElTag>
-        <span v-else class="toolbar-hint">全量 Arthas 命令（含 ognl / redefine 等高危命令，全程审计录制）</span>
+        <ElTag v-if="connected && sessionAgent && diagStore.currentAgent?.agentId !== sessionAgent.agentId" size="small" type="info">
+          左侧已切换目标，会话保持
+        </ElTag>
+        <span v-if="!connected && !connecting" class="toolbar-hint">全量 Arthas 命令（含 ognl / redefine 等高危命令，全程审计录制）</span>
       </div>
       <div class="toolbar-right">
         <PermissionButton
