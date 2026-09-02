@@ -58,6 +58,19 @@ func (s *K8sClusterService) GetClusters(userID uint, page, pageSize int, filter 
 	})
 }
 
+// ListAllClusterIDs 全量集群 ID（后台同步任务专用，不经过用户数据权限）
+func (s *K8sClusterService) ListAllClusterIDs() ([]uint, error) {
+	clusters, _, err := s.clusterRepo.FindWithPagination(repok8s.ClusterQuery{Page: 1, PageSize: 1000})
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]uint, 0, len(clusters))
+	for _, c := range clusters {
+		ids = append(ids, c.ID)
+	}
+	return ids, nil
+}
+
 // GetClusterByID 根据ID获取集群详情（带权限检查）
 func (s *K8sClusterService) GetClusterByID(clusterID uint, userID uint) (*modelk8s.K8sCluster, error) {
 	// 先检查权限

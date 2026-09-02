@@ -24,13 +24,16 @@ func SetupK8sRoutes(r *gin.Engine) {
 	clusterSvc := k8ssvc.NewK8sClusterService(clusterRepo, clientPool, identitySvc)
 	resourceSvc := k8ssvc.NewK8sResourceService(clientPool)
 	diagnosticSvc := k8ssvc.NewDiagnosticService(clusterSvc, diagnosticRepo)
+	arthasWebhookSvc := k8ssvc.NewArthasWebhookService(clusterSvc, diagnosticRepo)
 	rbacSvc := k8ssvc.NewK8sRbacService(clientPool)
 
 	// 创建 controllers
 	k8sClusterController := k8sctrl.NewK8sClusterController(clusterSvc)
 	k8sResourceController := k8sctrl.NewK8sResourceController(resourceSvc, clusterSvc)
 	k8sPermissionController := k8sctrl.NewK8sPermissionController(clusterSvc)
-	diagnosticController := k8sctrl.NewDiagnosticController(diagnosticSvc, clusterSvc)
+	diagnosticController := k8sctrl.NewDiagnosticController(diagnosticSvc)
+	diagnosticWSController := k8sctrl.NewDiagnosticWSController(diagnosticSvc)
+	arthasWebhookController := k8sctrl.NewArthasWebhookController(arthasWebhookSvc)
 	terminalController := k8sctrl.NewTerminalController(clusterSvc)
 	rbacController := k8sctrl.NewK8sRbacController(rbacSvc, clusterSvc)
 
@@ -39,6 +42,11 @@ func SetupK8sRoutes(r *gin.Engine) {
 	// K8s Pod 终端 WebSocket（不经过 Auth 中间件，由 controller 自行验证）
 	api.GET("/k8s/terminal/ws", func(ctx *gin.Context) {
 		terminalController.HandleWebSocket(ctx)
+	})
+
+	// 诊断专家终端 WebSocket（不经过 Auth 中间件，由 controller 自行验证）
+	api.GET("/k8s/diagnostic/session/ws", func(ctx *gin.Context) {
+		diagnosticWSController.HandleSessionWS(ctx)
 	})
 
 	// K8s 管理路由（需要认证）
@@ -161,11 +169,27 @@ func SetupK8sRoutes(r *gin.Engine) {
 		k8s.GET("/terminal/active", terminalController.GetActiveSessions)
 		k8s.POST("/terminal/sessions/:sessionId/terminate", terminalController.TerminateSession)
 
-		// K8s 诊断功能
-		k8s.GET("/diagnostic/commands", diagnosticController.GetDiagnosticCommands)
-		k8s.GET("/diagnostic/pods/:clusterId/:namespace", diagnosticController.GetJavaPods)
-		k8s.GET("/diagnostic/namespaces/:clusterId", diagnosticController.GetNamespaces)
-		k8s.POST("/diagnostic/execute", diagnosticController.ExecuteDiagnostic)
-		k8s.GET("/diagnostic/history", diagnosticController.GetDiagnosticHistory)
+		// K8s 诊断中心（Arthas Tunnel 架构）
+		k8s.GET("/diagnostic/commands", diagnosticController.GetCommands)
+		k8s.GET("/diagnostic/apps", diagnosticController.ListApps)
+		k8s.GET("/diagnostic/apps/:appName/agents", diagnosticController.ListAppAgents)
+		k8s.POST("/diagnostic/execute", diagnosticController.ExecuteOneShot)
+		k8s.GET("/diagnostic/executions", diagnosticController.GetExecutions)
+		k8s.GET("/diagnostic/overview", diagnosticController.GetOverview)
+		k8s.GET("/diagnostic/sessions", diagnosticWSController.GetSessions)
+		k8s.GET("/diagnostic/sessions/:sessionId", diagnosticController.GetSessionDetail)
+		k8s.POST("/diagnostic/sessions/:sessionId/terminate", diagnosticWSController.TerminateSession)
+		k8s.GET("/diagnostic/command-overrides", diagnosticController.GetCommandOverrides)
+		k8s.POST("/diagnostic/command-overrides", diagnosticController.SaveCommandOverride)
+		k8s.DELETE("/diagnostic/command-overrides/:id", diagnosticController.DeleteCommandOverride)
+
+		// Arthas Webhook 自动注入管理（Pod label 触发）
+		k8s.GET("/diagnostic/webhook", arthasWebhookController.GetStatus)
+		k8s.POST("/diagnostic/webhook/enable", arthasWebhookController.Enable)
+		k8s.POST("/diagnostic/webhook/disable", arthasWebhookController.Disable)
+		k8s.POST("/diagnostic/webhook/config", arthasWebhookController.SaveConfig)
 	}
+
+	// Arthas webhook TLS server（apiserver 准入回调；ARTHAS_WEBHOOK_PORT 未配置则不启动）
+	go arthasWebhookSvc.StartTLSServer()
 }

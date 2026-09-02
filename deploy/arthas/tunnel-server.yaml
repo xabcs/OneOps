@@ -1,0 +1,120 @@
+# arthas-tunnel-server 集群内部署清单
+#
+# 端口约定（对齐官方 arthas-tunnel-server 3.x/4.x 实现）：
+#   7777  Netty WS：agent 反连注册（?method=agentRegister）+ 诊断会话（?method=connectArthas&id=）
+#         OneOps 平台需经此端口与 agent 建立诊断终端会话
+#   8080  HTTP：console SPA + 免认证 API（/api/tunnelAgents?agentId= 探测 agent 在线状态）
+#         注意：/actuator/** 受 Spring Security formLogin 保护（官方未启用 httpBasic），
+#               Basic 头会被忽略并 302 到 /login，平台不可用
+#
+# 安全提示：
+#   - 8080 的 /api/* 为免认证接口，SLB 务必用 ACL 限源为 OneOps 主机 IP
+#   - 7777 会话 WS 可对已注册 agent 发起诊断，同样需限源
+#   - tunnel-server 官方无专门权限管理，详见 https://arthas.aliyun.com/doc/tunnel.html
+#
+# 使用：
+#   1. 按同目录 Dockerfile.tunnel-server 构建镜像并推送内网仓库
+#   2. 修改下方 image 后 kubectl apply -f tunnel-server.yaml
+#   3. OneOps 治理页只需填一个 tunnel 地址（平台访问 tunnel-server）：http://<SLB-VIP>:8080
+#      会话地址自动推导 ws://同主机:7777；agent 反连地址由镜像内 arthas.properties 预置
+#      （ws://arthas-tunnel.test:7777/ws，指向集群内 Service）
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arthas-tunnel-server
+  namespace: test
+  labels:
+    app: arthas-tunnel-server
+spec:
+  replicas: 1 # agent 连接有状态，禁止多副本
+  selector:
+    matchLabels:
+      app: arthas-tunnel-server
+  template:
+    metadata:
+      labels:
+        app: arthas-tunnel-server
+    spec:
+      containers:
+        - name: tunnel-server
+          image: mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/arthas-tunnel-server:4.1.8
+          # 8080 控制面登录凭据（tunnel-server 3.6+ 默认启用 Spring Security）；
+          # 仅 console 页面登录用，平台 API 走免认证 /api/* 接口
+          # 注意：镜像版本必须与 agent（arthas-agent init 镜像）保持一致，否则 WS 协议不兼容导致注册失败
+          env:
+            - name: TUNNEL_PASSWORD
+              value: OneOpsTunnel2026 # 改为强密码
+          ports:
+            - containerPort: 7777
+              name: tunnel
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 7777
+            initialDelaySeconds: 30
+            periodSeconds: 20
+---
+# 集群内访问（agent 反连 + 平台集群内调试）
+apiVersion: v1
+kind: Service
+metadata:
+  name: arthas-tunnel
+  namespace: test
+spec:
+  selector:
+    app: arthas-tunnel-server
+  ports:
+    - name: tunnel
+      port: 7777
+      targetPort: 7777
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+# 对外访问（探测 agent 在线 + 建 WS 会话）：公网型 SLB，OneOps 集群外直连
+# 依赖：ACK 的 CCM（Cloud Controller Manager）自动创建 SLB，kubeconfig 用户需有 SLB 权限
+# 安全必做：① SLB ACL 限源为 OneOps 主机 IP ② TCP 监听空闲超时固定 900s（覆盖诊断终端 10 分钟空闲）
+# 仅内网使用时：把 address-type 改为 intranet
+apiVersion: v1
+kind: Service
+metadata:
+  name: arthas-tunnel-external
+  namespace: test
+  annotations:
+    service.beta.kubernetes.io/alibaba-cloud-loadbalancer-address-type: internet
+    service.beta.kubernetes.io/alibaba-cloud-loadbalancer-spec: slb.s1.small
+    # TCP 监听：空闲超时固定 900s（不可改也无需改），正好覆盖诊断终端 10 分钟空闲设计
+    # 注意：不要改成 http 监听（idle-timeout 上限仅 60s，会把 WS 静置会话掐断）
+    service.beta.kubernetes.io/alibaba-cloud-loadbalancer-protocol-port: "tcp:8080,tcp:7777"
+    # 限源（强烈建议）：先在 SLB 控制台创建 ACL 网段组，再填入 acl-id
+    # service.beta.kubernetes.io/alibaba-cloud-loadbalancer-acl-status: "true"
+    # service.beta.kubernetes.io/alibaba-cloud-loadbalancer-acl-id: "acl-xxxxxxxx"
+spec:
+  type: LoadBalancer
+  selector:
+    app: arthas-tunnel-server
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+    - name: tunnel
+      port: 7777
+      targetPort: 7777

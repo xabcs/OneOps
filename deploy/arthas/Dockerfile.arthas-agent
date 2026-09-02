@@ -1,0 +1,17 @@
+# Arthas agent initContainer 镜像（Webhook 注入 + 手动接入共用）
+# 必须包含全量 jar（arthas-agent.jar 仅 8KB 是引导器，核心逻辑在 arthas-core.jar）
+#
+# 构建推送：
+#   docker build --platform linux/amd64 -f Dockerfile.arthas-agent \
+#     -t mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/arthas-agent:4.1.8 .
+#   docker push mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/arthas-agent:4.1.8
+FROM docker.1ms.run/alpine:3.19
+RUN apk add --no-cache unzip curl
+RUN mkdir -p /opt/arthas
+RUN curl -L -o /tmp/arthas-bin.zip \
+    https://github.com/alibaba/arthas/releases/download/arthas-all-4.1.8/arthas-bin.zip \
+    && unzip -q /tmp/arthas-bin.zip -d /opt/arthas \
+    && rm -f /tmp/arthas-bin.zip
+# 覆盖官方默认 arthas.properties，预置集群内 tunnel-server 反连地址
+# agentId 不在此配置，由 Webhook 通过 -Darthas.agentId 系统属性注入（每 Pod 唯一）
+COPY arthas.properties /opt/arthas/arthas.properties

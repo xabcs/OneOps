@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-java
+  namespace: test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-java
+  template:
+    metadata:
+      labels:
+        app: test-java
+        oneops-arthas-injection: enabled
+    spec:
+      initContainers:
+        - name: arthas-agent
+          image: mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/arthas-agent:4.1.8
+          imagePullPolicy: Always # 总是拉取最新镜像，避免用本地缓存的旧镜像
+          command:
+            [
+              "sh",
+              "-c",
+              'set -e; cp -rf /opt/arthas/. /arthas/ && test -f /arthas/arthas.properties && test -f /arthas/arthas-core.jar && grep -q "^arthas.tunnelServer=" /arthas/arthas.properties',
+            ]
+          volumeMounts:
+            - name: arthas
+              mountPath: /arthas
+      containers:
+        - name: app
+          image: mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/tomcat:9.0-jre8
+          ports:
+            - containerPort: 8080
+          env:
+            # agent 反连 tunnel-server 的地址（K8s 集群内可达即可）
+            # 改集群/换 tunnel-server 时只需改这里或挂 ConfigMap，无需重 build 镜像
+            - name: ARTHAS_TUNNEL_SERVER
+              value: "ws://arthas-tunnel.test:7777/ws"
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: POD_NAMESPACE
+              valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+            - name: JAVA_TOOL_OPTIONS
+              value: >-
+                -javaagent:/arthas/arthas-agent.jar
+                -Darthas.tunnelServer=$(ARTHAS_TUNNEL_SERVER)
+                -Darthas.agentId=$(POD_NAME)-$(POD_NAMESPACE)
+          volumeMounts:
+            - name: arthas
+              mountPath: /arthas
+      volumes:
+        - name: arthas
+          emptyDir: {}

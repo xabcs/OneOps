@@ -1,0 +1,271 @@
+# Arthas 诊断中心 - 配置与调试记录
+
+## 一、配置地址（治理页）
+
+| 项 | 值 | 说明 |
+|---|---|---|
+| 回调地址(全局) | https://60.191.116.75:9443/webhook/arthas-inject | apiserver 回调 OneOps webhook 的 HTTPS 地址 |
+| tunnel 地址 | http://47.111.184.180:8080 | 平台访问 tunnel-server 的 HTTP 地址（探测 agent 在线） |
+| init 镜像 | registry.cn-hangzhou.aliyuncs.com/base/arthas-agent:4.1.8 | 含 arthas 全量文件 + 预置 arthas.properties 的 init 镜像 |
+
+自动推导/默认值：
+- WS 会话地址：ws://47.111.184.180:7777（由 tunnel 地址推导：http→ws 同主机:7777）
+- agent 反连地址：ws://arthas-tunnel.test:7777/ws（镜像内 arthas.properties 预置，集群内 K8s Service 地址）
+
+## 二、镜像构建
+
+```sh
+cd /Users/mpm/Desktop/doc/go/OneOpsV2/OneOps/deploy/arthas
+
+# 构建 init 镜像（含 arthas-bin.zip + 预置 arthas.properties）
+docker build --platform linux/amd64 -f Dockerfile.arthas-agent \
+  -t mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/arthas-agent:4.1.8 .
+
+# 推送
+docker push mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/arthas-agent:4.1.8
+
+# 验证镜像内容
+docker run --rm mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/arthas-agent:4.1.8 sh -c '
+  ls -la /opt/arthas/ | head -20
+  grep -E "tunnelServer|agentId" /opt/arthas/arthas.properties
+  ls /opt/arthas/arthas-core.jar
+'
+```
+
+## 三、部署与重启
+
+```sh
+# 部署 tunnel-server（如未部署或更新）
+kubectl apply -f deploy/arthas/tunnel-server.yaml
+
+# 部署测试 Java 应用（含 arthas 注入配置）
+kubectl apply -f deploy/arthas/java-demo.yml
+
+# 滚动重启触发新 Pod 创建（webhook 注入或手动 initContainer 生效）
+kubectl rollout restart -n test deploy/test-java
+
+# 查看 Pod 状态
+kubectl get pod -n test -l app=test-java -o wide
+```
+
+## 四、注入验证
+
+```sh
+POD=$(kubectl get pod -n test -l app=test-java -o jsonpath='{.items[0].metadata.name}')
+echo "Pod: $POD"
+
+# 1. initContainer 日志（应静默成功，无错误）
+kubectl logs -n test "$POD" -c arthas-agent
+
+# 2. 主容器 env（验证 JAVA_TOOL_OPTIONS + ARTHAS_TUNNEL_SERVER + POD_NAME/NS）
+kubectl get pod -n test "$POD" -o jsonpath='{.spec.containers[0].env[*]}' | python3 -m json.tool
+kubectl exec -n test "$POD" -- env | grep -E "ARTHAS_TUNNEL_SERVER|JAVA_TOOL_OPTIONS|POD_NAME|POD_NAMESPACE"
+
+# 3. 验证共享卷内的 arthas 文件
+kubectl exec -n test "$POD" -- ls -la /arthas/
+kubectl exec -n test "$POD" -- cat /arthas/arthas.properties | grep -E "tunnelServer|agentId"
+
+# 4. 验证 arthas-core.jar 存在（4.x AgentBootstrap 必需）
+kubectl exec -n test "$POD" -- ls -la /arthas/arthas-core.jar
+```
+
+## 五、agent 注册验证
+
+```sh
+# 通过 tunnel-server API 查询 agent 在线状态
+curl "http://47.111.184.180:8080/api/tunnelAgents?agentId=${POD}-test"
+# 期望：{"success":true,...}
+
+# 查询所有已注册 agent
+curl "http://47.111.184.180:8080/api/tunnelAgents" | python3 -m json.tool
+```
+
+## 六、诊断命令执行
+
+```sh
+# 一次性执行 Arthas 命令（经平台 API）
+curl -X POST http://localhost:8080/api/k8s/diagnostic/execute \
+  -H "Content-Type: application/json" \
+  -d "{\"agentId\":\"${POD}-test\",\"command\":\"dashboard\"}"
+
+# 常用 Arthas 命令
+# - dashboard    仪表盘（JVM 概览）
+# - thread        线程详情
+# - jvm           JVM 信息
+# - sysprop       系统属性
+# - sc -d <类名>  查找已加载的类
+# - trace <方法>  方法调用链路
+# - watch <方法>  方法执行数据
+```
+
+## 七、Webhook 注入验证
+
+```sh
+# 查看 MutatingWebhookConfiguration
+kubectl get mutatingwebhookconfiguration oneops-arthas-inject -o yaml | head -50
+
+# 查看 webhook 失败事件
+kubectl get events -A --field-selector reason=FailedMutatingWebhook 2>/dev/null | tail
+
+# 给已有 deployment 打 label 触发注入
+kubectl patch deploy <app> -n <ns> --type='merge' \
+  -p='{"spec":{"template":{"metadata":{"labels":{"oneops-arthas-injection":"enabled"}}}}}'
+
+# 单 Pod 排除注入（annotation）
+kubectl annotate pod <pod> -n <ns> oneops-arthas.injection/disabled=true
+```
+
+## 八、常见问题排查
+
+### 1. initContainer Exit 1
+```sh
+# 看具体哪一步失败
+kubectl logs -n test <pod> -c arthas-agent
+
+# 可能原因：
+# - 镜像没重新 build（arthas.properties 还是注释状态）→ docker build + push
+# - arthas-core.jar 不存在 → Dockerfile 的 unzip 路径错
+# - 镜像 tag 没变但内容变了 → imagePullPolicy: Always（已配置）
+```
+
+### 2. agent online: false
+```sh
+# 检查 K8s Service 是否可解析
+kubectl exec -n test <pod> -- nslookup arthas-tunnel.test
+kubectl exec -n test <pod> -- sh -c 'nc -zv arthas-tunnel.test 7777'
+
+# 检查 Arthas 日志
+kubectl exec -n test <pod> -- cat /root/logs/arthas/arthas.log | tail -50
+
+# 常见原因：
+# - tunnel-server 与 agent 版本不匹配（必须都是 4.1.8）
+# - K8s Service arthas-tunnel 不存在或端口不对
+# - agent 没读到 tunnelServer 配置（检查 env/properties）
+```
+
+### 3. websocket panic: repeated read on failed websocket connection
+- 根因：gorilla/websocket v1.5.x 在 ReadMessage 出错后再次 Read 会 panic
+- 修复：collectOutput 出错直接返回，不 continue 循环（已修复）
+- 上游原因：agent 不在线时 WS 会话立即被 tunnel-server 断开
+
+### 4. WS 会话超时（agent 在线但命令执行超时）
+- 根因：gorilla/websocket 的 SetReadDeadline 超时后会把错误写入 c.readErr，
+  后续所有 ReadMessage 都会返回旧错误。旧代码连续调用 collectOutput（先收集
+  banner 再收集命令输出），第一次 idle 超时污染 readErr，第二次全部返回旧错误
+- 修复：collectOutput 重写为 goroutine 阻塞读 + select channel 做 idle 超时，
+  不使用 SetReadDeadline，避免 readErr 污染（已修复）
+- 验证：wscat 直连正常但平台超时 → 问题在平台代码而非 agent
+
+### 5. 后端 9443 未监听
+- webhook 是懒启动：治理页启用开关后才拉起 TLS server
+- 检查：ss -tlnp | grep 9443
+- 证书由 ensureCert() 自动生成自签证书 + 同步 caBundle 到 MWC
+
+### 6. agent 注册表 success:true 但实际不在线
+- 现象：tunnel-server API 返回 success:true，但 WS 会话超时
+- 根因：success:true 只表示 agentId 在注册表里，不代表当前 WS 长连接活跃
+- 修复：ExecuteOneShot 执行前实时调 CheckAgentOnline 探测，更新 DB online 状态
+- 探测失败时降级用 DB 旧值 + 警告日志
+
+## 九、验收结果
+
+| 检查项 | 结果 |
+|---|---|
+| 后端全量编译 `go build ./...` | exit 0 |
+| 前端类型检查 `vue-tsc` | 无 GovernanceTab/diagnostic 报错 |
+| YAML 语法（tunnel-server 4 docs, java-demo 1 doc） | 全部通过 |
+| collectOutput 无实际 SetReadDeadline 调用 | 4 处均为注释 |
+| arthas.properties 预置 tunnelServer | arthas.tunnelServer=ws://arthas-tunnel.test:7777/ws |
+| Dockerfile COPY arthas.properties | 已配置 |
+| java-demo.yml imagePullPolicy: Always | 已配置 |
+| webhook ImagePullPolicy: PullAlways | 已配置 |
+| webhook 注入 ARTHAS_TUNNEL_SERVER env | 已配置 |
+| tunnel-server 镜像版本 4.1.8 | 已配置 |
+| ExecuteOneShot 实时探测 agent 在线 | 已配置 |
+
+## 十、功能测试
+
+### 1. 重新部署后端（必须，代码改了）
+
+```sh
+# 在 60.191.116.75 上重新编译 + 部署后端
+# 后端代码改动：
+#   - arthas_webhook.go: initContainer 简化 + imagePullPolicy + ARTHAS_TUNNEL_SERVER env
+#   - diagnostic_service.go: collectOutput 重写 + ExecuteOneShot 实时探测
+#   - tunnel_client.go: CheckAgentOnline 免认证 API
+```
+
+### 2. 重新 build + push init 镜像
+
+```sh
+cd /Users/mpm/Desktop/doc/go/OneOpsV2/OneOps/deploy/arthas
+docker build --platform linux/amd64 -f Dockerfile.arthas-agent \
+  -t mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/arthas-agent:4.1.8 .
+docker push mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/arthas-agent:4.1.8
+```
+
+### 3. 重启测试应用
+
+```sh
+kubectl apply -f deploy/arthas/java-demo.yml
+kubectl rollout restart -n test deploy/test-java
+kubectl get pod -n test -l app=test-java -w
+```
+
+### 4. 验证注入 + agent 注册
+
+```sh
+POD=$(kubectl get pod -n test -l app=test-java -o jsonpath='{.items[0].metadata.name}')
+echo "Pod: $POD"
+
+# initContainer 成功（静默退出）
+kubectl logs -n test "$POD" -c arthas-agent
+
+# env 正确（ARTHAS_TUNNEL_SERVER + JAVA_TOOL_OPTIONS 含 -Darthas.tunnelServer）
+kubectl exec -n test "$POD" -- env | grep -E "ARTHAS_TUNNEL_SERVER|JAVA_TOOL_OPTIONS"
+
+# agent 注册
+curl "http://47.111.184.180:8080/api/tunnelAgents?agentId=${POD}-test"
+```
+
+### 5. 执行诊断命令（核心验证）
+
+```sh
+# 通过平台 API 执行 dashboard 命令
+curl -X POST http://localhost:8080/api/k8s/diagnostic/execute \
+  -H "Content-Type: application/json" \
+  -d "{\"agentId\":\"${POD}-test\",\"command\":\"dashboard\"}"
+```
+
+预期结果：
+- 不再 panic（repeated read 修复）
+- 不再超时（SetReadDeadline readErr 污染修复）
+- 返回 Arthas dashboard 输出（含 banner + JVM 信息）
+- banner 混在输出里（已知小问题，后续可剥离）
+
+### 6. 验证治理页
+
+打开治理页 → 切换集群 → 应看到"当前生效配置"卡片，所有字段回显正确。
+
+### 7. wscat 直连测试（对照平台结果）
+
+```sh
+# 安装 wscat
+npm install -g wscat
+
+# 直连 tunnel-server WS 会话端点
+wscat -c "ws://47.111.184.180:7777/ws?method=connectArthas&id=${POD}-test"
+# 连上后输入：dashboard
+# 若秒回 → agent 在线，问题在平台代码
+# 若无响应 → agent 不在线或协议不匹配
+```
+
+### 测试结果判断
+
+| 现象 | 结论 |
+|---|---|
+| 返回 dashboard 输出 | 全链路打通 |
+| 返回"agent 离线" | agent 没注册成功，查 initContainer 日志 |
+| 返回超时但无 panic | WS 会话层有问题，用 wscat 对照 |
+| 返回 panic | 后端没重新部署 |
+```

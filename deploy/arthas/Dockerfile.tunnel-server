@@ -1,0 +1,19 @@
+# arthas-tunnel-server 镜像（官方 fatjar + JRE）
+#
+# 注意：tunnel-server 3.6+ 默认启用 Spring Security（8080 控制面需登录），
+#       凭据运行时注入：容器 env TUNNEL_USER / TUNNEL_PASSWORD（未设置时用占位符默认值）。
+#       ${VAR:default} 是 Spring Boot 属性占位符（非 shell 展开），exec 形式同样生效。
+#
+# 1. 下载 jar（注意文件名带 -fatjar）：
+#    curl -L -o arthas-tunnel-server-4.1.8-fatjar.jar \
+#      https://github.com/alibaba/arthas/releases/download/arthas-all-4.1.8/arthas-tunnel-server-4.1.8-fatjar.jar
+#    （GitHub 直连慢时可在 URL 前加加速前缀，如 https://ghproxy.net/<原URL>）
+#
+# 2. 构建推送：
+#    docker build --platform linux/amd64 -f Dockerfile.tunnel-server \
+#      -t mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/arthas-tunnel-server:4.1.8 .
+#    docker push mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/arthas-tunnel-server:4.1.8
+FROM docker.1ms.run/eclipse-temurin:8-jre-alpine
+COPY arthas-tunnel-server-4.1.8-fatjar.jar /app/arthas-tunnel-server.jar
+EXPOSE 7777 8080
+ENTRYPOINT ["java", "-Xms256m", "-Xmx512m", "-jar", "/app/arthas-tunnel-server.jar", "--spring.security.user.name=${TUNNEL_USER:arthas}", "--spring.security.user.password=${TUNNEL_PASSWORD:OneOpsTunnel2026}"]
