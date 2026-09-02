@@ -167,6 +167,38 @@ kubectl exec -n test <pod> -- cat /root/logs/arthas/arthas.log | tail -50
 - 修复：ExecuteOneShot 执行前实时调 CheckAgentOnline 探测，更新 DB online 状态
 - 探测失败时降级用 DB 旧值 + 警告日志
 
+### 7. 命令输出只有 banner（thread -n 5 返回 banner 而非线程表格）
+- 现象：执行 `thread -n 5`，耗时 3.22s，返回的 output 是 Arthas banner
+  （logo + wiki/version 元信息 + `[arthas@1]$`），没有线程表格
+- 根因：banner collect 的 idleTimeout=2s 太短。Arthas agent 在 WS 会话建立后
+  需要初始化（加载类、启动 telnet），banner 首条消息可能在 2s 之后才到达。
+  banner collect 在 banner 到达前就 idle 超时返回空（error 被 `_` 丢弃），
+  随后 Arthas 发送的 banner 被 reader 放入 channel，发送命令后 command collect
+  从 channel 读到 banner，把 banner 当作命令输出返回
+- 时间线：3.22s = 2s（banner collect 空等 idle）+ 1.22s（command collect 收到
+  banner 后连接断开或 idle 触发返回）
+- 修复：collect 增加 stopMarker 参数，检测到 `[arthas@` 提示符立即返回（这是
+  Arthas 就绪/命令完成的可靠标志）。banner collect 改为 idle 5s + 检测提示符，
+  command collect 改为 idle 8s + 检测提示符，并增加 trimArthasPrompt 剥离
+  末尾提示符
+- 关键代码：diagnostic_service.go `collect()`、`runCommandOverTunnel()`、
+  `trimArthasPrompt()`
+
+### 8. 命令执行超时（banner 收到但命令无响应）
+- 现象：banner collect 成功（1312 字节，含 [arthas@ 提示符，217ms），
+  command collect 8s idle 超时，outputLen=0，错误"命令执行超时"
+- 排查：wscat 直连输入命令同样无响应，排除平台独有问题
+- 根因：**Arthas tunnel-server 的 WS 会话不是纯文本透传，而是 relay 通道协议**
+  - 每条消息是 JSON 对象 `{"action":"read","data":"<char>"}`
+  - data 是**单个字符**，命令需逐字符发送
+  - 最后单独发 `{"action":"read","data":"\r"}` 作为回车
+  - 直接发纯文本帧（command+"\r\n"）tunnel-server 不认识，命令到达不了 agent
+  - banner 能收到是因为那是 tunnel-server 主动推送的输出帧，不经过 relay 协议
+- 修复：命令发送改为 relay 协议逐字符发送，reset 同样用 relay 协议
+- 参考：https://www.cnblogs.com/10ng/p/22741967 （Go+Vue3+K8s+Arthas tunnel 诊断平台）
+- 关键代码：diagnostic_service.go `runCommandOverTunnel()` 中 `sendRelay()` + 逐字符循环
+
+
 ## 九、验收结果
 
 | 检查项 | 结果 |
@@ -240,8 +272,8 @@ curl -X POST http://localhost:8080/api/k8s/diagnostic/execute \
 预期结果：
 - 不再 panic（repeated read 修复）
 - 不再超时（SetReadDeadline readErr 污染修复）
-- 返回 Arthas dashboard 输出（含 banner + JVM 信息）
-- banner 混在输出里（已知小问题，后续可剥离）
+- 返回 Arthas dashboard 输出（JVM 信息）
+- banner 已剥离（stopMarker 检测 [arthas@ 提示符 + trimArthasPrompt）
 
 ### 6. 验证治理页
 

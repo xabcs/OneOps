@@ -2,9 +2,8 @@ package k8s
 
 import (
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -428,11 +427,15 @@ func (s *DiagnosticService) ExecuteOneShot(req *OneShotRequest) (*OneShotResult,
 }
 
 // runCommandOverTunnel 在临时 tunnel 会话上执行命令并收集输出
-// 结束条件：识别到 arthas 提示符（输出稳定）或空闲超时或总超时
 //
-// 关键设计：gorilla/websocket 的 SetReadDeadline 超时后会把错误写入 c.readErr，
-// 后续所有 ReadMessage 都会返回旧错误。故 collectOutput 不用 SetReadDeadline，
-// 改用 goroutine 阻塞读 + select channel 做 idle 超时，避免 readErr 污染。
+// 设计：用持续运行的 reader goroutine 管理读取，避免 gorilla/websocket 的
+// SetReadDeadline readErr 污染问题。reader 在连接生命周期内只启动一次，
+// collect 可多次调用，共享同一个 channel。
+//
+// banner 与命令输出分离：Arthas 在会话建立后发送 banner（以 [arthas@N]$ 提示符
+// 结尾），每条命令执行完后也会发送新的提示符。用 [arthas@ 作为 collect 的
+// stopMarker，精准判定阶段边界，避免旧实现 idle 2s 太短导致 banner 被误判
+// 为"无输出"而泄漏到 command collect（表现为命令输出变成 banner）。
 func (s *DiagnosticService) runCommandOverTunnel(sessionURL, agentID, command string, timeoutSec int) (string, error) {
 	conn, err := s.tunnelClient.DialAgentSession(sessionURL, agentID)
 	if err != nil {
@@ -446,60 +449,130 @@ func (s *DiagnosticService) runCommandOverTunnel(sessionURL, agentID, command st
 
 	deadline := time.Now().Add(time.Duration(timeoutSec) * time.Second)
 
-	// 发送命令（arthas telnet 行协议）
-	// 不单独收集 banner，直接发送命令，collectOutput 一起收集后分离
-	if err := conn.WriteMessage(websocket.TextMessage, []byte(command+"\n")); err != nil {
-		return "", fmt.Errorf("发送命令失败: %w", err)
+	// 启动持续 reader goroutine（整个连接生命周期内只启动一次）
+	reader := newWSReader(conn)
+	defer reader.stop()
+
+	// 1) 等待 Arthas 就绪：收集 banner 直到出现 [arthas@ 提示符
+	bannerDeadline := time.Now().Add(15 * time.Second)
+	if bannerDeadline.After(deadline) {
+		bannerDeadline = deadline
 	}
+	bannerStart := time.Now()
+	banner, bannerErr := reader.collect(5*time.Second, bannerDeadline, "[arthas@")
+	logger.Info("tunnel banner collect",
+		zap.String("agentId", agentID),
+		zap.Int("bannerLen", len(banner)),
+		zap.Bool("hasPrompt", strings.Contains(banner, "[arthas@")),
+		zap.Duration("cost", time.Since(bannerStart)),
+		zap.NamedError("err", bannerErr))
 
-	// 收集命令输出（banner + 命令结果一起收集，单次调用避免 readErr 污染）
-	output, err := collectOutput(conn, 3*time.Second, deadline)
-
-	// 执行 reset 清理可能产生的字节码增强（幂等，失败不影响结果）
-	_ = conn.WriteMessage(websocket.TextMessage, []byte("reset\n"))
-
-	if err != nil {
-		if output != "" {
-			return output, nil // 有部分输出则返回
+	// 2) 发送命令
+	//    Arthas tunnel-server 的 WS 会话使用 relay 通道协议，不是纯文本透传：
+	//    - 每条消息是 JSON 对象 {"action":"read","data":"<char>"}
+	//    - data 是单个字符，命令需逐字符发送
+	//    - 最后单独发 {"action":"read","data":"\r"} 作为回车
+	//    直接发纯文本帧（command+"\r\n"）tunnel-server 不认识，命令到达不了 agent
+	type relayMsg struct {
+		Action string `json:"action"`
+		Data   string `json:"data"`
+	}
+	sendRelay := func(data string) error {
+		msg, _ := json.Marshal(relayMsg{Action: "read", Data: data})
+		return conn.WriteMessage(websocket.TextMessage, msg)
+	}
+	for _, ch := range command {
+		if err := sendRelay(string(ch)); err != nil {
+			return "", fmt.Errorf("发送命令失败: %w", err)
 		}
+		time.Sleep(1 * time.Millisecond)
+	}
+	if err := sendRelay("\r"); err != nil {
+		return "", fmt.Errorf("发送回车失败: %w", err)
+	}
+	logger.Info("tunnel 命令已发送(relay逐字符)",
+		zap.String("agentId", agentID), zap.String("command", command))
+
+	// 3) 收集命令输出：直到出现下一个 [arthas@ 提示符（命令完成），或 idle 超时
+	cmdStart := time.Now()
+	output, err := reader.collect(8*time.Second, deadline, "[arthas@")
+	logger.Info("tunnel command collect",
+		zap.String("agentId", agentID),
+		zap.Int("outputLen", len(output)),
+		zap.Bool("hasPrompt", strings.Contains(output, "[arthas@")),
+		zap.Duration("cost", time.Since(cmdStart)),
+		zap.NamedError("err", err))
+
+	// 4) 执行 reset 清理字节码增强（幂等，用 relay 协议逐字符发送）
+	for _, ch := range "reset" {
+		_ = sendRelay(string(ch))
+		time.Sleep(1 * time.Millisecond)
+	}
+	_ = sendRelay("\r")
+
+	// 5) 剥离末尾的 [arthas@N]$ 提示符（命令完成标志，非命令输出）
+	output = trimArthasPrompt(output)
+
+	if err != nil && output == "" {
 		return "", err
 	}
 	return output, nil
 }
 
-// collectOutput 收集 tunnel 会话输出：idle 静默超过 idleTimeout 或达到 deadline 即认为命令完成
-//
-// 设计：用 goroutine 阻塞读 + select channel 做 idle 超时，不使用 SetReadDeadline。
-// 原因：gorilla/websocket v1.5.x 的 SetReadDeadline 超时会写入 c.readErr，
-// 后续所有 ReadMessage 都会返回旧错误，导致连续调用 collectOutput 失败。
-func collectOutput(conn *websocket.Conn, idleTimeout time.Duration, deadline time.Time) (string, error) {
-	var sb strings.Builder
+// wsReader 持续读取 WebSocket 消息的 reader
+// 通过 channel 供多次 collect 调用共享，避免 SetReadDeadline 的 readErr 污染
+type wsReader struct {
+	conn *websocket.Conn
+	ch   chan wsReadResult
+	done chan struct{}
+}
 
-	type readResult struct {
-		msg []byte
-		err error
+type wsReadResult struct {
+	msg []byte
+	err error
+}
+
+func newWSReader(conn *websocket.Conn) *wsReader {
+	r := &wsReader{
+		conn: conn,
+		ch:   make(chan wsReadResult, 64),
+		done: make(chan struct{}),
 	}
-	ch := make(chan readResult, 1)
-	done := make(chan struct{})
+	go r.readLoop()
+	return r
+}
 
-	// goroutine 持续阻塞读取（不设 ReadDeadline）
-	go func() {
-		for {
-			_, msg, err := conn.ReadMessage()
-			select {
-			case ch <- readResult{msg: msg, err: err}:
-			case <-done:
-				return
-			}
-			if err != nil {
-				return
-			}
+func (r *wsReader) readLoop() {
+	for {
+		_, msg, err := r.conn.ReadMessage()
+		select {
+		case r.ch <- wsReadResult{msg: msg, err: err}:
+		case <-r.done:
+			return
 		}
-	}()
-	// 返回时通知 goroutine 退出（conn.Close 会让 ReadMessage 返回错误）
-	defer close(done)
+		if err != nil {
+			return
+		}
+	}
+}
 
+func (r *wsReader) stop() {
+	close(r.done)
+}
+
+// collect 从 channel 收集消息。
+//   - idleTimeout: 两条消息之间最大间隔，超过则视为空闲，返回已收集内容
+//   - deadline:    绝对截止时间
+//   - stopMarker:  检测到该子串立即返回（如 "[arthas@" 提示符，标志 banner 结束或命令完成）
+//
+// 为何需要 stopMarker：Arthas 在 banner 结尾与每条命令执行完后都会发送 [arthas@N]$
+// 提示符。用提示符作为"阶段结束"的可靠标志，比固定 idle 超时更精准——既不会在 banner
+// 延迟到达时空等（旧 2s idle 在 agent 初始化慢时会误判"无 banner"，导致 banner 消息
+// 被后续 command collect 消费，命令输出变成 banner），也不会在命令完成后还傻等 5s。
+func (r *wsReader) collect(idleTimeout time.Duration, deadline time.Time, stopMarker string) (string, error) {
+	var sb strings.Builder
 	lastReceive := time.Now()
+
 	for {
 		if time.Now().After(deadline) {
 			if sb.Len() > 0 {
@@ -517,19 +590,19 @@ func collectOutput(conn *websocket.Conn, idleTimeout time.Duration, deadline tim
 		}
 
 		select {
-		case r := <-ch:
-			if r.err != nil {
+		case res := <-r.ch:
+			if res.err != nil {
 				if sb.Len() > 0 {
 					return sb.String(), nil
 				}
-				var netErr net.Error
-				if errors.As(r.err, &netErr) && netErr.Timeout() {
-					return "", fmt.Errorf("命令执行超时: %w", r.err)
-				}
-				return "", fmt.Errorf("tunnel 会话读取失败: %w", r.err)
+				return "", fmt.Errorf("tunnel 会话读取失败: %w", res.err)
 			}
 			lastReceive = time.Now()
-			sb.Write(r.msg)
+			sb.Write(res.msg)
+			// 检测到停止标记（如 [arthas@ 提示符）立即返回，避免误消费下一阶段内容
+			if stopMarker != "" && strings.Contains(sb.String(), stopMarker) {
+				return sb.String(), nil
+			}
 			if sb.Len() > 4<<20 {
 				return sb.String(), nil
 			}
@@ -540,6 +613,16 @@ func collectOutput(conn *websocket.Conn, idleTimeout time.Duration, deadline tim
 			return "", fmt.Errorf("命令执行超时")
 		}
 	}
+}
+
+// trimArthasPrompt 剥离输出末尾的 [arthas@N]$ 提示符
+// Arthas 命令完成后会发送新的提示符，这不是命令输出的一部分
+func trimArthasPrompt(s string) string {
+	idx := strings.LastIndex(s, "[arthas@")
+	if idx < 0 {
+		return s
+	}
+	return strings.TrimRight(s[:idx], " \t\r\n")
 }
 
 // ========== 历史与总览 ==========
