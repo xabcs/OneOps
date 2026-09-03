@@ -123,7 +123,7 @@ type webhookConfigRequest struct {
 // @Tags         K8s-诊断
 // @Accept       json
 // @Produce      json
-// @Param        body body webhookConfigRequest true "配置" example({"clusterId":0,"webhookURL":"https://192.168.1.10:9443/webhook/arthas-inject","tunnelWS":"ws://arthas-tunnel.oneops:7777/ws","initImage":"registry.cn-hangzhou.aliyuncs.com/oneops/arthas-agent:3.7.2"})
+// @Param        body body webhookConfigRequest true "配置" example({"clusterId":0,"webhookURL":"svc://test/msre-pilot:9443","tunnelWS":"ws://arthas-tunnel.test:7777/ws","initImage":"registry.cn-hangzhou.aliyuncs.com/oneops/arthas-agent:3.7.2"})
 // @Success      200 {object} utils.Response
 // @Router       /k8s/diagnostic/webhook/config [post]
 // @Security     BearerAuth

@@ -131,7 +131,8 @@ func (ctrl *DiagnosticWSController) HandleSessionWS(c *gin.Context) {
 		return
 	}
 	if !agent.Online {
-		c.JSON(http.StatusOK, gin.H{"code": 409, "success": false, "message": "agent 离线，无法建立会话"})
+		c.JSON(http.StatusOK, gin.H{"code": 409, "success": false,
+			"message": "agent 离线，无法建立会话（若此前执行过 stop：Arthas 已被关闭且不会自愈，需重启该 Pod 恢复诊断）"})
 		return
 	}
 

@@ -126,7 +126,7 @@
       return;
     }
     if (!agent.online) {
-      ElMessage.error('该实例 Agent 离线，无法建立会话');
+      ElMessage.error('该实例 Agent 离线，无法建立会话（若此前执行过 stop，需重启该 Pod 恢复诊断）');
       return;
     }
     if (connected.value || connecting.value) return;
@@ -213,10 +213,11 @@
     connecting.value = false;
   }
 
-  function sendStop() {
-    // 会话收尾：还原字节码增强后断开
+  function sendReset() {
+    // 还原字节码增强，agent 保持在线、会话可继续。
+    // 不发 stop：stop 会关闭 Arthas，agent 从 tunnel 永久掉线（javaagent 模式无自愈），
+    // 该实例在 Pod 重建前无法再次诊断
     sendCommand('reset');
-    setTimeout(() => sendCommand('stop'), 300);
   }
 
   onMounted(() => {
@@ -265,7 +266,7 @@
           连接
         </PermissionButton>
         <template v-else>
-          <ElButton size="small" @click="sendStop">还原增强(stop)</ElButton>
+          <ElButton size="small" @click="sendReset">还原增强(reset)</ElButton>
           <ElButton size="small" type="danger" @click="disconnect">断开</ElButton>
         </template>
       </div>

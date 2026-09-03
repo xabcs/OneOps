@@ -62,7 +62,7 @@ var builtinCommandCatalog = []CommandCatalogItem{
 	{"pwd", "基础", "查看工作目录", "L0", false, "pwd"},
 	{"cls", "基础", "清屏", "L0", false, "cls"},
 	{"reset", "会话控制", "还原所有被增强的类（清理字节码增强，鼓励随时使用）", "L0", false, "reset"},
-	{"stop", "会话控制", "结束 Arthas 会话并卸载 agent 增强", "L0", false, "stop"},
+	{"stop", "会话控制", "关闭 Arthas：还原增强并断开 tunnel，agent 将离线且无法重连（需重启 Pod 恢复）。仅清理增强请用 reset", "L3", false, "stop"},
 	{"save-log", "会话控制", "导出本次会话全部日志", "L0", false, "save-log"},
 	{"options", "基础", "查看/设置会话选项（save-result 等）", "L1", false, "options"},
 	{"keymap", "基础", "查看快捷键", "L0", false, "keymap"},

@@ -1,0 +1,70 @@
+# OtelPilot 组件 RBAC：
+# - 集群级：仅 MutatingWebhookConfiguration 的读写（自愈 CA Bundle）
+# - 命名空间级：证书 Secret、配置 ConfigMap、Leader 选举 Lease
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-pilot
+  namespace: otel-pilot
+  labels:
+    app.kubernetes.io/name: otel-pilot
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-pilot-manager
+  labels:
+    app.kubernetes.io/name: otel-pilot
+rules:
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["mutatingwebhookconfigurations"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-pilot-manager
+  labels:
+    app.kubernetes.io/name: otel-pilot
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: otel-pilot-manager
+subjects:
+  - kind: ServiceAccount
+    name: otel-pilot
+    namespace: otel-pilot
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: otel-pilot-manager
+  namespace: otel-pilot
+  labels:
+    app.kubernetes.io/name: otel-pilot
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "create", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: otel-pilot-manager
+  namespace: otel-pilot
+  labels:
+    app.kubernetes.io/name: otel-pilot
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: otel-pilot-manager
+subjects:
+  - kind: ServiceAccount
+    name: otel-pilot
+    namespace: otel-pilot

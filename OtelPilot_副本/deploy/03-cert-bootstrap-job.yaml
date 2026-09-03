@@ -1,0 +1,35 @@
+# 安装期证书初始化 Job：先于 Deployment 执行，签发自签 CA + Webhook 服务端证书，
+# 并将 CA 写入 MutatingWebhookConfiguration，解决 Webhook 服务依赖证书的启动顺序问题。
+# 运行期证书轮转 / 自愈由常驻 Controller（Leader）负责。
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: otel-pilot-cert-bootstrap
+  namespace: otel-pilot
+  labels:
+    app.kubernetes.io/name: otel-pilot
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: otel-pilot
+    spec:
+      serviceAccountName: otel-pilot
+      restartPolicy: Never
+      containers:
+        - name: bootstrap
+          image: registry.example.com/observability/otelpilot:v0.1.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - -mode=cert-bootstrap
+            - -namespace=otel-pilot
+            - -service-name=otel-pilot
+            - -cert-secret-name=otel-pilot-cert
+            - -webhook-config-name=otel-pilot
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532

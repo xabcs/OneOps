@@ -82,9 +82,14 @@
 
     if (isHighRisk(item.riskLevel)) {
       const meta = riskMeta(item.riskLevel);
+      // stop 的后果与通用风险描述不同，专项提示（agent 永久离线，Pod 重建前不可再诊断）
+      const extra =
+        item.command === 'stop'
+          ? '。stop 会关闭 Arthas：该实例 Agent 将永久离线、无法重连，需重启 Pod 恢复；若只想清理增强请改用 reset'
+          : '';
       try {
         await ElMessageBox.confirm(
-          `${meta.label}：${meta.desc}。确认在 ${agent.podName || agent.agentId} 上执行「${command}」？`,
+          `${meta.label}：${meta.desc}${extra}。确认在 ${agent.podName || agent.agentId} 上执行「${command}」？`,
           '高危操作确认',
           { type: 'warning', confirmButtonText: '确认执行', cancelButtonText: '取消' }
         );

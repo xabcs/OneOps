@@ -1,0 +1,17 @@
+# APIServer 访问 Webhook 的 Service：443 -> 容器 9443（TLS）。
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-pilot
+  namespace: otel-pilot
+  labels:
+    app.kubernetes.io/name: otel-pilot
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: otel-pilot
+  ports:
+    - name: https-webhook
+      port: 443
+      targetPort: webhook
+      protocol: TCP

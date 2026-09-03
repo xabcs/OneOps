@@ -5,6 +5,8 @@
   import { executeDiagnosticOneShot, type DiagnosticOneShotResult } from '@/service/api/diagnostic';
   import { useDiagnosticStore } from '@/store/modules/diagnostic';
   import { formatDuration, isHighRisk, riskMeta } from '../shared';
+  import { buildFinding } from '../finding/rules';
+  import FindingResult from './FindingResult.vue';
 
   defineOptions({ name: 'DiagnosticScenarioPanel' });
 
@@ -220,6 +222,8 @@
   const resultCommand = ref('');
   /** 执行目标快照：结果归属于执行时的实例，切换左侧目标不改变已有结果归属 */
   const resultTarget = ref('');
+  /** 结果归属场景快照：Finding 构建依据执行时的场景，切换场景卡片不影响已有结果 */
+  const resultScenarioId = ref('');
 
   async function run(scenario: Scenario) {
     const agent = diagStore.currentAgent;
@@ -267,11 +271,25 @@
         result.value = data;
         resultCommand.value = command;
         resultTarget.value = agent.podName || agent.agentId;
+        resultScenarioId.value = scenario.id;
       }
     } finally {
       executing.value = false;
     }
   }
+
+  // ========== 结构化 Finding（解析 → 规则判定 → 渲染） ==========
+  const currentFinding = computed(() => {
+    if (!result.value || !resultScenarioId.value) return null;
+    // 纯错误回执（无输出可解析）不进规则管线，直接展示原文
+    if (result.value.error && !result.value.output) return null;
+    return buildFinding({
+      scenarioId: resultScenarioId.value,
+      command: resultCommand.value,
+      output: result.value.output,
+      error: result.value.error
+    });
+  });
 
   function copyOutput() {
     if (result.value?.output) {
@@ -354,7 +372,13 @@
               <ElButton size="small" text type="primary" @click="copyOutput">复制</ElButton>
             </span>
           </div>
-          <pre class="result-output">{{ result.output || result.error }}</pre>
+          <FindingResult
+            v-if="currentFinding"
+            :finding="currentFinding"
+            :raw="result.output || result.error || ''"
+            @open-terminal="cmd => emit('openTerminal', cmd)"
+          />
+          <pre v-else class="result-output">{{ result.output || result.error }}</pre>
         </div>
       </template>
 

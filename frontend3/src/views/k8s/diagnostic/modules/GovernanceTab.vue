@@ -154,11 +154,17 @@
   }
 
   const switchWebhook = async (enabled: boolean) => {
-    if (!clusterId.value) return;
+    if (!clusterId.value || webhookLoading.value) return;
     const action = enabled ? enableDiagnosticWebhook : disableDiagnosticWebhook;
-    const { error } = await action(clusterId.value);
-    if (!error) {
-      ElMessage.success(enabled ? '已启用自动注入' : '已禁用自动注入');
+    // 启用/禁用为意图下发 + 等待集群内控制器收敛（最长约 20s），期间锁定防重复点击
+    webhookLoading.value = true;
+    try {
+      const { error } = await action(clusterId.value);
+      if (!error) {
+        ElMessage.success(enabled ? '已启用自动注入' : '已禁用自动注入');
+      }
+    } finally {
+      webhookLoading.value = false;
       loadWebhookStatus();
     }
   };
@@ -300,7 +306,7 @@
           <ElFormItem label="回调地址(全局)">
             <ElInput
               v-model="webhookForm.webhookURL"
-              placeholder="https://<OneOps主机IP或域名>:9443/webhook/arthas-inject（K8s 节点需可访问）"
+              placeholder="集群内部署填 svc://<ns>/msre-pilot:9443（如 svc://test/...）；平台直连填 https://<OneOps地址>:9443/webhook/msre-pilot"
               clearable
             />
           </ElFormItem>

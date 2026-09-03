@@ -1,0 +1,197 @@
+# MsrePilot 集群内部署清单（本目录自包含：代码 + 镜像 + 部署）
+#
+# 背景：ACK 托管集群 apiserver（托管面）无法出网到 OneOps 平台侧（IDC 公网 IP），
+#       URL 型 MWC 回调 context deadline exceeded 且 failurePolicy=Ignore 静默失败。
+#       本服务部署进目标集群后，治理页回调地址改填 Service 型：
+#         svc://test/msre-pilot:9443
+#       （istio-sidecar-injector 同构路径：apiserver → ClusterIP，必达）
+#
+# 使用步骤：
+#   1. 构建镜像（本目录，见 Dockerfile 头部注释）
+#   2. kubectl apply -f msrepilot-deploy.yaml
+#      —— 部署到已有 test 命名空间（tunnel-server 同 ns）
+#      —— 证书零手工：Pod 启动时轮转器检测 Secret 为空/占位，自动签发
+#         CA+leaf（SAN 覆盖 Service DNS）写回 Secret，等 kubelet 同步挂载卷后起服务；
+#         此后 12h 巡检一次，剩余 <30 天自动轮转并跟随更新 MWC caBundle。
+#         证书完全由轮转器自签管理（不留 openssl 手工路径；非本体系证书会被重建接管）
+#   3. OneOps 治理页：
+#      - tunnel WS / init 镜像配好后点"保存配置"（平台自动同步到下方 ConfigMap，
+#        本服务 informer watch 热加载，亚秒生效，无需重启）
+#      - 回调地址填 svc://test/msre-pilot:9443 保存；点"启用"写入意图
+#        （ConfigMap WEBHOOK_ENABLED=true，本服务控制器 15s 内创建 MWC
+#         并同步 caBundle；"禁用"同理删除 MWC；改名遗留孤儿会被自动清理）
+#      - 应用 Pod template 打 label oneops-arthas-injection=enabled 即自动注入
+---
+# 控制器 RBAC：本 ns Secret（签发/轮转）+ ConfigMap（读启用意图）+ 集群级 MWC（生命周期）
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: msre-pilot
+  namespace: test
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: msre-pilot-cert
+  namespace: test
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["msre-pilot-tls"]
+    # create：Secret 丢失自愈重建（轮转器接管证书全生命周期）
+    verbs: ["get", "create", "update"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    # list/watch 供控制器 informer 快路径监听意图变化；
+    # RBAC 的 resourceNames 不适用于 list/watch（请求不带资源名），
+    # 故放开为 ns 级只读，实际数据流由 fieldSelector metadata.name 限定
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: msre-pilot-cert
+  namespace: test
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: msre-pilot-cert
+subjects:
+  - kind: ServiceAccount
+    name: msre-pilot
+    namespace: test
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: msre-pilot-cabundle
+rules:
+  # MWC 生命周期控制器：意图收敛（create/update/delete）+ 孤儿清理（list）。
+  # 范围自律靠所有权 label（oneops.io/managed-by=oneops + component=arthas-webhook）
+  # 与历史名收编，集群 RBAC 无法按 label 限定 cluster-scoped 资源
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["mutatingwebhookconfigurations"]
+    verbs: ["get", "list", "create", "update", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: msre-pilot-cabundle
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: msre-pilot-cabundle
+subjects:
+  - kind: ServiceAccount
+    name: msre-pilot
+    namespace: test
+---
+# 注入参数 + 启用意图（治理页保存/启停时由平台自动同步；手工改动会在下次治理页操作时被覆盖）
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: msre-pilot-config
+  namespace: test
+data:
+  # agent 反连 tunnel-server 的 WS 地址（跨 ns FQDN 形式，不依赖部署 ns）
+  ARTHAS_TUNNEL_WS: "ws://arthas-tunnel.test:7777/ws"
+  # initContainer 镜像（与 tunnel-server 版号保持一致）
+  ARTHAS_INIT_IMAGE: "registry.cn-hangzhou.aliyuncs.com/base/arthas-agent:4.1.8v2"
+  # 注入开关意图（治理页"启用/禁用"写入，控制器 watch 秒级收敛 MWC，15s 周期兜底）
+  WEBHOOK_ENABLED: "true"
+---
+# 证书（容器内轮转器自签管理：首次启动签发全套写入本 Secret；剩余 <30 天自动轮转；
+# CA 剩余 ≥60 天复用仅重签 leaf，ca.key 保存于此供轮转复用。
+# 非本体系证书（如手工 openssl 预置）会被自动重建接管）
+# tls.crt/tls.key：webhook TLS 服务证书；ca.crt：签发 CA（平台读它写 MWC caBundle）
+apiVersion: v1
+kind: Secret
+metadata:
+  name: msre-pilot-tls
+  namespace: test
+type: Opaque
+# 留空即可：轮转器首次启动检测到无证书会自动签发写回
+data: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: msre-pilot
+  namespace: test
+  labels:
+    app: msre-pilot
+spec:
+  replicas: 1 # 无状态 admission handler，需要高可用改回 2 即可
+  selector:
+    matchLabels:
+      app: msre-pilot
+  template:
+    metadata:
+      labels:
+        app: msre-pilot
+    spec:
+      serviceAccountName: msre-pilot # 轮转器：Secret 签发 + MWC caBundle 跟随
+      containers:
+        - name: webhook
+          image: mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/msre-pilot:v5
+          envFrom:
+            - configMapRef:
+                name: msre-pilot-config
+          env:
+            - name: ARTHAS_WEBHOOK_CERT_DIR
+              value: /etc/webhook-tls
+            # SAN 校验目标（轮转器据此签发/校验证书，须与 Service 实际 ns/name 一致）
+            - name: ARTHAS_WEBHOOK_SERVICE_NS
+              value: test
+            - name: ARTHAS_WEBHOOK_SERVICE_NAME
+              value: msre-pilot
+          ports:
+            - containerPort: 9443
+              name: webhook
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 9443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 30 # 容忍首次自动签发等 kubelet 同步 Secret 卷（≤5min）
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9443
+              scheme: HTTPS
+            # 必须 > bootstrapCert 最坏等待（waitCertReady 300s 等 kubelet 同步 Secret 卷）：
+            # 否则首次部署/轮转重启时进程还在等证书就被 liveness 击杀 → Back-off 循环。
+            # 晚启动保护无业务代价（webhook 有 failurePolicy=Ignore 兜底）
+            initialDelaySeconds: 330
+            periodSeconds: 20
+          volumeMounts:
+            - name: tls
+              mountPath: /etc/webhook-tls
+              readOnly: true
+      volumes:
+        - name: tls
+          secret:
+            secretName: msre-pilot-tls
+---
+# apiserver 回调入口（治理页回调地址 svc://test/msre-pilot:9443）
+apiVersion: v1
+kind: Service
+metadata:
+  name: msre-pilot
+  namespace: test
+spec:
+  selector:
+    app: msre-pilot
+  ports:
+    - name: webhook
+      port: 9443
+      targetPort: 9443

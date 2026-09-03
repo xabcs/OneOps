@@ -24,6 +24,6 @@ spec:
     spec:
       containers:
         - name: app
-          image: mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/tomcat:9.0-jre8
+          image: mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/gs-spring-boot-docker:latest
           ports:
             - containerPort: 8080

@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -31,6 +30,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"oneops/backend3/pkg/logger"
 	repok8s "oneops/backend3/repository/k8s"
@@ -53,7 +53,7 @@ import (
 
 const (
 	// webhookHandlerPath TLS webhook server 的回调路径
-	webhookHandlerPath = "/webhook/arthas-inject"
+	webhookHandlerPath = "/webhook/msre-pilot"
 	// InjectLabel 触发注入的 Pod label
 	InjectLabel = "oneops-arthas-injection"
 	// InjectDisabledAnnotation 显式排除注入的 annotation
@@ -68,7 +68,14 @@ const (
 	defaultWebhookPort = "9443"
 
 	// MWCName MutatingWebhookConfiguration 名称（每集群一份）
-	MWCName = "oneops-arthas-inject"
+	MWCName = "msre-pilot-inject"
+
+	// 集群内独立 webhook 服务的工作负载/配置名（与 arthas-webhook/msrepilot-deploy.yaml 对应）
+	WebhookDeploymentName = "msre-pilot"
+	WebhookConfigMapName  = "msre-pilot-config"
+
+	// WebhookIntentKey 治理页注入开关意图（写入集群 ConfigMap，msre-pilot 控制器消费）
+	WebhookIntentKey = "WEBHOOK_ENABLED"
 
 	// 配置 key（k8s_diagnostic_config，clusterID=0 全局默认，可按集群覆盖）
 	ConfigKeyTunnelWS    = "arthas.tunnel.ws"
@@ -178,7 +185,75 @@ func (s *ArthasWebhookService) SaveWebhookConfig(clusterID uint, tunnelWS, initI
 	if webhookURL != "" {
 		s.syncEnabledMWCs()
 	}
+	// 注入参数变化时同步集群内独立 webhook 服务的 ConfigMap 并滚动重启（svc:// 形态）
+	if tunnelWS != "" || initImage != "" {
+		s.syncWebhookWorkloads()
+	}
 	return nil
+}
+
+// syncWebhookWorkloads 同步集群内独立 webhook 服务（svc:// 形态）的注入参数：
+// upsert ConfigMap（ARTHAS_TUNNEL_WS/ARTHAS_INIT_IMAGE）即完成——webhook 服务
+// informer watch 此 ConfigMap 热加载，无需滚动重启（无重启窗口、无漏注入风险）。
+// URL 型（本进程即 webhook）无需同步——本进程每次请求实时读 DB。
+func (s *ArthasWebhookService) syncWebhookWorkloads() {
+	ref, ok := parseSvcRef(s.GetWebhookURL())
+	if !ok {
+		return // URL 型或未配置，无集群内工作负载
+	}
+	clusterIDs, err := s.clusterSvc.ListAllClusterIDs()
+	if err != nil {
+		logger.Warn("查询集群列表失败，跳过 webhook 工作负载同步", zap.Error(err))
+		return
+	}
+	for _, id := range clusterIDs {
+		client, err := s.clusterSvc.GetClient(id)
+		if err != nil {
+			continue
+		}
+		// 按集群读配置（GetXxx(id) 内含优先级链：集群级覆盖 > 全局 > 默认）：
+		// svc:// 形态一个集群一套 ConfigMap，固定读全局(0)会导致
+		// "集群级保存的 initImage/tunnelWS 永远同步不下去（被全局/默认值覆盖）"
+		desired := map[string]string{
+			"ARTHAS_TUNNEL_WS":  s.GetTunnelWS(id),
+			"ARTHAS_INIT_IMAGE": s.GetInitImage(id),
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		if err := s.upsertWebhookConfigMap(ctx, client, ref.namespace, desired); err != nil {
+			logger.Warn("同步 webhook ConfigMap 失败", zap.Uint64("clusterID", uint64(id)), zap.Error(err))
+		} else {
+			logger.Info("webhook ConfigMap 已同步（服务 watch 热加载即时生效）",
+				zap.Uint64("clusterID", uint64(id)), zap.String("namespace", ref.namespace))
+		}
+		cancel()
+	}
+}
+
+// upsertWebhookConfigMap 创建/更新集群内 webhook 配置 ConfigMap（值变化才更新，避免无谓滚动）
+func (s *ArthasWebhookService) upsertWebhookConfigMap(ctx context.Context, client *kubernetes.Clientset, ns string, data map[string]string) error {
+	cm, err := client.CoreV1().ConfigMaps(ns).Get(ctx, WebhookConfigMapName, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		_, err = client.CoreV1().ConfigMaps(ns).Create(ctx, &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: WebhookConfigMapName, Namespace: ns},
+			Data:       data,
+		}, metav1.CreateOptions{})
+		return err
+	}
+	if err != nil {
+		return err
+	}
+	changed := false
+	for k, v := range data {
+		if cm.Data[k] != v {
+			cm.Data[k] = v
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
+	_, err = client.CoreV1().ConfigMaps(ns).Update(ctx, cm, metav1.UpdateOptions{})
+	return err
 }
 
 // syncEnabledMWCs 对所有已创建 MWC 的集群重建 webhook 配置（url/caBundle 同步）
@@ -391,30 +466,28 @@ func escapeJSONPointer(s string) string {
 
 // ========== Admission 处理 ==========
 
-// HandleAdmissionReview 处理 AdmissionReview 请求（TLS server 回调入口）
+// HandleAdmissionReview 处理 AdmissionReview 请求（TLS server 回调入口，URL 型模式）
+// 集群内部署形态（svc:// 回调）由独立工程 arthas-webhook/ 承接，本进程仅服务 URL 型模式；
+// 注入 Patch 逻辑改动时须同步两份（arthas-webhook/inject.go buildInjectionPatch）
 func (s *ArthasWebhookService) HandleAdmissionReview(c *gin.Context) {
 	var review admissionv1.AdmissionReview
 	if err := c.ShouldBindJSON(&review); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("invalid admission review: %v", err)})
 		return
 	}
-
 	resp := &admissionv1.AdmissionResponse{Allowed: true}
 	if review.Request != nil {
 		resp.UID = review.Request.UID
-
 		pod := &corev1.Pod{}
 		if err := json.Unmarshal(review.Request.Object.Raw, pod); err != nil {
 			resp.Allowed = false
 			resp.Result = &metav1.Status{Message: fmt.Sprintf("decode pod failed: %v", err)}
 		} else {
-			// 请求到达即记录（排查 apiserver 是否回调及注入判定依据）
 			logger.Info("webhook 收到 admission 请求",
 				zap.String("namespace", pod.Namespace), zap.String("pod", pod.Name),
 				zap.String("injectLabel", pod.Labels[InjectLabel]),
 				zap.Bool("shouldInject", ShouldInject(pod)))
 			if ShouldInject(pod) {
-				// 注入配置取全局默认（admission 回调不携带集群上下文）
 				if patches, err := BuildInjectionPatch(pod, s.GetTunnelWS(0), s.GetInitImage(0)); err != nil {
 					resp.Allowed = false
 					resp.Result = &metav1.Status{Message: err.Error()}
@@ -426,13 +499,14 @@ func (s *ArthasWebhookService) HandleAdmissionReview(c *gin.Context) {
 					} else {
 						patchType := admissionv1.PatchTypeJSONPatch
 						resp.PatchType = &patchType
-						resp.Patch = []byte(base64.StdEncoding.EncodeToString(patchBytes))
+						// Patch 为 []byte：JSON 序列化时自动 base64（wire 协议自带），
+						// 手动再编会双重编码导致 apiserver 静默丢弃注入 patch
+						resp.Patch = patchBytes
 					}
 				}
 			}
 		}
 	}
-
 	review.Response = resp
 	review.Request = nil
 	c.JSON(http.StatusOK, review)
@@ -570,7 +644,36 @@ func certCoversHosts(cert *x509.Certificate, hosts []string) bool {
 
 // ========== MutatingWebhookConfiguration 管理 ==========
 
-// webhookClientConfig apiserver 回调地址：DB/环境变量配置的 URL 优先，其次 in-cluster service
+// svcWebhookRef Service 型回调地址引用
+type svcWebhookRef struct {
+	namespace string
+	name      string
+	port      int32
+}
+
+// parseSvcRef 解析 svc://<namespace>/<name>:<port>（Service 型回调，集群内独立 webhook）
+// 与 URL 型（https://...）互斥；治理页同一字段按前缀智能识别
+func parseSvcRef(u string) (*svcWebhookRef, bool) {
+	rest, ok := strings.CutPrefix(u, "svc://")
+	if !ok {
+		return nil, false
+	}
+	nsName, portStr, _ := strings.Cut(rest, ":")
+	ns, name, ok := strings.Cut(nsName, "/")
+	if !ok || ns == "" || name == "" {
+		return nil, false
+	}
+	port := int32(9443)
+	if p, err := strconv.ParseInt(portStr, 10, 32); err == nil && p > 0 && p < 65536 {
+		port = int32(p)
+	}
+	return &svcWebhookRef{namespace: ns, name: name, port: port}, true
+}
+
+// webhookClientConfig apiserver 回调地址（仅 URL 型使用，svc:// 形态 MWC 由
+// 集群内 msre-pilot 控制器构造）：
+//   - https://... → URL 型（apiserver 直连平台侧，要求 master 可出网到该地址）
+//   - 未配置      → env Service 兜底（in-cluster 部署形态）
 func (s *ArthasWebhookService) webhookClientConfig() (*admissionregv1.WebhookClientConfig, error) {
 	if u := s.GetWebhookURL(); u != "" {
 		return &admissionregv1.WebhookClientConfig{URL: &u}, nil
@@ -596,6 +699,12 @@ func (s *ArthasWebhookService) webhookClientConfig() (*admissionregv1.WebhookCli
 	}, nil
 }
 
+// caBundleForWebhook 读取 CA 证书（仅 URL 型使用：本地 certDirOf()/ca.crt，
+// 本进程 ensureCert 维护；svc:// 形态的 MWC/caBundle 归集群内 msre-pilot 控制器）
+func (s *ArthasWebhookService) caBundleForWebhook() ([]byte, error) {
+	return os.ReadFile(filepath.Join(certDirOf(), "ca.crt"))
+}
+
 // EnableWebhook 在指定集群创建/更新 MutatingWebhookConfiguration（Pod label 触发）
 func (s *ArthasWebhookService) EnableWebhook(clusterID uint) error {
 	client, err := s.clusterSvc.GetClient(clusterID)
@@ -603,18 +712,28 @@ func (s *ArthasWebhookService) EnableWebhook(clusterID uint) error {
 		return fmt.Errorf("获取集群客户端失败: %w", err)
 	}
 
-	// 前置：配置回调地址（DB/环境变量）+ 证书/TLS server 就绪（治理页启用即可拉起，零环境变量）
+	// 前置：配置回调地址（DB/环境变量）
+	//   - svc:// 形态：MWC 生命周期归集群内 msre-pilot 控制器管理，
+	//     平台只写启用意图（ConfigMap WEBHOOK_ENABLED）并等待收敛
+	//   - https:// 形态：admission 服务即本进程，需证书/TLS 就绪，平台直建 MWC
+	isSvcMode := false
+	var svcRef *svcWebhookRef
+	if u := s.GetWebhookURL(); u != "" {
+		svcRef, isSvcMode = parseSvcRef(u)
+	}
 	if s.GetWebhookURL() == "" && os.Getenv("ARTHAS_WEBHOOK_SERVICE_NAME") == "" {
-		return fmt.Errorf("请先在治理页保存配置：apiserver 回调地址（如 https://<OneOps地址>:9443%s）", webhookHandlerPath)
+		return fmt.Errorf("请先在治理页保存配置：回调地址（集群内服务 svc://<ns>/<name>:9443，或 https://<OneOps地址>:9443%s）", webhookHandlerPath)
+	}
+	if isSvcMode {
+		return s.setWebhookIntent(clusterID, svcRef, true)
 	}
 	if err := s.ensureCertAndServer(); err != nil {
 		return fmt.Errorf("webhook TLS 服务就绪失败: %w", err)
 	}
 
-	// 读取 CA 证书（caBundle）
-	caPEM, err := os.ReadFile(filepath.Join(certDirOf(), "ca.crt"))
+	caPEM, err := s.caBundleForWebhook()
 	if err != nil {
-		return fmt.Errorf("读取 CA 证书失败: %w", err)
+		return err
 	}
 
 	clientCfg, err := s.webhookClientConfig()
@@ -631,7 +750,7 @@ func (s *ArthasWebhookService) EnableWebhook(clusterID uint) error {
 	desired := &admissionregv1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{Name: MWCName},
 		Webhooks: []admissionregv1.MutatingWebhook{{
-			Name:         "arthas-inject.oneops.cn",
+			Name:         "msre-pilot.oneops.cn",
 			ClientConfig: *clientCfg,
 			Rules: []admissionregv1.RuleWithOperations{{
 				Operations: []admissionregv1.OperationType{admissionregv1.Create},
@@ -676,11 +795,53 @@ func (s *ArthasWebhookService) EnableWebhook(clusterID uint) error {
 	return err
 }
 
-// DisableWebhook 删除指定集群的 MutatingWebhookConfiguration（已注入的 Pod 不受影响）
+// setWebhookIntent svc:// 形态：写启用/禁用意图到集群内 webhook ConfigMap，
+// 由 msre-pilot 控制器（15s 一轮）收敛 MWC 创建/删除。返回前轮询确认收敛
+// （超时不视为失败——意图已持久化，控制器最终一致）。
+func (s *ArthasWebhookService) setWebhookIntent(clusterID uint, ref *svcWebhookRef, enabled bool) error {
+	client, err := s.clusterSvc.GetClient(clusterID)
+	if err != nil {
+		return fmt.Errorf("获取集群客户端失败: %w", err)
+	}
+	val := "false"
+	if enabled {
+		val = "true"
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := s.upsertWebhookConfigMap(ctx, client, ref.namespace, map[string]string{WebhookIntentKey: val}); err != nil {
+		return fmt.Errorf("写入注入开关意图失败: %w", err)
+	}
+	// 等待控制器收敛：msre-pilot watch 意图变化为快路径（通常 1s 内），
+	// 5s 上限兜底（watch 断线时最坏 15s ticker 收敛，超时仅 Warn 最终一致）
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		_, err := client.AdmissionregistrationV1().MutatingWebhookConfigurations().Get(ctx, MWCName, metav1.GetOptions{})
+		if enabled && err == nil {
+			return nil
+		}
+		if !enabled && apierrors.IsNotFound(err) {
+			return nil
+		}
+		if err != nil && !apierrors.IsNotFound(err) {
+			return fmt.Errorf("查询 MWC 失败: %w", err)
+		}
+		time.Sleep(1 * time.Second)
+	}
+	logger.Warn("等待 msre-pilot 控制器收敛超时（意图已写入，将最终收敛）",
+		zap.Uint64("clusterID", uint64(clusterID)), zap.Bool("enabled", enabled))
+	return nil
+}
+
+// DisableWebhook 关闭指定集群注入（已注入的 Pod 不受影响）
+// svc:// 形态写意图由 msre-pilot 控制器删 MWC；URL 型（本进程即 webhook）直接删
 func (s *ArthasWebhookService) DisableWebhook(clusterID uint) error {
 	client, err := s.clusterSvc.GetClient(clusterID)
 	if err != nil {
 		return fmt.Errorf("获取集群客户端失败: %w", err)
+	}
+	if ref, ok := parseSvcRef(s.GetWebhookURL()); ok {
+		return s.setWebhookIntent(clusterID, ref, false)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -718,6 +879,20 @@ func (s *ArthasWebhookService) GetWebhookStatus(clusterID uint) (*WebhookStatus,
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	// svc:// 形态：状态 = 治理页意图（MWC 由 msre-pilot 控制器最终一致地建/删）
+	if ref, ok := parseSvcRef(status.WebhookURL); ok {
+		cm, err := client.CoreV1().ConfigMaps(ref.namespace).Get(ctx, WebhookConfigMapName, metav1.GetOptions{})
+		if apierrors.IsNotFound(err) {
+			status.Enabled = false
+			return status, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		status.Enabled = cm.Data[WebhookIntentKey] == "true"
+		return status, nil
+	}
+	// URL 型：MWC 存在即启用
 	_, err = client.AdmissionregistrationV1().MutatingWebhookConfigurations().Get(ctx, MWCName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		status.Enabled = false
@@ -746,7 +921,7 @@ func generateSelfSignedCert(dir string, extraHosts []string) error {
 	}
 	caTmpl := &x509.Certificate{
 		SerialNumber:          randomSerial(),
-		Subject:               pkix.Name{CommonName: "oneops-arthas-webhook-ca", Organization: []string{"OneOps"}},
+		Subject:               pkix.Name{CommonName: "msre-pilot-ca", Organization: []string{"OneOps"}},
 		NotBefore:             time.Now().Add(-time.Hour),
 		NotAfter:              time.Now().AddDate(10, 0, 0),
 		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageDigitalSignature,
@@ -781,7 +956,7 @@ func generateSelfSignedCert(dir string, extraHosts []string) error {
 	}
 	srvTmpl := &x509.Certificate{
 		SerialNumber: randomSerial(),
-		Subject:      pkix.Name{CommonName: "oneops-arthas-webhook", Organization: []string{"OneOps"}},
+		Subject:      pkix.Name{CommonName: "msre-pilot", Organization: []string{"OneOps"}},
 		DNSNames:     dnsNames,
 		IPAddresses:  ipAddrs,
 		NotBefore:    time.Now().Add(-time.Hour),

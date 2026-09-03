@@ -1,0 +1,29 @@
+# 业务接入示例：仅在 spec.template.metadata.labels 配置自研标签即可注入（Deployment 顶层标签不生效）。
+#   otel.pilot.auto.enable: on          # 开关注入（off/空/无标签 = 放行不修改）
+#   otel.pilot.app.name: demo-java      # 应用名 → OTEL_SERVICE_NAME
+#   otel.pilot.agent.version: "2.31.1"  # 可选：覆盖探针版本
+#   otel.pilot.jdk.version: "17"        # 可选：记录 JDK 版本
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-java
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-java
+  template:
+    metadata:
+      labels:
+        app: demo-java
+        otel.pilot.auto.enable: "on"
+        otel.pilot.app.name: demo-java
+        otel.pilot.agent.version: "2.31.1"
+        otel.pilot.jdk.version: "17"
+    spec:
+      containers:
+        - name: app
+          image: eclipse-temurin:17-jre-alpine
+          # 演示用：周期性启动 JVM 触发 Agent 加载，实际业务替换为真实启动命令
+          command: ["sh", "-c", "while true; do java -version; sleep 60; done"]

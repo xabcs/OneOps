@@ -4,7 +4,7 @@
 
 | 项 | 值 | 说明 |
 |---|---|---|
-| 回调地址(全局) | https://60.191.116.75:9443/webhook/arthas-inject | apiserver 回调 OneOps webhook 的 HTTPS 地址 |
+| 回调地址(全局) | svc://test/msre-pilot:9443 | Service 型 MWC 回调（集群内 msre-pilot 服务）；URL 型 https://60.191.116.75:9443 已废弃（master 出网不通） |
 | tunnel 地址 | http://47.111.184.180:8080 | 平台访问 tunnel-server 的 HTTP 地址（探测 agent 在线） |
 | init 镜像 | registry.cn-hangzhou.aliyuncs.com/base/arthas-agent:4.1.8 | 含 arthas 全量文件 + 预置 arthas.properties 的 init 镜像 |
 
@@ -253,6 +253,174 @@ kubectl exec -n test <pod> -- cat /root/logs/arthas/arthas.log | tail -50
   ID=0 时 Create（GORM 自动维护时间戳）
 - 代码：repository/k8s/diagnostic_repository.go `UpsertAgent()`
 - 验证：go build exit 0；SyncAgents 后无 "保存 agent 注册信息失败" 警告
+
+### 13. 独立 admission webhook 服务拆分（解决 ACK master 出网不通）
+- 现象：MWC 指向正确后仍静默不注入；Fail 探针法（临时 failurePolicy=Fail +
+  kubectl run）实锤 apiserver 回调 `https://60.191.116.75:39443/...`
+  context deadline exceeded —— ACK 托管集群 master（托管面）无法出网到
+  IDC 公网 IP（node 出网正常），URL 型 MWC 此路不通
+- 方案：webhook 服务单独部署进目标集群（Deployment+Service），MWC 改用
+  Service 型 clientConfig（istio-sidecar-injector 同构路径，apiserver →
+  ClusterIP 必达）。不是 Operator：无 CRD/Informer/reconcile，纯无状态
+  admission HTTP handler
+- 变更清单（独立工程形态）：
+  - arthas-webhook/（MsrePilot 独立工程，与 backend3/frontend3 平级，独立
+    go module，仅依赖 gin+zap+k8s api 类型，无 DB/API 依赖树）：
+    - main.go：env 读配置（ARTHAS_TUNNEL_WS/ARTHAS_INIT_IMAGE/端口/证书目录），
+      bootstrapCert 证书保障 + gin TLS + /healthz + 优雅退出
+    - inject.go：注入核心独立副本（常量 + shouldInject + buildInjectionPatch +
+      handleAdmission），与 backend3 的 BuildInjectionPatch 双份维护、改动须同步
+    - rotator.go：证书自签与轮转（首次自动签发/12h 巡检/轮转后即时更新 caBundle）
+    - reconcile.go：MWC 生命周期控制器（意图与实现分离）——治理页启停只写
+      意图（ConfigMap WEBHOOK_ENABLED），控制器双路径收敛：watch 意图变化
+      秒级触发（快路径）+ 15s ticker 兜底（漂移自愈/watch 断线补偿）。
+      enabled 建/修
+      MWC（spec+caBundle 漂移自愈，带所有权 label oneops.io/managed-by=oneops），
+      disabled 删 MWC，孤儿清理（label 匹配的非当前名 + 历史名 oneops-arthas-inject
+      一次性收编——本次集群里的旧 MWC 会被自动删掉，无需手工）
+    - Dockerfile：多阶段构建（golang:1.26-alpine → alpine:3.20 非 root），
+      构建上下文即本目录，产物 < 20MB
+    - msrepilot-deploy.yaml：test ns + RBAC（Secret/ConfigMap ns 级最小权限；
+      MWC 集群级 get/list/create/update/delete——controller 化必要权限，
+      范围自律靠所有权 label）+ ConfigMap（含 WEBHOOK_ENABLED 意图 key）+
+      空 Secret（轮转器自动签发）+ Deployment（1 副本/HTTPS 探针）
+      + Service 9443
+  - backend3（只留管理面）：
+    - arthas_webhook.go：
+      - 治理页回调地址支持双格式：`svc://<ns>/<name>:<port>`（Service 型）/
+        `https://...`（URL 型），parseSvcRef 智能识别
+      - EnableWebhook：svc 模式只写意图（ConfigMap WEBHOOK_ENABLED=true）并
+        轮询等待 msre-pilot 控制器收敛（≤20s，超时不算失败，最终一致）；
+        URL 模式仍本进程直建 MWC（TLS server + 本地 ca.crt）
+      - DisableWebhook：svc 模式写意图 false；URL 模式直接删 MWC
+      - GetWebhookStatus：svc 模式读意图，URL 模式查 MWC 存在性
+      - caBundleForWebhook/webhookClientConfig：svc 分支删除（职责移交控制器）
+      - SaveWebhookConfig：注入参数变化时 syncWebhookWorkloads()——对 svc://
+        集群 upsert ConfigMap（msre-pilot-config，不触碰意图 key）并 rollout
+        restart Deployment（env 不会热更，重启加载；值未变不滚动）
+  - GovernanceTab.vue：回调地址 placeholder 提示双格式
+  - 资源命名统一 msre-pilot 系（MWC msre-pilot-inject、entry name
+    msre-pilot.oneops.cn、回调路径 /webhook/msre-pilot）；注入 label 族
+    （oneops-arthas-injection 等）是对外协议保持不变（demo2 兼容）
+- 使用（部署侧完整命令）：
+
+  1. 构建并推送镜像（mac 上，arthas-webhook/ 目录内）：
+
+     ```sh
+     cd /Users/mpm/Desktop/doc/go/OneOpsV2/OneOps/arthas-webhook
+     docker build --platform linux/amd64 \
+       -t mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/msre-pilot:v1 .
+     docker push mpm-image-registry.cn-hangzhou.cr.aliyuncs.com/base/msre-pilot:v1
+     ```
+
+  2. 部署服务到已有 test 命名空间（RBAC + ConfigMap + 空 Secret + Deployment + Service；
+     证书零手工——Pod 启动时轮转器检测 Secret 为空，自动签发 CA+leaf 写回，
+     等 kubelet 同步挂载卷后起服务，首次就绪约 1-2min）：
+
+     ```sh
+     cd /Users/mpm/Desktop/doc/go/OneOpsV2/OneOps
+     kubectl apply -f arthas-webhook/msrepilot-deploy.yaml
+     kubectl -n test rollout status deploy/msre-pilot
+     kubectl -n test get pod -l app=msre-pilot
+     # 就绪后容器内自检（SAN 校验 + TLS 握手）
+     kubectl -n test exec deploy/msre-pilot -- \
+       wget -q --no-check-certificate -O- https://localhost:9443/healthz
+     # 确认轮转器已自动签发证书（Secret 含 tls.crt/tls.key/ca.crt/ca.key 四 key）
+     kubectl -n test get secret msre-pilot-tls \
+       -o jsonpath='{.data}' | tr ',' '\n'
+     ```
+
+  3. 治理页配置（OneOps 平台）：
+     - 打开 K8s 诊断 → 治理页，确认 tunnel WS（ws://arthas-tunnel.test:7777/ws）
+       与 init 镜像正确后点"保存配置"（平台自动同步集群内 ConfigMap 并滚动重启
+       webhook Deployment；也可跳过，msrepilot-deploy.yaml 的 ConfigMap 已预置正确值）
+     - 回调地址（全局）填 `svc://test/msre-pilot:9443` → 保存
+     - 点"启用"：平台写意图 WEBHOOK_ENABLED=true，msre-pilot 控制器 watch
+       秒级创建 MWC（控制器同时自动清理旧名 oneops-arthas-inject 孤儿——即当前
+       demo2 报 Internal error 的元凶，无需手工删）
+
+     验证 MWC 已是 Service 型：
+     ```sh
+     kubectl get mutatingwebhookconfiguration msre-pilot-inject -o jsonpath='{.webhooks[0].clientConfig.service}'
+     # 同时确认旧 MWC 已被控制器清理：
+     kubectl get mutatingwebhookconfigurations | grep -E 'msre-pilot|oneops-arthas'
+     ```
+
+  4. 验证注入（demo2 仅打 label 的干净版应用）：
+     ```sh
+     kubectl apply -f deploy/arthas/demo2.yml
+     kubectl rollout restart -n test deploy/test-java2
+     kubectl get pod -n test -l app=test-java2 \
+       -o jsonpath='{.items[0].spec.initContainers[*].name}'
+     # 期望输出：oneops-arthas-agent
+     # 再验证 agent 已反连注册：
+     curl "http://47.111.184.180:8080/api/tunnelAgents" | grep test-java2
+     ```
+
+  5. 分层验证 checklist（部署后逐层验证，任一层不符先修复再往下，
+     可快速隔离问题在 pilot / 平台 / 应用侧；本轮含 informer 变更，
+     镜像必须重新构建，建议 tag 升 v2）：
+
+     L0 部署就绪（步骤 2 已覆盖主体）：
+     ```sh
+     kubectl -n test get pod -l app=msre-pilot          # Running 1/1
+     kubectl logs -n test deploy/msre-pilot | grep -iE 'forbidden|error'   # 无输出
+     kubectl logs -n test deploy/msre-pilot | grep 'MWC 控制器已启动'      # 存在
+     ```
+
+     L1 证书控制器：
+     ```sh
+     kubectl get secret -n test msre-pilot-tls \
+       -o jsonpath='{.data.ca\.crt}' | base64 -d | openssl x509 -noout -subject -dates
+     # 期望：subject=CN=msre-pilot-ca，notAfter 约 10 年后
+     ```
+
+     L2 MWC 控制器专项（watch 快路径/孤儿清理/漂移自愈，本轮核心变更；
+     绕过治理页直接改意图 ConfigMap 是最快测法）：
+     ```sh
+     # a. watch 快路径（秒级收敛）
+     kubectl patch cm -n test msre-pilot-config -p '{"data":{"WEBHOOK_ENABLED":"true"}}'
+     kubectl logs -n test deploy/msre-pilot --since=10s | grep 快路径
+     #   期望：1-2s 内出现"意图事件触发快路径收敛"+"MWC 已创建"
+     kubectl get mwc msre-pilot-inject                  #   存在
+
+     # b. 孤儿清理（复现 demo2 事故场景：手工投放历史名 MWC）
+     kubectl create -f <(echo '{"apiVersion":"admissionregistration.k8s.io/v1","kind":"MutatingWebhookConfiguration","metadata":{"name":"oneops-arthas-inject"}}')
+     #   期望：≤15s 被自动删除，日志"已清理孤儿 MWC"
+     kubectl get mwc | grep -E 'msre-pilot|oneops-arthas'   # 只剩 msre-pilot-inject
+
+     # c. 漂移自愈（验证 15s ticker 兜底路径）
+     kubectl patch mwc msre-pilot-inject --type=json \
+       -p='[{"op":"remove","path":"/webhooks/0/objectSelector"}]'
+     #   期望：≤15s 恢复，日志"MWC 漂移已修正"
+
+     # d. 禁用收敛
+     kubectl patch cm -n test msre-pilot-config -p '{"data":{"WEBHOOK_ENABLED":"false"}}'
+     #   期望：秒级删 MWC
+     ```
+
+     L3 平台链路（治理页）：启用后预期 1-2s 返回（watch 快路径收益，
+     改造前需 8-20s）、开关变绿、MWC 存在；禁用后 MWC 消失。
+     MWC Service 型确认见上方步骤 3 的验证命令。
+
+     L4 端到端注入：即上方步骤 4（initContainer 名 + tunnelAgents 注册）。
+
+     全绿即收官：L2 四项对应 watch 快路径/孤儿清理/漂移自愈/禁用收敛，
+     L3 验证平台等待窗口收窄，L4 验证最终业务价值。
+
+- 证书生命周期（rotator.go，借鉴 OtelPilot cert.go 单进程精简版，完全自签自管理）：
+  - 首次：Secret 空/占位 → 自动签发（ECDSA P256，CA 10 年 + leaf 10 年，
+    SAN=Service DNS）写回，进程等 kubelet 同步（≤5min）后起 TLS server
+  - 巡检：12h 一轮 + 启动抖动 0-5min（多副本错峰），leaf 剩余 <30 天自动轮转；
+    CA 剩余 ≥60 天复用仅重签 leaf，否则重建 CA；resourceVersion 乐观锁防并发双写
+  - 接管：非本体系证书（无 ca.key，如手工 openssl 预置）即使仍在有效期也重建全套，
+    不留手工证书路径
+  - 跟随：签发/轮转后同步 MWC（msre-pilot-inject）caBundle（漂移自愈）；
+    MWC 不存在则跳过（平台启用时读 Secret 最新 ca.crt）
+  - 生效：轮转后进程退出由 K8s 重启加载（10 年一轮，重启可接受）
+  - 权限：Role（本 ns secret get/update，限定 msre-pilot-tls）
+    + ClusterRole（MWC get/update，限定 msre-pilot-inject）
+- 验证：backend3 与 arthas-webhook 双工程 go build ./... + go vet exit 0
 
 
 ## 九、验收结果

@@ -1,0 +1,99 @@
+# OtelPilot 常驻组件：Webhook（同步注入）+ Controller（证书/配置自愈）。
+# 双副本 + Leader 选举：Webhook 双活承载注入流量，写入类控制器仅 Leader 执行。
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-pilot
+  namespace: otel-pilot
+  labels:
+    app.kubernetes.io/name: otel-pilot
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: otel-pilot
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: otel-pilot
+    spec:
+      serviceAccountName: otel-pilot
+      # 尽量分散到不同节点，提升 Webhook 可用性
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: otel-pilot
+      containers:
+        - name: manager
+          image: registry.example.com/observability/otelpilot:v0.1.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - -mode=run
+            - -leader-elect=true
+            - -namespace=$(POD_NAMESPACE)
+            - -service-name=otel-pilot
+            - -cert-secret-name=otel-pilot-cert
+            - -webhook-config-name=otel-pilot
+            - -configmap-name=otel-pilot-config
+            - -auth-secret-name=otel-pilot-auth
+            - -metrics-bind-address=:8383
+            - -health-probe-bind-address=:8081
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+            - name: webhook
+              containerPort: 9443
+              protocol: TCP
+            - name: metrics
+              containerPort: 8383
+              protocol: TCP
+            - name: health
+              containerPort: 8081
+              protocol: TCP
+          # 证书 Secret 由 bootstrap Job / Controller 维护，certwatcher 自动热加载轮转
+          volumeMounts:
+            - name: cert
+              mountPath: /tmp/k8s-webhook-server/serving-certs
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            runAsNonRoot: true
+            runAsUser: 65532
+      volumes:
+        - name: cert
+          secret:
+            secretName: otel-pilot-cert
+        - name: tmp
+          emptyDir: {}
