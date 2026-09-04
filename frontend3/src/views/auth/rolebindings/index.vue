@@ -92,7 +92,7 @@
 </script>
 
 <template>
-  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
+  <div class="table-page">
     <!-- 用户组选择 -->
     <ElCard class="card-wrapper">
       <ElSpace>
@@ -117,7 +117,7 @@
         <span class="text-lg font-medium">权限映射列表</span>
       </template>
 
-      <div class="h-[calc(100%-52px)]">
+      <div class="table-scroll-wrap">
         <ElTable v-loading="loading" height="100%" :data="tableData" :border="false" row-key="id">
           <ElTableColumn type="index" label="序号" width="60" align="center" />
           <ElTableColumn label="应用名称" align="center" min-width="120">

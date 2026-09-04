@@ -150,9 +150,9 @@
 </script>
 
 <template>
-  <div class="flex flex-col gap-16px">
+  <div class="table-page">
     <!-- Hero 区域 -->
-    <ElCard v-if="heroVisible" shadow="hover">
+    <ElCard v-if="heroVisible" shadow="hover" class="card-static">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-12px">
           <ElIcon :size="24">
@@ -214,7 +214,8 @@
       </ElSpace>
 
       <!-- 数据表格 -->
-      <ElTable v-loading="loading" :data="data" border stripe row-key="id">
+      <div class="table-scroll-wrap">
+        <ElTable v-loading="loading" :data="data" border stripe row-key="id" height="100%">
         <ElTableColumn prop="id" label="ID" width="70" />
         <ElTableColumn prop="code" label="编码" min-width="120" />
         <ElTableColumn prop="name" label="名称" min-width="120" />
@@ -244,6 +245,7 @@
           </template>
         </ElTableColumn>
       </ElTable>
+      </div>
 
       <!-- 分页 -->
       <div v-if="total" class="mt-16px flex justify-end">

@@ -139,7 +139,7 @@
 </script>
 
 <template>
-  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
+  <div class="table-page">
     <UserSearch v-model:model="searchParams" @search="getDataByPage" />
     <ElCard class="card-wrapper sm:flex-1-hidden">
       <template #header>
@@ -155,31 +155,30 @@
           />
         </div>
       </template>
-      <div class="h-[calc(100%-52px)]">
+      <div class="table-scroll-wrap">
         <ElTable
           v-loading="loading"
           height="100%"
           border
-          class="sm:h-full"
           :data="data"
           row-key="id"
           @selection-change="checkedRowKeys = $event"
         >
           <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
         </ElTable>
-        <div class="mt-20px flex justify-end">
-          <ElPagination
-            v-if="total"
-            layout="total,prev,pager,next,sizes"
-            :current-page="page"
-            :total="total"
-            :page-size="pageSize"
-            :page-sizes="[10, 15, 20, 25, 30]"
-            :page-count="pageCount"
-            @current-change="getDataByPage"
-            @size-change="handleSizeChange"
-          />
-        </div>
+      </div>
+      <div class="mt-20px flex justify-end">
+        <ElPagination
+          v-if="total"
+          layout="total,prev,pager,next,sizes"
+          :current-page="page"
+          :total="total"
+          :page-size="pageSize"
+          :page-sizes="[10, 15, 20, 25, 30]"
+          :page-count="pageCount"
+          @current-change="getDataByPage"
+          @size-change="handleSizeChange"
+        />
       </div>
       <UserOperateDrawer
         v-model:visible="drawerVisible"

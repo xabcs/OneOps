@@ -217,7 +217,7 @@
 </script>
 
 <template>
-  <div class="access-policies-page">
+  <div class="table-page">
     <ElCard shadow="never">
       <template #header>
         <div class="card-header">
@@ -229,7 +229,8 @@
       </template>
 
       <!-- 策略列表 -->
-      <ElTable v-loading="loading" :data="policies" stripe style="width: 100%">
+      <div class="table-scroll-wrap">
+        <ElTable v-loading="loading" :data="policies" stripe height="100%">
         <ElTableColumn prop="id" label="ID" width="60" />
 
         <ElTableColumn prop="name" label="策略名称" min-width="150" />

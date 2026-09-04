@@ -165,9 +165,9 @@
 </script>
 
 <template>
-  <div class="p-4 space-y-4">
+  <div class="table-page">
     <!-- 标题栏 -->
-    <ElCard shadow="never">
+    <ElCard shadow="never" class="card-static">
       <div class="flex items-center justify-between">
         <div>
           <span class="text-lg font-semibold">通知渠道</span>
@@ -186,7 +186,8 @@
 
     <!-- 渠道列表 -->
     <ElCard shadow="never">
-      <ElTable v-loading="loading" :data="channels" border stripe>
+      <div class="table-scroll-wrap">
+        <ElTable v-loading="loading" :data="channels" border stripe height="100%">
         <ElTableColumn label="类型" width="110" align="center">
           <template #default="{ row }">
             <ElIcon :size="20">
@@ -258,8 +259,7 @@
           </template>
         </ElTableColumn>
       </ElTable>
-
-      <ElEmpty v-if="!loading && channels.length === 0" description="暂无通知渠道" />
+      </div>
     </ElCard>
 
     <!-- 通知渠道对话框 -->

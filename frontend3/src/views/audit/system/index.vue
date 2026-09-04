@@ -87,7 +87,7 @@
 </script>
 
 <template>
-  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
+  <div class="table-page">
     <ElCard class="card-wrapper">
       <ElForm :model="searchParams" inline class="search-form">
         <ElFormItem label="级别">
@@ -124,9 +124,11 @@
         </ElFormItem>
       </ElForm>
 
-      <ElTable v-loading="loading" :data="data" border stripe class="h-full" height="calc(100vh - 400px)">
-        <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-      </ElTable>
+      <div class="table-scroll-wrap">
+        <ElTable v-loading="loading" :data="data" border stripe height="100%">
+          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+        </ElTable>
+      </div>
 
       <div class="mt-16px flex justify-end">
         <ElPagination

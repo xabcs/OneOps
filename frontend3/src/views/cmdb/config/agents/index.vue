@@ -462,7 +462,7 @@
 </script>
 
 <template>
-  <div class="agent-page">
+  <div class="table-page">
     <ElCard shadow="never">
       <template #header>
         <div class="toolbar">
@@ -542,16 +542,18 @@
         </div>
       </template>
 
-      <ElTable
-        v-loading="loading"
-        :data="data"
-        border
-        stripe
-        style="width: 100%"
-        @selection-change="handleSelectionChange"
-      >
-        <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-      </ElTable>
+      <div class="table-scroll-wrap">
+        <ElTable
+          v-loading="loading"
+          :data="data"
+          border
+          stripe
+          height="100%"
+          @selection-change="handleSelectionChange"
+        >
+          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+        </ElTable>
+      </div>
 
       <div v-if="mobilePagination.total" class="pagination-bar">
         <ElPagination

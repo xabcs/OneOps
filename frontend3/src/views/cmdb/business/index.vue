@@ -66,7 +66,7 @@
 </script>
 
 <template>
-  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
+  <div class="table-page">
     <ElCard class="card-wrapper">
       <div class="mb-16px flex justify-between">
         <ElButton :icon="Refresh" @click="getData">刷新</ElButton>
@@ -75,7 +75,16 @@
         </PermissionButton>
       </div>
 
-      <ElTable v-loading="loading" :data="tableData" row-key="id" border stripe :tree-props="{ children: 'children' }">
+      <div class="table-scroll-wrap">
+        <ElTable
+          v-loading="loading"
+          :data="tableData"
+          row-key="id"
+          border
+          stripe
+          height="100%"
+          :tree-props="{ children: 'children' }"
+        >
         <ElTableColumn prop="id" label="ID" width="80" />
         <ElTableColumn prop="name" label="业务名称" min-width="160" show-overflow-tooltip />
         <ElTableColumn prop="code" label="业务代码" width="140" />
@@ -100,7 +109,8 @@
             </PermissionButton>
           </template>
         </ElTableColumn>
-      </ElTable>
+        </ElTable>
+      </div>
 
       <BusinessOperateDrawer
         v-model:visible="drawerVisible"

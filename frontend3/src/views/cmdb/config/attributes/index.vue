@@ -261,7 +261,7 @@
 </script>
 
 <template>
-  <div class="attributes-page">
+  <div class="table-page">
     <ElCard shadow="never">
       <template #header>
         <div class="card-header">
@@ -286,7 +286,8 @@
       </div>
 
       <!-- 属性列表表格 -->
-      <ElTable v-loading="loading" :data="attributes" stripe style="width: 100%">
+      <div class="table-scroll-wrap">
+        <ElTable v-loading="loading" :data="attributes" stripe height="100%">
         <ElTableColumn prop="name" label="属性名称" min-width="120" />
         <ElTableColumn prop="key" label="属性键" min-width="120">
           <template #default="{ row }">
@@ -347,6 +348,7 @@
           </template>
         </ElTableColumn>
       </ElTable>
+      </div>
     </ElCard>
 
     <!-- 属性表单对话框 -->

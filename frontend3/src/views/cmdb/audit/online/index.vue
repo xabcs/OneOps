@@ -147,7 +147,7 @@
 </script>
 
 <template>
-  <div class="online-page">
+  <div class="table-page">
     <ElCard shadow="never">
       <template #header>
         <div class="card-header">
@@ -179,7 +179,8 @@
         </div>
       </div>
 
-      <ElTable v-loading="loading" :data="sessions" stripe style="width: 100%; margin-top: 16px">
+      <div class="table-scroll-wrap">
+        <ElTable v-loading="loading" :data="sessions" stripe height="100%">
         <ElTableColumn prop="id" label="会话ID" width="80" />
         <ElTableColumn prop="username" label="用户名" width="120" />
         <ElTableColumn label="服务器" width="160">
@@ -218,7 +219,8 @@
             </PermissionButton>
           </template>
         </ElTableColumn>
-      </ElTable>
+        </ElTable>
+      </div>
     </ElCard>
   </div>
 </template>

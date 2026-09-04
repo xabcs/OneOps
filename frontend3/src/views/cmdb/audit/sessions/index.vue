@@ -125,7 +125,7 @@
 </script>
 
 <template>
-  <div class="sessions-page">
+  <div class="table-page">
     <ElCard shadow="never">
       <template #header>
         <div class="card-header">
@@ -164,7 +164,8 @@
         </ElForm>
       </div>
 
-      <ElTable v-loading="loading" :data="sessions" stripe style="width: 100%; margin-top: 16px">
+      <div class="table-scroll-wrap">
+        <ElTable v-loading="loading" :data="sessions" stripe height="100%">
         <ElTableColumn prop="id" label="ID" width="70" />
         <ElTableColumn prop="username" label="用户名" width="110" />
         <ElTableColumn label="服务器" width="160">
@@ -208,7 +209,8 @@
             <ElButton type="primary" size="small" @click="handleViewDetail(row)">详情</ElButton>
           </template>
         </ElTableColumn>
-      </ElTable>
+        </ElTable>
+      </div>
 
       <div class="pagination-wrapper">
         <ElPagination

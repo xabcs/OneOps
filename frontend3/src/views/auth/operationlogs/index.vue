@@ -97,7 +97,7 @@
 </script>
 
 <template>
-  <div class="min-h-500px flex-col gap-4">
+  <div class="table-page">
     <!-- 应用选择 -->
     <ElCard shadow="never">
       <ElSelect
@@ -116,9 +116,11 @@
         <span class="text-lg font-medium">操作日志列表</span>
       </template>
 
-      <ElTable v-loading="loading" :data="data" :border="false">
-        <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-      </ElTable>
+      <div class="table-scroll-wrap">
+        <ElTable v-loading="loading" :data="data" :border="false" height="100%">
+          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+        </ElTable>
+      </div>
 
       <div class="mt-4 flex justify-end">
         <ElPagination

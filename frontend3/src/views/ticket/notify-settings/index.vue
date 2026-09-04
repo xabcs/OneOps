@@ -255,9 +255,9 @@
 </script>
 
 <template>
-  <div class="p-4 space-y-4">
+  <div class="table-page">
     <!-- 标题栏 -->
-    <ElCard shadow="never">
+    <ElCard shadow="never" class="card-static">
       <div class="flex items-center justify-between">
         <div>
           <span class="text-lg font-semibold">通知设置</span>
@@ -308,7 +308,8 @@
             </span>
           </div>
 
-          <ElTable v-loading="loading" :data="policies" border stripe>
+          <div class="table-scroll-wrap">
+            <ElTable v-loading="loading" :data="policies" border stripe height="100%">
             <ElTableColumn label="通知事件" width="130">
               <template #default="{ row }">
                 <span class="font-medium">{{ row.name }}</span>
@@ -388,8 +389,7 @@
               </template>
             </ElTableColumn>
           </ElTable>
-
-          <ElEmpty v-if="!loading && policies.length === 0" description="暂无通知事件" />
+          </div>
         </ElTabPane>
 
         <!-- 发送记录 -->
@@ -412,7 +412,8 @@
             <span class="text-xs text-gray-400">外部渠道投递结果（保留 30 天）；站内消息不在此列，见头部通知中心</span>
           </div>
 
-          <ElTable v-loading="logsLoading" :data="logs" border stripe>
+          <div class="table-scroll-wrap">
+            <ElTable v-loading="logsLoading" :data="logs" border stripe height="100%">
             <ElTableColumn label="时间" width="170">
               <template #default="{ row }">
                 {{ new Date(row.createdAt).toLocaleString('zh-CN', { hour12: false }) }}
@@ -453,6 +454,7 @@
               </template>
             </ElTableColumn>
           </ElTable>
+          </div>
 
           <div class="mt-4 flex justify-end">
             <ElPagination

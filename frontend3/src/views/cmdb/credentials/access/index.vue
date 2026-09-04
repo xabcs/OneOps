@@ -124,7 +124,7 @@
 </script>
 
 <template>
-  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
+  <div class="table-page">
     <ElCard class="card-wrapper">
       <!-- 类型 Tab + 新增按钮 -->
       <div class="mb-16px flex items-center justify-between">
@@ -167,7 +167,8 @@
       />
 
       <!-- 数据表格 -->
-      <ElTable v-loading="loading" :data="tableData" border stripe>
+      <div class="table-scroll-wrap">
+        <ElTable v-loading="loading" :data="tableData" border stripe height="100%">
         <ElTableColumn prop="id" label="ID" width="70" align="center" />
         <ElTableColumn prop="name" label="凭证名称" min-width="150" />
         <ElTableColumn label="凭证用途" width="120" align="center">
@@ -213,7 +214,8 @@
             </PermissionButton>
           </template>
         </ElTableColumn>
-      </ElTable>
+        </ElTable>
+      </div>
 
       <SshCredentialOperateDrawer
         v-model:visible="drawerVisible"

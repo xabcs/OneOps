@@ -138,7 +138,7 @@
 </script>
 
 <template>
-  <div class="commands-page">
+  <div class="table-page">
     <ElCard shadow="never">
       <template #header>
         <div class="card-header">
@@ -186,13 +186,14 @@
       </div>
 
       <!-- 命令表格 -->
-      <ElTable
-        v-loading="loading"
-        :data="commands"
-        stripe
-        style="width: 100%; margin-top: 16px"
-        :default-sort="{ prop: 'executedAt', order: 'descending' }"
-      >
+      <div class="table-scroll-wrap">
+        <ElTable
+          v-loading="loading"
+          :data="commands"
+          stripe
+          height="100%"
+          :default-sort="{ prop: 'executedAt', order: 'descending' }"
+        >
         <ElTableColumn prop="id" label="ID" width="60" />
 
         <ElTableColumn label="会话ID" width="80">

@@ -70,7 +70,7 @@
 </script>
 
 <template>
-  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
+  <div class="table-page">
     <ElCard class="card-wrapper">
       <div class="mb-16px flex justify-between">
         <ElSpace>
@@ -92,7 +92,8 @@
         </PermissionButton>
       </div>
 
-      <ElTable v-loading="loading" :data="tableData" border stripe>
+      <div class="table-scroll-wrap">
+        <ElTable v-loading="loading" :data="tableData" border stripe height="100%">
         <ElTableColumn prop="id" label="ID" width="70" align="center" />
         <ElTableColumn prop="name" label="机房名称" min-width="120" align="center" />
         <ElTableColumn prop="code" label="机房代码" width="120" align="center" />

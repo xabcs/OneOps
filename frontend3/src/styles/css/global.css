@@ -32,3 +32,76 @@ html {
   font-family: var(--font-data);
   font-weight: 500;
 }
+
+/* ========== 固定高度列表页模式 ==========
+ * 页面内容撑满布局内容区（不产生页面级滚动条），
+ * 表格区域内部滚动（表头固定），搜索表单/分页固定。
+ * 用法：
+ *   <div class="table-page">
+ *     <ElCard class="card-wrapper">          // 或直接子元素
+ *       <ElForm>...</ElForm>                  // 搜索区（自动不被压缩）
+ *       <div class="table-scroll-wrap">
+ *         <ElTable height="100%">...</ElTable>
+ *       </div>
+ *       <div class="mt-16px flex justify-end"><ElPagination/></div>
+ *     </ElCard>
+ *   </div>
+ */
+.table-page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+/* 表格所在 ElCard 撑满剩余高度，卡片内部形成纵向 flex 布局（仅直接子卡片） */
+.table-page > .el-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部 Hero/说明/搜索等卡片不参与拉伸 */
+.table-page > .el-card.card-static {
+  flex: none;
+}
+
+.table-page > .el-card > .el-card__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 搜索表单不被压缩 */
+.table-page > .el-card > .el-card__body > .el-form,
+.table-page > .el-form {
+  flex-shrink: 0;
+}
+
+/* 表格滚动容器：占满剩余高度，内部 ElTable 传 height="100%" 实现表头固定 + 表体滚动 */
+.table-page .table-scroll-wrap {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ElTabs 填满卡片：页签头固定，内容区撑满，各页签内部纵向 flex */
+.table-page .el-tabs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.table-page .el-tabs__content {
+  flex: 1;
+  min-height: 0;
+}
+
+.table-page .el-tab-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}

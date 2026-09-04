@@ -62,7 +62,7 @@
 </script>
 
 <template>
-  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
+  <div class="table-page">
     <ElCard class="card-wrapper">
       <div class="mb-16px flex justify-between">
         <ElButton :icon="Refresh" @click="getData">刷新</ElButton>
@@ -71,7 +71,8 @@
         </PermissionButton>
       </div>
 
-      <ElTable v-loading="loading" :data="tableData" border stripe>
+      <div class="table-scroll-wrap">
+        <ElTable v-loading="loading" :data="tableData" border stripe height="100%">
         <ElTableColumn prop="id" label="ID" width="80" />
         <ElTableColumn prop="name" label="标签名称" min-width="150" />
         <ElTableColumn label="颜色" width="100">
@@ -103,6 +104,7 @@
           </template>
         </ElTableColumn>
       </ElTable>
+      </div>
 
       <TagOperateDrawer
         v-model:visible="drawerVisible"

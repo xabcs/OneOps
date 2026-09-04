@@ -214,7 +214,7 @@
 </script>
 
 <template>
-  <div class="min-h-500px flex-col gap-4">
+  <div class="table-page">
     <!-- Tab 切换层 -->
     <div class="space-y-3">
       <!-- 第一层：应用切换 + 视图切换 -->
@@ -322,7 +322,7 @@
       </div>
 
       <!-- 列表视图 -->
-      <div v-else>
+      <div v-else class="flex flex-col flex-1 min-h-0">
         <!-- 搜索栏 -->
         <div class="mb-4">
           <ElForm :model="searchParams" inline>
@@ -336,7 +336,8 @@
           </ElForm>
         </div>
 
-        <ElTable v-loading="loading" :data="tableData" :border="false">
+        <div class="table-scroll-wrap">
+          <ElTable v-loading="loading" :data="tableData" :border="false" height="100%">
           <ElTableColumn type="index" label="序号" width="60" align="center" />
           <ElTableColumn label="授权中心用户" align="center" min-width="120">
             <template #default="{ row }">
@@ -392,7 +393,8 @@
               {{ row.assigned_at || '-' }}
             </template>
           </ElTableColumn>
-        </ElTable>
+          </ElTable>
+        </div>
 
         <div class="mt-4 flex justify-end">
           <ElPagination
