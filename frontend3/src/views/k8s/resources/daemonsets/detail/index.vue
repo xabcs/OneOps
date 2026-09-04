@@ -340,7 +340,7 @@
   .tab-toolbar {
     display: flex;
     justify-content: flex-end;
-    padding: 0 16px 8px 16px;
+    padding: 0 16px 8px;
   }
 
   .basic-info-section {

@@ -61,7 +61,9 @@
       <template #default="{ row }">
         <span class="operation-buttons">
           <ElButton link type="primary" size="default" @click="emit('go-to-detail', row)">详情</ElButton>
-          <PermissionButton code="k8s.resource.update" link type="primary" size="default" @click="emit('scale', row)">伸缩</PermissionButton>
+          <PermissionButton code="k8s.resource.update" link type="primary" size="default" @click="emit('scale', row)">
+            伸缩
+          </PermissionButton>
           <ElDropdown trigger="click" @command="cmd => emit('more-command', cmd, row)">
             <span class="dropdown-link">
               更多

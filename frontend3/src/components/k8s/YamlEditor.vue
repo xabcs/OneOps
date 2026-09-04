@@ -415,7 +415,7 @@
     min-height: 500px;
     max-height: 60vh;
     padding: 16px;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    font-family: Monaco, Menlo, 'Ubuntu Mono', Consolas, monospace;
     font-size: 14px;
     line-height: 1.6;
     background: #1e1e1e;

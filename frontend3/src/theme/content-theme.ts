@@ -592,7 +592,7 @@ export function initContentTheme() {
  * Initialize hero section visibility
  * @deprecated 使用组件内的 v-if="heroVisible" 条件渲染
  */
-export function initHeroVisibility(theme?: ContentTheme2Settings) {
+export function initHeroVisibility(_theme?: ContentTheme2Settings) {
   // 不再需要 DOM 操作，由组件自行处理显示逻辑
 }
 

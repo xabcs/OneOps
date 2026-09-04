@@ -2,7 +2,7 @@
   import { onMounted, ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { Refresh } from '@element-plus/icons-vue';
-  import { fetchDiagnosticOverview, type DiagnosticOverviewData } from '@/service/api/diagnostic';
+  import { type DiagnosticOverviewData, fetchDiagnosticOverview } from '@/service/api/diagnostic';
   import { useDiagnosticStore } from '@/store/modules/diagnostic';
 
   defineOptions({ name: 'DiagnosticOverviewTab' });
@@ -50,16 +50,16 @@
   <div v-loading="loading" class="overview-tab">
     <!-- 统计卡片 -->
     <div class="stat-cards">
-      <div v-for="card in cards" :key="card.key" :class="['stat-card', card.type]">
+      <div v-for="card in cards" :key="card.key" class="stat-card" :class="[card.type]">
         <div class="stat-value">
           {{
             card.key === 'apps'
-              ? overview?.apps ?? 0
+              ? (overview?.apps ?? 0)
               : card.key === 'agentOnline'
-                ? overview?.agentOnline ?? 0
+                ? (overview?.agentOnline ?? 0)
                 : card.key === 'agentTotal'
-                  ? overview?.agentTotal ?? 0
-                  : overview?.execStats?.[card.key] ?? 0
+                  ? (overview?.agentTotal ?? 0)
+                  : (overview?.execStats?.[card.key] ?? 0)
           }}
         </div>
         <div class="stat-label">{{ card.label }}</div>

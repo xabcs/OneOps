@@ -1,8 +1,8 @@
 <script setup lang="ts">
-  import { computed, onMounted, ref, watch, type Component } from 'vue';
+  import { type Component, computed, onMounted, ref, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { ElMessage } from 'element-plus';
-  import { Monitor, Refresh, Setting, SwitchButton, Tickets, Odometer } from '@element-plus/icons-vue';
+  import { Monitor, Odometer, Refresh, Setting, SwitchButton, Tickets } from '@element-plus/icons-vue';
   import { useAuthStore } from '@/store/modules/auth';
   import { useDiagnosticStore } from '@/store/modules/diagnostic';
   import WorkbenchTab from './modules/WorkbenchTab.vue';
@@ -108,7 +108,7 @@
           >
             <span class="agent-option">
               <span>{{ agent.podName || agent.agentId }}</span>
-              <span :class="['agent-dot', { online: agent.online }]">{{ agent.online ? '在线' : '离线' }}</span>
+              <span class="agent-dot" :class="[{ online: agent.online }]">{{ agent.online ? '在线' : '离线' }}</span>
             </span>
           </ElOption>
         </ElSelect>

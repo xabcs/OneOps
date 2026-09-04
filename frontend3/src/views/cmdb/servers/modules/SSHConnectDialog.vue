@@ -182,7 +182,16 @@
         <!-- 左栏：连接配置 -->
         <ElCol :span="12">
           <div :style="{ padding: '4px 0' }">
-            <div :style="{ fontSize: '14px', fontWeight: 600, color: '#303133', marginBottom: '16px', paddingBottom: '8px', borderBottom: '1px solid #ebeef5' }">
+            <div
+              :style="{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#303133',
+                marginBottom: '16px',
+                paddingBottom: '8px',
+                borderBottom: '1px solid #ebeef5'
+              }"
+            >
               连接配置
             </div>
 
@@ -226,12 +235,23 @@
         <!-- 右栏：安全上下文 -->
         <ElCol :span="12">
           <div :style="{ padding: '4px 0' }">
-            <div :style="{ fontSize: '14px', fontWeight: 600, color: '#303133', marginBottom: '16px', paddingBottom: '8px', borderBottom: '1px solid #ebeef5' }">
+            <div
+              :style="{
+                fontSize: '14px',
+                fontWeight: 600,
+                color: '#303133',
+                marginBottom: '16px',
+                paddingBottom: '8px',
+                borderBottom: '1px solid #ebeef5'
+              }"
+            >
               安全上下文
             </div>
 
             <div :style="{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px', gap: '8px' }">
-              <span :style="{ fontSize: '13px', color: '#606266', minWidth: '70px', flexShrink: 0, paddingTop: '2px' }">主机环境</span>
+              <span :style="{ fontSize: '13px', color: '#606266', minWidth: '70px', flexShrink: 0, paddingTop: '2px' }">
+                主机环境
+              </span>
               <ElTag
                 :type="props.serverEnv === 'prod' ? 'danger' : props.serverEnv === 'test' ? 'warning' : 'info'"
                 size="small"
@@ -241,14 +261,18 @@
             </div>
 
             <div :style="{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px', gap: '8px' }">
-              <span :style="{ fontSize: '13px', color: '#606266', minWidth: '70px', flexShrink: 0, paddingTop: '2px' }">凭证状态</span>
+              <span :style="{ fontSize: '13px', color: '#606266', minWidth: '70px', flexShrink: 0, paddingTop: '2px' }">
+                凭证状态
+              </span>
               <ElTag :type="availableCredentials.length > 0 ? 'success' : 'warning'" size="small">
                 {{ availableCredentials.length > 0 ? `${availableCredentials.length} 个可用` : '未配置' }}
               </ElTag>
             </div>
 
             <div :style="{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px', gap: '8px' }">
-              <span :style="{ fontSize: '13px', color: '#606266', minWidth: '70px', flexShrink: 0, paddingTop: '2px' }">最近连接</span>
+              <span :style="{ fontSize: '13px', color: '#606266', minWidth: '70px', flexShrink: 0, paddingTop: '2px' }">
+                最近连接
+              </span>
               <span :style="{ fontSize: '13px', color: '#303133' }">
                 <template v-if="recentSession">
                   {{ recentSession.username }} · {{ recentSession.startedAt?.substring(0, 16) }}
@@ -258,7 +282,9 @@
             </div>
 
             <div :style="{ display: 'flex', alignItems: 'flex-start', marginBottom: '12px', gap: '8px' }">
-              <span :style="{ fontSize: '13px', color: '#606266', minWidth: '70px', flexShrink: 0, paddingTop: '2px' }">登录账号</span>
+              <span :style="{ fontSize: '13px', color: '#606266', minWidth: '70px', flexShrink: 0, paddingTop: '2px' }">
+                登录账号
+              </span>
               <span :style="{ fontSize: '13px', color: '#303133' }">
                 {{ selectedCredential?.username || '—' }}
               </span>

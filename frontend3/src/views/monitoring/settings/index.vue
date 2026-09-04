@@ -2,12 +2,8 @@
   import { onMounted, ref } from 'vue';
   import { ElMessage, ElMessageBox } from 'element-plus';
   import { Plus } from '@element-plus/icons-vue';
+  import { deleteAlertRule, fetchAlertRules, updateAlertRuleStatus } from '@/service/api';
   import { useAuthStore } from '@/store/modules/auth';
-  import {
-    deleteAlertRule,
-    fetchAlertRules,
-    updateAlertRuleStatus
-  } from '@/service/api';
   import AlertRuleDialog from './modules/AlertRuleDialog.vue';
 
   defineOptions({
@@ -212,10 +208,22 @@
           </ElTableColumn>
           <ElTableColumn label="操作" width="150" align="center" fixed="right">
             <template #default="{ row }">
-              <PermissionButton code="monitor.alert_rule.update" type="primary" link size="small" @click="handleEditRule(row)">
+              <PermissionButton
+                code="monitor.alert_rule.update"
+                type="primary"
+                link
+                size="small"
+                @click="handleEditRule(row)"
+              >
                 编辑
               </PermissionButton>
-              <PermissionButton code="monitor.alert_rule.delete" type="danger" link size="small" @click="handleDeleteRule(row)">
+              <PermissionButton
+                code="monitor.alert_rule.delete"
+                type="danger"
+                link
+                size="small"
+                @click="handleDeleteRule(row)"
+              >
                 删除
               </PermissionButton>
             </template>
@@ -227,6 +235,11 @@
     </ElCard>
 
     <!-- 告警规则对话框 -->
-    <AlertRuleDialog v-model:visible="showRuleDialog" :mode="ruleDialogMode" :rule="currentRule" @submitted="loadAlertRules" />
+    <AlertRuleDialog
+      v-model:visible="showRuleDialog"
+      :mode="ruleDialogMode"
+      :rule="currentRule"
+      @submitted="loadAlertRules"
+    />
   </div>
 </template>

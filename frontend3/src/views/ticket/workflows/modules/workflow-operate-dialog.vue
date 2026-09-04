@@ -1,7 +1,14 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue';
   import { ArrowDown, ArrowUp, Delete, Plus } from '@element-plus/icons-vue';
-  import { createWorkflow, fetchRoleOptions, fetchTicketTypeOptions, fetchUserOptions, fetchWorkflowDetail, updateWorkflow } from '@/service/api';
+  import {
+    createWorkflow,
+    fetchRoleOptions,
+    fetchTicketTypeOptions,
+    fetchUserOptions,
+    fetchWorkflowDetail,
+    updateWorkflow
+  } from '@/service/api';
   import { useForm, useFormRules } from '@/hooks/common/form';
 
   defineOptions({ name: 'WorkflowOperateDialog' });
@@ -133,12 +140,7 @@
               return {
                 name: node.name,
                 approverType: node.approverType,
-                approverIds: node.approverIds
-                  ? node.approverIds
-                      .split(',')
-                      .filter(Boolean)
-                      .map(Number)
-                  : [],
+                approverIds: node.approverIds ? node.approverIds.split(',').filter(Boolean).map(Number) : [],
                 multiType: (node.multiType || 'any') as Api.Ticket.MultiType,
                 conditions,
                 conditionEnabled: conditions.length > 0,
@@ -216,9 +218,7 @@
 
     submitLoading.value = true;
     const { error } =
-      props.operateType === 'edit'
-        ? await updateWorkflow(props.rowData!.id, payload)
-        : await createWorkflow(payload);
+      props.operateType === 'edit' ? await updateWorkflow(props.rowData!.id, payload) : await createWorkflow(payload);
     submitLoading.value = false;
 
     if (!error) {
@@ -272,11 +272,7 @@
     <ElDivider content-position="left">审批节点（按顺序流转）</ElDivider>
 
     <div class="flex flex-col gap-12px">
-      <div
-        v-for="(node, index) in nodes"
-        :key="index"
-        class="rounded-6px border border-gray-200 p-12px"
-      >
+      <div v-for="(node, index) in nodes" :key="index" class="border border-gray-200 rounded-6px p-12px">
         <div class="mb-8px flex items-center justify-between">
           <ElTag size="small" type="primary">节点 {{ index + 1 }}</ElTag>
           <div class="flex gap-4px">
@@ -311,12 +307,7 @@
               class="w-full"
             >
               <template v-if="node.approverType === 'user'">
-                <ElOption
-                  v-for="u in userOptions"
-                  :key="u.id"
-                  :label="`${u.nickname}(${u.username})`"
-                  :value="u.id"
-                />
+                <ElOption v-for="u in userOptions" :key="u.id" :label="`${u.nickname}(${u.username})`" :value="u.id" />
               </template>
               <template v-else>
                 <ElOption v-for="r in roleOptions" :key="r.id" :label="r.name" :value="r.id" />
@@ -355,17 +346,9 @@
                     <ElOption v-for="op in opOptions" :key="op.value" :label="op.label" :value="op.value" />
                   </ElSelect>
                   <ElInput v-model="cond.value" placeholder="值 如 urgent" class="flex-1" />
-                  <ElButton
-                    size="small"
-                    text
-                    type="danger"
-                    :icon="Delete"
-                    @click="node.conditions.splice(ci, 1)"
-                  />
+                  <ElButton size="small" text type="danger" :icon="Delete" @click="node.conditions.splice(ci, 1)" />
                 </div>
-                <ElButton size="small" text type="primary" :icon="Plus" @click="addCondition(node)">
-                  添加条件
-                </ElButton>
+                <ElButton size="small" text type="primary" :icon="Plus" @click="addCondition(node)">添加条件</ElButton>
               </div>
             </div>
           </ElFormItem>

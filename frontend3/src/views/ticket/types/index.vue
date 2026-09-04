@@ -54,14 +54,14 @@
         width: 110,
         align: 'center',
         formatter: row =>
-          row.status !== 1 ? '' : row.workflowCount > 0 ? (
+          row.status !== 1 ? (
+            ''
+          ) : row.workflowCount > 0 ? (
             <ElTag type="success">{row.workflowCount} 个</ElTag>
           ) : (
             <ElTooltip content="该场景未配置审批流程，发起工单时将无流程可选，请前往「审批流程」新建并选择所属场景">
               {{
-                default: () => (
-                  <ElTag type="danger">未配置</ElTag>
-                )
+                default: () => <ElTag type="danger">未配置</ElTag>
               }}
             </ElTooltip>
           )

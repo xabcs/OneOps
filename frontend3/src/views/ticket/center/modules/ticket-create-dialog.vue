@@ -2,8 +2,8 @@
   import { computed, ref, watch } from 'vue';
   import { ArrowLeft } from '@element-plus/icons-vue';
   import { createTicket, fetchWorkflowsByType } from '@/service/api';
-  import { ticketPriorityOptions } from '../../constants';
   import { useForm } from '@/hooks/common/form';
+  import { ticketPriorityOptions } from '../../constants';
 
   defineOptions({ name: 'TicketCreateDialog' });
 
@@ -144,7 +144,7 @@
         <div
           v-for="t in typeOptions"
           :key="t.id"
-          class="cursor-pointer rounded-6px border border-gray-200 p-14px transition hover:border-primary"
+          class="cursor-pointer border border-gray-200 rounded-6px p-14px transition hover:border-primary"
           @click="selectType(t)"
         >
           <div class="flex items-center gap-8px">
@@ -177,21 +177,19 @@
               :closable="false"
               title="该场景暂无启用的审批流程，请联系管理员配置"
             />
-            <div v-else class="flex w-full flex-col gap-8px">
+            <div v-else class="w-full flex flex-col gap-8px">
               <div
                 v-for="wf in workflowOptions"
                 :key="wf.id"
-                class="cursor-pointer rounded-6px border px-12px py-8px transition"
+                class="cursor-pointer border rounded-6px px-12px py-8px transition"
                 :class="
-                  selectedWorkflowId === wf.id
-                    ? 'border-primary bg-primary-50'
-                    : 'border-gray-200 hover:border-primary'
+                  selectedWorkflowId === wf.id ? 'border-primary bg-primary-50' : 'border-gray-200 hover:border-primary'
                 "
                 @click="selectedWorkflowId = wf.id"
               >
                 <div class="flex items-center gap-8px">
                   <span
-                    class="inline-block h-10px w-10px shrink-0 rounded-full border-2px"
+                    class="inline-block h-10px w-10px shrink-0 border-2px rounded-full"
                     :class="selectedWorkflowId === wf.id ? 'border-primary' : 'border-gray-300'"
                   />
                   <span class="font-medium">{{ wf.name }}</span>
@@ -217,12 +215,7 @@
         </ElFormItem>
 
         <!-- 动态表单 -->
-        <ElFormItem
-          v-for="field in formFields"
-          :key="field.key"
-          :label="field.label"
-          :prop="`formData.${field.key}`"
-        >
+        <ElFormItem v-for="field in formFields" :key="field.key" :label="field.label" :prop="`formData.${field.key}`">
           <ElInput
             v-if="field.type === 'input'"
             v-model="model.formData[field.key] as string"
@@ -265,12 +258,7 @@
     <template #footer>
       <template v-if="selectedType">
         <ElButton @click="visible = false">取消</ElButton>
-        <ElButton
-          type="primary"
-          :loading="submitLoading"
-          :disabled="!selectedWorkflowId"
-          @click="handleSubmit"
-        >
+        <ElButton type="primary" :loading="submitLoading" :disabled="!selectedWorkflowId" @click="handleSubmit">
           提交工单
         </ElButton>
       </template>

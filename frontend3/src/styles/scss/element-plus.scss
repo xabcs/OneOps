@@ -8,8 +8,8 @@ html.dark:root {
     --el-color-#{$color}-light-3: rgb(var(--#{$color}-400-color));
     --el-color-#{$color}-light-5: rgb(var(--#{$color}-300-color));
     --el-color-#{$color}-light-7: rgb(var(--#{$color}-200-color));
-    --el-color-#{$color}-light-9: rgb(var(--#{$color}-color) / 0.1);
-    --el-color-#{$color}-rgba: rgb(var(--#{$color}-color) / 0.15); /* 添加半透明版本用于渐变效果 */
+    --el-color-#{$color}-light-9: rgb(var(--#{$color}-color) / 10%);
+    --el-color-#{$color}-rgba: rgb(var(--#{$color}-color) / 15%); /* 添加半透明版本用于渐变效果 */
   }
 
   --el-color-danger: rgb(var(--error-color));
@@ -17,22 +17,21 @@ html.dark:root {
   --el-color-danger-light-3: rgb(var(--error-400-color));
   --el-color-danger-light-5: rgb(var(--error-300-color));
   --el-color-danger-light-7: rgb(var(--error-200-color));
-  --el-color-danger-light-9: rgb(var(--error-color) / 0.1);
-
-  --el-menu-item-hover-fill: rgba(0, 0, 0, 0.05);
-
+  --el-color-danger-light-9: rgb(var(--error-color) / 10%);
+  --el-menu-item-hover-fill: rgb(0 0 0 / 5%);
   --el-menu-item-height: 42px;
 }
+
 html.dark:root,
 .bg-inverted {
-  --el-menu-item-hover-fill: rgba(255, 255, 255, 0.1);
+  --el-menu-item-hover-fill: rgb(255 255 255 / 10%);
 }
 
 .bg-inverted {
   .el-menu {
     --el-menu-bg-color: transparent;
     --el-menu-text-color: #e5eaf3;
-    --el-menu-hover-bg-color: rgba(255, 255, 255, 0.08);
+    --el-menu-hover-bg-color: rgb(255 255 255 / 8%);
     --el-menu-active-color: var(--el-color-primary);
   }
 }
@@ -41,8 +40,8 @@ html.dark:root,
 html.dark .el-menu,
 .bg-inverted .el-menu {
   --el-menu-bg-color: transparent;
-  --el-menu-text-color: rgba(255, 255, 255, 0.85);
-  --el-menu-hover-bg-color: rgba(255, 255, 255, 0.08);
+  --el-menu-text-color: rgb(255 255 255 / 85%);
+  --el-menu-hover-bg-color: rgb(255 255 255 / 8%);
   --el-menu-active-color: var(--el-color-primary);
 }
 
@@ -50,14 +49,14 @@ html.dark .el-menu-item,
 html.dark .el-sub-menu__title,
 .bg-inverted .el-menu-item,
 .bg-inverted .el-sub-menu__title {
-  color: rgba(255, 255, 255, 0.85);
+  color: rgb(255 255 255 / 85%);
 }
 
 html.dark .el-menu-item:hover,
 html.dark .el-sub-menu__title:hover,
 .bg-inverted .el-menu-item:hover,
 .bg-inverted .el-sub-menu__title:hover {
-  color: #ffffff;
+  color: #fff;
 }
 
 html.dark .el-menu-item.is-active,
@@ -72,39 +71,44 @@ html.dark .el-menu-item.is-active,
 .el-menu--popup {
   min-width: unset;
 }
+
 .el-popper {
   border: none;
   border-radius: var(--border-radius-medium, 8px);
 }
+
 .el-menu {
   border-right: none;
+
   &.el-menu--horizontal {
     border: none;
   }
+
   .el-sub-menu.is-active {
     > .el-sub-menu__title {
       color: var(--el-menu-active-color);
     }
   }
+
   .el-sub-menu__title:hover,
   li.el-menu-item:not(.is-disabled):hover,
   .el-menu-item.is-active {
     background-color: unset;
+
     &::before {
       content: '';
       position: absolute;
       z-index: auto;
-      left: 8px;
-      right: 8px;
-      top: 0;
-      bottom: 0;
+      inset: 0 8px;
       border-radius: var(--border-radius-medium, 8px);
       pointer-events: none;
       background-color: var(--el-menu-item-hover-fill);
     }
   }
+
   li.el-menu-item {
     margin-top: 6px;
+
     &.is-active,
     &.is-active:hover {
       &::before {
@@ -112,6 +116,7 @@ html.dark .el-menu-item.is-active,
       }
     }
   }
+
   li.el-sub-menu {
     margin-top: 6px;
   }
@@ -122,31 +127,39 @@ html .el-collapse {
   --el-collapse-header-text-color: #475569;
   --el-collapse-header-background-color: transparent;
   --el-collapse-border-color: transparent;
+
   background-color: transparent;
   border: none;
+
   .el-collapse-item__header {
     border: none;
     color: #475569;
     background-color: transparent;
   }
+
   .el-collapse-item__header:hover {
     color: #334155;
     background-color: transparent;
   }
+
   .el-collapse-item__header.is-active {
     border: none;
   }
+
   .el-collapse-item__header.focusing {
     border: none;
     outline: none;
   }
+
   .el-collapse-item__arrow {
     color: #94a3b8;
   }
+
   .el-collapse-item__wrap {
     border: none;
     background-color: transparent;
   }
+
   .el-collapse-item__content {
     padding-bottom: 0;
     background-color: transparent;
@@ -156,6 +169,7 @@ html .el-collapse {
 
 .el-card {
   --el-card-padding: 16px;
+
   .el-card__header {
     font-weight: 500;
     font-size: 16px;
@@ -187,9 +201,11 @@ html .el-collapse {
 .el-card {
   display: flex;
   flex-direction: column;
+
   .el-card__header {
     border: none;
   }
+
   .el-card__body {
     height: 100%;
   }
@@ -199,6 +215,7 @@ html .el-collapse {
   .header {
     border-top-left-radius: 3px;
   }
+
   .cell {
     padding: 0;
   }
@@ -210,12 +227,16 @@ html .el-collapse {
     border: none;
     padding: 4px;
     background-color: var(--el-fill-color-light);
+
     --el-tabs-header-height: 30px;
+
     .el-tabs__content {
       display: none;
     }
+
     .el-tabs__header {
       border: none;
+
       .el-tabs__item {
         border: none;
         padding: 0 24px;
@@ -232,10 +253,12 @@ html .el-collapse {
 .el-segmented {
   padding: 5px;
   border-radius: var(--border-radius-medium, 6px);
+
   .el-segmented__item {
     border-radius: var(--border-radius-medium, 6px);
     padding: 4px 20px;
   }
+
   .el-segmented__item-selected {
     border-radius: var(--border-radius-medium, 6px);
   }

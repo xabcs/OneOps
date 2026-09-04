@@ -4,11 +4,11 @@
   import {
     assignUserToGroup,
     deleteAuthUser,
+    deleteUserGroup,
     fetchAllAuthGroups,
     fetchAuthUsers,
     fetchUserGroups,
-    getAuthUserPassword,
-    deleteUserGroup
+    getAuthUserPassword
   } from '@/service/api/application-permission';
   import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
   import PermissionButton from '@/components/common/PermissionButton.vue';
@@ -68,7 +68,13 @@
               ) : (
                 <span class="text-gray-400">未分配</span>
               )}
-              <PermissionButton code="auth.user.update" size="small" type="primary" link onClick={() => handleManageGroups(row)}>
+              <PermissionButton
+                code="auth.user.update"
+                size="small"
+                type="primary"
+                link
+                onClick={() => handleManageGroups(row)}
+              >
                 {groups.length > 0 ? '管理' : '分配'}
               </PermissionButton>
             </div>
@@ -81,7 +87,13 @@
         align: 'center',
         width: 140,
         formatter: row => (
-          <PermissionButton code="auth.user.update" size="small" type="primary" link onClick={() => handleViewPassword(row)}>
+          <PermissionButton
+            code="auth.user.update"
+            size="small"
+            type="primary"
+            link
+            onClick={() => handleViewPassword(row)}
+          >
             查看密码
           </PermissionButton>
         )
@@ -106,7 +118,14 @@
             <ElButton size="small" type="primary" link onClick={() => handleManageGroups(row)}>
               用户组
             </ElButton>
-            <PermissionButton code="auth.user.update" size="small" type="warning" link icon={Edit} onClick={() => handleEdit(row.id)}>
+            <PermissionButton
+              code="auth.user.update"
+              size="small"
+              type="warning"
+              link
+              icon={Edit}
+              onClick={() => handleEdit(row.id)}
+            >
               编辑
             </PermissionButton>
             <ElPopconfirm title="确认删除该用户？" onConfirm={() => handleDelete(row.id)}>
@@ -229,7 +248,9 @@
       <template #header>
         <div class="flex items-center justify-between">
           <span class="text-lg font-medium">授权中心用户列表</span>
-          <PermissionButton code="auth.user.create" type="primary" :icon="Plus" @click="handleAdd">添加用户</PermissionButton>
+          <PermissionButton code="auth.user.create" type="primary" :icon="Plus" @click="handleAdd">
+            添加用户
+          </PermissionButton>
         </div>
       </template>
 
@@ -272,7 +293,9 @@
               :value="group.id"
             />
           </ElSelect>
-          <PermissionButton code="auth.user.update" type="primary" size="small" @click="handleAssignGroup">分配</PermissionButton>
+          <PermissionButton code="auth.user.update" type="primary" size="small" @click="handleAssignGroup">
+            分配
+          </PermissionButton>
         </div>
       </div>
 
@@ -284,7 +307,9 @@
         <ElTableColumn prop="grantedBy" label="分配人" align="center" min-width="100" />
         <ElTableColumn label="操作" align="center" width="100">
           <template #default="{ row }">
-            <PermissionButton code="auth.user.update" size="small" type="danger" @click="handleRemoveGroup(row.id)">移除</PermissionButton>
+            <PermissionButton code="auth.user.update" size="small" type="danger" @click="handleRemoveGroup(row.id)">
+              移除
+            </PermissionButton>
           </template>
         </ElTableColumn>
       </ElTable>

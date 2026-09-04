@@ -224,9 +224,7 @@ declare namespace Api {
       /** failed count */
       failedCount: number;
       /** created external identities */
-      createdIdentities:
-        | number
-        | Array<{ username: string; appName: string; status: string }>;
+      createdIdentities: number | Array<{ username: string; appName: string; status: string }>;
       /** pending members */
       pendingMembers?: Array<{ username: string; reason: string }>;
       /** failed members */

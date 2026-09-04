@@ -77,6 +77,7 @@
 <style scoped>
   .perm-btn-wrap {
     display: inline-flex;
+
     /* 与 .el-button 默认的 vertical-align 保持一致，行内环境下与相邻按钮对齐 */
     vertical-align: middle;
     cursor: not-allowed;

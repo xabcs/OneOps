@@ -9,8 +9,8 @@
 
   import { computed, watch } from 'vue';
   import type { FormRules } from 'element-plus';
-  import AttributeFormItems from './AttributeFormItems.vue';
   import { useForm } from '@/hooks/common/form';
+  import AttributeFormItems from './AttributeFormItems.vue';
 
   defineOptions({ name: 'ServerFormDialog' });
 
@@ -78,7 +78,16 @@
 <template>
   <ElDialog v-model="visible" :title="dialogTitle" width="600px">
     <ElForm ref="formRef" :model="serverForm" :rules="serverFormRules" label-width="100px">
-      <div :style="{ fontSize: '14px', fontWeight: 600, color: '#303133', marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #e4e7ed' }">
+      <div
+        :style="{
+          fontSize: '14px',
+          fontWeight: 600,
+          color: '#303133',
+          marginBottom: '16px',
+          paddingBottom: '8px',
+          borderBottom: '2px solid #e4e7ed'
+        }"
+      >
         基础信息（必填）
       </div>
 
@@ -140,7 +149,9 @@
             :value="cred.id"
           />
         </ElSelect>
-        <div :style="{ marginTop: '4px', fontSize: '12px', color: '#909399' }">用于 Agent 部署、重启、指标采集，需 root/sudo 权限</div>
+        <div :style="{ marginTop: '4px', fontSize: '12px', color: '#909399' }">
+          用于 Agent 部署、重启、指标采集，需 root/sudo 权限
+        </div>
       </ElFormItem>
 
       <ElFormItem label="所属分组" prop="groupIds">
@@ -167,15 +178,17 @@
           collapse-tags
           collapse-tags-tooltip
         >
-          <ElOption
-            v-for="tag in serverTags"
-            :key="tag.id"
-            :label="tag.name"
-            :value="tag.id"
-          >
+          <ElOption v-for="tag in serverTags" :key="tag.id" :label="tag.name" :value="tag.id">
             <span>{{ tag.name }}</span>
             <span
-              :style="{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: tag.color, marginLeft: '8px' }"
+              :style="{
+                display: 'inline-block',
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: tag.color,
+                marginLeft: '8px'
+              }"
             />
           </ElOption>
         </ElSelect>

@@ -156,9 +156,7 @@
         <ElDescriptionsItem label="初始密码">
           <div class="flex items-center gap-2">
             <code class="text-lg text-primary font-bold">{{ createdPassword.password }}</code>
-            <ElButton size="small" type="primary" @click="copyPassword">
-              复制密码
-            </ElButton>
+            <ElButton size="small" type="primary" @click="copyPassword">复制密码</ElButton>
           </div>
         </ElDescriptionsItem>
       </ElDescriptions>

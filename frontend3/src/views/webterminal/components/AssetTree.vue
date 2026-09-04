@@ -432,7 +432,7 @@
   .wb-sidebar-title {
     font-size: 12px;
     font-weight: 500;
-    color: #cccccc;
+    color: #ccc;
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -491,7 +491,7 @@
     background: transparent !important;
     border: none !important;
     padding: 0 4px !important;
-    color: #cccccc;
+    color: #ccc;
     font-size: 12px;
   }
 
@@ -515,7 +515,7 @@
   }
 
   .wb-search-input-inner :deep(.el-input__clear:hover) {
-    color: #cccccc !important;
+    color: #ccc !important;
   }
 
   /* 搜索框展开动画 */
@@ -553,15 +553,15 @@
   }
 
   .wb-sidebar-actions :deep(.el-button:hover) {
-    background: rgba(0, 0, 0, 0.2) !important;
+    background: rgb(0 0 0 / 20%) !important;
   }
 
   .wb-sidebar-actions :deep(.el-button:hover .iconify) {
-    color: #aaaaaa !important;
+    color: #aaa !important;
   }
 
   .wb-sidebar-actions :deep(.el-button.is-link:hover) {
-    background-color: rgba(0, 0, 0, 0.2) !important;
+    background-color: rgb(0 0 0 / 20%) !important;
   }
 
   .wb-icon {
@@ -572,7 +572,7 @@
   }
 
   .wb-sidebar-actions :deep(.el-button:hover) .wb-icon {
-    color: #aaaaaa;
+    color: #aaa;
   }
 
   .wb-spinning {
@@ -583,6 +583,7 @@
     from {
       transform: rotate(0deg);
     }
+
     to {
       transform: rotate(360deg);
     }
@@ -602,7 +603,7 @@
      悬停/聚焦背景改为 VS Code 风格微亮白，替代 EP 默认浅白 #f5f7fa——
      在 #252526 深色侧栏上默认浅白会呈现为刺眼的纯白色块 */
   .wb-tree.el-tree {
-    --el-tree-node-hover-bg-color: rgba(255, 255, 255, 0.08);
+    --el-tree-node-hover-bg-color: rgb(255 255 255 / 8%);
   }
 
   .wb-tree .el-tree-node__content {
@@ -614,7 +615,7 @@
 
   .wb-tree .el-tree-node__content:hover,
   .wb-tree .el-tree-node:focus > .el-tree-node__content {
-    background: rgba(255, 255, 255, 0.08) !important;
+    background: rgb(255 255 255 / 8%) !important;
   }
 
   .wb-tree :deep(.el-tree-node__expand-icon) {
@@ -640,7 +641,7 @@
 
   .wb-tree-node-label {
     font-size: 12px;
-    color: #cccccc;
+    color: #ccc;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -655,7 +656,7 @@
   }
 
   .is-connected {
-    background: rgba(78, 201, 176, 0.1);
+    background: rgb(78 201 176 / 10%);
   }
 
   .is-connected .wb-tree-node-icon {
@@ -698,7 +699,7 @@
     background: #252526;
     border: 1px solid #454545;
     border-radius: 4px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 12px rgb(0 0 0 / 50%);
   }
 
   .wb-dropdown-item {
@@ -707,7 +708,7 @@
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    color: #cccccc;
+    color: #ccc;
     font-size: 12px;
     transition: background 0.1s;
   }
@@ -724,7 +725,7 @@
   }
 
   .wb-dropdown-item:hover .wb-dropdown-item-icon {
-    color: #cccccc;
+    color: #ccc;
   }
 
   .wb-tag {

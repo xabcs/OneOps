@@ -187,8 +187,8 @@
             <MenuIcon />
           </ElIcon>
           <div class="flex flex-col gap-2px">
-            <h2 class="text-18px font-bold m-0">{{ $t('page.manage.menu.title') }}</h2>
-            <p class="text-13px opacity-70 m-0">管理系统菜单结构，支持树形层级展示与拖拽排序</p>
+            <h2 class="m-0 text-18px font-bold">{{ $t('page.manage.menu.title') }}</h2>
+            <p class="m-0 text-13px opacity-70">管理系统菜单结构，支持树形层级展示与拖拽排序</p>
           </div>
         </div>
         <ElButton size="small" :loading="loading" @click="refreshData">
@@ -228,7 +228,12 @@
           @input="handleFilterChange"
           @clear="handleFilterChange"
         />
-        <ElButton @click="filterText = ''; handleFilterChange()">
+        <ElButton
+          @click="
+            filterText = '';
+            handleFilterChange();
+          "
+        >
           <ElIcon>
             <Refresh />
           </ElIcon>

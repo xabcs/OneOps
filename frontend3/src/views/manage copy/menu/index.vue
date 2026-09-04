@@ -107,7 +107,12 @@
       await authStore.getUserInfo();
       routeStore.rebuildRoutes();
     } else {
-      ElNotification({ title: '错误', message: error?.response?.data?.message || error?.message || '删除失败', type: 'error', duration: 3000 });
+      ElNotification({
+        title: '错误',
+        message: error?.response?.data?.message || error?.message || '删除失败',
+        type: 'error',
+        duration: 3000
+      });
     }
   }
 
@@ -300,5 +305,5 @@
 </template>
 
 <style scoped lang="scss">
-  @use './modules/menu-page.scss';
+  @use './modules/menu-page';
 </style>

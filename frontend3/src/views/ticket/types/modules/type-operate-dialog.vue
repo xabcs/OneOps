@@ -226,7 +226,12 @@
         <ElInput v-model="baseModel.name" placeholder="如：SQL 审核" maxlength="50" />
       </ElFormItem>
       <ElFormItem label="类型编码" prop="code">
-        <ElInput v-model="baseModel.code" placeholder="如：sql-audit" :disabled="operateType === 'edit'" maxlength="50" />
+        <ElInput
+          v-model="baseModel.code"
+          placeholder="如：sql-audit"
+          :disabled="operateType === 'edit'"
+          maxlength="50"
+        />
       </ElFormItem>
       <ElFormItem label="图标" prop="icon">
         <ElInput v-model="baseModel.icon" placeholder="mdi 图标名，如 mdi:database" maxlength="60" class="w-260px" />
@@ -254,17 +259,21 @@
     >
       <div class="text-12px">
         为防止保存空配置覆盖原始数据，已禁用表单设计器与保存按钮。请点击「取消」，并联系管理员参照下方原始内容修复数据库：
-        <pre class="mt-8px max-h-160px overflow-auto rounded-4px bg-gray-100 p-8px dark:bg-gray-800">{{ rawSchema || '(空)' }}</pre>
+        <pre class="mt-8px max-h-160px overflow-auto rounded-4px bg-gray-100 p-8px dark:bg-gray-800">{{
+          rawSchema || '(空)'
+        }}</pre>
       </div>
     </ElAlert>
 
     <div v-if="!schemaBroken" class="flex flex-col gap-12px">
-      <div v-for="(field, index) in fields" :key="index" class="rounded-6px border border-gray-200 p-12px">
+      <div v-for="(field, index) in fields" :key="index" class="border border-gray-200 rounded-6px p-12px">
         <div class="mb-8px flex items-center justify-between">
           <ElTag size="small" type="primary">字段 {{ index + 1 }}</ElTag>
           <div class="flex gap-4px">
             <ElButton size="small" text :disabled="index === 0" @click="moveField(index, -1)">上移</ElButton>
-            <ElButton size="small" text :disabled="index === fields.length - 1" @click="moveField(index, 1)">下移</ElButton>
+            <ElButton size="small" text :disabled="index === fields.length - 1" @click="moveField(index, 1)">
+              下移
+            </ElButton>
             <ElButton size="small" text type="danger" :icon="Delete" @click="removeField(index)" />
           </div>
         </div>
@@ -285,12 +294,7 @@
             <ElInput v-model="field.placeholder" placeholder="输入提示（可选）" />
           </ElFormItem>
           <ElFormItem v-if="field.type === 'select'" label="候选项" label-width="70px" class="col-span-2">
-            <ElInput
-              v-model="field.optionsText"
-              type="textarea"
-              :rows="3"
-              placeholder="每行一个选项"
-            />
+            <ElInput v-model="field.optionsText" type="textarea" :rows="3" placeholder="每行一个选项" />
           </ElFormItem>
           <ElFormItem label="必填" label-width="70px">
             <ElSwitch v-model="field.required" />

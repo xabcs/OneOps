@@ -3,10 +3,10 @@
   import { ElMessage, ElMessageBox } from 'element-plus';
   import { CircleCloseFilled, Refresh } from '@element-plus/icons-vue';
   import {
+    type DiagnosticSession,
     fetchDiagnosticSessionDetail,
     fetchDiagnosticSessions,
-    terminateDiagnosticSession,
-    type DiagnosticSession
+    terminateDiagnosticSession
   } from '@/service/api/diagnostic';
   import { formatDateTime } from '../shared';
 
@@ -90,7 +90,7 @@
       <ElButton :icon="Refresh" size="small" :loading="loading" @click="load">刷新</ElButton>
     </div>
 
-    <ElTable :data="sessions" v-loading="loading" size="small">
+    <ElTable v-loading="loading" :data="sessions" size="small">
       <ElTableColumn prop="id" label="会话" width="70" />
       <ElTableColumn prop="appName" label="应用" min-width="140" show-overflow-tooltip />
       <ElTableColumn prop="agentId" label="Agent（Pod）" min-width="220" show-overflow-tooltip />

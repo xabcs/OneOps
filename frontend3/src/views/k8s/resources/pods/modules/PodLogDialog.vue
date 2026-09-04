@@ -48,9 +48,7 @@
       <ElInputNumber v-model="logTailLines" :min="10" :max="10000" :step="100" />
       <ElButton size="small" @click="loadLogs">刷新</ElButton>
     </div>
-    <div
-      class="max-h-[600px] overflow-auto whitespace-pre-wrap rounded bg-black p-4 text-sm text-green-400 font-mono"
-    >
+    <div class="max-h-[600px] overflow-auto whitespace-pre-wrap rounded bg-black p-4 text-sm text-green-400 font-mono">
       {{ logContent }}
     </div>
   </ElDialog>

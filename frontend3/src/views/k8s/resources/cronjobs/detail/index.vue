@@ -85,7 +85,11 @@
     if (!clusterId.value) return;
     podsLoading.value = true;
     try {
-      const { data: podsData, error: podsError } = await getK8sCronJobPods(clusterId.value, namespace.value, resourceName.value);
+      const { data: podsData, error: podsError } = await getK8sCronJobPods(
+        clusterId.value,
+        namespace.value,
+        resourceName.value
+      );
       pods.value = !podsError && podsData ? podsData : [];
     } catch (error: unknown) {
       const err = error as Error;
@@ -208,7 +212,9 @@
         <PermissionButton code="k8s.resource.update" type="primary" @click="handleToggleSuspend">
           {{ resource?.suspend ? '恢复' : '暂停' }}
         </PermissionButton>
-        <PermissionButton code="k8s.resource.update" type="primary" @click="showYamlEditor = true">编辑YAML</PermissionButton>
+        <PermissionButton code="k8s.resource.update" type="primary" @click="showYamlEditor = true">
+          编辑YAML
+        </PermissionButton>
         <PermissionButton code="k8s.resource.delete" type="danger" @click="handleDelete">删除</PermissionButton>
       </div>
     </div>
@@ -373,7 +379,7 @@
   .yaml-viewer pre {
     margin: 0;
     color: #d4d4d4;
-    font-family: 'Monaco', 'Menlo', monospace;
+    font-family: Monaco, Menlo, monospace;
     font-size: 13px;
     line-height: 1.6;
     white-space: pre-wrap;

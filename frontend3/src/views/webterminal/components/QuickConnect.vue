@@ -185,7 +185,7 @@
     align-items: center;
     font-size: 12px;
     font-weight: 600;
-    color: #cccccc;
+    color: #ccc;
   }
 
   .icon {
@@ -217,6 +217,7 @@
     from {
       transform: rotate(0deg);
     }
+
     to {
       transform: rotate(360deg);
     }
@@ -321,7 +322,7 @@
   .host-name {
     font-size: 13px;
     font-weight: 500;
-    color: #cccccc;
+    color: #ccc;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

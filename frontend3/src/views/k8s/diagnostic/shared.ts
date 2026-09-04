@@ -3,7 +3,10 @@
  */
 
 /** 风险级元数据（与后端 L0-L5 / disabled 对齐） */
-export const RISK_LEVEL_META: Record<string, { label: string; type: 'info' | 'success' | 'warning' | 'danger'; desc: string }> = {
+export const RISK_LEVEL_META: Record<
+  string,
+  { label: string; type: 'info' | 'success' | 'warning' | 'danger'; desc: string }
+> = {
   L0: { label: 'L0 环境操作', type: 'info', desc: '会话/环境类操作，无 JVM 影响' },
   L1: { label: 'L1 只读诊断', type: 'success', desc: '只读查看，不改变任何状态' },
   L2: { label: 'L2 观测增强', type: 'success', desc: '字节码增强类观测，默认带 -n 限量' },

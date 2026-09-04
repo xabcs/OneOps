@@ -49,7 +49,8 @@
         <div
           v-for="agent in filteredAgents"
           :key="agent.agentId"
-          :class="['agent-item', { active: diagStore.currentAgent?.agentId === agent.agentId }]"
+          class="agent-item"
+          :class="[{ active: diagStore.currentAgent?.agentId === agent.agentId }]"
           @click="diagStore.selectAgent(agent)"
         >
           <div class="agent-main">
@@ -58,7 +59,7 @@
             </div>
             <div class="agent-meta">{{ agent.namespace }} · {{ agent.agentVersion || 'arthas' }}</div>
           </div>
-          <span :class="['status-dot', { online: agent.online }]" />
+          <span class="status-dot" :class="[{ online: agent.online }]" />
         </div>
 
         <ElEmpty
@@ -74,17 +75,26 @@
       <ElTabs v-model="subTab" class="sub-tabs">
         <ElTabPane name="scenario">
           <template #label>
-            <span class="sub-tab-label"><ElIcon :size="14"><Monitor /></ElIcon> 场景诊断</span>
+            <span class="sub-tab-label">
+              <ElIcon :size="14"><Monitor /></ElIcon>
+              场景诊断
+            </span>
           </template>
         </ElTabPane>
         <ElTabPane name="catalog">
           <template #label>
-            <span class="sub-tab-label"><ElIcon :size="14"><Sort /></ElIcon> 命令目录</span>
+            <span class="sub-tab-label">
+              <ElIcon :size="14"><Sort /></ElIcon>
+              命令目录
+            </span>
           </template>
         </ElTabPane>
         <ElTabPane name="terminal">
           <template #label>
-            <span class="sub-tab-label"><ElIcon :size="14"><Grid /></ElIcon> 专家终端</span>
+            <span class="sub-tab-label">
+              <ElIcon :size="14"><Grid /></ElIcon>
+              专家终端
+            </span>
           </template>
         </ElTabPane>
       </ElTabs>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, onMounted, ref, type Component } from 'vue';
+  import { type Component, computed, onMounted, ref } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { useIntervalFn, useWindowSize } from '@vueuse/core';
   import {
@@ -25,13 +25,7 @@
     urgeTicket
   } from '@/service/api';
   import { useAuthStore } from '@/store/modules/auth';
-  import {
-    URGE_COOLDOWN_MS,
-    nodeStatusMap,
-    nodeTagType,
-    ticketPriorityMap,
-    ticketStatusMap
-  } from '../../constants';
+  import { URGE_COOLDOWN_MS, nodeStatusMap, nodeTagType, ticketPriorityMap, ticketStatusMap } from '../../constants';
   import TicketResubmitDialog from '../modules/ticket-resubmit-dialog.vue';
   import TicketReassignDialog from '../modules/ticket-reassign-dialog.vue';
 
@@ -175,7 +169,12 @@
 
   /** 审批人姓名列表 */
   function approverList(node: Api.Ticket.TicketNodeRecord): string[] {
-    return node.approverNames ? node.approverNames.split(',').map(s => s.trim()).filter(Boolean) : [];
+    return node.approverNames
+      ? node.approverNames
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean)
+      : [];
   }
 
   /** 头像底色（按姓名散列取色板） */
@@ -264,7 +263,14 @@
         key: `node-${n.id}`,
         time: n.startedAt ? new Date(n.startedAt).getTime() : Number.MAX_SAFE_INTEGER,
         order: i,
-        item: { key: `node-${n.id}`, kind: 'node', icon: dot.icon, color: dot.color, timeText: fmt(n.startedAt), node: n }
+        item: {
+          key: `node-${n.id}`,
+          kind: 'node',
+          icon: dot.icon,
+          color: dot.color,
+          timeText: fmt(n.startedAt),
+          node: n
+        }
       });
     });
     logs.value
@@ -499,7 +505,7 @@
     </ElCard>
 
     <!-- 审批操作条：待我审批（行内意见 + 通过/驳回），吸顶保证长表单下始终可达 -->
-    <ElCard v-if="detail?.canApprove" class="card-wrapper sticky top-0 z-10" shadow="never">
+    <ElCard v-if="detail?.canApprove" class="sticky top-0 z-10 card-wrapper" shadow="never">
       <div class="flex flex-wrap items-center justify-between gap-12px">
         <div class="flex flex-wrap items-center gap-8px">
           <ElIcon :size="18" color="#e6a23c"><Bell /></ElIcon>
@@ -508,7 +514,7 @@
             会签 {{ signProgress(pendingNode) }}
           </span>
         </div>
-        <div class="flex min-w-360px flex-1 items-center justify-end gap-8px">
+        <div class="min-w-360px flex flex-1 items-center justify-end gap-8px">
           <ElInput
             v-model="actionComment"
             placeholder="审批意见（驳回时必填，填写后可回车通过）"
@@ -524,13 +530,11 @@
     </ElCard>
 
     <!-- 发起人视角条：审批进度 + 催办，吸顶 -->
-    <ElCard v-else-if="isCreatorPending" class="card-wrapper sticky top-0 z-10" shadow="never">
+    <ElCard v-else-if="isCreatorPending" class="sticky top-0 z-10 card-wrapper" shadow="never">
       <div class="flex flex-wrap items-center justify-between gap-12px">
         <div class="flex items-center gap-8px text-13px text-gray-600">
           <ElIcon :size="16" color="#409eff"><Clock /></ElIcon>
-          <span>
-            审批中：当前节点「{{ ticket?.currentNodeName }}」，审批人 {{ pendingNode?.approverNames || '-' }}
-          </span>
+          <span>审批中：当前节点「{{ ticket?.currentNodeName }}」，审批人 {{ pendingNode?.approverNames || '-' }}</span>
         </div>
         <div class="flex items-center gap-8px">
           <span v-if="urgeCooldownText" class="text-12px text-gray-400">{{ urgeCooldownText }}</span>
@@ -550,7 +554,7 @@
 
     <div class="ticket-detail-grid grid grid-cols-[1fr_480px] gap-16px lt-xl:grid-cols-1">
       <!-- 申请内容 -->
-      <ElCard class="card-wrapper ticket-form-card" title="申请内容">
+      <ElCard class="ticket-form-card card-wrapper" title="申请内容">
         <div class="ticket-card-body">
           <ElDescriptions v-if="detail" :column="1" border size="small">
             <ElDescriptionsItem
@@ -559,7 +563,7 @@
               :label="field.label"
               :label-width="140"
             >
-              <pre v-if="field.type === 'textarea'" class="m-0 whitespace-pre-wrap break-all font-mono text-13px">{{
+              <pre v-if="field.type === 'textarea'" class="m-0 whitespace-pre-wrap break-all text-13px font-mono">{{
                 (detail.formData[field.key] as string) || '-'
               }}</pre>
               <template v-else>{{ detail.formData[field.key] ?? '-' }}</template>
@@ -570,7 +574,7 @@
       </ElCard>
 
       <!-- 审批记录（发起 → 节点/评论/事件 → 结束，统一时间线） -->
-      <ElCard class="card-wrapper ticket-timeline-card" title="审批记录">
+      <ElCard class="ticket-timeline-card card-wrapper" title="审批记录">
         <div class="ticket-card-body">
           <ElTimeline v-if="timelineItems.length" class="pl-2px">
             <ElTimelineItem
@@ -606,7 +610,7 @@
                 <div class="mt-6px flex flex-wrap items-center gap-10px">
                   <div v-for="name in approverList(item.node)" :key="name" class="flex items-center gap-4px">
                     <span
-                      class="flex h-22px w-22px items-center justify-center rounded-full text-12px text-white"
+                      class="h-22px w-22px flex items-center justify-center rounded-full text-12px text-white"
                       :style="avatarStyle(name)"
                     >
                       {{ name.slice(0, 1) }}
@@ -638,10 +642,7 @@
               </div>
 
               <!-- 事件（重新提交/改派/催办） -->
-              <div
-                v-else-if="item.kind === 'event' && item.event"
-                class="flex flex-wrap items-center gap-8px pb-4px"
-              >
+              <div v-else-if="item.kind === 'event' && item.event" class="flex flex-wrap items-center gap-8px pb-4px">
                 <span class="text-13px text-gray-500">{{ item.event.name }}</span>
                 <span class="text-13px font-medium" :style="{ color: item.color }">{{ item.event.content }}</span>
               </div>
@@ -682,31 +683,29 @@
 </template>
 
 <style scoped>
-/**
+  /**
  * 工单详情页布局稳定性：
  * 当评论/审批记录很多时，右列 timeline 会把 Grid 行无限撑高，
  * 进而导致左列「申请内容」也被等比拉伸、顶部信息和操作条与主体脱节（用户感知为"其他元素被压缩/遮挡"）。
  * 以下规则给卡片主体建立最大高度 + 局部滚动，保证整体页面长度保持在合理范围。
  */
 
-/* ≥1200px 宽屏：左右两栏布局，给两个卡片主体相同的视口相对最大高度，保持等高且局部滚动 */
-@media (min-width: 1200px) {
-  .ticket-card-body {
-    max-height: calc(100vh - 360px);
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-gutter: stable;
+  /* ≥1200px 宽屏：左右两栏布局，给两个卡片主体相同的视口相对最大高度，保持等高且局部滚动 */
+  @media (width >= 1200px) {
+    .ticket-card-body {
+      max-height: calc(100vh - 360px);
+      overflow: hidden auto;
+      scrollbar-gutter: stable;
+    }
   }
-}
 
-/* <1200px 窄屏：单列堆叠，只约束"审批记录"卡片，避免大量评论把页面顶到无穷远；
+  /* <1200px 窄屏：单列堆叠，只约束"审批记录"卡片，避免大量评论把页面顶到无穷远；
    申请内容保持自然高度以便阅读表单 */
-@media (max-width: 1199.98px) {
-  .ticket-timeline-card .ticket-card-body {
-    max-height: 70vh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-gutter: stable;
+  @media (width <= 1199.98px) {
+    .ticket-timeline-card .ticket-card-body {
+      max-height: 70vh;
+      overflow: hidden auto;
+      scrollbar-gutter: stable;
+    }
   }
-}
 </style>

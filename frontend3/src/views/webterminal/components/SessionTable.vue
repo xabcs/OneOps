@@ -232,16 +232,16 @@
     th {
       text-align: left;
       padding: 10px 12px;
-      border-bottom: 1px solid #333333;
+      border-bottom: 1px solid #333;
       font-weight: 500;
-      color: #cccccc;
+      color: #ccc;
       white-space: nowrap;
       vertical-align: middle;
     }
 
     td {
       padding: 10px 12px;
-      border-bottom: 1px solid #333333;
+      border-bottom: 1px solid #333;
       vertical-align: middle;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -259,7 +259,7 @@
   .wb-checkbox-column {
     width: 48px;
     text-align: center;
-    border-right: 1px solid #333333;
+    border-right: 1px solid #333;
     padding: 10px 12px !important;
     vertical-align: middle;
   }
@@ -270,10 +270,10 @@
     height: 14px;
     cursor: pointer;
     appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
+    appearance: none;
+    appearance: none;
     background: #252526;
-    border: 1px solid #555555;
+    border: 1px solid #555;
     border-radius: 2px;
     position: relative;
     vertical-align: middle;
@@ -292,7 +292,7 @@
         content: '';
         position: absolute;
         left: 3px;
-        top: 0px;
+        top: 0;
         width: 4px;
         height: 8px;
         border: solid white;
@@ -311,9 +311,9 @@
   thead th.wb-checkbox-column {
     padding: 10px 12px !important;
     text-align: center !important;
-    border-bottom: 1px solid #333333;
+    border-bottom: 1px solid #333;
     font-weight: 500;
-    color: #ffffff;
+    color: #fff;
   }
 
   /* 序号列样式 */
@@ -321,10 +321,10 @@
     width: 80px;
     text-align: left;
     padding: 10px 12px 10px 16px !important;
-    color: #ffffff;
+    color: #fff;
     font-size: 14px;
     font-weight: 400;
-    border-right: 1px solid #333333;
+    border-right: 1px solid #333;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     letter-spacing: 0.5px;
     vertical-align: middle;
@@ -333,9 +333,9 @@
   /* 表头序号列特殊样式 */
   thead th.wb-index-column {
     padding: 10px 12px 10px 16px !important;
-    color: #ffffff;
+    color: #fff;
     font-weight: 500;
-    border-bottom: 1px solid #333333;
+    border-bottom: 1px solid #333;
   }
 
   .wb-status-online {
@@ -385,7 +385,7 @@
     background: transparent;
     border: 1px solid #3c3c3c;
     border-radius: 2px;
-    color: #cccccc;
+    color: #ccc;
     cursor: pointer;
     font-size: 12px;
 
@@ -408,7 +408,7 @@
     background: #252526;
     border: 1px solid #252526;
     border-radius: 2px;
-    color: #cccccc;
+    color: #ccc;
     cursor: pointer;
     font-size: 12px;
 

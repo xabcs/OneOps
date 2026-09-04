@@ -44,7 +44,7 @@
   color: var(--sx-hero-icon-color);
   background: var(--sx-hero-icon-bg);
   border: 1px solid var(--sx-hero-icon-border);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 80%);
 }
 
 .hero-title-row h2 {
@@ -243,7 +243,7 @@
 /* ============================================
    7. 响应式设计
    ============================================ */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .hero-section {
     flex-direction: column;
     align-items: flex-start;

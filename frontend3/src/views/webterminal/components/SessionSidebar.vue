@@ -153,7 +153,7 @@
   .section-title {
     font-size: 13px;
     font-weight: 600;
-    color: #cccccc;
+    color: #ccc;
   }
 
   .icon {
@@ -175,7 +175,7 @@
   }
 
   .empty p {
-    margin: 0 0 16px 0;
+    margin: 0 0 16px;
     font-size: 12px;
   }
 
@@ -222,7 +222,7 @@
 
   .name {
     font-size: 13px;
-    color: #cccccc;
+    color: #ccc;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

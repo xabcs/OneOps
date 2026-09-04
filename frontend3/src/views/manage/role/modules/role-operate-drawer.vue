@@ -135,7 +135,13 @@
     <template #footer>
       <ElSpace :size="16">
         <ElButton @click="closeDrawer">{{ $t('common.cancel') }}</ElButton>
-        <PermissionButton :code="isEdit ? 'system.role.update' : 'system.role.create'" type="primary" @click="handleSubmit">{{ $t('common.confirm') }}</PermissionButton>
+        <PermissionButton
+          :code="isEdit ? 'system.role.update' : 'system.role.create'"
+          type="primary"
+          @click="handleSubmit"
+        >
+          {{ $t('common.confirm') }}
+        </PermissionButton>
       </ElSpace>
     </template>
   </ElDrawer>

@@ -176,12 +176,12 @@
         &:hover {
           background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
           transform: translateY(-1px);
-          box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+          box-shadow: 0 4px 8px rgb(102 126 234 / 30%);
         }
 
         &.is-active {
           background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
-          box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+          box-shadow: 0 6px 12px rgb(102 126 234 / 40%);
         }
 
         .el-icon {
@@ -224,6 +224,7 @@
       opacity: 1;
       transform: translateY(-50%) scale(1);
     }
+
     50% {
       opacity: 0.8;
       transform: translateY(-50%) scale(1.1);

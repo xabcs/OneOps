@@ -105,6 +105,6 @@
 
 <style scoped>
   .selected-mix-menu {
-    background-color: v-bind(selectedBgColor);
+    background-color: v-bind(selectedbgcolor);
   }
 </style>

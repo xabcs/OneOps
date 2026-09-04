@@ -212,7 +212,8 @@
 
           <ElCol :xs="24">
             <ElFormItem>
-              <PermissionButton code="monitor.report.create"
+              <PermissionButton
+                code="monitor.report.create"
                 type="primary"
                 :loading="generating"
                 :disabled="reportForm.serverIds.length === 0"

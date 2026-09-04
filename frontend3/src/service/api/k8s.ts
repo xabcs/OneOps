@@ -798,11 +798,7 @@ export function getK8sNativeRole(clusterId: number, namespace: string, name: str
 /**
  * 更新命名空间内原生 Role
  */
-export function updateK8sNativeRole(
-  clusterId: number,
-  namespace: string,
-  manifest: Record<string, unknown>
-) {
+export function updateK8sNativeRole(clusterId: number, namespace: string, manifest: Record<string, unknown>) {
   return request({
     url: `/k8s/clusters/${clusterId}/rbac/roles/${namespace}`,
     method: 'put',

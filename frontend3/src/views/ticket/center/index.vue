@@ -1,13 +1,13 @@
 <script setup lang="tsx">
   import { computed, ref } from 'vue';
-  import dayjs from 'dayjs';
-  import { Plus } from '@element-plus/icons-vue';
   import { useRouter } from 'vue-router';
   import type { TabPaneName } from 'element-plus';
-  import { useAuthStore } from '@/store/modules/auth';
+  import dayjs from 'dayjs';
+  import { Plus } from '@element-plus/icons-vue';
   import { fetchTicketTypeOptions, fetchTickets } from '@/service/api';
+  import { useAuthStore } from '@/store/modules/auth';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
-  import { ticketStatusMap, ticketStatusOptions, ticketPriorityMap } from '../constants';
+  import { ticketPriorityMap, ticketStatusMap, ticketStatusOptions } from '../constants';
   import TicketCreateDialog from './modules/ticket-create-dialog.vue';
 
   defineOptions({ name: 'TicketCenter' });
@@ -108,11 +108,7 @@
         fixed: 'right',
         align: 'center',
         formatter: row => (
-          <ElButton
-            size="small"
-            type={row.canApprove ? 'primary' : 'default'}
-            onClick={() => handleView(row.id)}
-          >
+          <ElButton size="small" type={row.canApprove ? 'primary' : 'default'} onClick={() => handleView(row.id)}>
             {row.canApprove ? '去审批' : '查看'}
           </ElButton>
         )

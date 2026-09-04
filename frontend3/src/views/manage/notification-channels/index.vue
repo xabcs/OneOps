@@ -3,13 +3,13 @@
   import type { Component } from 'vue';
   import { ElMessage, ElMessageBox } from 'element-plus';
   import { Bell, ChatDotRound, Message, Plus } from '@element-plus/icons-vue';
-  import { useAuthStore } from '@/store/modules/auth';
   import {
     deleteNotificationChannel,
     fetchNotificationChannels,
     testNotificationChannel,
     updateNotificationChannel
   } from '@/service/api';
+  import { useAuthStore } from '@/store/modules/auth';
   import NotificationChannelDialog from './modules/NotificationChannelDialog.vue';
 
   defineOptions({
@@ -227,7 +227,13 @@
         </ElTableColumn>
         <ElTableColumn label="操作" width="200" align="center" fixed="right">
           <template #default="{ row }">
-            <PermissionButton code="monitor.notification.update" type="primary" link size="small" @click="handleEdit(row)">
+            <PermissionButton
+              code="monitor.notification.update"
+              type="primary"
+              link
+              size="small"
+              @click="handleEdit(row)"
+            >
               编辑
             </PermissionButton>
             <PermissionButton
@@ -240,7 +246,13 @@
             >
               测试
             </PermissionButton>
-            <PermissionButton code="monitor.notification.delete" type="danger" link size="small" @click="handleDelete(row)">
+            <PermissionButton
+              code="monitor.notification.delete"
+              type="danger"
+              link
+              size="small"
+              @click="handleDelete(row)"
+            >
               删除
             </PermissionButton>
           </template>
@@ -251,6 +263,11 @@
     </ElCard>
 
     <!-- 通知渠道对话框 -->
-    <NotificationChannelDialog v-model:visible="showDialog" :mode="dialogMode" :channel="currentChannel" @submitted="loadChannels" />
+    <NotificationChannelDialog
+      v-model:visible="showDialog"
+      :mode="dialogMode"
+      :channel="currentChannel"
+      @submitted="loadChannels"
+    />
   </div>
 </template>

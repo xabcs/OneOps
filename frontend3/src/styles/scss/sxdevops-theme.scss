@@ -15,12 +15,13 @@
   --brand-gradient-short: linear-gradient(135deg, #67b7ab 0%, #5586b6 100%);
 
   /* ========== 侧边栏配色系统 ========== */
+
   /* 侧边栏尺寸 */
   --sidebar-width: 188px;
   --sidebar-collapsed-width: 68px;
 
   /* 侧边栏背景渐变 */
-  --sidebar-bg: linear-gradient(180deg, rgba(241, 246, 255, 0.98) 0%, rgba(232, 240, 255, 0.9) 100%);
+  --sidebar-bg: linear-gradient(180deg, rgb(241 246 255 / 98%) 0%, rgb(232 240 255 / 90%) 100%);
   --sidebar-hover: #e8f0ff;
   --sidebar-active: linear-gradient(180deg, #eaf2ff 0%, #deebff 100%);
 
@@ -29,19 +30,20 @@
   --sidebar-text-active: #2563eb;
 
   /* ========== 顶栏配色系统 ========== */
+
   /* 顶栏尺寸 */
   --header-height: 60px;
 
   /* 顶栏背景渐变 */
-  --header-bg: linear-gradient(180deg, rgba(248, 251, 255, 0.98) 0%, rgba(243, 247, 255, 0.94) 100%);
-  --header-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  --header-bg: linear-gradient(180deg, rgb(248 251 255 / 98%) 0%, rgb(243 247 255 / 94%) 100%);
+  --header-shadow: 0 1px 3px rgb(15 23 42 / 4%);
 
   /* ========== 内容区配色 ========== */
   --content-bg: #f1f5f9;
 
   /* ========== 卡片配色系统 ========== */
-  --card-bg: #ffffff;
-  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --card-bg: #fff;
+  --card-shadow: 0 1px 3px rgb(0 0 0 / 6%), 0 1px 2px rgb(0 0 0 / 4%);
   --card-radius: 12px;
 
   /* ========== 文字颜色层级 ========== */
@@ -50,25 +52,26 @@
   --text-muted: #94a3b8;
 
   /* ========== 状态色彩系统 ========== */
+
   /* 成功状态 */
   --success: #10b981;
-  --success-light: rgba(16, 185, 129, 0.1);
-  --success-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+  --success-light: rgb(16 185 129 / 10%);
+  --success-shadow: 0 0 6px rgb(16 185 129 / 50%);
 
   /* 警告状态 */
   --warning: #f59e0b;
-  --warning-light: rgba(245, 158, 11, 0.1);
-  --warning-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
+  --warning-light: rgb(245 158 11 / 10%);
+  --warning-shadow: 0 0 6px rgb(245 158 11 / 50%);
 
   /* 危险状态 */
   --danger: #ef4444;
-  --danger-light: rgba(239, 68, 68, 0.1);
-  --danger-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+  --danger-light: rgb(239 68 68 / 10%);
+  --danger-shadow: 0 0 6px rgb(239 68 68 / 50%);
 
   /* 信息状态 */
   --info: #3b82f6;
-  --info-light: rgba(59, 130, 246, 0.1);
-  --info-shadow: 0 0 6px rgba(59, 130, 246, 0.5);
+  --info-light: rgb(59 130 246 / 10%);
+  --info-shadow: 0 0 6px rgb(59 130 246 / 50%);
 
   /* ========== 过渡动画系统 ========== */
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -76,49 +79,50 @@
   --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
   /* ========== 阴影系统 ========== */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 5%);
+  --shadow-md: 0 4px 6px rgb(0 0 0 / 7%);
+  --shadow-lg: 0 10px 15px rgb(0 0 0 / 10%);
+  --shadow-xl: 0 20px 25px rgb(0 0 0 / 15%);
 
   /* 品牌阴影系统 */
-  --brand-shadow-sm: 0 2px 8px rgba(59, 130, 246, 0.08);
-  --brand-shadow-md: 0 8px 18px rgba(59, 130, 246, 0.14);
-  --brand-shadow-lg: 0 12px 24px rgba(59, 130, 246, 0.2);
+  --brand-shadow-sm: 0 2px 8px rgb(59 130 246 / 8%);
+  --brand-shadow-md: 0 8px 18px rgb(59 130 246 / 14%);
+  --brand-shadow-lg: 0 12px 24px rgb(59 130 246 / 20%);
 
   /* ========== 边框系统 ========== */
-  --border-light: rgba(148, 163, 184, 0.12);
-  --border-medium: rgba(148, 163, 184, 0.18);
-  --border-strong: rgba(59, 130, 246, 0.24);
-  --border-brand: rgba(96, 165, 250, 0.24);
+  --border-light: rgb(148 163 184 / 12%);
+  --border-medium: rgb(148 163 184 / 18%);
+  --border-strong: rgb(59 130 246 / 24%);
+  --border-brand: rgb(96 165 250 / 24%);
 
   /* ========== 按钮配色系统 ========== */
+
   /* 产品介绍按钮 */
-  --btn-promo-bg: linear-gradient(135deg, rgba(239, 246, 255, 0.92) 0%, rgba(236, 253, 245, 0.74) 100%);
-  --btn-promo-hover: linear-gradient(135deg, rgba(219, 234, 254, 0.98) 0%, rgba(209, 250, 229, 0.84) 100%);
+  --btn-promo-bg: linear-gradient(135deg, rgb(239 246 255 / 92%) 0%, rgb(236 253 245 / 74%) 100%);
+  --btn-promo-hover: linear-gradient(135deg, rgb(219 234 254 / 98%) 0%, rgb(209 250 229 / 84%) 100%);
   --btn-promo-text: #5b7fc7;
-  --btn-promo-border: rgba(96, 165, 250, 0.22);
+  --btn-promo-border: rgb(96 165 250 / 22%);
 
   /* 智能助手按钮 */
-  --btn-assistant-bg: linear-gradient(135deg, rgba(239, 246, 255, 0.92) 0%, rgba(255, 247, 237, 0.72) 100%);
-  --btn-assistant-hover: linear-gradient(135deg, rgba(219, 234, 254, 0.96) 0%, rgba(255, 237, 213, 0.82) 100%);
+  --btn-assistant-bg: linear-gradient(135deg, rgb(239 246 255 / 92%) 0%, rgb(255 247 237 / 72%) 100%);
+  --btn-assistant-hover: linear-gradient(135deg, rgb(219 234 254 / 96%) 0%, rgb(255 237 213 / 82%) 100%);
   --btn-assistant-text: #3b82f6;
 
   /* ========== Logo 配色 ========== */
   --logo-icon-bg: linear-gradient(145deg, #eef4ff 0%, #f8fbff 100%);
-  --logo-icon-border: rgba(96, 165, 250, 0.24);
-  --logo-icon-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+  --logo-icon-border: rgb(96 165 250 / 24%);
+  --logo-icon-shadow: 0 8px 18px rgb(37 99 235 / 8%);
   --logo-text-color: #2563eb;
   --logo-subtext-color: #6b7c96;
 
   /* ========== 通知系统配色 ========== */
-  --notice-panel-bg: rgba(255, 255, 255, 0.92);
-  --notice-border: rgba(226, 232, 240, 0.72);
+  --notice-panel-bg: rgb(255 255 255 / 92%);
+  --notice-border: rgb(226 232 240 / 72%);
 
   /* 通知项配色 */
-  --notice-item-bg: rgba(255, 255, 255, 0.92);
-  --notice-item-hover: rgba(248, 250, 252, 0.96);
-  --notice-item-border: rgba(226, 232, 240, 0.72);
+  --notice-item-bg: rgb(255 255 255 / 92%);
+  --notice-item-hover: rgb(248 250 252 / 96%);
+  --notice-item-border: rgb(226 232 240 / 72%);
 
   /* 通知状态点 */
   --notice-dot-danger: #ef4444;
@@ -128,17 +132,18 @@
 
   /* ========== 用户头像配色 ========== */
   --avatar-bg: linear-gradient(135deg, #72c1b5 0%, #5f90c1 58%, #506ba5 100%);
-  --avatar-shadow: 0 8px 18px rgba(80, 107, 165, 0.18);
+  --avatar-shadow: 0 8px 18px rgb(80 107 165 / 18%);
 
   /* ========== 工业风格配色 ========== */
+
   /* K8s 工具栏 */
   --k8s-toolbar-bg: linear-gradient(135deg, #3b82f6, #2563eb);
-  --k8s-toolbar-shadow: 0 4px 15px -3px rgba(59, 130, 246, 0.4);
-  --k8s-toolbar-text: #ffffff;
+  --k8s-toolbar-shadow: 0 4px 15px -3px rgb(59 130 246 / 40%);
+  --k8s-toolbar-text: #fff;
 
   /* Docker 工具栏 */
   --docker-toolbar-bg: #2496ed;
-  --docker-toolbar-shadow: 0 4px 15px -3px rgba(36, 150, 237, 0.4);
+  --docker-toolbar-shadow: 0 4px 15px -3px rgb(36 150 237 / 40%);
 
   /* 工业风格背景 */
   --industrial-bg: #0f172a;
@@ -152,10 +157,11 @@
   --terminal-success: #10b981;
 
   /* ========== 状态指示器配色 ========== */
+
   /* 脉冲动画颜色 */
-  --pulse-success: rgba(16, 185, 129, 0.5);
-  --pulse-warning: rgba(245, 158, 11, 0.5);
-  --pulse-danger: rgba(239, 68, 68, 0.5);
+  --pulse-success: rgb(16 185 129 / 50%);
+  --pulse-warning: rgb(245 158 11 / 50%);
+  --pulse-danger: rgb(239 68 68 / 50%);
 
   /* ========== 滚动条配色 ========== */
   --scrollbar-track: transparent;
@@ -163,17 +169,17 @@
   --scrollbar-thumb-hover: #94a3b8;
 
   /* ========== 输入框配色 ========== */
-  --input-bg: rgba(255, 255, 255, 0.92);
-  --input-border: rgba(148, 163, 184, 0.16);
-  --input-hover-border: rgba(59, 130, 246, 0.18);
-  --input-focus-border: rgba(37, 99, 235, 0.22);
-  --input-shadow: 0 0 0 1px rgba(148, 163, 184, 0.16) inset;
-  --input-focus-shadow: 0 0 0 1px rgba(37, 99, 235, 0.38) inset;
+  --input-bg: rgb(255 255 255 / 92%);
+  --input-border: rgb(148 163 184 / 16%);
+  --input-hover-border: rgb(59 130 246 / 18%);
+  --input-focus-border: rgb(37 99 235 / 22%);
+  --input-shadow: 0 0 0 1px rgb(148 163 184 / 16%) inset;
+  --input-focus-shadow: 0 0 0 1px rgb(37 99 235 / 38%) inset;
 
   /* ========== 表格配色 ========== */
   --table-header-bg: #f8fafc;
   --table-row-hover: #f8fbff;
-  --table-border: rgba(148, 163, 184, 0.16);
+  --table-border: rgb(148 163 184 / 16%);
   --table-text-color: #475569;
 
   /* ========== 动画时间 ========== */
@@ -184,68 +190,68 @@
 
 /* ========== 深色模式适配 ========== */
 html.dark:root {
-    /* 主色调调整 */
-    --primary: #818cf8;
-    --primary-light: #a5b4fc;
-    --primary-dark: #6366f1;
+  /* 主色调调整 */
+  --primary: #818cf8;
+  --primary-light: #a5b4fc;
+  --primary-dark: #6366f1;
 
-    /* 背景色系 — 参考 soybean-admin 中性灰 */
-    --content-bg: #121212;
-    --card-bg: #1c1c1c;
-    --header-bg: linear-gradient(180deg, rgba(28, 28, 28, 0.98), rgba(18, 18, 18, 0.94));
-    --sidebar-bg: linear-gradient(180deg, rgba(28, 28, 28, 0.98) 0%, rgba(18, 18, 18, 0.9) 100%);
+  /* 背景色系 — 参考 soybean-admin 中性灰 */
+  --content-bg: #121212;
+  --card-bg: #1c1c1c;
+  --header-bg: linear-gradient(180deg, rgb(28 28 28 / 98%), rgb(18 18 18 / 94%));
+  --sidebar-bg: linear-gradient(180deg, rgb(28 28 28 / 98%) 0%, rgb(18 18 18 / 90%) 100%);
 
-    /* 文字颜色 */
-    --text-primary: #e0e0e0;
-    --text-secondary: #a0a0a0;
-    --text-muted: #707070;
+  /* 文字颜色 */
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #707070;
 
-    /* 边框颜色 */
-    --border-light: rgba(255, 255, 255, 0.08);
-    --border-medium: rgba(255, 255, 255, 0.12);
-    --border-strong: rgba(255, 255, 255, 0.16);
+  /* 边框颜色 */
+  --border-light: rgb(255 255 255 / 8%);
+  --border-medium: rgb(255 255 255 / 12%);
+  --border-strong: rgb(255 255 255 / 16%);
 
-    /* 侧边栏颜色 */
-    --sidebar-text: #a0a0a0;
-    --sidebar-text-active: var(--primary);
-    --sidebar-hover: rgba(255, 255, 255, 0.06);
+  /* 侧边栏颜色 */
+  --sidebar-text: #a0a0a0;
+  --sidebar-text-active: var(--primary);
+  --sidebar-hover: rgb(255 255 255 / 6%);
 
-    /* 卡片阴影 */
-    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  /* 卡片阴影 */
+  --card-shadow: 0 1px 3px rgb(0 0 0 / 30%);
 
-    /* 表格配色 */
-    --table-header-bg: #1c1c1c;
-    --table-row-hover: rgba(255, 255, 255, 0.04);
-    --table-border: rgba(255, 255, 255, 0.08);
-    --table-text-color: #c0c0c0;
+  /* 表格配色 */
+  --table-header-bg: #1c1c1c;
+  --table-row-hover: rgb(255 255 255 / 4%);
+  --table-border: rgb(255 255 255 / 8%);
+  --table-text-color: #c0c0c0;
 
-    /* 输入框配色 */
-    --input-bg: rgba(28, 28, 28, 0.6);
-    --input-border: rgba(255, 255, 255, 0.1);
-    --input-hover-border: rgba(129, 140, 248, 0.3);
-    --input-focus-border: rgba(129, 140, 248, 0.4);
-    --input-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
-    --input-focus-shadow: 0 0 0 1px rgba(129, 140, 248, 0.4) inset;
+  /* 输入框配色 */
+  --input-bg: rgb(28 28 28 / 60%);
+  --input-border: rgb(255 255 255 / 10%);
+  --input-hover-border: rgb(129 140 248 / 30%);
+  --input-focus-border: rgb(129 140 248 / 40%);
+  --input-shadow: 0 0 0 1px rgb(255 255 255 / 6%) inset;
+  --input-focus-shadow: 0 0 0 1px rgb(129 140 248 / 40%) inset;
 
-    /* 滚动条 */
-    --scrollbar-thumb: #3a3a3a;
-    --scrollbar-thumb-hover: #505050;
+  /* 滚动条 */
+  --scrollbar-thumb: #3a3a3a;
+  --scrollbar-thumb-hover: #505050;
 
-    /* Logo */
-    --logo-icon-bg: linear-gradient(145deg, rgba(28, 28, 28, 0.8) 0%, rgba(18, 18, 18, 0.9) 100%);
-    --logo-text-color: var(--primary);
-    --logo-subtext-color: #a0a0a0;
+  /* Logo */
+  --logo-icon-bg: linear-gradient(145deg, rgb(28 28 28 / 80%) 0%, rgb(18 18 18 / 90%) 100%);
+  --logo-text-color: var(--primary);
+  --logo-subtext-color: #a0a0a0;
 
-    /* 通知面板 */
-    --notice-panel-bg: rgba(28, 28, 28, 0.92);
-    --notice-border: rgba(255, 255, 255, 0.08);
-    --notice-item-bg: rgba(28, 28, 28, 0.92);
-    --notice-item-hover: rgba(255, 255, 255, 0.04);
-    --notice-item-border: rgba(255, 255, 255, 0.08);
+  /* 通知面板 */
+  --notice-panel-bg: rgb(28 28 28 / 92%);
+  --notice-border: rgb(255 255 255 / 8%);
+  --notice-item-bg: rgb(28 28 28 / 92%);
+  --notice-item-hover: rgb(255 255 255 / 4%);
+  --notice-item-border: rgb(255 255 255 / 8%);
 }
 
 /* ========== 响应式变量调整 ========== */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   :root {
     --sidebar-width: var(--sidebar-collapsed-width);
     --card-radius: 8px;

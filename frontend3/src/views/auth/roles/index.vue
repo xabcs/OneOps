@@ -57,7 +57,13 @@
         fixed: 'right',
         formatter: row => (
           <ElSpace>
-            <PermissionButton code="auth.group.update" size="small" type="warning" icon={Edit} onClick={() => handleEdit(row.id)}>
+            <PermissionButton
+              code="auth.group.update"
+              size="small"
+              type="warning"
+              icon={Edit}
+              onClick={() => handleEdit(row.id)}
+            >
               编辑
             </PermissionButton>
             <ElPopconfirm title="确认删除该用户组？" onConfirm={() => handleDelete(row.id)}>
@@ -108,7 +114,9 @@
       <template #header>
         <div class="flex items-center justify-between">
           <span class="text-lg font-medium">授权中心用户组列表</span>
-          <PermissionButton code="auth.group.create" type="primary" :icon="Plus" @click="handleAdd">添加用户组</PermissionButton>
+          <PermissionButton code="auth.group.create" type="primary" :icon="Plus" @click="handleAdd">
+            添加用户组
+          </PermissionButton>
         </div>
       </template>
 

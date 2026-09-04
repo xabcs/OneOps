@@ -1,12 +1,8 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
-import { SetupStoreId } from '@/enum';
-import type {
-  DiagnosticAgent,
-  DiagnosticAppSummary,
-  DiagnosticCommandCatalogItem
-} from '@/service/api/diagnostic';
+import type { DiagnosticAgent, DiagnosticAppSummary, DiagnosticCommandCatalogItem } from '@/service/api/diagnostic';
 import { fetchDiagnosticAppAgents, fetchDiagnosticApps, fetchDiagnosticCommands } from '@/service/api/diagnostic';
+import { SetupStoreId } from '@/enum';
 
 /**
  * 诊断中心上下文 Store

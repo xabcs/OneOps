@@ -80,14 +80,29 @@
         fixed: 'right',
         formatter: row => (
           <ElSpace wrap>
-            <PermissionButton code="auth.application.sync" size="small" type="primary" onClick={() => handleSyncUsers(row)}>
+            <PermissionButton
+              code="auth.application.sync"
+              size="small"
+              type="primary"
+              onClick={() => handleSyncUsers(row)}
+            >
               同步用户
             </PermissionButton>
-            <PermissionButton code="auth.application.sync" size="small" type="success" onClick={() => handleSyncGroups(row)}>
+            <PermissionButton
+              code="auth.application.sync"
+              size="small"
+              type="success"
+              onClick={() => handleSyncGroups(row)}
+            >
               同步用户组
             </PermissionButton>
             {row.type === 'jumpserver' && (
-              <PermissionButton code="auth.application.sync" size="small" type="warning" onClick={() => handleSyncRules(row)}>
+              <PermissionButton
+                code="auth.application.sync"
+                size="small"
+                type="warning"
+                onClick={() => handleSyncRules(row)}
+              >
                 同步授权规则
               </PermissionButton>
             )}
@@ -311,7 +326,9 @@
       <template #header>
         <div class="flex items-center justify-between">
           <span class="text-lg font-medium">应用列表</span>
-          <PermissionButton code="auth.application.create" type="primary" :icon="Plus" @click="handleAdd">添加应用</PermissionButton>
+          <PermissionButton code="auth.application.create" type="primary" :icon="Plus" @click="handleAdd">
+            添加应用
+          </PermissionButton>
         </div>
       </template>
 
@@ -397,9 +414,18 @@
       <ElAlert title="授权规则说明" type="info" :closable="false" style="margin-bottom: 16px">
         <p>授权规则定义了用户/用户组对资产的访问权限，包括：</p>
         <ul style="margin: 8px 0; padding-left: 20px">
-          <li><strong>主体</strong>：谁可以访问（用户或用户组）</li>
-          <li><strong>对象</strong>：可以访问什么（具体资产或全部资产）</li>
-          <li><strong>权限</strong>：可以执行的操作（连接、上传、下载、命令等）</li>
+          <li>
+            <strong>主体</strong>
+            ：谁可以访问（用户或用户组）
+          </li>
+          <li>
+            <strong>对象</strong>
+            ：可以访问什么（具体资产或全部资产）
+          </li>
+          <li>
+            <strong>权限</strong>
+            ：可以执行的操作（连接、上传、下载、命令等）
+          </li>
         </ul>
       </ElAlert>
 

@@ -9,7 +9,13 @@
 import { reactive, ref } from 'vue';
 import { ElNotification } from 'element-plus';
 import type { FormRules } from 'element-plus';
-import { fetchAssignServerToGroups, fetchCreateServer, fetchUpdateServer, fetchAssignServerTag, fetchRemoveServerTag } from '@/service/api';
+import {
+  fetchAssignServerTag,
+  fetchAssignServerToGroups,
+  fetchCreateServer,
+  fetchRemoveServerTag,
+  fetchUpdateServer
+} from '@/service/api';
 
 export function useServerForm() {
   // ===== 对话框状态 =====

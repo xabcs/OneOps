@@ -39,8 +39,8 @@
 
   .gradient-panel-light {
     background: linear-gradient(135deg, #fbfdff, #f7faff 52%, #f9fbfd);
-    border: 1px solid rgba(36, 91, 219, 0.09);
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    border: 1px solid rgb(36 91 219 / 9%);
+    box-shadow: 0 8px 24px rgb(15 23 42 / 4%);
     padding: 16px;
   }
 
@@ -49,22 +49,22 @@
     color: white;
     padding: 20px;
     border-radius: 16px;
-    box-shadow: 0 12px 32px rgba(103, 183, 171, 0.25);
+    box-shadow: 0 12px 32px rgb(103 183 171 / 25%);
   }
 
   .gradient-panel-toolbar {
     background: linear-gradient(180deg, #f8fafceb, #fffffff5);
-    border: 1px solid rgba(148, 163, 184, 0.12);
-    box-shadow: inset 0 1px rgba(255, 255, 255, 0.95);
+    border: 1px solid rgb(148 163 184 / 12%);
+    box-shadow: inset 0 1px rgb(255 255 255 / 95%);
     border-radius: 12px;
     padding: 12px;
   }
 
   .gradient-panel-glass {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), transparent 52%);
+    background: linear-gradient(135deg, rgb(255 255 255 / 60%), transparent 52%);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(148, 163, 184, 0.12);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgb(148 163 184 / 12%);
     border-radius: 12px;
     padding: 16px;
   }
@@ -75,7 +75,7 @@
     justify-content: space-between;
     margin-bottom: 16px;
     padding-bottom: 12px;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    border-bottom: 1px solid rgb(148 163 184 / 12%);
   }
 
   .gradient-panel-title {
@@ -102,10 +102,10 @@
   .gradient-panel-footer {
     margin-top: 16px;
     padding-top: 12px;
-    border-top: 1px solid rgba(148, 163, 184, 0.12);
+    border-top: 1px solid rgb(148 163 184 / 12%);
   }
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     .gradient-panel {
       border-radius: 8px;
       padding: 12px;

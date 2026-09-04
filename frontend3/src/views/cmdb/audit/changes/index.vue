@@ -1,9 +1,9 @@
 <script setup lang="tsx">
   import { onMounted, ref } from 'vue';
   import { Refresh, Search } from '@element-plus/icons-vue';
+  import type { FlatResponseData } from '@sa/axios';
   import { fetchGetAssetChanges } from '@/service/api';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
-  import type { FlatResponseData } from '@sa/axios';
 
   defineOptions({ name: 'CmdbChanges' });
 
@@ -68,7 +68,10 @@
     ]
   });
 
-  function getChangeTypeTag(type: string): { text: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' } {
+  function getChangeTypeTag(type: string): {
+    text: string;
+    type: 'success' | 'warning' | 'danger' | 'info' | 'primary';
+  } {
     const typeMap: Record<string, { text: string; type: 'success' | 'warning' | 'danger' | 'info' | 'primary' }> = {
       create: { text: '创建', type: 'success' },
       update: { text: '更新', type: 'warning' },

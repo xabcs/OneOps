@@ -305,7 +305,7 @@
   }
 
   .command-text {
-    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-family: Monaco, Menlo, 'Courier New', monospace;
     font-size: 13px;
     word-break: break-all;
   }

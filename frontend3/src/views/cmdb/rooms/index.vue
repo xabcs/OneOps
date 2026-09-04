@@ -87,7 +87,9 @@
           </ElInput>
           <ElButton :icon="Refresh" @click="getData">刷新</ElButton>
         </ElSpace>
-        <PermissionButton code="cmdb.rooms.create" type="primary" :icon="Plus" @click="handleAdd">新增机房</PermissionButton>
+        <PermissionButton code="cmdb.rooms.create" type="primary" :icon="Plus" @click="handleAdd">
+          新增机房
+        </PermissionButton>
       </div>
 
       <ElTable v-loading="loading" :data="tableData" border stripe>
@@ -109,8 +111,12 @@
         <ElTableColumn prop="remarks" label="备注" min-width="150" align="center" show-overflow-tooltip />
         <ElTableColumn label="操作" width="180" align="center" fixed="right">
           <template #default="{ row }">
-            <PermissionButton code="cmdb.rooms.update" type="primary" size="small" @click="handleEdit(row)">编辑</PermissionButton>
-            <PermissionButton code="cmdb.rooms.delete" type="danger" size="small" @click="handleDelete(row)">删除</PermissionButton>
+            <PermissionButton code="cmdb.rooms.update" type="primary" size="small" @click="handleEdit(row)">
+              编辑
+            </PermissionButton>
+            <PermissionButton code="cmdb.rooms.delete" type="danger" size="small" @click="handleDelete(row)">
+              删除
+            </PermissionButton>
           </template>
         </ElTableColumn>
       </ElTable>

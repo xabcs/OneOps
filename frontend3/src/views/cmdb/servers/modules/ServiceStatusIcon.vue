@@ -54,7 +54,13 @@
     effect="light"
     round
     :title="getStatusText()"
-    :style="{ color: getStatusColor(), borderColor: getStatusColor(), display: 'inline-flex', alignItems: 'center', gap: '4px' }"
+    :style="{
+      color: getStatusColor(),
+      borderColor: getStatusColor(),
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '4px'
+    }"
   >
     <span>{{ getStatusIcon() }}</span>
     <span v-if="showText">{{ getStatusText() }}</span>

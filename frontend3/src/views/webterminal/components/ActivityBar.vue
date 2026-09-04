@@ -150,24 +150,24 @@
 
   .wb-activity-item:hover svg,
   .wb-activity-item:hover .iconify {
-    color: #ffffff !important;
+    color: #fff !important;
   }
 
   .wb-activity-item.active svg,
   .wb-activity-item.active .iconify {
-    color: #ffffff !important;
+    color: #fff !important;
   }
 
   .wb-activity-icon {
-    color: #cccccc !important;
+    color: #ccc !important;
   }
 
   .wb-activity-item:hover .wb-activity-icon {
-    color: #ffffff !important;
+    color: #fff !important;
   }
 
   .wb-activity-item.active .wb-activity-icon {
-    color: #ffffff !important;
+    color: #fff !important;
   }
 
   /* 下拉菜单 */
@@ -179,7 +179,7 @@
     background: #212121;
     border: none;
     border-radius: 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 12px rgb(0 0 0 / 50%);
     padding: 4px 0;
     z-index: 100;
   }
@@ -190,7 +190,7 @@
     gap: 8px;
     padding: 8px 12px;
     cursor: pointer;
-    color: #cccccc;
+    color: #ccc;
     font-size: 12px;
     transition: background 0.15s;
   }
@@ -212,7 +212,7 @@
   }
 
   .wb-menu-item:hover .wb-menu-item-icon {
-    color: #cccccc;
+    color: #ccc;
   }
 
   .wb-menu-indicator {

@@ -41,8 +41,8 @@
     padding: 8px 16px;
     cursor: pointer;
     transition: all 0.3s ease;
-    border: 1px solid rgba(96, 165, 250, 0.24);
-    box-shadow: 0 8px 18px rgba(59, 130, 246, 0.14);
+    border: 1px solid rgb(96 165 250 / 24%);
+    box-shadow: 0 8px 18px rgb(59 130 246 / 14%);
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -58,7 +58,7 @@
   .gradient-button-light:hover {
     background: linear-gradient(135deg, #dbeafefa, #d1fae5d6);
     transform: translateY(-1px);
-    box-shadow: 0 12px 24px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 12px 24px rgb(59 130 246 / 20%);
   }
 
   .gradient-button-white {
@@ -69,29 +69,29 @@
   .gradient-button-white:hover {
     background: linear-gradient(135deg, #dbeafef5, #ffedd5d1);
     transform: translateY(-1px);
-    box-shadow: 0 12px 24px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 12px 24px rgb(59 130 246 / 20%);
   }
 
   .gradient-button-brand {
     background: linear-gradient(135deg, #67b7ab 0%, #5586b6 58%, #49639a 100%);
     color: white;
-    border-color: rgba(103, 183, 171, 0.3);
+    border-color: rgb(103 183 171 / 30%);
   }
 
   .gradient-button-brand:hover {
     transform: translateY(-1px);
-    box-shadow: 0 12px 24px rgba(103, 183, 171, 0.3);
+    box-shadow: 0 12px 24px rgb(103 183 171 / 30%);
   }
 
   .gradient-button-blue {
     background: linear-gradient(135deg, #3b82f6, #38bdf8);
     color: white;
-    border-color: rgba(59, 130, 246, 0.3);
+    border-color: rgb(59 130 246 / 30%);
   }
 
   .gradient-button-blue:hover {
     transform: translateY(-1px);
-    box-shadow: 0 12px 24px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 12px 24px rgb(59 130 246 / 30%);
   }
 
   .gradient-button:disabled {
@@ -113,7 +113,7 @@
     align-items: center;
   }
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     .gradient-button {
       border-radius: 8px;
       padding: 6px 12px;

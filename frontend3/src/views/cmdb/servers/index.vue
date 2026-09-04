@@ -214,7 +214,11 @@
     attrFilterActive.value = true;
     serverDataCtx.loading.value = true;
     try {
-      const res = await fetchGetServersByAttributes(filters, serverDataCtx.pagination.page, serverDataCtx.pagination.pageSize);
+      const res = await fetchGetServersByAttributes(
+        filters,
+        serverDataCtx.pagination.page,
+        serverDataCtx.pagination.pageSize
+      );
       if (res.data) {
         serverDataCtx.tableData.value = res.data.list || [];
         serverDataCtx.total.value = res.data.total || 0;
@@ -277,7 +281,6 @@
 
   // ===== 创建/编辑提交（子组件验证通过后触发）=====
   async function onSubmitted() {
-
     const success = await formCtx.submitForm(async (serverId: number) => {
       await serverDataCtx.saveServerAttributes(serverId, serverAttributes.value);
     });
@@ -435,9 +438,9 @@
 </script>
 
 <template>
-  <el-container style="height: 100%">
+  <ElContainer style="height: 100%">
     <!-- 左侧分组树 -->
-    <el-aside width="220px" style="overflow: hidden;">
+    <ElAside width="220px" style="overflow: hidden">
       <GroupTreePanel
         :group-loading="groupTreeCtx.groupLoading.value"
         :filtered-group-tree="groupTreeCtx.filteredGroupTree.value"
@@ -469,10 +472,10 @@
         @update:group-dialog-visible="groupTreeCtx.groupDialogVisible.value = $event"
         @save-group="groupTreeCtx.handleSaveGroup"
       />
-    </el-aside>
+    </ElAside>
 
     <!-- 右侧主机列表 -->
-    <el-main style="padding: 0; margin-left: 8px;">
+    <ElMain style="padding: 0; margin-left: 8px">
       <ServerListPanel
         :loading="serverDataCtx.loading.value"
         :table-data="serverDataCtx.tableData.value"
@@ -583,6 +586,6 @@
         @confirm="confirmConnect"
         @cancel="connectingServer = null"
       />
-    </el-main>
-  </el-container>
+    </ElMain>
+  </ElContainer>
 </template>

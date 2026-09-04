@@ -255,8 +255,9 @@
         </ElTableColumn>
         <ElTableColumn label="操作" width="100" align="center" fixed="right">
           <template #default="{ row }">
-            <PermissionButton code="monitor.alert.ack"
+            <PermissionButton
               v-if="!row.acknowledged && !row.resolvedAt"
+              code="monitor.alert.ack"
               type="primary"
               link
               size="small"

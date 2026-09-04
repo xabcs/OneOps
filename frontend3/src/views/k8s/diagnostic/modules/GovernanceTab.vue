@@ -3,19 +3,19 @@
   import { ElMessage, ElMessageBox } from 'element-plus';
   import { Delete, Edit, Plus, Refresh } from '@element-plus/icons-vue';
   import {
+    type DiagnosticCommandOverride,
+    type DiagnosticWebhookStatus,
     deleteDiagnosticCommandOverride,
     disableDiagnosticWebhook,
     enableDiagnosticWebhook,
     fetchDiagnosticCommandOverrides,
     fetchDiagnosticWebhookStatus,
     saveDiagnosticCommandOverride,
-    saveDiagnosticWebhookConfig,
-    type DiagnosticCommandOverride,
-    type DiagnosticWebhookStatus
+    saveDiagnosticWebhookConfig
   } from '@/service/api/diagnostic';
   import { fetchK8sClusterOptions } from '@/service/api/k8s';
   import { useDiagnosticStore } from '@/store/modules/diagnostic';
-  import { formatDateTime, RISK_LEVEL_META } from '../shared';
+  import { RISK_LEVEL_META, formatDateTime } from '../shared';
 
   defineOptions({ name: 'DiagnosticGovernanceTab' });
 
@@ -198,7 +198,7 @@
       title: '方式二：Starter 主动接入',
       desc: '应用引入 arthas-spring-boot-starter，配置 tunnel 地址；适合自建镜像或无法使用 Webhook 的场景。',
       steps: [
-        "依赖：com.taobao.arthas:arthas-spring-boot-starter",
+        '依赖：com.taobao.arthas:arthas-spring-boot-starter',
         '配置：arthas.tunnel-server=ws://<tunnel-host>:7777/ws',
         '配置：arthas.agent-id=${POD_NAME}-${POD_NAMESPACE}'
       ]
@@ -238,7 +238,9 @@
         <div>
           <div class="section-title">Webhook 自动注入（推荐）</div>
           <div class="section-sub">
-            按 Pod 粒度触发：仅注入带 label <code>oneops-arthas-injection=enabled</code> 的 Pod，无需对命名空间打标签。
+            按 Pod 粒度触发：仅注入带 label
+            <code>oneops-arthas-injection=enabled</code>
+            的 Pod，无需对命名空间打标签。
           </div>
         </div>
         <div class="section-actions">
@@ -264,13 +266,7 @@
 
       <div v-loading="webhookLoading" class="webhook-body">
         <!-- 当前生效配置（保存后此处回显） -->
-        <ElDescriptions
-          v-if="webhookStatus"
-          :column="1"
-          border
-          size="small"
-          class="webhook-desc"
-        >
+        <ElDescriptions v-if="webhookStatus" :column="1" border size="small" class="webhook-desc">
           <ElDescriptionsItem label="注入状态">
             <ElTag :type="webhookStatus.enabled ? 'success' : 'info'" size="small">
               {{ webhookStatus.enabled ? '已启用' : '未启用' }}
@@ -377,7 +373,7 @@
         </div>
       </div>
 
-      <ElTable :data="overrides" v-loading="loading" size="small">
+      <ElTable v-loading="loading" :data="overrides" size="small">
         <ElTableColumn prop="command" label="命令" width="140">
           <template #default="{ row }">
             <code class="cmd-text">{{ row.command }}</code>
@@ -397,10 +393,24 @@
         </ElTableColumn>
         <ElTableColumn label="操作" width="130" fixed="right">
           <template #default="{ row }">
-            <PermissionButton code="k8s.diagnostic.execute" size="small" link type="primary" :icon="Edit" @click="openEdit(row)">
+            <PermissionButton
+              code="k8s.diagnostic.execute"
+              size="small"
+              link
+              type="primary"
+              :icon="Edit"
+              @click="openEdit(row)"
+            >
               编辑
             </PermissionButton>
-            <PermissionButton code="k8s.diagnostic.execute" size="small" link type="danger" :icon="Delete" @click="remove(row)">
+            <PermissionButton
+              code="k8s.diagnostic.execute"
+              size="small"
+              link
+              type="danger"
+              :icon="Delete"
+              @click="remove(row)"
+            >
               删除
             </PermissionButton>
           </template>
@@ -436,7 +446,9 @@
       </ElForm>
       <template #footer>
         <ElButton @click="dialogVisible = false">取消</ElButton>
-        <PermissionButton code="k8s.diagnostic.execute" type="primary" :loading="saving" @click="save">保存</PermissionButton>
+        <PermissionButton code="k8s.diagnostic.execute" type="primary" :loading="saving" @click="save">
+          保存
+        </PermissionButton>
       </template>
     </ElDialog>
   </div>

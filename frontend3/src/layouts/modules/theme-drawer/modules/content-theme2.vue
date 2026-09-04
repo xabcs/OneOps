@@ -837,7 +837,7 @@
 <style scoped lang="scss">
   .theme-section {
     padding: 12px 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    border-bottom: 1px solid rgb(0 0 0 / 6%);
 
     &:last-child {
       border-bottom: none;
@@ -869,7 +869,7 @@
     font-size: 12px;
     font-weight: 500;
     color: #64748b;
-    border-left: 2px solid rgba(59, 130, 246, 0.2);
+    border-left: 2px solid rgb(59 130 246 / 20%);
     padding-left: 8px;
   }
 

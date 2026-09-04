@@ -75,20 +75,29 @@
 </script>
 
 <template>
-  <ElDrawer
-    v-model="visible"
-    :title="`编辑主机 - ${serverForm.hostname}`"
-    direction="rtl"
-    size="80%"
-    destroy-on-close
-  >
+  <ElDrawer v-model="visible" :title="`编辑主机 - ${serverForm.hostname}`" direction="rtl" size="80%" destroy-on-close>
     <ElTabs v-model="activeTab">
       <!-- 基础信息 Tab -->
       <ElTabPane label="基础信息" name="basic">
-        <ElForm ref="formRef" :model="serverForm" :rules="serverFormRules" label-width="100px" :style="{ padding: '16px' }">
+        <ElForm
+          ref="formRef"
+          :model="serverForm"
+          :rules="serverFormRules"
+          label-width="100px"
+          :style="{ padding: '16px' }"
+        >
           <div :style="{ display: 'flex', gap: '20px', marginBottom: '16px' }">
             <div :style="{ flex: '1', minWidth: '0' }">
-              <div :style="{ fontSize: '13px', fontWeight: 600, color: 'var(--el-color-primary)', marginBottom: '10px', paddingBottom: '4px', borderBottom: '1px solid #dcdfe6' }">
+              <div
+                :style="{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: 'var(--el-color-primary)',
+                  marginBottom: '10px',
+                  paddingBottom: '4px',
+                  borderBottom: '1px solid #dcdfe6'
+                }"
+              >
                 主机信息
               </div>
               <ElFormItem label="主机名" prop="hostname" :style="{ marginBottom: '8px' }">
@@ -117,7 +126,16 @@
               </ElFormItem>
             </div>
             <div :style="{ flex: '1', minWidth: '0' }">
-              <div :style="{ fontSize: '13px', fontWeight: 600, color: 'var(--el-color-primary)', marginBottom: '10px', paddingBottom: '4px', borderBottom: '1px solid #dcdfe6' }">
+              <div
+                :style="{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: 'var(--el-color-primary)',
+                  marginBottom: '10px',
+                  paddingBottom: '4px',
+                  borderBottom: '1px solid #dcdfe6'
+                }"
+              >
                 归属信息
               </div>
               <ElFormItem label="业务系统">
@@ -136,7 +154,16 @@
 
           <div :style="{ display: 'flex', gap: '20px', marginBottom: '16px' }">
             <div :style="{ flex: '1', minWidth: '0' }">
-              <div :style="{ fontSize: '13px', fontWeight: 600, color: 'var(--el-color-primary)', marginBottom: '10px', paddingBottom: '4px', borderBottom: '1px solid #dcdfe6' }">
+              <div
+                :style="{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: 'var(--el-color-primary)',
+                  marginBottom: '10px',
+                  paddingBottom: '4px',
+                  borderBottom: '1px solid #dcdfe6'
+                }"
+              >
                 凭证配置
               </div>
               <ElFormItem label="用户连接凭证" prop="credentialIds">
@@ -173,7 +200,16 @@
               </ElFormItem>
             </div>
             <div :style="{ flex: '1', minWidth: '0' }">
-              <div :style="{ fontSize: '13px', fontWeight: 600, color: 'var(--el-color-primary)', marginBottom: '10px', paddingBottom: '4px', borderBottom: '1px solid #dcdfe6' }">
+              <div
+                :style="{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: 'var(--el-color-primary)',
+                  marginBottom: '10px',
+                  paddingBottom: '4px',
+                  borderBottom: '1px solid #dcdfe6'
+                }"
+              >
                 分组与标签
               </div>
               <ElFormItem label="所属分组" prop="groupIds">
@@ -219,7 +255,16 @@
 
           <div :style="{ display: 'flex', gap: '20px', marginBottom: '16px' }">
             <div :style="{ flex: '1', minWidth: '0' }">
-              <div :style="{ fontSize: '13px', fontWeight: 600, color: 'var(--el-color-primary)', marginBottom: '10px', paddingBottom: '4px', borderBottom: '1px solid #dcdfe6' }">
+              <div
+                :style="{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: 'var(--el-color-primary)',
+                  marginBottom: '10px',
+                  paddingBottom: '4px',
+                  borderBottom: '1px solid #dcdfe6'
+                }"
+              >
                 位置信息
               </div>
               <ElFormItem label="所在机房">
@@ -256,7 +301,16 @@
               </ElFormItem>
             </div>
             <div :style="{ flex: '1', minWidth: '0' }">
-              <div :style="{ fontSize: '13px', fontWeight: 600, color: 'var(--el-color-primary)', marginBottom: '10px', paddingBottom: '4px', borderBottom: '1px solid #dcdfe6' }">
+              <div
+                :style="{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: 'var(--el-color-primary)',
+                  marginBottom: '10px',
+                  paddingBottom: '4px',
+                  borderBottom: '1px solid #dcdfe6'
+                }"
+              >
                 硬件配置
               </div>
               <ElFormItem label="CPU/内存/磁盘">

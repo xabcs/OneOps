@@ -401,5 +401,5 @@
 </template>
 
 <style scoped lang="scss">
-  @use './modules/role-page.scss';
+  @use './modules/role-page';
 </style>

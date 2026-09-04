@@ -400,5 +400,5 @@
 </template>
 
 <style scoped lang="scss">
-  @use './modules/user-page.scss';
+  @use './modules/user-page';
 </style>

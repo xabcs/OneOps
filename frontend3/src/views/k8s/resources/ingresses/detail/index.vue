@@ -199,7 +199,9 @@
 
       <ElTabPane label="YAML" name="yaml">
         <div class="tab-toolbar">
-          <PermissionButton code="k8s.resource.update" type="primary" size="small" @click="showYamlEditor = true">编辑 YAML</PermissionButton>
+          <PermissionButton code="k8s.resource.update" type="primary" size="small" @click="showYamlEditor = true">
+            编辑 YAML
+          </PermissionButton>
         </div>
         <div class="yaml-viewer">
           <pre>{{ yamlContent }}</pre>
@@ -241,7 +243,7 @@
   .tab-toolbar {
     display: flex;
     justify-content: flex-end;
-    padding: 0 16px 8px 16px;
+    padding: 0 16px 8px;
   }
 
   .detail-tabs {
@@ -259,7 +261,7 @@
   .yaml-viewer pre {
     margin: 0;
     color: #d4d4d4;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Courier New', monospace;
+    font-family: Monaco, Menlo, 'Ubuntu Mono', 'Courier New', monospace;
     font-size: 13px;
     line-height: 1.6;
     white-space: pre-wrap;

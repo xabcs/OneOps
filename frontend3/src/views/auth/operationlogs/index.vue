@@ -1,8 +1,8 @@
 <script setup lang="tsx">
   import { onMounted, ref } from 'vue';
+  import type { FlatResponseData } from '@sa/axios';
   import { fetchApplicationOptions, fetchOperationLogs } from '@/service/api/application-permission';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
-  import type { FlatResponseData } from '@sa/axios';
 
   defineOptions({ name: 'AuthCenterOperationLogs' });
 
@@ -67,9 +67,7 @@
         width: 100,
         formatter: row => {
           const t = getStatusTag(row.status);
-          return (
-            <ElTag type={t.type}>{t.label}</ElTag>
-          );
+          return <ElTag type={t.type}>{t.label}</ElTag>;
         }
       },
       { prop: 'operator', label: '操作人', align: 'center', minWidth: 120 },
@@ -77,7 +75,10 @@
     ]
   });
 
-  function getStatusTag(status: string): { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string } {
+  function getStatusTag(status: string): {
+    type: 'primary' | 'success' | 'warning' | 'info' | 'danger';
+    label: string;
+  } {
     const map: Record<string, { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
       success: { type: 'success', label: '成功' },
       failed: { type: 'danger', label: '失败' },

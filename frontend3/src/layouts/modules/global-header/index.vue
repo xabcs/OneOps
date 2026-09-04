@@ -1,11 +1,9 @@
 <script setup lang="ts">
   import { computed, onMounted, onUnmounted, ref } from 'vue';
-  import { useFullscreen } from '@vueuse/core';
   import { useRouter } from 'vue-router';
+  import { useFullscreen } from '@vueuse/core';
   import { ElMessage } from 'element-plus';
   import { GLOBAL_HEADER_MENU_ID } from '@/constants/app';
-  import { useAppStore } from '@/store/modules/app';
-  import { useThemeStore } from '@/store/modules/theme';
   import {
     fetchMyNotifySetting,
     fetchTicketMessages,
@@ -13,6 +11,8 @@
     markTicketMessagesRead,
     updateMyNotifySetting
   } from '@/service/api';
+  import { useAppStore } from '@/store/modules/app';
+  import { useThemeStore } from '@/store/modules/theme';
   import GlobalLogo from '../global-logo/index.vue';
   import GlobalBreadcrumb from '../global-breadcrumb/index.vue';
   import GlobalSearch from '../global-search/index.vue';
@@ -520,12 +520,12 @@
 
   .status-success {
     background-color: #67c23a;
-    box-shadow: 0 0 0 2px rgba(103, 194, 58, 0.3);
+    box-shadow: 0 0 0 2px rgb(103 194 58 / 30%);
   }
 
   .status-error {
     background-color: #f56c6c;
-    box-shadow: 0 0 0 2px rgba(245, 108, 108, 0.3);
+    box-shadow: 0 0 0 2px rgb(245 108 108 / 30%);
     animation: pulse 2s infinite;
   }
 
@@ -534,6 +534,7 @@
     100% {
       opacity: 1;
     }
+
     50% {
       opacity: 0.5;
     }
@@ -572,7 +573,7 @@
     font-weight: 600;
     line-height: 16px;
     text-align: center;
-    box-shadow: 0 2px 4px rgba(245, 108, 108, 0.3);
+    box-shadow: 0 2px 4px rgb(245 108 108 / 30%);
   }
 
   .dropdown-panel {
@@ -584,7 +585,7 @@
     background: var(--el-bg-color);
     border: 1px solid var(--el-border-color);
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
     z-index: 1000;
     overflow: hidden;
   }
@@ -665,22 +666,22 @@
   }
 
   .notification-warning .notification-icon {
-    background: rgba(230, 162, 60, 0.1);
+    background: rgb(230 162 60 / 10%);
     color: var(--el-color-warning);
   }
 
   .notification-error .notification-icon {
-    background: rgba(245, 108, 108, 0.1);
+    background: rgb(245 108 108 / 10%);
     color: var(--el-color-danger);
   }
 
   .notification-info .notification-icon {
-    background: rgba(64, 158, 255, 0.1);
+    background: rgb(64 158 255 / 10%);
     color: var(--el-color-primary);
   }
 
   .notification-unread .notification-icon {
-    background: rgba(64, 158, 255, 0.12);
+    background: rgb(64 158 255 / 12%);
     color: var(--el-color-primary);
   }
 
@@ -751,7 +752,7 @@
     gap: 4px;
     padding: 4px 8px;
     border-radius: 6px;
-    font-family: 'Consolas', 'Monaco', monospace;
+    font-family: Consolas, Monaco, monospace;
     font-size: 13px;
     color: var(--el-text-color-secondary);
     background: var(--el-fill-color-light);

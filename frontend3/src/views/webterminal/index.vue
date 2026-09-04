@@ -211,12 +211,12 @@
      注意：本 style 块非 scoped，:deep() 编译后选择器永不匹配（历史写法全部失效），
      必须用全局选择器；悬停色用 VS Code 风格微亮白，与深色工作台协调 */
   .terminal-workbench .el-tree {
-    --el-tree-node-hover-bg-color: rgba(255, 255, 255, 0.08) !important;
-    --el-fill-color-light: rgba(0, 0, 0, 0.2) !important;
-    --el-fill-color-lighter: rgba(0, 0, 0, 0.2) !important;
-    --el-fill-color-extra-light: rgba(0, 0, 0, 0.15) !important;
-    --el-fill-color: rgba(0, 0, 0, 0.2) !important;
-    --el-fill-color-dark: rgba(0, 0, 0, 0.3) !important;
+    --el-tree-node-hover-bg-color: rgb(255 255 255 / 8%) !important;
+    --el-fill-color-light: rgb(0 0 0 / 20%) !important;
+    --el-fill-color-lighter: rgb(0 0 0 / 20%) !important;
+    --el-fill-color-extra-light: rgb(0 0 0 / 15%) !important;
+    --el-fill-color: rgb(0 0 0 / 20%) !important;
+    --el-fill-color-dark: rgb(0 0 0 / 30%) !important;
   }
 
   .terminal-workbench .el-tree-node__content {
@@ -224,7 +224,7 @@
   }
 
   .terminal-workbench .el-tree-node__content:hover {
-    background-color: rgba(255, 255, 255, 0.08) !important;
+    background-color: rgb(255 255 255 / 8%) !important;
   }
 
   .terminal-workbench.is-fullscreen {
@@ -273,16 +273,16 @@
   }
 
   .terminal-workbench :deep(.el-button:hover) {
-    background: rgba(0, 0, 0, 0.2) !important;
-    color: #aaaaaa !important;
+    background: rgb(0 0 0 / 20%) !important;
+    color: #aaa !important;
   }
 
   .terminal-workbench :deep(.el-button:hover .iconify) {
-    color: #aaaaaa !important;
+    color: #aaa !important;
   }
 
   .terminal-workbench :deep(.el-button.is-link:hover) {
-    background-color: rgba(0, 0, 0, 0.2) !important;
+    background-color: rgb(0 0 0 / 20%) !important;
   }
 
   /* 对话框和 Select 组件的暗色主题覆盖样式已在 ConnectDialog.vue 中定义 */

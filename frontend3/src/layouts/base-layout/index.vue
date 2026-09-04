@@ -141,6 +141,6 @@
 
 <style lang="scss">
   #__SCROLL_EL_ID__ {
-    @include scrollbar();
+    @include scrollbar;
   }
 </style>

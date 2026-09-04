@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { User, CircleCheck, CircleClose } from '@element-plus/icons-vue';
+  import { CircleCheck, CircleClose, User } from '@element-plus/icons-vue';
 
   interface UserStatsData {
     total: number;

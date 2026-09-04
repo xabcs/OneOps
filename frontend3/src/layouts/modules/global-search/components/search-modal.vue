@@ -140,9 +140,11 @@
     .el-dialog__header {
       display: none;
     }
+
     .el-dialog__body {
       padding: 10px 15px 0;
     }
+
     .el-dialog__footer {
       border-top-width: 1px;
     }

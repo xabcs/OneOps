@@ -262,7 +262,9 @@
         <template #default="{ row }">
           <ElSpace>
             <ElButton size="small" type="primary" @click="goToDetail(row)">详情</ElButton>
-            <PermissionButton code="k8s.resource.delete" size="small" type="danger" @click="handleDelete(row)">删除</PermissionButton>
+            <PermissionButton code="k8s.resource.delete" size="small" type="danger" @click="handleDelete(row)">
+              删除
+            </PermissionButton>
           </ElSpace>
         </template>
       </ElTableColumn>

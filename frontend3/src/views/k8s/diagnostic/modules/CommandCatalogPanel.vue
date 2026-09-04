@@ -2,7 +2,7 @@
   import { computed, ref } from 'vue';
   import { ElMessage, ElMessageBox } from 'element-plus';
   import { Search, VideoPlay } from '@element-plus/icons-vue';
-  import { executeDiagnosticOneShot, type DiagnosticOneShotResult } from '@/service/api/diagnostic';
+  import { type DiagnosticOneShotResult, executeDiagnosticOneShot } from '@/service/api/diagnostic';
   import { useDiagnosticStore } from '@/store/modules/diagnostic';
   import { formatDuration, isHighRisk, riskMeta } from '../shared';
 
@@ -123,12 +123,23 @@
   <div class="catalog-panel">
     <!-- 筛选条 -->
     <div class="catalog-filter">
-      <ElInput v-model="search" placeholder="搜索命令 / 说明 / 用法" clearable :prefix-icon="Search" class="filter-search" />
+      <ElInput
+        v-model="search"
+        placeholder="搜索命令 / 说明 / 用法"
+        clearable
+        :prefix-icon="Search"
+        class="filter-search"
+      />
       <ElSelect v-model="category" placeholder="全部分类" clearable class="filter-category">
         <ElOption v-for="c in categories" :key="c" :label="c" :value="c" />
       </ElSelect>
       <ElSelect v-model="riskFilter" placeholder="全部风险级" clearable class="filter-risk">
-        <ElOption v-for="level in ['L0', 'L1', 'L2', 'L3', 'L4', 'L5', 'disabled']" :key="level" :label="riskMeta(level).label" :value="level" />
+        <ElOption
+          v-for="level in ['L0', 'L1', 'L2', 'L3', 'L4', 'L5', 'disabled']"
+          :key="level"
+          :label="riskMeta(level).label"
+          :value="level"
+        />
       </ElSelect>
       <span class="filter-count">共 {{ filteredCatalog.length }} 条</span>
     </div>

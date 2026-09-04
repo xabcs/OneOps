@@ -84,7 +84,13 @@ export function createRoleColumns(handlers: {
           >
             分配权限
           </ElButton>
-          <ElButton type="danger" plain size="small" disabled={row.code === 'admin'} onClick={() => handlers.handleDelete(row.id)}>
+          <ElButton
+            type="danger"
+            plain
+            size="small"
+            disabled={row.code === 'admin'}
+            onClick={() => handlers.handleDelete(row.id)}
+          >
             {$t('common.delete')}
           </ElButton>
         </div>

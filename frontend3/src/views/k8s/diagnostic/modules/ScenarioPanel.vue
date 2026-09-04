@@ -2,7 +2,7 @@
   import { computed, reactive, ref } from 'vue';
   import { ElMessage, ElMessageBox } from 'element-plus';
   import { Cpu, DataLine, Link, MagicStick, VideoPlay } from '@element-plus/icons-vue';
-  import { executeDiagnosticOneShot, type DiagnosticOneShotResult } from '@/service/api/diagnostic';
+  import { type DiagnosticOneShotResult, executeDiagnosticOneShot } from '@/service/api/diagnostic';
   import { useDiagnosticStore } from '@/store/modules/diagnostic';
   import { formatDuration, isHighRisk, riskMeta } from '../shared';
   import { buildFinding } from '../finding/rules';
@@ -124,10 +124,7 @@
       description: '追踪方法调用链各级耗时，定位慢调用环节',
       riskLevel: 'L2',
       streaming: true,
-      fields: [
-        ...classMethodFields,
-        { key: 'cost', label: '耗时阈值(ms)', placeholder: '如 100，留空不过滤' }
-      ],
+      fields: [...classMethodFields, { key: 'cost', label: '耗时阈值(ms)', placeholder: '如 100，留空不过滤' }],
       build: v => `trace ${v.class} ${v.method}${v.cost ? ` '#cost > ${v.cost}'` : ''} -n 5`.trim()
     },
     {
@@ -137,7 +134,10 @@
       description: '查看方法调用时的入参、返回值与异常（-n 5 限量）',
       riskLevel: 'L2',
       streaming: true,
-      fields: [...classMethodFields, { key: 'expr', label: '观察表达式', placeholder: 'params,returnObj', defaultValue: 'params,returnObj' }],
+      fields: [
+        ...classMethodFields,
+        { key: 'expr', label: '观察表达式', placeholder: 'params,returnObj', defaultValue: 'params,returnObj' }
+      ],
       build: v => `watch ${v.class} ${v.method} "${v.expr || 'params,returnObj'}" -x 2 -n 5`
     },
     {
@@ -312,7 +312,8 @@
           <div
             v-for="s in items"
             :key="s.id"
-            :class="['scenario-card', { selected: selectedScenario?.id === s.id }]"
+            class="scenario-card"
+            :class="[{ selected: selectedScenario?.id === s.id }]"
             @click="selectScenario(s)"
           >
             <div class="card-head">
@@ -338,11 +339,7 @@
 
         <ElForm v-if="selectedScenario.fields?.length" label-position="top" size="small" class="detail-form">
           <ElFormItem v-for="f in selectedScenario.fields" :key="f.key" :label="f.label">
-            <ElInput
-              v-model="fieldValues[selectedScenario.id][f.key]"
-              :placeholder="f.placeholder"
-              clearable
-            />
+            <ElInput v-model="fieldValues[selectedScenario.id][f.key]" :placeholder="f.placeholder" clearable />
           </ElFormItem>
         </ElForm>
 

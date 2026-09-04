@@ -7,10 +7,14 @@
 
 /** 清洗 ANSI 转义码与控制字符 */
 export function stripAnsi(s: string): string {
-  return s
-    .replace(/\r\n/g, '\n')
-    .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
-    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '');
+  return (
+    s
+      .replace(/\r\n/g, '\n')
+      // oxlint-disable-next-line no-control-regex
+      .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
+      // oxlint-disable-next-line no-control-regex
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+  );
 }
 
 // ========== thread 系列 ==========
@@ -110,7 +114,7 @@ export interface MemoryRegion {
 export function parseMemory(output: string): MemoryRegion[] {
   const regions: MemoryRegion[] = [];
   for (const line of stripAnsi(output).split('\n')) {
-    const m = line.trim().match(/^([\w.\-]+)\s+([\d.]+[KMG]?|-)\s+([\d.]+[KMG]?|-)\s+(\S+)\s*$/);
+    const m = line.trim().match(/^([\w.-]+)\s+([\d.]+[KMG]?|-)\s+([\d.]+[KMG]?|-)\s+(\S+)\s*$/);
     if (!m) continue;
     // 跳过表头
     if (m[1].toLowerCase() === 'memory') continue;

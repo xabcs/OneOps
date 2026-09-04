@@ -1,12 +1,7 @@
 <script setup lang="ts">
   import { onMounted, ref } from 'vue';
   import { useRouter } from 'vue-router';
-  import {
-    fetchGetCommands,
-    fetchGetServerStats,
-    fetchGetSessionStats,
-    fetchGetSessions
-  } from '@/service/api/cmdb';
+  import { fetchGetCommands, fetchGetServerStats, fetchGetSessionStats, fetchGetSessions } from '@/service/api/cmdb';
 
   defineOptions({ name: 'CmdbDashboard' });
 
@@ -36,7 +31,11 @@
       if (Array.isArray(byEnv)) {
         envList.value = byEnv;
       } else if (byEnv && typeof byEnv === 'object') {
-        envList.value = Object.entries(byEnv).map(([value, count]) => ({ value, label: value, count: count as number }));
+        envList.value = Object.entries(byEnv).map(([value, count]) => ({
+          value,
+          label: value,
+          count: count as number
+        }));
       } else {
         envList.value = [];
       }

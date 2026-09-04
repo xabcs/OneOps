@@ -5,7 +5,12 @@
    */
 
   import { ref, watch } from 'vue';
-  import { fetchCheckConnectPermission, fetchGetSessions, fetchGetServerAttributes, fetchGetAttributes } from '@/service/api';
+  import {
+    fetchCheckConnectPermission,
+    fetchGetAttributes,
+    fetchGetServerAttributes,
+    fetchGetSessions
+  } from '@/service/api';
   import AttributeFormItems from './AttributeFormItems.vue';
 
   const props = defineProps<{
@@ -110,7 +115,16 @@
         <!-- 概览 Tab -->
         <ElTabPane label="概览" name="overview">
           <div :style="{ marginBottom: '24px' }">
-            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+            <div
+              :style="{
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#303133',
+                marginBottom: '12px',
+                paddingBottom: '8px',
+                borderBottom: '1px solid #e4e7ed'
+              }"
+            >
               基础信息
             </div>
             <ElDescriptions :column="2" border size="small">
@@ -133,7 +147,16 @@
             </ElDescriptions>
           </div>
           <div :style="{ marginBottom: '24px' }">
-            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+            <div
+              :style="{
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#303133',
+                marginBottom: '12px',
+                paddingBottom: '8px',
+                borderBottom: '1px solid #e4e7ed'
+              }"
+            >
               硬件配置
             </div>
             <ElDescriptions :column="3" border size="small">
@@ -143,7 +166,16 @@
             </ElDescriptions>
           </div>
           <div v-if="server.serverType === 'cloud' && server.cloudInfo" :style="{ marginBottom: '24px' }">
-            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+            <div
+              :style="{
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#303133',
+                marginBottom: '12px',
+                paddingBottom: '8px',
+                borderBottom: '1px solid #e4e7ed'
+              }"
+            >
               云主机信息
             </div>
             <ElDescriptions :column="2" border size="small">
@@ -157,7 +189,16 @@
             </ElDescriptions>
           </div>
           <div :style="{ marginBottom: '24px' }">
-            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+            <div
+              :style="{
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#303133',
+                marginBottom: '12px',
+                paddingBottom: '8px',
+                borderBottom: '1px solid #e4e7ed'
+              }"
+            >
               归属信息
             </div>
             <ElDescriptions :column="2" border size="small">
@@ -183,7 +224,16 @@
             </ElDescriptions>
           </div>
           <div :style="{ marginBottom: '24px' }">
-            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+            <div
+              :style="{
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#303133',
+                marginBottom: '12px',
+                paddingBottom: '8px',
+                borderBottom: '1px solid #e4e7ed'
+              }"
+            >
               状态信息
             </div>
             <ElDescriptions :column="2" border size="small">
@@ -221,7 +271,16 @@
             </ElDescriptions>
           </div>
           <div :style="{ marginBottom: '24px' }">
-            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+            <div
+              :style="{
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#303133',
+                marginBottom: '12px',
+                paddingBottom: '8px',
+                borderBottom: '1px solid #e4e7ed'
+              }"
+            >
               扩展属性
             </div>
             <AttributeFormItems
@@ -296,13 +355,37 @@
         <!-- 监控信息 Tab -->
         <ElTabPane label="监控信息" name="monitor">
           <div :style="{ marginBottom: '24px' }">
-            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+            <div
+              :style="{
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#303133',
+                marginBottom: '12px',
+                paddingBottom: '8px',
+                borderBottom: '1px solid #e4e7ed'
+              }"
+            >
               资源使用率
             </div>
             <div :style="{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }">
-              <div :style="{ padding: '16px', backgroundColor: '#fafafa', borderRadius: '8px', border: '1px solid #e4e7ed', textAlign: 'center' }">
+              <div
+                :style="{
+                  padding: '16px',
+                  backgroundColor: '#fafafa',
+                  borderRadius: '8px',
+                  border: '1px solid #e4e7ed',
+                  textAlign: 'center'
+                }"
+              >
                 <div :style="{ fontSize: '12px', color: '#909399', marginBottom: '8px' }">CPU</div>
-                <div :style="{ fontSize: '24px', fontWeight: 600, marginBottom: '12px', color: getUsageColor(server.cpuUsage || 0) }">
+                <div
+                  :style="{
+                    fontSize: '24px',
+                    fontWeight: 600,
+                    marginBottom: '12px',
+                    color: getUsageColor(server.cpuUsage || 0)
+                  }"
+                >
                   {{ Math.round(server.cpuUsage || 0) }}%
                 </div>
                 <ElProgress
@@ -312,9 +395,24 @@
                 />
                 <div :style="{ fontSize: '12px', color: '#606266', marginTop: '8px' }">{{ server.cpu || '-' }} 核</div>
               </div>
-              <div :style="{ padding: '16px', backgroundColor: '#fafafa', borderRadius: '8px', border: '1px solid #e4e7ed', textAlign: 'center' }">
+              <div
+                :style="{
+                  padding: '16px',
+                  backgroundColor: '#fafafa',
+                  borderRadius: '8px',
+                  border: '1px solid #e4e7ed',
+                  textAlign: 'center'
+                }"
+              >
                 <div :style="{ fontSize: '12px', color: '#909399', marginBottom: '8px' }">内存</div>
-                <div :style="{ fontSize: '24px', fontWeight: 600, marginBottom: '12px', color: getUsageColor(server.memoryUsage || 0) }">
+                <div
+                  :style="{
+                    fontSize: '24px',
+                    fontWeight: 600,
+                    marginBottom: '12px',
+                    color: getUsageColor(server.memoryUsage || 0)
+                  }"
+                >
                   {{ Math.round(server.memoryUsage || 0) }}%
                 </div>
                 <ElProgress
@@ -330,9 +428,24 @@
                   }}
                 </div>
               </div>
-              <div :style="{ padding: '16px', backgroundColor: '#fafafa', borderRadius: '8px', border: '1px solid #e4e7ed', textAlign: 'center' }">
+              <div
+                :style="{
+                  padding: '16px',
+                  backgroundColor: '#fafafa',
+                  borderRadius: '8px',
+                  border: '1px solid #e4e7ed',
+                  textAlign: 'center'
+                }"
+              >
                 <div :style="{ fontSize: '12px', color: '#909399', marginBottom: '8px' }">磁盘</div>
-                <div :style="{ fontSize: '24px', fontWeight: 600, marginBottom: '12px', color: getUsageColor(server.diskUsage || 0) }">
+                <div
+                  :style="{
+                    fontSize: '24px',
+                    fontWeight: 600,
+                    marginBottom: '12px',
+                    color: getUsageColor(server.diskUsage || 0)
+                  }"
+                >
                   {{ Math.round(server.diskUsage || 0) }}%
                 </div>
                 <ElProgress
@@ -345,7 +458,16 @@
             </div>
           </div>
           <div :style="{ marginBottom: '24px' }">
-            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+            <div
+              :style="{
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#303133',
+                marginBottom: '12px',
+                paddingBottom: '8px',
+                borderBottom: '1px solid #e4e7ed'
+              }"
+            >
               磁盘分区详情
             </div>
             <ElTable :data="formatDiskPartitionsForDrawer(server)" size="small" border>
@@ -369,14 +491,28 @@
             </div>
           </div>
           <div :style="{ marginBottom: '24px' }">
-            <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid #e4e7ed' }">
+            <div
+              :style="{
+                fontSize: '14px',
+                fontWeight: 500,
+                color: '#303133',
+                marginBottom: '12px',
+                paddingBottom: '8px',
+                borderBottom: '1px solid #e4e7ed'
+              }"
+            >
               Agent 状态
             </div>
             <ElDescriptions :column="2" border size="small">
               <ElDescriptionsItem label="状态">
-                <div v-if="server.agentStatus === 'running'" :style="{ display: 'flex', alignItems: 'center', gap: '8px' }">
+                <div
+                  v-if="server.agentStatus === 'running'"
+                  :style="{ display: 'flex', alignItems: 'center', gap: '8px' }"
+                >
                   <ElTag type="success" size="small">运行中</ElTag>
-                  <span v-if="server.agentVersion" :style="{ fontSize: '12px', color: '#909399' }">v{{ server.agentVersion }}</span>
+                  <span v-if="server.agentVersion" :style="{ fontSize: '12px', color: '#909399' }">
+                    v{{ server.agentVersion }}
+                  </span>
                 </div>
                 <ElTag v-else-if="server.agentStatus === 'offline'" type="warning" size="small">离线</ElTag>
                 <ElTag v-else type="info" size="small">未安装</ElTag>

@@ -67,8 +67,10 @@
 
         <div v-else class="terminal-sessions">
           <template v-for="session in sessions" :key="session.id">
-            <!-- 按会话类型渲染（而非连接状态）：断开后保留终端视图展示"连接已关闭"信息，
-                 左侧"已连接"标记由 session-disconnected 事件另行同步 -->
+            <!--
+ 按会话类型渲染（而非连接状态）：断开后保留终端视图展示"连接已关闭"信息，
+                 左侧"已连接"标记由 session-disconnected 事件另行同步 
+-->
             <XTermTerminal
               v-if="!session.isSessionListView && session.websocketUrl"
               v-show="activeSession && session.id === activeSession.id"
@@ -146,7 +148,7 @@
     color: #858585;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.2);
+      background: rgb(0 0 0 / 20%);
       color: #aaa;
     }
   }

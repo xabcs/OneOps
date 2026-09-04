@@ -251,8 +251,8 @@
             <User />
           </ElIcon>
           <div class="flex flex-col gap-4px">
-            <h2 class="text-18px font-bold m-0">{{ $t('page.manage.user.title') }}</h2>
-            <p class="text-13px color-[var(--el-text-color-secondary)] m-0">
+            <h2 class="m-0 text-18px font-bold">{{ $t('page.manage.user.title') }}</h2>
+            <p class="m-0 text-13px color-[var(--el-text-color-secondary)]">
               统一维护用户、分配角色与权限，支持账号治理与安全策略管理
             </p>
           </div>
@@ -274,7 +274,7 @@
     <!-- 搜索卡片 -->
     <ElCard shadow="hover">
       <ElSpace wrap class="w-full" align="center">
-        <span class="text-16px font-bold whitespace-nowrap">搜索筛选</span>
+        <span class="whitespace-nowrap text-16px font-bold">搜索筛选</span>
         <ElInput
           v-model="searchParams.username"
           placeholder="搜索用户名"
@@ -329,9 +329,7 @@
         <div class="flex items-center justify-between">
           <div class="flex flex-col gap-4px">
             <span class="text-16px font-bold">用户列表</span>
-            <span class="text-13px color-[var(--el-text-color-secondary)]">
-              管理系统用户账号、角色分配与状态控制
-            </span>
+            <span class="text-13px color-[var(--el-text-color-secondary)]">管理系统用户账号、角色分配与状态控制</span>
           </div>
           <ElSpace>
             <PermissionButton code="system.user.create" type="primary" size="small" @click="handleAddClick">
@@ -340,7 +338,13 @@
               </template>
               新增用户
             </PermissionButton>
-            <PermissionButton code="system.user.delete" type="danger" size="small" :disabled="checkedRowKeys.length === 0" @click="handleBatchDelete">
+            <PermissionButton
+              code="system.user.delete"
+              type="danger"
+              size="small"
+              :disabled="checkedRowKeys.length === 0"
+              @click="handleBatchDelete"
+            >
               <template #icon>
                 <ElIcon><Delete /></ElIcon>
               </template>
@@ -350,18 +354,11 @@
         </div>
       </template>
 
-      <ElTable
-        v-loading="loading"
-        :data="data"
-        border
-        stripe
-        row-key="id"
-        @selection-change="checkedRowKeys = $event"
-      >
+      <ElTable v-loading="loading" :data="data" border stripe row-key="id" @selection-change="checkedRowKeys = $event">
         <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
       </ElTable>
 
-      <div class="flex justify-end mt-16px">
+      <div class="mt-16px flex justify-end">
         <ElPagination
           v-if="mobilePagination.total"
           layout="total, sizes, prev, pager, next, jumper"

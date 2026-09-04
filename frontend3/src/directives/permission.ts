@@ -84,19 +84,17 @@ function applyDisabled(el: HTMLElement, binding: DirectiveBinding) {
       wrap.appendChild(el);
       wrappers.set(el, wrap);
     }
-  } else {
-    if (!el.dataset.permissionDisabled) {
-      el.dataset.permissionDisabled = '1';
-      el.title = tip;
-      // 捕获阶段拦截 click（先于组件自身 handler），并弹出提示
-      const blocker = (e: Event) => {
-        e.preventDefault();
-        e.stopPropagation();
-        notifyMissingPermission(binding.value);
-      };
-      blockers.set(el, blocker);
-      el.addEventListener('click', blocker, true);
-    }
+  } else if (!el.dataset.permissionDisabled) {
+    el.dataset.permissionDisabled = '1';
+    el.title = tip;
+    // 捕获阶段拦截 click（先于组件自身 handler），并弹出提示
+    const blocker = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      notifyMissingPermission(binding.value);
+    };
+    blockers.set(el, blocker);
+    el.addEventListener('click', blocker, true);
   }
 }
 

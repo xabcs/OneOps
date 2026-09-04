@@ -2,8 +2,8 @@
   import { onMounted, ref } from 'vue';
   import { Refresh, Search } from '@element-plus/icons-vue';
   import { fetchExportOperationLogs, fetchGetModules, fetchGetOperationLogs } from '@/service/api';
-  import { exportFile } from '@/utils/file';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
+  import { exportFile } from '@/utils/file';
 
   defineOptions({ name: 'AuditOperationLogs' });
 
@@ -38,7 +38,9 @@
     }
   }
 
-  const { columns, data, loading, mobilePagination, getData, getDataByPage } = useUIPaginatedTable({
+  const { columns, columnChecks, data, loading, mobilePagination, getData, getDataByPage } = useUIPaginatedTable({
+    // 列配置（勾选 + 顺序）持久化到 localStorage，刷新页面后保留
+    columnSettingKey: 'audit-operation-logs',
     paginationProps: {
       currentPage: searchParams.value.page,
       pageSize: searchParams.value.pageSize,
@@ -123,9 +125,13 @@
 
   async function handleExport() {
     try {
-      const blob = await fetchExportOperationLogs(searchParams.value);
-      exportFile(blob, 'operation_logs.csv');
-      ElMessage.success('操作日志导出成功');
+      const { data, error } = await fetchExportOperationLogs(searchParams.value);
+      if (!error && data) {
+        exportFile(data, 'operation_logs.csv');
+        ElMessage.success('操作日志导出成功');
+      } else {
+        ElMessage.error('导出操作日志失败');
+      }
     } catch (error) {
       console.error('导出失败:', error);
       ElMessage.error('导出操作日志失败');
@@ -178,9 +184,15 @@
         <ElFormItem>
           <ElButton type="primary" :icon="Search" @click="handleSearch">搜索</ElButton>
           <ElButton :icon="Refresh" @click="handleReset">重置</ElButton>
-          <PermissionButton code="audit.operation_log.export" type="success" @click="handleExport">导出</PermissionButton>
+          <PermissionButton code="audit.operation_log.export" type="success" @click="handleExport">
+            导出
+          </PermissionButton>
         </ElFormItem>
       </ElForm>
+
+      <div class="mb-8px flex justify-end">
+        <TableColumnSetting v-model:columns="columnChecks" />
+      </div>
 
       <ElTable v-loading="loading" :data="data" border stripe class="h-full" height="calc(100vh - 400px)">
         <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />

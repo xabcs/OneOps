@@ -27,7 +27,7 @@
   z-index: 100;
   overflow: hidden;
   border-right: 1px solid var(--border-light);
-  box-shadow: 8px 0 24px rgba(15, 23, 42, 0.03);
+  box-shadow: 8px 0 24px rgb(15 23 42 / 3%);
 }
 
 .sidebar.collapsed {
@@ -43,7 +43,7 @@
   border-bottom: 1px solid var(--border-light);
   gap: 10px;
   flex-shrink: 0;
-  background: linear-gradient(180deg, rgba(241, 246, 255, 0.98) 0%, rgba(232, 240, 255, 0.9) 100%);
+  background: linear-gradient(180deg, rgb(241 246 255 / 98%) 0%, rgb(232 240 255 / 90%) 100%);
   backdrop-filter: blur(10px);
 }
 
@@ -77,7 +77,7 @@
   white-space: nowrap;
   letter-spacing: -0.2px;
   background: var(--brand-gradient);
-  -webkit-background-clip: text;
+  background-clip: text;
   background-clip: text;
   color: transparent;
 }
@@ -103,18 +103,13 @@
   height: 8px;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.98) 0 20%, rgba(255, 255, 255, 0) 22%),
-    radial-gradient(
-      circle at 50% 50%,
-      rgba(103, 183, 171, 0.92) 0%,
-      rgba(85, 134, 182, 0.96) 72%,
-      rgba(85, 134, 182, 0.72) 100%
-    );
-  border: 1px solid rgba(255, 255, 255, 0.88);
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 98%) 0 20%, rgb(255 255 255 / 0%) 22%),
+    radial-gradient(circle at 50% 50%, rgb(103 183 171 / 92%) 0%, rgb(85 134 182 / 96%) 72%, rgb(85 134 182 / 72%) 100%);
+  border: 1px solid rgb(255 255 255 / 88%);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.24),
-    0 0 0 3px rgba(96, 165, 250, 0.08),
-    0 2px 8px rgba(85, 134, 182, 0.16);
+    inset 0 0 0 1px rgb(255 255 255 / 24%),
+    0 0 0 3px rgb(96 165 250 / 8%),
+    0 2px 8px rgb(85 134 182 / 16%);
   position: relative;
 }
 
@@ -128,11 +123,13 @@
   padding: 10px 8px 14px;
   overflow-y: auto;
   border-right: none !important;
+
   --el-menu-bg-color: transparent;
   --el-menu-text-color: var(--sidebar-text);
   --el-menu-active-color: var(--sidebar-text-active);
   --el-menu-hover-bg-color: transparent;
   --el-menu-item-height: 40px;
+
   background-color: transparent;
 }
 
@@ -169,12 +166,12 @@
   color: var(--el-menu-active-color) !important;
   font-weight: 600;
   border-color: var(--border-brand);
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.07);
+  box-shadow: 0 8px 18px rgb(37 99 235 / 7%);
 }
 
 /* 子菜单打开状态 */
 .sidebar .el-sub-menu.is-opened > .el-sub-menu__title {
-  background: rgba(241, 245, 249, 0.72);
+  background: rgb(241 245 249 / 72%);
   color: #334155 !important;
 }
 
@@ -308,7 +305,7 @@
   font-size: 16px;
   font-weight: 700;
   background: var(--brand-gradient);
-  -webkit-background-clip: text;
+  background-clip: text;
   background-clip: text;
   color: transparent;
 }
@@ -330,7 +327,7 @@
   justify-content: center;
   border: 1px solid var(--border-medium);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgb(255 255 255 / 72%);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -351,7 +348,7 @@
 
 .promo-trigger:hover {
   color: #3f6fbd;
-  border-color: rgba(96, 165, 250, 0.36);
+  border-color: rgb(96 165 250 / 36%);
   background: var(--btn-promo-hover);
   transform: translateY(-1px);
   box-shadow: var(--brand-shadow-md);
@@ -371,13 +368,13 @@
   position: absolute;
   inset: 6px;
   border-radius: 9px;
-  border: 1px solid rgba(59, 130, 246, 0.12);
+  border: 1px solid rgb(59 130 246 / 12%);
   pointer-events: none;
 }
 
 .assistant-trigger:hover {
   color: #2563eb;
-  border-color: rgba(96, 165, 250, 0.34);
+  border-color: rgb(96 165 250 / 34%);
   background: var(--btn-assistant-hover);
   transform: translateY(-1px);
   box-shadow: var(--brand-shadow-md);
@@ -385,14 +382,14 @@
 
 .notice-trigger:hover {
   color: #356fc8;
-  border-color: rgba(96, 165, 250, 0.26);
-  background: rgba(239, 246, 255, 0.86);
+  border-color: rgb(96 165 250 / 26%);
+  background: rgb(239 246 255 / 86%);
 }
 
 /* ========== 内容区 ========== */
 .content {
   flex: 1;
-  padding: 12px 24px 12px;
+  padding: 12px 24px;
   width: 100%;
   overflow-x: hidden;
 }
@@ -410,12 +407,12 @@
 }
 
 .user-trigger:hover {
-  background: rgba(255, 255, 255, 0.56);
+  background: rgb(255 255 255 / 56%);
 }
 
 .user-avatar {
   background: var(--avatar-bg);
-  color: #ffffff;
+  color: #fff;
   box-shadow: var(--avatar-shadow);
 }
 
@@ -456,7 +453,7 @@
 }
 
 /* ========== 响应式布局 ========== */
-@media (max-width: 760px) {
+@media (width <= 760px) {
   .sidebar {
     width: var(--sidebar-collapsed-width);
     overflow: hidden;
@@ -540,25 +537,25 @@
 /* ========== 深色模式适配 ========== */
 html.dark {
   .sidebar {
-    background: linear-gradient(180deg, rgba(28, 28, 28, 0.98) 0%, rgba(18, 18, 18, 0.9) 100%);
-    border-right-color: rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgb(28 28 28 / 98%) 0%, rgb(18 18 18 / 90%) 100%);
+    border-right-color: rgb(255 255 255 / 8%);
   }
 
   .sidebar-logo {
-    background: linear-gradient(180deg, rgba(28, 28, 28, 0.98) 0%, rgba(18, 18, 18, 0.9) 100%);
-    border-bottom-color: rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgb(28 28 28 / 98%) 0%, rgb(18 18 18 / 90%) 100%);
+    border-bottom-color: rgb(255 255 255 / 8%);
   }
 
   .header {
-    background: linear-gradient(180deg, rgba(28, 28, 28, 0.98), rgba(18, 18, 18, 0.94));
-    border-bottom-color: rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgb(28 28 28 / 98%), rgb(18 18 18 / 94%));
+    border-bottom-color: rgb(255 255 255 / 8%);
   }
 
   .user-trigger:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgb(255 255 255 / 6%);
   }
 
   .notice-trigger:hover {
-    background: rgba(129, 140, 248, 0.15);
+    background: rgb(129 140 248 / 15%);
   }
 }

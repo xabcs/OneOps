@@ -102,12 +102,7 @@
         </ElRadioGroup>
       </ElFormItem>
 
-      <ElFormItem
-        v-for="field in formSchema"
-        :key="field.key"
-        :label="field.label"
-        :prop="`formData.${field.key}`"
-      >
+      <ElFormItem v-for="field in formSchema" :key="field.key" :label="field.label" :prop="`formData.${field.key}`">
         <ElInput
           v-if="field.type === 'input'"
           v-model="model.formData[field.key] as string"

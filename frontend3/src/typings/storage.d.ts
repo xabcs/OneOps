@@ -40,5 +40,11 @@ declare namespace StorageType {
 
     /** The last login user id */
     lastLoginUserId: string;
+    /**
+     * The table column settings (visibility + order), keyed by page-level unique key
+     *
+     * Used by `columnSettingKey` of `useUITable` / `useUIPaginatedTable`
+     */
+    tableColumnSettings: Record<string, { prop: string; checked: boolean }[]>;
   }
 }

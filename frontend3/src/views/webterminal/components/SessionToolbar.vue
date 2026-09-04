@@ -97,7 +97,7 @@
   .wb-page-title {
     font-size: 14px;
     font-weight: 500;
-    color: #ffffff;
+    color: #fff;
     margin: 0;
   }
 
@@ -111,7 +111,7 @@
     background: transparent;
     border: 1px solid #3c3c3c;
     border-radius: 2px;
-    color: #ffffff;
+    color: #fff;
     font-size: 12px;
     cursor: pointer;
     transition: all 0.2s;
@@ -130,7 +130,7 @@
   .wb-button-primary {
     background: transparent;
     border: 1px solid #3c3c3c;
-    color: #ffffff;
+    color: #fff;
 
     &:hover {
       background: #252526;
@@ -145,7 +145,7 @@
   .wb-button-danger {
     background: #f14c4c;
     border-color: #f14c4c;
-    color: #ffffff;
+    color: #fff;
 
     &:hover {
       background: #ff6060;
@@ -164,7 +164,7 @@
   .wb-tab {
     padding: 8px 16px 8px 0;
     cursor: pointer;
-    color: #ffffff;
+    color: #fff;
     transition: all 0.2s;
     position: relative;
     display: inline-flex;
@@ -181,7 +181,7 @@
     }
 
     &:hover {
-      color: #ffffff;
+      color: #fff;
     }
 
     &.active {
@@ -238,7 +238,7 @@
     border: none !important;
     outline: none !important;
     box-shadow: none !important;
-    color: #cccccc;
+    color: #ccc;
     font-size: 12px;
 
     &:focus {
@@ -266,7 +266,7 @@
     z-index: 2;
 
     &:hover {
-      color: #cccccc;
+      color: #ccc;
     }
   }
 </style>

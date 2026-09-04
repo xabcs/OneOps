@@ -60,9 +60,7 @@
         label: '权限编码',
         minWidth: 160,
         formatter: (row: Api.SystemManage.Permission) => (
-          <span style="font-family: monospace; font-size: 12px; color: var(--el-color-primary)">
-            {row.code}
-          </span>
+          <span style="font-family: monospace; font-size: 12px; color: var(--el-color-primary)">{row.code}</span>
         )
       },
       {
@@ -82,7 +80,9 @@
         label: '级别',
         width: 70,
         formatter: (row: Api.SystemManage.Permission) => (
-          <ElTag size="small" type="info">{levelLabels[row.level] || row.level}</ElTag>
+          <ElTag size="small" type="info">
+            {levelLabels[row.level] || row.level}
+          </ElTag>
         )
       },
       {
@@ -193,8 +193,8 @@
             <Key />
           </ElIcon>
           <div class="flex flex-col gap-2px">
-            <h2 class="text-18px font-bold m-0">权限管理</h2>
-            <p class="text-13px opacity-70 m-0">管理系统权限码与路由映射，控制 API 访问权限</p>
+            <h2 class="m-0 text-18px font-bold">权限管理</h2>
+            <p class="m-0 text-13px opacity-70">管理系统权限码与路由映射，控制 API 访问权限</p>
           </div>
         </div>
         <ElButton size="small" :loading="loading" @click="refreshData">
@@ -268,7 +268,7 @@
       </ElTable>
 
       <!-- 分页 -->
-      <div v-if="mobilePagination.total" class="flex justify-end mt-16px">
+      <div v-if="mobilePagination.total" class="mt-16px flex justify-end">
         <ElPagination
           layout="total, sizes, prev, pager, next, jumper"
           v-bind="mobilePagination"
@@ -287,9 +287,6 @@
     />
 
     <!-- 路由映射管理弹窗 -->
-    <PermissionRouteModal
-      v-model:visible="routeModalVisible"
-      :initial-permission-code="routeModalCode"
-    />
+    <PermissionRouteModal v-model:visible="routeModalVisible" :initial-permission-code="routeModalCode" />
   </div>
 </template>

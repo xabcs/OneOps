@@ -12,12 +12,7 @@
     ElTableColumn,
     ElTag
   } from 'element-plus';
-  import {
-    deleteK8sPod,
-    fetchK8sClusterNamespaces,
-    fetchK8sClusters,
-    fetchK8sPods
-  } from '@/service/api/k8s';
+  import { deleteK8sPod, fetchK8sClusterNamespaces, fetchK8sClusters, fetchK8sPods } from '@/service/api/k8s';
   import PodLogDialog from './modules/PodLogDialog.vue';
   import PodTerminalDialog from './modules/PodTerminalDialog.vue';
 
@@ -349,9 +344,13 @@
         <template #default="{ row }">
           <ElSpace wrap>
             <ElButton size="small" @click="handleViewDetail(row)">查看详情</ElButton>
-            <PermissionButton code="k8s.terminal.connect" size="small" type="primary" @click="handleTerminal(row)">进入终端</PermissionButton>
+            <PermissionButton code="k8s.terminal.connect" size="small" type="primary" @click="handleTerminal(row)">
+              进入终端
+            </PermissionButton>
             <ElButton size="small" @click="handleLogs(row)">查看日志</ElButton>
-            <PermissionButton code="k8s.resource.delete" size="small" type="danger" @click="handleDelete(row)">删除</PermissionButton>
+            <PermissionButton code="k8s.resource.delete" size="small" type="danger" @click="handleDelete(row)">
+              删除
+            </PermissionButton>
           </ElSpace>
         </template>
       </ElTableColumn>

@@ -70,7 +70,9 @@
     <ElCard class="card-wrapper">
       <div class="mb-16px flex justify-between">
         <ElButton :icon="Refresh" @click="getData">刷新</ElButton>
-        <PermissionButton code="cmdb.business.create" type="primary" :icon="Plus" @click="handleAdd">新增业务</PermissionButton>
+        <PermissionButton code="cmdb.business.create" type="primary" :icon="Plus" @click="handleAdd">
+          新增业务
+        </PermissionButton>
       </div>
 
       <ElTable v-loading="loading" :data="tableData" row-key="id" border stripe :tree-props="{ children: 'children' }">
@@ -90,8 +92,12 @@
         <ElTableColumn prop="remarks" label="备注" min-width="180" show-overflow-tooltip />
         <ElTableColumn label="操作" width="160" fixed="right">
           <template #default="{ row }">
-            <PermissionButton code="cmdb.business.update" type="primary" size="small" @click="handleEdit(row)">编辑</PermissionButton>
-            <PermissionButton code="cmdb.business.delete" type="danger" size="small" @click="handleDelete(row)">删除</PermissionButton>
+            <PermissionButton code="cmdb.business.update" type="primary" size="small" @click="handleEdit(row)">
+              编辑
+            </PermissionButton>
+            <PermissionButton code="cmdb.business.delete" type="danger" size="small" @click="handleDelete(row)">
+              删除
+            </PermissionButton>
           </template>
         </ElTableColumn>
       </ElTable>

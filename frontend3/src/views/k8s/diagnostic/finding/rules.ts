@@ -10,15 +10,15 @@
  * 模式参考：fastthread（IO 等待识别、线程分组）+ 社区（idle worker 栈顶模式）
  */
 
-import type { DiagnosticFinding, FindingAction, FindingRow, FindingContext } from './types';
+import type { DiagnosticFinding, FindingAction, FindingContext, FindingRow } from './types';
 import {
-  parseThreads,
-  parseMemory,
-  parseJvm,
-  parseSc,
+  type ThreadRow,
   parseHeapdumpFile,
+  parseJvm,
   parseLoggerCommand,
-  type ThreadRow
+  parseMemory,
+  parseSc,
+  parseThreads
 } from './parsers';
 
 // ========== 共享启发式 ==========
@@ -173,7 +173,7 @@ function ruleCpuTop(ctx: FindingContext): DiagnosticFinding {
     const biz = firstBizFrame(t.stack);
     const parts = biz ? splitFrame(biz) : null;
     return {
-      cells: [t.name, t.id, t.state, t.cpu !== null ? `${t.cpu}%` : '-', biz ?? (t.stack[0] ?? '-')],
+      cells: [t.name, t.id, t.state, t.cpu !== null ? `${t.cpu}%` : '-', biz ?? t.stack[0] ?? '-'],
       highlight: t.cpu !== null && t.cpu >= 50,
       note: isIdleWorker(t) ? '空闲 worker' : isIoWait(t) ? 'IO 等待' : undefined,
       actions: parts ? [{ label: '看调用栈', command: `stack ${parts.cls} ${parts.method} -n 3` }] : undefined
@@ -187,7 +187,10 @@ function ruleCpuTop(ctx: FindingContext): DiagnosticFinding {
       label: `trace ${frameParts.method} 耗时`,
       command: `trace ${frameParts.cls} ${frameParts.method} '#cost > 100' -n 5`
     });
-    nextActions.push({ label: `stack ${frameParts.method}`, command: `stack ${frameParts.cls} ${frameParts.method} -n 3` });
+    nextActions.push({
+      label: `stack ${frameParts.method}`,
+      command: `stack ${frameParts.cls} ${frameParts.method} -n 3`
+    });
   }
   if (ioWait) {
     nextActions.push({ label: '查看数据库连接等待', command: 'thread --state WAITING' });
@@ -195,9 +198,15 @@ function ruleCpuTop(ctx: FindingContext): DiagnosticFinding {
     nextActions.push({ label: '火焰图采样30s', command: 'profiler start --duration 30' });
   }
 
-  return { kind: 'finding', level, symptom, rootCause, impact, sections: [
-    { title: '线程 Top', type: 'table', columns: ['线程', 'Id', '状态', 'CPU', '热点帧'], rows }
-  ], nextActions };
+  return {
+    kind: 'finding',
+    level,
+    symptom,
+    rootCause,
+    impact,
+    sections: [{ title: '线程 Top', type: 'table', columns: ['线程', 'Id', '状态', 'CPU', '热点帧'], rows }],
+    nextActions
+  };
 }
 
 /** 死锁/阻塞检测（thread --blocked-thread-locks）：判定型 */
@@ -230,7 +239,10 @@ function ruleDeadlock(ctx: FindingContext): DiagnosticFinding {
   const rootCause = holderThread
     ? `锁持有者线程「${holderThread}」${holderBiz ? `，热点 ${firstBizFrame(holderBiz.stack)}` : ''}`
     : undefined;
-  const impact = blocked.length > 0 ? `被阻塞线程的请求将挂起直至锁释放${deadlock ? '（死锁不会自愈，需重启或干预）' : ''}` : undefined;
+  const impact =
+    blocked.length > 0
+      ? `被阻塞线程的请求将挂起直至锁释放${deadlock ? '（死锁不会自愈，需重启或干预）' : ''}`
+      : undefined;
 
   const rows: FindingRow[] = blocked.map(t => {
     const biz = firstBizFrame(t.stack);
@@ -267,7 +279,7 @@ function ruleThreadAll(ctx: FindingContext): DiagnosticFinding {
   const metrics = [
     { label: '总数', value: String(threads.length) },
     { label: 'RUNNABLE', value: String(countBy('RUNNABLE')) },
-    { label: 'BLOCKED', value: String(blockedCount), level: blockedCount > 0 ? 'warning' as const : undefined },
+    { label: 'BLOCKED', value: String(blockedCount), level: blockedCount > 0 ? ('warning' as const) : undefined },
     { label: 'WAITING', value: String(countBy('WAITING')) },
     { label: 'TIMED_WAITING', value: String(countBy('TIMED_WAITING')) }
   ];
@@ -276,7 +288,7 @@ function ruleThreadAll(ctx: FindingContext): DiagnosticFinding {
     const biz = firstBizFrame(t.stack);
     const parts = biz ? splitFrame(biz) : null;
     return {
-      cells: [t.name, t.state, t.cpu !== null ? `${t.cpu}%` : '-', biz ?? (t.stack[0] ?? '-')],
+      cells: [t.name, t.state, t.cpu !== null ? `${t.cpu}%` : '-', biz ?? t.stack[0] ?? '-'],
       highlight: t.state === 'BLOCKED',
       note: isIdleWorker(t) ? '空闲 worker' : isIoWait(t) ? 'IO 等待' : undefined,
       actions: parts ? [{ label: 'stack', command: `stack ${parts.cls} ${parts.method} -n 3` }] : undefined
@@ -286,7 +298,8 @@ function ruleThreadAll(ctx: FindingContext): DiagnosticFinding {
   return {
     kind: 'describe',
     level,
-    symptom: blockedCount > 0 ? `${blockedCount} 个线程 BLOCKED，建议用「死锁/阻塞检测」跟进` : `共 ${threads.length} 个线程`,
+    symptom:
+      blockedCount > 0 ? `${blockedCount} 个线程 BLOCKED，建议用「死锁/阻塞检测」跟进` : `共 ${threads.length} 个线程`,
     sections: [
       { title: header ?? '线程状态分布', type: 'metrics', metrics },
       { title: '线程明细', type: 'table', columns: ['线程', '状态', 'CPU', '热点帧'], rows }
@@ -322,7 +335,7 @@ function ruleMemory(ctx: FindingContext): DiagnosticFinding {
     notes.push(`Metaspace ${metaspace.percent}%（类加载泄漏线索，可用「类加载检索」跟进）`);
   }
 
-  const metricOf = (label: string, r: typeof regions[number]) => ({
+  const metricOf = (label: string, r: (typeof regions)[number]) => ({
     label,
     value: `${r.used} / ${r.total}${r.percent !== null ? `（${r.percent}%）` : ''}`,
     percent: r.percent ?? undefined,
@@ -340,9 +353,7 @@ function ruleMemory(ctx: FindingContext): DiagnosticFinding {
     ...(heap ? [metricOf('堆整体', heap)] : []),
     ...(old ? [metricOf('Old 区', old)] : []),
     ...(metaspace ? [metricOf('Metaspace', metaspace)] : []),
-    ...regions
-      .filter(r => r !== heap && r !== old && r !== metaspace)
-      .map(r => metricOf(r.name, r))
+    ...regions.filter(r => r !== heap && r !== old && r !== metaspace).map(r => metricOf(r.name, r))
   ];
 
   return {
@@ -396,9 +407,7 @@ function ruleSc(ctx: FindingContext): DiagnosticFinding {
       type: 'kv' as const,
       kv: b.kv
     })),
-    nextActions: blocks[0].className
-      ? [{ label: '列出该类方法', command: `sm ${blocks[0].className}` }]
-      : undefined
+    nextActions: blocks[0].className ? [{ label: '列出该类方法', command: `sm ${blocks[0].className}` }] : undefined
   };
 }
 
@@ -409,7 +418,11 @@ function ruleHeapdump(ctx: FindingContext): DiagnosticFinding {
   return {
     kind: 'export',
     level: failed ? 'critical' : 'ok',
-    symptom: failed ? '堆转储失败，请查看原始输出' : file ? `堆转储已生成：${file}` : '命令已执行，未见输出中的文件路径',
+    symptom: failed
+      ? '堆转储失败，请查看原始输出'
+      : file
+        ? `堆转储已生成：${file}`
+        : '命令已执行，未见输出中的文件路径',
     sections: [
       {
         title: '后续分析建议',

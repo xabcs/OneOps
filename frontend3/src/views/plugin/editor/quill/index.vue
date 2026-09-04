@@ -40,6 +40,7 @@
     background: inherit !important;
     border-color: var(--el-border-color) !important;
   }
+
   :deep(.w-e-text-container) {
     background: inherit;
     border-color: var(--el-border-color) !important;

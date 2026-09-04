@@ -239,7 +239,15 @@
       <div class="flex items-center space-x-2">
         <ElButton v-if="connected" size="small" @click="setFriendlyPrompt">设置提示符</ElButton>
         <ElButton v-if="connected" size="small" type="danger" @click="handleDisconnect">断开连接</ElButton>
-        <PermissionButton code="k8s.terminal.connect" v-if="!connected" size="small" type="primary" @click="connectTerminal">重新连接</PermissionButton>
+        <PermissionButton
+          v-if="!connected"
+          code="k8s.terminal.connect"
+          size="small"
+          type="primary"
+          @click="connectTerminal"
+        >
+          重新连接
+        </PermissionButton>
       </div>
     </div>
 
@@ -255,6 +263,7 @@
     100% {
       opacity: 1;
     }
+
     50% {
       opacity: 0.5;
     }

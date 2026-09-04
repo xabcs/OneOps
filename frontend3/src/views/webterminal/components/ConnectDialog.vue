@@ -143,23 +143,23 @@
 <style lang="scss">
   /* 连接对话框样式 - 终端暗色主题 */
   .terminal-workbench :deep(.el-overlay) {
-    background-color: rgba(0, 0, 0, 0.7) !important;
+    background-color: rgb(0 0 0 / 70%) !important;
   }
 
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog) {
     background: #252526 !important;
     border: 1px solid #454545 !important;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6) !important;
+    box-shadow: 0 4px 24px rgb(0 0 0 / 60%) !important;
   }
 
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog .el-dialog__header) {
     background: #2d2d2d !important;
-    border-bottom: 1px solid #000000 !important;
+    border-bottom: 1px solid #000 !important;
     padding: 12px 16px !important;
   }
 
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog .el-dialog__title) {
-    color: #cccccc !important;
+    color: #ccc !important;
     font-size: 13px !important;
     font-weight: 500 !important;
   }
@@ -169,64 +169,64 @@
   }
 
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog .el-dialog__headerbtn .el-dialog__close:hover) {
-    color: #cccccc !important;
+    color: #ccc !important;
   }
 
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog .el-dialog__body) {
     background: #252526 !important;
     padding: 16px !important;
-    color: #cccccc !important;
+    color: #ccc !important;
   }
 
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog .el-dialog__footer) {
     background: #2d2d2d !important;
-    border-top: 1px solid #000000 !important;
+    border-top: 1px solid #000 !important;
     padding: 12px 16px !important;
   }
 
   /* 对话框中的标签样式 */
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog .el-tag) {
-    background: rgba(78, 201, 176, 0.1) !important;
+    background: rgb(78 201 176 / 10%) !important;
     border-color: transparent !important;
     color: #4ec9b0 !important;
   }
 
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog .el-tag.el-tag--success) {
-    background: rgba(78, 201, 176, 0.1) !important;
+    background: rgb(78 201 176 / 10%) !important;
     color: #4ec9b0 !important;
   }
 
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog .el-tag.el-tag--warning) {
-    background: rgba(217, 119, 6, 0.1) !important;
+    background: rgb(217 119 6 / 10%) !important;
     color: #d97706 !important;
   }
 
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog .el-tag.el-tag--info) {
-    background: rgba(107, 114, 128, 0.1) !important;
+    background: rgb(107 114 128 / 10%) !important;
     color: #6b7280 !important;
   }
 
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog .el-tag.el-tag--plain) {
-    background: rgba(78, 201, 176, 0.15) !important;
-    border: 1px solid rgba(78, 201, 176, 0.3) !important;
+    background: rgb(78 201 176 / 15%) !important;
+    border: 1px solid rgb(78 201 176 / 30%) !important;
   }
 
   /* 对话框中的按钮样式 */
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog .el-button) {
     background: transparent !important;
-    color: #cccccc !important;
+    color: #ccc !important;
     border: 1px solid #454545 !important;
   }
 
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog .el-button:hover) {
-    background: rgba(0, 0, 0, 0.2) !important;
+    background: rgb(0 0 0 / 20%) !important;
     border-color: #555 !important;
   }
 
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog .el-button--primary) {
     background: #007acc !important;
     border-color: #007acc !important;
-    color: #ffffff !important;
+    color: #fff !important;
   }
 
   .terminal-workbench :deep(.el-dialog.terminal-connect-dialog .el-button--primary:hover) {
@@ -249,7 +249,7 @@
   .connect-section-title {
     font-size: 12px;
     font-weight: 500;
-    color: #cccccc;
+    color: #ccc;
     margin-bottom: 12px;
     padding-left: 12px;
     position: relative;
@@ -288,7 +288,7 @@
 
   .connect-info-value {
     font-size: 12px;
-    color: #cccccc;
+    color: #ccc;
     line-height: 1.5;
     display: flex;
     align-items: center;
@@ -314,7 +314,7 @@
     padding: 8px 12px;
     font-size: 11px;
     color: #858585;
-    background: rgba(136, 85, 85, 0.1);
+    background: rgb(136 85 85 / 10%);
     border-radius: 2px;
   }
 
@@ -325,7 +325,7 @@
     padding: 12px;
     color: #f14c4c;
     font-size: 12px;
-    background: rgba(241, 76, 76, 0.1);
+    background: rgb(241 76 76 / 10%);
     border: 1px dashed #f14c4c;
     border-radius: 2px;
   }

@@ -2,11 +2,7 @@
   import { computed, onMounted, ref } from 'vue';
   import { ElMessageBox } from 'element-plus';
   import { Setting, User } from '@element-plus/icons-vue';
-  import {
-    fetchDeleteSSHCredential,
-    fetchGetSSHCredentials,
-    fetchTestSSHCredential
-  } from '@/service/api/cmdb';
+  import { fetchDeleteSSHCredential, fetchGetSSHCredentials, fetchTestSSHCredential } from '@/service/api/cmdb';
   import SshCredentialOperateDrawer from '../ssh/modules/ssh-credential-operate-drawer.vue';
 
   defineOptions({ name: 'CmdbAccessCredentials' });
@@ -108,9 +104,7 @@
     }
   }
 
-  function getAuthTypeTag(
-    type: string
-  ): { text: string; type: 'primary' | 'success' | 'warning' | 'info' | 'danger' } {
+  function getAuthTypeTag(type: string): { text: string; type: 'primary' | 'success' | 'warning' | 'info' | 'danger' } {
     const typeMap: Record<string, { text: string; type: 'primary' | 'success' | 'warning' | 'info' | 'danger' }> = {
       password: { text: '密码', type: 'primary' },
       key: { text: '密钥', type: 'success' }
@@ -202,9 +196,21 @@
         </ElTableColumn>
         <ElTableColumn label="操作" width="230" align="center" fixed="right">
           <template #default="{ row }">
-            <PermissionButton code="cmdb.credential.test" type="success" size="small" :loading="testLoading" @click="handleTest(row)">测试</PermissionButton>
-            <PermissionButton code="cmdb.credential.update" type="primary" size="small" @click="handleEdit(row)">编辑</PermissionButton>
-            <PermissionButton code="cmdb.credential.delete" type="danger" size="small" @click="handleDelete(row)">删除</PermissionButton>
+            <PermissionButton
+              code="cmdb.credential.test"
+              type="success"
+              size="small"
+              :loading="testLoading"
+              @click="handleTest(row)"
+            >
+              测试
+            </PermissionButton>
+            <PermissionButton code="cmdb.credential.update" type="primary" size="small" @click="handleEdit(row)">
+              编辑
+            </PermissionButton>
+            <PermissionButton code="cmdb.credential.delete" type="danger" size="small" @click="handleDelete(row)">
+              删除
+            </PermissionButton>
           </template>
         </ElTableColumn>
       </ElTable>
@@ -224,6 +230,7 @@
   .card-wrapper {
     @apply flex-col-stretch;
   }
+
   .credential-tabs {
     :deep(.el-tabs__header) {
       margin-bottom: 0;

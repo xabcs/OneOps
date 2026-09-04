@@ -2,8 +2,8 @@
   import { onMounted, ref } from 'vue';
   import { Refresh, Search } from '@element-plus/icons-vue';
   import { fetchExportLoginLogs, fetchGetLoginLogs } from '@/service/api';
-  import { exportFile } from '@/utils/file';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
+  import { exportFile } from '@/utils/file';
 
   defineOptions({ name: 'AuditLoginLogs' });
 
@@ -70,7 +70,11 @@
         align: 'center',
         showOverflowTooltip: true,
         formatter: row =>
-          row.status === 'failed' ? <span class="text-error">{row.failReason}</span> : <span class="text-tertiary">-</span>
+          row.status === 'failed' ? (
+            <span class="text-error">{row.failReason}</span>
+          ) : (
+            <span class="text-tertiary">-</span>
+          )
       },
       { prop: 'loginTime', label: '登录时间', width: 160, align: 'center' },
       {

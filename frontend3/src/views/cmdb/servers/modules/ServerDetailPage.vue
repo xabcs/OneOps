@@ -122,7 +122,12 @@
         </ElTag>
       </div>
       <div class="instance-actions">
-        <PermissionButton code="cmdb.server.connect" type="primary" :disabled="!hasPermission || availableCredentials.length === 0" @click="handleConnect">
+        <PermissionButton
+          code="cmdb.server.connect"
+          type="primary"
+          :disabled="!hasPermission || availableCredentials.length === 0"
+          @click="handleConnect"
+        >
           远程连接
         </PermissionButton>
         <ElButton @click="router.push('/cmdb/servers')">返回列表</ElButton>

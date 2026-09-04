@@ -2,6 +2,7 @@ import process from 'node:process';
 import { URL, fileURLToPath } from 'node:url';
 import { defineConfig, loadEnv } from 'vite';
 import { setupVitePlugins } from './build/plugins';
+import { assetFileNames, chunkGroups } from './build/config/chunks';
 import { createViteProxy, getBuildTime } from './build/config';
 
 export default defineConfig(configEnv => {
@@ -65,6 +66,36 @@ export default defineConfig(configEnv => {
       sourcemap: viteEnv.VITE_SOURCE_MAP === 'Y',
       commonjsOptions: {
         ignoreTryCatch: false
+      },
+      // 生产环境使用 terser 压缩并移除 console/debugger，其余环境用默认压缩保持构建速度
+      ...(configEnv.mode === 'prod'
+        ? {
+            minify: 'terser' as const,
+            terserOptions: {
+              compress: {
+                drop_console: true,
+                drop_debugger: true,
+                dead_code: true,
+                unused: true
+              }
+            }
+          }
+        : {}),
+      rolldownOptions: {
+        output: {
+          // ============================================================================
+          // 浏览器缓存策略：通过 contenthash 实现长期缓存
+          // 1. [hash] 基于文件内容生成，内容不变 hash 不变
+          // 2. 配合服务器设置 Cache-Control: max-age=31536000, immutable
+          // 3. 大库独立分包（见 build/config/chunks.ts），业务代码变动不会导致 vendor 缓存失效
+          // ============================================================================
+          entryFileNames: 'assets/entry/[name]-[hash].js',
+          chunkFileNames: 'assets/chunks/[name]-[hash].js',
+          assetFileNames,
+          advancedChunks: {
+            groups: chunkGroups
+          }
+        }
       }
     }
   };

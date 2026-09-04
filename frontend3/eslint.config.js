@@ -1,4 +1,6 @@
 import { defineConfig } from '@soybeanjs/eslint-config';
+// oxlint 先行快速检查 correctness 类规则，eslint 侧关闭重复规则避免双报
+import oxlint from 'eslint-plugin-oxlint';
 
 export default defineConfig(
   { vue: true, unocss: true },
@@ -20,5 +22,6 @@ export default defineConfig(
       ],
       'unocss/order-attributify': 'off'
     }
-  }
+  },
+  ...oxlint.configs['flat/recommended']
 );

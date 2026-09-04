@@ -292,7 +292,19 @@ export function fetchGetPermissionList(params?: Api.SystemManage.PermissionSearc
  * 获取权限选项列表（不分页，用于选择器/权限树）
  */
 export function fetchPermissionOptions() {
-  return request<{ id: number; name: string; code: string; module: string; resource: string; action: string; parentId: number; level: number; sortOrder: number }[]>({
+  return request<
+    {
+      id: number;
+      name: string;
+      code: string;
+      module: string;
+      resource: string;
+      action: string;
+      parentId: number;
+      level: number;
+      sortOrder: number;
+    }[]
+  >({
     url: '/system/permissions/options',
     method: 'get'
   });
@@ -364,7 +376,9 @@ export function fetchGetPermissionRoutes(params?: { permissionCode?: string }) {
 /**
  * 新增权限路由映射（同一端点只能归属一个权限码，即时生效）
  */
-export function fetchCreatePermissionRoute(data: Pick<Api.SystemManage.PermissionRoute, 'permissionCode' | 'method' | 'path'>) {
+export function fetchCreatePermissionRoute(
+  data: Pick<Api.SystemManage.PermissionRoute, 'permissionCode' | 'method' | 'path'>
+) {
   return request({
     url: '/system/permissions/routes',
     method: 'post',
@@ -451,10 +465,7 @@ export function fetchCreateUserGroup(data: { code: string; name: string; descrip
 /**
  * 更新用户组（code 不可改；name 必传）
  */
-export function fetchUpdateUserGroup(
-  id: number,
-  data: { name: string; description?: string; status?: number }
-) {
+export function fetchUpdateUserGroup(id: number, data: { name: string; description?: string; status?: number }) {
   return request({
     url: `/system/user-groups/${id}`,
     method: 'put',

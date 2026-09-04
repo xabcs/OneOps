@@ -39,7 +39,13 @@ export function useServerData() {
   const attributeDefinitions = ref<Api.SystemManage.AttributeDefinition[]>([]);
 
   // ===== 数据获取 =====
-  async function getServers(searchParams?: { searchType: SearchType; searchKeyword: string; groupId?: number; ungrouped?: boolean; tagId?: number }) {
+  async function getServers(searchParams?: {
+    searchType: SearchType;
+    searchKeyword: string;
+    groupId?: number;
+    ungrouped?: boolean;
+    tagId?: number;
+  }) {
     loading.value = true;
     try {
       const params: CMDB.ServerQuery = { page: pagination.page, pageSize: pagination.pageSize };

@@ -605,26 +605,31 @@
       font-size: 12px;
       line-height: 30px;
     }
+
     :deep(.el-input__wrapper) {
       border-radius: 0 !important;
       height: 30px;
       font-size: 12px;
     }
+
     :deep(.el-select) {
       height: 30px;
       font-size: 12px;
     }
+
     :deep(.el-select .el-select__selection),
     :deep(.el-select .el-select__selected-item),
     :deep(.el-select .el-select__placeholder) {
       display: none;
     }
+
     .select-fixed-label {
       font-size: 12px;
       color: var(--el-text-color-regular);
       line-height: 30px;
       padding-left: 8px;
     }
+
     :deep(.el-select.has-value .el-select__prefix) {
       position: static;
       flex: none;
@@ -678,9 +683,11 @@
       color: var(--el-color-primary);
       font-size: var(--el-font-size-base);
       user-select: none;
+
       .dropdown-icon {
         font-size: 14px;
       }
+
       &:hover {
         opacity: 0.8;
       }
@@ -699,11 +706,13 @@
     background-color: #fff;
     border-top: 1px solid #ebeef5;
     z-index: 10;
+
     .batch-info {
       font-size: 14px;
       color: #303133;
       font-weight: 500;
     }
+
     :deep(.el-pagination) {
       margin: 0;
     }

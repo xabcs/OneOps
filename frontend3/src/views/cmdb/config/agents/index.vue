@@ -1,5 +1,6 @@
 <script setup lang="tsx">
   import { computed, onMounted, ref, resolveDirective, withDirectives } from 'vue';
+  import type { FlatResponseData } from '@sa/axios';
   import {
     fetchBatchUninstallAgent,
     fetchDeleteAgentRecord,
@@ -12,7 +13,6 @@
     fetchUpgradeAgent
   } from '@/service/api/cmdb';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
-  import type { FlatResponseData } from '@sa/axios';
   import PermissionButton from '@/components/common/PermissionButton.vue';
 
   defineOptions({ name: 'CmdbConfigAgents' });
@@ -138,7 +138,8 @@
           }
           return (
             <span class="actions-wrapper">
-              {row.agentStatus === 'running' && !isLatestVersion(row.agentVersion) &&
+              {row.agentStatus === 'running' &&
+                !isLatestVersion(row.agentVersion) &&
                 withDirectives(
                   <a class="action-link upgrade-link" onClick={() => handleUpgrade(row)}>
                     <icon-mdi-arrow-up-bold />
@@ -205,7 +206,10 @@
     return `${Math.floor(hours / 24)}天前`;
   }
 
-  function getAgentStatusTag(status?: string): { text: string; type: 'success' | 'danger' | 'info' | 'primary' | 'warning' } {
+  function getAgentStatusTag(status?: string): {
+    text: string;
+    type: 'success' | 'danger' | 'info' | 'primary' | 'warning';
+  } {
     if (status === 'running') return { text: '运行中', type: 'success' };
     if (status === 'offline') return { text: '离线', type: 'danger' };
     return { text: '未安装', type: 'info' };
@@ -216,7 +220,10 @@
     return currentVersion === latestVersion.value.version;
   }
 
-  function getVersionStatus(currentVersion?: string): { text: string; type: 'success' | 'warning' | 'info' | 'primary' | 'danger' } {
+  function getVersionStatus(currentVersion?: string): {
+    text: string;
+    type: 'success' | 'warning' | 'info' | 'primary' | 'danger';
+  } {
     if (!currentVersion) return { text: '未安装', type: 'info' };
     if (isLatestVersion(currentVersion)) return { text: '最新版', type: 'success' };
     return { text: '可升级', type: 'warning' };
@@ -492,17 +499,35 @@
             <span v-if="batchProgress.running" class="batch-progress-text">
               批量部署中：{{ batchProgress.current }} / {{ batchProgress.total }} 台
             </span>
-            <PermissionButton code="cmdb.agents.deploy" type="primary" plain :disabled="batchDeployable.length === 0" @click="handleBatchDeploy">
+            <PermissionButton
+              code="cmdb.agents.deploy"
+              type="primary"
+              plain
+              :disabled="batchDeployable.length === 0"
+              @click="handleBatchDeploy"
+            >
               <template #icon><icon-mdi-rocket-launch class="text-icon" /></template>
               批量部署
               <span v-if="batchDeployable.length > 0">（{{ batchDeployable.length }}）</span>
             </PermissionButton>
-            <PermissionButton code="cmdb.agents.uninstall" type="danger" plain :disabled="batchUninstallable.length === 0" @click="handleBatchUninstall">
+            <PermissionButton
+              code="cmdb.agents.uninstall"
+              type="danger"
+              plain
+              :disabled="batchUninstallable.length === 0"
+              @click="handleBatchUninstall"
+            >
               <template #icon><icon-mdi-delete class="text-icon" /></template>
               批量卸载
               <span v-if="batchUninstallable.length > 0">（{{ batchUninstallable.length }}）</span>
             </PermissionButton>
-            <PermissionButton code="cmdb.agents.upgrade" type="success" plain :disabled="batchUpgradeable.length === 0" @click="handleBatchUpgrade">
+            <PermissionButton
+              code="cmdb.agents.upgrade"
+              type="success"
+              plain
+              :disabled="batchUpgradeable.length === 0"
+              @click="handleBatchUpgrade"
+            >
               <template #icon><icon-mdi-arrow-up-bold class="text-icon" /></template>
               批量升级
               <span v-if="batchUpgradeable.length > 0">（{{ batchUpgradeable.length }}）</span>

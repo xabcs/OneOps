@@ -66,16 +66,18 @@
 </script>
 
 <template>
-  <div style="width: 220px; height: 100%; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden;">
+  <div style="width: 220px; height: 100%; display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden">
     <ElCard
       shadow="never"
       body-style="padding: 12px; border-radius: 0;"
-      style="border-radius: 0; flex: 1; display: flex; flex-direction: column;"
+      style="border-radius: 0; flex: 1; display: flex; flex-direction: column"
     >
       <div class="mb-8px flex items-center justify-between">
         <span class="text-14px text-gray-700 font-bold">资产分组</span>
         <div class="flex items-center gap-4px">
-          <PermissionButton code="cmdb.group.create" link size="small" @click="emit('add-root-group')"><icon-mdi-plus class="text-16px" /></PermissionButton>
+          <PermissionButton code="cmdb.group.create" link size="small" @click="emit('add-root-group')">
+            <icon-mdi-plus class="text-16px" />
+          </PermissionButton>
           <ElButton link size="small" @click="emit('refresh-groups')"><icon-mdi-refresh class="text-16px" /></ElButton>
         </div>
       </div>
@@ -117,7 +119,7 @@
                     ref="editInputRef"
                     :model-value="editingNodeName"
                     size="small"
-                    style="min-width: 0; flex: 1;"
+                    style="min-width: 0; flex: 1"
                     @update:model-value="emit('update:editingNodeName', $event)"
                     @keydown="emit('edit-keydown', $event as KeyboardEvent)"
                     @blur="emit('save-edit-group')"
@@ -161,7 +163,7 @@
             border: '1px solid #e4e7ed',
             borderRadius: '4px',
             boxShadow: '0 2px 12px 0 rgba(0, 0, 0, 0.1)',
-            borderRight: 'none',
+            borderRight: 'none'
           }"
           @click.stop="emit('context-menu-close')"
         >

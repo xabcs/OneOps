@@ -1,15 +1,15 @@
 <script setup lang="ts">
   import { computed, onMounted, reactive, ref } from 'vue';
   import { ElMessage } from 'element-plus';
-  import { useAuthStore } from '@/store/modules/auth';
   import {
-  fetchNotificationChannels,
-  fetchNotifyLogs,
-  fetchNotifyPolicies,
-  fetchNotifyQuiet,
-  updateNotifyPolicy,
-  updateNotifyQuiet
-} from '@/service/api';
+    fetchNotificationChannels,
+    fetchNotifyLogs,
+    fetchNotifyPolicies,
+    fetchNotifyQuiet,
+    updateNotifyPolicy,
+    updateNotifyQuiet
+  } from '@/service/api';
+  import { useAuthStore } from '@/store/modules/auth';
 
   defineOptions({
     name: 'TicketNotifySettings'
@@ -262,7 +262,8 @@
         <div>
           <span class="text-lg font-semibold">通知设置</span>
           <div class="mt-1 text-xs text-gray-400">
-            事件矩阵：为各审批事件选择通知渠道（渠道在「系统管理 → 通知渠道」维护）。未定制的事件默认走全部启用渠道；站内消息为兜底渠道，事件启用即写入
+            事件矩阵：为各审批事件选择通知渠道（渠道在「系统管理 →
+            通知渠道」维护）。未定制的事件默认走全部启用渠道；站内消息为兜底渠道，事件启用即写入
           </div>
         </div>
       </div>
@@ -273,7 +274,9 @@
         <!-- 事件矩阵 -->
         <ElTabPane label="事件矩阵" name="matrix">
           <!-- 防轰炸设置（蓝图⑥） -->
-          <div class="mb-4 flex flex-wrap items-center gap-4 rounded border border-dashed border-gray-300 p-3 dark:border-gray-600">
+          <div
+            class="mb-4 flex flex-wrap items-center gap-4 border border-gray-300 rounded border-dashed p-3 dark:border-gray-600"
+          >
             <span class="text-sm font-medium">防轰炸</span>
             <ElTooltip
               content="静默时段内：邮件/企微/钉钉等外部渠道暂停推送，站内消息不受影响；超时升级通知不受静默限制"
@@ -291,10 +294,18 @@
                 <ElOption v-for="h in hourOptions" :key="h.value" :label="h.label" :value="h.value" />
               </ElSelect>
             </template>
-            <PermissionButton code="ticket.notify.update" type="primary" size="small" :loading="savingQuiet" @click="handleSaveQuiet">
+            <PermissionButton
+              code="ticket.notify.update"
+              type="primary"
+              size="small"
+              :loading="savingQuiet"
+              @click="handleSaveQuiet"
+            >
               保存
             </PermissionButton>
-            <span class="ml-auto text-xs text-gray-400">固定规则：同工单同事件 10 分钟内去重 · 单人外部推送每小时上限 30 条</span>
+            <span class="ml-auto text-xs text-gray-400">
+              固定规则：同工单同事件 10 分钟内去重 · 单人外部推送每小时上限 30 条
+            </span>
           </div>
 
           <ElTable v-loading="loading" :data="policies" border stripe>
@@ -339,7 +350,13 @@
                 <div class="flex items-center justify-center gap-1">
                   <ElTag v-if="row.hasTpl" type="warning" size="small">自定义</ElTag>
                   <ElTag v-else type="info" size="small">默认</ElTag>
-                  <PermissionButton code="ticket.notify.update" type="primary" link size="small" @click="handleEditTpl(row)">
+                  <PermissionButton
+                    code="ticket.notify.update"
+                    type="primary"
+                    link
+                    size="small"
+                    @click="handleEditTpl(row)"
+                  >
                     编辑
                   </PermissionButton>
                 </div>
@@ -430,7 +447,9 @@
             </ElTableColumn>
             <ElTableColumn label="错误信息" min-width="200" show-overflow-tooltip>
               <template #default="{ row }">
-                <span class="text-xs" :class="row.error ? 'text-red-500' : 'text-gray-400'">{{ row.error || '—' }}</span>
+                <span class="text-xs" :class="row.error ? 'text-red-500' : 'text-gray-400'">
+                  {{ row.error || '—' }}
+                </span>
               </template>
             </ElTableColumn>
           </ElTable>
@@ -461,7 +480,12 @@
 
         <div>
           <div class="mb-1 text-sm font-medium">标题模板</div>
-          <ElInput v-model="tplDialog.titleTpl" placeholder="例：【OneOps 催办】{{title}}（{{ticketNo}}）" maxlength="500" show-word-limit />
+          <ElInput
+            v-model="tplDialog.titleTpl"
+            placeholder="例：【OneOps 催办】{{title}}（{{ticketNo}}）"
+            maxlength="500"
+            show-word-limit
+          />
         </div>
 
         <div>
@@ -477,7 +501,7 @@
         </div>
 
         <div class="rounded bg-gray-50 p-3 dark:bg-gray-800">
-          <div class="mb-2 text-xs font-medium text-gray-500">可用变量（点击插入正文）</div>
+          <div class="mb-2 text-xs text-gray-500 font-medium">可用变量（点击插入正文）</div>
           <div class="flex flex-wrap gap-2">
             <ElTag
               v-for="v in tplVars"

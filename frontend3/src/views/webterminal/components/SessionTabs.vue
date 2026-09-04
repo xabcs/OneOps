@@ -95,12 +95,12 @@
   }
 
   .wb-toolbar-item:hover {
-    background: rgba(0, 0, 0, 0.2) !important;
+    background: rgb(0 0 0 / 20%) !important;
   }
 
   .wb-toolbar-item:hover .iconify,
   .wb-toolbar-item:hover .wb-icon {
-    color: #aaaaaa !important;
+    color: #aaa !important;
   }
 
   .wb-icon {
@@ -114,8 +114,7 @@
     flex: 1;
     display: flex;
     align-items: center;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: auto hidden;
     min-width: 0;
     height: 100%;
     padding-left: 16px;
@@ -186,12 +185,12 @@
   }
 
   .wb-tab-item.active .wb-tab-icon {
-    color: #cccccc;
+    color: #ccc;
   }
 
   .wb-tab-label {
     font-size: 12px;
-    color: #ffffff;
+    color: #fff;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -219,7 +218,7 @@
   }
 
   .wb-tab-close:hover {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgb(0 0 0 / 30%);
   }
 
   .wb-close-icon {
@@ -229,6 +228,6 @@
   }
 
   .wb-tab-close:hover .wb-close-icon {
-    color: #aaaaaa;
+    color: #aaa;
   }
 </style>

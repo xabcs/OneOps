@@ -175,7 +175,7 @@ export function useSessionList() {
       await fetchTerminateSession(sessionId);
       window.$message?.success('会话已终止');
       loadSessions();
-    } catch (error) {
+    } catch {
       window.$message?.error('终止会话失败');
     } finally {
       loading.value = false;
@@ -202,7 +202,7 @@ export function useSessionList() {
       window.$message?.success(`已终止 ${selectedSessionIds.value.length} 个会话`);
       selectedSessionIds.value = [];
       loadSessions();
-    } catch (error) {
+    } catch {
       window.$message?.error('批量终止会话失败');
     } finally {
       loading.value = false;

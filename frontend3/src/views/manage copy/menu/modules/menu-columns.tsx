@@ -1,7 +1,7 @@
 /**
  * 菜单表格列定义
  */
-import { Bottom, Plus, Top } from '@element-plus/icons-vue';
+import { Plus } from '@element-plus/icons-vue';
 import { Icon } from '@iconify/vue';
 import { $t } from '@/locales';
 import { type MenuWithHierarchy, isFirst, isLast } from './menu-tree-helper';

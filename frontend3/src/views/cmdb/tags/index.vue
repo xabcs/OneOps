@@ -66,7 +66,9 @@
     <ElCard class="card-wrapper">
       <div class="mb-16px flex justify-between">
         <ElButton :icon="Refresh" @click="getData">刷新</ElButton>
-        <PermissionButton code="cmdb.tags.create" type="primary" :icon="Plus" @click="handleAdd">新增标签</PermissionButton>
+        <PermissionButton code="cmdb.tags.create" type="primary" :icon="Plus" @click="handleAdd">
+          新增标签
+        </PermissionButton>
       </div>
 
       <ElTable v-loading="loading" :data="tableData" border stripe>
@@ -92,8 +94,12 @@
         </ElTableColumn>
         <ElTableColumn label="操作" width="160" fixed="right">
           <template #default="{ row }">
-            <PermissionButton code="cmdb.tags.update" type="primary" size="small" @click="handleEdit(row)">编辑</PermissionButton>
-            <PermissionButton code="cmdb.tags.delete" type="danger" size="small" @click="handleDelete(row)">删除</PermissionButton>
+            <PermissionButton code="cmdb.tags.update" type="primary" size="small" @click="handleEdit(row)">
+              编辑
+            </PermissionButton>
+            <PermissionButton code="cmdb.tags.delete" type="danger" size="small" @click="handleDelete(row)">
+              删除
+            </PermissionButton>
           </template>
         </ElTableColumn>
       </ElTable>

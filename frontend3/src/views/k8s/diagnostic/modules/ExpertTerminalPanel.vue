@@ -43,7 +43,9 @@
       if (!cmd) return;
       const targetId = diagStore.currentAgent?.agentId;
       if (connected.value && sessionAgent.value && sessionAgent.value.agentId !== targetId) {
-        writeSystem(`\r\n\x1B[33m命令目标(${diagStore.currentAgent?.podName})与会话目标(${sessionAgent.value.podName})不同，切换会话\x1B[0m\r\n`);
+        writeSystem(
+          `\r\n\x1B[33m命令目标(${diagStore.currentAgent?.podName})与会话目标(${sessionAgent.value.podName})不同，切换会话\x1B[0m\r\n`
+        );
         disconnect();
       }
       emit('update:autoCommand', '');
@@ -242,16 +244,26 @@
     <!-- 终端工具栏 -->
     <div class="terminal-toolbar">
       <div class="toolbar-left">
-        <span :class="['conn-dot', { online: connected }]"></span>
+        <span class="conn-dot" :class="[{ online: connected }]"></span>
         <span class="target-name">
-          {{ connected && sessionAgent ? sessionAgent.podName : diagStore.currentAgent?.podName || diagStore.currentAgent?.agentId || '未选择诊断目标' }}
+          {{
+            connected && sessionAgent
+              ? sessionAgent.podName
+              : diagStore.currentAgent?.podName || diagStore.currentAgent?.agentId || '未选择诊断目标'
+          }}
         </span>
         <ElTag v-if="connected" size="small" type="success">会话中</ElTag>
         <ElTag v-else-if="connecting" size="small" type="warning">连接中</ElTag>
-        <ElTag v-if="connected && sessionAgent && diagStore.currentAgent?.agentId !== sessionAgent.agentId" size="small" type="info">
+        <ElTag
+          v-if="connected && sessionAgent && diagStore.currentAgent?.agentId !== sessionAgent.agentId"
+          size="small"
+          type="info"
+        >
           左侧已切换目标，会话保持
         </ElTag>
-        <span v-if="!connected && !connecting" class="toolbar-hint">全量 Arthas 命令（含 ognl / redefine 等高危命令，全程审计录制）</span>
+        <span v-if="!connected && !connecting" class="toolbar-hint">
+          全量 Arthas 命令（含 ognl / redefine 等高危命令，全程审计录制）
+        </span>
       </div>
       <div class="toolbar-right">
         <PermissionButton
@@ -301,7 +313,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        color: #cccccc;
+        color: #ccc;
         font-size: 13px;
         min-width: 0;
 

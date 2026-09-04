@@ -1,10 +1,7 @@
 <script setup lang="ts">
   import { onMounted, reactive, ref } from 'vue';
   import { Search } from '@element-plus/icons-vue';
-  import {
-    fetchDiagnosticExecutions,
-    type DiagnosticExecution
-  } from '@/service/api/diagnostic';
+  import { type DiagnosticExecution, fetchDiagnosticExecutions } from '@/service/api/diagnostic';
   import { channelLabel, formatDateTime, formatDuration, riskMeta } from '../shared';
 
   defineOptions({ name: 'DiagnosticHistoryTab' });
@@ -68,7 +65,7 @@
       <ElButton type="primary" :icon="Search" :loading="loading" @click="search">查询</ElButton>
     </div>
 
-    <ElTable :data="executions" v-loading="loading" size="small">
+    <ElTable v-loading="loading" :data="executions" size="small">
       <ElTableColumn label="时间" width="165">
         <template #default="{ row }">{{ formatDateTime(row.timestamp) }}</template>
       </ElTableColumn>

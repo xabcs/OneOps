@@ -230,11 +230,7 @@ export function fetchDiagnosticCommandOverrides() {
 }
 
 /** 新增/更新命令风险覆盖（返回合并后的最新命令目录） */
-export function saveDiagnosticCommandOverride(data: {
-  command: string;
-  riskLevel: string;
-  description?: string;
-}) {
+export function saveDiagnosticCommandOverride(data: { command: string; riskLevel: string; description?: string }) {
   return request<DiagnosticCommandCatalogItem[]>({
     url: '/k8s/diagnostic/command-overrides',
     method: 'post',

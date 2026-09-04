@@ -1,5 +1,5 @@
 import { nextTick } from 'vue';
-import type { LocationQueryRaw, RouteLocationNormalized, RouteLocationRaw, Router } from 'vue-router';
+import type { RouteLocationNormalized, RouteLocationRaw, Router } from 'vue-router';
 import type { RouteKey, RoutePath } from '@elegant-router/types';
 import { useAuthStore } from '@/store/modules/auth';
 import { useRouteStore } from '@/store/modules/route';

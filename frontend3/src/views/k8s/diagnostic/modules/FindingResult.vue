@@ -1,7 +1,46 @@
+<script setup lang="ts">
+  import { computed, ref } from 'vue';
+  import type { DiagnosticFinding } from '../finding/types';
+
+  defineOptions({ name: 'DiagnosticFindingResult' });
+
+  const props = defineProps<{
+    finding: DiagnosticFinding;
+    raw: string;
+  }>();
+
+  const emit = defineEmits<{ openTerminal: [command: string] }>();
+
+  const showRaw = ref(false);
+
+  const LEVEL_TEXT: Record<DiagnosticFinding['level'], string> = {
+    critical: '发现异常',
+    warning: '需要关注',
+    ok: '未见异常',
+    info: '信息',
+    unknown: '未判定'
+  };
+  const KIND_TEXT: Record<DiagnosticFinding['kind'], string> = {
+    finding: '判定',
+    describe: '信息',
+    export: '产物',
+    mutate: '变更'
+  };
+
+  const levelText = computed(() => LEVEL_TEXT[props.finding.level]);
+  const kindText = computed(() => KIND_TEXT[props.finding.kind]);
+
+  /** 堆栈帧列使用等宽字体 */
+  function isFrameCol(sec: { columns?: string[] }, idx: number): boolean {
+    const name = sec.columns?.[idx] ?? '';
+    return /帧|栈|class|loader/i.test(name);
+  }
+</script>
+
 <template>
   <div class="finding-result">
     <!-- 状态条（severity banner） -->
-    <div :class="['f-banner', `level-${finding.level}`]">
+    <div class="f-banner" :class="[`level-${finding.level}`]">
       <span class="f-dot" />
       <span class="f-level-text">{{ levelText }}</span>
       <span class="f-kind">{{ kindText }}</span>
@@ -34,7 +73,8 @@
         <div
           v-for="m in sec.metrics"
           :key="m.label"
-          :class="['metric-item', { warn: m.level === 'warning', crit: m.level === 'critical' }]"
+          class="metric-item"
+          :class="[{ warn: m.level === 'warning', crit: m.level === 'critical' }]"
         >
           <div class="metric-head">
             <span class="metric-label">{{ m.label }}</span>
@@ -117,45 +157,6 @@
   </div>
 </template>
 
-<script setup lang="ts">
-  import { computed, ref } from 'vue';
-  import type { DiagnosticFinding } from '../finding/types';
-
-  defineOptions({ name: 'DiagnosticFindingResult' });
-
-  const props = defineProps<{
-    finding: DiagnosticFinding;
-    raw: string;
-  }>();
-
-  const emit = defineEmits<{ openTerminal: [command: string] }>();
-
-  const showRaw = ref(false);
-
-  const LEVEL_TEXT: Record<DiagnosticFinding['level'], string> = {
-    critical: '发现异常',
-    warning: '需要关注',
-    ok: '未见异常',
-    info: '信息',
-    unknown: '未判定'
-  };
-  const KIND_TEXT: Record<DiagnosticFinding['kind'], string> = {
-    finding: '判定',
-    describe: '信息',
-    export: '产物',
-    mutate: '变更'
-  };
-
-  const levelText = computed(() => LEVEL_TEXT[props.finding.level]);
-  const kindText = computed(() => KIND_TEXT[props.finding.kind]);
-
-  /** 堆栈帧列使用等宽字体 */
-  function isFrameCol(sec: { columns?: string[] }, idx: number): boolean {
-    const name = sec.columns?.[idx] ?? '';
-    return /帧|栈|class|loader/i.test(name);
-  }
-</script>
-
 <style scoped lang="scss">
   .finding-result {
     display: flex;
@@ -200,26 +201,45 @@
       &.level-critical {
         background: var(--el-color-danger-light-9);
         border-color: var(--el-color-danger-light-7);
-        .f-dot { background: var(--el-color-danger); }
-        .f-level-text { color: var(--el-color-danger); }
+        .f-dot {
+          background: var(--el-color-danger);
+        }
+        .f-level-text {
+          color: var(--el-color-danger);
+        }
       }
+
       &.level-warning {
         background: var(--el-color-warning-light-9);
         border-color: var(--el-color-warning-light-7);
-        .f-dot { background: var(--el-color-warning); }
-        .f-level-text { color: var(--el-color-warning); }
+        .f-dot {
+          background: var(--el-color-warning);
+        }
+        .f-level-text {
+          color: var(--el-color-warning);
+        }
       }
+
       &.level-ok {
         background: var(--el-color-success-light-9);
         border-color: var(--el-color-success-light-7);
-        .f-dot { background: var(--el-color-success); }
-        .f-level-text { color: var(--el-color-success); }
+        .f-dot {
+          background: var(--el-color-success);
+        }
+        .f-level-text {
+          color: var(--el-color-success);
+        }
       }
+
       &.level-info,
       &.level-unknown {
         background: var(--el-fill-color-light);
-        .f-dot { background: var(--el-text-color-secondary); }
-        .f-level-text { color: var(--el-text-color-regular); }
+        .f-dot {
+          background: var(--el-text-color-secondary);
+        }
+        .f-level-text {
+          color: var(--el-text-color-regular);
+        }
       }
     }
 
@@ -278,8 +298,12 @@
         border-radius: 6px;
         padding: 8px 10px;
 
-        &.warn { border-color: var(--el-color-warning-light-5); }
-        &.crit { border-color: var(--el-color-danger-light-5); }
+        &.warn {
+          border-color: var(--el-color-warning-light-5);
+        }
+        &.crit {
+          border-color: var(--el-color-danger-light-5);
+        }
 
         .metric-head {
           display: flex;
@@ -287,8 +311,12 @@
           gap: 6px;
           margin-bottom: 6px;
 
-          .metric-label { color: var(--el-text-color-secondary); }
-          .metric-value { font-weight: 500; }
+          .metric-label {
+            color: var(--el-text-color-secondary);
+          }
+          .metric-value {
+            font-weight: 500;
+          }
         }
 
         .metric-bar {
@@ -303,8 +331,12 @@
             background: var(--el-color-success);
             transition: width 0.3s;
 
-            &.warn { background: var(--el-color-warning); }
-            &.crit { background: var(--el-color-danger); }
+            &.warn {
+              background: var(--el-color-warning);
+            }
+            &.crit {
+              background: var(--el-color-danger);
+            }
           }
         }
       }
@@ -367,8 +399,12 @@
         padding: 6px 10px;
         border-bottom: 1px solid var(--el-border-color-extra-light);
 
-        &:nth-child(odd) { background: var(--el-fill-color-lighter); }
-        &:last-child { border-bottom: none; }
+        &:nth-child(odd) {
+          background: var(--el-fill-color-lighter);
+        }
+        &:last-child {
+          border-bottom: none;
+        }
 
         .kv-key {
           flex-shrink: 0;
@@ -380,7 +416,9 @@
           color: var(--el-text-color-regular);
           word-break: break-all;
 
-          &.mono { font-size: 11px; }
+          &.mono {
+            font-size: 11px;
+          }
         }
       }
     }
@@ -417,7 +455,9 @@
     .f-raw-toggle {
       display: flex;
 
-      :deep(.el-button) { padding: 4px 0; }
+      :deep(.el-button) {
+        padding: 4px 0;
+      }
     }
 
     .f-raw {

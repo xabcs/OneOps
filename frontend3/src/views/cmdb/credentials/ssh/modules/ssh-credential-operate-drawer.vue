@@ -116,9 +116,7 @@
         <ElRadioGroup v-model="model.credentialType" class="mt-8px">
           <ElRadio value="system">
             <span class="font-medium">系统运维</span>
-            <span class="ml-6px text-12px text-gray-400">
-              供 OneOps 后端 Agent 部署、采集使用，需 root / sudo 权限
-            </span>
+            <span class="ml-6px text-12px text-gray-400">供 OneOps 后端 Agent 部署、采集使用，需 root / sudo 权限</span>
           </ElRadio>
         </ElRadioGroup>
       </ElFormItem>

@@ -108,6 +108,7 @@
 
     :deep(.el-table__header-wrapper) {
       background-color: transparent !important;
+
       th.el-table__cell {
         background-color: #f5f7fa !important;
         color: #303133;
@@ -122,12 +123,15 @@
     :deep(.el-table__body-wrapper) {
       background-color: transparent !important;
     }
+
     :deep(.el-table__body) {
       background-color: transparent !important;
     }
+
     :deep(.el-table__body tr) {
       background-color: transparent !important;
     }
+
     :deep(.el-table__body td.el-table__cell) {
       background-color: transparent !important;
     }
@@ -135,6 +139,7 @@
     &.el-table--striped {
       :deep(.el-table__body tr.el-table__row--striped) {
         background-color: transparent !important;
+
         td.el-table__cell {
           background-color: transparent !important;
         }
@@ -148,9 +153,11 @@
     :deep(.el-table__fixed),
     :deep(.el-table__fixed-body-wrapper) {
       background-color: transparent !important;
+
       .el-table__body tr {
         background-color: transparent !important;
       }
+
       .el-table__body td.el-table__cell {
         background-color: transparent !important;
       }
@@ -222,6 +229,7 @@
       .batch-actions {
         display: flex;
         gap: 8px;
+
         :deep(.el-button.is-disabled) {
           opacity: 0.5;
         }

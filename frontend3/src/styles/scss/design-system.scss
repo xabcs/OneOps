@@ -11,7 +11,7 @@
   --oneops-brand-accent: #2563eb;
 
   /* 浅色系配色 */
-  --oneops-light-white: #ffffff;
+  --oneops-light-white: #fff;
   --oneops-light-bg-1: #f8fafc;
   --oneops-light-bg-2: #f7fbff;
   --oneops-light-bg-3: #f6fbff;
@@ -30,15 +30,15 @@
   --oneops-gradient-end-4: #f8fbff;
 
   /* 边框色系 */
-  --oneops-border-light: rgba(148, 163, 184, 0.12);
-  --oneops-border-medium: rgba(148, 163, 184, 0.18);
-  --oneops-border-strong: rgba(59, 130, 246, 0.24);
+  --oneops-border-light: rgb(148 163 184 / 12%);
+  --oneops-border-medium: rgb(148 163 184 / 18%);
+  --oneops-border-strong: rgb(59 130 246 / 24%);
 
   /* 阴影系统 */
-  --oneops-shadow-sm: 0 2px 8px rgba(59, 130, 246, 0.08);
-  --oneops-shadow-md: 0 8px 18px rgba(59, 130, 246, 0.14);
-  --oneops-shadow-lg: 0 12px 24px rgba(59, 130, 246, 0.2);
-  --oneops-shadow-inset: inset 0 1px rgba(255, 255, 255, 0.95);
+  --oneops-shadow-sm: 0 2px 8px rgb(59 130 246 / 8%);
+  --oneops-shadow-md: 0 8px 18px rgb(59 130 246 / 14%);
+  --oneops-shadow-lg: 0 12px 24px rgb(59 130 246 / 20%);
+  --oneops-shadow-inset: inset 0 1px rgb(255 255 255 / 95%);
 
   /* 文本色系 */
   --oneops-text-primary: #1e293b;
@@ -50,7 +50,7 @@
 
 /* 卡片基础渐变 */
 .gradient-card-diagonal {
-  background: linear-gradient(135deg, #ffffff, #f7fbff);
+  background: linear-gradient(135deg, #fff, #f7fbff);
   border: 1px solid var(--oneops-border-light);
   box-shadow: var(--oneops-shadow-sm);
   border-radius: 12px;
@@ -65,7 +65,7 @@
 /* 按钮渐变 - 浅蓝系 */
 .gradient-button-light {
   background: linear-gradient(135deg, var(--oneops-gradient-start-2), var(--oneops-gradient-end-2));
-  border: 1px solid rgba(96, 165, 250, 0.24);
+  border: 1px solid rgb(96 165 250 / 24%);
   box-shadow: var(--oneops-shadow-sm);
   color: #3b82f6;
   transition: all 0.3s ease;
@@ -80,7 +80,7 @@
 /* 按钮渐变 - 白色系 */
 .gradient-button-white {
   background: linear-gradient(135deg, var(--oneops-gradient-start-2), #fff7edb8);
-  border: 1px solid rgba(59, 130, 246, 0.24);
+  border: 1px solid rgb(59 130 246 / 24%);
   box-shadow: var(--oneops-shadow-sm);
   color: #3b82f6;
   transition: all 0.3s ease;
@@ -111,10 +111,10 @@
 /* Logo图标背景 */
 .gradient-logo-bg {
   background: linear-gradient(145deg, #eef4ff, #f8fbff);
-  border: 1px solid rgba(96, 165, 250, 0.24);
+  border: 1px solid rgb(96 165 250 / 24%);
   box-shadow:
     var(--oneops-shadow-inset),
-    0 8px 18px rgba(37, 99, 235, 0.14);
+    0 8px 18px rgb(37 99 235 / 14%);
   border-radius: 11px;
 }
 
@@ -122,9 +122,9 @@
 
 /* 头部区域渐变 */
 .gradient-header {
-  background: linear-gradient(180deg, rgba(248, 251, 255, 0.98), rgba(243, 247, 255, 0.94));
+  background: linear-gradient(180deg, rgb(248 251 255 / 98%), rgb(243 247 255 / 94%));
   border-bottom: 1px solid var(--oneops-border-light);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 4%);
 }
 
 /* 工具栏卡片 */
@@ -137,7 +137,7 @@
 
 /* 卡片悬停渐变 */
 .gradient-card-hover:hover {
-  background: linear-gradient(180deg, #ffffff, #f8fbff);
+  background: linear-gradient(180deg, #fff, #f8fbff);
   transform: translateY(-1px);
   box-shadow: var(--oneops-shadow-sm);
 }
@@ -150,9 +150,9 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(191, 219, 255, 0.9) 14%,
-    rgba(226, 232, 240, 0.95) 50%,
-    rgba(191, 219, 255, 0.9) 86%,
+    rgb(191 219 255 / 90%) 14%,
+    rgb(226 232 240 / 95%) 50%,
+    rgb(191 219 255 / 90%) 86%,
     transparent 100%
   );
 }
@@ -188,9 +188,9 @@
 
 /* 玻璃拟态效果 */
 .gradient-glass {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), transparent 52%);
+  background: linear-gradient(135deg, rgb(255 255 255 / 60%), transparent 52%);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   border: 1px solid var(--oneops-border-light);
   border-radius: 12px;
 }
@@ -199,7 +199,7 @@
 
 /* Element Plus 卡片增强 */
 .el-card.gradient-enhanced {
-  background: linear-gradient(135deg, #ffffff, #f7fbff);
+  background: linear-gradient(135deg, #fff, #f7fbff);
   border: 1px solid var(--oneops-border-light);
   box-shadow: var(--oneops-shadow-sm);
   border-radius: 12px;
@@ -213,7 +213,7 @@
 /* Element Plus 按钮增强 */
 .el-button.gradient-light {
   background: linear-gradient(135deg, var(--oneops-gradient-start-2), var(--oneops-gradient-end-2));
-  border: 1px solid rgba(96, 165, 250, 0.24);
+  border: 1px solid rgb(96 165 250 / 24%);
   box-shadow: var(--oneops-shadow-sm);
   transition: all 0.3s ease;
 }
@@ -228,64 +228,64 @@
 
 .panel-gradient-light {
   background: linear-gradient(135deg, #fbfdff, #f7faff 52%, #f9fbfd);
-  border: 1px solid rgba(36, 91, 219, 0.09);
+  border: 1px solid rgb(36 91 219 / 9%);
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 8px 24px rgb(15 23 42 / 4%);
 }
 
 /* ========== 输入框增强 ========== */
 
 .input-gradient {
   background: #ffffffeb !important;
-  border: 1px solid rgba(148, 163, 184, 0.16) !important;
-  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.16) inset !important;
+  border: 1px solid rgb(148 163 184 / 16%) !important;
+  box-shadow: 0 0 0 1px rgb(148 163 184 / 16%) inset !important;
   border-radius: 12px !important;
   transition: all 0.3s ease;
 }
 
 .input-gradient:hover {
-  border-color: rgba(59, 130, 246, 0.18) !important;
-  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.18) inset !important;
+  border-color: rgb(59 130 246 / 18%) !important;
+  box-shadow: 0 0 0 1px rgb(59 130 246 / 18%) inset !important;
 }
 
 .input-gradient:focus {
-  border-color: rgba(37, 99, 235, 0.22) !important;
-  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.38) inset !important;
+  border-color: rgb(37 99 235 / 22%) !important;
+  box-shadow: 0 0 0 1px rgb(37 99 235 / 38%) inset !important;
 }
 
 /* ========== 工具类 ========== */
 
 .bg-gradient-diagonal {
-  background: linear-gradient(135deg, #ffffff, #f7fbff) !important;
+  background: linear-gradient(135deg, #fff, #f7fbff) !important;
 }
 
 .bg-gradient-card {
-  background: linear-gradient(180deg, #ffffff, #f8fbff) !important;
+  background: linear-gradient(180deg, #fff, #f8fbff) !important;
 }
 
 .bg-gradient-header {
-  background: linear-gradient(180deg, rgba(248, 251, 255, 0.98), rgba(243, 247, 255, 0.94)) !important;
+  background: linear-gradient(180deg, rgb(248 251 255 / 98%), rgb(243 247 255 / 94%)) !important;
 }
 
 .shadow-gradient-sm {
-  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.14) !important;
+  box-shadow: 0 8px 18px rgb(59 130 246 / 14%) !important;
 }
 
 .shadow-gradient-md {
-  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.2) !important;
+  box-shadow: 0 12px 24px rgb(59 130 246 / 20%) !important;
 }
 
 .border-gradient-light {
-  border: 1px solid rgba(148, 163, 184, 0.12) !important;
+  border: 1px solid rgb(148 163 184 / 12%) !important;
 }
 
 .border-gradient-brand {
-  border: 1px solid rgba(96, 165, 250, 0.24) !important;
+  border: 1px solid rgb(96 165 250 / 24%) !important;
 }
 
 /* ========== 响应式优化 ========== */
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .gradient-card-diagonal,
   .gradient-card-3d,
   .panel-gradient-light {
@@ -301,25 +301,24 @@
 /* ========== 深色模式适配 ========== */
 
 html.dark:root {
-    --oneops-light-white: #1c1c1c;
-    --oneops-light-bg-1: #121212;
-    --oneops-light-bg-2: #1c1c1c;
-    --oneops-light-bg-3: #2a2a2a;
-    --oneops-light-bg-4: #3a3a3a;
-
-    --oneops-text-primary: #e0e0e0;
-    --oneops-text-secondary: #a0a0a0;
-    --oneops-text-muted: #707070;
-  }
+  --oneops-light-white: #1c1c1c;
+  --oneops-light-bg-1: #121212;
+  --oneops-light-bg-2: #1c1c1c;
+  --oneops-light-bg-3: #2a2a2a;
+  --oneops-light-bg-4: #3a3a3a;
+  --oneops-text-primary: #e0e0e0;
+  --oneops-text-secondary: #a0a0a0;
+  --oneops-text-muted: #707070;
+}
 
 html.dark {
   .gradient-card-diagonal {
     background: linear-gradient(135deg, #1c1c1c, #121212);
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: rgb(255 255 255 / 8%);
   }
 
   .gradient-header {
-    background: linear-gradient(180deg, rgba(28, 28, 28, 0.98), rgba(18, 18, 18, 0.94));
-    border-color: rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, rgb(28 28 28 / 98%), rgb(18 18 18 / 94%));
+    border-color: rgb(255 255 255 / 8%);
   }
 }

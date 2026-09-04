@@ -78,7 +78,7 @@ export function fetchApplicationUsers(id: number) {
 }
 
 /** 获取用户组权限绑定列表 */
-export function fetchGroupBindings(groupId: number) {
+export function fetchGroupBindings(_groupId: number) {
   return request<Api.ApplicationPermission.GroupBinding[]>({
     method: 'get'
   });
@@ -102,7 +102,7 @@ export function deleteGroupBinding(id: number) {
 }
 
 /** 获取用户所属用户组列表 */
-export function fetchUserGroups(userId: number) {
+export function fetchUserGroups(_userId: number) {
   return request<Api.ApplicationPermission.AuthUserGroup[]>({
     method: 'get'
   });

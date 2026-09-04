@@ -62,6 +62,7 @@
   :deep(.el-dropdown-menu__item) {
     border-radius: 6px;
   }
+
   :deep(.is-active) {
     background-color: var(--el-dropdown-menuItem-hover-fill);
     color: var(--el-dropdown-menuItem-hover-color);

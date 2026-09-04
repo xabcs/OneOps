@@ -300,7 +300,13 @@
     <template #footer>
       <ElSpace :size="16">
         <ElButton @click="closeDrawer">{{ $t('common.cancel') }}</ElButton>
-        <PermissionButton :code="isEdit ? 'system.menu.update' : 'system.menu.create'" type="primary" @click="handleSubmit">{{ $t('common.confirm') }}</PermissionButton>
+        <PermissionButton
+          :code="isEdit ? 'system.menu.update' : 'system.menu.create'"
+          type="primary"
+          @click="handleSubmit"
+        >
+          {{ $t('common.confirm') }}
+        </PermissionButton>
       </ElSpace>
     </template>
   </ElDrawer>

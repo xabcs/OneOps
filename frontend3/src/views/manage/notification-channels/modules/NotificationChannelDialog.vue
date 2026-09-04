@@ -133,11 +133,7 @@
   >
     <ElForm :model="form" label-width="120px">
       <ElFormItem label="渠道类型" required>
-        <ElSelect
-          v-model="form.channelType"
-          placeholder="请选择渠道类型"
-          :disabled="mode === 'edit'"
-        >
+        <ElSelect v-model="form.channelType" placeholder="请选择渠道类型" :disabled="mode === 'edit'">
           <ElOption v-for="type in channelTypeOptions" :key="type.value" :label="type.label" :value="type.value" />
         </ElSelect>
       </ElFormItem>
@@ -151,10 +147,7 @@
         <ElDivider content-position="left">邮件服务器配置</ElDivider>
 
         <ElFormItem label="SMTP 服务器" required>
-          <ElInput
-            v-model="(form.config as Monitoring.EmailConfig).smtpHost"
-            placeholder="smtp.example.com"
-          />
+          <ElInput v-model="(form.config as Monitoring.EmailConfig).smtpHost" placeholder="smtp.example.com" />
           <span class="ml-2 text-gray-500">服务器地址</span>
         </ElFormItem>
 
@@ -181,10 +174,7 @@
         </ElFormItem>
 
         <ElFormItem label="发件人邮箱" required>
-          <ElInput
-            v-model="(form.config as Monitoring.EmailConfig).from"
-            placeholder="noreply@example.com"
-          />
+          <ElInput v-model="(form.config as Monitoring.EmailConfig).from" placeholder="noreply@example.com" />
         </ElFormItem>
 
         <ElFormItem label="发件人名称">

@@ -56,10 +56,24 @@
     <!-- 编辑模式 -->
     <template v-else>
       <div v-for="attr in attributes" :key="attr.id" :style="{ display: 'flex', flexDirection: 'column', gap: '8px' }">
-        <div :style="{ fontSize: '14px', fontWeight: 500, color: '#303133', display: 'flex', alignItems: 'center', gap: '4px' }">
+        <div
+          :style="{
+            fontSize: '14px',
+            fontWeight: 500,
+            color: '#303133',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
+          }"
+        >
           <span v-if="attr.required" :style="{ color: '#f56c6c', fontSize: '14px' }">*</span>
           {{ attr.name }}
-          <span v-if="attr.description" :style="{ fontSize: '12px', color: '#909399', fontWeight: 'normal', marginLeft: '8px' }">{{ attr.description }}</span>
+          <span
+            v-if="attr.description"
+            :style="{ fontSize: '12px', color: '#909399', fontWeight: 'normal', marginLeft: '8px' }"
+          >
+            {{ attr.description }}
+          </span>
         </div>
         <div :style="{ width: '100%' }">
           <ElInput

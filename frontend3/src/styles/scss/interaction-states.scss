@@ -76,6 +76,7 @@
   --el-table-border-color: var(--table-border);
   --el-table-header-bg-color: var(--table-header-bg);
   --el-table-row-hover-bg-color: var(--table-row-hover);
+
   border: 1px solid var(--table-border);
   border-radius: 12px;
   overflow: hidden;
@@ -162,11 +163,13 @@
   0% {
     box-shadow: 0 0 0 0 var(--pulse-success);
   }
+
   70% {
-    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    box-shadow: 0 0 0 6px rgb(16 185 129 / 0%);
   }
+
   100% {
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    box-shadow: 0 0 0 0 rgb(16 185 129 / 0%);
   }
 }
 
@@ -234,17 +237,17 @@
 
 .notice-item__dot.is-danger {
   background: var(--notice-dot-danger);
-  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.08);
+  box-shadow: 0 0 0 4px rgb(239 68 68 / 8%);
 }
 
 .notice-item__dot.is-warning {
   background: var(--notice-dot-warning);
-  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.08);
+  box-shadow: 0 0 0 4px rgb(245 158 11 / 8%);
 }
 
 .notice-item__dot.is-info {
   background: var(--notice-dot-info);
-  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.08);
+  box-shadow: 0 0 0 4px rgb(96 165 250 / 8%);
 }
 
 /* ========== 复选框交互状态 ========== */
@@ -360,7 +363,7 @@
 
 /* ========== 加载状态 ========== */
 .loading-interactive .el-loading-mask {
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgb(255 255 255 / 90%);
   border-radius: var(--card-radius);
 }
 

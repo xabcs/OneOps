@@ -1,0 +1,33 @@
+{
+  "extends": "stylelint-config-standard-scss",
+  "overrides": [
+    {
+      "files": ["**/*.{vue,html}"],
+      "customSyntax": "postcss-html"
+    },
+    {
+      "files": ["**/*.{scss,sass}"],
+      "customSyntax": "postcss-scss"
+    }
+  ],
+  "rules": {
+    "selector-class-pattern": null,
+    "selector-pseudo-class-no-unknown": [
+      true,
+      {
+        "ignorePseudoClasses": ["deep", "global"]
+      }
+    ],
+    "selector-pseudo-element-no-unknown": [
+      true,
+      {
+        "ignorePseudoElements": ["v-deep", "v-slotted", "v-global"]
+      }
+    ],
+    "no-descending-specificity": null,
+    "no-empty-source": null,
+    "declaration-block-no-duplicate-properties": null,
+    "selector-id-pattern": null,
+    "custom-property-pattern": null
+  }
+}

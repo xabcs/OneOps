@@ -29,37 +29,37 @@
   }
 
   .gradient-card-diagonal {
-    background: linear-gradient(135deg, #ffffff, #f7fbff);
-    border: 1px solid rgba(148, 163, 184, 0.12);
-    box-shadow: 0 8px 18px rgba(59, 130, 246, 0.14);
+    background: linear-gradient(135deg, #fff, #f7fbff);
+    border: 1px solid rgb(148 163 184 / 12%);
+    box-shadow: 0 8px 18px rgb(59 130 246 / 14%);
   }
 
   .gradient-card-3d {
     background: linear-gradient(145deg, #eef5ff, #f6fbff);
-    border: 1px solid rgba(148, 163, 184, 0.12);
+    border: 1px solid rgb(148 163 184 / 12%);
     box-shadow:
-      inset 0 1px rgba(255, 255, 255, 0.95),
-      0 8px 16px rgba(59, 130, 246, 0.14);
+      inset 0 1px rgb(255 255 255 / 95%),
+      0 8px 16px rgb(59 130 246 / 14%);
   }
 
   .gradient-card-hover:hover {
-    background: linear-gradient(180deg, #ffffff, #f8fbff);
+    background: linear-gradient(180deg, #fff, #f8fbff);
     transform: translateY(-1px);
-    box-shadow: 0 12px 24px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 12px 24px rgb(59 130 246 / 20%);
   }
 
   .gradient-card-glass {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.6), transparent 52%);
+    background: linear-gradient(135deg, rgb(255 255 255 / 60%), transparent 52%);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(148, 163, 184, 0.12);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgb(148 163 184 / 12%);
   }
 
   .gradient-card-hover {
     cursor: pointer;
   }
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     .gradient-card {
       border-radius: 8px;
     }

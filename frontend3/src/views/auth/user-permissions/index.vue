@@ -199,10 +199,7 @@
   }
 
   function getStatusTag(status: string) {
-    const statusMap: Record<
-      string,
-      { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string }
-    > = {
+    const statusMap: Record<string, { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
       active: { type: 'success', label: '有效' },
       inactive: { type: 'info', label: '无效' },
       expired: { type: 'danger', label: '已过期' },
@@ -418,10 +415,10 @@
     display: flex;
     width: 100%;
     padding: 4px;
-    border: 1px solid rgba(148, 163, 184, 0.16);
+    border: 1px solid rgb(148 163 184 / 16%);
     border-radius: 12px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.9));
-    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.04);
+    background: linear-gradient(180deg, rgb(255 255 255 / 96%), rgb(248 250 252 / 90%));
+    box-shadow: 0 12px 26px rgb(15 23 42 / 4%);
   }
 
   .permission-tab-btn {
@@ -442,16 +439,16 @@
   }
 
   .permission-tab-btn:hover {
-    background: rgba(51, 112, 255, 0.06);
+    background: rgb(51 112 255 / 6%);
   }
 
   .permission-tab-btn.active {
     background: #e8f0ff;
     color: #245bdb;
-    box-shadow: inset 0 0 0 1px rgba(51, 112, 255, 0.08);
+    box-shadow: inset 0 0 0 1px rgb(51 112 255 / 8%);
   }
 
-  @media (max-width: 768px) {
+  @media (width <= 768px) {
     .permission-tabs-shell {
       flex-wrap: wrap;
     }

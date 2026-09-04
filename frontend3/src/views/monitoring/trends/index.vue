@@ -229,10 +229,12 @@
     chartInstance = echarts.init(chartRef.value);
     updateChart();
 
-    // 响应式调整
-    window.addEventListener('resize', () => {
-      chartInstance?.resize();
-    });
+    // 响应式调整（具名引用，确保卸载时能正确移除监听）
+    window.addEventListener('resize', handleChartResize);
+  }
+
+  function handleChartResize() {
+    chartInstance?.resize();
   }
 
   // 更新图表
@@ -365,9 +367,7 @@
     if (chartInstance) {
       chartInstance.dispose();
     }
-    window.removeEventListener('resize', () => {
-      chartInstance?.resize();
-    });
+    window.removeEventListener('resize', handleChartResize);
   });
 
   // 监听图表数据变化，自动更新图表

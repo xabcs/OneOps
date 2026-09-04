@@ -153,7 +153,9 @@
         <div class="card-header">
           <span class="title">在线会话</span>
           <div class="header-actions">
-            <PermissionButton code="cmdb.session.terminate" type="warning" @click="handleCleanupInvalidSessions">清理无效会话</PermissionButton>
+            <PermissionButton code="cmdb.session.terminate" type="warning" @click="handleCleanupInvalidSessions">
+              清理无效会话
+            </PermissionButton>
             <ElButton type="primary" @click="refresh">刷新</ElButton>
           </div>
         </div>
@@ -211,7 +213,9 @@
         </ElTableColumn>
         <ElTableColumn label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <PermissionButton code="cmdb.session.terminate" type="danger" size="small" @click="handleTerminate(row)">强制断开</PermissionButton>
+            <PermissionButton code="cmdb.session.terminate" type="danger" size="small" @click="handleTerminate(row)">
+              强制断开
+            </PermissionButton>
           </template>
         </ElTableColumn>
       </ElTable>

@@ -54,7 +54,9 @@ export const useAuthStore = defineStore(SetupStoreId.Auth, () => {
     // 用户名是 admin 直接认定为超级管理员
     if (userInfo.username === 'admin') return true;
     // 或者拥有通配符权限（后端实际下发 *:*:* 冒号分隔；*.*.* 为历史误写，双认兼容）
-    return permissions.value.includes('*:*:*') || permissions.value.includes('*.*.*') || permissions.value.includes('admin');
+    return (
+      permissions.value.includes('*:*:*') || permissions.value.includes('*.*.*') || permissions.value.includes('admin')
+    );
   });
 
   /** Permission code to name mapping */

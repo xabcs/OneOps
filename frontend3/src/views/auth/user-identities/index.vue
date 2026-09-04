@@ -1,6 +1,7 @@
 <script setup lang="tsx">
   import { onMounted, ref } from 'vue';
   import { Delete, Refresh, Search } from '@element-plus/icons-vue';
+  import type { FlatResponseData } from '@sa/axios';
   import {
     deleteUserIdentityMapping,
     fetchApplicationOptions,
@@ -8,7 +9,6 @@
   } from '@/service/api/application-permission';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
   import PermissionButton from '@/components/common/PermissionButton.vue';
-  import type { FlatResponseData } from '@sa/axios';
 
   defineOptions({ name: 'AuthUserIdentities' });
 
@@ -95,9 +95,7 @@
         width: 110,
         formatter: row => {
           const t = getMappingTypeTag(row.mappingType);
-          return (
-            <ElTag type={t.type}>{t.label}</ElTag>
-          );
+          return <ElTag type={t.type}>{t.label}</ElTag>;
         }
       },
       {
@@ -107,9 +105,7 @@
         width: 100,
         formatter: row => {
           const t = getStatusTag(row.mappingStatus);
-          return (
-            <ElTag type={t.type}>{t.label}</ElTag>
-          );
+          return <ElTag type={t.type}>{t.label}</ElTag>;
         }
       },
       {
@@ -127,7 +123,13 @@
         width: 100,
         fixed: 'right',
         formatter: row => (
-          <PermissionButton code="auth.user.delete" size="small" type="danger" icon={Delete} onClick={() => handleDelete(row.id)}>
+          <PermissionButton
+            code="auth.user.delete"
+            size="small"
+            type="danger"
+            icon={Delete}
+            onClick={() => handleDelete(row.id)}
+          >
             删除
           </PermissionButton>
         )
@@ -135,7 +137,10 @@
     ]
   });
 
-  function getStatusTag(status: string): { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string } {
+  function getStatusTag(status: string): {
+    type: 'primary' | 'success' | 'warning' | 'info' | 'danger';
+    label: string;
+  } {
     const statusMap: Record<string, { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
       active: { type: 'success', label: '激活' },
       inactive: { type: 'info', label: '禁用' },
@@ -144,9 +149,10 @@
     return statusMap[status] || { type: 'primary', label: status };
   }
 
-  function getMappingTypeTag(
-    type: string
-  ): { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string } {
+  function getMappingTypeTag(type: string): {
+    type: 'primary' | 'success' | 'warning' | 'info' | 'danger';
+    label: string;
+  } {
     const typeMap: Record<string, { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
       auto: { type: 'primary', label: '自动创建' },
       manual: { type: 'warning', label: '手动创建' }
