@@ -244,11 +244,11 @@
       v-if="heroVisible"
       class="hero-section"
       :style="{
-        background: 'var(--sx-hero-bg)',
-        border: '1px solid var(--sx-hero-border)',
-        borderRadius: 'var(--sx-hero-radius)',
-        boxShadow: 'var(--sx-hero-shadow)',
-        padding: 'var(--sx-hero-padding)'
+        background: 'var(--msre-hero-bg)',
+        border: '1px solid var(--msre-hero-border)',
+        borderRadius: 'var(--msre-hero-radius)',
+        boxShadow: 'var(--msre-hero-shadow)',
+        padding: 'var(--msre-hero-padding)'
       }"
     >
       <div class="hero-content">
@@ -276,11 +276,11 @@
     <div
       class="content-card cluster-content-card"
       :style="{
-        background: 'var(--sx-content-card-bg)',
-        border: '1px solid var(--sx-content-card-border)',
-        borderRadius: 'var(--sx-content-card-radius)',
-        boxShadow: 'var(--sx-content-card-shadow)',
-        padding: 'var(--sx-content-card-padding)'
+        background: 'var(--msre-content-card-bg)',
+        border: '1px solid var(--msre-content-card-border)',
+        borderRadius: 'var(--msre-content-card-radius)',
+        boxShadow: 'var(--msre-content-card-shadow)',
+        padding: 'var(--msre-content-card-padding)'
       }"
     >
       <!-- 工具栏 -->
@@ -497,21 +497,21 @@
     align-items: center;
     justify-content: center;
     font-size: 20px;
-    color: var(--sx-hero-icon-color);
-    background: var(--sx-hero-icon-bg);
-    border: 1px solid var(--sx-hero-icon-border);
+    color: var(--msre-hero-icon-color);
+    background: var(--msre-hero-icon-bg);
+    border: 1px solid var(--msre-hero-icon-border);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 80%);
   }
 
   .hero-title-row h2 {
-    color: var(--sx-text-primary);
+    color: var(--msre-text-primary);
     font-size: 23px;
     font-weight: 700;
     margin: 0;
   }
 
   .hero-desc {
-    color: var(--sx-text-secondary);
+    color: var(--msre-text-secondary);
     font-size: 13px;
     line-height: 1.45;
     margin: 0;
@@ -538,7 +538,7 @@
     align-items: flex-start;
     gap: 12px;
     padding-bottom: 12px;
-    border-bottom: 1px solid var(--sx-border-soft);
+    border-bottom: 1px solid var(--msre-border-soft);
   }
 
   .toolbar-head {
@@ -548,13 +548,13 @@
   }
 
   .toolbar-title {
-    color: var(--sx-text-primary);
+    color: var(--msre-text-primary);
     font-size: 16px;
     font-weight: 700;
   }
 
   .toolbar-desc {
-    color: var(--sx-text-secondary);
+    color: var(--msre-text-secondary);
     font-size: 12px;
   }
 
@@ -585,11 +585,11 @@
   }
 
   .workbench-toolbar.workbench-toolbar--history {
-    background: var(--sx-toolbar-bg);
-    border: 1px solid var(--sx-toolbar-border);
-    border-radius: var(--sx-toolbar-radius);
-    padding: var(--sx-toolbar-padding);
-    box-shadow: var(--sx-toolbar-shadow);
+    background: var(--msre-toolbar-bg);
+    border: 1px solid var(--msre-toolbar-border);
+    border-radius: var(--msre-toolbar-radius);
+    padding: var(--msre-toolbar-padding);
+    box-shadow: var(--msre-toolbar-shadow);
     gap: 8px;
     margin: 6px 0;
 
@@ -601,28 +601,28 @@
 
     .el-input__wrapper,
     .el-select__wrapper {
-      background: var(--sx-search-input-bg);
-      border-radius: var(--sx-search-input-radius);
-      box-shadow: 0 0 0 1px var(--sx-search-input-border) inset;
+      background: var(--msre-search-input-bg);
+      border-radius: var(--msre-search-input-radius);
+      box-shadow: 0 0 0 1px var(--msre-search-input-border) inset;
       transition: all 0.3s ease;
 
       &:hover {
-        box-shadow: 0 0 0 1px var(--sx-search-input-hover-border) inset;
+        box-shadow: 0 0 0 1px var(--msre-search-input-hover-border) inset;
       }
     }
 
     .el-input.is-focus .el-input__wrapper,
     .el-select.is-focus .el-select__wrapper {
-      box-shadow: 0 0 0 1px var(--sx-search-input-focus-border) inset;
+      box-shadow: 0 0 0 1px var(--msre-search-input-focus-border) inset;
     }
 
     .el-button:not(.is-link) {
-      background: var(--sx-search-button-bg);
-      color: var(--sx-search-button-text);
+      background: var(--msre-search-button-bg);
+      color: var(--msre-search-button-text);
       transition: all 0.3s ease;
 
       &:hover {
-        background: var(--sx-search-button-hover);
+        background: var(--msre-search-button-hover);
       }
     }
   }
@@ -638,19 +638,19 @@
 
   .data-table {
     width: 100%;
-    border-radius: var(--sx-table-radius);
+    border-radius: var(--msre-table-radius);
     overflow: hidden;
-    border: 1px solid var(--sx-table-border);
+    border: 1px solid var(--msre-table-border);
     border-collapse: separate;
     border-spacing: 0;
 
-    --el-table-border-color: var(--sx-table-border);
-    --el-table-header-bg-color: var(--sx-table-header-bg);
-    --el-table-row-hover-bg-color: var(--sx-table-row-hover);
+    --el-table-border-color: var(--msre-table-border);
+    --el-table-header-bg-color: var(--msre-table-header-bg);
+    --el-table-row-hover-bg-color: var(--msre-table-row-hover);
 
     :deep(th.el-table__cell) {
-      background-color: var(--sx-table-header-bg);
-      color: var(--sx-table-header-text);
+      background-color: var(--msre-table-header-bg);
+      color: var(--msre-table-header-text);
       font-weight: 600;
       border-radius: 0;
     }
@@ -666,7 +666,7 @@
     }
 
     &--striped :deep(.el-table__body tr.el-table__row--striped td) {
-      background-color: var(--sx-table-striped-bg);
+      background-color: var(--msre-table-striped-bg);
     }
   }
 
@@ -702,18 +702,18 @@
       .btn-next,
       .btn-prev,
       .el-pager li {
-        background: var(--sx-pagination-button-bg);
-        color: var(--sx-pagination-button-text);
-        border-radius: var(--sx-pagination-radius);
+        background: var(--msre-pagination-button-bg);
+        color: var(--msre-pagination-button-text);
+        border-radius: var(--msre-pagination-radius);
         transition: all 0.3s ease;
 
         &:hover {
-          background: var(--sx-pagination-button-hover);
+          background: var(--msre-pagination-button-hover);
         }
 
         &.is-active {
-          background: var(--sx-pagination-active-bg);
-          color: var(--sx-pagination-active-text);
+          background: var(--msre-pagination-active-bg);
+          color: var(--msre-pagination-active-text);
         }
       }
     }

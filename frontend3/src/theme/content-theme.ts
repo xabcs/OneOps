@@ -16,132 +16,132 @@ export function applyContentTheme(theme: ContentThemeSettings) {
 
   // Card styles
   if (theme.cardBg) {
-    root.style.setProperty('--sx-card-bg', theme.cardBg);
+    root.style.setProperty('--msre-card-bg', theme.cardBg);
   }
   if (theme.cardRadius) {
-    root.style.setProperty('--sx-card-radius', theme.cardRadius);
+    root.style.setProperty('--msre-card-radius', theme.cardRadius);
   }
   if (theme.cardShadow) {
-    root.style.setProperty('--sx-card-shadow', theme.cardShadow);
+    root.style.setProperty('--msre-card-shadow', theme.cardShadow);
   }
 
   // Card gradient
   if (theme.useCardGradient && theme.cardGradientStart && theme.cardGradientEnd) {
     root.style.setProperty(
-      '--sx-card-bg',
+      '--msre-card-bg',
       `linear-gradient(145deg, ${theme.cardGradientStart} 0%, ${theme.cardGradientEnd} 100%)`
     );
   }
 
   // Table styles
   if (theme.tableBorder) {
-    root.style.setProperty('--sx-table-border', theme.tableBorder);
+    root.style.setProperty('--msre-table-border', theme.tableBorder);
   }
   if (theme.tableHeaderBg) {
-    root.style.setProperty('--sx-table-header-bg', theme.tableHeaderBg);
+    root.style.setProperty('--msre-table-header-bg', theme.tableHeaderBg);
   }
   if (theme.tableHoverBg) {
-    root.style.setProperty('--sx-table-hover-bg', theme.tableHoverBg);
+    root.style.setProperty('--msre-table-hover-bg', theme.tableHoverBg);
   }
   if (theme.tableRadius) {
-    root.style.setProperty('--sx-table-radius', theme.tableRadius);
+    root.style.setProperty('--msre-table-radius', theme.tableRadius);
   }
 
   // Button styles
   if (theme.buttonRadius) {
-    root.style.setProperty('--sx-button-radius', theme.buttonRadius);
+    root.style.setProperty('--msre-button-radius', theme.buttonRadius);
   }
   if (theme.buttonDefaultBg) {
-    root.style.setProperty('--sx-button-default-bg', theme.buttonDefaultBg);
+    root.style.setProperty('--msre-button-default-bg', theme.buttonDefaultBg);
   }
   if (theme.buttonDefaultColor) {
-    root.style.setProperty('--sx-button-default-color', theme.buttonDefaultColor);
+    root.style.setProperty('--msre-button-default-color', theme.buttonDefaultColor);
   }
   if (theme.buttonDefaultBorder) {
-    root.style.setProperty('--sx-button-default-border', theme.buttonDefaultBorder);
+    root.style.setProperty('--msre-button-default-border', theme.buttonDefaultBorder);
   }
   if (theme.buttonHoverBg) {
-    root.style.setProperty('--sx-button-hover-bg', theme.buttonHoverBg);
+    root.style.setProperty('--msre-button-hover-bg', theme.buttonHoverBg);
   }
   if (theme.buttonHoverColor) {
-    root.style.setProperty('--sx-button-hover-color', theme.buttonHoverColor);
+    root.style.setProperty('--msre-button-hover-color', theme.buttonHoverColor);
   }
   if (theme.buttonHoverBorder) {
-    root.style.setProperty('--sx-button-hover-border', theme.buttonHoverBorder);
+    root.style.setProperty('--msre-button-hover-border', theme.buttonHoverBorder);
   }
 
   // Input styles
   if (theme.inputRadius) {
-    root.style.setProperty('--sx-input-radius', theme.inputRadius);
+    root.style.setProperty('--msre-input-radius', theme.inputRadius);
   }
   if (theme.inputBg) {
-    root.style.setProperty('--sx-input-bg', theme.inputBg);
+    root.style.setProperty('--msre-input-bg', theme.inputBg);
   }
   if (theme.inputBorderShadow) {
-    root.style.setProperty('--sx-input-border-shadow', theme.inputBorderShadow);
+    root.style.setProperty('--msre-input-border-shadow', theme.inputBorderShadow);
   }
   if (theme.inputHoverShadow) {
-    root.style.setProperty('--sx-input-hover-shadow', theme.inputHoverShadow);
+    root.style.setProperty('--msre-input-hover-shadow', theme.inputHoverShadow);
   }
   if (theme.inputFocusShadow) {
-    root.style.setProperty('--sx-input-focus-shadow', theme.inputFocusShadow);
+    root.style.setProperty('--msre-input-focus-shadow', theme.inputFocusShadow);
   }
 
   // Toolbar gradient
   if (theme.useToolbarGradient && theme.toolbarGradientStart && theme.toolbarGradientEnd) {
     root.style.setProperty(
-      '--sx-toolbar-bg',
+      '--msre-toolbar-bg',
       `linear-gradient(180deg, ${theme.toolbarGradientStart} 0%, ${theme.toolbarGradientEnd} 100%)`
     );
   } else {
-    root.style.removeProperty('--sx-toolbar-bg');
+    root.style.removeProperty('--msre-toolbar-bg');
   }
 
   // Hero gradient
   if (theme.heroGradientStart && theme.heroGradientEnd) {
     root.style.setProperty(
-      '--sx-gradient-hero',
+      '--msre-gradient-hero',
       `linear-gradient(135deg, ${theme.heroGradientStart} 0%, ${theme.heroGradientEnd} 100%)`
     );
   }
 
   // Color variables
   if (theme.primary) {
-    root.style.setProperty('--sx-primary', theme.primary);
+    root.style.setProperty('--msre-primary', theme.primary);
   }
   if (theme.primaryLight) {
-    root.style.setProperty('--sx-primary-light', theme.primaryLight);
+    root.style.setProperty('--msre-primary-light', theme.primaryLight);
   }
   if (theme.success) {
-    root.style.setProperty('--sx-success', theme.success);
+    root.style.setProperty('--msre-success', theme.success);
   }
   if (theme.warning) {
-    root.style.setProperty('--sx-warning', theme.warning);
+    root.style.setProperty('--msre-warning', theme.warning);
   }
   if (theme.danger) {
-    root.style.setProperty('--sx-danger', theme.danger);
+    root.style.setProperty('--msre-danger', theme.danger);
   }
   if (theme.info) {
-    root.style.setProperty('--sx-info', theme.info);
+    root.style.setProperty('--msre-info', theme.info);
   }
 
   // Text colors
   if (theme.textPrimary) {
-    root.style.setProperty('--sx-text-primary', theme.textPrimary);
+    root.style.setProperty('--msre-text-primary', theme.textPrimary);
   }
   if (theme.textSecondary) {
-    root.style.setProperty('--sx-text-secondary', theme.textSecondary);
+    root.style.setProperty('--msre-text-secondary', theme.textSecondary);
   }
   if (theme.textMuted) {
-    root.style.setProperty('--sx-text-muted', theme.textMuted);
+    root.style.setProperty('--msre-text-muted', theme.textMuted);
   }
 
   // Border colors
   if (theme.borderSoft) {
-    root.style.setProperty('--sx-border-soft', theme.borderSoft);
+    root.style.setProperty('--msre-border-soft', theme.borderSoft);
   }
   if (theme.borderMedium) {
-    root.style.setProperty('--sx-border-medium', theme.borderMedium);
+    root.style.setProperty('--msre-border-medium', theme.borderMedium);
   }
 }
 
@@ -158,49 +158,49 @@ export function applyContentTheme2(theme: ContentTheme2Settings) {
 
     // 设置 Hero 区域的显示状态 CSS 变量
     const isVisible = hero.visible !== false;
-    root.style.setProperty('--sx-hero-visible', isVisible ? '1' : '0');
+    root.style.setProperty('--msre-hero-visible', isVisible ? '1' : '0');
 
     if (hero.useGradient && hero.gradientStart && hero.gradientEnd) {
       const angle = hero.gradientAngle || 135;
       if (hero.gradientMiddle) {
         // 三色渐变
         root.style.setProperty(
-          '--sx-hero-bg',
+          '--msre-hero-bg',
           `linear-gradient(${angle}deg, ${hero.gradientStart} 0%, ${hero.gradientMiddle} 50%, ${hero.gradientEnd} 100%)`
         );
       } else {
         // 两色渐变
         root.style.setProperty(
-          '--sx-hero-bg',
+          '--msre-hero-bg',
           `linear-gradient(${angle}deg, ${hero.gradientStart} 0%, ${hero.gradientEnd} 100%)`
         );
       }
     } else if (hero.background) {
-      root.style.setProperty('--sx-hero-bg', hero.background);
+      root.style.setProperty('--msre-hero-bg', hero.background);
     }
     if (hero.borderColor) {
-      root.style.setProperty('--sx-hero-border', hero.borderColor);
+      root.style.setProperty('--msre-hero-border', hero.borderColor);
     }
     if (hero.borderRadius) {
-      root.style.setProperty('--sx-hero-radius', hero.borderRadius);
+      root.style.setProperty('--msre-hero-radius', hero.borderRadius);
     }
     if (hero.shadow) {
-      root.style.setProperty('--sx-hero-shadow', hero.shadow);
+      root.style.setProperty('--msre-hero-shadow', hero.shadow);
     }
     if (hero.padding) {
-      root.style.setProperty('--sx-hero-padding', hero.padding);
+      root.style.setProperty('--msre-hero-padding', hero.padding);
     }
     if (hero.iconGradientStart && hero.iconGradientEnd) {
       root.style.setProperty(
-        '--sx-hero-icon-bg',
+        '--msre-hero-icon-bg',
         `linear-gradient(180deg, ${hero.iconGradientStart} 0%, ${hero.iconGradientEnd} 100%)`
       );
     }
     if (hero.iconBorderColor) {
-      root.style.setProperty('--sx-hero-icon-border', hero.iconBorderColor);
+      root.style.setProperty('--msre-hero-icon-border', hero.iconBorderColor);
     }
     if (hero.iconColor) {
-      root.style.setProperty('--sx-hero-icon-color', hero.iconColor);
+      root.style.setProperty('--msre-hero-icon-color', hero.iconColor);
     }
   }
 
@@ -212,53 +212,53 @@ export function applyContentTheme2(theme: ContentTheme2Settings) {
       // 渐变模式：所有卡片使用渐变
       if (stat.defaultBgStart && stat.defaultBgEnd) {
         root.style.setProperty(
-          '--sx-stat-default-bg',
+          '--msre-stat-default-bg',
           `linear-gradient(145deg, ${stat.defaultBgStart} 0%, ${stat.defaultBgEnd} 100%)`
         );
       }
       if (stat.successBgStart && stat.successBgEnd) {
         root.style.setProperty(
-          '--sx-stat-success-bg',
+          '--msre-stat-success-bg',
           `linear-gradient(145deg, ${stat.successBgStart} 0%, ${stat.successBgEnd} 100%)`
         );
       }
       if (stat.warningBgStart && stat.warningBgEnd) {
         root.style.setProperty(
-          '--sx-stat-warning-bg',
+          '--msre-stat-warning-bg',
           `linear-gradient(145deg, ${stat.warningBgStart} 0%, ${stat.warningBgEnd} 100%)`
         );
       }
       if (stat.dangerBgStart && stat.dangerBgEnd) {
         root.style.setProperty(
-          '--sx-stat-danger-bg',
+          '--msre-stat-danger-bg',
           `linear-gradient(145deg, ${stat.dangerBgStart} 0%, ${stat.dangerBgEnd} 100%)`
         );
       }
     } else {
       // 纯色模式：所有卡片使用纯色
       if (stat.defaultBg) {
-        root.style.setProperty('--sx-stat-default-bg', stat.defaultBg);
+        root.style.setProperty('--msre-stat-default-bg', stat.defaultBg);
       }
       if (stat.successBg) {
-        root.style.setProperty('--sx-stat-success-bg', stat.successBg);
+        root.style.setProperty('--msre-stat-success-bg', stat.successBg);
       }
       if (stat.warningBg) {
-        root.style.setProperty('--sx-stat-warning-bg', stat.warningBg);
+        root.style.setProperty('--msre-stat-warning-bg', stat.warningBg);
       }
       if (stat.dangerBg) {
-        root.style.setProperty('--sx-stat-danger-bg', stat.dangerBg);
+        root.style.setProperty('--msre-stat-danger-bg', stat.dangerBg);
       }
     }
 
     // 通用样式（不受渐变开关影响）
     if (stat.defaultBorder) {
-      root.style.setProperty('--sx-stat-default-border', stat.defaultBorder);
+      root.style.setProperty('--msre-stat-default-border', stat.defaultBorder);
     }
     if (stat.borderRadius) {
-      root.style.setProperty('--sx-stat-radius', stat.borderRadius);
+      root.style.setProperty('--msre-stat-radius', stat.borderRadius);
     }
     if (stat.shadow) {
-      root.style.setProperty('--sx-stat-shadow', stat.shadow);
+      root.style.setProperty('--msre-stat-shadow', stat.shadow);
     }
   }
 
@@ -270,28 +270,28 @@ export function applyContentTheme2(theme: ContentTheme2Settings) {
       if (toolbar.gradientMiddle) {
         // 三色渐变
         root.style.setProperty(
-          '--sx-toolbar-bg',
+          '--msre-toolbar-bg',
           `linear-gradient(${angle}deg, ${toolbar.gradientStart} 0%, ${toolbar.gradientMiddle} 50%, ${toolbar.gradientEnd} 100%)`
         );
       } else {
         // 两色渐变
         root.style.setProperty(
-          '--sx-toolbar-bg',
+          '--msre-toolbar-bg',
           `linear-gradient(${angle}deg, ${toolbar.gradientStart} 0%, ${toolbar.gradientEnd} 100%)`
         );
       }
     }
     if (toolbar.borderColor) {
-      root.style.setProperty('--sx-toolbar-border', toolbar.borderColor);
+      root.style.setProperty('--msre-toolbar-border', toolbar.borderColor);
     }
     if (toolbar.borderRadius) {
-      root.style.setProperty('--sx-toolbar-radius', toolbar.borderRadius);
+      root.style.setProperty('--msre-toolbar-radius', toolbar.borderRadius);
     }
     if (toolbar.padding) {
-      root.style.setProperty('--sx-toolbar-padding', toolbar.padding);
+      root.style.setProperty('--msre-toolbar-padding', toolbar.padding);
     }
     if (toolbar.shadow) {
-      root.style.setProperty('--sx-toolbar-shadow', toolbar.shadow);
+      root.style.setProperty('--msre-toolbar-shadow', toolbar.shadow);
     }
   }
 
@@ -303,30 +303,30 @@ export function applyContentTheme2(theme: ContentTheme2Settings) {
       if (card.bgGradientMiddle) {
         // 三色渐变
         root.style.setProperty(
-          '--sx-content-card-bg',
+          '--msre-content-card-bg',
           `linear-gradient(${angle}deg, ${card.bgGradientStart} 0%, ${card.bgGradientMiddle} 50%, ${card.bgGradientEnd} 100%)`
         );
       } else {
         // 两色渐变
         root.style.setProperty(
-          '--sx-content-card-bg',
+          '--msre-content-card-bg',
           `linear-gradient(${angle}deg, ${card.bgGradientStart} 0%, ${card.bgGradientEnd} 100%)`
         );
       }
     } else if (card.background) {
-      root.style.setProperty('--sx-content-card-bg', card.background);
+      root.style.setProperty('--msre-content-card-bg', card.background);
     }
     if (card.borderColor) {
-      root.style.setProperty('--sx-content-card-border', card.borderColor);
+      root.style.setProperty('--msre-content-card-border', card.borderColor);
     }
     if (card.borderRadius) {
-      root.style.setProperty('--sx-content-card-radius', card.borderRadius);
+      root.style.setProperty('--msre-content-card-radius', card.borderRadius);
     }
     if (card.shadow) {
-      root.style.setProperty('--sx-content-card-shadow', card.shadow);
+      root.style.setProperty('--msre-content-card-shadow', card.shadow);
     }
     if (card.padding) {
-      root.style.setProperty('--sx-content-card-padding', card.padding);
+      root.style.setProperty('--msre-content-card-padding', card.padding);
     }
   }
 
@@ -334,28 +334,28 @@ export function applyContentTheme2(theme: ContentTheme2Settings) {
   if (theme.dataTable) {
     const table = theme.dataTable;
     if (table.headerBg) {
-      root.style.setProperty('--sx-table-header-bg', table.headerBg);
+      root.style.setProperty('--msre-table-header-bg', table.headerBg);
     }
     if (table.headerTextColor) {
-      root.style.setProperty('--sx-table-header-text', table.headerTextColor);
+      root.style.setProperty('--msre-table-header-text', table.headerTextColor);
     }
     if (table.headerBorderColor) {
-      root.style.setProperty('--sx-table-header-border', table.headerBorderColor);
+      root.style.setProperty('--msre-table-header-border', table.headerBorderColor);
     }
     if (table.rowHoverBg) {
-      root.style.setProperty('--sx-table-row-hover', table.rowHoverBg);
+      root.style.setProperty('--msre-table-row-hover', table.rowHoverBg);
     }
     if (table.rowBorderColor) {
-      root.style.setProperty('--sx-table-row-border', table.rowBorderColor);
+      root.style.setProperty('--msre-table-row-border', table.rowBorderColor);
     }
     if (table.tableBorder) {
-      root.style.setProperty('--sx-table-border', table.tableBorder);
+      root.style.setProperty('--msre-table-border', table.tableBorder);
     }
     if (table.borderRadius) {
-      root.style.setProperty('--sx-table-radius', table.borderRadius);
+      root.style.setProperty('--msre-table-radius', table.borderRadius);
     }
     if (table.stripedBg) {
-      root.style.setProperty('--sx-table-striped-bg', table.stripedBg);
+      root.style.setProperty('--msre-table-striped-bg', table.stripedBg);
     }
   }
 
@@ -363,28 +363,28 @@ export function applyContentTheme2(theme: ContentTheme2Settings) {
   if (theme.searchFilters) {
     const search = theme.searchFilters;
     if (search.inputBg) {
-      root.style.setProperty('--sx-search-input-bg', search.inputBg);
+      root.style.setProperty('--msre-search-input-bg', search.inputBg);
     }
     if (search.inputBorder) {
-      root.style.setProperty('--sx-search-input-border', search.inputBorder);
+      root.style.setProperty('--msre-search-input-border', search.inputBorder);
     }
     if (search.inputHoverBorder) {
-      root.style.setProperty('--sx-search-input-hover-border', search.inputHoverBorder);
+      root.style.setProperty('--msre-search-input-hover-border', search.inputHoverBorder);
     }
     if (search.inputFocusBorder) {
-      root.style.setProperty('--sx-search-input-focus-border', search.inputFocusBorder);
+      root.style.setProperty('--msre-search-input-focus-border', search.inputFocusBorder);
     }
     if (search.inputBorderRadius) {
-      root.style.setProperty('--sx-search-input-radius', search.inputBorderRadius);
+      root.style.setProperty('--msre-search-input-radius', search.inputBorderRadius);
     }
     if (search.buttonBg) {
-      root.style.setProperty('--sx-search-button-bg', search.buttonBg);
+      root.style.setProperty('--msre-search-button-bg', search.buttonBg);
     }
     if (search.buttonTextColor) {
-      root.style.setProperty('--sx-search-button-text', search.buttonTextColor);
+      root.style.setProperty('--msre-search-button-text', search.buttonTextColor);
     }
     if (search.buttonHoverBg) {
-      root.style.setProperty('--sx-search-button-hover', search.buttonHoverBg);
+      root.style.setProperty('--msre-search-button-hover', search.buttonHoverBg);
     }
   }
 
@@ -392,22 +392,22 @@ export function applyContentTheme2(theme: ContentTheme2Settings) {
   if (theme.pagination) {
     const pagination = theme.pagination;
     if (pagination.buttonBg) {
-      root.style.setProperty('--sx-pagination-button-bg', pagination.buttonBg);
+      root.style.setProperty('--msre-pagination-button-bg', pagination.buttonBg);
     }
     if (pagination.buttonTextColor) {
-      root.style.setProperty('--sx-pagination-button-text', pagination.buttonTextColor);
+      root.style.setProperty('--msre-pagination-button-text', pagination.buttonTextColor);
     }
     if (pagination.buttonHoverBg) {
-      root.style.setProperty('--sx-pagination-button-hover', pagination.buttonHoverBg);
+      root.style.setProperty('--msre-pagination-button-hover', pagination.buttonHoverBg);
     }
     if (pagination.activeButtonBg) {
-      root.style.setProperty('--sx-pagination-active-bg', pagination.activeButtonBg);
+      root.style.setProperty('--msre-pagination-active-bg', pagination.activeButtonBg);
     }
     if (pagination.activeButtonTextColor) {
-      root.style.setProperty('--sx-pagination-active-text', pagination.activeButtonTextColor);
+      root.style.setProperty('--msre-pagination-active-text', pagination.activeButtonTextColor);
     }
     if (pagination.borderRadius) {
-      root.style.setProperty('--sx-pagination-radius', pagination.borderRadius);
+      root.style.setProperty('--msre-pagination-radius', pagination.borderRadius);
     }
   }
 
@@ -415,28 +415,28 @@ export function applyContentTheme2(theme: ContentTheme2Settings) {
   if (theme.tags) {
     const tags = theme.tags;
     if (tags.defaultBg) {
-      root.style.setProperty('--sx-tag-default-bg', tags.defaultBg);
+      root.style.setProperty('--msre-tag-default-bg', tags.defaultBg);
     }
     if (tags.defaultBorder) {
-      root.style.setProperty('--sx-tag-default-border', tags.defaultBorder);
+      root.style.setProperty('--msre-tag-default-border', tags.defaultBorder);
     }
     if (tags.defaultTextColor) {
-      root.style.setProperty('--sx-tag-default-text', tags.defaultTextColor);
+      root.style.setProperty('--msre-tag-default-text', tags.defaultTextColor);
     }
     if (tags.successBg) {
-      root.style.setProperty('--sx-tag-success-bg', tags.successBg);
+      root.style.setProperty('--msre-tag-success-bg', tags.successBg);
     }
     if (tags.warningBg) {
-      root.style.setProperty('--sx-tag-warning-bg', tags.warningBg);
+      root.style.setProperty('--msre-tag-warning-bg', tags.warningBg);
     }
     if (tags.dangerBg) {
-      root.style.setProperty('--sx-tag-danger-bg', tags.dangerBg);
+      root.style.setProperty('--msre-tag-danger-bg', tags.dangerBg);
     }
     if (tags.infoBg) {
-      root.style.setProperty('--sx-tag-info-bg', tags.infoBg);
+      root.style.setProperty('--msre-tag-info-bg', tags.infoBg);
     }
     if (tags.borderRadius) {
-      root.style.setProperty('--sx-tag-radius', tags.borderRadius);
+      root.style.setProperty('--msre-tag-radius', tags.borderRadius);
     }
   }
 }
@@ -462,16 +462,16 @@ export function applyHeaderTheme(headerTheme: App.Theme.ThemeSetting['header']) 
     const startAlpha = parseAlpha(gradientStart) || 0.98;
 
     root.style.setProperty(
-      '--header-button-default-bg',
+      '--msre-header-button-default-bg',
       `rgba(255, 255, 255, ${Math.max(startAlpha - 0.13, 0.72).toFixed(2)})`
     );
     root.style.setProperty(
-      '--header-button-hover-bg',
+      '--msre-header-button-hover-bg',
       `rgba(255, 255, 255, ${Math.max(startAlpha - 0.03, 0.85).toFixed(2)})`
     );
-    root.style.setProperty('--header-input-bg', `rgba(255, 255, 255, ${Math.max(startAlpha - 0.23, 0.62).toFixed(2)})`);
+    root.style.setProperty('--msre-header-input-bg', `rgba(255, 255, 255, ${Math.max(startAlpha - 0.23, 0.62).toFixed(2)})`);
     root.style.setProperty(
-      '--header-status-bg',
+      '--msre-header-status-bg',
       `rgba(255, 255, 255, ${Math.max(startAlpha - 0.38, 0.47).toFixed(2)})`
     );
   } else if (headerTheme.useCustomColor && headerTheme.customColor) {
@@ -482,55 +482,55 @@ export function applyHeaderTheme(headerTheme: App.Theme.ThemeSetting['header']) 
     // Adjust internal element colors based on header background brightness
     if (brightness > 128) {
       // Light header
-      root.style.setProperty('--header-button-default-bg', 'rgba(255, 255, 255, 0.85)');
-      root.style.setProperty('--header-button-hover-bg', 'rgba(255, 255, 255, 0.95)');
-      root.style.setProperty('--header-input-bg', 'rgba(255, 255, 255, 0.75)');
-      root.style.setProperty('--header-status-bg', 'rgba(255, 255, 255, 0.6)');
+      root.style.setProperty('--msre-header-button-default-bg', 'rgba(255, 255, 255, 0.85)');
+      root.style.setProperty('--msre-header-button-hover-bg', 'rgba(255, 255, 255, 0.95)');
+      root.style.setProperty('--msre-header-input-bg', 'rgba(255, 255, 255, 0.75)');
+      root.style.setProperty('--msre-header-status-bg', 'rgba(255, 255, 255, 0.6)');
     } else {
       // Dark header
-      root.style.setProperty('--header-button-default-bg', 'rgba(255, 255, 255, 0.15)');
-      root.style.setProperty('--header-button-hover-bg', 'rgba(255, 255, 255, 0.25)');
-      root.style.setProperty('--header-input-bg', 'rgba(255, 255, 255, 0.12)');
-      root.style.setProperty('--header-status-bg', 'rgba(255, 255, 255, 0.12)');
+      root.style.setProperty('--msre-header-button-default-bg', 'rgba(255, 255, 255, 0.15)');
+      root.style.setProperty('--msre-header-button-hover-bg', 'rgba(255, 255, 255, 0.25)');
+      root.style.setProperty('--msre-header-input-bg', 'rgba(255, 255, 255, 0.12)');
+      root.style.setProperty('--msre-header-status-bg', 'rgba(255, 255, 255, 0.12)');
     }
   } else {
     // Default header (no custom color)
-    root.style.setProperty('--header-button-default-bg', 'rgba(255, 255, 255, 0.85)');
-    root.style.setProperty('--header-button-hover-bg', 'rgba(255, 255, 255, 0.95)');
-    root.style.setProperty('--header-input-bg', 'rgba(255, 255, 255, 0.75)');
-    root.style.setProperty('--header-status-bg', 'rgba(255, 255, 255, 0.6)');
+    root.style.setProperty('--msre-header-button-default-bg', 'rgba(255, 255, 255, 0.85)');
+    root.style.setProperty('--msre-header-button-hover-bg', 'rgba(255, 255, 255, 0.95)');
+    root.style.setProperty('--msre-header-input-bg', 'rgba(255, 255, 255, 0.75)');
+    root.style.setProperty('--msre-header-status-bg', 'rgba(255, 255, 255, 0.6)');
   }
 
   // Set text colors based on header brightness
   if (isGradient || getColorBrightness(headerBg) > 128) {
-    root.style.setProperty('--header-button-default-color', '#475569');
-    root.style.setProperty('--header-button-hover-color', '#1d4ed8');
-    root.style.setProperty('--header-input-color', '#475569');
-    root.style.setProperty('--header-breadcrumb-color', '#475569');
-    root.style.setProperty('--header-breadcrumb-hover', '#1d4ed8');
-    root.style.setProperty('--header-status-text', '#475569');
+    root.style.setProperty('--msre-header-button-default-color', '#475569');
+    root.style.setProperty('--msre-header-button-hover-color', '#1d4ed8');
+    root.style.setProperty('--msre-header-input-color', '#475569');
+    root.style.setProperty('--msre-header-breadcrumb-color', '#475569');
+    root.style.setProperty('--msre-header-breadcrumb-hover', '#1d4ed8');
+    root.style.setProperty('--msre-header-status-text', '#475569');
   } else {
-    root.style.setProperty('--header-button-default-color', 'rgba(255, 255, 255, 0.9)');
-    root.style.setProperty('--header-button-hover-color', '#ffffff');
-    root.style.setProperty('--header-input-color', 'rgba(255, 255, 255, 0.9)');
-    root.style.setProperty('--header-breadcrumb-color', 'rgba(255, 255, 255, 0.8)');
-    root.style.setProperty('--header-breadcrumb-hover', '#ffffff');
-    root.style.setProperty('--header-status-text', 'rgba(255, 255, 255, 0.8)');
+    root.style.setProperty('--msre-header-button-default-color', 'rgba(255, 255, 255, 0.9)');
+    root.style.setProperty('--msre-header-button-hover-color', '#ffffff');
+    root.style.setProperty('--msre-header-input-color', 'rgba(255, 255, 255, 0.9)');
+    root.style.setProperty('--msre-header-breadcrumb-color', 'rgba(255, 255, 255, 0.8)');
+    root.style.setProperty('--msre-header-breadcrumb-hover', '#ffffff');
+    root.style.setProperty('--msre-header-status-text', 'rgba(255, 255, 255, 0.8)');
   }
 
   // Border colors
   if (isGradient || getColorBrightness(headerBg) > 128) {
-    root.style.setProperty('--header-button-default-border', 'rgba(148, 163, 184, 0.1)');
-    root.style.setProperty('--header-button-hover-border', 'rgba(59, 130, 246, 0.16)');
-    root.style.setProperty('--header-input-border', 'rgba(148, 163, 184, 0.1)');
-    root.style.setProperty('--header-input-hover-border', 'rgba(59, 130, 246, 0.14)');
-    root.style.setProperty('--header-input-focus-border', 'rgba(37, 99, 235, 0.18)');
+    root.style.setProperty('--msre-header-button-default-border', 'rgba(148, 163, 184, 0.1)');
+    root.style.setProperty('--msre-header-button-hover-border', 'rgba(59, 130, 246, 0.16)');
+    root.style.setProperty('--msre-header-input-border', 'rgba(148, 163, 184, 0.1)');
+    root.style.setProperty('--msre-header-input-hover-border', 'rgba(59, 130, 246, 0.14)');
+    root.style.setProperty('--msre-header-input-focus-border', 'rgba(37, 99, 235, 0.18)');
   } else {
-    root.style.setProperty('--header-button-default-border', 'rgba(255, 255, 255, 0.2)');
-    root.style.setProperty('--header-button-hover-border', 'rgba(255, 255, 255, 0.3)');
-    root.style.setProperty('--header-input-border', 'rgba(255, 255, 255, 0.2)');
-    root.style.setProperty('--header-input-hover-border', 'rgba(255, 255, 255, 0.3)');
-    root.style.setProperty('--header-input-focus-border', 'rgba(255, 255, 255, 0.4)');
+    root.style.setProperty('--msre-header-button-default-border', 'rgba(255, 255, 255, 0.2)');
+    root.style.setProperty('--msre-header-button-hover-border', 'rgba(255, 255, 255, 0.3)');
+    root.style.setProperty('--msre-header-input-border', 'rgba(255, 255, 255, 0.2)');
+    root.style.setProperty('--msre-header-input-hover-border', 'rgba(255, 255, 255, 0.3)');
+    root.style.setProperty('--msre-header-input-focus-border', 'rgba(255, 255, 255, 0.4)');
   }
 }
 

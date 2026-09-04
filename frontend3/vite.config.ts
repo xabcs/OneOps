@@ -30,14 +30,8 @@ export default defineConfig(configEnv => {
             // 2. global.scss 导入的文件（避免反向注入造成循环）
             const excludedPaths = [
               '/styles/scss/global.scss',
-              '/styles/scss/sxdevops-theme.scss',
-              '/styles/scss/layout-theme.scss',
-              '/styles/scss/interaction-states.scss',
-              '/styles/scss/sidebar.scss',
-              '/styles/scss/design-system.scss',
+              '/styles/scss/tokens.scss',
               '/styles/scss/element-plus.scss',
-              '/styles/scss/compact-theme.scss',
-              '/styles/scss/terminal-workbench.scss'
             ];
 
             if (excludedPaths.some(path => loaderPath.includes(path))) {

@@ -6,23 +6,25 @@
 /* ========== Header CSS 变量 ========== */
 :root {
   /* Header 内部元素变量 */
-  --header-button-default-bg: rgb(255 255 255 / 85%);
-  --header-button-default-color: #475569;
-  --header-button-default-border: rgb(148 163 184 / 10%);
-  --header-button-hover-bg: rgb(255 255 255 / 95%);
-  --header-button-hover-color: #1d4ed8;
-  --header-button-hover-border: rgb(59 130 246 / 16%);
+  --msre-header-button-default-bg: rgb(255 255 255 / 85%);
+  --msre-header-button-default-color: #475569;
+  --msre-header-button-default-border: rgb(148 163 184 / 10%);
+  --msre-header-button-hover-bg: rgb(255 255 255 / 95%);
+  --msre-header-button-hover-color: #1d4ed8;
+  --msre-header-button-hover-border: rgb(59 130 246 / 16%);
   --header-button-radius: 8px;
-  --header-input-bg: rgb(255 255 255 / 75%);
-  --header-input-border: rgb(148 163 184 / 10%);
-  --header-input-hover-border: rgb(59 130 246 / 14%);
-  --header-input-focus-border: rgb(37 99 235 / 18%);
+  --msre-header-input-bg: rgb(255 255 255 / 75%);
+  --msre-header-input-border: rgb(148 163 184 / 10%);
+  --msre-header-input-hover-border: rgb(59 130 246 / 14%);
+  --msre-header-input-focus-border: rgb(37 99 235 / 18%);
   --header-input-radius: 8px;
-  --header-input-color: #475569;
-  --header-breadcrumb-color: #475569;
-  --header-breadcrumb-hover: #1d4ed8;
-  --header-status-bg: rgb(255 255 255 / 60%);
+  --msre-header-input-radius: 8px;
+  --msre-header-input-color: #475569;
+  --msre-header-breadcrumb-color: #475569;
+  --msre-header-breadcrumb-hover: #1d4ed8;
+  --msre-header-status-bg: rgb(255 255 255 / 60%);
   --header-status-radius: 6px;
+  --msre-header-status-radius: 6px;
 }
 
 /* ========== Header 内部元素样式 ========== */
@@ -45,9 +47,9 @@
     .el-button--danger,
     .el-button--info
   ) {
-  background-color: var(--header-button-default-bg) !important;
-  color: var(--header-button-default-color) !important;
-  border-color: var(--header-button-default-border) !important;
+  background-color: var(--msre-header-button-default-bg) !important;
+  color: var(--msre-header-button-default-color) !important;
+  border-color: var(--msre-header-button-default-border) !important;
   border-radius: var(--header-button-radius) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
   backdrop-filter: blur(8px) !important;
@@ -55,9 +57,9 @@
 
 .global-header .el-button:hover,
 .global-header .header-action-item:hover {
-  background-color: var(--header-button-hover-bg) !important;
-  color: var(--header-button-hover-color) !important;
-  border-color: var(--header-button-hover-border) !important;
+  background-color: var(--msre-header-button-hover-bg) !important;
+  color: var(--msre-header-button-hover-color) !important;
+  border-color: var(--msre-header-button-hover-border) !important;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgb(0 0 0 / 8%);
 }
@@ -68,38 +70,38 @@
 
 /* Header 内部输入框 */
 .global-header .el-input .el-input__wrapper {
-  background-color: var(--header-input-bg) !important;
+  background-color: var(--msre-header-input-bg) !important;
   border-radius: var(--header-input-radius) !important;
-  box-shadow: 0 0 0 1px var(--header-input-border) inset !important;
+  box-shadow: 0 0 0 1px var(--msre-header-input-border) inset !important;
   backdrop-filter: blur(8px) !important;
 }
 
 .global-header .el-input .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1px var(--header-input-hover-border) inset !important;
+  box-shadow: 0 0 0 1px var(--msre-header-input-hover-border) inset !important;
 }
 
 .global-header .el-input.is-focus .el-input__wrapper {
-  box-shadow: 0 0 0 1px var(--header-input-focus-border) inset !important;
+  box-shadow: 0 0 0 1px var(--msre-header-input-focus-border) inset !important;
 }
 
 .global-header .el-input .el-input__inner {
-  color: var(--header-input-color) !important;
+  color: var(--msre-header-input-color) !important;
 }
 
 /* Header 内部选择器 */
 .global-header .el-select .el-input__wrapper {
-  background-color: var(--header-input-bg) !important;
+  background-color: var(--msre-header-input-bg) !important;
   border-radius: var(--header-input-radius) !important;
-  box-shadow: 0 0 0 1px var(--header-input-border) inset !important;
+  box-shadow: 0 0 0 1px var(--msre-header-input-border) inset !important;
   backdrop-filter: blur(8px) !important;
 }
 
 .global-header .el-select .el-input__wrapper:hover {
-  box-shadow: 0 0 0 1px var(--header-input-hover-border) inset !important;
+  box-shadow: 0 0 0 1px var(--msre-header-input-hover-border) inset !important;
 }
 
 .global-header .el-select.is-focus .el-input__wrapper {
-  box-shadow: 0 0 0 1px var(--header-input-focus-border) inset !important;
+  box-shadow: 0 0 0 1px var(--msre-header-input-focus-border) inset !important;
 }
 
 /* Header 面包屑 */
@@ -108,11 +110,11 @@
 }
 
 .global-header .el-breadcrumb__item {
-  color: var(--header-breadcrumb-color) !important;
+  color: var(--msre-header-breadcrumb-color) !important;
 }
 
 .global-header .el-breadcrumb__item:hover {
-  color: var(--header-breadcrumb-hover) !important;
+  color: var(--msre-header-breadcrumb-hover) !important;
 }
 
 .global-header .el-breadcrumb__item:last-child {
@@ -121,20 +123,20 @@
 
 /* Header 状态指示器 */
 .global-header .status-item {
-  background-color: var(--header-status-bg) !important;
+  background-color: var(--msre-header-status-bg) !important;
   border-radius: var(--header-status-radius) !important;
   padding: 4px 8px !important;
   backdrop-filter: blur(8px) !important;
 }
 
 .global-header .status-label {
-  color: var(--header-input-color) !important;
+  color: var(--msre-header-input-color) !important;
 }
 
 .global-header .time-display {
-  background-color: var(--header-status-bg) !important;
+  background-color: var(--msre-header-status-bg) !important;
   border-radius: var(--header-status-radius) !important;
-  color: var(--header-input-color) !important;
+  color: var(--msre-header-input-color) !important;
   backdrop-filter: blur(8px) !important;
 }
 
@@ -175,8 +177,8 @@
   width: 36px;
   height: 36px;
   border-radius: var(--header-button-radius) !important;
-  background-color: var(--header-button-default-bg) !important;
-  color: var(--header-button-default-color) !important;
+  background-color: var(--msre-header-button-default-bg) !important;
+  color: var(--msre-header-button-default-color) !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -186,8 +188,8 @@
 }
 
 .global-header .header-icon-button:hover {
-  background-color: var(--header-button-hover-bg) !important;
-  color: var(--header-button-hover-color) !important;
+  background-color: var(--msre-header-button-hover-bg) !important;
+  color: var(--msre-header-button-hover-color) !important;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgb(0 0 0 / 8%);
 }

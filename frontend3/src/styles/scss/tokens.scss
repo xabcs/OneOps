@@ -1,0 +1,559 @@
+/**
+ * OneOps 统一主题令牌系统
+ *
+ * 全站唯一的 CSS 变量定义源。
+ * 所有自定义变量统一使用 --msre- 前缀。
+ * 旧的 --sxdevops-* / --oneops-* / 无前缀变量
+ * 在文件末尾以别名方式保持兼容，后续逐步清理。
+ */
+
+:root {
+  /* ========== 色彩 ========== */
+  --msre-primary: #6366f1;
+  --msre-primary-light: #818cf8;
+  --msre-primary-dark: #4f46e5;
+
+  /* 状态色 */
+  --msre-success: #10b981;
+  --msre-success-light: rgb(16 185 129 / 10%);
+  --msre-warning: #f59e0b;
+  --msre-warning-light: rgb(245 158 11 / 10%);
+  --msre-danger: #ef4444;
+  --msre-danger-light: rgb(239 68 68 / 10%);
+  --msre-info: #3b82f6;
+  --msre-info-light: rgb(59 130 246 / 10%);
+
+  /* 文字色 */
+  --msre-text-primary: #1e293b;
+  --msre-text-secondary: #64748b;
+  --msre-text-muted: #94a3b8;
+
+  /* 边框色 */
+  --msre-border-light: rgb(148 163 184 / 12%);
+  --msre-border-medium: rgb(148 163 184 / 18%);
+  --msre-border-strong: rgb(59 130 246 / 24%);
+  --msre-border-brand: rgb(96 165 250 / 24%);
+
+  /* 背景色 */
+  --msre-content-bg: #f1f5f9;
+  --msre-light-white: #fff;
+  --msre-light-bg-1: #f8fafc;
+  --msre-light-bg-2: #f7fbff;
+
+  /* ========== 品牌渐变 ========== */
+  --msre-brand-gradient: linear-gradient(135deg, #67b7ab 0%, #5586b6 58%, #49639a 100%);
+  --msre-brand-gradient-short: linear-gradient(135deg, #67b7ab 0%, #49639a 100%);
+
+  /* ========== 渐变工具色 ========== */
+  --msre-gradient-start-1: #f1f6fffa;
+  --msre-gradient-start-2: #eff6ffeb;
+  --msre-gradient-start-3: #eef5ff;
+  --msre-gradient-start-4: #eef4ff;
+  --msre-gradient-end-1: #e8f0ffe6;
+  --msre-gradient-end-2: #ecfdf5bd;
+  --msre-gradient-end-3: #f6fbff;
+  --msre-gradient-end-4: #f8fbff;
+
+  /* ========== 布局 ========== */
+  --msre-sidebar-width: 188px;
+  --msre-sidebar-collapsed-width: 68px;
+  --msre-header-height: 60px;
+
+  /* ========== 侧边栏 ========== */
+  --msre-sidebar-bg: linear-gradient(180deg, rgb(241 246 255 / 98%) 0%, rgb(232 240 255 / 90%) 100%);
+  --msre-sidebar-hover: #e8f0ff;
+  --msre-sidebar-active: linear-gradient(180deg, #eaf2ff 0%, #deebff 100%);
+  --msre-sidebar-text: #5f6b7a;
+  --msre-sidebar-text-active: #2563eb;
+  --msre-sidebar-text-hover: #334155;
+  --msre-sidebar-icon: #7b8794;
+  --msre-sidebar-icon-active: #2563eb;
+
+  /* ========== 顶栏 ========== */
+  --msre-header-bg: linear-gradient(180deg, rgb(248 251 255 / 98%) 0%, rgb(243 247 255 / 94%) 100%);
+  --msre-header-shadow: 0 1px 3px rgb(15 23 42 / 4%);
+  --msre-header-button-default-bg: rgb(255 255 255 / 85%);
+  --msre-header-button-default-color: #475569;
+  --msre-header-button-default-border: rgb(148 163 184 / 10%);
+  --msre-header-button-hover-bg: rgb(255 255 255 / 95%);
+  --msre-header-button-hover-color: #1d4ed8;
+  --msre-header-button-hover-border: rgb(59 130 246 / 16%);
+  --msre-header-button-radius: 8px;
+  --msre-header-input-bg: rgb(255 255 255 / 75%);
+  --msre-header-input-border: rgb(148 163 184 / 10%);
+  --msre-header-input-hover-border: rgb(59 130 246 / 14%);
+  --msre-header-input-focus-border: rgb(37 99 235 / 18%);
+  --msre-header-input-radius: 8px;
+  --msre-header-input-color: #475569;
+  --msre-header-breadcrumb-color: #475569;
+  --msre-header-breadcrumb-hover: #1d4ed8;
+  --msre-header-status-bg: rgb(255 255 255 / 60%);
+  --msre-header-status-radius: 6px;
+  --msre-header-status-text: #475569;
+
+  /* ========== Logo ========== */
+  --msre-logo-bg: linear-gradient(180deg, rgb(210 235 255 / 98%) 0%, rgb(221 222 222 / 90%) 100%);
+  --msre-logo-icon-bg: linear-gradient(145deg, #eef4ff 0%, #f8fbff 100%);
+  --msre-logo-icon-border: rgb(96 165 250 / 24%);
+  --msre-logo-icon-shadow: 0 8px 18px rgb(37 99 235 / 8%);
+  --msre-logo-text-color: #2563eb;
+  --msre-logo-subtext-color: #6b7c96;
+
+  /* ========== 卡片 ========== */
+  --msre-card-bg: #fff;
+  --msre-card-shadow: 0 1px 3px rgb(0 0 0 / 6%), 0 1px 2px rgb(0 0 0 / 4%);
+  --msre-card-radius: 12px;
+
+  /* ========== 圆角 ========== */
+  --msre-radius-small: 8px;
+  --msre-radius-medium: 10px;
+  --msre-radius-large: 12px;
+  --msre-radius-logo-icon: 11px;
+  --msre-radius-menu: 10px;
+  --msre-radius-card: 12px;
+
+  /* ========== 阴影 ========== */
+  --msre-shadow-sm: 0 1px 2px rgb(0 0 0 / 5%);
+  --msre-shadow-md: 0 4px 6px rgb(0 0 0 / 7%);
+  --msre-shadow-lg: 0 10px 15px rgb(0 0 0 / 10%);
+  --msre-shadow-xl: 0 20px 25px rgb(0 0 0 / 15%);
+  --msre-brand-shadow-sm: 0 2px 8px rgb(59 130 246 / 8%);
+  --msre-brand-shadow-md: 0 8px 18px rgb(59 130 246 / 14%);
+  --msre-brand-shadow-lg: 0 12px 24px rgb(59 130 246 / 20%);
+  --msre-shadow-inset: inset 0 1px rgb(255 255 255 / 95%);
+
+  /* ========== 过渡 ========== */
+  --msre-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --msre-transition-fast: all 0.18s ease;
+  --msre-transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --msre-animation-duration: 0.3s;
+  --msre-animation-duration-fast: 0.15s;
+  --msre-animation-duration-slow: 0.4s;
+
+  /* ========== 按钮 ========== */
+  --msre-btn-promo-bg: linear-gradient(135deg, rgb(239 246 255 / 92%) 0%, rgb(236 253 245 / 74%) 100%);
+  --msre-btn-promo-hover: linear-gradient(135deg, rgb(219 234 254 / 98%) 0%, rgb(209 250 229 / 84%) 100%);
+  --msre-btn-promo-text: #5b7fc7;
+  --msre-btn-promo-border: rgb(96 165 250 / 22%);
+  --msre-btn-assistant-bg: linear-gradient(135deg, rgb(239 246 255 / 92%) 0%, rgb(255 247 237 / 72%) 100%);
+  --msre-btn-assistant-hover: linear-gradient(135deg, rgb(219 234 254 / 96%) 0%, rgb(255 237 213 / 82%) 100%);
+  --msre-btn-assistant-text: #3b82f6;
+
+  /* ========== 通知 ========== */
+  --msre-notice-panel-bg: rgb(255 255 255 / 92%);
+  --msre-notice-border: rgb(226 232 240 / 72%);
+  --msre-notice-item-bg: rgb(255 255 255 / 92%);
+  --msre-notice-item-hover: rgb(248 250 252 / 96%);
+  --msre-notice-item-border: rgb(226 232 240 / 72%);
+  --msre-notice-dot-danger: #ef4444;
+  --msre-notice-dot-warning: #f59e0b;
+  --msre-notice-dot-info: #60a5fa;
+  --msre-notice-dot-success: #10b981;
+
+  /* ========== 头像 ========== */
+  --msre-avatar-bg: linear-gradient(135deg, #72c1b5 0%, #5f90c1 58%, #506ba5 100%);
+  --msre-avatar-shadow: 0 8px 18px rgb(80 107 165 / 18%);
+
+  /* ========== K8s / Docker 工具栏 ========== */
+  --msre-k8s-toolbar-bg: linear-gradient(135deg, #3b82f6, #2563eb);
+  --msre-k8s-toolbar-shadow: 0 4px 15px -3px rgb(59 130 246 / 40%);
+  --msre-k8s-toolbar-text: #fff;
+  --msre-docker-toolbar-bg: #2496ed;
+  --msre-docker-toolbar-shadow: 0 4px 15px -3px rgb(36 150 237 / 40%);
+
+  /* ========== 终端 ========== */
+  --msre-terminal-bg: #0f172a;
+  --msre-terminal-text: #e2e8f0;
+  --msre-terminal-success: #10b981;
+
+  /* ========== 脉冲动画 ========== */
+  --msre-pulse-success: rgb(16 185 129 / 50%);
+  --msre-pulse-warning: rgb(245 158 11 / 50%);
+  --msre-pulse-danger: rgb(239 68 68 / 50%);
+
+  /* ========== 滚动条 ========== */
+  --msre-scrollbar-track: transparent;
+  --msre-scrollbar-thumb: #cbd5e1;
+  --msre-scrollbar-thumb-hover: #94a3b8;
+
+  /* ========== 输入框 ========== */
+  --msre-input-bg: rgb(255 255 255 / 92%);
+  --msre-input-border: rgb(148 163 184 / 16%);
+  --msre-input-hover-border: rgb(59 130 246 / 18%);
+  --msre-input-focus-border: rgb(37 99 235 / 22%);
+  --msre-input-shadow: 0 0 0 1px rgb(148 163 184 / 16%) inset;
+  --msre-input-focus-shadow: 0 0 0 1px rgb(37 99 235 / 38%) inset;
+
+  /* ========== 表格 ========== */
+  --msre-table-header-bg: #f8fafc;
+  --msre-table-header-text: #475569;
+  --msre-table-header-border: rgb(148 163 184 / 16%);
+  --msre-table-row-hover: #f8fbff;
+  --msre-table-hover-bg: #f8fbff;
+  --msre-table-row-border: rgb(148 163 184 / 8%);
+  --msre-table-border: rgb(148 163 184 / 16%);
+  --msre-table-text-color: #475569;
+  --msre-table-radius: 12px;
+  --msre-table-striped-bg: #f8fafc;
+
+  /* ========== 按钮 ========== */
+  --msre-button-radius: 10px;
+  --msre-button-default-bg: rgb(255 255 255 / 90%);
+  --msre-button-default-color: #475569;
+  --msre-button-default-border: rgb(148 163 184 / 12%);
+  --msre-button-hover-bg: #f8fbff;
+  --msre-button-hover-color: #1d4ed8;
+  --msre-button-hover-border: rgb(59 130 246 / 18%);
+
+  /* ========== 输入框增强 ========== */
+  --msre-input-radius: 12px;
+  --msre-input-border-shadow: rgb(148 163 184 / 16%);
+  --msre-input-hover-shadow: rgb(59 130 246 / 18%);
+
+  /* ========== 卡片增强 ========== */
+  --msre-card-border: rgb(148 163 184 / 12%);
+  --msre-card-padding: 20px;
+
+  /* ========== 工具栏 ========== */
+  --msre-toolbar-bg: linear-gradient(180deg, rgb(248 250 252 / 92%) 0%, rgb(255 255 255 / 96%) 100%);
+  --msre-toolbar-border: rgb(148 163 184 / 12%);
+  --msre-toolbar-radius: 12px;
+  --msre-toolbar-padding: 12px 16px;
+
+  /* ========== Hero 区域 ========== */
+  --msre-hero-bg: linear-gradient(135deg, #fbfdff 0%, #f7faff 52%, #f9fbfd 100%);
+  --msre-hero-border: rgb(36 91 219 / 9%);
+  --msre-hero-radius: 20px;
+  --msre-hero-shadow: 0 8px 24px rgb(15 23 42 / 4%);
+  --msre-hero-padding: 14px 22px;
+  --msre-hero-visible: 1;
+  --msre-hero-icon-bg: linear-gradient(180deg, rgb(243 247 255 / 98%) 0%, rgb(235 242 255 / 96%) 100%);
+  --msre-hero-icon-border: rgb(36 91 219 / 12%);
+  --msre-hero-icon-color: #245bdb;
+
+  /* ========== 内容卡片 ========== */
+  --msre-content-card-bg: var(--msre-card-bg);
+  --msre-content-card-radius: var(--msre-card-radius);
+  --msre-content-card-shadow: var(--msre-card-shadow);
+  --msre-content-card-border: var(--msre-card-border);
+  --msre-content-card-padding: var(--msre-card-padding);
+
+  /* ========== 搜索筛选 ========== */
+  --msre-search-input-bg: rgb(255 255 255 / 92%);
+  --msre-search-input-border: rgb(148 163 184 / 16%);
+  --msre-search-input-hover-border: rgb(59 130 246 / 18%);
+  --msre-search-input-focus-border: rgb(37 99 235 / 22%);
+  --msre-search-input-radius: 12px;
+  --msre-search-button-bg: rgb(255 255 255 / 90%);
+  --msre-search-button-text: #475569;
+  --msre-search-button-hover: #f8fbff;
+
+  /* ========== 分页 ========== */
+  --msre-pagination-button-bg: rgb(255 255 255 / 90%);
+  --msre-pagination-button-text: #475569;
+  --msre-pagination-button-hover: #f8fbff;
+  --msre-pagination-active-bg: var(--msre-primary);
+  --msre-pagination-active-text: #fff;
+  --msre-pagination-radius: 10px;
+
+  /* ========== 标签 ========== */
+  --msre-tag-default-bg: #f1f5f9;
+  --msre-tag-default-border: rgb(148 163 184 / 20%);
+  --msre-tag-default-text: #475569;
+  --msre-tag-success-bg: rgb(16 185 129 / 10%);
+  --msre-tag-warning-bg: rgb(245 158 11 / 10%);
+  --msre-tag-danger-bg: rgb(239 68 68 / 10%);
+  --msre-tag-info-bg: rgb(59 130 246 / 10%);
+  --msre-tag-radius: 8px;
+
+  /* ========== 统计卡片 ========== */
+  --msre-stat-default-bg: rgb(255 255 255 / 98%);
+  --msre-stat-default-border: rgb(148 163 184 / 16%);
+  --msre-stat-radius: 12px;
+  --msre-stat-shadow: 0 1px 3px rgb(0 0 0 / 6%);
+  --msre-stat-success-bg: rgb(240 253 244 / 98%);
+  --msre-stat-warning-bg: rgb(255 251 235 / 98%);
+  --msre-stat-danger-bg: rgb(254 242 242 / 98%);
+
+  /* ========== 其他 ========== */
+  --msre-border-soft: rgb(148 163 184 / 12%);
+  --msre-toolbar-shadow: 0 1px 3px rgb(15 23 42 / 4%);
+}
+
+/* ========== 深色模式 ========== */
+html.dark:root {
+  --msre-primary: #818cf8;
+  --msre-primary-light: #a5b4fc;
+  --msre-primary-dark: #6366f1;
+
+  --msre-content-bg: #121212;
+  --msre-card-bg: #1c1c1c;
+  --msre-header-bg: linear-gradient(180deg, rgb(28 28 28 / 98%), rgb(18 18 18 / 94%));
+  --msre-sidebar-bg: linear-gradient(180deg, rgb(28 28 28 / 98%) 0%, rgb(18 18 18 / 90%) 100%);
+
+  --msre-text-primary: #e0e0e0;
+  --msre-text-secondary: #a0a0a0;
+  --msre-text-muted: #707070;
+
+  --msre-border-light: rgb(255 255 255 / 8%);
+  --msre-border-medium: rgb(255 255 255 / 12%);
+  --msre-border-strong: rgb(255 255 255 / 16%);
+
+  --msre-sidebar-text: #a0a0a0;
+  --msre-sidebar-text-active: var(--msre-primary);
+  --msre-sidebar-hover: rgb(255 255 255 / 6%);
+  --msre-sidebar-icon: #a0a0a0;
+  --msre-sidebar-icon-active: var(--msre-primary);
+
+  --msre-card-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+
+  --msre-table-header-bg: #1c1c1c;
+  --msre-table-row-hover: rgb(255 255 255 / 4%);
+  --msre-table-border: rgb(255 255 255 / 8%);
+  --msre-table-text-color: #c0c0c0;
+
+  --msre-input-bg: rgb(28 28 28 / 60%);
+  --msre-input-border: rgb(255 255 255 / 10%);
+  --msre-input-hover-border: rgb(129 140 248 / 30%);
+  --msre-input-focus-border: rgb(129 140 248 / 40%);
+  --msre-input-shadow: 0 0 0 1px rgb(255 255 255 / 6%) inset;
+  --msre-input-focus-shadow: 0 0 0 1px rgb(129 140 248 / 40%) inset;
+
+  --msre-scrollbar-thumb: #3a3a3a;
+  --msre-scrollbar-thumb-hover: #505050;
+
+  --msre-logo-icon-bg: linear-gradient(145deg, rgb(28 28 28 / 80%) 0%, rgb(18 18 18 / 90%) 100%);
+  --msre-logo-text-color: var(--msre-primary);
+  --msre-logo-subtext-color: #a0a0a0;
+
+  --msre-notice-panel-bg: rgb(28 28 28 / 92%);
+  --msre-notice-border: rgb(255 255 255 / 8%);
+  --msre-notice-item-bg: rgb(28 28 28 / 92%);
+  --msre-notice-item-hover: rgb(255 255 255 / 4%);
+  --msre-notice-item-border: rgb(255 255 255 / 8%);
+}
+
+/* ========== 响应式 ========== */
+@media (width <= 768px) {
+  :root {
+    --msre-sidebar-width: var(--msre-sidebar-collapsed-width);
+    --msre-card-radius: 8px;
+  }
+}
+
+/* ====================================================
+ * 兼容别名
+ * 将旧的 --sxdevops-* / --oneops-* / 无前缀变量
+ * 映射到 --msre-* 统一命名空间。
+ * 后续逐步替换旧引用后可删除此区块。
+ * ==================================================== */
+
+:root {
+  /* --sxdevops-* 别名 */
+  --sxdevops-primary: var(--msre-primary);
+  --sxdevops-primary-light: var(--msre-primary-light);
+  --sxdevops-primary-dark: var(--msre-primary-dark);
+  --sxdevops-brand-gradient: var(--msre-brand-gradient);
+  --sxdevops-brand-gradient-short: var(--msre-brand-gradient-short);
+  --sxdevops-sidebar-bg: var(--msre-sidebar-bg);
+  --sxdevops-sidebar-hover: var(--msre-sidebar-hover);
+  --sxdevops-sidebar-active: var(--msre-sidebar-active);
+  --sxdevops-sidebar-text: var(--msre-sidebar-text);
+  --sxdevops-sidebar-text-active: var(--msre-sidebar-text-active);
+  --sxdevops-sidebar-text-hover: var(--msre-sidebar-text-hover);
+  --sxdevops-sidebar-icon: var(--msre-sidebar-icon);
+  --sxdevops-sidebar-icon-active: var(--msre-sidebar-icon-active);
+  --sxdevops-logo-bg: var(--msre-logo-bg);
+  --sxdevops-logo-icon-bg: var(--msre-logo-icon-bg);
+  --sxdevops-logo-icon-border: var(--msre-logo-icon-border);
+  --sxdevops-logo-icon-shadow: var(--msre-logo-icon-shadow);
+  --sxdevops-header-height: var(--msre-header-height);
+  --sxdevops-header-bg: var(--msre-header-bg);
+  --sxdevops-header-shadow: var(--msre-header-shadow);
+  --sxdevops-content-bg: var(--msre-content-bg);
+  --sxdevops-card-bg: var(--msre-card-bg);
+  --sxdevops-card-shadow: var(--msre-card-shadow);
+  --sxdevops-card-radius: var(--msre-card-radius);
+  --sxdevops-text-primary: var(--msre-text-primary);
+  --sxdevops-text-secondary: var(--msre-text-secondary);
+  --sxdevops-text-muted: var(--msre-text-muted);
+  --sxdevops-success: var(--msre-success);
+  --sxdevops-warning: var(--msre-warning);
+  --sxdevops-danger: var(--msre-danger);
+  --sxdevops-info: var(--msre-info);
+  --sxdevops-radius-small: var(--msre-radius-small);
+  --sxdevops-radius-medium: var(--msre-radius-medium);
+  --sxdevops-radius-large: var(--msre-radius-large);
+  --sxdevops-radius-logo-icon: var(--msre-radius-logo-icon);
+  --sxdevops-radius-menu: var(--msre-radius-menu);
+  --sxdevops-radius-card: var(--msre-radius-card);
+  --sxdevops-transition: var(--msre-transition);
+  --sxdevops-transition-fast: var(--msre-transition-fast);
+  --sxdevops-sidebar-icon: var(--msre-sidebar-icon);
+  --sxdevops-sidebar-icon-active: var(--msre-sidebar-icon-active);
+
+  /* --oneops-* 别名 */
+  --oneops-brand-primary: var(--msre-primary);
+  --oneops-brand-secondary: #38bdf8;
+  --oneops-brand-accent: #2563eb;
+  --oneops-light-white: var(--msre-light-white);
+  --oneops-light-bg-1: var(--msre-light-bg-1);
+  --oneops-light-bg-2: var(--msre-light-bg-2);
+  --oneops-light-bg-3: #f6fbff;
+  --oneops-light-bg-4: #f8fbff;
+  --oneops-gradient-start-1: var(--msre-gradient-start-1);
+  --oneops-gradient-start-2: var(--msre-gradient-start-2);
+  --oneops-gradient-start-3: var(--msre-gradient-start-3);
+  --oneops-gradient-start-4: var(--msre-gradient-start-4);
+  --oneops-gradient-end-1: var(--msre-gradient-end-1);
+  --oneops-gradient-end-2: var(--msre-gradient-end-2);
+  --oneops-gradient-end-3: var(--msre-gradient-end-3);
+  --oneops-gradient-end-4: var(--msre-gradient-end-4);
+  --oneops-border-light: var(--msre-border-light);
+  --oneops-border-medium: var(--msre-border-medium);
+  --oneops-border-strong: var(--msre-border-strong);
+  --oneops-shadow-sm: var(--msre-brand-shadow-sm);
+  --oneops-shadow-md: var(--msre-brand-shadow-md);
+  --oneops-shadow-lg: var(--msre-brand-shadow-lg);
+  --oneops-shadow-inset: var(--msre-shadow-inset);
+  --oneops-text-primary: var(--msre-text-primary);
+  --oneops-text-secondary: var(--msre-text-secondary);
+  --oneops-text-muted: var(--msre-text-muted);
+
+  /* 无前缀变量别名 */
+  --primary: var(--msre-primary);
+  --primary-light: var(--msre-primary-light);
+  --primary-dark: var(--msre-primary-dark);
+  --brand-gradient: var(--msre-brand-gradient);
+  --brand-gradient-short: var(--msre-brand-gradient-short);
+  --sidebar-width: var(--msre-sidebar-width);
+  --sidebar-collapsed-width: var(--msre-sidebar-collapsed-width);
+  --sidebar-bg: var(--msre-sidebar-bg);
+  --sidebar-hover: var(--msre-sidebar-hover);
+  --sidebar-active: var(--msre-sidebar-active);
+  --sidebar-text: var(--msre-sidebar-text);
+  --sidebar-text-active: var(--msre-sidebar-text-active);
+  --header-height: var(--msre-header-height);
+  --header-bg: var(--msre-header-bg);
+  --header-shadow: var(--msre-header-shadow);
+  --header-button-default-bg: var(--msre-header-button-default-bg);
+  --header-button-default-color: var(--msre-header-button-default-color);
+  --header-button-default-border: var(--msre-header-button-default-border);
+  --header-button-hover-bg: var(--msre-header-button-hover-bg);
+  --header-button-hover-color: var(--msre-header-button-hover-color);
+  --header-button-hover-border: var(--msre-header-button-hover-border);
+  --header-button-radius: var(--msre-header-button-radius);
+  --header-input-bg: var(--msre-header-input-bg);
+  --header-input-border: var(--msre-header-input-border);
+  --header-input-hover-border: var(--msre-header-input-hover-border);
+  --header-input-focus-border: var(--msre-header-input-focus-border);
+  --header-input-radius: var(--msre-header-input-radius);
+  --header-input-color: var(--msre-header-input-color);
+  --header-breadcrumb-color: var(--msre-header-breadcrumb-color);
+  --header-breadcrumb-hover: var(--msre-header-breadcrumb-hover);
+  --header-status-bg: var(--msre-header-status-bg);
+  --header-status-radius: var(--msre-header-status-radius);
+  --header-status-text: var(--msre-header-status-text);
+  --content-bg: var(--msre-content-bg);
+  --card-bg: var(--msre-card-bg);
+  --card-shadow: var(--msre-card-shadow);
+  --card-radius: var(--msre-card-radius);
+  --text-primary: var(--msre-text-primary);
+  --text-secondary: var(--msre-text-secondary);
+  --text-muted: var(--msre-text-muted);
+  --success: var(--msre-success);
+  --success-light: var(--msre-success-light);
+  --warning: var(--msre-warning);
+  --warning-light: var(--msre-warning-light);
+  --danger: var(--msre-danger);
+  --danger-light: var(--msre-danger-light);
+  --info: var(--msre-info);
+  --info-light: var(--msre-info-light);
+  --transition: var(--msre-transition);
+  --transition-fast: var(--msre-transition-fast);
+  --transition-slow: var(--msre-transition-slow);
+  --shadow-sm: var(--msre-shadow-sm);
+  --shadow-md: var(--msre-shadow-md);
+  --shadow-lg: var(--msre-shadow-lg);
+  --shadow-xl: var(--msre-shadow-xl);
+  --brand-shadow-sm: var(--msre-brand-shadow-sm);
+  --brand-shadow-md: var(--msre-brand-shadow-md);
+  --brand-shadow-lg: var(--msre-brand-shadow-lg);
+  --border-light: var(--msre-border-light);
+  --border-medium: var(--msre-border-medium);
+  --border-strong: var(--msre-border-strong);
+  --border-brand: var(--msre-border-brand);
+  --btn-promo-bg: var(--msre-btn-promo-bg);
+  --btn-promo-hover: var(--msre-btn-promo-hover);
+  --btn-promo-text: var(--msre-btn-promo-text);
+  --btn-promo-border: var(--msre-btn-promo-border);
+  --btn-assistant-bg: var(--msre-btn-assistant-bg);
+  --btn-assistant-hover: var(--msre-btn-assistant-hover);
+  --btn-assistant-text: var(--msre-btn-assistant-text);
+  --logo-icon-bg: var(--msre-logo-icon-bg);
+  --logo-icon-border: var(--msre-logo-icon-border);
+  --logo-icon-shadow: var(--msre-logo-icon-shadow);
+  --logo-text-color: var(--msre-logo-text-color);
+  --logo-subtext-color: var(--msre-logo-subtext-color);
+  --notice-panel-bg: var(--msre-notice-panel-bg);
+  --notice-border: var(--msre-notice-border);
+  --notice-item-bg: var(--msre-notice-item-bg);
+  --notice-item-hover: var(--msre-notice-item-hover);
+  --notice-item-border: var(--msre-notice-item-border);
+  --notice-dot-danger: var(--msre-notice-dot-danger);
+  --notice-dot-warning: var(--msre-notice-dot-warning);
+  --notice-dot-info: var(--msre-notice-dot-info);
+  --notice-dot-success: var(--msre-notice-dot-success);
+  --avatar-bg: var(--msre-avatar-bg);
+  --avatar-shadow: var(--msre-avatar-shadow);
+  --k8s-toolbar-bg: var(--msre-k8s-toolbar-bg);
+  --k8s-toolbar-shadow: var(--msre-k8s-toolbar-shadow);
+  --k8s-toolbar-text: var(--msre-k8s-toolbar-text);
+  --docker-toolbar-bg: var(--msre-docker-toolbar-bg);
+  --docker-toolbar-shadow: var(--msre-docker-toolbar-shadow);
+  --terminal-bg: var(--msre-terminal-bg);
+  --terminal-text: var(--msre-terminal-text);
+  --terminal-success: var(--msre-terminal-success);
+  --pulse-success: var(--msre-pulse-success);
+  --pulse-warning: var(--msre-pulse-warning);
+  --pulse-danger: var(--msre-pulse-danger);
+  --scrollbar-track: var(--msre-scrollbar-track);
+  --scrollbar-thumb: var(--msre-scrollbar-thumb);
+  --scrollbar-thumb-hover: var(--msre-scrollbar-thumb-hover);
+  --input-bg: var(--msre-input-bg);
+  --input-border: var(--msre-input-border);
+  --input-hover-border: var(--msre-input-hover-border);
+  --input-focus-border: var(--msre-input-focus-border);
+  --input-shadow: var(--msre-input-shadow);
+  --input-focus-shadow: var(--msre-input-focus-shadow);
+  --table-header-bg: var(--msre-table-header-bg);
+  --table-row-hover: var(--msre-table-row-hover);
+  --table-border: var(--msre-table-border);
+  --table-text-color: var(--msre-table-text-color);
+  --animation-duration: var(--msre-animation-duration);
+  --animation-duration-fast: var(--msre-animation-duration-fast);
+  --animation-duration-slow: var(--msre-animation-duration-slow);
+}
+
+/* 品牌渐变文字 */
+.sxdevops-brand-text {
+  background: var(--msre-brand-gradient);
+  background-clip: text;
+  color: transparent;
+}
+
+/* 3D 球体状态指示 */
+.sxdevops-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 98%) 0 20%, rgb(255 255 255 / 0%) 22%),
+    radial-gradient(circle at 50% 50%, rgb(103 183 171 / 92%) 0%, rgb(85 134 182 / 96%) 72%, rgb(85 134 182 / 72%) 100%);
+  border: 1px solid rgb(255 255 255 / 88%);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 24%),
+    0 0 0 3px rgb(96 165 250 / 8%),
+    0 2px 8px rgb(85 134 182 / 16%);
+  position: relative;
+}

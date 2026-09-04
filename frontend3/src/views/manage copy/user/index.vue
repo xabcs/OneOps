@@ -250,11 +250,11 @@
       v-if="heroVisible"
       class="hero-section"
       :style="{
-        background: 'var(--sx-hero-bg)',
-        border: '1px solid var(--sx-hero-border)',
-        borderRadius: 'var(--sx-hero-radius)',
-        boxShadow: 'var(--sx-hero-shadow)',
-        padding: 'var(--sx-hero-padding)'
+        background: 'var(--msre-hero-bg)',
+        border: '1px solid var(--msre-hero-border)',
+        borderRadius: 'var(--msre-hero-radius)',
+        boxShadow: 'var(--msre-hero-shadow)',
+        padding: 'var(--msre-hero-padding)'
       }"
     >
       <div class="hero-content">
@@ -285,11 +285,11 @@
     <div
       class="content-card user-content-card"
       :style="{
-        background: 'var(--sx-content-card-bg)',
-        border: '1px solid var(--sx-content-card-border)',
-        borderRadius: 'var(--sx-content-card-radius)',
-        boxShadow: 'var(--sx-content-card-shadow)',
-        padding: 'var(--sx-content-card-padding)'
+        background: 'var(--msre-content-card-bg)',
+        border: '1px solid var(--msre-content-card-border)',
+        borderRadius: 'var(--msre-content-card-radius)',
+        boxShadow: 'var(--msre-content-card-shadow)',
+        padding: 'var(--msre-content-card-padding)'
       }"
     >
       <!-- 工具栏 -->

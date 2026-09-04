@@ -261,6 +261,7 @@
           </template>
         </ElTableColumn>
       </ElTable>
+      </div>
 
       <!-- 分页 -->
       <div class="pagination-wrapper">

@@ -121,6 +121,7 @@
           </template>
         </ElTableColumn>
       </ElTable>
+      </div>
 
       <RoomOperateDrawer
         v-model:visible="drawerVisible"
