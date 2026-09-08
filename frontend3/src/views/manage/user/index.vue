@@ -1,11 +1,12 @@
 <script setup lang="tsx">
-  import { computed, onMounted, onUnmounted, ref } from 'vue';
+  import { computed, onActivated, onMounted, onUnmounted, ref } from 'vue';
   import { ElMessageBox } from 'element-plus';
   import { Delete, Plus, Refresh, Search, User } from '@element-plus/icons-vue';
-  import { fetchDeleteUser, fetchGetAllRoles, fetchGetUserList } from '@/service/api';
+  import { fetchDeleteUser, fetchGetAllRoles, fetchGetUserList, fetchUpdateUser } from '@/service/api';
   import { useThemeStore } from '@/store/modules/theme';
   import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
   import { executeWithPermission } from '@/hooks/business/auth';
+  import { createCachedRequest } from '@/utils/request-cache';
   import { $t } from '@/locales';
   import UserOperateDrawer from './modules/user-operate-drawer.vue';
   import ResetPasswordModal from './modules/reset-password-modal.vue';
@@ -40,50 +41,62 @@
     return map;
   });
 
-  // 获取所有角色
-  async function getAllRoles() {
+  const roleListCache = createCachedRequest(async () => {
     const { error, data } = await fetchGetAllRoles();
-    if (!error && data) {
-      allRoles.value = data.list || [];
-    } else {
+
+    if (error || !data) {
+      throw new Error('Failed to load roles');
+    }
+
+    return data.list || [];
+  });
+
+  // 获取所有角色；同一时间窗内复用结果，避免反复初始化时重复请求
+  async function getAllRoles() {
+    try {
+      allRoles.value = await roleListCache.load();
+    } catch {
       allRoles.value = [];
     }
   }
 
   // 更新用户统计数据
   async function updateUserStats() {
-    const { error, data } = await fetchGetUserList({
-      page: 1,
-      pageSize: 1,
-      status: undefined,
-      username: undefined,
-      nickname: undefined,
-      email: undefined
-    });
-
-    if (!error && data) {
-      userStats.value.total = data.total || 0;
-
-      const activeResult = await fetchGetUserList({
+    const [totalResult, activeResult] = await Promise.all([
+      fetchGetUserList({
+        page: 1,
+        pageSize: 1,
+        status: undefined,
+        username: undefined,
+        nickname: undefined,
+        email: undefined
+      }),
+      fetchGetUserList({
         page: 1,
         pageSize: 1,
         status: 'active',
         username: undefined,
         nickname: undefined,
         email: undefined
-      });
+      })
+    ]);
 
-      if (!activeResult.error && activeResult.data) {
-        userStats.value.active = activeResult.data.total || 0;
-      }
+    const { error, data } = totalResult;
+    const { error: activeError, data: activeData } = activeResult;
 
+    if (!error && data) {
+      userStats.value.total = data.total || 0;
+      userStats.value.active = !activeError && activeData ? activeData.total || 0 : 0;
       userStats.value.inactive = userStats.value.total - userStats.value.active;
     }
   }
 
+  async function refreshAuxiliaryData() {
+    await Promise.all([getAllRoles(), updateUserStats()]);
+  }
+
   onMounted(() => {
-    getAllRoles();
-    updateUserStats();
+    refreshAuxiliaryData();
   });
 
   const searchParams = ref(getInitSearchParams());
@@ -112,82 +125,44 @@
     });
   }
 
-  function handleResetPasswordSubmitted() {
-    getDataByPage();
-  }
-
-  async function handleBatchDelete() {
-    await executeWithPermission('system.user.batch_delete', async () => {
-      if (checkedRowKeys.value.length === 0) {
-        window.$message?.warning('请选择要删除的用户');
-        return;
-      }
-
-      let successCount = 0;
-      let failCount = 0;
-
-      for (const id of checkedRowKeys.value) {
-        const { error } = await fetchDeleteUser(id as number);
-        if (!error) {
-          successCount++;
-        } else {
-          failCount++;
-        }
-      }
-
-      if (successCount > 0) {
-        window.$message?.success(`成功删除 ${successCount} 个用户`);
-      }
-
-      if (failCount > 0) {
-        window.$message?.error(`${failCount} 个用户删除失败`);
-      }
-
-      onBatchDeleted();
-      await getAllRoles();
-      await updateUserStats();
-    });
-  }
-
-  async function handleDelete(id: number) {
-    await ElMessageBox.confirm('确认删除吗？', '提示', {
-      type: 'warning',
-      confirmButtonText: '确定',
-      cancelButtonText: '取消'
-    });
-    await executeWithPermission(
-      'system.user.delete',
-      async () => {
-        const { error } = await fetchDeleteUser(id);
-
-        if (!error) {
-          window.$message?.success($t('common.deleteSuccess'));
-          onDeleted();
-          await getAllRoles();
-          await updateUserStats();
-        }
-      },
-      { type: 'error' }
-    );
-  }
-
   function resetSearchParams() {
     searchParams.value = getInitSearchParams();
   }
 
-  async function edit(id: number) {
+  async function handleStatusChange(row: Api.SystemManage.User, val: string) {
+    // 禁用后该用户无法登录，已登录会话也会立即失效，需二次确认
+    if (val === 'inactive') {
+      const confirmed = await ElMessageBox.confirm(
+        `禁用用户 "${row.username}" 后，该用户将无法登录，已登录的会话也会立即失效，确认禁用吗？`,
+        '禁用确认',
+        {
+          type: 'warning',
+          confirmButtonText: '确认禁用',
+          cancelButtonText: '取消'
+        }
+      )
+        .then(() => true)
+        .catch(() => false);
+
+      if (!confirmed) {
+        row.status = 'active'; // 取消时回滚开关状态
+        return;
+      }
+    }
+
     await executeWithPermission('system.user.update', async () => {
-      handleEdit(id);
+      const { error } = await fetchUpdateUser(row.id, { status: val });
+
+      if (!error) {
+        window.$message?.success(`${val === 'active' ? '启用' : '禁用'}成功`);
+        await updateUserStats();
+      } else {
+        row.status = val === 'active' ? 'inactive' : 'active';
+      }
     });
   }
 
-  async function handleAddClick() {
-    await executeWithPermission('system.user.create', async () => {
-      handleAdd();
-    });
-  }
-
-  const { columns, data, getData, getDataByPage, loading, mobilePagination } = useUIPaginatedTable({
+  const { columns, data, getData, getDataByPage, loading, pagination, mobilePagination } = useUIPaginatedTable({
     paginationProps: {
       currentPage: searchParams.value.page,
       pageSize: searchParams.value.pageSize
@@ -202,18 +177,89 @@
       roleMap: () => roleMap.value,
       edit,
       openResetPassword,
-      handleDelete
+      handleDelete,
+      handleStatusChange
     })
   });
 
   const { drawerVisible, operateType, editingData, handleAdd, handleEdit, checkedRowKeys, onBatchDeleted, onDeleted } =
     useTableOperate(data, 'id', getData);
 
+  async function handleDelete(id: number) {
+    await ElMessageBox.confirm('确认删除吗？', '提示', {
+      type: 'warning',
+      confirmButtonText: '确定',
+      cancelButtonText: '取消'
+    });
+    await executeWithPermission('system.user.delete', async () => {
+      const { error } = await fetchDeleteUser(id);
+
+      if (!error) {
+        window.$message?.success($t('common.deleteSuccess'));
+        onDeleted();
+        await refreshAuxiliaryData();
+      }
+    });
+  }
+
+  function handleResetPasswordSubmitted() {
+    getDataByPage();
+  }
+
+  async function handleBatchDelete() {
+    await executeWithPermission('system.user.batch_delete', async () => {
+      if (checkedRowKeys.value.length === 0) {
+        window.$message?.warning('请选择要删除的用户');
+        return;
+      }
+
+      const results = await Promise.all(checkedRowKeys.value.map(id => fetchDeleteUser(Number(id))));
+      const successCount = results.filter(({ error }) => !error).length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0) {
+        window.$message?.success(`成功删除 ${successCount} 个用户`);
+      }
+
+      if (failCount > 0) {
+        window.$message?.error(`${failCount} 个用户删除失败`);
+      }
+
+      onBatchDeleted();
+      await refreshAuxiliaryData();
+    });
+  }
+
+  async function edit(id: number) {
+    await executeWithPermission('system.user.update', async () => {
+      handleEdit(id);
+    });
+  }
+
+  async function handleAddClick() {
+    await executeWithPermission('system.user.create', async () => {
+      handleAdd();
+    });
+  }
+
   // 刷新数据
   async function refreshData() {
-    await updateUserStats();
-    await getDataByPage();
+    await Promise.all([updateUserStats(), getDataByPage()]);
   }
+
+  let hasFirstActivation = false;
+
+  // 缓存页重新激活时静默刷新，兼顾返回速度与数据新鲜度
+  onActivated(() => {
+    if (!hasFirstActivation) {
+      hasFirstActivation = true;
+      return;
+    }
+
+    getAllRoles();
+    updateUserStats();
+    getDataByPage(pagination.currentPage ?? 1);
+  });
 
   // 搜索输入处理（防抖）
   let searchTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -280,7 +326,7 @@
           placeholder="搜索用户名"
           size="small"
           clearable
-          style="width: 200px"
+          class="w-200px"
           @input="handleSearchInput"
         >
           <template #prefix>
@@ -292,7 +338,7 @@
           placeholder="搜索昵称"
           size="small"
           clearable
-          style="width: 200px"
+          class="w-200px"
           @input="handleSearchInput"
         >
           <template #prefix>
@@ -304,7 +350,7 @@
           placeholder="搜索邮箱"
           size="small"
           clearable
-          style="width: 240px"
+          class="w-240px"
           @input="handleSearchInput"
         >
           <template #prefix>
@@ -388,7 +434,7 @@
       :operate-type="operateType"
       :row-data="editingData"
       :all-roles="allRoles"
-      @submitted="getDataByPage"
+      @submitted="refreshData"
     />
     <ResetPasswordModal
       v-model:visible="resetPasswordVisible"

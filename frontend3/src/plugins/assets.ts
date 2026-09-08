@@ -9,6 +9,3 @@ import '../styles/css/global.css';
 import '../styles/css/border-radius.css';
 import '../styles/scss/global.scss';
 import '../styles/scss/content-theme.scss';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';

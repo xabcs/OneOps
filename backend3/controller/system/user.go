@@ -79,6 +79,11 @@ type CreateUserRequest struct {
 	HomePath string `json:"homePath"`
 }
 
+// isValidUserStatus 校验用户状态枚举，与鉴权口径（status != "active" 即视为禁用）保持一致
+func isValidUserStatus(status string) bool {
+	return status == "active" || status == "inactive"
+}
+
 // CreateUser godoc
 // @Summary      创建用户
 // @Description  新增用户并分配角色
@@ -94,6 +99,10 @@ func (ctrl *UserController) CreateUser(c *gin.Context) {
 	var req CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误"))
+		return
+	}
+	if req.Status != "" && !isValidUserStatus(req.Status) {
+		c.JSON(http.StatusOK, utils.ErrorBadRequest("状态值无效，仅支持 active/inactive"))
 		return
 	}
 

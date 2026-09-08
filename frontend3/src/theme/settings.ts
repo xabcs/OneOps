@@ -385,7 +385,7 @@ export const themeSettings: App.Theme.ThemeSetting = {
   },
   page: {
     animate: false,
-    animateMode: 'fade-bottom'
+    animateMode: 'fade'
   },
   header: {
     height: 60,

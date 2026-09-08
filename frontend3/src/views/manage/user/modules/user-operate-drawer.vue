@@ -57,6 +57,9 @@
 
   const isEdit = computed(() => props.operateType === 'edit');
 
+  // admin 是内置超管入口，编辑时禁止修改其状态
+  const isAdminUser = computed(() => isEdit.value && props.rowData?.username === 'admin');
+
   type Model = {
     username: string;
     nickname: string;
@@ -287,7 +290,7 @@
         />
       </ElFormItem>
       <ElFormItem :label="$t('page.manage.user.userStatus')" prop="status">
-        <ElRadioGroup v-model="model.status">
+        <ElRadioGroup v-model="model.status" :disabled="isAdminUser">
           <ElRadio value="active">启用</ElRadio>
           <ElRadio value="inactive">禁用</ElRadio>
         </ElRadioGroup>

@@ -31,7 +31,7 @@ export default defineConfig(configEnv => {
             const excludedPaths = [
               '/styles/scss/global.scss',
               '/styles/scss/tokens.scss',
-              '/styles/scss/element-plus.scss',
+              '/styles/scss/element-plus.scss'
             ];
 
             if (excludedPaths.some(path => loaderPath.includes(path))) {
@@ -76,6 +76,10 @@ export default defineConfig(configEnv => {
           }
         : {}),
       rolldownOptions: {
+        preserveEntrySignatures: 'allow-extension',
+        experimental: {
+          strictExecutionOrder: true
+        },
         output: {
           // ============================================================================
           // 浏览器缓存策略：通过 contenthash 实现长期缓存
@@ -87,6 +91,7 @@ export default defineConfig(configEnv => {
           chunkFileNames: 'assets/chunks/[name]-[hash].js',
           assetFileNames,
           advancedChunks: {
+            includeDependenciesRecursively: false,
             groups: chunkGroups
           }
         }

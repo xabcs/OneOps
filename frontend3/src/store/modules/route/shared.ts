@@ -3,6 +3,22 @@ import type { ElegantConstRoute, LastLevelRouteKey, RouteKey, RouteMap } from '@
 import { useSvgIcon } from '@/hooks/common/icon';
 import { $t } from '@/locales';
 
+/** 默认缓存的高频列表页；路由元信息里显式配置 false 可关闭。 */
+const DEFAULT_CACHE_ROUTE_NAMES = new Set<LastLevelRouteKey>([
+  'home',
+  'manage_user',
+  'manage_role',
+  'manage_menu',
+  'k8s_clusters',
+  'cmdb_servers',
+  'k8s_workloads',
+  'k8s_resources_pods',
+  'k8s_resources_deployments',
+  'k8s_resources_services',
+  'k8s_resources_secrets',
+  'k8s_resources_configmaps'
+]);
+
 /**
  * Filter auth routes by roles
  *
@@ -151,12 +167,17 @@ function getGlobalMenuByBaseRoute(route: RouteLocationNormalizedLoaded | Elegant
  */
 export function getCacheRouteNames(routes: RouteRecordRaw[]) {
   const cacheNames: LastLevelRouteKey[] = [];
+  const routeNameSet = new Set(cacheNames);
 
   routes.forEach(route => {
     // only get last two level route, which has component
     route.children?.forEach(child => {
-      if (child.component && child.meta?.keepAlive) {
-        cacheNames.push(child.name as LastLevelRouteKey);
+      const routeName = child.name as LastLevelRouteKey;
+      const isDefaultCacheRoute = DEFAULT_CACHE_ROUTE_NAMES.has(routeName) && child.meta?.keepAlive !== false;
+
+      if (child.component && (child.meta?.keepAlive || isDefaultCacheRoute) && !routeNameSet.has(routeName)) {
+        cacheNames.push(routeName);
+        routeNameSet.add(routeName);
       }
     });
   });

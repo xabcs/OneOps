@@ -3,7 +3,7 @@
  */
 // tsx 文件不受 unplugin-vue-components 自动注册覆盖（仅 .vue），必须显式 import 组件，
 // 否则 JSX 编译降级为 resolveComponent("ElTag")，运行时解析不到会渲染成无样式的原生元素
-import { ElButton, ElTag } from 'element-plus';
+import { ElButton, ElSwitch, ElTag } from 'element-plus';
 
 // 预定义颜色列表
 const COLOR_PALETTE: Array<{ type: UI.ThemeColor; customClass?: string }> = [
@@ -44,6 +44,7 @@ export function createUserColumns(handlers: {
   edit: (id: number) => void;
   openResetPassword: (row: Api.SystemManage.User) => void;
   handleDelete: (id: number) => void;
+  handleStatusChange: (row: Api.SystemManage.User, val: string) => void;
 }) {
   return () => [
     { prop: 'selection', type: 'selection', width: 48 },
@@ -93,15 +94,16 @@ export function createUserColumns(handlers: {
           return '';
         }
 
-        // 状态值约定：'1' 表示启用；'2' 表示禁用
-        const statusMap: Record<string, UI.ThemeColor> = {
-          '1': 'success',
-          '2': 'warning'
-        };
-
-        const label = row.status === '1' ? '启用' : '禁用';
-
-        return <ElTag type={statusMap[row.status] || 'info'}>{label}</ElTag>;
+        // 状态值与后端一致：'active' 表示启用；'inactive' 表示禁用；admin 内置用户禁止切换
+        return (
+          <ElSwitch
+            v-model={row.status}
+            activeValue="active"
+            inactiveValue="inactive"
+            disabled={row.username === 'admin'}
+            onChange={(val: string | number | boolean) => handlers.handleStatusChange(row, String(val))}
+          />
+        );
       }
     },
     {

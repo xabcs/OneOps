@@ -155,6 +155,26 @@
   }
 
   async function handleStatusChange(row: Api.SystemManage.Role, val: number) {
+    // 禁用会即时回收该角色绑定用户的菜单与操作权限，需二次确认
+    if (val === 0) {
+      const confirmed = await ElMessageBox.confirm(
+        `禁用角色 "${row.name}" 后，该角色绑定的用户将立即失去此角色带来的菜单与操作权限，确认禁用吗？`,
+        '禁用确认',
+        {
+          type: 'warning',
+          confirmButtonText: '确认禁用',
+          cancelButtonText: '取消'
+        }
+      )
+        .then(() => true)
+        .catch(() => false);
+
+      if (!confirmed) {
+        row.status = 1; // 取消时回滚开关状态
+        return;
+      }
+    }
+
     await executeWithPermission('system.role.update', async () => {
       const { error } = await fetchUpdateRole(row.id, { status: val });
 

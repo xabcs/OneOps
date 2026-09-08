@@ -12,9 +12,10 @@ import (
 
 // 用户业务错误
 var (
-	ErrUsernameExists     = errors.New("用户名已存在")
-	ErrUserNotFound       = errors.New("用户不存在")
-	ErrAdminUserProtected = errors.New("不能删除管理员用户")
+	ErrUsernameExists        = errors.New("用户名已存在")
+	ErrUserNotFound          = errors.New("用户不存在")
+	ErrAdminUserProtected    = errors.New("不能删除管理员用户")
+	ErrAdminDisableProtected = errors.New("不能禁用管理员用户")
 )
 
 // UserService 用户业务逻辑层
@@ -93,6 +94,13 @@ func (s *UserService) Create(user *modelsystem.User, plainPassword string) error
 
 // Update 更新用户信息
 func (s *UserService) Update(id uint64, updates map[string]interface{}) error {
+	// admin 是内置超管入口，禁止禁用（与删除保护口径一致，避免系统失去管理入口）
+	if status, ok := updates["status"].(string); ok && status != "active" {
+		if user, err := s.repo.FindByID(id); err == nil && user.Username == "admin" {
+			return ErrAdminDisableProtected
+		}
+	}
+
 	// 如果更新家目录，需验证权限
 	if homePath, ok := updates["home_path"].(string); ok && homePath != "" {
 		var roleIDs []uint

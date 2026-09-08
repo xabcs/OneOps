@@ -1,12 +1,14 @@
 package system
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 
 	modelsystem "oneops/backend3/model/system"
 	"oneops/backend3/pkg/database"
@@ -77,6 +79,18 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 	if err != nil {
 		logger.Debug("[登录调试] 登录失败", zap.Error(err))
 
+		// 区分失败原因：禁用账号单独提示；其余（含用户不存在）按防枚举口径统一为用户名或密码错误
+		failReason := "登录失败"
+		resp := utils.ErrorInternal("登录失败")
+		switch {
+		case errors.Is(err, system.ErrUserDisabled):
+			failReason = "账号已被禁用，请联系管理员"
+			resp = utils.ErrorUnauthorized(failReason)
+		case errors.Is(err, system.ErrInvalidPassword), errors.Is(err, gorm.ErrRecordNotFound):
+			failReason = "用户名或密码错误"
+			resp = utils.ErrorUnauthorized(failReason)
+		}
+
 		// 记录登录失败日志
 		if logErr := ctrl.auditSvc.LogLogin(
 			0, // 用户ID未知
@@ -86,17 +100,13 @@ func (ctrl *AuthController) Login(c *gin.Context) {
 			c.Request.UserAgent(),
 			"",
 			"failed",
-			"用户名或密码错误",
+			failReason,
 		); logErr != nil {
 			// 记录日志失败，打印错误但不影响登录流程
 			log.Printf("记录登录失败日志出错: %v", logErr)
 		}
 
-		if err == system.ErrInvalidPassword {
-			c.JSON(http.StatusOK, utils.ErrorUnauthorized("用户名或密码错误"))
-		} else {
-			c.JSON(http.StatusOK, utils.ErrorInternal("登录失败"))
-		}
+		c.JSON(http.StatusOK, resp)
 		return
 	}
 
