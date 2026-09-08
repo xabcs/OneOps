@@ -231,95 +231,108 @@
       <!-- 策略列表 -->
       <div class="table-scroll-wrap">
         <ElTable v-loading="loading" :data="policies" stripe height="100%">
-        <ElTableColumn prop="id" label="ID" width="60" />
+          <ElTableColumn prop="id" label="ID" width="60" />
 
-        <ElTableColumn prop="name" label="策略名称" min-width="150" />
+          <ElTableColumn prop="name" label="策略名称" min-width="150" />
 
-        <ElTableColumn label="授权对象" width="200">
-          <template #default="{ row }">
-            <ElTag size="small" type="primary">
-              {{ row.subjectType === 'user' ? '用户' : row.subjectType === 'role' ? '角色' : '用户组' }}
-            </ElTag>
-            <span style="margin-left: 8px">
-              {{ getSubjectName(row.subjectType, row.subjectId) }}
-            </span>
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="授权对象" width="200">
+            <template #default="{ row }">
+              <ElTag size="small" type="primary">
+                {{ row.subjectType === 'user' ? '用户' : row.subjectType === 'role' ? '角色' : '用户组' }}
+              </ElTag>
+              <span style="margin-left: 8px">
+                {{ getSubjectName(row.subjectType, row.subjectId) }}
+              </span>
+            </template>
+          </ElTableColumn>
 
-        <ElTableColumn label="资产范围" width="200">
-          <template #default="{ row }">
-            <ElTag size="small" type="success">
-              {{ getAssetScopeTypeName(row.assetScopeType) }}
-            </ElTag>
-            <span v-if="row.assetScopeType !== 'all'" style="margin-left: 8px">
-              {{ getAssetScopeName(row.assetScopeType, row.assetScopeId) }}
-            </span>
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="资产范围" width="200">
+            <template #default="{ row }">
+              <ElTag size="small" type="success">
+                {{ getAssetScopeTypeName(row.assetScopeType) }}
+              </ElTag>
+              <span v-if="row.assetScopeType !== 'all'" style="margin-left: 8px">
+                {{ getAssetScopeName(row.assetScopeType, row.assetScopeId) }}
+              </span>
+            </template>
+          </ElTableColumn>
 
-        <ElTableColumn label="允许账号" width="200">
-          <template #default="{ row }">
-            <ElTag
-              v-for="(account, idx) in (row.loginAccounts || []).slice(0, 2)"
-              :key="idx"
-              size="small"
-              style="margin-right: 4px"
-            >
-              {{ account }}
-            </ElTag>
-            <span v-if="(row.loginAccounts || []).length > 2" style="font-size: 12px; color: #909399">
-              +{{ (row.loginAccounts || []).length - 2 }}
-            </span>
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="允许账号" width="200">
+            <template #default="{ row }">
+              <ElTag
+                v-for="(account, idx) in (row.loginAccounts || []).slice(0, 2)"
+                :key="idx"
+                size="small"
+                style="margin-right: 4px"
+              >
+                {{ account }}
+              </ElTag>
+              <span v-if="(row.loginAccounts || []).length > 2" style="font-size: 12px; color: #909399">
+                +{{ (row.loginAccounts || []).length - 2 }}
+              </span>
+            </template>
+          </ElTableColumn>
 
-        <ElTableColumn label="允许协议" width="120">
-          <template #default="{ row }">
-            <ElTag
-              v-for="(protocol, idx) in row.protocols || []"
-              :key="idx"
-              size="small"
-              :type="protocol === 'ssh' ? 'primary' : 'success'"
-              style="margin-right: 4px"
-            >
-              {{ protocol.toUpperCase() }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="允许协议" width="120">
+            <template #default="{ row }">
+              <ElTag
+                v-for="(protocol, idx) in row.protocols || []"
+                :key="idx"
+                size="small"
+                :type="protocol === 'ssh' ? 'primary' : 'success'"
+                style="margin-right: 4px"
+              >
+                {{ protocol.toUpperCase() }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
 
-        <ElTableColumn label="时间窗口" width="180">
-          <template #default="{ row }">
-            {{ formatTimeWindow(row.timeWindow) }}
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="时间窗口" width="180">
+            <template #default="{ row }">
+              {{ formatTimeWindow(row.timeWindow) }}
+            </template>
+          </ElTableColumn>
 
-        <ElTableColumn label="状态" width="80">
-          <template #default="{ row }">
-            <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
-              {{ getStatusTag(row) }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="状态" width="80">
+            <template #default="{ row }">
+              <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
+                {{ getStatusTag(row) }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
 
-        <ElTableColumn label="操作" width="200" fixed="right">
-          <template #default="{ row }">
-            <PermissionButton code="cmdb.access_policy.update" type="primary" size="small" @click="handleEdit(row)">
-              编辑
-            </PermissionButton>
-            <PermissionButton
-              code="cmdb.access_policy.update"
-              :type="row.status === 1 ? 'warning' : 'success'"
-              size="small"
-              @click="handleToggleStatus(row)"
-            >
-              {{ row.status === 1 ? '禁用' : '启用' }}
-            </PermissionButton>
-            <PermissionButton code="cmdb.access_policy.delete" type="danger" size="small" @click="handleDelete(row)">
-              删除
-            </PermissionButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
+          <ElTableColumn label="操作" align="center" width="200" fixed="right" class-name="msre-table-actions">
+            <template #default="{ row }">
+              <PermissionButton
+                link
+                type="primary"
+                size="small"
+                code="cmdb.access_policy.update"
+                @click="handleEdit(row)"
+              >
+                编辑
+              </PermissionButton>
+              <PermissionButton
+                link
+                type="primary"
+                size="small"
+                code="cmdb.access_policy.update"
+                @click="handleToggleStatus(row)"
+              >
+                {{ row.status === 1 ? '禁用' : '启用' }}
+              </PermissionButton>
+              <PermissionButton
+                link
+                type="danger"
+                size="small"
+                code="cmdb.access_policy.delete"
+                @click="handleDelete(row)"
+              >
+                删除
+              </PermissionButton>
+            </template>
+          </ElTableColumn>
+        </ElTable>
       </div>
 
       <!-- 分页 -->

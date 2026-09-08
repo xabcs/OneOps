@@ -171,13 +171,13 @@
           <code class="usage-code">{{ row.usage }}</code>
         </template>
       </ElTableColumn>
-      <ElTableColumn label="操作" width="110" fixed="right">
+      <ElTableColumn label="操作" align="center" width="110" fixed="right" class-name="msre-table-actions">
         <template #default="{ row }">
           <PermissionButton
-            code="k8s.diagnostic.execute"
-            size="small"
-            type="primary"
             link
+            type="primary"
+            size="small"
+            code="k8s.diagnostic.execute"
             :icon="VideoPlay"
             :loading="executingCommand === row.command"
             @click="runCommand(row)"

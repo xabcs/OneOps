@@ -97,9 +97,9 @@
         <template #default="{ row }">{{ formatDuration(row.duration) }}</template>
       </ElTableColumn>
       <ElTableColumn prop="username" label="操作者" width="100" />
-      <ElTableColumn label="操作" width="80" fixed="right">
+      <ElTableColumn label="操作" align="center" width="80" fixed="right" class-name="msre-table-actions">
         <template #default="{ row }">
-          <ElButton size="small" link type="primary" @click="showDetail(row)">详情</ElButton>
+          <ElButton link type="primary" size="small" @click="showDetail(row)">详情</ElButton>
         </template>
       </ElTableColumn>
       <template #empty>

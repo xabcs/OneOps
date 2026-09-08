@@ -131,9 +131,9 @@
       <ElTableColumn prop="username" label="用户名" />
       <ElTableColumn prop="nickname" label="昵称" />
       <ElTableColumn prop="createdAt" label="加入时间" width="170" />
-      <ElTableColumn label="操作" width="100">
+      <ElTableColumn label="操作" align="center" width="100" class-name="msre-table-actions">
         <template #default="{ row }">
-          <PermissionButton code="system.user.update" type="danger" size="small" link @click="handleRemoveMember(row)">
+          <PermissionButton link type="danger" size="small" code="system.user.update" @click="handleRemoveMember(row)">
             移除
           </PermissionButton>
         </template>

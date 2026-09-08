@@ -67,16 +67,17 @@ export function createRoleColumns(handlers: {
     {
       prop: 'operate',
       label: $t('common.operate'),
+      className: 'msre-table-actions',
       align: 'center',
       width: 260,
       formatter: (row: Api.SystemManage.Role) => (
-        <div class="flex-center gap-8px">
-          <ElButton type="primary" plain size="small" onClick={() => handlers.edit(row.id)}>
+        <div>
+          <ElButton link type="primary" size="small" onClick={() => handlers.edit(row.id)}>
             {$t('common.edit')}
           </ElButton>
           <ElButton
-            type="success"
-            plain
+            link
+            type="primary"
             size="small"
             disabled={row.code === 'admin'}
             title={row.code === 'admin' ? '超级管理员默认拥有全部权限，无需分配' : undefined}
@@ -85,8 +86,8 @@ export function createRoleColumns(handlers: {
             分配权限
           </ElButton>
           <ElButton
+            link
             type="danger"
-            plain
             size="small"
             disabled={row.code === 'admin'}
             onClick={() => handlers.handleDelete(row.id)}

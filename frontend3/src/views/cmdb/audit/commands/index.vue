@@ -192,72 +192,72 @@
           height="100%"
           :default-sort="{ prop: 'executedAt', order: 'descending' }"
         >
-        <ElTableColumn prop="id" label="ID" width="60" />
+          <ElTableColumn prop="id" label="ID" width="60" />
 
-        <ElTableColumn label="会话ID" width="80">
-          <template #default="{ row }">
-            {{ row.sessionId }}
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="会话ID" width="80">
+            <template #default="{ row }">
+              {{ row.sessionId }}
+            </template>
+          </ElTableColumn>
 
-        <ElTableColumn label="用户" width="100">
-          <template #default="{ row }">
-            {{ row.session?.user?.username || '-' }}
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="用户" width="100">
+            <template #default="{ row }">
+              {{ row.session?.user?.username || '-' }}
+            </template>
+          </ElTableColumn>
 
-        <ElTableColumn label="服务器" width="120">
-          <template #default="{ row }">
-            {{ row.session?.server?.hostname || '-' }}
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="服务器" width="120">
+            <template #default="{ row }">
+              {{ row.session?.server?.hostname || '-' }}
+            </template>
+          </ElTableColumn>
 
-        <ElTableColumn label="命令" min-width="300">
-          <template #default="{ row }">
-            <div class="command-cell">
-              <code class="command-text" :style="{ color: getRiskLevelColor(row.riskLevel) }">
-                {{ row.command }}
-              </code>
-              <ElTag v-if="row.blocked" type="danger" size="small" style="margin-left: 8px">已拦截</ElTag>
-            </div>
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="命令" min-width="300">
+            <template #default="{ row }">
+              <div class="command-cell">
+                <code class="command-text" :style="{ color: getRiskLevelColor(row.riskLevel) }">
+                  {{ row.command }}
+                </code>
+                <ElTag v-if="row.blocked" type="danger" size="small" style="margin-left: 8px">已拦截</ElTag>
+              </div>
+            </template>
+          </ElTableColumn>
 
-        <ElTableColumn label="风险等级" width="100">
-          <template #default="{ row }">
-            <ElTag :type="getRiskLevelType(row.riskLevel)" size="small">
-              {{ getRiskLevelText(row.riskLevel) }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="风险等级" width="100">
+            <template #default="{ row }">
+              <ElTag :type="getRiskLevelType(row.riskLevel)" size="small">
+                {{ getRiskLevelText(row.riskLevel) }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
 
-        <ElTableColumn label="退出码" width="80">
-          <template #default="{ row }">
-            <span :class="row.exitCode === 0 ? 'text-success' : 'text-danger'">
-              {{ row.exitCode ?? '-' }}
-            </span>
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="退出码" width="80">
+            <template #default="{ row }">
+              <span :class="row.exitCode === 0 ? 'text-success' : 'text-danger'">
+                {{ row.exitCode ?? '-' }}
+              </span>
+            </template>
+          </ElTableColumn>
 
-        <ElTableColumn label="执行时间" width="160">
-          <template #default="{ row }">
-            {{ formatTime(row.executedAt || '') }}
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="执行时间" width="160">
+            <template #default="{ row }">
+              {{ formatTime(row.executedAt || '') }}
+            </template>
+          </ElTableColumn>
 
-        <ElTableColumn label="输出摘要" width="200">
-          <template #default="{ row }">
-            <ElText truncated :title="row.outputSummary">
-              {{ row.outputSummary || '-' }}
-            </ElText>
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="输出摘要" width="200">
+            <template #default="{ row }">
+              <ElText truncated :title="row.outputSummary">
+                {{ row.outputSummary || '-' }}
+              </ElText>
+            </template>
+          </ElTableColumn>
 
-        <ElTableColumn label="操作" width="100" fixed="right">
-          <template #default="{ row }">
-            <ElButton type="primary" size="small" @click="handleViewDetail(row)">详情</ElButton>
-          </template>
-        </ElTableColumn>
+          <ElTableColumn label="操作" align="center" width="100" fixed="right" class-name="msre-table-actions">
+            <template #default="{ row }">
+              <ElButton link type="primary" size="small" @click="handleViewDetail(row)">详情</ElButton>
+            </template>
+          </ElTableColumn>
         </ElTable>
       </div>
 
@@ -322,9 +322,5 @@
     display: flex;
     justify-content: center;
     margin-top: 16px;
-  }
-
-  :deep(.el-table__cell) {
-    padding: 8px 0;
   }
 </style>

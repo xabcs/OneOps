@@ -288,66 +288,66 @@
       <!-- 属性列表表格 -->
       <div class="table-scroll-wrap">
         <ElTable v-loading="loading" :data="attributes" stripe height="100%">
-        <ElTableColumn prop="name" label="属性名称" min-width="120" />
-        <ElTableColumn prop="key" label="属性键" min-width="120">
-          <template #default="{ row }">
-            <ElTag type="info" size="small">{{ row.key }}</ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="分类" width="100">
-          <template #default="{ row }">
-            <ElTag :type="getCategoryTagType(row.category)" size="small">
-              {{ getCategoryName(row.category) }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="类型" width="100">
-          <template #default="{ row }">
-            {{ getTypeName(row.type) }}
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="选项预览" min-width="200">
-          <template #default="{ row }">
-            <template v-if="row.type === 'select' || row.type === 'multiselect'">
-              <ElTag
-                v-for="(opt, idx) in parseOptions(row.options)"
-                :key="idx"
-                type="info"
-                size="small"
-                style="margin-right: 4px; margin-bottom: 4px"
-              >
-                {{ opt.label }}
+          <ElTableColumn prop="name" label="属性名称" min-width="120" />
+          <ElTableColumn prop="key" label="属性键" min-width="120">
+            <template #default="{ row }">
+              <ElTag type="info" size="small">{{ row.key }}</ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="分类" width="100">
+            <template #default="{ row }">
+              <ElTag :type="getCategoryTagType(row.category)" size="small">
+                {{ getCategoryName(row.category) }}
               </ElTag>
             </template>
-            <span v-else class="text-gray-400">-</span>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="必填" width="80" align="center">
-          <template #default="{ row }">
-            <ElTag :type="row.required ? 'danger' : 'info'" size="small">
-              {{ row.required ? '是' : '否' }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn prop="sortOrder" label="排序" width="80" align="center" />
-        <ElTableColumn label="状态" width="80" align="center">
-          <template #default="{ row }">
-            <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
-              {{ row.status === 1 ? '启用' : '禁用' }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="操作" width="150" align="center" fixed="right">
-          <template #default="{ row }">
-            <PermissionButton code="cmdb.attribute.update" type="primary" size="small" @click="handleEdit(row)">
-              编辑
-            </PermissionButton>
-            <PermissionButton code="cmdb.attribute.delete" type="danger" size="small" @click="handleDelete(row)">
-              删除
-            </PermissionButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
+          </ElTableColumn>
+          <ElTableColumn label="类型" width="100">
+            <template #default="{ row }">
+              {{ getTypeName(row.type) }}
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="选项预览" min-width="200">
+            <template #default="{ row }">
+              <template v-if="row.type === 'select' || row.type === 'multiselect'">
+                <ElTag
+                  v-for="(opt, idx) in parseOptions(row.options)"
+                  :key="idx"
+                  type="info"
+                  size="small"
+                  style="margin-right: 4px; margin-bottom: 4px"
+                >
+                  {{ opt.label }}
+                </ElTag>
+              </template>
+              <span v-else class="text-gray-400">-</span>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="必填" width="80" align="center">
+            <template #default="{ row }">
+              <ElTag :type="row.required ? 'danger' : 'info'" size="small">
+                {{ row.required ? '是' : '否' }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn prop="sortOrder" label="排序" width="80" align="center" />
+          <ElTableColumn label="状态" width="80" align="center">
+            <template #default="{ row }">
+              <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
+                {{ row.status === 1 ? '启用' : '禁用' }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="操作" width="150" align="center" fixed="right" class-name="msre-table-actions">
+            <template #default="{ row }">
+              <PermissionButton link type="primary" size="small" code="cmdb.attribute.update" @click="handleEdit(row)">
+                编辑
+              </PermissionButton>
+              <PermissionButton link type="danger" size="small" code="cmdb.attribute.delete" @click="handleDelete(row)">
+                删除
+              </PermissionButton>
+            </template>
+          </ElTableColumn>
+        </ElTable>
       </div>
     </ElCard>
 

@@ -166,49 +166,49 @@
 
       <div class="table-scroll-wrap">
         <ElTable v-loading="loading" :data="sessions" stripe height="100%">
-        <ElTableColumn prop="id" label="ID" width="70" />
-        <ElTableColumn prop="username" label="用户名" width="110" />
-        <ElTableColumn label="服务器" width="160">
-          <template #default="{ row }">
-            {{ row.server?.hostname || row.server?.ip || `ID:${row.serverId}` }}
-          </template>
-        </ElTableColumn>
-        <ElTableColumn prop="loginAccount" label="登录账号" width="120" />
-        <ElTableColumn prop="clientIp" label="客户端IP" width="140" />
-        <ElTableColumn prop="protocol" label="协议" width="90">
-          <template #default="{ row }">
-            <ElTag :type="row.protocol === 'ssh' ? 'primary' : 'success'" size="small">
-              {{ row.protocol?.toUpperCase() }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="开始时间" width="180">
-          <template #default="{ row }">
-            {{ formatTime(row.startedAt || '') }}
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="时长" width="110">
-          <template #default="{ row }">
-            {{ formatDuration(row.duration) }}
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="状态" width="90">
-          <template #default="{ row }">
-            <ElTag :type="getStatusType(row.status)" size="small">
-              {{ getStatusText(row.status) }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="关闭原因" width="150" show-overflow-tooltip>
-          <template #default="{ row }">
-            {{ row.closeReason || '-' }}
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="操作" width="100" fixed="right">
-          <template #default="{ row }">
-            <ElButton type="primary" size="small" @click="handleViewDetail(row)">详情</ElButton>
-          </template>
-        </ElTableColumn>
+          <ElTableColumn prop="id" label="ID" width="70" />
+          <ElTableColumn prop="username" label="用户名" width="110" />
+          <ElTableColumn label="服务器" width="160">
+            <template #default="{ row }">
+              {{ row.server?.hostname || row.server?.ip || `ID:${row.serverId}` }}
+            </template>
+          </ElTableColumn>
+          <ElTableColumn prop="loginAccount" label="登录账号" width="120" />
+          <ElTableColumn prop="clientIp" label="客户端IP" width="140" />
+          <ElTableColumn prop="protocol" label="协议" width="90">
+            <template #default="{ row }">
+              <ElTag :type="row.protocol === 'ssh' ? 'primary' : 'success'" size="small">
+                {{ row.protocol?.toUpperCase() }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="开始时间" width="180">
+            <template #default="{ row }">
+              {{ formatTime(row.startedAt || '') }}
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="时长" width="110">
+            <template #default="{ row }">
+              {{ formatDuration(row.duration) }}
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="状态" width="90">
+            <template #default="{ row }">
+              <ElTag :type="getStatusType(row.status)" size="small">
+                {{ getStatusText(row.status) }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="关闭原因" width="150" show-overflow-tooltip>
+            <template #default="{ row }">
+              {{ row.closeReason || '-' }}
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="操作" align="center" width="100" fixed="right" class-name="msre-table-actions">
+            <template #default="{ row }">
+              <ElButton link type="primary" size="small" @click="handleViewDetail(row)">详情</ElButton>
+            </template>
+          </ElTableColumn>
         </ElTable>
       </div>
 

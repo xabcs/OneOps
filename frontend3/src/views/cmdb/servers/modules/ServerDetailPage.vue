@@ -561,9 +561,9 @@
               <template #default="{ row }">{{ Math.floor(row.duration / 60) }}分钟</template>
             </ElTableColumn>
             <ElTableColumn prop="startedAt" label="开始时间" width="160" />
-            <ElTableColumn label="操作" width="80">
+            <ElTableColumn label="操作" align="center" width="80" class-name="msre-table-actions">
               <template #default="{ row }">
-                <ElButton type="primary" link size="small" @click="router.push(`/cmdb/sessions/${row.id}`)">
+                <ElButton link type="primary" size="small" @click="router.push(`/cmdb/sessions/${row.id}`)">
                   详情
                 </ElButton>
               </template>

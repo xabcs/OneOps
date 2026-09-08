@@ -1,6 +1,5 @@
 <script setup lang="ts">
   import { useThemeStore } from '@/store/modules/theme';
-  import { $t } from '@/locales';
   import SettingItem from '../components/setting-item.vue';
 
   defineOptions({ name: 'BorderRadius' });
@@ -33,6 +32,14 @@
     return option?.value || '';
   }
 
+  // 圆形组件只开放比例值，避免数值输入把 50% 改成像素
+  function getComponentRadiusOptions(key: keyof App.Theme.ThemeSetting['borderRadius']['components']) {
+    if (key === 'radio') {
+      return [...borderRadiusOptions, { label: '50% (圆形)', value: '50%' }];
+    }
+    return borderRadiusOptions;
+  }
+
   // 基础分类圆角的选中值
   function getBasicSelectedValue(type: 'small' | 'medium' | 'large') {
     return getSelectedValue(themeStore.borderRadius[type]);
@@ -44,8 +51,7 @@
     { key: 'input' as const, label: '输入框', desc: '文本输入框、数字输入框、文本域' },
     { key: 'select' as const, label: '选择框', desc: '下拉选择器、级联选择器' },
     { key: 'card' as const, label: '卡片', desc: '卡片容器、内容面板' },
-    { key: 'table' as const, label: '表格', desc: '数据表格容器' },
-    { key: 'modal' as const, label: '对话框', desc: '弹窗、抽屉、悬浮层' },
+    { key: 'modal' as const, label: '对话框', desc: '弹窗、抽屉、消息框' },
     { key: 'tag' as const, label: '标签', desc: '标签组件、徽章' },
     { key: 'menu' as const, label: '菜单', desc: '菜单项、导航栏' },
     { key: 'switch' as const, label: '开关', desc: '开关切换组件' },
@@ -57,12 +63,12 @@
   const scopeDescriptions = {
     small: '分页按钮、小号交互元素',
     medium: '按钮、输入框、选择框、菜单项、标签、通知消息等标准组件',
-    large: '卡片、对话框、面板、表格等大容器组件'
+    large: '卡片、对话框、面板等大容器组件'
   };
 </script>
 
 <template>
-  <ElDivider>{{ $t('theme.borderRadius.title') }}</ElDivider>
+  <ElDivider>圆角</ElDivider>
   <div class="flex-col-stretch gap-12px">
     <!-- 组件级圆角开关 -->
     <SettingItem label="启用组件级圆角">
@@ -239,9 +245,15 @@
             class="w-120px"
             @change="(val: string) => handleComponentRadiusChange(config.key, val)"
           >
-            <ElOption v-for="opt in borderRadiusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+            <ElOption
+              v-for="opt in getComponentRadiusOptions(config.key)"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
           </ElSelect>
           <ElInputNumber
+            v-if="config.key !== 'radio'"
             :model-value="parseInt(themeStore.borderRadius.components[config.key])"
             size="small"
             :min="0"

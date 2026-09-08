@@ -86,13 +86,11 @@
     </div>
 
     <div class="mb-16px flex items-center justify-between gap-12px">
-      <div class="filter-inputs flex items-center gap-8px">
-        <ElSelect v-model="selectedCluster" style="width: 200px" @change="loadNamespaces">
-          <template #prefix><span class="select-fixed-label">选择集群</span></template>
+      <div class="flex items-center gap-8px">
+        <ElSelect v-model="selectedCluster" placeholder="选择集群" style="width: 200px" @change="loadNamespaces">
           <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
         </ElSelect>
-        <ElSelect v-model="selectedNamespace" style="width: 180px" @change="loadCurrentData">
-          <template #prefix><span class="select-fixed-label">选择命名空间</span></template>
+        <ElSelect v-model="selectedNamespace" placeholder="选择命名空间" style="width: 180px" @change="loadCurrentData">
           <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
         </ElSelect>
       </div>
@@ -267,49 +265,5 @@
     flex-direction: column;
     overflow: hidden;
     height: 100%;
-  }
-
-  .filter-inputs {
-    :deep(.el-select__wrapper) {
-      border-radius: 0 !important;
-      height: 30px;
-      font-size: 12px;
-      line-height: 30px;
-    }
-
-    :deep(.el-input__wrapper) {
-      border-radius: 0 !important;
-      height: 30px;
-      font-size: 12px;
-    }
-
-    :deep(.el-select) {
-      height: 30px;
-      font-size: 12px;
-    }
-
-    :deep(.el-select .el-select__selection) {
-      display: none;
-    }
-
-    :deep(.el-select .el-select__selected-item) {
-      display: none;
-    }
-
-    :deep(.el-select .el-select__placeholder) {
-      display: none;
-    }
-
-    .select-fixed-label {
-      font-size: 12px;
-      color: var(--el-text-color-regular);
-      line-height: 30px;
-      padding-left: 8px;
-    }
-
-    :deep(.el-select.has-value .el-select__prefix) {
-      position: static;
-      flex: none;
-    }
   }
 </style>

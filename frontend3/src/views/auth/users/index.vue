@@ -1,6 +1,6 @@
 <script setup lang="tsx">
   import { ref } from 'vue';
-  import { Delete, Edit, Plus } from '@element-plus/icons-vue';
+  import { Plus } from '@element-plus/icons-vue';
   import {
     assignUserToGroup,
     deleteAuthUser,
@@ -111,19 +111,19 @@
         prop: 'operate',
         label: '操作',
         align: 'center',
+        className: 'msre-table-actions',
         width: 200,
         fixed: 'right',
         formatter: row => (
-          <ElSpace>
-            <ElButton size="small" type="primary" link onClick={() => handleManageGroups(row)}>
+          <div>
+            <ElButton link type="primary" size="small" onClick={() => handleManageGroups(row)}>
               用户组
             </ElButton>
             <PermissionButton
               code="auth.user.update"
               size="small"
-              type="warning"
+              type="primary"
               link
-              icon={Edit}
               onClick={() => handleEdit(row.id)}
             >
               编辑
@@ -131,13 +131,13 @@
             <ElPopconfirm title="确认删除该用户？" onConfirm={() => handleDelete(row.id)}>
               {{
                 reference: () => (
-                  <PermissionButton code="auth.user.delete" size="small" type="danger" link icon={Delete}>
+                  <PermissionButton code="auth.user.delete" link type="danger" size="small">
                     删除
                   </PermissionButton>
                 )
               }}
             </ElPopconfirm>
-          </ElSpace>
+          </div>
         )
       }
     ]
@@ -305,9 +305,15 @@
         <ElTableColumn prop="groupName" label="用户组名称" align="center" min-width="150" />
         <ElTableColumn prop="groupCode" label="用户组代码" align="center" min-width="150" />
         <ElTableColumn prop="grantedBy" label="分配人" align="center" min-width="100" />
-        <ElTableColumn label="操作" align="center" width="100">
+        <ElTableColumn label="操作" align="center" width="100" class-name="msre-table-actions">
           <template #default="{ row }">
-            <PermissionButton code="auth.user.update" size="small" type="danger" @click="handleRemoveGroup(row.id)">
+            <PermissionButton
+              link
+              type="danger"
+              size="small"
+              code="auth.user.update"
+              @click="handleRemoveGroup(row.id)"
+            >
               移除
             </PermissionButton>
           </template>

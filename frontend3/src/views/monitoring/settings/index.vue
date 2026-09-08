@@ -206,22 +206,22 @@
               />
             </template>
           </ElTableColumn>
-          <ElTableColumn label="操作" width="150" align="center" fixed="right">
+          <ElTableColumn label="操作" width="150" align="center" fixed="right" class-name="msre-table-actions">
             <template #default="{ row }">
               <PermissionButton
-                code="monitor.alert_rule.update"
-                type="primary"
                 link
+                type="primary"
                 size="small"
+                code="monitor.alert_rule.update"
                 @click="handleEditRule(row)"
               >
                 编辑
               </PermissionButton>
               <PermissionButton
-                code="monitor.alert_rule.delete"
-                type="danger"
                 link
+                type="danger"
                 size="small"
+                code="monitor.alert_rule.delete"
                 @click="handleDeleteRule(row)"
               >
                 删除

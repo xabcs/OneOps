@@ -105,14 +105,14 @@
           </ElTag>
         </template>
       </ElTableColumn>
-      <ElTableColumn label="操作" width="180" fixed="right">
+      <ElTableColumn label="操作" align="center" width="180" fixed="right" class-name="msre-table-actions">
         <template #default="{ row }">
-          <ElButton size="small" link type="primary" @click="showReplay(row)">I/O 回放</ElButton>
+          <ElButton link type="primary" size="small" @click="showReplay(row)">I/O 回放</ElButton>
           <PermissionButton
-            code="k8s.diagnostic.execute"
-            size="small"
             link
             type="danger"
+            size="small"
+            code="k8s.diagnostic.execute"
             :icon="CircleCloseFilled"
             :loading="terminatingId === row.id"
             @click="terminate(row)"

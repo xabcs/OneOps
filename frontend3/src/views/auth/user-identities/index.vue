@@ -1,6 +1,6 @@
 <script setup lang="tsx">
   import { onMounted, ref } from 'vue';
-  import { Delete, Refresh, Search } from '@element-plus/icons-vue';
+  import { Refresh, Search } from '@element-plus/icons-vue';
   import type { FlatResponseData } from '@sa/axios';
   import {
     deleteUserIdentityMapping,
@@ -120,6 +120,7 @@
         prop: 'operate',
         label: '操作',
         align: 'center',
+        className: 'msre-table-actions',
         width: 100,
         fixed: 'right',
         formatter: row => (
@@ -127,7 +128,7 @@
             code="auth.user.delete"
             size="small"
             type="danger"
-            icon={Delete}
+            link
             onClick={() => handleDelete(row.id)}
           >
             删除

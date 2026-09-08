@@ -253,14 +253,14 @@
         <ElTableColumn label="确认人" prop="acknowledgedBy" width="110">
           <template #default="{ row }">{{ row.acknowledgedBy || '-' }}</template>
         </ElTableColumn>
-        <ElTableColumn label="操作" width="100" align="center" fixed="right">
+        <ElTableColumn label="操作" width="100" align="center" fixed="right" class-name="msre-table-actions">
           <template #default="{ row }">
             <PermissionButton
+              link
+              type="primary"
+              size="small"
               v-if="!row.acknowledged && !row.resolvedAt"
               code="monitor.alert.ack"
-              type="primary"
-              link
-              size="small"
               @click="handleAcknowledge(row)"
             >
               确认

@@ -391,23 +391,23 @@
         <ElTableColumn label="更新时间" width="165">
           <template #default="{ row }">{{ formatDateTime(row.updatedAt) }}</template>
         </ElTableColumn>
-        <ElTableColumn label="操作" width="130" fixed="right">
+        <ElTableColumn label="操作" align="center" width="130" fixed="right" class-name="msre-table-actions">
           <template #default="{ row }">
             <PermissionButton
-              code="k8s.diagnostic.execute"
-              size="small"
               link
               type="primary"
+              size="small"
+              code="k8s.diagnostic.execute"
               :icon="Edit"
               @click="openEdit(row)"
             >
               编辑
             </PermissionButton>
             <PermissionButton
-              code="k8s.diagnostic.execute"
-              size="small"
               link
               type="danger"
+              size="small"
+              code="k8s.diagnostic.execute"
               :icon="Delete"
               @click="remove(row)"
             >

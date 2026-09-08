@@ -232,14 +232,6 @@
       nextTick(() => {
         const input = document.querySelector('.wb-search-input-inner input') as HTMLInputElement;
         input?.focus();
-
-        // 调试：检查输入框样式
-        nextTick(() => {
-          const wrapper = document.querySelector('.wb-search-input-inner .el-input__wrapper');
-          if (wrapper) {
-            void getComputedStyle(wrapper);
-          }
-        });
       });
     } else {
       searchKeyword.value = '';
@@ -300,18 +292,17 @@
         <Transition name="wb-search-expand">
           <span v-if="!searchExpanded" key="title" class="wb-sidebar-title">主机资产</span>
           <div v-else key="search" class="wb-search-container">
-            <div class="wb-search-input-wrapper">
+            <ElInput
+              ref="searchInputRef"
+              v-model="searchKeyword"
+              placeholder="搜索..."
+              size="small"
+              clearable
+              class="wb-search-input-inner"
+              @click="handleSearchClick"
+            >
               <Icon icon="lucide:search" class="wb-search-icon-inline" />
-              <ElInput
-                ref="searchInputRef"
-                v-model="searchKeyword"
-                placeholder="搜索..."
-                size="small"
-                clearable
-                class="wb-search-input-inner"
-                @click="handleSearchClick"
-              />
-            </div>
+            </ElInput>
           </div>
         </Transition>
       </div>
@@ -445,77 +436,9 @@
     align-items: center;
   }
 
-  .wb-search-input-wrapper {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    height: 24px;
-    background: #3c3c3c;
-    border-radius: 12px;
-    padding: 0 8px;
-    gap: 6px;
-  }
-
-  .wb-search-icon-inline {
-    width: 16px;
-    height: 16px;
-    color: #858585;
-    flex-shrink: 0;
-  }
-
   .wb-search-input-inner {
     flex: 1;
     min-width: 0;
-  }
-
-  /* 强制覆盖 Element Plus 输入框样式 */
-  .wb-search-input-inner {
-    --el-input-bg-color: transparent !important;
-    --el-input-border-color: transparent !important;
-    --el-input-hover-border-color: transparent !important;
-    --el-input-focus-border-color: transparent !important;
-    --el-input-clear-bg-color: transparent !important;
-  }
-
-  .wb-search-input-inner :deep(.el-input__wrapper) {
-    height: 24px !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-  }
-
-  .wb-search-input-inner :deep(.el-input__inner) {
-    height: 24px !important;
-    line-height: 24px !important;
-    background: transparent !important;
-    border: none !important;
-    padding: 0 4px !important;
-    color: #ccc;
-    font-size: 12px;
-  }
-
-  .wb-search-input-inner :deep(.el-input__wrapper::before),
-  .wb-search-input-inner :deep(.el-input__wrapper::after),
-  .wb-search-input-inner :deep(.el-input__wrapper:hover),
-  .wb-search-input-inner :deep(.el-input__wrapper.is-focus) {
-    border: none !important;
-    box-shadow: none !important;
-    background: transparent !important;
-  }
-
-  .wb-search-input-inner :deep(.el-input__prefix),
-  .wb-search-input-inner :deep(.el-input__suffix) {
-    display: none !important;
-  }
-
-  .wb-search-input-inner :deep(.el-input__clear) {
-    background: transparent !important;
-    color: #858585 !important;
-  }
-
-  .wb-search-input-inner :deep(.el-input__clear:hover) {
-    color: #ccc !important;
   }
 
   /* 搜索框展开动画 */

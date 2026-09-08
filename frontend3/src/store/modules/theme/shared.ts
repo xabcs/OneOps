@@ -1,5 +1,5 @@
 import { defu } from 'defu';
-import { addColorAlpha, getColorPalette, getPaletteColorByNumber, getRgb } from '@sa/color';
+import { addColorAlpha, getColorPalette, getHex, getPaletteColorByNumber, getRgb, mixColor } from '@sa/color';
 import { DARK_CLASS } from '@/constants/app';
 import { toggleHtmlClass } from '@/utils/common';
 import { localStg } from '@/utils/storage';
@@ -40,12 +40,14 @@ export function initThemeSettings() {
  * @param [recommended=false] Use recommended color. Default is `false`
  * @param siderCustomColor Custom sider color
  */
-export function createThemeToken(
-  colors: App.Theme.ThemeColor,
-  tokens?: App.Theme.ThemeSetting['tokens'],
-  recommended = false,
-  siderCustomColor?: string
-) {
+interface CreateThemeTokenOptions {
+  tokens?: App.Theme.ThemeSetting['tokens'];
+  recommended?: boolean;
+  siderCustomColor?: string;
+}
+
+export function createThemeToken(colors: App.Theme.ThemeColor, options: CreateThemeTokenOptions = {}) {
+  const { tokens, recommended = false, siderCustomColor } = options;
   const paletteColors = createThemePaletteColors(colors, recommended);
 
   const { light, dark } = tokens || themeSettings.tokens;
@@ -162,7 +164,6 @@ export function getBorderRadiusCssVars(borderRadius: App.Theme.ThemeSetting['bor
       --border-radius-input: ${components.input};
       --border-radius-select: ${components.select};
       --border-radius-card: ${components.card};
-      --border-radius-table: ${components.table};
       --border-radius-modal: ${components.modal};
       --border-radius-tag: ${components.tag};
       --border-radius-switch: ${components.switch};
@@ -176,6 +177,12 @@ export function getBorderRadiusCssVars(borderRadius: App.Theme.ThemeSetting['bor
       --el-border-radius-small: ${components.input};
       --el-border-radius-round: ${components.tag};
       --el-border-radius-circle: ${components.radio};
+      --el-input-border-radius: ${components.input};
+      --el-checkbox-border-radius: ${components.checkbox};
+      --el-radio-input-border-radius: ${components.radio};
+      --el-dialog-border-radius: ${components.modal};
+      --el-messagebox-border-radius: ${components.modal};
+      --el-notification-radius: ${medium};
     `
       .replace(/\s+/g, ' ')
       .trim();
@@ -190,12 +197,34 @@ export function getBorderRadiusCssVars(borderRadius: App.Theme.ThemeSetting['bor
     --el-border-radius-small: ${small};
     --border-radius-card: ${large};
     --border-radius-modal: ${large};
-    --border-radius-table: ${medium};
     --border-radius-menu: ${medium};
     --border-radius-tag: ${medium};
     --border-radius-switch: 12px;
     --border-radius-checkbox: 4px;
     --border-radius-radio: 50%;
+    --el-input-border-radius: ${small};
+    --el-checkbox-border-radius: 4px;
+    --el-radio-input-border-radius: 50%;
+    --el-dialog-border-radius: ${large};
+    --el-messagebox-border-radius: ${large};
+    --el-notification-radius: ${medium};
+  `
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** 生成 Element Plus 主色变量，保证 link 按钮等组件跟随主题主色 */
+function getElementPlusPrimaryVars(primary: string, dark: boolean) {
+  const baseColor = dark ? '#141414' : '#ffffff';
+
+  return `
+    --el-color-primary: ${getHex(primary)};
+    --el-color-primary-light-3: ${mixColor(primary, baseColor, 0.3)};
+    --el-color-primary-light-5: ${mixColor(primary, baseColor, 0.5)};
+    --el-color-primary-light-7: ${mixColor(primary, baseColor, 0.7)};
+    --el-color-primary-light-8: ${mixColor(primary, baseColor, 0.8)};
+    --el-color-primary-light-9: ${mixColor(primary, baseColor, 0.9)};
+    --el-color-primary-dark-2: ${mixColor(primary, '#000000', 0.2)};
   `
     .replace(/\s+/g, ' ')
     .trim();
@@ -207,18 +236,26 @@ export function getBorderRadiusCssVars(borderRadius: App.Theme.ThemeSetting['bor
  * @param tokens
  * @param borderRadius Border radius settings
  */
+interface AddThemeVarsOptions {
+  borderRadius?: App.Theme.ThemeSetting['borderRadius'];
+  themeColors?: App.Theme.ThemeColor;
+}
+
 export function addThemeVarsToGlobal(
   tokens: App.Theme.BaseToken,
   darkTokens: App.Theme.BaseToken,
-  borderRadius?: App.Theme.ThemeSetting['borderRadius']
+  options: AddThemeVarsOptions = {}
 ) {
   const cssVarStr = getCssVarByTokens(tokens);
   const darkCssVarStr = getCssVarByTokens(darkTokens);
+  const { borderRadius, themeColors } = options;
   const borderRadiusStr = borderRadius ? getBorderRadiusCssVars(borderRadius) : '';
 
-  const css = `:root { ${cssVarStr} ${borderRadiusStr} }`;
+  const primaryVars = themeColors ? ` ${getElementPlusPrimaryVars(themeColors.primary, false)}` : '';
+  const darkPrimaryVars = themeColors ? ` ${getElementPlusPrimaryVars(themeColors.primary, true)}` : '';
+  const css = `:root { ${cssVarStr} ${borderRadiusStr}${primaryVars} }`;
 
-  const darkCss = `html.${DARK_CLASS} { ${darkCssVarStr} }`;
+  const darkCss = `html.${DARK_CLASS} { ${darkCssVarStr}${darkPrimaryVars} }`;
 
   const styleId = 'theme-vars';
 

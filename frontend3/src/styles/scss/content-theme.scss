@@ -1,17 +1,17 @@
 /**
  * Content area theme styles
- * Applies SxDevOps style to content area components
+ * Applies the unified MSRE content style.
  */
 
 /* ========== 全局 CSS 变量默认值 ========== */
 :root {
-  /* 卡片样式 - SxDevOps 风格 */
+  /* 卡片样式 - MSRE 风格 */
   --msre-card-bg: #fff;
   --msre-card-radius: 12px;
   --msre-card-shadow: 0 1px 3px rgb(0 0 0 / 6%), 0 1px 2px rgb(0 0 0 / 4%);
   --msre-card-padding: 20px;
 
-  /* contentTheme2 专用变量（会被动态设置） */
+  /* 内容卡片专用变量（运行时由统一主题注入） */
   --msre-content-card-bg: #fff;
   --msre-content-card-border: rgb(148 163 184 / 16%);
   --msre-content-card-radius: 12px;
@@ -24,21 +24,20 @@
   --msre-hero-border: rgb(36 91 219 / 9%);
   --msre-hero-radius: 12px;
   --msre-hero-shadow: 0 8px 24px rgb(15 23 42 / 4%);
-  --msre-hero-padding: 12px 14px;
+  --msre-hero-padding: 10px 14px;
   --msre-hero-icon-bg: linear-gradient(180deg, #f3f7ff 0%, #ebf2ff 100%);
   --msre-hero-icon-border: rgb(36 91 219 / 12%);
   --msre-hero-icon-color: #245bdb;
 
-  /* 表格样式 - SxDevOps 风格 */
+  /* 表格样式 - MSRE 风格 */
   --msre-table-border: rgb(148 163 184 / 16%);
   --msre-table-header-bg: rgb(208 229 253 / 98%);
   --msre-table-header-text: #334155;
   --msre-table-hover-bg: #f8fbff;
   --msre-table-row-hover: #f1f5f9;
   --msre-table-striped-bg: #fbfaff;
-  --msre-table-radius: 12px;
 
-  /* 按钮样式 - SxDevOps 风格 */
+  /* 按钮样式 - MSRE 风格 */
   --msre-button-radius: 10px;
   --msre-button-default-bg: rgb(255 255 255 / 90%);
   --msre-button-default-color: #475569;
@@ -47,25 +46,26 @@
   --msre-button-hover-color: #1d4ed8;
   --msre-button-hover-border: rgb(59 130 246 / 18%);
 
-  /* 输入框样式 - SxDevOps 风格 */
+  /* 输入框样式 - MSRE 风格 */
   --msre-input-radius: 12px;
   --msre-input-bg: rgb(255 255 255 / 92%);
   --msre-input-border-shadow: rgb(148 163 184 / 16%);
   --msre-input-hover-shadow: rgb(59 130 246 / 18%);
   --msre-input-focus-shadow: rgb(37 99 235 / 22%);
 
-  /* 工具栏样式 - SxDevOps 风格 */
+  /* 工具栏样式 - MSRE 风格 */
   --msre-toolbar-bg: linear-gradient(180deg, rgb(248 250 252 / 92%) 0%, rgb(255 255 255 / 96%) 100%);
   --msre-toolbar-radius: 12px;
-  --msre-toolbar-padding: 12px 16px;
+  --msre-toolbar-padding: 8px 12px;
   --msre-toolbar-border: rgb(148 163 184 / 12%);
+  --msre-stat-padding: 10px 14px;
 }
 
 /* ========== 卡片容器类 ========== */
 
-/* 注意：这些是全局默认样式，具体的contentTheme2配置会覆盖 */
+/* 注意：这些是全局默认样式，统一内容区配置会在运行时覆盖 */
 .content-card,
-.sx-card {
+.msre-card {
   background: var(--msre-content-card-bg, var(--msre-card-bg)) !important;
   border-radius: var(--msre-content-card-radius, var(--msre-card-radius)) !important;
   box-shadow: var(--msre-content-card-shadow, var(--msre-card-shadow)) !important;
@@ -75,7 +75,7 @@
 }
 
 .content-card:hover,
-.sx-card:hover {
+.msre-card:hover {
   box-shadow: 0 8px 25px rgb(0 0 0 / 10%) !important;
   transform: translateY(-2px);
 }
@@ -85,11 +85,317 @@
 .content-card input *,
 .content-card select *,
 .content-card textarea *,
-.sx-card button *,
-.sx-card input *,
-.sx-card select *,
-.sx-card textarea * {
+.msre-card button *,
+.msre-card input *,
+.msre-card select *,
+.msre-card textarea * {
   border-radius: var(--msre-button-radius) !important;
+}
+
+/* ========== 全局内容区语义层 ========== */
+
+/* 路由页面根节点由 GlobalContent 统一注入 msre-content */
+.msre-content {
+  color: var(--msre-text-primary);
+}
+
+/* 所有内容区页面卡片统一使用页面级 contentCard 配置 */
+.msre-content .el-card {
+  background: var(--msre-content-card-bg) !important;
+  border: 1px solid var(--msre-content-card-border) !important;
+  border-radius: var(--msre-content-card-radius) !important;
+  box-shadow: var(--msre-content-card-shadow) !important;
+}
+
+.msre-content .el-card__body {
+  padding: var(--msre-content-card-padding) !important;
+}
+
+/* 统计卡是 contentCard 上的专用变体 */
+.msre-content .stat-card {
+  background: var(--msre-stat-default-bg) !important;
+  border: 1px solid var(--msre-stat-default-border) !important;
+  border-radius: var(--msre-stat-radius) !important;
+  box-shadow: var(--msre-stat-shadow) !important;
+}
+
+/* ElCard 统计卡只保留 body 一层统计卡内边距，避免高度叠加 */
+.msre-content .stat-card.el-card {
+  padding: 0 !important;
+}
+
+.msre-content .stat-card.el-card .el-card__body {
+  padding: var(--msre-stat-padding) !important;
+}
+
+.msre-content .stat-card:not(.el-card) {
+  padding: var(--msre-stat-padding) !important;
+}
+
+/* 紧凑统计卡排版 */
+.msre-content .stat-card .el-statistic {
+  --el-statistic-content-font-size: 20px;
+}
+
+.msre-content .stat-card .el-statistic__head {
+  font-size: 12px;
+  line-height: 1.3;
+  margin-bottom: 2px;
+}
+
+.msre-content .stat-card .el-statistic__content {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.msre-content .stat-card.success,
+.msre-content .stat-card.success-card,
+.msre-content .status-card.success-card {
+  background: var(--msre-stat-success-bg) !important;
+}
+
+.msre-content .stat-card.warning,
+.msre-content .stat-card.warning-card,
+.msre-content .status-card.warning-card {
+  background: var(--msre-stat-warning-bg) !important;
+}
+
+.msre-content .stat-card.danger,
+.msre-content .stat-card.danger-card,
+.msre-content .status-card.danger-card {
+  background: var(--msre-stat-danger-bg) !important;
+}
+
+/* Hero、内容卡片和普通卡片共用 contentCard 基础形态 */
+.msre-content .msre-hero {
+  background: var(--msre-hero-bg) !important;
+  border: 1px solid var(--msre-hero-border) !important;
+  border-radius: var(--msre-hero-radius) !important;
+  box-shadow: var(--msre-hero-shadow) !important;
+}
+
+/* ElCard 的 Hero 只保留卡片 body 一层 Hero 内边距，避免高度叠加 */
+.msre-content .msre-hero.el-card {
+  padding: 0 !important;
+}
+
+.msre-content .msre-hero.el-card .el-card__body {
+  padding: var(--msre-hero-padding) !important;
+}
+
+.msre-content .msre-hero:not(.el-card) {
+  padding: var(--msre-hero-padding) !important;
+}
+
+/* 统一 Hero 密度，避免不同页面使用过大标题和图标 */
+.msre-content .msre-hero h2 {
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+.msre-content .msre-hero p {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.msre-content .msre-hero .el-icon {
+  font-size: 20px;
+}
+
+/* 现代渐变下，主要内容表面提供统一的悬停浮起反馈 */
+.msre-content .el-card,
+.msre-content .stat-card,
+.msre-content .msre-hero,
+.msre-content .toolbar,
+.msre-content .msre-toolbar,
+.msre-content .filter-bar,
+.msre-content .search-card-wrapper,
+.msre-content .card-toolbar,
+.msre-content .tab-toolbar,
+.msre-content .bottom-toolbar,
+.msre-content .workbench-toolbar {
+  transition:
+    box-shadow 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.msre-content[data-msre-variant='modern'] .el-card:hover,
+.msre-content[data-msre-variant='modern'] .stat-card:hover,
+.msre-content[data-msre-variant='modern'] .msre-hero:hover,
+.msre-content[data-msre-variant='modern'] .toolbar:hover,
+.msre-content[data-msre-variant='modern'] .msre-toolbar:hover,
+.msre-content[data-msre-variant='modern'] .filter-bar:hover,
+.msre-content[data-msre-variant='modern'] .search-card-wrapper:hover,
+.msre-content[data-msre-variant='modern'] .card-toolbar:hover,
+.msre-content[data-msre-variant='modern'] .tab-toolbar:hover,
+.msre-content[data-msre-variant='modern'] .bottom-toolbar:hover,
+.msre-content[data-msre-variant='modern'] .workbench-toolbar:hover {
+  box-shadow:
+    0 10px 24px rgb(15 23 42 / 8%),
+    0 2px 6px rgb(15 23 42 / 4%) !important;
+  transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .msre-content .el-card,
+  .msre-content .stat-card,
+  .msre-content .msre-hero,
+  .msre-content .toolbar,
+  .msre-content .msre-toolbar,
+  .msre-content .filter-bar,
+  .msre-content .search-card-wrapper,
+  .msre-content .card-toolbar,
+  .msre-content .tab-toolbar,
+  .msre-content .bottom-toolbar,
+  .msre-content .workbench-toolbar {
+    transition: none;
+  }
+
+  .msre-content[data-msre-variant='modern'] .el-card:hover,
+  .msre-content[data-msre-variant='modern'] .stat-card:hover,
+  .msre-content[data-msre-variant='modern'] .msre-hero:hover,
+  .msre-content[data-msre-variant='modern'] .toolbar:hover,
+  .msre-content[data-msre-variant='modern'] .msre-toolbar:hover,
+  .msre-content[data-msre-variant='modern'] .filter-bar:hover,
+  .msre-content[data-msre-variant='modern'] .search-card-wrapper:hover,
+  .msre-content[data-msre-variant='modern'] .card-toolbar:hover,
+  .msre-content[data-msre-variant='modern'] .tab-toolbar:hover,
+  .msre-content[data-msre-variant='modern'] .bottom-toolbar:hover,
+  .msre-content[data-msre-variant='modern'] .workbench-toolbar:hover {
+    transform: none;
+  }
+}
+
+/* 内容卡片显式类用于页面主容器；ElCard 默认也归口到同一配置 */
+.msre-content .content-card,
+.msre-content .msre-card {
+  background: var(--msre-content-card-bg) !important;
+  border-color: var(--msre-content-card-border) !important;
+  border-radius: var(--msre-content-card-radius) !important;
+  box-shadow: var(--msre-content-card-shadow) !important;
+  padding: var(--msre-content-card-padding) !important;
+}
+
+/* 页面中的筛选和操作工具栏统一走 toolbar 配置 */
+.msre-content .toolbar,
+.msre-content .msre-toolbar,
+.msre-content .filter-bar,
+.msre-content .search-card-wrapper,
+.msre-content .card-toolbar,
+.msre-content .tab-toolbar,
+.msre-content .bottom-toolbar,
+.msre-content .workbench-toolbar {
+  background: var(--msre-toolbar-bg) !important;
+  border: 1px solid var(--msre-toolbar-border) !important;
+  border-radius: var(--msre-toolbar-radius) !important;
+  box-shadow: var(--msre-toolbar-shadow) !important;
+  padding: var(--msre-toolbar-padding) !important;
+}
+
+/* 工具栏是 ElCard 时同样避免外层和 body 双重内边距 */
+.msre-content .toolbar.el-card,
+.msre-content .msre-toolbar.el-card,
+.msre-content .filter-bar.el-card,
+.msre-content .search-card-wrapper.el-card,
+.msre-content .card-toolbar.el-card,
+.msre-content .tab-toolbar.el-card,
+.msre-content .bottom-toolbar.el-card,
+.msre-content .workbench-toolbar.el-card {
+  padding: 0 !important;
+}
+
+.msre-content .toolbar.el-card .el-card__body,
+.msre-content .msre-toolbar.el-card .el-card__body,
+.msre-content .filter-bar.el-card .el-card__body,
+.msre-content .search-card-wrapper.el-card .el-card__body,
+.msre-content .card-toolbar.el-card .el-card__body,
+.msre-content .tab-toolbar.el-card .el-card__body,
+.msre-content .bottom-toolbar.el-card .el-card__body,
+.msre-content .workbench-toolbar.el-card .el-card__body {
+  padding: var(--msre-toolbar-padding) !important;
+}
+
+/* 搜索筛选模块优先于通用输入框配置 */
+.msre-content .toolbar .el-input__wrapper,
+.msre-content .msre-toolbar .el-input__wrapper,
+.msre-content .filter-bar .el-input__wrapper,
+.msre-content .search-card-wrapper .el-input__wrapper {
+  background: var(--msre-search-input-bg) !important;
+  border-radius: var(--msre-search-input-radius) !important;
+  box-shadow: 0 0 0 1px var(--msre-search-input-border) inset !important;
+}
+
+.msre-content .toolbar .el-input__wrapper:hover,
+.msre-content .msre-toolbar .el-input__wrapper:hover,
+.msre-content .filter-bar .el-input__wrapper:hover,
+.msre-content .search-card-wrapper .el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--msre-search-input-hover-border) inset !important;
+}
+
+.msre-content .toolbar .el-input.is-focus .el-input__wrapper,
+.msre-content .msre-toolbar .el-input.is-focus .el-input__wrapper,
+.msre-content .filter-bar .el-input.is-focus .el-input__wrapper,
+.msre-content .search-card-wrapper .el-input.is-focus .el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--msre-search-input-focus-border) inset !important;
+}
+
+.msre-content .toolbar .el-button:not(.el-button--primary, .is-link),
+.msre-content .msre-toolbar .el-button:not(.el-button--primary, .is-link),
+.msre-content .filter-bar .el-button:not(.el-button--primary, .is-link),
+.msre-content .search-card-wrapper .el-button:not(.el-button--primary, .is-link) {
+  background: var(--msre-search-button-bg) !important;
+  color: var(--msre-search-button-text) !important;
+}
+
+.msre-content .toolbar .el-button:not(.el-button--primary, .is-link):hover,
+.msre-content .msre-toolbar .el-button:not(.el-button--primary, .is-link):hover,
+.msre-content .filter-bar .el-button:not(.el-button--primary, .is-link):hover,
+.msre-content .search-card-wrapper .el-button:not(.el-button--primary, .is-link):hover {
+  background: var(--msre-search-button-hover) !important;
+}
+
+/* 分页模块统一控制所有内容区分页器 */
+.msre-content .el-pagination .btn-next,
+.msre-content .el-pagination .btn-prev,
+.msre-content .el-pagination .el-pager li {
+  background: var(--msre-pagination-button-bg) !important;
+  border-radius: var(--msre-pagination-radius) !important;
+  color: var(--msre-pagination-button-text) !important;
+}
+
+.msre-content .el-pagination .btn-next:hover,
+.msre-content .el-pagination .btn-prev:hover,
+.msre-content .el-pagination .el-pager li:hover {
+  background: var(--msre-pagination-button-hover) !important;
+}
+
+.msre-content .el-pagination .el-pager li.is-active {
+  background: var(--msre-pagination-active-bg) !important;
+  color: var(--msre-pagination-active-text) !important;
+}
+
+/* 标签模块统一控制内容区状态标签 */
+.msre-content .el-tag {
+  background: var(--msre-tag-default-bg) !important;
+  border-color: var(--msre-tag-default-border) !important;
+  border-radius: var(--msre-tag-radius) !important;
+  color: var(--msre-tag-default-text) !important;
+}
+
+.msre-content .el-tag--success {
+  background: var(--msre-tag-success-bg) !important;
+}
+
+.msre-content .el-tag--warning {
+  background: var(--msre-tag-warning-bg) !important;
+}
+
+.msre-content .el-tag--danger {
+  background: var(--msre-tag-danger-bg) !important;
+}
+
+.msre-content .el-tag--info {
+  background: var(--msre-tag-info-bg) !important;
 }
 
 /* ========== Element Plus 组件覆盖 ========== */
@@ -108,54 +414,82 @@
 
 /* 表格组件 */
 .el-table {
-  --el-table-border-color: var(--msre-table-border) !important;
-  --el-table-header-bg-color: var(--msre-table-header-bg) !important;
-  --el-table-header-text-color: var(--msre-table-header-text) !important;
-  --el-table-row-hover-bg-color: var(--msre-table-hover-bg) !important;
+  /* 颜色只映射 Element Plus 官方变量，交还给组件自身渲染 */
+  --el-table-border-color: var(--msre-table-row-border);
+  --el-table-header-bg-color: var(--msre-table-header-bg);
+  --el-table-header-text-color: var(--msre-table-header-text);
+  --el-table-row-hover-bg-color: var(--msre-table-hover-bg);
+  --el-fill-color-lighter: var(--msre-table-striped-bg);
+}
 
-  border-radius: var(--msre-table-radius) !important;
+/* Element Plus 未单独暴露表头分隔线变量，这里仅接管主题里的表头边框颜色 */
+.el-table th.el-table__cell {
+  border-bottom-color: var(--msre-table-header-border);
+}
+
+/* 非网格模式下，忽略页面里遗留的 border 属性带来的竖线和外框伪元素 */
+html:is([data-msre-table-style='borderless'], [data-msre-table-style='zebra'], [data-msre-table-style='soft']) {
+  .el-table--border::before,
+  .el-table--border::after,
+  .el-table--border .el-table__inner-wrapper::after {
+    display: none !important;
+  }
+
+  .el-table--border .el-table__cell,
+  .el-table .el-table__cell {
+    border-right: none !important;
+  }
+
+  .el-table__border-left-patch,
+  .el-table__border-right-patch,
+  .el-table__border-bottom-patch {
+    background-color: transparent !important;
+  }
+
+  .el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+    background-color: transparent !important;
+  }
+}
+
+/* 柔和边框：只保留容器外框和横向行分隔 */
+html[data-msre-table-style='soft'] .el-table {
   border: 1px solid var(--msre-table-border) !important;
-  overflow: hidden;
 }
 
-/* 表格内部单元格 - 强制移除所有圆角 */
-.el-table th.el-table__cell,
-.el-table td.el-table__cell {
-  border-radius: 0 !important;
+/* 斑马线：主题统一接管，不依赖每个页面是否写了 stripe 属性 */
+html[data-msre-table-style='zebra'] {
+  .el-table td.el-table__cell {
+    border-bottom-color: transparent !important;
+  }
+
+  .el-table__body tr:nth-child(even) > td.el-table__cell {
+    background-color: var(--msre-table-striped-bg) !important;
+  }
+
+  .el-table__body tr.hover-row > td.el-table__cell,
+  .el-table__body tr:hover > td.el-table__cell {
+    background-color: var(--msre-table-hover-bg) !important;
+  }
+
+  .el-table__body tr.current-row > td.el-table__cell {
+    background-color: var(--el-table-current-row-bg-color) !important;
+  }
 }
 
-/* 特别针对第一列和最后一列的表头单元格 - 确保下角无圆角 */
-.el-table th.el-table__cell:first-child {
-  border-top-left-radius: 0 !important;
-  border-bottom-left-radius: 0 !important;
-}
+/* 网格：完整行列分隔，适合少量需要精确对齐对比的数据 */
+html[data-msre-table-style='grid'] {
+  .el-table {
+    border: 1px solid var(--msre-table-border) !important;
+  }
 
-.el-table th.el-table__cell:last-child {
-  border-top-right-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
+  .el-table .el-table__cell:not(:last-child) {
+    border-right: 1px solid var(--msre-table-border) !important;
+  }
 }
 
 /* 表格内部其他元素可以保持圆角 */
 .el-table .el-checkbox__inner {
-  border-radius: 2px !important;
-}
-
-/* 斑马纹间隔行 */
-.el-table--striped .el-table__body tr.el-table__row--striped td {
-  background-color: var(--msre-table-striped-bg) !important;
-}
-
-/* 表格内部按钮和输入框 */
-.el-table .el-button {
-  border-radius: var(--msre-button-radius) !important;
-}
-
-.el-table .el-input .el-input__wrapper {
-  border-radius: calc(var(--msre-button-radius) - 2px) !important;
-}
-
-.el-table .el-input .el-input__wrapper {
-  border-radius: calc(var(--msre-button-radius) - 2px) !important;
+  border-radius: var(--border-radius-checkbox, 8px) !important;
 }
 
 /* 按钮组件 */
@@ -164,14 +498,22 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
+.el-button.is-circle {
+  border-radius: 50% !important;
+}
+
+.el-button.is-round {
+  border-radius: 999px !important;
+}
+
 .el-button:not(
-  .is-link,
-  .el-button--primary,
-  .el-button--success,
-  .el-button--warning,
-  .el-button--danger,
-  .el-button--info
-) {
+    .is-link,
+    .el-button--primary,
+    .el-button--success,
+    .el-button--warning,
+    .el-button--danger,
+    .el-button--info
+  ) {
   background-color: var(--msre-button-default-bg) !important;
   color: var(--msre-button-default-color) !important;
   border-color: var(--msre-button-default-border) !important;
@@ -225,6 +567,10 @@
 }
 
 /* 选择器 */
+.el-select .el-select__wrapper {
+  border-radius: var(--border-radius-select, 12px) !important;
+}
+
 .el-select .el-input__wrapper {
   border-radius: var(--msre-input-radius) !important;
   background-color: var(--msre-input-bg) !important;
@@ -256,7 +602,7 @@
 
 /* 对话框 */
 .el-dialog {
-  border-radius: var(--msre-card-radius) !important;
+  border-radius: var(--border-radius-modal, 12px) !important;
 }
 
 .el-dialog__body {
@@ -265,7 +611,12 @@
 
 /* 抽屉 */
 .el-drawer {
-  border-radius: var(--msre-card-radius) !important;
+  border-radius: var(--border-radius-modal, 12px) !important;
+}
+
+/* 消息框 */
+.el-message-box {
+  border-radius: var(--border-radius-modal, 12px) !important;
 }
 
 /* 消息提示 */
@@ -275,7 +626,7 @@
 
 /* 通知 */
 .el-notification {
-  border-radius: var(--msre-card-radius) !important;
+  border-radius: var(--border-radius-medium, 10px) !important;
 }
 
 /* 标签 */
@@ -296,11 +647,23 @@
 }
 
 /* 开关 */
-.el-switch {
-  border-radius: var(--msre-button-radius) !important;
+.el-switch__core {
+  border-radius: var(--border-radius-switch, 12px) !important;
+}
+
+.el-switch__action {
+  border-radius: 50% !important;
 }
 
 /* 单选框和复选框 */
+.el-radio__inner {
+  border-radius: var(--border-radius-radio, 50%) !important;
+}
+
+.el-checkbox__inner {
+  border-radius: var(--border-radius-checkbox, 8px) !important;
+}
+
 .el-radio-button__inner {
   border-radius: var(--msre-button-radius) !important;
 }
@@ -320,34 +683,6 @@
   box-shadow: var(--msre-card-shadow) !important;
 }
 
-/* 工具栏内部元素统一 - 排除表格元素 */
-.toolbar button *,
-.toolbar input *,
-.toolbar select *,
-.toolbar textarea *,
-.filter-bar button *,
-.filter-bar input *,
-.filter-bar select *,
-.filter-bar textarea *,
-.workbench-toolbar button *,
-.workbench-toolbar input *,
-.workbench-toolbar select *,
-.workbench-toolbar textarea * {
-  border-radius: var(--msre-button-radius) !important;
-}
-
-.toolbar .el-button,
-.filter-bar .el-button,
-.workbench-toolbar .el-button {
-  border-radius: calc(var(--msre-button-radius) - 1px) !important;
-}
-
-.toolbar .el-input,
-.filter-bar .el-input,
-.workbench-toolbar .el-input {
-  border-radius: calc(var(--msre-input-radius) - 1px) !important;
-}
-
 /* ========== Workbench Toolbar 左右侧区域 ========== */
 .workbench-toolbar-left,
 .workbench-toolbar-right {
@@ -355,55 +690,6 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-}
-
-/* ========== Workbench Toolbar --history 样式 ========== */
-.workbench-toolbar.workbench-toolbar--history {
-  padding: 6px 8px;
-  border-radius: 12px;
-  border: 1px solid rgb(148 163 184 / 12%);
-  background: linear-gradient(180deg, rgb(248 250 252 / 92%) 0%, rgb(255 255 255 / 96%) 100%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 90%);
-  gap: 8px;
-  margin: 6px 0;
-}
-
-.workbench-toolbar--history .workbench-toolbar-left,
-.workbench-toolbar--history .workbench-toolbar-right {
-  gap: 5px; /* 搜索框之间有 5px 间距 */
-}
-
-.workbench-toolbar--history .el-input__wrapper,
-.workbench-toolbar--history .el-select__wrapper {
-  min-height: 28px;
-  border-radius: 8px;
-  box-shadow: 0 0 0 1px rgb(148 163 184 / 12%) inset;
-  background: rgb(255 255 255 / 94%);
-}
-
-.workbench-toolbar--history .el-input__wrapper:hover,
-.workbench-toolbar--history .el-select__wrapper:hover {
-  box-shadow: 0 0 0 1px rgb(59 130 246 / 16%) inset;
-}
-
-.workbench-toolbar--history .el-button:not(.is-link) {
-  min-height: 24px;
-  padding: 0 8px;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 12px;
-}
-
-.workbench-toolbar--history .el-button:not(.el-button--primary, .is-link) {
-  border-color: rgb(148 163 184 / 12%);
-  background: rgb(255 255 255 / 90%);
-  color: #475569;
-}
-
-.workbench-toolbar--history .el-button:not(.is-link):hover {
-  border-color: rgb(59 130 246 / 18%);
-  color: #1d4ed8;
-  background: #f8fbff;
 }
 
 /* ========== 状态卡片样式 ========== */

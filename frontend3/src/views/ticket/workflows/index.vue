@@ -1,6 +1,6 @@
 <script setup lang="tsx">
   import { ref } from 'vue';
-  import { Delete, Edit, Plus } from '@element-plus/icons-vue';
+  import { Plus } from '@element-plus/icons-vue';
   import { deleteWorkflow, fetchTicketTypeOptions, fetchWorkflows } from '@/service/api';
   import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
   import PermissionButton from '@/components/common/PermissionButton.vue';
@@ -81,13 +81,14 @@
         width: 150,
         fixed: 'right',
         align: 'center',
+        className: 'msre-table-actions',
         formatter: row => (
-          <ElSpace>
+          <div>
             <PermissionButton
               code="ticket.workflow.update"
               size="small"
-              type="warning"
-              icon={Edit}
+              link
+              type="primary"
               onClick={() => handleEdit(row.id)}
             >
               编辑
@@ -95,13 +96,13 @@
             <ElPopconfirm title="确认删除该流程？已有工单记录时无法删除" onConfirm={() => handleDelete(row.id)}>
               {{
                 reference: () => (
-                  <PermissionButton code="ticket.workflow.delete" size="small" type="danger" icon={Delete}>
+                  <PermissionButton code="ticket.workflow.delete" link type="danger" size="small">
                     删除
                   </PermissionButton>
                 )
               }}
             </ElPopconfirm>
-          </ElSpace>
+          </div>
         )
       }
     ]

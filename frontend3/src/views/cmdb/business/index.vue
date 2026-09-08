@@ -85,30 +85,30 @@
           height="100%"
           :tree-props="{ children: 'children' }"
         >
-        <ElTableColumn prop="id" label="ID" width="80" />
-        <ElTableColumn prop="name" label="业务名称" min-width="160" show-overflow-tooltip />
-        <ElTableColumn prop="code" label="业务代码" width="140" />
-        <ElTableColumn prop="owner" label="负责人" width="120" />
-        <ElTableColumn prop="phone" label="联系电话" width="140" />
-        <ElTableColumn prop="sortOrder" label="排序" width="80" />
-        <ElTableColumn label="状态" width="90">
-          <template #default="{ row }">
-            <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
-              {{ row.status === 1 ? '启用' : '禁用' }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn prop="remarks" label="备注" min-width="180" show-overflow-tooltip />
-        <ElTableColumn label="操作" width="160" fixed="right">
-          <template #default="{ row }">
-            <PermissionButton code="cmdb.business.update" type="primary" size="small" @click="handleEdit(row)">
-              编辑
-            </PermissionButton>
-            <PermissionButton code="cmdb.business.delete" type="danger" size="small" @click="handleDelete(row)">
-              删除
-            </PermissionButton>
-          </template>
-        </ElTableColumn>
+          <ElTableColumn prop="id" label="ID" width="80" />
+          <ElTableColumn prop="name" label="业务名称" min-width="160" show-overflow-tooltip />
+          <ElTableColumn prop="code" label="业务代码" width="140" />
+          <ElTableColumn prop="owner" label="负责人" width="120" />
+          <ElTableColumn prop="phone" label="联系电话" width="140" />
+          <ElTableColumn prop="sortOrder" label="排序" width="80" />
+          <ElTableColumn label="状态" width="90">
+            <template #default="{ row }">
+              <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
+                {{ row.status === 1 ? '启用' : '禁用' }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn prop="remarks" label="备注" min-width="180" show-overflow-tooltip />
+          <ElTableColumn label="操作" align="center" width="160" fixed="right" class-name="msre-table-actions">
+            <template #default="{ row }">
+              <PermissionButton link type="primary" size="small" code="cmdb.business.update" @click="handleEdit(row)">
+                编辑
+              </PermissionButton>
+              <PermissionButton link type="danger" size="small" code="cmdb.business.delete" @click="handleDelete(row)">
+                删除
+              </PermissionButton>
+            </template>
+          </ElTableColumn>
         </ElTable>
       </div>
 

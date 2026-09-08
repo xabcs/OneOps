@@ -125,18 +125,19 @@ export function createUserColumns(handlers: {
       prop: 'operate',
       label: '操作',
       align: 'center',
+      className: 'msre-table-actions',
       width: 260,
       formatter: (row: Api.SystemManage.User) => (
-        <div class="flex-center gap-8px">
-          <ElButton type="primary" plain size="small" onClick={() => handlers.edit(row.id)}>
+        <div>
+          <ElButton link type="primary" size="small" onClick={() => handlers.edit(row.id)}>
             编辑
           </ElButton>
-          <ElButton type="warning" plain size="small" onClick={() => handlers.openResetPassword(row)}>
+          <ElButton link type="primary" size="small" onClick={() => handlers.openResetPassword(row)}>
             重置密码
           </ElButton>
           <ElButton
+            link
             type="danger"
-            plain
             size="small"
             disabled={row.username === 'admin'}
             onClick={() => handlers.handleDelete(row.id)}

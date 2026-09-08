@@ -17,7 +17,7 @@
   const themeStore = useThemeStore();
 
   // Hero区域显示状态
-  const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);
+  const heroVisible = computed(() => themeStore.content.hero.visible !== false);
 
   // 用户统计数据
   const userStats = ref({
@@ -244,10 +244,10 @@
 <template>
   <div class="table-page">
     <!-- Hero 区域 -->
-    <ElCard v-if="heroVisible" shadow="hover" class="card-static">
+    <ElCard v-if="heroVisible" shadow="hover" class="card-static msre-hero">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-12px">
-          <ElIcon :size="24">
+          <ElIcon :size="20">
             <User />
           </ElIcon>
           <div class="flex flex-col gap-4px">
@@ -272,12 +272,13 @@
     <UserStats :user-stats="userStats" />
 
     <!-- 搜索卡片 -->
-    <ElCard shadow="hover" class="card-static">
+    <ElCard shadow="hover" class="card-static msre-toolbar">
       <ElSpace wrap class="w-full" align="center">
-        <span class="whitespace-nowrap text-16px font-bold">搜索筛选</span>
+        <span class="whitespace-nowrap text-14px font-semibold">搜索筛选</span>
         <ElInput
           v-model="searchParams.username"
           placeholder="搜索用户名"
+          size="small"
           clearable
           style="width: 200px"
           @input="handleSearchInput"
@@ -289,6 +290,7 @@
         <ElInput
           v-model="searchParams.nickname"
           placeholder="搜索昵称"
+          size="small"
           clearable
           style="width: 200px"
           @input="handleSearchInput"
@@ -300,6 +302,7 @@
         <ElInput
           v-model="searchParams.email"
           placeholder="搜索邮箱"
+          size="small"
           clearable
           style="width: 240px"
           @input="handleSearchInput"
@@ -308,13 +311,13 @@
             <ElIcon><Search /></ElIcon>
           </template>
         </ElInput>
-        <ElButton @click="resetSearchParams">
+        <ElButton size="small" @click="resetSearchParams">
           <template #icon>
             <ElIcon><Refresh /></ElIcon>
           </template>
           重置
         </ElButton>
-        <ElButton type="primary" @click="handleSearch">
+        <ElButton size="small" type="primary" @click="handleSearch">
           <template #icon>
             <ElIcon><Search /></ElIcon>
           </template>

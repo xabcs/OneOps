@@ -40,9 +40,9 @@
 <template>
   <ElRow :gutter="16">
     <ElCol v-for="item in statsItems" :key="item.key" :span="8">
-      <ElCard shadow="hover">
-        <div class="flex items-center gap-16px">
-          <ElIcon :size="32" :color="item.color">
+      <ElCard shadow="hover" class="stat-card">
+        <div class="flex items-center gap-12px">
+          <ElIcon :size="24" :color="item.color">
             <component :is="item.icon" />
           </ElIcon>
           <ElStatistic :value="item.value" :title="item.label" />

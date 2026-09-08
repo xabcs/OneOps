@@ -7,7 +7,7 @@ import { $t } from '@/locales';
 
 export function setupLoading() {
   const storedThemeColor = localStg.get('themeColor');
-  const defaultThemeColor = '#6366f1'; // SxDevOps indigo
+  const defaultThemeColor = '#6366f1'; // MSRE indigo
   const themeColor = storedThemeColor && isValidColor(storedThemeColor) ? storedThemeColor : defaultThemeColor;
   const darkMode = localStg.get('darkMode') || false;
   const palette = getColorPalette(themeColor);

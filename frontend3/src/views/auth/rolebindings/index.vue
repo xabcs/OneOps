@@ -141,15 +141,16 @@
             </template>
           </ElTableColumn>
           <ElTableColumn prop="createdAt" label="映射时间" align="center" min-width="160" />
-          <ElTableColumn label="操作" align="center" width="180">
+          <ElTableColumn label="操作" align="center" width="180" class-name="msre-table-actions">
             <template #default="{ row }">
-              <ElButton size="small" type="primary" :icon="View" @click="handleViewExecutionDetail(row.id)">
+              <ElButton link type="primary" size="small" :icon="View" @click="handleViewExecutionDetail(row.id)">
                 执行详情
               </ElButton>
               <PermissionButton
-                code="auth.group.delete"
-                size="small"
+                link
                 type="danger"
+                size="small"
+                code="auth.group.delete"
                 :icon="Delete"
                 @click="handleDelete(row.id)"
               >

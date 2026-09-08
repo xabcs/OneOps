@@ -295,14 +295,12 @@
         </template>
       </ElTableColumn>
       <ElTableColumn prop="age" label="年龄" width="160" />
-      <ElTableColumn label="操作" width="180" fixed="right">
+      <ElTableColumn label="操作" align="center" width="180" fixed="right" class-name="msre-table-actions">
         <template #default="{ row }">
-          <ElSpace>
-            <ElButton size="small" type="primary" @click="goToDetail(row)">详情</ElButton>
-            <PermissionButton code="k8s.resource.delete" size="small" type="danger" @click="handleDelete(row)">
-              删除
-            </PermissionButton>
-          </ElSpace>
+          <ElButton link type="primary" size="small" @click="goToDetail(row)">详情</ElButton>
+          <PermissionButton link type="danger" size="small" code="k8s.resource.delete" @click="handleDelete(row)">
+            删除
+          </PermissionButton>
         </template>
       </ElTableColumn>
     </ElTable>

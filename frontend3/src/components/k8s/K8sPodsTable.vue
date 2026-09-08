@@ -146,10 +146,10 @@
         {{ row.age || '-' }}
       </template>
     </ElTableColumn>
-    <ElTableColumn label="操作" width="150" fixed="right" align="left">
+    <ElTableColumn label="操作" width="150" fixed="right" align="center" class-name="msre-table-actions">
       <template #default="{ row }">
-        <ElButton size="small" type="primary" link @click="handleTerminal(row)">终端</ElButton>
-        <ElButton size="small" link @click="handleLogs(row)">日志</ElButton>
+        <ElButton link type="primary" size="small" @click="handleTerminal(row)">终端</ElButton>
+        <ElButton link type="primary" size="small" @click="handleLogs(row)">日志</ElButton>
       </template>
     </ElTableColumn>
   </ElTable>
@@ -185,78 +185,5 @@
     word-break: break-all;
     max-height: 600px;
     overflow: auto;
-  }
-
-  /* 表格样式优化 - 完全覆盖 Element Plus 默认样式 */
-  .k8s-pods-table,
-  .k8s-pods-table.el-table,
-  :deep(.el-table),
-  :deep(.el-table__body),
-  :deep(.el-table__body-wrapper),
-  :deep(.el-table__inner-wrapper),
-  :deep(.el-table__header) {
-    background-color: transparent !important;
-  }
-
-  /* 表头样式 */
-  :deep(.el-table__header-wrapper) {
-    background-color: transparent !important;
-
-    th.el-table__cell {
-      background-color: #f5f7fa !important;
-      color: #303133;
-      font-weight: 600;
-      text-align: left;
-    }
-  }
-
-  /* 移除所有行的背景色 */
-  :deep(.el-table__body-wrapper) {
-    background-color: transparent !important;
-  }
-
-  :deep(.el-table__body) {
-    background-color: transparent !important;
-  }
-
-  :deep(.el-table__body tr) {
-    background-color: transparent !important;
-  }
-
-  :deep(.el-table__body td.el-table__cell) {
-    background-color: transparent !important;
-  }
-
-  /* 去掉斑马纹 */
-  :deep(.el-table--striped .el-table__body tr.el-table__row--striped) {
-    background-color: transparent !important;
-
-    td.el-table__cell {
-      background-color: transparent !important;
-    }
-  }
-
-  /* 移除 hover 效果的背景色 */
-  :deep(.el-table__body tr:hover > td.el-table__cell) {
-    background-color: transparent !important;
-  }
-
-  /* 移除固定列的背景色 */
-  :deep(.el-table__fixed),
-  :deep(.el-table__fixed-body-wrapper) {
-    background-color: transparent !important;
-
-    .el-table__body tr {
-      background-color: transparent !important;
-    }
-
-    .el-table__body td.el-table__cell {
-      background-color: transparent !important;
-    }
-  }
-
-  /* 移除表格容器的背景色 */
-  :deep(.el-table__inner-wrapper) {
-    background-color: transparent !important;
   }
 </style>

@@ -340,18 +340,16 @@
         </template>
       </ElTableColumn>
       <ElTableColumn prop="age" label="年龄" width="160" />
-      <ElTableColumn label="操作" width="350" fixed="right">
+      <ElTableColumn label="操作" align="center" width="350" fixed="right" class-name="msre-table-actions">
         <template #default="{ row }">
-          <ElSpace wrap>
-            <ElButton size="small" @click="handleViewDetail(row)">查看详情</ElButton>
-            <PermissionButton code="k8s.terminal.connect" size="small" type="primary" @click="handleTerminal(row)">
-              进入终端
-            </PermissionButton>
-            <ElButton size="small" @click="handleLogs(row)">查看日志</ElButton>
-            <PermissionButton code="k8s.resource.delete" size="small" type="danger" @click="handleDelete(row)">
-              删除
-            </PermissionButton>
-          </ElSpace>
+          <ElButton link type="primary" size="small" @click="handleViewDetail(row)">查看详情</ElButton>
+          <PermissionButton link type="primary" size="small" code="k8s.terminal.connect" @click="handleTerminal(row)">
+            进入终端
+          </PermissionButton>
+          <ElButton link type="primary" size="small" @click="handleLogs(row)">查看日志</ElButton>
+          <PermissionButton link type="danger" size="small" code="k8s.resource.delete" @click="handleDelete(row)">
+            删除
+          </PermissionButton>
         </template>
       </ElTableColumn>
     </ElTable>

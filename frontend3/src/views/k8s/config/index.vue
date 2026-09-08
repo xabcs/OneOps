@@ -149,17 +149,11 @@
     <!-- 头部：集群/命名空间选择和刷新按钮（同一行）-->
     <div class="mb-16px flex items-center justify-between gap-12px">
       <!-- 左侧：集群和命名空间选择 -->
-      <div class="filter-inputs flex items-center gap-8px">
-        <ElSelect v-model="selectedCluster" style="width: 200px" @change="loadNamespaces">
-          <template #prefix>
-            <span class="select-fixed-label">选择集群</span>
-          </template>
+      <div class="flex items-center gap-8px">
+        <ElSelect v-model="selectedCluster" placeholder="选择集群" style="width: 200px" @change="loadNamespaces">
           <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
         </ElSelect>
-        <ElSelect v-model="selectedNamespace" style="width: 180px" @change="loadCurrentData">
-          <template #prefix>
-            <span class="select-fixed-label">选择命名空间</span>
-          </template>
+        <ElSelect v-model="selectedNamespace" placeholder="选择命名空间" style="width: 180px" @change="loadCurrentData">
           <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
         </ElSelect>
       </div>
@@ -192,9 +186,9 @@
               </template>
             </ElTableColumn>
             <ElTableColumn prop="age" label="年龄" min-width="120" align="left" />
-            <ElTableColumn label="操作" min-width="120" align="left">
+            <ElTableColumn label="操作" min-width="120" align="center" class-name="msre-table-actions">
               <template #default>
-                <ElButton link type="primary" size="default">查看详情</ElButton>
+                <ElButton link type="primary" size="small">查看详情</ElButton>
               </template>
             </ElTableColumn>
           </ElTable>
@@ -244,9 +238,9 @@
               </template>
             </ElTableColumn>
             <ElTableColumn prop="age" label="年龄" min-width="120" align="left" />
-            <ElTableColumn label="操作" min-width="120" align="left">
+            <ElTableColumn label="操作" min-width="120" align="center" class-name="msre-table-actions">
               <template #default>
-                <ElButton link type="primary" size="default">查看详情</ElButton>
+                <ElButton link type="primary" size="small">查看详情</ElButton>
               </template>
             </ElTableColumn>
           </ElTable>
@@ -301,51 +295,6 @@
     height: 100%;
   }
 
-  /* 筛选输入框样式 - 参考主机资产页面 */
-  .filter-inputs {
-    :deep(.el-select__wrapper) {
-      border-radius: 0 !important;
-      height: 30px;
-      font-size: 12px;
-      line-height: 30px;
-    }
-
-    :deep(.el-input__wrapper) {
-      border-radius: 0 !important;
-      height: 30px;
-      font-size: 12px;
-    }
-
-    :deep(.el-select) {
-      height: 30px;
-      font-size: 12px;
-    }
-
-    :deep(.el-select .el-select__selection) {
-      display: none;
-    }
-
-    :deep(.el-select .el-select__selected-item) {
-      display: none;
-    }
-
-    :deep(.el-select .el-select__placeholder) {
-      display: none;
-    }
-
-    .select-fixed-label {
-      font-size: 12px;
-      color: var(--el-text-color-regular);
-      line-height: 30px;
-      padding-left: 8px;
-    }
-
-    :deep(.el-select.has-value .el-select__prefix) {
-      position: static;
-      flex: none;
-    }
-  }
-
   /* 表格容器 */
   .table-container {
     flex: 1;
@@ -362,54 +311,6 @@
     min-height: 0;
     overflow: auto;
     padding-bottom: 60px;
-
-    /* 表头样式 */
-    :deep(.el-table__header-wrapper) {
-      th.el-table__cell {
-        background-color: #f5f7fa !important;
-        color: #303133;
-        font-weight: 600;
-        text-align: left;
-        position: sticky;
-        top: 0;
-        z-index: 1;
-      }
-    }
-
-    /* 数据行透明 */
-    :deep(.el-table__body-wrapper) {
-      background-color: transparent !important;
-    }
-
-    :deep(.el-table__body) {
-      background-color: transparent !important;
-    }
-
-    :deep(.el-table__body tr) {
-      background-color: transparent !important;
-    }
-
-    :deep(.el-table__body td.el-table__cell) {
-      background-color: transparent !important;
-    }
-
-    :deep(.el-table__body tr:hover > td.el-table__cell) {
-      background-color: transparent !important;
-    }
-
-    :deep(.el-table__inner-wrapper) {
-      background-color: transparent !important;
-    }
-
-    :deep(.el-table__fixed),
-    :deep(.el-table__fixed-body-wrapper) {
-      background-color: transparent !important;
-
-      .el-table__body tr,
-      .el-table__body td.el-table__cell {
-        background-color: transparent !important;
-      }
-    }
   }
 
   /* 底部工具栏固定在底部 */

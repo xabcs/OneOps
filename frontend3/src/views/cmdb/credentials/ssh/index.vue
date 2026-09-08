@@ -115,44 +115,51 @@
 
       <div class="table-scroll-wrap">
         <ElTable v-loading="loading" :data="tableData" border stripe height="100%">
-        <ElTableColumn prop="id" label="ID" width="70" align="center" />
-        <ElTableColumn prop="name" label="凭证名称" min-width="150" align="center" />
-        <ElTableColumn prop="username" label="用户名" width="120" align="center" />
-        <ElTableColumn label="认证类型" width="100" align="center">
-          <template #default="{ row }">
-            <ElTag :type="getAuthTypeTag(row.authType).type" size="small">
-              {{ getAuthTypeTag(row.authType).text }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn prop="port" label="端口" width="80" align="center" />
-        <ElTableColumn prop="description" label="描述" min-width="200" show-overflow-tooltip />
-        <ElTableColumn label="状态" width="80" align="center">
-          <template #default="{ row }">
-            <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
-              {{ row.status === 1 ? '启用' : '禁用' }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="操作" width="230" align="center" fixed="right">
-          <template #default="{ row }">
-            <PermissionButton
-              code="cmdb.credential.test"
-              type="success"
-              size="small"
-              :loading="testLoading"
-              @click="handleTest(row)"
-            >
-              测试
-            </PermissionButton>
-            <PermissionButton code="cmdb.credential.update" type="primary" size="small" @click="handleEdit(row)">
-              编辑
-            </PermissionButton>
-            <PermissionButton code="cmdb.credential.delete" type="danger" size="small" @click="handleDelete(row)">
-              删除
-            </PermissionButton>
-          </template>
-        </ElTableColumn>
+          <ElTableColumn prop="id" label="ID" width="70" align="center" />
+          <ElTableColumn prop="name" label="凭证名称" min-width="150" align="center" />
+          <ElTableColumn prop="username" label="用户名" width="120" align="center" />
+          <ElTableColumn label="认证类型" width="100" align="center">
+            <template #default="{ row }">
+              <ElTag :type="getAuthTypeTag(row.authType).type" size="small">
+                {{ getAuthTypeTag(row.authType).text }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn prop="port" label="端口" width="80" align="center" />
+          <ElTableColumn prop="description" label="描述" min-width="200" show-overflow-tooltip />
+          <ElTableColumn label="状态" width="80" align="center">
+            <template #default="{ row }">
+              <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
+                {{ row.status === 1 ? '启用' : '禁用' }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="操作" width="230" align="center" fixed="right" class-name="msre-table-actions">
+            <template #default="{ row }">
+              <PermissionButton
+                link
+                type="primary"
+                size="small"
+                code="cmdb.credential.test"
+                :loading="testLoading"
+                @click="handleTest(row)"
+              >
+                测试
+              </PermissionButton>
+              <PermissionButton link type="primary" size="small" code="cmdb.credential.update" @click="handleEdit(row)">
+                编辑
+              </PermissionButton>
+              <PermissionButton
+                link
+                type="danger"
+                size="small"
+                code="cmdb.credential.delete"
+                @click="handleDelete(row)"
+              >
+                删除
+              </PermissionButton>
+            </template>
+          </ElTableColumn>
         </ElTable>
       </div>
 

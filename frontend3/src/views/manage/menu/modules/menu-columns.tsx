@@ -1,7 +1,6 @@
 /**
  * 菜单表格列定义
  */
-import { Plus } from '@element-plus/icons-vue';
 import { Icon } from '@iconify/vue';
 import { $t } from '@/locales';
 import { type MenuWithHierarchy, isFirst, isLast } from './menu-tree-helper';
@@ -90,9 +89,10 @@ export function createMenuColumns(handlers: {
             type="primary"
             onClick={() => handlers.handleMove(row, 'up')}
             disabled={isFirst(row.id, handlers.originalTreeData())}
-            title="上移"
           >
-            <Icon icon="mdi:arrow-up" style="font-size: 16px" />
+            <span title="上移">
+              <Icon icon="mdi:arrow-up" style="font-size: 16px" />
+            </span>
           </ElButton>
           <span class="sort-value">{row.sort}</span>
           <ElButton
@@ -100,9 +100,10 @@ export function createMenuColumns(handlers: {
             type="primary"
             onClick={() => handlers.handleMove(row, 'down')}
             disabled={isLast(row.id, handlers.originalTreeData())}
-            title="下移"
           >
-            <Icon icon="mdi:arrow-down" style="font-size: 16px" />
+            <span title="下移">
+              <Icon icon="mdi:arrow-down" style="font-size: 16px" />
+            </span>
           </ElButton>
         </div>
       )
@@ -129,22 +130,41 @@ export function createMenuColumns(handlers: {
     {
       prop: 'operate',
       label: '操作',
+      className: 'msre-table-actions',
       width: 280,
       align: 'center',
       fixed: 'right',
       formatter: (row: Api.SystemManage.Menu) => (
-        <div class="flex-center gap-8px">
+        <div>
           {row.menuType === 'directory' && (
-            <ElButton type="primary" plain size="small" icon={Plus} onClick={() => handlers.handleAddChild(row)}>
+            <PermissionButton
+              code="system.menu.create"
+              link
+              type="primary"
+              size="small"
+              onClick={() => handlers.handleAddChild(row)}
+            >
               添加子菜单
-            </ElButton>
+            </PermissionButton>
           )}
-          <ElButton type="primary" plain size="small" onClick={() => handlers.handleEdit(row.id)}>
+          <PermissionButton
+            code="system.menu.update"
+            link
+            type="primary"
+            size="small"
+            onClick={() => handlers.handleEdit(row.id)}
+          >
             {$t('common.edit')}
-          </ElButton>
-          <ElButton type="danger" plain size="small" onClick={() => handlers.handleDelete(row.id)}>
+          </PermissionButton>
+          <PermissionButton
+            code="system.menu.delete"
+            link
+            type="danger"
+            size="small"
+            onClick={() => handlers.handleDelete(row.id)}
+          >
             {$t('common.delete')}
-          </ElButton>
+          </PermissionButton>
         </div>
       )
     }

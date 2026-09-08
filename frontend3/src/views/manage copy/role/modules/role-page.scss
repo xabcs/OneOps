@@ -179,8 +179,6 @@
 
 .data-table {
   width: 100%;
-  border-radius: var(--msre-table-radius);
-  overflow: hidden;
   border: 1px solid var(--msre-table-border);
   border-collapse: separate;
   border-spacing: 0;
@@ -193,17 +191,6 @@
     background-color: var(--msre-table-header-bg);
     color: var(--msre-table-header-text);
     font-weight: 600;
-    border-radius: 0;
-  }
-
-  :deep(td.el-table__cell) {
-    border-radius: 0;
-  }
-
-  :deep(.el-checkbox__inner),
-  :deep(.el-checkbox__inner::before),
-  :deep(.el-checkbox__inner::after) {
-    border-radius: 0;
   }
 
   &--striped :deep(.el-table__body tr.el-table__row--striped td) {

@@ -57,27 +57,25 @@
         <ElTag v-else type="warning">更新中</ElTag>
       </template>
     </ElTableColumn>
-    <ElTableColumn label="操作" min-width="200" fixed="right" align="left">
+    <ElTableColumn label="操作" min-width="200" fixed="right" align="center" class-name="msre-table-actions">
       <template #default="{ row }">
-        <span class="operation-buttons">
-          <ElButton link type="primary" size="default" @click="emit('go-to-detail', row)">详情</ElButton>
-          <PermissionButton code="k8s.resource.update" link type="primary" size="default" @click="emit('scale', row)">
-            伸缩
-          </PermissionButton>
-          <ElDropdown trigger="click" @command="cmd => emit('more-command', cmd, row)">
-            <span class="dropdown-link">
-              更多
-              <icon-mdi-chevron-down class="dropdown-icon" />
-            </span>
-            <template #dropdown>
-              <ElDropdownMenu>
-                <ElDropdownItem v-permission="'k8s.resource.update'" command="edit">编辑YAML</ElDropdownItem>
-                <ElDropdownItem v-permission="'k8s.resource.update'" command="restart">重启</ElDropdownItem>
-                <ElDropdownItem v-permission="'k8s.resource.delete'" command="delete">删除</ElDropdownItem>
-              </ElDropdownMenu>
-            </template>
-          </ElDropdown>
-        </span>
+        <ElButton link type="primary" size="small" @click="emit('go-to-detail', row)">详情</ElButton>
+        <PermissionButton link type="primary" size="small" code="k8s.resource.update" @click="emit('scale', row)">
+          伸缩
+        </PermissionButton>
+        <ElDropdown trigger="click" @command="cmd => emit('more-command', cmd, row)">
+          <ElButton link type="primary" size="small" class="table-dropdown-trigger">
+            更多
+            <icon-mdi-chevron-down class="dropdown-icon" />
+          </ElButton>
+          <template #dropdown>
+            <ElDropdownMenu>
+              <ElDropdownItem v-permission="'k8s.resource.update'" command="edit">编辑YAML</ElDropdownItem>
+              <ElDropdownItem v-permission="'k8s.resource.update'" command="restart">重启</ElDropdownItem>
+              <ElDropdownItem v-permission="'k8s.resource.delete'" command="delete">删除</ElDropdownItem>
+            </ElDropdownMenu>
+          </template>
+        </ElDropdown>
       </template>
     </ElTableColumn>
   </WorkloadTable>

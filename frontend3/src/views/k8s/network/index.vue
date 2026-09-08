@@ -394,13 +394,11 @@
 
     <!-- 头部：集群/命名空间选择和刷新按钮 -->
     <div class="mb-16px flex items-center justify-between gap-12px">
-      <div class="filter-inputs flex items-center gap-8px">
-        <ElSelect v-model="selectedCluster" style="width: 200px" @change="loadNamespaces">
-          <template #prefix><span class="select-fixed-label">选择集群</span></template>
+      <div class="flex items-center gap-8px">
+        <ElSelect v-model="selectedCluster" placeholder="选择集群" style="width: 200px" @change="loadNamespaces">
           <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
         </ElSelect>
-        <ElSelect v-model="selectedNamespace" style="width: 180px" @change="loadCurrentData">
-          <template #prefix><span class="select-fixed-label">选择命名空间</span></template>
+        <ElSelect v-model="selectedNamespace" placeholder="选择命名空间" style="width: 180px" @change="loadCurrentData">
           <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
         </ElSelect>
       </div>
@@ -447,23 +445,21 @@
               </template>
             </ElTableColumn>
             <ElTableColumn prop="age" label="年龄" min-width="120" align="left" />
-            <ElTableColumn label="操作" min-width="180" fixed="right" align="left">
+            <ElTableColumn label="操作" min-width="180" fixed="right" align="center" class-name="msre-table-actions">
               <template #default="{ row }">
-                <ElSpace>
-                  <ElButton size="small" type="primary" @click="goToDetail(row)">详情</ElButton>
-                  <ElDropdown trigger="click" @command="cmd => handleCommand(cmd, row)">
-                    <span class="dropdown-link">
-                      更多
-                      <icon-mdi-chevron-down class="dropdown-icon" />
-                    </span>
-                    <template #dropdown>
-                      <ElDropdownMenu>
-                        <ElDropdownItem v-permission="'k8s.resource.update'" command="edit">编辑YAML</ElDropdownItem>
-                        <ElDropdownItem v-permission="'k8s.resource.delete'" command="delete">删除</ElDropdownItem>
-                      </ElDropdownMenu>
-                    </template>
-                  </ElDropdown>
-                </ElSpace>
+                <ElButton link type="primary" size="small" @click="goToDetail(row)">详情</ElButton>
+                <ElDropdown trigger="click" @command="cmd => handleCommand(cmd, row)">
+                  <ElButton link type="primary" size="small" class="table-dropdown-trigger">
+                    更多
+                    <icon-mdi-chevron-down class="dropdown-icon" />
+                  </ElButton>
+                  <template #dropdown>
+                    <ElDropdownMenu>
+                      <ElDropdownItem v-permission="'k8s.resource.update'" command="edit">编辑YAML</ElDropdownItem>
+                      <ElDropdownItem v-permission="'k8s.resource.delete'" command="delete">删除</ElDropdownItem>
+                    </ElDropdownMenu>
+                  </template>
+                </ElDropdown>
               </template>
             </ElTableColumn>
           </ElTable>
@@ -520,23 +516,21 @@
               </template>
             </ElTableColumn>
             <ElTableColumn prop="age" label="年龄" min-width="120" align="left" />
-            <ElTableColumn label="操作" min-width="180" fixed="right" align="left">
+            <ElTableColumn label="操作" min-width="180" fixed="right" align="center" class-name="msre-table-actions">
               <template #default="{ row }">
-                <ElSpace>
-                  <ElButton size="small" type="primary" @click="goToDetail(row)">详情</ElButton>
-                  <ElDropdown trigger="click" @command="cmd => handleCommand(cmd, row)">
-                    <span class="dropdown-link">
-                      更多
-                      <icon-mdi-chevron-down class="dropdown-icon" />
-                    </span>
-                    <template #dropdown>
-                      <ElDropdownMenu>
-                        <ElDropdownItem v-permission="'k8s.resource.update'" command="edit">编辑YAML</ElDropdownItem>
-                        <ElDropdownItem v-permission="'k8s.resource.delete'" command="delete">删除</ElDropdownItem>
-                      </ElDropdownMenu>
-                    </template>
-                  </ElDropdown>
-                </ElSpace>
+                <ElButton link type="primary" size="small" @click="goToDetail(row)">详情</ElButton>
+                <ElDropdown trigger="click" @command="cmd => handleCommand(cmd, row)">
+                  <ElButton link type="primary" size="small" class="table-dropdown-trigger">
+                    更多
+                    <icon-mdi-chevron-down class="dropdown-icon" />
+                  </ElButton>
+                  <template #dropdown>
+                    <ElDropdownMenu>
+                      <ElDropdownItem v-permission="'k8s.resource.update'" command="edit">编辑YAML</ElDropdownItem>
+                      <ElDropdownItem v-permission="'k8s.resource.delete'" command="delete">删除</ElDropdownItem>
+                    </ElDropdownMenu>
+                  </template>
+                </ElDropdown>
               </template>
             </ElTableColumn>
           </ElTable>
@@ -598,44 +592,6 @@
     height: 100%;
   }
 
-  .filter-inputs {
-    :deep(.el-select__wrapper) {
-      border-radius: 0 !important;
-      height: 30px;
-      font-size: 12px;
-      line-height: 30px;
-    }
-
-    :deep(.el-input__wrapper) {
-      border-radius: 0 !important;
-      height: 30px;
-      font-size: 12px;
-    }
-
-    :deep(.el-select) {
-      height: 30px;
-      font-size: 12px;
-    }
-
-    :deep(.el-select .el-select__selection),
-    :deep(.el-select .el-select__selected-item),
-    :deep(.el-select .el-select__placeholder) {
-      display: none;
-    }
-
-    .select-fixed-label {
-      font-size: 12px;
-      color: var(--el-text-color-regular);
-      line-height: 30px;
-      padding-left: 8px;
-    }
-
-    :deep(.el-select.has-value .el-select__prefix) {
-      position: static;
-      flex: none;
-    }
-  }
-
   .table-container {
     flex: 1;
     display: flex;
@@ -650,48 +606,6 @@
     min-height: 0;
     overflow: auto;
     padding-bottom: 60px;
-
-    :deep(.el-table__header-wrapper th.el-table__cell) {
-      background-color: #f5f7fa !important;
-      color: #303133;
-      font-weight: 600;
-      text-align: left;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-
-    :deep(.el-table__body-wrapper),
-    :deep(.el-table__body),
-    :deep(.el-table__body tr),
-    :deep(.el-table__body td.el-table__cell),
-    :deep(.el-table__inner-wrapper),
-    :deep(.el-table__fixed),
-    :deep(.el-table__fixed-body-wrapper) {
-      background-color: transparent !important;
-    }
-
-    :deep(.el-table__body tr:hover > td.el-table__cell) {
-      background-color: transparent !important;
-    }
-
-    .dropdown-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 2px;
-      cursor: pointer;
-      color: var(--el-color-primary);
-      font-size: var(--el-font-size-base);
-      user-select: none;
-
-      .dropdown-icon {
-        font-size: 14px;
-      }
-
-      &:hover {
-        opacity: 0.8;
-      }
-    }
   }
 
   .bottom-toolbar {

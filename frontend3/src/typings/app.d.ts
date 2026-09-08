@@ -162,8 +162,6 @@ declare namespace App {
           select: string;
           /** Card border radius */
           card: string;
-          /** Table border radius */
-          table: string;
           /** Modal/Dialog border radius */
           modal: string;
           /** Tag border radius */
@@ -179,278 +177,250 @@ declare namespace App {
         };
       };
       /** Content area theme settings */
-      contentTheme: {
-        /** Card background color */
-        cardBg?: string;
-        /** Card border radius */
-        cardRadius?: string;
-        /** Card shadow */
-        cardShadow?: string;
-        /** Table border color */
-        tableBorder?: string;
-        /** Table header background */
-        tableHeaderBg?: string;
-        /** Table row hover background */
-        tableHoverBg?: string;
-        /** Table border radius */
-        tableRadius?: string;
-        /** Button border radius */
-        buttonRadius?: string;
-        /** Button default background */
-        buttonDefaultBg?: string;
-        /** Button default color */
-        buttonDefaultColor?: string;
-        /** Button default border */
-        buttonDefaultBorder?: string;
-        /** Button hover background */
-        buttonHoverBg?: string;
-        /** Button hover color */
-        buttonHoverColor?: string;
-        /** Button hover border */
-        buttonHoverBorder?: string;
-        /** Input border radius */
-        inputRadius?: string;
-        /** Input background */
-        inputBg?: string;
-        /** Input border shadow */
-        inputBorderShadow?: string;
-        /** Input hover border shadow */
-        inputHoverShadow?: string;
-        /** Input focus border shadow */
-        inputFocusShadow?: string;
-        /** Use gradient for cards */
-        useCardGradient?: boolean;
-        /** Card gradient start */
-        cardGradientStart?: string;
-        /** Card gradient end */
-        cardGradientEnd?: string;
-        /** Use gradient for toolbar */
-        useToolbarGradient?: boolean;
-        /** Toolbar gradient start */
-        toolbarGradientStart?: string;
-        /** Toolbar gradient end */
-        toolbarGradientEnd?: string;
-        /** Hero gradient start */
-        heroGradientStart?: string;
-        /** Hero gradient end */
-        heroGradientEnd?: string;
-        /** Primary color */
-        primary?: string;
-        /** Primary light color */
-        primaryLight?: string;
-        /** Success color */
-        success?: string;
-        /** Warning color */
-        warning?: string;
-        /** Danger color */
-        danger?: string;
-        /** Info color */
-        info?: string;
-        /** Text primary color */
-        textPrimary?: string;
-        /** Text secondary color */
-        textSecondary?: string;
-        /** Text muted color */
-        textMuted?: string;
-        /** Border soft color */
-        borderSoft?: string;
-        /** Border medium color */
-        borderMedium?: string;
-      };
-      /** Content area theme settings 2 - Enhanced modular customization */
-      contentTheme2: {
-        /** Hero section configuration */
-        heroSection: {
-          /** Hero section visibility */
-          visible?: boolean;
-          /** Enable hero gradient background */
-          useGradient?: boolean;
+      /** Content area unified theme configuration */
+      content: {
+        /** Content variant: standard (flat) or modern (gradient) */
+        variant: 'standard' | 'modern';
+
+        /** Hero section (top banner area) */
+        hero: {
+          /** Whether hero section is visible */
+          visible: boolean;
+          /** Background color when gradient is off */
+          background: string;
           /** Gradient start color */
-          gradientStart?: string;
-          /** Gradient middle color (optional, for complex gradients) */
-          gradientMiddle?: string;
+          gradientStart: string;
+          /** Gradient middle color (optional, for 3-color gradients) */
+          gradientMiddle: string;
           /** Gradient end color */
-          gradientEnd?: string;
+          gradientEnd: string;
           /** Gradient angle in degrees */
-          gradientAngle?: number;
-          /** Background color (fallback when gradient is disabled) */
-          background?: string;
+          gradientAngle: number;
           /** Border color */
-          borderColor?: string;
-          /** Border radius */
-          borderRadius?: string;
-          /** Shadow effect */
-          shadow?: string;
+          borderColor: string;
+          /** Box shadow */
+          shadow: string;
           /** Padding */
-          padding?: string;
+          padding: string;
           /** Icon background gradient start */
-          iconGradientStart?: string;
+          iconGradientStart: string;
           /** Icon background gradient end */
-          iconGradientEnd?: string;
+          iconGradientEnd: string;
           /** Icon border color */
-          iconBorderColor?: string;
+          iconBorderColor: string;
           /** Icon text color */
-          iconColor?: string;
+          iconColor: string;
         };
-        /** Statistics cards configuration */
+
+        /** Statistics cards */
         statCards: {
-          /** Use gradient for all cards */
-          useGradient?: boolean;
-          /** Default card background */
-          defaultBg?: string;
-          /** Default card background gradient start */
-          defaultBgStart?: string;
-          /** Default card background gradient end */
-          defaultBgEnd?: string;
-          /** Default card border */
-          defaultBorder?: string;
-          /** Success card background */
-          successBg?: string;
-          /** Success card background gradient */
-          successBgStart?: string;
-          /** Success card background gradient end */
-          successBgEnd?: string;
-          /** Warning card background */
-          warningBg?: string;
-          /** Warning card background gradient start */
-          warningBgStart?: string;
-          /** Warning card background gradient end */
-          warningBgEnd?: string;
-          /** Danger card background */
-          dangerBg?: string;
-          /** Danger card background gradient start */
-          dangerBgStart?: string;
-          /** Danger card background gradient end */
-          dangerBgEnd?: string;
-          /** Card border radius */
-          borderRadius?: string;
+          /** Use gradient for all stat cards */
+          useGradient: boolean;
+          /** Default card solid background (when gradient off) */
+          defaultBg: string;
+          /** Default card gradient start */
+          defaultBgStart: string;
+          /** Default card gradient end */
+          defaultBgEnd: string;
+          /** Success card solid background */
+          successBg: string;
+          /** Success card gradient start */
+          successBgStart: string;
+          /** Success card gradient end */
+          successBgEnd: string;
+          /** Warning card solid background */
+          warningBg: string;
+          /** Warning card gradient start */
+          warningBgStart: string;
+          /** Warning card gradient end */
+          warningBgEnd: string;
+          /** Danger card solid background */
+          dangerBg: string;
+          /** Danger card gradient start */
+          dangerBgStart: string;
+          /** Danger card gradient end */
+          dangerBgEnd: string;
+          /** Card border color */
+          border: string;
           /** Card shadow */
-          shadow?: string;
+          shadow: string;
+          /** Card padding */
+          padding: string;
         };
-        /** Toolbar configuration */
-        toolbar: {
-          /** Section toolbar background */
-          sectionBg?: string;
-          /** Section toolbar border */
-          sectionBorder?: string;
-          /** Search toolbar background */
-          searchBg?: string;
-          /** Search toolbar border */
-          searchBorder?: string;
-          /** Toolbar background gradient start */
-          gradientStart?: string;
-          /** Toolbar background gradient middle (optional) */
-          gradientMiddle?: string;
-          /** Toolbar background gradient end */
-          gradientEnd?: string;
-          /** Gradient angle in degrees */
-          gradientAngle?: number;
-          /** Toolbar border color */
-          borderColor?: string;
-          /** Toolbar border radius */
-          borderRadius?: string;
-          /** Toolbar padding */
-          padding?: string;
-          /** Toolbar shadow */
-          shadow?: string;
-        };
-        /** Content card configuration */
+
+        /** Content card (page-level card container) */
         contentCard: {
-          /** Background color */
-          background?: string;
-          /** Background gradient start */
-          bgGradientStart?: string;
-          /** Background gradient middle (optional, for 3-color gradients) */
-          bgGradientMiddle?: string;
-          /** Background gradient end */
-          bgGradientEnd?: string;
-          /** Use gradient background */
-          useGradient?: boolean;
-          /** Gradient angle in degrees (e.g., 145, 75, 253) */
-          gradientAngle?: number;
+          /** Background color when gradient is off */
+          background: string;
+          /** Gradient start color */
+          gradientStart: string;
+          /** Gradient middle color (optional) */
+          gradientMiddle: string;
+          /** Gradient end color */
+          gradientEnd: string;
+          /** Gradient angle */
+          gradientAngle: number;
           /** Border color */
-          borderColor?: string;
-          /** Border radius */
-          borderRadius?: string;
-          /** Shadow effect */
-          shadow?: string;
+          borderColor: string;
+          /** Box shadow */
+          shadow: string;
           /** Padding */
-          padding?: string;
+          padding: string;
         };
-        /** Data table configuration */
+
+        /** Toolbar (search/filter area) */
+        toolbar: {
+          /** Background color when gradient is off */
+          background: string;
+          /** Gradient start color */
+          gradientStart: string;
+          /** Gradient middle color (optional) */
+          gradientMiddle: string;
+          /** Gradient end color */
+          gradientEnd: string;
+          /** Gradient angle */
+          gradientAngle: number;
+          /** Border color */
+          borderColor: string;
+          /** Padding */
+          padding: string;
+          /** Box shadow */
+          shadow: string;
+        };
+
+        /** Data table */
         dataTable: {
-          /** Header background */
-          headerBg?: string;
+          /** Table presentation style */
+          tableStyle: 'borderless' | 'zebra' | 'soft' | 'grid';
+          /** Header background color */
+          headerBg: string;
           /** Header text color */
-          headerTextColor?: string;
+          headerTextColor: string;
           /** Header border color */
-          headerBorderColor?: string;
+          headerBorderColor: string;
           /** Row hover background */
-          rowHoverBg?: string;
+          rowHoverBg: string;
           /** Row border color */
-          rowBorderColor?: string;
+          rowBorderColor: string;
           /** Table border color */
-          tableBorder?: string;
-          /** Table border radius */
-          borderRadius?: string;
+          borderColor: string;
           /** Striped row background */
-          stripedBg?: string;
+          stripedBg: string;
         };
-        /** Search filters configuration */
+
+        /** Search filters (input area within toolbar) */
         searchFilters: {
-          /** Input background */
-          inputBg?: string;
+          /** Input background color */
+          inputBg: string;
           /** Input border color */
-          inputBorder?: string;
-          /** Input hover border */
-          inputHoverBorder?: string;
-          /** Input focus border */
-          inputFocusBorder?: string;
-          /** Input border radius */
-          inputBorderRadius?: string;
-          /** Button background */
-          buttonBg?: string;
+          inputBorder: string;
+          /** Input hover border color */
+          inputHoverBorder: string;
+          /** Input focus border color */
+          inputFocusBorder: string;
+          /** Button background color */
+          buttonBg: string;
           /** Button text color */
-          buttonTextColor?: string;
+          buttonTextColor: string;
           /** Button hover background */
-          buttonHoverBg?: string;
+          buttonHoverBg: string;
         };
-        /** Pagination configuration */
+
+        /** Pagination */
         pagination: {
-          /** Button background */
-          buttonBg?: string;
+          /** Button background color */
+          buttonBg: string;
           /** Button text color */
-          buttonTextColor?: string;
+          buttonTextColor: string;
           /** Button hover background */
-          buttonHoverBg?: string;
-          /** Active button background */
-          activeButtonBg?: string;
-          /** Active button text color */
-          activeButtonTextColor?: string;
-          /** Border radius */
-          borderRadius?: string;
+          buttonHoverBg: string;
+          /** Active page background */
+          activeBg: string;
+          /** Active page text color */
+          activeTextColor: string;
         };
-        /** Tags configuration */
+
+        /** Tags */
         tags: {
           /** Default tag background */
-          defaultBg?: string;
+          defaultBg: string;
           /** Default tag border */
-          defaultBorder?: string;
+          defaultBorder: string;
           /** Default tag text color */
-          defaultTextColor?: string;
+          defaultTextColor: string;
           /** Success tag background */
-          successBg?: string;
+          successBg: string;
           /** Warning tag background */
-          warningBg?: string;
+          warningBg: string;
           /** Danger tag background */
-          dangerBg?: string;
+          dangerBg: string;
           /** Info tag background */
-          infoBg?: string;
-          /** Tag border radius */
-          borderRadius?: string;
+          infoBg: string;
+        };
+
+        /** Shared button style for content area */
+        button: {
+          /** Default background color */
+          defaultBg: string;
+          /** Default text color */
+          defaultColor: string;
+          /** Default border color */
+          defaultBorder: string;
+          /** Hover background color */
+          hoverBg: string;
+          /** Hover text color */
+          hoverColor: string;
+          /** Hover border color */
+          hoverBorder: string;
+        };
+
+        /** Shared input style for content area */
+        input: {
+          /** Input background color */
+          bg: string;
+          /** Inner border shadow color */
+          borderShadow: string;
+          /** Hover inner shadow color */
+          hoverShadow: string;
+          /** Focus inner shadow color */
+          focusShadow: string;
+        };
+
+        /** Shared card style for content area */
+        card: {
+          /** Card background color */
+          bg: string;
+          /** Card border color */
+          border: string;
+          /** Card shadow */
+          shadow: string;
+          /** Card padding */
+          padding: string;
+        };
+
+        /** Content area color palette */
+        colors: {
+          primary: string;
+          primaryLight: string;
+          success: string;
+          warning: string;
+          danger: string;
+          info: string;
+        };
+
+        /** Content area text colors */
+        text: {
+          primary: string;
+          secondary: string;
+          muted: string;
+        };
+
+        /** Content area border colors */
+        border: {
+          soft: string;
+          medium: string;
         };
       };
-      /** define some theme settings tokens, will transform to css variables */
       tokens: {
         light: ThemeSettingToken;
         dark?: {

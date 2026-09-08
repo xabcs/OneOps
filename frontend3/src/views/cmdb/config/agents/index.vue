@@ -125,34 +125,44 @@
       {
         prop: 'operate',
         label: '操作',
-        width: 120,
+        width: 160,
         align: 'center',
+        className: 'msre-table-actions',
         fixed: 'right',
         formatter: row => {
           if (!row.agentStatus || row.agentStatus === 'uninstalled') {
             return (
-              <PermissionButton code="cmdb.agents.deploy" type="primary" size="small" onClick={() => handleDeploy(row)}>
+              <PermissionButton
+                code="cmdb.agents.deploy"
+                link
+                type="primary"
+                size="small"
+                onClick={() => handleDeploy(row)}
+              >
                 部署
               </PermissionButton>
             );
           }
           return (
-            <span class="actions-wrapper">
-              {row.agentStatus === 'running' &&
-                !isLatestVersion(row.agentVersion) &&
-                withDirectives(
-                  <a class="action-link upgrade-link" onClick={() => handleUpgrade(row)}>
-                    <icon-mdi-arrow-up-bold />
-                    <span>升级</span>
-                  </a>,
-                  [[vPermission, 'cmdb.agents.upgrade']]
-                )}
+            <div>
+              {row.agentStatus === 'running' && !isLatestVersion(row.agentVersion) && (
+                <PermissionButton
+                  code="cmdb.agents.upgrade"
+                  link
+                  type="primary"
+                  size="small"
+                  onClick={() => handleUpgrade(row)}
+                >
+                  升级
+                </PermissionButton>
+              )}
               <ElDropdown trigger="click">
                 {{
                   default: () => (
-                    <span class="more-btn">
-                      <i class="more-icon">⋮</i>
-                    </span>
+                    <ElButton link type="primary" size="small" class="table-dropdown-trigger">
+                      更多
+                      <icon-mdi-chevron-down class="dropdown-icon" />
+                    </ElButton>
                   ),
                   dropdown: () => (
                     <ElDropdownMenu>
@@ -187,7 +197,7 @@
                   )
                 }}
               </ElDropdown>
-            </span>
+            </div>
           );
         }
       }
@@ -543,14 +553,7 @@
       </template>
 
       <div class="table-scroll-wrap">
-        <ElTable
-          v-loading="loading"
-          :data="data"
-          border
-          stripe
-          height="100%"
-          @selection-change="handleSelectionChange"
-        >
+        <ElTable v-loading="loading" :data="data" border stripe height="100%" @selection-change="handleSelectionChange">
           <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
         </ElTable>
       </div>

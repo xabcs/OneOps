@@ -120,12 +120,13 @@
           <ElTableColumn prop="groupCode" label="用户组代码" align="center" min-width="150" />
           <ElTableColumn prop="grantedBy" label="授权人" align="center" min-width="120" />
           <ElTableColumn prop="grantedAt" label="授权时间" align="center" min-width="160" />
-          <ElTableColumn label="操作" align="center" width="100">
+          <ElTableColumn label="操作" align="center" width="100" class-name="msre-table-actions">
             <template #default="{ row }">
               <PermissionButton
-                code="auth.user.update"
-                size="small"
+                link
                 type="danger"
+                size="small"
+                code="auth.user.update"
                 :icon="Delete"
                 @click="handleDelete(row.groupId)"
               >

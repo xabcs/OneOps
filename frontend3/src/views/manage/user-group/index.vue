@@ -14,7 +14,7 @@
   const themeStore = useThemeStore();
 
   // Hero区域显示状态
-  const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);
+  const heroVisible = computed(() => themeStore.content.hero.visible !== false);
 
   const searchParams = ref({
     page: 1,
@@ -152,10 +152,10 @@
 <template>
   <div class="table-page">
     <!-- Hero 区域 -->
-    <ElCard v-if="heroVisible" shadow="hover" class="card-static">
+    <ElCard v-if="heroVisible" shadow="hover" class="card-static msre-hero">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-12px">
-          <ElIcon :size="24">
+          <ElIcon :size="20">
             <User />
           </ElIcon>
           <div class="flex flex-col gap-2px">
@@ -216,35 +216,35 @@
       <!-- 数据表格 -->
       <div class="table-scroll-wrap">
         <ElTable v-loading="loading" :data="data" border stripe row-key="id" height="100%">
-        <ElTableColumn prop="id" label="ID" width="70" />
-        <ElTableColumn prop="code" label="编码" min-width="120" />
-        <ElTableColumn prop="name" label="名称" min-width="120" />
-        <ElTableColumn prop="memberCount" label="成员数" width="90" />
-        <ElTableColumn prop="description" label="描述" min-width="140" show-overflow-tooltip />
-        <ElTableColumn prop="createdAt" label="创建时间" width="170" />
-        <ElTableColumn label="状态" width="90">
-          <template #default="{ row }">
-            <ElSwitch :model-value="row.status === 1" @change="(val: any) => handleStatusChange(row, val ? 1 : 0)" />
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="操作" width="220" fixed="right">
-          <template #default="{ row }">
-            <ElButton type="primary" size="small" link @click="handleManageMembers(row.id)">成员管理</ElButton>
-            <PermissionButton
-              code="system.user.update"
-              type="primary"
-              size="small"
-              link
-              @click="handleEditClick(row.id)"
-            >
-              编辑
-            </PermissionButton>
-            <PermissionButton code="system.user.delete" type="danger" size="small" link @click="handleDelete(row.id)">
-              删除
-            </PermissionButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
+          <ElTableColumn prop="id" label="ID" width="70" />
+          <ElTableColumn prop="code" label="编码" min-width="120" />
+          <ElTableColumn prop="name" label="名称" min-width="120" />
+          <ElTableColumn prop="memberCount" label="成员数" width="90" />
+          <ElTableColumn prop="description" label="描述" min-width="140" show-overflow-tooltip />
+          <ElTableColumn prop="createdAt" label="创建时间" width="170" />
+          <ElTableColumn label="状态" width="90">
+            <template #default="{ row }">
+              <ElSwitch :model-value="row.status === 1" @change="(val: any) => handleStatusChange(row, val ? 1 : 0)" />
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="操作" align="center" width="220" fixed="right" class-name="msre-table-actions">
+            <template #default="{ row }">
+              <ElButton link type="primary" size="small" @click="handleManageMembers(row.id)">成员管理</ElButton>
+              <PermissionButton
+                link
+                type="primary"
+                size="small"
+                code="system.user.update"
+                @click="handleEditClick(row.id)"
+              >
+                编辑
+              </PermissionButton>
+              <PermissionButton link type="danger" size="small" code="system.user.delete" @click="handleDelete(row.id)">
+                删除
+              </PermissionButton>
+            </template>
+          </ElTableColumn>
+        </ElTable>
       </div>
 
       <!-- 分页 -->

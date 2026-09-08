@@ -73,37 +73,37 @@
 
       <div class="table-scroll-wrap">
         <ElTable v-loading="loading" :data="tableData" border stripe height="100%">
-        <ElTableColumn prop="id" label="ID" width="80" />
-        <ElTableColumn prop="name" label="标签名称" min-width="150" />
-        <ElTableColumn label="颜色" width="100">
-          <template #default="{ row }">
-            <span
-              v-if="row.color"
-              :style="{ backgroundColor: row.color }"
-              class="inline-block h-22px w-40px rounded-4px align-middle"
-            />
-          </template>
-        </ElTableColumn>
-        <ElTableColumn prop="description" label="描述" min-width="220" show-overflow-tooltip />
-        <ElTableColumn prop="sortOrder" label="排序" width="80" />
-        <ElTableColumn label="状态" width="90">
-          <template #default="{ row }">
-            <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
-              {{ row.status === 1 ? '启用' : '禁用' }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="操作" width="160" fixed="right">
-          <template #default="{ row }">
-            <PermissionButton code="cmdb.tags.update" type="primary" size="small" @click="handleEdit(row)">
-              编辑
-            </PermissionButton>
-            <PermissionButton code="cmdb.tags.delete" type="danger" size="small" @click="handleDelete(row)">
-              删除
-            </PermissionButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
+          <ElTableColumn prop="id" label="ID" width="80" />
+          <ElTableColumn prop="name" label="标签名称" min-width="150" />
+          <ElTableColumn label="颜色" width="100">
+            <template #default="{ row }">
+              <span
+                v-if="row.color"
+                :style="{ backgroundColor: row.color }"
+                class="inline-block h-22px w-40px rounded-4px align-middle"
+              />
+            </template>
+          </ElTableColumn>
+          <ElTableColumn prop="description" label="描述" min-width="220" show-overflow-tooltip />
+          <ElTableColumn prop="sortOrder" label="排序" width="80" />
+          <ElTableColumn label="状态" width="90">
+            <template #default="{ row }">
+              <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
+                {{ row.status === 1 ? '启用' : '禁用' }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="操作" align="center" width="160" fixed="right" class-name="msre-table-actions">
+            <template #default="{ row }">
+              <PermissionButton link type="primary" size="small" code="cmdb.tags.update" @click="handleEdit(row)">
+                编辑
+              </PermissionButton>
+              <PermissionButton link type="danger" size="small" code="cmdb.tags.delete" @click="handleDelete(row)">
+                删除
+              </PermissionButton>
+            </template>
+          </ElTableColumn>
+        </ElTable>
       </div>
 
       <TagOperateDrawer

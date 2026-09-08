@@ -237,22 +237,14 @@
           </ElTag>
         </template>
       </ElTableColumn>
-      <ElTableColumn label="操作" width="150" fixed="right">
+      <ElTableColumn label="操作" align="center" width="150" fixed="right" class-name="msre-table-actions">
         <template #default="{ row }">
-          <ElSpace size="small">
-            <PermissionButton code="system.permission.update" text type="primary" size="small" @click="openEdit(row)">
-              改权限码
-            </PermissionButton>
-            <PermissionButton
-              code="system.permission.delete"
-              text
-              type="danger"
-              size="small"
-              @click="handleDelete(row)"
-            >
-              删除
-            </PermissionButton>
-          </ElSpace>
+          <PermissionButton link type="primary" size="small" code="system.permission.update" @click="openEdit(row)">
+            改权限码
+          </PermissionButton>
+          <PermissionButton link type="danger" size="small" code="system.permission.delete" @click="handleDelete(row)">
+            删除
+          </PermissionButton>
         </template>
       </ElTableColumn>
     </ElTable>

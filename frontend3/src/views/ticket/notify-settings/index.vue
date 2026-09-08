@@ -310,85 +310,85 @@
 
           <div class="table-scroll-wrap">
             <ElTable v-loading="loading" :data="policies" border stripe height="100%">
-            <ElTableColumn label="通知事件" width="130">
-              <template #default="{ row }">
-                <span class="font-medium">{{ row.name }}</span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="说明" min-width="180">
-              <template #default="{ row }">
-                <span class="text-sm text-gray-500">{{ row.desc }}</span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="通知渠道" min-width="300">
-              <template #default="{ row }">
-                <div class="flex items-center gap-2">
-                  <ElSelect
-                    v-model="row.channels"
-                    multiple
-                    collapse-tags
-                    collapse-tags-tooltip
-                    clearable
-                    placeholder="不选则该事件不发送"
-                    :disabled="!hasUpdatePerm || row.enabled === 0"
-                    class="w-full"
+              <ElTableColumn label="通知事件" width="130">
+                <template #default="{ row }">
+                  <span class="font-medium">{{ row.name }}</span>
+                </template>
+              </ElTableColumn>
+              <ElTableColumn label="说明" min-width="180">
+                <template #default="{ row }">
+                  <span class="text-sm text-gray-500">{{ row.desc }}</span>
+                </template>
+              </ElTableColumn>
+              <ElTableColumn label="通知渠道" min-width="300">
+                <template #default="{ row }">
+                  <div class="flex items-center gap-2">
+                    <ElSelect
+                      v-model="row.channels"
+                      multiple
+                      collapse-tags
+                      collapse-tags-tooltip
+                      clearable
+                      placeholder="不选则该事件不发送"
+                      :disabled="!hasUpdatePerm || row.enabled === 0"
+                      class="w-full"
+                      @change="markDirty(row)"
+                    >
+                      <ElOption
+                        v-for="ch in channelOptions"
+                        :key="ch.id"
+                        :value="ch.id"
+                        :label="channelLabel(ch)"
+                        :disabled="!ch.enabled"
+                      />
+                    </ElSelect>
+                    <ElTag v-if="!row.configured" type="info" size="small" class="shrink-0">默认</ElTag>
+                  </div>
+                </template>
+              </ElTableColumn>
+              <ElTableColumn label="通知模板" width="110" align="center">
+                <template #default="{ row }">
+                  <div class="flex items-center justify-center gap-1">
+                    <ElTag v-if="row.hasTpl" type="warning" size="small">自定义</ElTag>
+                    <ElTag v-else type="info" size="small">默认</ElTag>
+                    <PermissionButton
+                      code="ticket.notify.update"
+                      type="primary"
+                      link
+                      size="small"
+                      @click="handleEditTpl(row)"
+                    >
+                      编辑
+                    </PermissionButton>
+                  </div>
+                </template>
+              </ElTableColumn>
+              <ElTableColumn label="启用" width="90" align="center">
+                <template #default="{ row }">
+                  <ElSwitch
+                    v-model="row.enabled"
+                    :active-value="1"
+                    :inactive-value="0"
+                    :disabled="!hasUpdatePerm"
                     @change="markDirty(row)"
-                  >
-                    <ElOption
-                      v-for="ch in channelOptions"
-                      :key="ch.id"
-                      :value="ch.id"
-                      :label="channelLabel(ch)"
-                      :disabled="!ch.enabled"
-                    />
-                  </ElSelect>
-                  <ElTag v-if="!row.configured" type="info" size="small" class="shrink-0">默认</ElTag>
-                </div>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="通知模板" width="110" align="center">
-              <template #default="{ row }">
-                <div class="flex items-center justify-center gap-1">
-                  <ElTag v-if="row.hasTpl" type="warning" size="small">自定义</ElTag>
-                  <ElTag v-else type="info" size="small">默认</ElTag>
+                  />
+                </template>
+              </ElTableColumn>
+              <ElTableColumn label="操作" width="100" align="center" fixed="right" class-name="msre-table-actions">
+                <template #default="{ row }">
                   <PermissionButton
-                    code="ticket.notify.update"
-                    type="primary"
                     link
+                    type="primary"
                     size="small"
-                    @click="handleEditTpl(row)"
+                    code="ticket.notify.update"
+                    :loading="savingEvent === row.event"
+                    @click="handleSave(row)"
                   >
-                    编辑
+                    保存
                   </PermissionButton>
-                </div>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="启用" width="90" align="center">
-              <template #default="{ row }">
-                <ElSwitch
-                  v-model="row.enabled"
-                  :active-value="1"
-                  :inactive-value="0"
-                  :disabled="!hasUpdatePerm"
-                  @change="markDirty(row)"
-                />
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="操作" width="100" align="center" fixed="right">
-              <template #default="{ row }">
-                <PermissionButton
-                  code="ticket.notify.update"
-                  type="primary"
-                  link
-                  size="small"
-                  :loading="savingEvent === row.event"
-                  @click="handleSave(row)"
-                >
-                  保存
-                </PermissionButton>
-              </template>
-            </ElTableColumn>
-          </ElTable>
+                </template>
+              </ElTableColumn>
+            </ElTable>
           </div>
         </ElTabPane>
 
@@ -414,46 +414,46 @@
 
           <div class="table-scroll-wrap">
             <ElTable v-loading="logsLoading" :data="logs" border stripe height="100%">
-            <ElTableColumn label="时间" width="170">
-              <template #default="{ row }">
-                {{ new Date(row.createdAt).toLocaleString('zh-CN', { hour12: false }) }}
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="事件" width="100" align="center">
-              <template #default="{ row }">
-                <ElTag size="small">{{ eventText(row.event) }}</ElTag>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="工单" width="140">
-              <template #default="{ row }">
-                <span class="text-xs">{{ row.ticketNo || '-' }}</span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="渠道" width="150">
-              <template #default="{ row }">
-                {{ row.channelName || row.channelType }}
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="接收者" min-width="220" show-overflow-tooltip>
-              <template #default="{ row }">
-                <span class="text-xs">{{ row.recipient }}</span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="状态" width="80" align="center">
-              <template #default="{ row }">
-                <ElTag :type="row.status === 1 ? 'success' : 'danger'" size="small">
-                  {{ row.status === 1 ? '成功' : '失败' }}
-                </ElTag>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="错误信息" min-width="200" show-overflow-tooltip>
-              <template #default="{ row }">
-                <span class="text-xs" :class="row.error ? 'text-red-500' : 'text-gray-400'">
-                  {{ row.error || '—' }}
-                </span>
-              </template>
-            </ElTableColumn>
-          </ElTable>
+              <ElTableColumn label="时间" width="170">
+                <template #default="{ row }">
+                  {{ new Date(row.createdAt).toLocaleString('zh-CN', { hour12: false }) }}
+                </template>
+              </ElTableColumn>
+              <ElTableColumn label="事件" width="100" align="center">
+                <template #default="{ row }">
+                  <ElTag size="small">{{ eventText(row.event) }}</ElTag>
+                </template>
+              </ElTableColumn>
+              <ElTableColumn label="工单" width="140">
+                <template #default="{ row }">
+                  <span class="text-xs">{{ row.ticketNo || '-' }}</span>
+                </template>
+              </ElTableColumn>
+              <ElTableColumn label="渠道" width="150">
+                <template #default="{ row }">
+                  {{ row.channelName || row.channelType }}
+                </template>
+              </ElTableColumn>
+              <ElTableColumn label="接收者" min-width="220" show-overflow-tooltip>
+                <template #default="{ row }">
+                  <span class="text-xs">{{ row.recipient }}</span>
+                </template>
+              </ElTableColumn>
+              <ElTableColumn label="状态" width="80" align="center">
+                <template #default="{ row }">
+                  <ElTag :type="row.status === 1 ? 'success' : 'danger'" size="small">
+                    {{ row.status === 1 ? '成功' : '失败' }}
+                  </ElTag>
+                </template>
+              </ElTableColumn>
+              <ElTableColumn label="错误信息" min-width="200" show-overflow-tooltip>
+                <template #default="{ row }">
+                  <span class="text-xs" :class="row.error ? 'text-red-500' : 'text-gray-400'">
+                    {{ row.error || '—' }}
+                  </span>
+                </template>
+              </ElTableColumn>
+            </ElTable>
           </div>
 
           <div class="mt-4 flex justify-end">

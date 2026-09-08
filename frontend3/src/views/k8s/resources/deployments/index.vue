@@ -356,20 +356,18 @@
         <template #default="{ row }">{{ row.ready || 0 }} / {{ row.replicas || 0 }}</template>
       </ElTableColumn>
       <ElTableColumn prop="age" label="年龄" width="160" />
-      <ElTableColumn label="操作" width="280" fixed="right">
+      <ElTableColumn label="操作" align="center" width="280" fixed="right" class-name="msre-table-actions">
         <template #default="{ row }">
-          <ElSpace>
-            <ElButton size="small" @click="handleViewDetail(row)">详情</ElButton>
-            <PermissionButton code="k8s.resource.update" size="small" type="primary" @click="handleScale(row)">
-              缩放
-            </PermissionButton>
-            <PermissionButton code="k8s.resource.update" size="small" type="warning" @click="handleRestart(row)">
-              重启
-            </PermissionButton>
-            <PermissionButton code="k8s.resource.delete" size="small" type="danger" @click="handleDelete(row)">
-              删除
-            </PermissionButton>
-          </ElSpace>
+          <ElButton link type="primary" size="small" @click="handleViewDetail(row)">详情</ElButton>
+          <PermissionButton link type="primary" size="small" code="k8s.resource.update" @click="handleScale(row)">
+            缩放
+          </PermissionButton>
+          <PermissionButton link type="primary" size="small" code="k8s.resource.update" @click="handleRestart(row)">
+            重启
+          </PermissionButton>
+          <PermissionButton link type="danger" size="small" code="k8s.resource.delete" @click="handleDelete(row)">
+            删除
+          </PermissionButton>
         </template>
       </ElTableColumn>
     </ElTable>

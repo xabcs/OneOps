@@ -4,8 +4,8 @@ import { usePreferredColorScheme } from '@vueuse/core';
 import { defineStore } from 'pinia';
 import { getPaletteColorByNumber } from '@sa/color';
 import { localStg } from '@/utils/storage';
-import { applyContentTheme2, applyHeaderTheme } from '@/theme/content-theme';
-import { themeSettings } from '@/theme/settings';
+import { applyContentTheme, applyHeaderTheme } from '@/theme/content-theme';
+import { modernContent, standardContent, themeSettings } from '@/theme/settings';
 import { SetupStoreId } from '@/enum';
 import {
   addThemeVarsToGlobal,
@@ -51,9 +51,7 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
 
   /** UI theme */
   const uiTheme = computed(() => {
-    const borderRadius = settings.value.borderRadius.unified
-      ? settings.value.borderRadius.global
-      : settings.value.borderRadius.medium;
+    const borderRadius = settings.value.borderRadius.medium;
     return getNaiveTheme(themeColors.value, settings.value.recommendColor, borderRadius);
   });
 
@@ -143,13 +141,15 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
   /** Setup theme vars to global */
   function setupThemeVarsToGlobal() {
     const siderCustomColor = settings.value.sider.useCustomColor ? settings.value.sider.customColor : undefined;
-    const { themeTokens, darkThemeTokens } = createThemeToken(
-      themeColors.value,
-      settings.value.tokens,
-      settings.value.recommendColor,
+    const { themeTokens, darkThemeTokens } = createThemeToken(themeColors.value, {
+      tokens: settings.value.tokens,
+      recommended: settings.value.recommendColor,
       siderCustomColor
-    );
-    addThemeVarsToGlobal(themeTokens, darkThemeTokens, settings.value.borderRadius);
+    });
+    addThemeVarsToGlobal(themeTokens, darkThemeTokens, {
+      borderRadius: settings.value.borderRadius,
+      themeColors: themeColors.value
+    });
   }
   /**
    * Set layout reverse horizontal mix
@@ -289,79 +289,45 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     }
   }
 
-  /**
-   * Set content theme settings
-   *
-   * @param key Content theme key
-   * @param value Content theme value
-   */
-  function setContentTheme<K extends keyof App.Theme.ThemeSetting['contentTheme']>(
-    key: K,
-    value: App.Theme.ThemeSetting['contentTheme'][K]
-  ) {
-    settings.value.contentTheme[key] = value;
+  /** Set content variant and restore the matching preset */
+  function setContentVariant(variant: 'standard' | 'modern') {
+    const preset = variant === 'standard' ? standardContent : modernContent;
+
+    settings.value.content = {
+      ...preset,
+      dataTable: {
+        ...preset.dataTable,
+        tableStyle: settings.value.content.dataTable.tableStyle
+      },
+      colors: { ...settings.value.content.colors },
+      text: { ...settings.value.content.text },
+      border: { ...settings.value.content.border }
+    };
   }
 
-  /**
-   * Set multiple content theme settings at once
-   *
-   * @param theme Partial content theme settings
-   */
-  function setContentThemeBatch(theme: Partial<App.Theme.ThemeSetting['contentTheme']>) {
-    Object.assign(settings.value.contentTheme, theme);
-  }
-
-  /**
-   * Set content theme 2 settings
-   *
-   * @param theme Complete content theme 2 object or key
-   * @param value Value if setting a specific key
-   */
-  function setContentTheme2(
-    theme: App.Theme.ThemeSetting['contentTheme2'] | string,
-    value?: App.Theme.ThemeSetting['contentTheme2'][keyof App.Theme.ThemeSetting['contentTheme2']]
-  ) {
-    if (typeof theme === 'string') {
-      // 单个键值对设置
-      (
-        settings.value.contentTheme2 as Record<
-          string,
-          App.Theme.ThemeSetting['contentTheme2'][keyof App.Theme.ThemeSetting['contentTheme2']]
-        >
-      )[theme] = value!;
-    } else {
-      // 整个对象替换
-      Object.assign(settings.value.contentTheme2, theme);
-    }
-  }
-
-  /**
-   * Set content theme 2 module settings
-   *
-   * @param module Module name
-   * @param key Setting key
-   * @param value Setting value
-   */
-  function setContentTheme2Module<M extends keyof App.Theme.ThemeSetting['contentTheme2']>(
+  /** Set a content module config (hero, statCards, toolbar, etc.) */
+  function setContentModule<M extends keyof App.Theme.ThemeSetting['content']>(
     module: M,
-    key: keyof App.Theme.ThemeSetting['contentTheme2'][M],
-    value: App.Theme.ThemeSetting['contentTheme2'][M][keyof App.Theme.ThemeSetting['contentTheme2'][M]]
+    patch: Partial<App.Theme.ThemeSetting['content'][M]>
   ) {
-    (
-      settings.value.contentTheme2[module] as Record<
-        string,
-        App.Theme.ThemeSetting['contentTheme2'][M][keyof App.Theme.ThemeSetting['contentTheme2'][M]]
-      >
-    )[key] = value;
+    if (module === 'variant') return;
+    const target = settings.value.content[module] as Record<string, unknown>;
+    Object.assign(target, patch);
   }
 
-  /**
-   * Set multiple content theme 2 settings at once
-   *
-   * @param theme Partial content theme 2 settings
-   */
-  function setContentTheme2Batch(theme: Partial<App.Theme.ThemeSetting['contentTheme2']>) {
-    Object.assign(settings.value.contentTheme2, theme);
+  /** Set content color palette */
+  function setContentColors(patch: Partial<App.Theme.ThemeSetting['content']['colors']>) {
+    Object.assign(settings.value.content.colors, patch);
+  }
+
+  /** Set content text colors */
+  function setContentText(patch: Partial<App.Theme.ThemeSetting['content']['text']>) {
+    Object.assign(settings.value.content.text, patch);
+  }
+
+  /** Set content border colors */
+  function setContentBorder(patch: Partial<App.Theme.ThemeSetting['content']['border']>) {
+    Object.assign(settings.value.content.border, patch);
   }
 
   /** Cache theme settings */
@@ -461,22 +427,12 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
 
     // watch content theme change
     watch(
-      () => settings.value.contentTheme,
+      () => settings.value.content,
       () => {
-        // Content theme changes are handled directly by CSS variables
-        // No need to regenerate CSS vars
+        // Apply content theme styles when settings change
+        applyContentTheme(settings.value.content);
       },
-      { deep: true }
-    );
-
-    // watch content theme 2 change
-    watch(
-      () => settings.value.contentTheme2,
-      newTheme => {
-        // Apply contentTheme2 styles when theme changes
-        applyContentTheme2(newTheme);
-      },
-      { deep: true }
+      { deep: true, immediate: true }
     );
 
     // cache theme settings when settings change
@@ -517,10 +473,10 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
     setSiderGradient,
     setHeaderCustomColor,
     setHeaderGradient,
-    setContentTheme,
-    setContentThemeBatch,
-    setContentTheme2,
-    setContentTheme2Module,
-    setContentTheme2Batch
+    setContentVariant,
+    setContentModule,
+    setContentColors,
+    setContentText,
+    setContentBorder
   };
 });

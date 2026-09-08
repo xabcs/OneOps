@@ -94,33 +94,33 @@
 
       <div class="table-scroll-wrap">
         <ElTable v-loading="loading" :data="tableData" border stripe height="100%">
-        <ElTableColumn prop="id" label="ID" width="70" align="center" />
-        <ElTableColumn prop="name" label="机房名称" min-width="120" align="center" />
-        <ElTableColumn prop="code" label="机房代码" width="120" align="center" />
-        <ElTableColumn prop="location" label="位置" min-width="150" align="center" show-overflow-tooltip />
-        <ElTableColumn prop="address" label="详细地址" min-width="200" align="center" show-overflow-tooltip />
-        <ElTableColumn prop="provider" label="服务商" width="100" align="center" />
-        <ElTableColumn prop="contact" label="联系人" width="100" align="center" />
-        <ElTableColumn prop="phone" label="联系电话" width="120" align="center" />
-        <ElTableColumn label="状态" width="80" align="center">
-          <template #default="{ row }">
-            <ElTag :type="getStatusTag(row.status).type" size="small">
-              {{ getStatusTag(row.status).text }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn prop="remarks" label="备注" min-width="150" align="center" show-overflow-tooltip />
-        <ElTableColumn label="操作" width="180" align="center" fixed="right">
-          <template #default="{ row }">
-            <PermissionButton code="cmdb.rooms.update" type="primary" size="small" @click="handleEdit(row)">
-              编辑
-            </PermissionButton>
-            <PermissionButton code="cmdb.rooms.delete" type="danger" size="small" @click="handleDelete(row)">
-              删除
-            </PermissionButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
+          <ElTableColumn prop="id" label="ID" width="70" align="center" />
+          <ElTableColumn prop="name" label="机房名称" min-width="120" align="center" />
+          <ElTableColumn prop="code" label="机房代码" width="120" align="center" />
+          <ElTableColumn prop="location" label="位置" min-width="150" align="center" show-overflow-tooltip />
+          <ElTableColumn prop="address" label="详细地址" min-width="200" align="center" show-overflow-tooltip />
+          <ElTableColumn prop="provider" label="服务商" width="100" align="center" />
+          <ElTableColumn prop="contact" label="联系人" width="100" align="center" />
+          <ElTableColumn prop="phone" label="联系电话" width="120" align="center" />
+          <ElTableColumn label="状态" width="80" align="center">
+            <template #default="{ row }">
+              <ElTag :type="getStatusTag(row.status).type" size="small">
+                {{ getStatusTag(row.status).text }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn prop="remarks" label="备注" min-width="150" align="center" show-overflow-tooltip />
+          <ElTableColumn label="操作" width="180" align="center" fixed="right" class-name="msre-table-actions">
+            <template #default="{ row }">
+              <PermissionButton link type="primary" size="small" code="cmdb.rooms.update" @click="handleEdit(row)">
+                编辑
+              </PermissionButton>
+              <PermissionButton link type="danger" size="small" code="cmdb.rooms.delete" @click="handleDelete(row)">
+                删除
+              </PermissionButton>
+            </template>
+          </ElTableColumn>
+        </ElTable>
       </div>
 
       <RoomOperateDrawer

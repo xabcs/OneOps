@@ -188,77 +188,77 @@
     <ElCard shadow="never">
       <div class="table-scroll-wrap">
         <ElTable v-loading="loading" :data="channels" border stripe height="100%">
-        <ElTableColumn label="类型" width="110" align="center">
-          <template #default="{ row }">
-            <ElIcon :size="20">
-              <component :is="getChannelIcon(row.channelType)" />
-            </ElIcon>
-            <span class="ml-2">{{ getChannelTypeText(row.channelType) }}</span>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="名称" prop="channelName" min-width="150" />
-        <ElTableColumn label="配置信息" min-width="250">
-          <template #default="{ row }">
-            <div v-if="row.channelType === 'email'" class="text-sm">
-              <div class="text-gray-600">
-                SMTP: {{ (row.config as Monitoring.EmailConfig).smtpHost }}:{{
-                  (row.config as Monitoring.EmailConfig).smtpPort
-                }}
+          <ElTableColumn label="类型" width="110" align="center">
+            <template #default="{ row }">
+              <ElIcon :size="20">
+                <component :is="getChannelIcon(row.channelType)" />
+              </ElIcon>
+              <span class="ml-2">{{ getChannelTypeText(row.channelType) }}</span>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="名称" prop="channelName" min-width="150" />
+          <ElTableColumn label="配置信息" min-width="250">
+            <template #default="{ row }">
+              <div v-if="row.channelType === 'email'" class="text-sm">
+                <div class="text-gray-600">
+                  SMTP: {{ (row.config as Monitoring.EmailConfig).smtpHost }}:{{
+                    (row.config as Monitoring.EmailConfig).smtpPort
+                  }}
+                </div>
+                <div class="text-gray-600">发件人: {{ (row.config as Monitoring.EmailConfig).from }}</div>
               </div>
-              <div class="text-gray-600">发件人: {{ (row.config as Monitoring.EmailConfig).from }}</div>
-            </div>
-            <div v-else-if="row.channelType === 'wechat'" class="text-sm">
-              <div class="truncate text-gray-600" :title="(row.config as Monitoring.WeChatConfig).webhookUrl">
-                Webhook: {{ (row.config as Monitoring.WeChatConfig).webhookUrl }}
+              <div v-else-if="row.channelType === 'wechat'" class="text-sm">
+                <div class="truncate text-gray-600" :title="(row.config as Monitoring.WeChatConfig).webhookUrl">
+                  Webhook: {{ (row.config as Monitoring.WeChatConfig).webhookUrl }}
+                </div>
               </div>
-            </div>
-            <div v-else class="text-sm text-gray-400">点击"编辑"查看配置</div>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="状态" width="90" align="center">
-          <template #default="{ row }">
-            <ElSwitch
-              :model-value="row.enabled"
-              :disabled="!authStore.hasPermission('monitor.notification.update')"
-              title="缺少权限：monitor.notification.update"
-              @click="handleDisabledSwitchClick('monitor.notification.update')"
-              @change="handleToggleStatus(row)"
-            />
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="操作" width="200" align="center" fixed="right">
-          <template #default="{ row }">
-            <PermissionButton
-              code="monitor.notification.update"
-              type="primary"
-              link
-              size="small"
-              @click="handleEdit(row)"
-            >
-              编辑
-            </PermissionButton>
-            <PermissionButton
-              code="monitor.notification.test"
-              type="success"
-              link
-              size="small"
-              :disabled="!row.enabled"
-              @click="handleTest(row)"
-            >
-              测试
-            </PermissionButton>
-            <PermissionButton
-              code="monitor.notification.delete"
-              type="danger"
-              link
-              size="small"
-              @click="handleDelete(row)"
-            >
-              删除
-            </PermissionButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
+              <div v-else class="text-sm text-gray-400">点击"编辑"查看配置</div>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="状态" width="90" align="center">
+            <template #default="{ row }">
+              <ElSwitch
+                :model-value="row.enabled"
+                :disabled="!authStore.hasPermission('monitor.notification.update')"
+                title="缺少权限：monitor.notification.update"
+                @click="handleDisabledSwitchClick('monitor.notification.update')"
+                @change="handleToggleStatus(row)"
+              />
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="操作" width="200" align="center" fixed="right" class-name="msre-table-actions">
+            <template #default="{ row }">
+              <PermissionButton
+                link
+                type="primary"
+                size="small"
+                code="monitor.notification.update"
+                @click="handleEdit(row)"
+              >
+                编辑
+              </PermissionButton>
+              <PermissionButton
+                link
+                type="primary"
+                size="small"
+                code="monitor.notification.test"
+                :disabled="!row.enabled"
+                @click="handleTest(row)"
+              >
+                测试
+              </PermissionButton>
+              <PermissionButton
+                link
+                type="danger"
+                size="small"
+                code="monitor.notification.delete"
+                @click="handleDelete(row)"
+              >
+                删除
+              </PermissionButton>
+            </template>
+          </ElTableColumn>
+        </ElTable>
       </div>
     </ElCard>
 

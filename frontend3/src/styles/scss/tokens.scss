@@ -3,7 +3,7 @@
  *
  * 全站唯一的 CSS 变量定义源。
  * 所有自定义变量统一使用 --msre- 前缀。
- * 旧的 --sxdevops-* / --oneops-* / 无前缀变量
+ * 旧的 --oneops-* / 无前缀变量
  * 在文件末尾以别名方式保持兼容，后续逐步清理。
  */
 
@@ -193,7 +193,6 @@
   --msre-table-row-border: rgb(148 163 184 / 8%);
   --msre-table-border: rgb(148 163 184 / 16%);
   --msre-table-text-color: #475569;
-  --msre-table-radius: 12px;
   --msre-table-striped-bg: #f8fafc;
 
   /* ========== 按钮 ========== */
@@ -218,14 +217,15 @@
   --msre-toolbar-bg: linear-gradient(180deg, rgb(248 250 252 / 92%) 0%, rgb(255 255 255 / 96%) 100%);
   --msre-toolbar-border: rgb(148 163 184 / 12%);
   --msre-toolbar-radius: 12px;
-  --msre-toolbar-padding: 12px 16px;
+  --msre-toolbar-padding: 8px 12px;
+  --msre-stat-padding: 10px 14px;
 
   /* ========== Hero 区域 ========== */
   --msre-hero-bg: linear-gradient(135deg, #fbfdff 0%, #f7faff 52%, #f9fbfd 100%);
   --msre-hero-border: rgb(36 91 219 / 9%);
   --msre-hero-radius: 20px;
   --msre-hero-shadow: 0 8px 24px rgb(15 23 42 / 4%);
-  --msre-hero-padding: 14px 22px;
+  --msre-hero-padding: 10px 14px;
   --msre-hero-visible: 1;
   --msre-hero-icon-bg: linear-gradient(180deg, rgb(243 247 255 / 98%) 0%, rgb(235 242 255 / 96%) 100%);
   --msre-hero-icon-border: rgb(36 91 219 / 12%);
@@ -285,47 +285,37 @@ html.dark:root {
   --msre-primary: #818cf8;
   --msre-primary-light: #a5b4fc;
   --msre-primary-dark: #6366f1;
-
   --msre-content-bg: #121212;
   --msre-card-bg: #1c1c1c;
   --msre-header-bg: linear-gradient(180deg, rgb(28 28 28 / 98%), rgb(18 18 18 / 94%));
   --msre-sidebar-bg: linear-gradient(180deg, rgb(28 28 28 / 98%) 0%, rgb(18 18 18 / 90%) 100%);
-
   --msre-text-primary: #e0e0e0;
   --msre-text-secondary: #a0a0a0;
   --msre-text-muted: #707070;
-
   --msre-border-light: rgb(255 255 255 / 8%);
   --msre-border-medium: rgb(255 255 255 / 12%);
   --msre-border-strong: rgb(255 255 255 / 16%);
-
   --msre-sidebar-text: #a0a0a0;
   --msre-sidebar-text-active: var(--msre-primary);
   --msre-sidebar-hover: rgb(255 255 255 / 6%);
   --msre-sidebar-icon: #a0a0a0;
   --msre-sidebar-icon-active: var(--msre-primary);
-
   --msre-card-shadow: 0 1px 3px rgb(0 0 0 / 30%);
-
   --msre-table-header-bg: #1c1c1c;
   --msre-table-row-hover: rgb(255 255 255 / 4%);
   --msre-table-border: rgb(255 255 255 / 8%);
   --msre-table-text-color: #c0c0c0;
-
   --msre-input-bg: rgb(28 28 28 / 60%);
   --msre-input-border: rgb(255 255 255 / 10%);
   --msre-input-hover-border: rgb(129 140 248 / 30%);
   --msre-input-focus-border: rgb(129 140 248 / 40%);
   --msre-input-shadow: 0 0 0 1px rgb(255 255 255 / 6%) inset;
   --msre-input-focus-shadow: 0 0 0 1px rgb(129 140 248 / 40%) inset;
-
   --msre-scrollbar-thumb: #3a3a3a;
   --msre-scrollbar-thumb-hover: #505050;
-
   --msre-logo-icon-bg: linear-gradient(145deg, rgb(28 28 28 / 80%) 0%, rgb(18 18 18 / 90%) 100%);
   --msre-logo-text-color: var(--msre-primary);
   --msre-logo-subtext-color: #a0a0a0;
-
   --msre-notice-panel-bg: rgb(28 28 28 / 92%);
   --msre-notice-border: rgb(255 255 255 / 8%);
   --msre-notice-item-bg: rgb(28 28 28 / 92%);
@@ -341,58 +331,8 @@ html.dark:root {
   }
 }
 
-/* ====================================================
- * 兼容别名
- * 将旧的 --sxdevops-* / --oneops-* / 无前缀变量
- * 映射到 --msre-* 统一命名空间。
- * 后续逐步替换旧引用后可删除此区块。
- * ==================================================== */
-
 :root {
-  /* --sxdevops-* 别名 */
-  --sxdevops-primary: var(--msre-primary);
-  --sxdevops-primary-light: var(--msre-primary-light);
-  --sxdevops-primary-dark: var(--msre-primary-dark);
-  --sxdevops-brand-gradient: var(--msre-brand-gradient);
-  --sxdevops-brand-gradient-short: var(--msre-brand-gradient-short);
-  --sxdevops-sidebar-bg: var(--msre-sidebar-bg);
-  --sxdevops-sidebar-hover: var(--msre-sidebar-hover);
-  --sxdevops-sidebar-active: var(--msre-sidebar-active);
-  --sxdevops-sidebar-text: var(--msre-sidebar-text);
-  --sxdevops-sidebar-text-active: var(--msre-sidebar-text-active);
-  --sxdevops-sidebar-text-hover: var(--msre-sidebar-text-hover);
-  --sxdevops-sidebar-icon: var(--msre-sidebar-icon);
-  --sxdevops-sidebar-icon-active: var(--msre-sidebar-icon-active);
-  --sxdevops-logo-bg: var(--msre-logo-bg);
-  --sxdevops-logo-icon-bg: var(--msre-logo-icon-bg);
-  --sxdevops-logo-icon-border: var(--msre-logo-icon-border);
-  --sxdevops-logo-icon-shadow: var(--msre-logo-icon-shadow);
-  --sxdevops-header-height: var(--msre-header-height);
-  --sxdevops-header-bg: var(--msre-header-bg);
-  --sxdevops-header-shadow: var(--msre-header-shadow);
-  --sxdevops-content-bg: var(--msre-content-bg);
-  --sxdevops-card-bg: var(--msre-card-bg);
-  --sxdevops-card-shadow: var(--msre-card-shadow);
-  --sxdevops-card-radius: var(--msre-card-radius);
-  --sxdevops-text-primary: var(--msre-text-primary);
-  --sxdevops-text-secondary: var(--msre-text-secondary);
-  --sxdevops-text-muted: var(--msre-text-muted);
-  --sxdevops-success: var(--msre-success);
-  --sxdevops-warning: var(--msre-warning);
-  --sxdevops-danger: var(--msre-danger);
-  --sxdevops-info: var(--msre-info);
-  --sxdevops-radius-small: var(--msre-radius-small);
-  --sxdevops-radius-medium: var(--msre-radius-medium);
-  --sxdevops-radius-large: var(--msre-radius-large);
-  --sxdevops-radius-logo-icon: var(--msre-radius-logo-icon);
-  --sxdevops-radius-menu: var(--msre-radius-menu);
-  --sxdevops-radius-card: var(--msre-radius-card);
-  --sxdevops-transition: var(--msre-transition);
-  --sxdevops-transition-fast: var(--msre-transition-fast);
-  --sxdevops-sidebar-icon: var(--msre-sidebar-icon);
-  --sxdevops-sidebar-icon-active: var(--msre-sidebar-icon-active);
-
-  /* --oneops-* 别名 */
+  /* --oneops-* 兼容别名 */
   --oneops-brand-primary: var(--msre-primary);
   --oneops-brand-secondary: #38bdf8;
   --oneops-brand-accent: #2563eb;
@@ -533,27 +473,4 @@ html.dark:root {
   --animation-duration: var(--msre-animation-duration);
   --animation-duration-fast: var(--msre-animation-duration-fast);
   --animation-duration-slow: var(--msre-animation-duration-slow);
-}
-
-/* 品牌渐变文字 */
-.sxdevops-brand-text {
-  background: var(--msre-brand-gradient);
-  background-clip: text;
-  color: transparent;
-}
-
-/* 3D 球体状态指示 */
-.sxdevops-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 98%) 0 20%, rgb(255 255 255 / 0%) 22%),
-    radial-gradient(circle at 50% 50%, rgb(103 183 171 / 92%) 0%, rgb(85 134 182 / 96%) 72%, rgb(85 134 182 / 72%) 100%);
-  border: 1px solid rgb(255 255 255 / 88%);
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 24%),
-    0 0 0 3px rgb(96 165 250 / 8%),
-    0 2px 8px rgb(85 134 182 / 16%);
-  position: relative;
 }

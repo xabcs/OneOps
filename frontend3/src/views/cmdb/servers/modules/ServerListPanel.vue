@@ -444,92 +444,79 @@
                 <span v-else class="text-12px text-gray-400">-</span>
               </template>
             </ElTableColumn>
-            <ElTableColumn label="操作" width="100" align="center" fixed="right">
+            <ElTableColumn label="操作" width="100" align="center" fixed="right" class-name="msre-table-actions">
               <template #default="{ row }">
-                <div style="display: flex; align-items: center; justify-content: center; gap: 12px">
-                  <a
-                    v-permission="'cmdb.server.connect'"
-                    title="连接终端"
-                    style="cursor: pointer"
-                    @click="emit('connect', row)"
-                  >
-                    <icon-lucide-terminal class="text-14px" style="color: #909399" />
-                  </a>
-                  <ElDropdown trigger="click" @command="emit('more-action', $event, row)">
-                    <span
-                      style="
-                        display: inline-flex;
-                        align-items: center;
-                        justify-content: center;
-                        width: 24px;
-                        height: 24px;
-                        cursor: pointer;
-                        font-size: 16px;
-                        color: #909399;
-                        font-style: normal;
-                        letter-spacing: 1px;
-                      "
-                    >
-                      ⋮
-                    </span>
-                    <template #dropdown>
-                      <ElDropdownMenu>
-                        <ElDropdownItem
-                          v-if="row.agentStatus === 'running' || row.agentStatus === 'failed'"
-                          command="sync-metrics"
-                        >
-                          <icon-mdi-refresh class="mr-8px" />
-                          刷新指标
-                        </ElDropdownItem>
-                        <ElDropdownItem v-if="row.agentStatus === 'running'" command="monitoring">
-                          <icon-mdi-chart-line class="mr-8px" />
-                          监控详情
-                        </ElDropdownItem>
-                        <ElDropdownItem command="detail">
-                          <icon-ic-round-info class="mr-8px" />
-                          主机详情
-                        </ElDropdownItem>
-                        <ElDropdownItem v-permission="'cmdb.server.update'" command="edit">
-                          <icon-ic-round-edit class="mr-8px" />
-                          编辑
-                        </ElDropdownItem>
-                        <ElDropdownItem
-                          v-if="!row.agentStatus || row.agentStatus === 'uninstalled' || row.agentStatus === 'failed'"
-                          v-permission="'cmdb.agents.deploy'"
-                          command="agent-deploy"
-                        >
-                          <icon-mdi-download class="mr-8px" />
-                          部署 Agent
-                        </ElDropdownItem>
-                        <ElDropdownItem
-                          v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'"
-                          v-permission="'cmdb.agents.restart'"
-                          command="agent-restart"
-                        >
-                          <icon-mdi-restart class="mr-8px" />
-                          重启 Agent
-                        </ElDropdownItem>
-                        <ElDropdownItem
-                          v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'"
-                          v-permission="'cmdb.agents.uninstall'"
-                          command="agent-uninstall"
-                        >
-                          <icon-mdi-delete-forever class="mr-8px" />
-                          卸载 Agent
-                        </ElDropdownItem>
-                        <ElDropdownItem
-                          v-permission="'cmdb.server.delete'"
-                          divided
-                          command="delete"
-                          style="color: #f56c6c"
-                        >
-                          <icon-ic-round-delete class="mr-8px" />
-                          删除主机
-                        </ElDropdownItem>
-                      </ElDropdownMenu>
-                    </template>
-                  </ElDropdown>
-                </div>
+                <PermissionButton
+                  code="cmdb.server.connect"
+                  link
+                  type="primary"
+                  size="small"
+                  title="连接终端"
+                  @click="emit('connect', row)"
+                >
+                  <icon-lucide-terminal class="text-14px" />
+                </PermissionButton>
+                <ElDropdown trigger="click" @command="emit('more-action', $event, row)">
+                  <ElButton link type="primary" size="small" title="更多操作">
+                    <icon-lucide-ellipsis-vertical class="text-14px" />
+                  </ElButton>
+                  <template #dropdown>
+                    <ElDropdownMenu>
+                      <ElDropdownItem
+                        v-if="row.agentStatus === 'running' || row.agentStatus === 'failed'"
+                        command="sync-metrics"
+                      >
+                        <icon-mdi-refresh class="mr-8px" />
+                        刷新指标
+                      </ElDropdownItem>
+                      <ElDropdownItem v-if="row.agentStatus === 'running'" command="monitoring">
+                        <icon-mdi-chart-line class="mr-8px" />
+                        监控详情
+                      </ElDropdownItem>
+                      <ElDropdownItem command="detail">
+                        <icon-ic-round-info class="mr-8px" />
+                        主机详情
+                      </ElDropdownItem>
+                      <ElDropdownItem v-permission="'cmdb.server.update'" command="edit">
+                        <icon-ic-round-edit class="mr-8px" />
+                        编辑
+                      </ElDropdownItem>
+                      <ElDropdownItem
+                        v-if="!row.agentStatus || row.agentStatus === 'uninstalled' || row.agentStatus === 'failed'"
+                        v-permission="'cmdb.agents.deploy'"
+                        command="agent-deploy"
+                      >
+                        <icon-mdi-download class="mr-8px" />
+                        部署 Agent
+                      </ElDropdownItem>
+                      <ElDropdownItem
+                        v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'"
+                        v-permission="'cmdb.agents.restart'"
+                        command="agent-restart"
+                      >
+                        <icon-mdi-restart class="mr-8px" />
+                        重启 Agent
+                      </ElDropdownItem>
+                      <ElDropdownItem
+                        v-if="row.agentStatus === 'running' || row.agentStatus === 'offline'"
+                        v-permission="'cmdb.agents.uninstall'"
+                        command="agent-uninstall"
+                      >
+                        <icon-mdi-delete-forever class="mr-8px" />
+                        卸载 Agent
+                      </ElDropdownItem>
+                      <ElDropdownItem
+                        v-permission="'cmdb.server.delete'"
+                        divided
+                        command="delete"
+                        style="color: #f56c6c"
+                      >
+                        <icon-ic-round-delete class="mr-8px" />
+                        删除主机
+                      </ElDropdownItem>
+                    </ElDropdownMenu>
+                  </template>
+                </ElDropdown>
               </template>
             </ElTableColumn>
           </ElTable>

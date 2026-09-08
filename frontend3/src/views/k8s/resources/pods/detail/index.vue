@@ -393,18 +393,18 @@
             >
               <ElTableColumn prop="name" label="容器名称" min-width="180" />
               <ElTableColumn prop="image" label="镜像" min-width="250" show-overflow-tooltip />
-              <ElTableColumn label="操作" width="180" fixed="right">
+              <ElTableColumn label="操作" align="center" width="180" fixed="right" class-name="msre-table-actions">
                 <template #default="{ row }">
                   <PermissionButton
-                    code="k8s.terminal.connect"
-                    size="small"
-                    type="primary"
                     link
+                    type="primary"
+                    size="small"
+                    code="k8s.terminal.connect"
                     @click="handleTerminal(row.name)"
                   >
                     终端
                   </PermissionButton>
-                  <ElButton size="small" link @click="handleLogs(row.name)">日志</ElButton>
+                  <ElButton link type="primary" size="small" @click="handleLogs(row.name)">日志</ElButton>
                 </template>
               </ElTableColumn>
             </ElTable>
@@ -686,80 +686,5 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-  }
-
-  /* 表格透明样式 - 完全覆盖 Element Plus 默认样式 */
-  .pods-containers-table,
-  .pods-events-table,
-  .pods-containers-table.el-table,
-  .pods-events-table.el-table,
-  :deep(.el-table),
-  :deep(.el-table__body),
-  :deep(.el-table__body-wrapper),
-  :deep(.el-table__inner-wrapper),
-  :deep(.el-table__header) {
-    background-color: transparent !important;
-  }
-
-  /* 表头样式 */
-  :deep(.el-table__header-wrapper) {
-    background-color: transparent !important;
-
-    th.el-table__cell {
-      background-color: #f5f7fa !important;
-      color: #303133;
-      font-weight: 600;
-      text-align: left;
-    }
-  }
-
-  /* 移除所有行的背景色 */
-  :deep(.el-table__body-wrapper) {
-    background-color: transparent !important;
-  }
-
-  :deep(.el-table__body) {
-    background-color: transparent !important;
-  }
-
-  :deep(.el-table__body tr) {
-    background-color: transparent !important;
-  }
-
-  :deep(.el-table__body td.el-table__cell) {
-    background-color: transparent !important;
-  }
-
-  /* 去掉斑马纹 */
-  :deep(.el-table--striped .el-table__body tr.el-table__row--striped) {
-    background-color: transparent !important;
-
-    td.el-table__cell {
-      background-color: transparent !important;
-    }
-  }
-
-  /* 移除 hover 效果的背景色 */
-  :deep(.el-table__body tr:hover > td.el-table__cell) {
-    background-color: transparent !important;
-  }
-
-  /* 移除固定列的背景色 */
-  :deep(.el-table__fixed),
-  :deep(.el-table__fixed-body-wrapper) {
-    background-color: transparent !important;
-
-    .el-table__body tr {
-      background-color: transparent !important;
-    }
-
-    .el-table__body td.el-table__cell {
-      background-color: transparent !important;
-    }
-  }
-
-  /* 移除表格容器的背景色 */
-  :deep(.el-table__inner-wrapper) {
-    background-color: transparent !important;
   }
 </style>

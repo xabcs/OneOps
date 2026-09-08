@@ -217,9 +217,9 @@
           </template>
         </ElTableColumn>
         <ElTableColumn prop="last_activity" label="最后活动" width="160" />
-        <ElTableColumn label="操作" width="120" fixed="right">
+        <ElTableColumn label="操作" align="center" width="120" fixed="right" class-name="msre-table-actions">
           <template #default="{ row }">
-            <PermissionButton code="k8s.terminal.connect" size="small" type="danger" @click="handleTerminate(row)">
+            <PermissionButton link type="danger" size="small" code="k8s.terminal.connect" @click="handleTerminate(row)">
               终止
             </PermissionButton>
           </template>

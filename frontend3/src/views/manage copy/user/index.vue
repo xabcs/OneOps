@@ -17,7 +17,7 @@
   const themeStore = useThemeStore();
 
   // Hero区域显示状态
-  const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);
+  const heroVisible = computed(() => themeStore.content.hero.visible !== false);
 
   // 用户统计数据
   const userStats = ref({

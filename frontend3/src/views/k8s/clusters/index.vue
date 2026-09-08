@@ -12,7 +12,7 @@
   const themeStore = useThemeStore();
 
   // Hero区域显示状态
-  const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);
+  const heroVisible = computed(() => themeStore.content.hero.visible !== false);
 
   const message = ElNotification;
 
@@ -242,7 +242,7 @@
     <!-- Hero 区域 -->
     <section
       v-if="heroVisible"
-      class="hero-section"
+      class="hero-section msre-hero"
       :style="{
         background: 'var(--msre-hero-bg)',
         border: '1px solid var(--msre-hero-border)',
@@ -397,16 +397,18 @@
             </template>
           </ElTableColumn>
           <ElTableColumn prop="createdAt" label="创建时间" width="160" />
-          <ElTableColumn label="操作" width="280" fixed="right" align="center">
+          <ElTableColumn label="操作" width="280" fixed="right" align="center" class-name="msre-table-actions">
             <template #default="{ row }">
-              <div class="flex-center gap-8px">
-                <ElButton link type="primary" @click="handleDetail(row)">详情</ElButton>
-                <PermissionButton code="k8s.cluster.update" link type="primary" @click="handleEdit(row)">
+              <div>
+                <ElButton link type="primary" size="small" @click="handleDetail(row)">详情</ElButton>
+                <PermissionButton link type="primary" size="small" code="k8s.cluster.update" @click="handleEdit(row)">
                   编辑
                 </PermissionButton>
                 <PermissionButton
-                  code="k8s.cluster.connect"
                   link
+                  type="primary"
+                  size="small"
+                  code="k8s.cluster.connect"
                   class="text-accent"
                   @click="handleTestConnection(row)"
                 >
@@ -414,7 +416,7 @@
                 </PermissionButton>
                 <ElPopconfirm title="确定要删除集群吗？" @confirm="handleDelete(row)">
                   <template #reference>
-                    <PermissionButton code="k8s.cluster.delete" link type="danger">删除</PermissionButton>
+                    <PermissionButton link type="danger" size="small" code="k8s.cluster.delete">删除</PermissionButton>
                   </template>
                 </ElPopconfirm>
               </div>
@@ -490,13 +492,13 @@
   }
 
   .hero-icon {
-    width: 42px;
-    height: 42px;
-    border-radius: 14px;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 16px;
     color: var(--msre-hero-icon-color);
     background: var(--msre-hero-icon-bg);
     border: 1px solid var(--msre-hero-icon-border);
@@ -564,72 +566,6 @@
     align-items: center;
   }
 
-  /* ============================================
-                                                            	   4. 搜索工具栏
-                                                            	   ============================================ */
-  .workbench-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin: 6px 0 8px;
-  }
-
-  .workbench-toolbar-left,
-  .workbench-toolbar-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  .workbench-toolbar.workbench-toolbar--history {
-    background: var(--msre-toolbar-bg);
-    border: 1px solid var(--msre-toolbar-border);
-    border-radius: var(--msre-toolbar-radius);
-    padding: var(--msre-toolbar-padding);
-    box-shadow: var(--msre-toolbar-shadow);
-    gap: 8px;
-    margin: 6px 0;
-
-    .workbench-toolbar-left,
-    .workbench-toolbar-right {
-      gap: 5px;
-      flex-wrap: nowrap; /* 防止元素换行 */
-    }
-
-    .el-input__wrapper,
-    .el-select__wrapper {
-      background: var(--msre-search-input-bg);
-      border-radius: var(--msre-search-input-radius);
-      box-shadow: 0 0 0 1px var(--msre-search-input-border) inset;
-      transition: all 0.3s ease;
-
-      &:hover {
-        box-shadow: 0 0 0 1px var(--msre-search-input-hover-border) inset;
-      }
-    }
-
-    .el-input.is-focus .el-input__wrapper,
-    .el-select.is-focus .el-select__wrapper {
-      box-shadow: 0 0 0 1px var(--msre-search-input-focus-border) inset;
-    }
-
-    .el-button:not(.is-link) {
-      background: var(--msre-search-button-bg);
-      color: var(--msre-search-button-text);
-      transition: all 0.3s ease;
-
-      &:hover {
-        background: var(--msre-search-button-hover);
-      }
-    }
-  }
-
-  /* ============================================
-                                                            	   5. 数据表格
-                                                            	   ============================================ */
   .table-section {
     flex: 1;
     display: flex;
@@ -638,36 +574,6 @@
 
   .data-table {
     width: 100%;
-    border-radius: var(--msre-table-radius);
-    overflow: hidden;
-    border: 1px solid var(--msre-table-border);
-    border-collapse: separate;
-    border-spacing: 0;
-
-    --el-table-border-color: var(--msre-table-border);
-    --el-table-header-bg-color: var(--msre-table-header-bg);
-    --el-table-row-hover-bg-color: var(--msre-table-row-hover);
-
-    :deep(th.el-table__cell) {
-      background-color: var(--msre-table-header-bg);
-      color: var(--msre-table-header-text);
-      font-weight: 600;
-      border-radius: 0;
-    }
-
-    :deep(td.el-table__cell) {
-      border-radius: 0;
-    }
-
-    :deep(.el-checkbox__inner),
-    :deep(.el-checkbox__inner::before),
-    :deep(.el-checkbox__inner::after) {
-      border-radius: 0;
-    }
-
-    &--striped :deep(.el-table__body tr.el-table__row--striped td) {
-      background-color: var(--msre-table-striped-bg);
-    }
   }
 
   .cluster-name-link {

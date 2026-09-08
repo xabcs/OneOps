@@ -90,7 +90,7 @@
         label: '路由映射',
         width: 90,
         formatter: (row: Api.SystemManage.Permission) => (
-          <ElButton text type="primary" size="small" onClick={() => openRouteModal(row.code)}>
+          <ElButton link type="primary" size="small" onClick={() => openRouteModal(row.code)}>
             查看
           </ElButton>
         )
@@ -109,16 +109,18 @@
         prop: 'operate',
         label: '操作',
         width: 120,
+        align: 'center',
+        className: 'msre-table-actions',
         fixed: 'right',
         formatter: (row: Api.SystemManage.Permission) => (
-          <ElSpace size="small">
-            <ElButton text type="primary" size="small" onClick={() => handleEdit(row.id)}>
+          <div>
+            <ElButton link type="primary" size="small" onClick={() => handleEdit(row.id)}>
               编辑
             </ElButton>
-            <ElButton text type="danger" size="small" onClick={() => handleDelete(row.id)}>
+            <ElButton link type="danger" size="small" onClick={() => handleDelete(row.id)}>
               删除
             </ElButton>
-          </ElSpace>
+          </div>
         )
       }
     ]

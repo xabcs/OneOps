@@ -1,6 +1,6 @@
 /**
  * OneOps 布局组件配色系统
- * 基于 SxDevOps 布局设计理念
+ * 基于 MSRE 布局设计理念
  * 提供侧边栏、顶栏、内容区的完整配色样式
  */
 
@@ -102,8 +102,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 98%) 0 20%, rgb(255 255 255 / 0%) 22%),
+  background: radial-gradient(circle at 50% 50%, rgb(255 255 255 / 98%) 0 20%, rgb(255 255 255 / 0%) 22%),
     radial-gradient(circle at 50% 50%, rgb(103 183 171 / 92%) 0%, rgb(85 134 182 / 96%) 72%, rgb(85 134 182 / 72%) 100%);
   border: 1px solid rgb(255 255 255 / 88%);
   box-shadow:

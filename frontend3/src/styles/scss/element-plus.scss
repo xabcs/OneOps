@@ -211,16 +211,6 @@ html .el-collapse {
   }
 }
 
-.el-table {
-  .header {
-    border-top-left-radius: 3px;
-  }
-
-  .cell {
-    padding: 0;
-  }
-}
-
 .el-tabs {
   &.segment {
     border-radius: var(--border-radius-medium, 6px);

@@ -230,11 +230,11 @@
             {{ row.metricsUpdatedAt ? new Date(row.metricsUpdatedAt).toLocaleString('zh-CN') : '-' }}
           </template>
         </ElTableColumn>
-        <ElTableColumn label="操作" width="110" align="center" fixed="right">
+        <ElTableColumn label="操作" width="110" align="center" fixed="right" class-name="msre-table-actions">
           <template #default="{ row }">
             <ElButton
-              type="primary"
               link
+              type="primary"
               size="small"
               :disabled="row.agentStatus !== 'running'"
               @click="handleViewMonitoring(row.id)"

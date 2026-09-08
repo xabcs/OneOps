@@ -492,7 +492,7 @@
               </span>
             </template>
           </ElTableColumn>
-          <ElTableColumn label="操作" width="110" fixed="right">
+          <ElTableColumn label="操作" align="center" width="110" fixed="right" class-name="msre-table-actions">
             <template #default="{ row }">
               <ElButton
                 link
@@ -540,7 +540,7 @@
               </ElTag>
             </template>
           </ElTableColumn>
-          <ElTableColumn label="操作" width="110" fixed="right">
+          <ElTableColumn label="操作" align="center" width="110" fixed="right" class-name="msre-table-actions">
             <template #default="{ row }">
               <ElButton
                 link
@@ -600,9 +600,16 @@
             </template>
           </ElTableColumn>
           <ElTableColumn prop="createdAt" label="授权时间" width="170" />
-          <ElTableColumn v-if="canRevoke" label="操作" width="100" fixed="right">
+          <ElTableColumn
+            v-if="canRevoke"
+            label="操作"
+            align="center"
+            width="100"
+            fixed="right"
+            class-name="msre-table-actions"
+          >
             <template #default="{ row }">
-              <ElButton type="danger" link size="small" @click="handleRevoke(row)">撤销</ElButton>
+              <ElButton link type="danger" size="small" @click="handleRevoke(row)">撤销</ElButton>
             </template>
           </ElTableColumn>
         </ElTable>
@@ -650,9 +657,16 @@
           </template>
         </ElTableColumn>
         <ElTableColumn prop="binding.createdAt" label="授权时间" width="165" />
-        <ElTableColumn v-if="canRevoke" label="操作" width="90" fixed="right">
+        <ElTableColumn
+          v-if="canRevoke"
+          label="操作"
+          align="center"
+          width="90"
+          fixed="right"
+          class-name="msre-table-actions"
+        >
           <template #default="{ row }">
-            <ElButton v-if="!row.inherited" type="danger" link size="small" @click="handleRevoke(row.binding)">
+            <ElButton link type="danger" size="small" v-if="!row.inherited" @click="handleRevoke(row.binding)">
               撤销
             </ElButton>
             <span v-else class="text-12px opacity-50">组管理</span>
@@ -734,7 +748,7 @@
               <ElText v-else type="info" size="small">—</ElText>
             </template>
           </ElTableColumn>
-          <ElTableColumn label="操作" width="70" fixed="right">
+          <ElTableColumn label="操作" align="center" width="70" fixed="right" class-name="msre-table-actions">
             <template #default="{ $index }">
               <ElButton link type="danger" size="small" @click="removePendingRow($index)">删除</ElButton>
             </template>

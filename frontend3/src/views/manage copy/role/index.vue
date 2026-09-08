@@ -17,7 +17,7 @@
   const themeStore = useThemeStore();
 
   // Hero区域显示状态
-  const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);
+  const heroVisible = computed(() => themeStore.content.hero.visible !== false);
 
   const searchParams = ref(getInitSearchParams());
 

@@ -86,9 +86,9 @@
         <ElTableColumn prop="agentVersion" label="Agent 版本" width="140">
           <template #default="{ row }">{{ row.agentVersion || '-' }}</template>
         </ElTableColumn>
-        <ElTableColumn label="操作" width="120" fixed="right">
+        <ElTableColumn label="操作" align="center" width="120" fixed="right" class-name="msre-table-actions">
           <template #default="{ row }">
-            <ElButton size="small" link type="primary" @click="gotoWorkbench(row.appName)">去诊断</ElButton>
+            <ElButton link type="primary" size="small" @click="gotoWorkbench(row.appName)">去诊断</ElButton>
           </template>
         </ElTableColumn>
         <template #empty>

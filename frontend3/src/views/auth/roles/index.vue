@@ -1,6 +1,6 @@
 <script setup lang="tsx">
   import { ref } from 'vue';
-  import { Delete, Edit, Plus } from '@element-plus/icons-vue';
+  import { Plus } from '@element-plus/icons-vue';
   import { deleteAuthGroup, fetchAuthGroups } from '@/service/api/application-permission';
   import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
   import PermissionButton from '@/components/common/PermissionButton.vue';
@@ -53,15 +53,16 @@
         prop: 'operate',
         label: '操作',
         align: 'center',
+        className: 'msre-table-actions',
         width: 150,
         fixed: 'right',
         formatter: row => (
-          <ElSpace>
+          <div>
             <PermissionButton
               code="auth.group.update"
               size="small"
-              type="warning"
-              icon={Edit}
+              link
+              type="primary"
               onClick={() => handleEdit(row.id)}
             >
               编辑
@@ -69,13 +70,13 @@
             <ElPopconfirm title="确认删除该用户组？" onConfirm={() => handleDelete(row.id)}>
               {{
                 reference: () => (
-                  <PermissionButton code="auth.group.delete" size="small" type="danger" icon={Delete}>
+                  <PermissionButton code="auth.group.delete" link type="danger" size="small">
                     删除
                   </PermissionButton>
                 )
               }}
             </ElPopconfirm>
-          </ElSpace>
+          </div>
         )
       }
     ]

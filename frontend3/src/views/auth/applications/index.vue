@@ -76,12 +76,14 @@
         prop: 'operate',
         label: '操作',
         align: 'center',
+        className: 'msre-table-actions',
         width: 320,
         fixed: 'right',
         formatter: row => (
-          <ElSpace wrap>
+          <div>
             <PermissionButton
               code="auth.application.sync"
+              link
               size="small"
               type="primary"
               onClick={() => handleSyncUsers(row)}
@@ -90,8 +92,9 @@
             </PermissionButton>
             <PermissionButton
               code="auth.application.sync"
+              link
               size="small"
-              type="success"
+              type="primary"
               onClick={() => handleSyncGroups(row)}
             >
               同步用户组
@@ -99,17 +102,18 @@
             {row.type === 'jumpserver' && (
               <PermissionButton
                 code="auth.application.sync"
+                link
                 size="small"
-                type="warning"
+                type="primary"
                 onClick={() => handleSyncRules(row)}
               >
                 同步授权规则
               </PermissionButton>
             )}
             <ElDropdown onCommand={(cmd: string) => handleCommand(cmd, row)}>
-              <ElButton size="small">
+              <ElButton link type="primary" size="small" class="table-dropdown-trigger">
                 更多
-                <ElIcon class="el-icon--right">
+                <ElIcon class="dropdown-icon">
                   <ArrowDown />
                 </ElIcon>
               </ElButton>
@@ -140,7 +144,7 @@
                 )
               }}
             </ElDropdown>
-          </ElSpace>
+          </div>
         )
       }
     ]

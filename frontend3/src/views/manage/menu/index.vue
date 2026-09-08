@@ -20,7 +20,7 @@
   const themeStore = useThemeStore();
 
   // Hero区域显示状态
-  const heroVisible = computed(() => themeStore.contentTheme2.heroSection.visible !== false);
+  const heroVisible = computed(() => themeStore.content.hero.visible !== false);
 
   const filterText = ref('');
   const flatMenuList = ref<Api.SystemManage.Menu[]>([]);
@@ -180,10 +180,10 @@
 <template>
   <div class="table-page">
     <!-- Hero 区域 -->
-    <ElCard v-if="heroVisible" shadow="hover" class="card-static">
+    <ElCard v-if="heroVisible" shadow="hover" class="card-static msre-hero">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-12px">
-          <ElIcon :size="24">
+          <ElIcon :size="20">
             <MenuIcon />
           </ElIcon>
           <div class="flex flex-col gap-2px">

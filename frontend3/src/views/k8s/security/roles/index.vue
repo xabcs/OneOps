@@ -288,7 +288,7 @@
         </ElTableColumn>
         <ElTableColumn prop="rules" label="规则数" width="90" />
         <ElTableColumn prop="createdAt" label="创建时间" width="170" />
-        <ElTableColumn label="操作" width="130" fixed="right">
+        <ElTableColumn label="操作" align="center" width="130" fixed="right" class-name="msre-table-actions">
           <template #default="{ row }">
             <ElButton link type="primary" size="small" @click="openRoleDetail('ClusterRole', row)">详情</ElButton>
           </template>
@@ -307,7 +307,7 @@
         </ElTableColumn>
         <ElTableColumn prop="rules" label="规则数" width="90" />
         <ElTableColumn prop="createdAt" label="创建时间" width="170" />
-        <ElTableColumn label="操作" width="130" fixed="right">
+        <ElTableColumn label="操作" align="center" width="130" fixed="right" class-name="msre-table-actions">
           <template #default="{ row }">
             <ElButton link type="primary" size="small" @click="openRoleDetail('Role', row)">详情</ElButton>
           </template>
@@ -331,7 +331,7 @@
           </template>
         </ElTableColumn>
         <ElTableColumn prop="createdAt" label="创建时间" width="170" />
-        <ElTableColumn label="操作" width="130" fixed="right">
+        <ElTableColumn label="操作" align="center" width="130" fixed="right" class-name="msre-table-actions">
           <template #default="{ row }">
             <ElButton link type="primary" size="small" @click="openBindingDetail('CRB', row)">详情</ElButton>
           </template>
@@ -356,7 +356,7 @@
           </template>
         </ElTableColumn>
         <ElTableColumn prop="createdAt" label="创建时间" width="170" />
-        <ElTableColumn label="操作" width="130" fixed="right">
+        <ElTableColumn label="操作" align="center" width="130" fixed="right" class-name="msre-table-actions">
           <template #default="{ row }">
             <ElButton link type="primary" size="small" @click="openBindingDetail('RB', row)">详情</ElButton>
           </template>

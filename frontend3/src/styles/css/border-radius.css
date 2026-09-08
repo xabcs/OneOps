@@ -45,17 +45,6 @@
   border-radius: var(--border-radius-card, var(--el-border-radius-base, 8px)) !important;
 }
 
-/* 表格 - 只给整个表格容器设置圆角，不影响内部单元格 */
-.el-table {
-  border-radius: var(--border-radius-table, var(--el-border-radius-base, 8px)) !important;
-}
-
-/* 表头单元格不应该有圆角 - 只有整个表格容器的顶部有圆角 */
-.el-table th.el-table__cell,
-.el-table td.el-table__cell {
-  border-radius: 0 !important;
-}
-
 /* 对话框 */
 .el-dialog {
   border-radius: var(--border-radius-modal, 8px) !important;

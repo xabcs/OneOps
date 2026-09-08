@@ -116,8 +116,11 @@
     <div v-if="expanded" class="host-list">
       <!-- 搜索框 -->
       <div class="search-box">
-        <icon-mdi-magnify class="search-icon" />
-        <ElInput v-model="searchKeyword" placeholder="搜索主机..." size="small" clearable />
+        <ElInput v-model="searchKeyword" placeholder="搜索主机..." size="small" clearable>
+          <template #prefix>
+            <icon-mdi-magnify />
+          </template>
+        </ElInput>
       </div>
 
       <!-- 主机列表 -->
@@ -230,19 +233,6 @@
   .search-box {
     position: relative;
     margin-bottom: 8px;
-  }
-
-  .search-icon {
-    position: absolute;
-    left: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 14px;
-    color: #858585;
-  }
-
-  .search-box :deep(.el-input__wrapper) {
-    padding-left: 32px;
   }
 
   .loading-state {

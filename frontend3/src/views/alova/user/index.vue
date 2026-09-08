@@ -117,16 +117,19 @@
     {
       prop: 'operate',
       label: $t('common.operate'),
+      className: 'msre-table-actions',
       width: 130,
+      align: 'center',
+      fixed: 'right',
       formatter: row => (
-        <div class="flex-center gap-8px">
-          <ElButton type="primary" plain size="small" onClick={() => edit(row.id)}>
+        <div>
+          <ElButton link type="primary" size="small" onClick={() => edit(row.id)}>
             {$t('common.edit')}
           </ElButton>
           <ElPopconfirm title={$t('common.confirmDelete')} onConfirm={() => handleDelete(row.id)}>
             {{
               reference: () => (
-                <ElButton type="danger" plain size="small">
+                <ElButton link type="danger" size="small">
                   {$t('common.delete')}
                 </ElButton>
               )

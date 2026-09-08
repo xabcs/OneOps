@@ -184,11 +184,13 @@
               <span v-else class="value-cell">{{ row.value }}</span>
             </template>
           </ElTableColumn>
-          <ElTableColumn label="操作" width="120">
+          <ElTableColumn label="操作" align="center" width="120" class-name="msre-table-actions">
             <template #default="{ row, $index }">
-              <ElButton v-if="!row.editing" link type="primary" size="small" @click="row.editing = true">编辑</ElButton>
-              <ElButton v-if="row.editing" link type="primary" size="small" @click="saveDataItem(row)">保存</ElButton>
-              <ElButton v-if="row.editing" link size="small" @click="cancelEdit(row, $index)">取消</ElButton>
+              <ElButton link type="primary" size="small" v-if="!row.editing" @click="row.editing = true">编辑</ElButton>
+              <ElButton link type="primary" size="small" v-if="row.editing" @click="saveDataItem(row)">保存</ElButton>
+              <ElButton link type="primary" size="small" v-if="row.editing" @click="cancelEdit(row, $index)">
+                取消
+              </ElButton>
             </template>
           </ElTableColumn>
         </ElTable>

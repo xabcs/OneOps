@@ -6,7 +6,6 @@
   import ThemeColor from './modules/theme-color.vue';
   import HeaderColor from './modules/header-color.vue';
   import ContentTheme from './modules/content-theme.vue';
-  import ContentTheme2 from './modules/content-theme2.vue';
   import SiderColor from './modules/sider-color.vue';
   import BorderRadius from './modules/border-radius.vue';
   import PageFun from './modules/page-fun.vue';
@@ -24,7 +23,6 @@
     <ThemeColor />
     <HeaderColor />
     <ContentTheme />
-    <ContentTheme2 />
     <SiderColor />
     <BorderRadius />
     <PageFun />

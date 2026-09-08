@@ -1,6 +1,6 @@
 /**
  * OneOps 侧边栏样式
- * 基于 SxDevOps 侧边栏设计理念
+ * 基于 MSRE 侧边栏设计理念
  * 提供完整的侧边栏布局、渐变、悬停、激活状态样式
  */
 
@@ -99,8 +99,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, rgb(255 255 255 / 98%) 0 20%, rgb(255 255 255 / 0%) 22%),
+  background: radial-gradient(circle at 50% 50%, rgb(255 255 255 / 98%) 0 20%, rgb(255 255 255 / 0%) 22%),
     radial-gradient(circle at 50% 50%, rgb(103 183 171 / 92%) 0%, rgb(85 134 182 / 96%) 72%, rgb(85 134 182 / 72%) 100%);
   border: 1px solid rgb(255 255 255 / 88%);
   box-shadow:
@@ -142,7 +141,7 @@
   line-height: 40px;
   margin: 2px 0;
   padding: 0 10px !important;
-  border-radius: 10px;
+  border-radius: var(--border-radius-menu, 10px);
   color: #5f6b7a !important;
   font-size: 13px;
   font-weight: 500;
@@ -165,7 +164,7 @@
   position: absolute;
   z-index: 0;
   inset: 0;
-  border-radius: 10px;
+  border-radius: var(--border-radius-menu, 10px);
   pointer-events: none;
   background: linear-gradient(90deg, rgb(64 73 101 / 8%) 0%, transparent 50%);
 }
@@ -184,7 +183,7 @@
   position: absolute;
   z-index: 0;
   inset: 0;
-  border-radius: 10px;
+  border-radius: var(--border-radius-menu, 10px);
   pointer-events: none;
   background: linear-gradient(180deg, #eaf2ff 0%, #deebff 100%);
 }
@@ -220,7 +219,7 @@
   line-height: 36px;
   margin: 1px 0 1px 4px;
   padding-left: 32px !important;
-  border-radius: 9px;
+  border-radius: calc(var(--border-radius-menu, 10px) - 1px);
   font-weight: 500;
 }
 
@@ -232,7 +231,7 @@
   margin: 2px auto;
   padding: 0 !important;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: calc(var(--border-radius-menu, 10px) + 2px);
 }
 
 .global-sider-enhanced.sider-collapsed :deep(.el-sub-menu .el-icon.el-sub-menu__icon-arrow) {
@@ -282,14 +281,14 @@
   background: linear-gradient(135deg, rgb(255 255 255 / 95%), rgb(255 255 255 / 98%)) !important;
   border: 1px solid rgb(148 163 184 / 12%) !important;
   box-shadow: 0 8px 24px rgb(15 23 42 / 8%) !important;
-  border-radius: 8px !important;
+  border-radius: calc(var(--border-radius-menu, 10px) - 2px) !important;
   padding: 8px !important;
   min-width: 160px;
 }
 
 .global-sider-enhanced :deep(.el-sub-menu__popup .el-menu-item) {
   margin: 2px 0 !important;
-  border-radius: 6px !important;
+  border-radius: calc(var(--border-radius-menu, 10px) - 4px) !important;
 }
 
 .global-sider-enhanced :deep(.el-sub-menu__popup .el-menu-item:hover) {

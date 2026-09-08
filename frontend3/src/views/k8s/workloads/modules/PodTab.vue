@@ -52,25 +52,23 @@
     <ElTableColumn prop="node" label="节点" min-width="150" align="left" />
     <ElTableColumn prop="restarts" label="重启次数" min-width="100" align="left" />
     <ElTableColumn prop="age" label="年龄" min-width="120" align="left" />
-    <ElTableColumn label="操作" min-width="150" fixed="right" align="left">
+    <ElTableColumn label="操作" min-width="150" fixed="right" align="center" class-name="msre-table-actions">
       <template #default="{ row }">
-        <span class="operation-buttons">
-          <ElButton link type="primary" size="default" @click="emit('go-to-detail', row)">详情</ElButton>
-          <ElButton link type="primary" size="default" @click="emit('pod-logs', row)">日志</ElButton>
-          <ElDropdown trigger="click" @command="cmd => emit('pod-more-command', cmd, row)">
-            <span class="dropdown-link">
-              更多
-              <icon-mdi-chevron-down class="dropdown-icon" />
-            </span>
-            <template #dropdown>
-              <ElDropdownMenu>
-                <ElDropdownItem command="edit">编辑YAML</ElDropdownItem>
-                <ElDropdownItem v-permission="'k8s.terminal.connect'" command="terminal">终端</ElDropdownItem>
-                <ElDropdownItem v-permission="'k8s.resource.delete'" command="delete">删除</ElDropdownItem>
-              </ElDropdownMenu>
-            </template>
-          </ElDropdown>
-        </span>
+        <ElButton link type="primary" size="small" @click="emit('go-to-detail', row)">详情</ElButton>
+        <ElButton link type="primary" size="small" @click="emit('pod-logs', row)">日志</ElButton>
+        <ElDropdown trigger="click" @command="cmd => emit('pod-more-command', cmd, row)">
+          <ElButton link type="primary" size="small" class="table-dropdown-trigger">
+            更多
+            <icon-mdi-chevron-down class="dropdown-icon" />
+          </ElButton>
+          <template #dropdown>
+            <ElDropdownMenu>
+              <ElDropdownItem command="edit">编辑YAML</ElDropdownItem>
+              <ElDropdownItem v-permission="'k8s.terminal.connect'" command="terminal">终端</ElDropdownItem>
+              <ElDropdownItem v-permission="'k8s.resource.delete'" command="delete">删除</ElDropdownItem>
+            </ElDropdownMenu>
+          </template>
+        </ElDropdown>
       </template>
     </ElTableColumn>
   </WorkloadTable>

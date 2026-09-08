@@ -5,7 +5,7 @@ import { setupAppVersionNotification, setupDayjs, setupIconifyOffline, setupLoad
 import { setupStore } from './store';
 import { setupRouter } from './router';
 import { setupI18n } from './locales';
-import { initContentTheme, initContentTheme2, initHeaderTheme } from './theme/content-theme';
+import { initContentTheme, initHeaderTheme } from './theme/content-theme';
 import App from './App.vue';
 import permission from './directives/permission';
 import PermissionButton from './components/common/PermissionButton.vue';
@@ -19,9 +19,8 @@ async function setupApp() {
 
   setupDayjs();
 
-  // 初始化内容主题和Header主题
+  // 初始化内容主题和顶栏主题
   initContentTheme();
-  initContentTheme2();
   initHeaderTheme();
 
   const app = createApp(App);

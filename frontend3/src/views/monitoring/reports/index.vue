@@ -250,11 +250,11 @@
         <ElTableColumn label="完成时间" width="180">
           <template #default="{ row }">{{ formatTime(row.completedAt) }}</template>
         </ElTableColumn>
-        <ElTableColumn label="操作" width="200" align="center" fixed="right">
+        <ElTableColumn label="操作" width="200" align="center" fixed="right" class-name="msre-table-actions">
           <template #default="{ row }">
-            <ElButton type="primary" link size="small" @click="viewReport(row)">查看</ElButton>
-            <ElButton type="success" link size="small" @click="exportReport(row)">导出</ElButton>
-            <ElButton type="danger" link size="small" @click="deleteReport(row.id)">删除</ElButton>
+            <ElButton link type="primary" size="small" @click="viewReport(row)">查看</ElButton>
+            <ElButton link type="primary" size="small" @click="exportReport(row)">导出</ElButton>
+            <ElButton link type="danger" size="small" @click="deleteReport(row.id)">删除</ElButton>
           </template>
         </ElTableColumn>
       </ElTable>

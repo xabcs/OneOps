@@ -107,8 +107,9 @@
         width: 90,
         fixed: 'right',
         align: 'center',
+        className: 'msre-table-actions',
         formatter: row => (
-          <ElButton size="small" type={row.canApprove ? 'primary' : 'default'} onClick={() => handleView(row.id)}>
+          <ElButton link type="primary" size="small" onClick={() => handleView(row.id)}>
             {row.canApprove ? '去审批' : '查看'}
           </ElButton>
         )
