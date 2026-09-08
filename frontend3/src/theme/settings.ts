@@ -42,6 +42,7 @@ export const standardContent: App.Theme.ThemeSetting['content'] = {
     padding: '10px 14px'
   },
   contentCard: {
+    borderVisible: false,
     background: '#ffffff',
     gradientStart: '#ffffff',
     gradientMiddle: '',
@@ -109,12 +110,6 @@ export const standardContent: App.Theme.ThemeSetting['content'] = {
     borderShadow: 'rgba(148, 163, 184, 0.16)',
     hoverShadow: 'rgba(59, 130, 246, 0.18)',
     focusShadow: 'rgba(37, 99, 235, 0.22)'
-  },
-  card: {
-    bg: '#ffffff',
-    border: 'rgba(148, 163, 184, 0.12)',
-    shadow: '0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)',
-    padding: '20px'
   },
   colors: {
     primary: 'rgb(99, 102, 241)',

@@ -24,6 +24,8 @@ declare namespace StorageType {
     darkMode: boolean;
     /** The theme settings */
     themeSettings: App.Theme.ThemeSetting;
+    /** Whether the default content card border has been migrated */
+    contentCardBorderMigrated: boolean;
     /**
      * The override theme flags
      *

@@ -172,7 +172,6 @@ const local: App.I18n.Schema = {
         tags: 'Tags',
         button: 'Button Style',
         input: 'Input Style',
-        card: 'Shared Card',
         colors: 'Content Colors',
         text: 'Text Colors',
         border: 'Border Colors'
@@ -227,7 +226,7 @@ const local: App.I18n.Schema = {
         activeText: 'Active Text Color',
         defaultText: 'Default Text Color',
         defaultBorder: 'Default Border Color',
-        cardBg: 'Card Background'
+        borderVisible: 'Show Border'
       },
       colorGroups: {
         primary: 'Primary',
@@ -331,6 +330,7 @@ const local: App.I18n.Schema = {
     manage: 'System Manage',
     manage_user: 'User Manage',
     'manage_user-detail': 'User Detail',
+    'manage_user-group': 'User Group',
     manage_role: 'Role Manage',
     manage_permission: 'Permission Manage',
     // 'manage_api-permission': 'API Permission Manage', // 已废弃，使用层级权限代码管理

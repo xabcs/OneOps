@@ -84,6 +84,7 @@ export function buildContentVars(theme: ContentThemeSettings): CssVarMap {
     theme.contentCard.gradientAngle
   );
   vars['--msre-content-card-border'] = theme.contentCard.borderColor;
+  vars['--msre-content-card-border-width'] = theme.contentCard.borderVisible ? '1px' : '0';
   vars['--msre-content-card-radius'] = radiusVar('card', '12px');
   vars['--msre-content-card-shadow'] = theme.contentCard.shadow;
   vars['--msre-content-card-padding'] = theme.contentCard.padding;
@@ -156,11 +157,12 @@ export function buildContentVars(theme: ContentThemeSettings): CssVarMap {
   vars['--msre-input-focus-shadow'] = theme.input.focusShadow;
 
   // Shared card style
-  vars['--msre-card-bg'] = theme.card.bg;
-  vars['--msre-card-border'] = theme.card.border;
+  // 兼容旧变量：通用卡片和内容卡片统一由 contentCard 提供数据
+  vars['--msre-card-bg'] = theme.contentCard.background;
+  vars['--msre-card-border'] = theme.contentCard.borderColor;
   vars['--msre-card-radius'] = radiusVar('card', '12px');
-  vars['--msre-card-shadow'] = theme.card.shadow;
-  vars['--msre-card-padding'] = theme.card.padding;
+  vars['--msre-card-shadow'] = theme.contentCard.shadow;
+  vars['--msre-card-padding'] = theme.contentCard.padding;
 
   // Colors
   vars['--msre-primary'] = theme.colors.primary;

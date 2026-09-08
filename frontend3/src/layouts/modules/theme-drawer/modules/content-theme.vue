@@ -145,6 +145,7 @@
       key: 'contentCard',
       titleKey: 'theme.content.sections.contentCard',
       fields: [
+        { key: 'borderVisible', label: 'theme.content.fields.borderVisible', type: 'switch' },
         commonFields.background,
         ...gradientFields(),
         commonFields.border,
@@ -233,16 +234,6 @@
         { key: 'borderShadow', label: 'theme.content.fields.inputBorder', type: 'alphaColor' },
         { key: 'hoverShadow', label: 'theme.content.fields.inputHoverBorder', type: 'alphaColor' },
         { key: 'focusShadow', label: 'theme.content.fields.inputFocusBorder', type: 'alphaColor' }
-      ]
-    },
-    {
-      key: 'card',
-      titleKey: 'theme.content.sections.card',
-      fields: [
-        { key: 'bg', label: 'theme.content.fields.cardBg', type: 'color' },
-        { key: 'border', label: 'theme.content.fields.border', type: 'alphaColor' },
-        { key: 'shadow', label: 'theme.content.fields.shadow', type: 'text' },
-        { key: 'padding', label: 'theme.content.fields.padding', type: 'text' }
       ]
     }
   ];
@@ -462,7 +453,7 @@
   }
 
   .preview--standard {
-    background: var(--msre-card-bg);
+    background: var(--msre-content-card-bg);
   }
 
   .preview--modern {

@@ -14,6 +14,7 @@
   /* 内容卡片专用变量（运行时由统一主题注入） */
   --msre-content-card-bg: #fff;
   --msre-content-card-border: rgb(148 163 184 / 16%);
+  --msre-content-card-border-width: 0;
   --msre-content-card-radius: 12px;
   --msre-content-card-shadow: 0 1px 3px rgb(0 0 0 / 6%), 0 1px 2px rgb(0 0 0 / 4%);
   --msre-content-card-padding: 20px;
@@ -64,27 +65,22 @@
 /* ========== 卡片容器类 ========== */
 
 /* 注意：这些是全局默认样式，统一内容区配置会在运行时覆盖 */
-.content-card,
 .msre-card {
   background: var(--msre-content-card-bg, var(--msre-card-bg)) !important;
   border-radius: var(--msre-content-card-radius, var(--msre-card-radius)) !important;
   box-shadow: var(--msre-content-card-shadow, var(--msre-card-shadow)) !important;
-  border: 1px solid var(--msre-content-card-border, var(--msre-card-border, none)) !important;
+  border: var(--msre-content-card-border-width, 1px) solid
+    var(--msre-content-card-border, var(--msre-card-border, none)) !important;
   padding: var(--msre-content-card-padding, var(--msre-card-padding)) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.content-card:hover,
 .msre-card:hover {
   box-shadow: 0 8px 25px rgb(0 0 0 / 10%) !important;
   transform: translateY(-2px);
 }
 
 /* 卡片内部元素统一配色 - 排除表格元素 */
-.content-card button *,
-.content-card input *,
-.content-card select *,
-.content-card textarea *,
 .msre-card button *,
 .msre-card input *,
 .msre-card select *,
@@ -102,7 +98,7 @@
 /* 所有内容区页面卡片统一使用页面级 contentCard 配置 */
 .msre-content .el-card {
   background: var(--msre-content-card-bg) !important;
-  border: 1px solid var(--msre-content-card-border) !important;
+  border: var(--msre-content-card-border-width) solid var(--msre-content-card-border) !important;
   border-radius: var(--msre-content-card-radius) !important;
   box-shadow: var(--msre-content-card-shadow) !important;
 }
@@ -114,7 +110,7 @@
 /* 统计卡是 contentCard 上的专用变体 */
 .msre-content .stat-card {
   background: var(--msre-stat-default-bg) !important;
-  border: 1px solid var(--msre-stat-default-border) !important;
+  border: var(--msre-content-card-border-width) solid var(--msre-stat-default-border) !important;
   border-radius: var(--msre-stat-radius) !important;
   box-shadow: var(--msre-stat-shadow) !important;
 }
@@ -169,7 +165,7 @@
 /* Hero、内容卡片和普通卡片共用 contentCard 基础形态 */
 .msre-content .msre-hero {
   background: var(--msre-hero-bg) !important;
-  border: 1px solid var(--msre-hero-border) !important;
+  border: var(--msre-content-card-border-width) solid var(--msre-hero-border) !important;
   border-radius: var(--msre-hero-radius) !important;
   box-shadow: var(--msre-hero-shadow) !important;
 }
@@ -266,16 +262,6 @@
   }
 }
 
-/* 内容卡片显式类用于页面主容器；ElCard 默认也归口到同一配置 */
-.msre-content .content-card,
-.msre-content .msre-card {
-  background: var(--msre-content-card-bg) !important;
-  border-color: var(--msre-content-card-border) !important;
-  border-radius: var(--msre-content-card-radius) !important;
-  box-shadow: var(--msre-content-card-shadow) !important;
-  padding: var(--msre-content-card-padding) !important;
-}
-
 /* 页面中的筛选和操作工具栏统一走 toolbar 配置 */
 .msre-content .toolbar,
 .msre-content .msre-toolbar,
@@ -286,7 +272,7 @@
 .msre-content .bottom-toolbar,
 .msre-content .workbench-toolbar {
   background: var(--msre-toolbar-bg) !important;
-  border: 1px solid var(--msre-toolbar-border) !important;
+  border: var(--msre-content-card-border-width) solid var(--msre-toolbar-border) !important;
   border-radius: var(--msre-toolbar-radius) !important;
   box-shadow: var(--msre-toolbar-shadow) !important;
   padding: var(--msre-toolbar-padding) !important;
@@ -402,14 +388,14 @@
 
 /* 卡片组件 */
 .el-card {
-  background-color: var(--msre-card-bg) !important;
-  border-radius: var(--msre-card-radius) !important;
-  box-shadow: var(--msre-card-shadow) !important;
-  border: none !important;
+  background: var(--msre-content-card-bg) !important;
+  border: var(--msre-content-card-border-width) solid var(--msre-content-card-border) !important;
+  border-radius: var(--msre-content-card-radius) !important;
+  box-shadow: var(--msre-content-card-shadow) !important;
 }
 
 .el-card__body {
-  padding: var(--msre-card-padding) !important;
+  padding: var(--msre-content-card-padding) !important;
 }
 
 /* 表格组件 */
@@ -678,7 +664,7 @@ html[data-msre-table-style='grid'] {
 .workbench-toolbar {
   background: var(--msre-toolbar-bg) !important;
   border-radius: var(--msre-toolbar-radius) !important;
-  border: 1px solid var(--msre-toolbar-border) !important;
+  border: var(--msre-content-card-border-width) solid var(--msre-toolbar-border) !important;
   padding: var(--msre-toolbar-padding) !important;
   box-shadow: var(--msre-card-shadow) !important;
 }

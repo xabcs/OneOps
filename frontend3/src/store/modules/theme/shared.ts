@@ -6,6 +6,8 @@ import { localStg } from '@/utils/storage';
 import { overrideThemeSettings, themeSettings } from '@/theme/settings';
 import { themeVars } from '@/theme/vars';
 
+const CONTENT_CARD_BORDER_MIGRATED_KEY = 'contentCardBorderMigrated';
+
 /** Init theme settings */
 export function initThemeSettings() {
   const isProd = import.meta.env.MODE === 'prod';
@@ -27,6 +29,12 @@ export function initThemeSettings() {
   if (!isOverride) {
     settings = defu(overrideThemeSettings, settings);
     localStg.set('overrideThemeFlag', BUILD_TIME);
+  }
+
+  // 内容卡片边框默认值曾短暂为 true；这里只做一次迁移，避免旧缓存覆盖新默认值
+  if (localStg.get(CONTENT_CARD_BORDER_MIGRATED_KEY) !== true) {
+    settings.content.contentCard.borderVisible = false;
+    localStg.set(CONTENT_CARD_BORDER_MIGRATED_KEY, true);
   }
 
   return settings;

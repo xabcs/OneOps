@@ -172,7 +172,6 @@ const local: App.I18n.Schema = {
         tags: '标签样式',
         button: '按钮样式',
         input: '输入框样式',
-        card: '通用卡片',
         colors: '内容区颜色',
         text: '文字颜色',
         border: '边框颜色'
@@ -227,7 +226,7 @@ const local: App.I18n.Schema = {
         activeText: '激活文字颜色',
         defaultText: '默认文字颜色',
         defaultBorder: '默认边框颜色',
-        cardBg: '卡片背景颜色'
+        borderVisible: '显示边框'
       },
       colorGroups: {
         primary: '主题色',
@@ -356,6 +355,7 @@ const local: App.I18n.Schema = {
     manage: '系统管理',
     manage_user: '用户管理',
     'manage_user-detail': '用户详情',
+    'manage_user-group': '用户组管理',
     manage_role: '角色管理',
     manage_permission: '权限管理',
     // 'manage_api-permission': 'API权限管理', // 已废弃，使用层级权限代码管理

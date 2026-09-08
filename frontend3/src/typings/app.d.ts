@@ -250,6 +250,8 @@ declare namespace App {
 
         /** Content card (page-level card container) */
         contentCard: {
+          /** Whether the outer card border is visible */
+          borderVisible: boolean;
           /** Background color when gradient is off */
           background: string;
           /** Gradient start color */
@@ -384,18 +386,6 @@ declare namespace App {
           hoverShadow: string;
           /** Focus inner shadow color */
           focusShadow: string;
-        };
-
-        /** Shared card style for content area */
-        card: {
-          /** Card background color */
-          bg: string;
-          /** Card border color */
-          border: string;
-          /** Card shadow */
-          shadow: string;
-          /** Card padding */
-          padding: string;
         };
 
         /** Content area color palette */

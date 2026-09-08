@@ -273,16 +273,7 @@
     </section>
 
     <!-- 内容卡片 -->
-    <div
-      class="content-card cluster-content-card"
-      :style="{
-        background: 'var(--msre-content-card-bg)',
-        border: '1px solid var(--msre-content-card-border)',
-        borderRadius: 'var(--msre-content-card-radius)',
-        boxShadow: 'var(--msre-content-card-shadow)',
-        padding: 'var(--msre-content-card-padding)'
-      }"
-    >
+    <div class="msre-card cluster-content-card">
       <!-- 工具栏 -->
       <div class="card-toolbar">
         <div class="toolbar-head">
@@ -528,7 +519,7 @@
   /* ============================================
                                                             	   3. 内容卡片
                                                             	   ============================================ */
-  .content-card {
+  .cluster-content-card {
     display: flex;
     flex-direction: column;
     gap: 8px;
