@@ -58,26 +58,15 @@ func (s *MenuService) buildMenuTree(menus []modelsystem.Menu, parentID uint) []*
 		if menu.ParentID == parentID {
 			children := s.buildMenuTree(menus, menu.ID)
 
-			menuItem := &modelsystem.Menu{
-				ID:         menu.ID,
-				Name:       menu.Name,
-				Icon:       menu.Icon,
-				Path:       menu.Path,
-				Permission: menu.Permission,
-				MenuType:   menu.MenuType,
-				ParentID:   menu.ParentID,
-				Sort:       menu.Sort,
-				Status:     menu.Status,
-				CreatedAt:  menu.CreatedAt,
-				UpdatedAt:  menu.UpdatedAt,
-			}
-
+			// 整体值拷贝节点（模型新增字段自动跟随，避免手工逐字段拷贝漏列）
+			menuItem := menu
+			// 子级恒为非 nil 空切片（保证 JSON 序列化输出 [] 而非 null）
 			menuItem.Children = make([]*modelsystem.Menu, 0)
 			if len(children) > 0 {
 				menuItem.Children = children
 			}
 
-			result = append(result, menuItem)
+			result = append(result, &menuItem)
 		}
 	}
 	return result

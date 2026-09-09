@@ -126,10 +126,10 @@ func (s *RouteGenService) GetUserRoutes(userID uint) ([]map[string]interface{}, 
 	isSuper := permSvc.IsAdmin(roles)
 
 	// 将菜单转换为前端路由格式
-	routes := s.convertMenusToRoutes(menuTree, isSuper)
+	routes := s.convertMenusToRoutes(menuTree, isSuper, "")
 
-	// web 终端入口与主机管理菜单强耦合（有主机管理菜单才可见终端）
-	routes = s.appendTerminalRoute(routes, menuTree)
+	// new-tab 二级菜单的独立渲染路由（入口在父布局 children，渲染需无侧边栏布局）
+	routes = s.appendNewTabRenderRoutes(routes, menuTree)
 
 	// 隐藏详情页路由下发（可见性跟随锚点菜单）
 	routes = s.appendHiddenDetailRoutes(routes, menuTree)
@@ -229,10 +229,6 @@ func routeTreeContainsName(routes []map[string]interface{}, name string) bool {
 // frameworkRouteNames 前端框架内置路由名（router/routes/builtin.ts 固定生成，非业务配置）
 var frameworkRouteNames = map[string]bool{"root": true, "not-found": true}
 
-// derivedRouteNames 派生路由名（不在菜单表，由 GetUserRoutes 按业务规则追加）
-// webterminal 随主机管理菜单派生：页面全局存在，无权限直访时应显示 403 而非 404
-var derivedRouteNames = map[string]bool{"webterminal": true}
-
 // IsRouteExist 检查路由在系统中是否全局存在（与用户权限无关）
 // 用于前端路由守卫区分「路由不存在(404)」与「路由存在但无访问权限(403)」
 func (s *RouteGenService) IsRouteExist(userID uint, routeName string) (bool, error) {
@@ -242,7 +238,7 @@ func (s *RouteGenService) IsRouteExist(userID uint, routeName string) (bool, err
 			return true, nil
 		}
 	}
-	if frameworkRouteNames[routeName] || derivedRouteNames[routeName] {
+	if frameworkRouteNames[routeName] {
 		return true, nil
 	}
 
@@ -285,11 +281,7 @@ func (s *RouteGenService) DebugCache(userID uint) (map[string]interface{}, error
 		return nil, err
 	}
 
-	// 检查是否包含 webterminal（派生路由：随主机管理菜单出现）
-	hasWebTerminal := menuTreeContainsPath(menuTree, "/cmdb/servers")
-
 	return map[string]interface{}{
-		"has_webterminal":  hasWebTerminal,
 		"menu_count":       len(menuTree),
 		"permission_count": len(permissions),
 		"role_count":       len(roles),
@@ -298,18 +290,32 @@ func (s *RouteGenService) DebugCache(userID uint) (map[string]interface{}, error
 }
 
 // convertMenusToRoutes 将数据库菜单转换为前端路由格式
-func (s *RouteGenService) convertMenusToRoutes(menus []*modelsystem.Menu, isSuper bool) []map[string]interface{} {
+// parentPath：当前层级的父路径（顶层为空），用于生成二级 new-tab 菜单的入口路由
+func (s *RouteGenService) convertMenusToRoutes(menus []*modelsystem.Menu, isSuper bool, parentPath string) []map[string]interface{} {
 	routes := make([]map[string]interface{}, 0)
 
 	for _, menu := range menus {
 		// 检查是否有子菜单
 		hasChildren := len(menu.Children) > 0
 
+		// new-tab 叶子菜单：新标签页打开（如 web 终端），不渲染在系统布局内
+		if isOpenInNewTab(menu) && !hasChildren {
+			if parentPath == "" {
+				// 一级菜单：入口与渲染为同一条独立路由（无侧边栏布局）
+				routes = append(routes, s.buildNewTabRoute(menu, false))
+			} else {
+				// 二级菜单：入口路由挂在父布局 children 下（仅用于菜单层级显示与守卫兜底），
+				// 独立渲染路由由 appendNewTabRenderRoutes 在顶层补齐
+				routes = append(routes, s.buildNewTabEntryRoute(menu, parentPath))
+			}
+			continue
+		}
+
 		route := s.buildRouteFromMenu(menu, hasChildren, isSuper)
 
 		// 如果有子菜单，递归处理
 		if hasChildren {
-			childrenRoutes := s.convertMenusToRoutes(menu.Children, isSuper)
+			childrenRoutes := s.convertMenusToRoutes(menu.Children, isSuper, menu.Path)
 			if len(childrenRoutes) > 0 {
 				route["children"] = childrenRoutes
 			}
@@ -321,31 +327,84 @@ func (s *RouteGenService) convertMenusToRoutes(menus []*modelsystem.Menu, isSupe
 	return routes
 }
 
-// appendTerminalRoute 追加 web 终端路由（派生入口，不进菜单表）
-// 规则：用户菜单树包含主机管理（/cmdb/servers）时自动获得终端工作台入口，
-// 使「无主机管理菜单则不可见终端」在结构上成立，管理员无需单独绑定终端菜单
-func (s *RouteGenService) appendTerminalRoute(routes []map[string]interface{}, menuTree []*modelsystem.Menu) []map[string]interface{} {
-	for _, r := range routes {
-		if r["name"] == "webterminal" {
-			return routes
+// isOpenInNewTab 菜单是否配置为新标签页打开
+func isOpenInNewTab(menu *modelsystem.Menu) bool {
+	return menu.OpenType == "new-tab"
+}
+
+// buildNewTabRoute 构建 new-tab 菜单的独立渲染路由
+// 使用无系统侧边栏的全屏布局（terminalLayout）；新标签页直访时 meta.href === path 正常渲染
+func (s *RouteGenService) buildNewTabRoute(menu *modelsystem.Menu, hideInMenu bool) map[string]interface{} {
+	routeName := s.generateRouteName(menu.Path)
+	meta := map[string]interface{}{
+		"title":   menu.Name,
+		"i18nKey": "route." + routeName,
+		"order":   menu.Sort,
+		"href":    menu.Path, // 前端点击菜单时新窗口打开
+	}
+	if menu.Icon != "" {
+		meta["icon"] = menu.Icon
+	}
+	if menu.Permission != "" {
+		meta["permission"] = menu.Permission
+	}
+	if hideInMenu {
+		meta["hideInMenu"] = true
+	}
+	return map[string]interface{}{
+		"id":        strconv.FormatUint(uint64(menu.ID), 10),
+		"name":      routeName,
+		"path":      menu.Path,
+		"component": "layout.terminalLayout$view." + routeName,
+		"meta":      meta,
+	}
+}
+
+// buildNewTabEntryRoute 构建 new-tab 二级菜单的入口路由
+// 仅用于菜单树的层级显示（挂在父布局 children 下）；点击由前端按 meta.href 新窗口打开，
+// 直访该路径时路由守卫同样按 href 弹新窗并回退，组件实际不会被渲染
+func (s *RouteGenService) buildNewTabEntryRoute(menu *modelsystem.Menu, parentPath string) map[string]interface{} {
+	routeName := s.generateRouteName(menu.Path)
+	meta := map[string]interface{}{
+		"title":   menu.Name,
+		"i18nKey": "route." + routeName,
+		"order":   menu.Sort,
+		"href":    menu.Path,
+	}
+	if menu.Icon != "" {
+		meta["icon"] = menu.Icon
+	}
+	if menu.Permission != "" {
+		meta["permission"] = menu.Permission
+	}
+	return map[string]interface{}{
+		"id":        strconv.FormatUint(uint64(menu.ID), 10) + "-entry",
+		"name":      s.generateRouteName(parentPath + menu.Path),
+		"path":      parentPath + menu.Path,
+		"component": "view." + routeName,
+		"meta":      meta,
+	}
+}
+
+// appendNewTabRenderRoutes 为二级 new-tab 菜单补齐顶层独立渲染路由
+// （菜单树入口仅负责层级显示，新标签页直访时渲染于无侧边栏布局）
+func (s *RouteGenService) appendNewTabRenderRoutes(routes []map[string]interface{}, menuTree []*modelsystem.Menu) []map[string]interface{} {
+	var collect func(menus []*modelsystem.Menu)
+	collect = func(menus []*modelsystem.Menu) {
+		for _, menu := range menus {
+			if len(menu.Children) == 0 && menu.ParentID != 0 && isOpenInNewTab(menu) {
+				routeName := s.generateRouteName(menu.Path)
+				if !routeTreeContainsName(routes, routeName) {
+					routes = append(routes, s.buildNewTabRoute(menu, true))
+				}
+			}
+			if len(menu.Children) > 0 {
+				collect(menu.Children)
+			}
 		}
 	}
-	if !menuTreeContainsPath(menuTree, "/cmdb/servers") {
-		return routes
-	}
-	return append(routes, map[string]interface{}{
-		"id":        "webterminal",
-		"name":      "webterminal",
-		"path":      "/webterminal",
-		"component": "layout.terminalLayout$view.webterminal",
-		"meta": map[string]interface{}{
-			"title":   "web终端",
-			"i18nKey": "route.webterminal",
-			"icon":    "mdi:console",
-			"order":   7,
-			"href":    "/webterminal", // 新标签页打开；href === path 时在当前窗口渲染
-		},
-	})
+	collect(menuTree)
+	return routes
 }
 
 // menuTreeContainsPath 递归检查菜单树中是否存在指定路径

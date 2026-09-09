@@ -11,6 +11,8 @@ type Menu struct {
 	Permission string    `json:"permission" gorm:"size:100"`
 	Resource   string    `json:"resource" gorm:"size:30;index"`
 	MenuType   string    `json:"menuType" gorm:"size:20;default:menu"`
+	// OpenType 打开方式：internal=站内跳转（默认），new-tab=新标签页打开（配合 meta.href 下发）
+	OpenType   string    `json:"openType" gorm:"size:20;default:internal"`
 	ParentID   uint      `json:"parentId" gorm:"default:0"`
 	Sort       int       `json:"sort" gorm:"default:0"`
 	Status     int       `json:"status" gorm:"default:1"`

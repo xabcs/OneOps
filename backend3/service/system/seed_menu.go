@@ -56,8 +56,6 @@ func (i *Initializer) syncMenus() error {
 		{ID: 7, Name: "授权中心", Icon: "mdi:shield-account", Path: "/auth", Permission: "", MenuType: "directory", Sort: 4, Status: 1, ParentID: 0},
 		{ID: 4, Name: "审计中心", Icon: "mdi:file-document", Path: "/audit", Permission: "", MenuType: "directory", Sort: 5, Status: 1, ParentID: 0},
 		{ID: 5, Name: "K8s管理", Icon: "mdi:kubernetes", Path: "/k8s", Permission: "", MenuType: "directory", Sort: 6, Status: 1, ParentID: 0},
-		// web终端不再作为独立菜单：由 GetUserRoutes 按主机管理菜单（/cmdb/servers）派生，
-		// 保证「无主机管理权限则不可见终端」在结构上成立
 		{ID: 6, Name: "系统管理", Icon: "mdi:cog", Path: "/manage", Permission: "", MenuType: "directory", Sort: 8, Status: 1, ParentID: 0},
 
 		// ========== CMDB 二级菜单 (ID: 20-39) ==========
@@ -87,6 +85,8 @@ func (i *Initializer) syncMenus() error {
 		{ID: 36, Name: "在线会话", Icon: "mdi:laptop", Path: "/cmdb/audit/online", Permission: "cmdb:audit:online", MenuType: "menu", Sort: 3, Status: 1, ParentID: 32},
 		{ID: 37, Name: "历史会话", Icon: "mdi:history", Path: "/cmdb/audit/sessions", Permission: "cmdb:audit:sessions", MenuType: "menu", Sort: 4, Status: 1, ParentID: 32},
 		{ID: 38, Name: "命令记录", Icon: "mdi:code-tags", Path: "/cmdb/audit/commands", Permission: "cmdb:audit:commands", MenuType: "menu", Sort: 5, Status: 1, ParentID: 32},
+		// web 终端：新标签页打开的工作台（open_type=new-tab），可见性跟随主机管理（resource=server）
+		{ID: 60, Name: "Web终端", Icon: "mdi:console", Path: "/webterminal", Permission: "", MenuType: "menu", OpenType: "new-tab", Sort: 8, Status: 1, ParentID: 2},
 
 		// ========== 监控中心二级菜单 (ID: 40-49) ==========
 		{ID: 40, Name: "监控概览", Icon: "mdi:chart-line", Path: "/monitoring/overview", Permission: "monitoring:overview:query", MenuType: "menu", Sort: 1, Status: 1, ParentID: 3},
@@ -159,6 +159,7 @@ func (i *Initializer) syncMenus() error {
 				"parent_id":  menu.ParentID,
 				"status":     menu.Status,
 				"menu_type":  menu.MenuType,
+				"open_type":  menu.OpenType,
 			})
 			updatedCount++
 			logger.Debug("更新菜单",
@@ -191,6 +192,8 @@ func (i *Initializer) syncMenus() error {
 		{"/manage/menu", "menu"},
 		{"/manage/permission", "permission"},
 		{"/cmdb/servers", "server"},
+		// web 终端与主机管理共享 resource：有主机管理权限即可见终端入口
+		{"/webterminal", "server"},
 		{"/cmdb/business", "business"},
 		{"/cmdb/config/rooms", "rooms"},
 		{"/cmdb/config/tags", "tags"},
@@ -264,17 +267,6 @@ func (i *Initializer) syncMenus() error {
 	}
 	if deletedTerminalResult.RowsAffected > 0 {
 		logger.Info("已删除废弃终端菜单", zap.Int64("count", deletedTerminalResult.RowsAffected))
-	}
-
-	// 删除 webterminal 独立菜单：入口已改为随主机管理菜单派生（GetUserRoutes.appendTerminalRoute），
-	// 菜单表中残留会导致管理员误以为需要单独绑定
-	deletedWebTerminalResult := db.Where("path = ?", "/webterminal").Delete(&modelsystem.Menu{})
-	if deletedWebTerminalResult.Error != nil {
-		logger.Error("删除webterminal菜单失败", zap.Error(deletedWebTerminalResult.Error))
-		return deletedWebTerminalResult.Error
-	}
-	if deletedWebTerminalResult.RowsAffected > 0 {
-		logger.Info("已删除webterminal独立菜单（改为随主机管理菜单派生）", zap.Int64("count", deletedWebTerminalResult.RowsAffected))
 	}
 
 	// 删除废弃的集群角色菜单：三档（cluster-viewer/operator/admin）已下线，

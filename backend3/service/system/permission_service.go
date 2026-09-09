@@ -879,24 +879,16 @@ func (s *PermissionService) buildMenuTree(allMenus []*modelsystem.Menu, menuIDs 
 		}
 
 		if menu.ParentID == parentID {
-			menuItem := &modelsystem.Menu{
-				ID:         menu.ID,
-				Name:       menu.Name,
-				Icon:       menu.Icon,
-				Path:       menu.Path,
-				Permission: menu.Permission,
-				MenuType:   menu.MenuType,
-				ParentID:   menu.ParentID,
-				Sort:       menu.Sort,
-				Status:     menu.Status,
-			}
+			// 整体值拷贝节点（模型新增字段自动跟随，避免手工逐字段拷贝漏列），仅重置子级防串树
+			menuItem := *menu
+			menuItem.Children = nil
 
 			children := s.buildMenuTree(allMenus, menuIDs, menu.ID)
 			if len(children) > 0 {
 				menuItem.Children = children
 			}
 
-			result = append(result, menuItem)
+			result = append(result, &menuItem)
 		}
 	}
 

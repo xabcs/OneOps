@@ -1,5 +1,5 @@
 import { computed, nextTick, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useContext } from '@sa/hooks';
 import type { RouteKey } from '@elegant-router/types';
 import { useRouteStore } from '@/store/modules/route';
@@ -69,6 +69,7 @@ function useMixMenu() {
 
 export function useMenu() {
   const route = useRoute();
+  const router = useRouter();
   const { routerPushByKeyWithMetaQuery } = useRouterPush();
 
   const selectedKey = computed(() => {
@@ -92,9 +93,10 @@ export function useMenu() {
   function handleSelect(key: RouteKey) {
     selectedKeyDummy.value = key;
 
-    // web终端在新标签页打开
-    if (key === 'webterminal') {
-      window.open('/webterminal', '_blank');
+    // 新标签页打开的菜单（meta.href 标记，如 web 终端、外链）：新窗口打开，不切换当前路由
+    const meta = router.getRoutes().find(item => item.name === key)?.meta;
+    if (meta?.href) {
+      window.open(meta.href, '_blank');
       nextTick(() => {
         selectedKeyDummy.value = selectedKey.value;
       });
@@ -102,12 +104,6 @@ export function useMenu() {
     }
 
     routerPushByKeyWithMetaQuery(key);
-
-    if (key.endsWith('-link')) {
-      nextTick(() => {
-        selectedKeyDummy.value = selectedKey.value;
-      });
-    }
   }
 
   return {

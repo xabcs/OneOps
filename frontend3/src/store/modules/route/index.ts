@@ -265,12 +265,6 @@ export const useRouteStore = defineStore(SetupStoreId.Route, () => {
     if (!error) {
       const { routes, home } = data;
 
-      // 检查是否包含 webterminal 路由
-      const webterminalRoute = routes.find(r => r.path === '/webterminal' || r.name === 'webterminal');
-      if (webterminalRoute) {
-      } else {
-      }
-
       addAuthRoutes(routes);
 
       handleConstantAndAuthRoutes();
