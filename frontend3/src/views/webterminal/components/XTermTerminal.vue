@@ -232,7 +232,12 @@
     }
 
     if (terminal) {
-      terminal.dispose();
+      // xterm 插件异步激活，未加载完成时 dispose 会抛错，捕获避免中断卸载流程
+      try {
+        terminal.dispose();
+      } catch {
+        // ignore
+      }
       terminal = null;
     }
 

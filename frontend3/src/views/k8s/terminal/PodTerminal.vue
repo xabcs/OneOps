@@ -218,7 +218,13 @@
       ws.value.close();
     }
     if (terminal.value) {
-      terminal.value.dispose();
+      // 同 ExpertTerminalPanel：xterm 插件异步激活，未加载完成时 dispose 会抛错，捕获避免中断卸载流程
+      try {
+        terminal.value.dispose();
+      } catch {
+        // ignore
+      }
+      terminal.value = null;
     }
   });
 </script>

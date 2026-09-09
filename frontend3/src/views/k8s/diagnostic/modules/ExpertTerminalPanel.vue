@@ -234,7 +234,14 @@
       window.removeEventListener('resize', resizeHandler);
       resizeHandler = null;
     }
-    terminal.value?.dispose();
+    // xterm 5.5 的插件为异步激活：组件在插件加载完成前卸载时 dispose 会抛
+    // "Could not dispose an addon that has not been loaded"，
+    // 异常若从卸载钩子冒出会中断 Vue 卸载流程（导致后续 parentNode null、路由卡死），必须捕获
+    try {
+      terminal.value?.dispose();
+    } catch {
+      // ignore
+    }
     terminal.value = null;
   });
 </script>
