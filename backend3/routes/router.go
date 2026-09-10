@@ -18,8 +18,7 @@ import (
 
 // SetupRoutes 设置路由
 func SetupRoutes(r *gin.Engine, cfg *config.Config) {
-	// 应用中间件
-	r.Use(gin.Recovery())
+	// 应用中间件（Recovery 已在 main.go 全局注册，此处不再重复挂）
 	r.Use(middleware.RequestLogger())
 	r.Use(middleware.ErrorHandler())
 	r.Use(middleware.CORSMiddleware(cfg.CORS))

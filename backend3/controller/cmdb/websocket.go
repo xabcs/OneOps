@@ -439,19 +439,24 @@ func (h *SSHWebSocketHandler) connectToServer(session *modelcmdb.BastionSession)
 		return nil, fmt.Errorf("未找到 SSH 凭证")
 	}
 
-	// 解密凭证到局部变量（不修改 model 指针，避免明文密码驻留在 model 中）
+	// 解密凭证到局部变量（不修改 model 指针，避免明文密码驻留在 model 中）。
+	// 解密失败必须立即中止连接：继续用密文/坏密钥认证只会导致下游诡异失败
 	password := credential.Password
 	if password != "" {
-		if decrypted, err := utils.DecryptString(password); err == nil {
-			password = decrypted
+		decrypted, err := utils.DecryptString(password)
+		if err != nil {
+			return nil, fmt.Errorf("凭证密码解密失败: %w", err)
 		}
+		password = decrypted
 	}
 
 	privateKey := credential.PrivateKey
 	if privateKey != "" {
-		if decrypted, err := utils.DecryptString(privateKey); err == nil {
-			privateKey = decrypted
+		decrypted, err := utils.DecryptString(privateKey)
+		if err != nil {
+			return nil, fmt.Errorf("凭证私钥解密失败: %w", err)
 		}
+		privateKey = decrypted
 	}
 
 	// 确定连接端口
@@ -480,10 +485,11 @@ func (h *SSHWebSocketHandler) connectToServer(session *modelcmdb.BastionSession)
 	}
 
 	config := &ssh.ClientConfig{
-		User:            session.LoginAccount,
-		Auth:            authMethods,
+		User:    session.LoginAccount,
+		Auth:    authMethods,
+		Timeout: 30 * time.Second,
+		// TODO 安全风险：跳过主机指纹校验，后续应接入 known_hosts
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         30 * time.Second,
 	}
 
 	address := fmt.Sprintf("%s:%d", server.IP, port)

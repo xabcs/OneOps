@@ -109,14 +109,30 @@ func (c *AttributeController) CreateAttributeDefinition(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("属性创建成功"))
 }
 
+// UpdateAttributeDefinitionRequest 属性定义更新请求。
+// 指针字段：nil 表示未提交该字段、不参与更新——天然实现部分更新语义与字段白名单（防止 mass assignment），
+// 同时可挂 binding 校验。字段名与模型 JSON 契约一致（驼峰）
+type UpdateAttributeDefinitionRequest struct {
+	Name         *string `json:"name" binding:"omitempty,min=1,max=100"`
+	Key          *string `json:"key" binding:"omitempty,min=1,max=50"`
+	Category     *string `json:"category" binding:"omitempty,min=1,max=50"`
+	Type         *string `json:"type" binding:"omitempty,min=1,max=30"`
+	Options      *string `json:"options"`
+	Required     *bool   `json:"required"`
+	DefaultValue *string `json:"defaultValue"`
+	SortOrder    *int    `json:"sortOrder"`
+	Status       *int    `json:"status" binding:"omitempty,min=0,max=1"`
+	Description  *string `json:"description"`
+}
+
 // UpdateAttributeDefinition godoc
 // @Summary      更新属性定义
 // @Description  根据属性 ID 更新属性定义信息（部分字段更新，需要管理员权限）
 // @Tags         CMDB-属性
 // @Accept       json
 // @Produce      json
-// @Param        id    path      int                            true  "属性 ID"
-// @Param        attr  body      modelsystem.AttributeDefinition  true  "需要更新的字段"
+// @Param        id    path      int                                true  "属性 ID"
+// @Param        attr  body      UpdateAttributeDefinitionRequest   true  "需要更新的字段（仅提交要改的字段）"
 // @Success      200   {object}  utils.Response  "属性更新成功"
 // @Failure      200   {object}  utils.Response  "无效的 ID / 请求参数错误 / 无权限 / 更新失败"
 // @Router       /cmdb/attributes/{id} [put]
@@ -129,8 +145,8 @@ func (c *AttributeController) UpdateAttributeDefinition(ctx *gin.Context) {
 		return
 	}
 
-	var updates map[string]interface{}
-	if err := ctx.ShouldBindJSON(&updates); err != nil {
+	var req UpdateAttributeDefinitionRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
 	}
@@ -138,6 +154,44 @@ func (c *AttributeController) UpdateAttributeDefinition(ctx *gin.Context) {
 	// 检查管理员权限
 	if !c.isAdmin(ctx) {
 		ctx.JSON(http.StatusForbidden, utils.ErrorInternal("无权限"))
+		return
+	}
+
+	// 仅非 nil 字段进入更新集（部分更新），列名统一为蛇形；attr_key 为实际列名（原 key 为 MySQL 保留字，已迁移改名）
+	updates := make(map[string]interface{})
+	if req.Name != nil {
+		updates["name"] = *req.Name
+	}
+	if req.Key != nil {
+		updates["attr_key"] = *req.Key
+	}
+	if req.Category != nil {
+		updates["category"] = *req.Category
+	}
+	if req.Type != nil {
+		updates["type"] = *req.Type
+	}
+	if req.Options != nil {
+		updates["options"] = *req.Options
+	}
+	if req.Required != nil {
+		updates["required"] = *req.Required
+	}
+	if req.DefaultValue != nil {
+		updates["default_value"] = *req.DefaultValue
+	}
+	if req.SortOrder != nil {
+		updates["sort_order"] = *req.SortOrder
+	}
+	if req.Status != nil {
+		updates["status"] = *req.Status
+	}
+	if req.Description != nil {
+		updates["description"] = *req.Description
+	}
+
+	if len(updates) == 0 {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("没有可更新的字段"))
 		return
 	}
 

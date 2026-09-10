@@ -13,9 +13,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"oneops/backend3/config"
@@ -110,11 +113,11 @@ func main() {
 	// 11. 启动 Agent 指标采集调度器
 	go cmdbsvc.StartAgentMetricsScheduler()
 
-	// 12. 创建 Gin 引擎
-	r := gin.Default()
+	// 12. 创建 Gin 引擎（用 gin.New 而非 gin.Default：访问日志统一由 RequestLogger 输出、
+	// Recovery 统一由下方 GinRecovery 处理，避免重复注册导致一条请求打多份日志/多层恢复）
+	r := gin.New()
 
-	// 注册日志中间件
-	r.Use(logger.GinLogger())
+	// 注册 panic 恢复中间件（全局仅此一处，routes 中不再重复挂 gin.Recovery）
 	r.Use(logger.GinRecovery())
 
 	// 13. 注册路由
@@ -152,10 +155,33 @@ func main() {
 		zap.Int("write_timeout", cfg.Server.WriteTimeout),
 	)
 
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	// 15. 优雅停机：监听 SIGINT/SIGTERM，收到信号后给在途请求最多 10s 缓冲再退出
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	// 独立 goroutine 监听服务退出错误（SafeGo 防 panic 打崩进程）
+	errCh := make(chan error, 1)
+	utils.SafeGo("http-server", func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			errCh <- err
+		}
+	})
+
+	select {
+	case err := <-errCh:
 		logger.Fatal("服务器启动失败", zap.Error(err))
+	case <-ctx.Done():
+		logger.Info("收到退出信号，开始优雅停机")
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		logger.Error("服务器优雅停机失败（超时或出错）", zap.Error(err))
+	} else {
+		logger.Info("服务器已优雅停机")
 	}
 
 	// 关闭 Redis 连接
-	defer database.CloseRedis()
+	database.CloseRedis()
 }

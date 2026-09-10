@@ -428,20 +428,23 @@ func (s *RouteGenService) buildRouteFromMenu(menu *modelsystem.Menu, hasChildren
 	// 组件名称（根据是否有子菜单和层级生成）
 	component := s.generateComponent(menu.Path, menu.ParentID, hasChildren)
 
+	// meta 独立构建，避免对 route["meta"] 反复做类型断言
+	meta := map[string]interface{}{
+		"title":   menu.Name,
+		"i18nKey": "route." + routeName,
+		"order":   menu.Sort,
+	}
+
 	route := map[string]interface{}{
 		"id":   strconv.FormatUint(uint64(menu.ID), 10),
 		"name": routeName,
 		"path": menu.Path,
-		"meta": map[string]interface{}{
-			"title":   menu.Name,
-			"i18nKey": "route." + routeName,
-			"order":   menu.Sort,
-		},
+		"meta": meta,
 	}
 
 	// 添加图标（如果有）
 	if menu.Icon != "" {
-		route["meta"].(map[string]interface{})["icon"] = menu.Icon
+		meta["icon"] = menu.Icon
 	}
 
 	// 添加组件（如果有）
@@ -451,7 +454,7 @@ func (s *RouteGenService) buildRouteFromMenu(menu *modelsystem.Menu, hasChildren
 
 	// 添加权限标识（如果有）
 	if menu.Permission != "" {
-		route["meta"].(map[string]interface{})["permission"] = menu.Permission
+		meta["permission"] = menu.Permission
 	}
 
 	return route

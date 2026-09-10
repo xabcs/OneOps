@@ -93,7 +93,11 @@ func (s *BastionService) findApplicablePolicies(userID uint, roleIDs []uint, ser
 
 	applicable := make([]modelcmdb.AssetAccessPolicy, 0, len(policies))
 	for _, policy := range policies {
-		if s.matchesPolicy(policy, serverID, server, businessAncestors) {
+		matched, err := s.matchesPolicy(policy, serverID, server, businessAncestors)
+		if err != nil {
+			return nil, err
+		}
+		if matched {
 			applicable = append(applicable, policy)
 		}
 	}
@@ -110,28 +114,34 @@ func userRoleIDs(user *modelsystem.User) []uint {
 }
 
 // matchesPolicy 检查策略资产范围是否覆盖服务器（businessAncestors 为服务器所属业务系统及全部祖先 ID）
-func (s *BastionService) matchesPolicy(policy modelcmdb.AssetAccessPolicy, serverID uint, server *modelcmdb.Server, businessAncestors []uint) bool {
+func (s *BastionService) matchesPolicy(policy modelcmdb.AssetAccessPolicy, serverID uint, server *modelcmdb.Server, businessAncestors []uint) (bool, error) {
 	switch policy.AssetScopeType {
 	case "all":
-		return true
+		return true, nil
 	case "server":
-		return policy.AssetScopeID == serverID
+		return policy.AssetScopeID == serverID, nil
 	case "group":
-		count, _ := s.repo.CountServerGroupRelation(serverID, policy.AssetScopeID)
-		return count > 0
+		count, err := s.repo.CountServerGroupRelation(serverID, policy.AssetScopeID)
+		if err != nil {
+			return false, fmt.Errorf("查询服务器分组关联失败: %w", err)
+		}
+		return count > 0, nil
 	case "tag":
-		count, _ := s.repo.CountServerTagRelation(serverID, policy.AssetScopeID)
-		return count > 0
+		count, err := s.repo.CountServerTagRelation(serverID, policy.AssetScopeID)
+		if err != nil {
+			return false, fmt.Errorf("查询服务器标签关联失败: %w", err)
+		}
+		return count > 0, nil
 	case "business":
 		// 业务系统子树匹配：命中服务器所属业务或其任意祖先
 		for _, id := range businessAncestors {
 			if id == policy.AssetScopeID {
-				return true
+				return true, nil
 			}
 		}
-		return false
+		return false, nil
 	default:
-		return false
+		return false, nil
 	}
 }
 
@@ -309,7 +319,11 @@ func (s *BastionService) CloseSession(sessionID uint, reason string, status ...s
 	}
 
 	now := time.Now()
-	duration := int(now.Sub(*session.StartedAt).Seconds())
+	// StartedAt 理论上必填，但历史脏数据可能为 NULL，解引用前先做防护
+	duration := 0
+	if session.StartedAt != nil {
+		duration = int(now.Sub(*session.StartedAt).Seconds())
+	}
 
 	targetStatus := "closed"
 	if len(status) > 0 && status[0] != "" {
@@ -1063,10 +1077,11 @@ func getRoleIDsFromSession(session *modelcmdb.BastionSession) []uint {
 	return []uint{}
 }
 
-// truncateString 截断字符串
+// truncateString 截断字符串（按 rune 截断，避免多字节中文被从中间截开产生乱码）
 func truncateString(s string, maxLen int) string {
-	if len(s) <= maxLen {
+	runes := []rune(s)
+	if len(runes) <= maxLen {
 		return s
 	}
-	return s[:maxLen] + "..."
+	return string(runes[:maxLen]) + "..."
 }

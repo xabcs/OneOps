@@ -3,6 +3,7 @@ package cmdb
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	modelcmdb "oneops/backend3/model/cmdb"
@@ -67,7 +68,8 @@ func (s *AttributeService) UpdateAttributeDefinition(id uint, updates map[string
 		return err
 	}
 
-	if newKey, ok := updates["key"].(string); ok && newKey != attr.Key {
+	// key 列已改名 attr_key（原 key 为 MySQL 保留字）
+	if newKey, ok := updates["attr_key"].(string); ok && newKey != attr.Key {
 		count, err := s.repo.CountAttributeDefinitionByKeyExcludeID(newKey, id)
 		if err != nil {
 			return err
@@ -153,9 +155,19 @@ func (s *AttributeService) GetServerAttributes(serverID uint) ([]modelcmdb.Serve
 
 // SaveServerAttributes 保存主机属性
 func (s *AttributeService) SaveServerAttributes(serverID uint, attributes []modelcmdb.ServerAttribute) error {
+	// 批量获取属性定义，避免循环内逐条查询（N+1）
+	attrIDs := make([]uint, 0, len(attributes))
 	for i := range attributes {
-		def, err := s.repo.FindAttributeDefinitionByID(attributes[i].AttributeID)
-		if err != nil {
+		attrIDs = append(attrIDs, attributes[i].AttributeID)
+	}
+	defMap, err := s.repo.FindAttributeDefinitionsByIDs(attrIDs)
+	if err != nil {
+		return err
+	}
+
+	for i := range attributes {
+		def, ok := defMap[attributes[i].AttributeID]
+		if !ok {
 			return fmt.Errorf("属性ID %d 不存在", attributes[i].AttributeID)
 		}
 
@@ -233,7 +245,6 @@ func getValueType(attrType string) string {
 }
 
 func parseFloat(s string) (float64, error) {
-	var result float64
-	_, err := fmt.Sscanf(s, "%f", &result)
-	return result, err
+	// 用 ParseFloat 严格校验整串输入，避免 Sscanf 只解析前缀导致 "12abc" 也被当作合法数字
+	return strconv.ParseFloat(strings.TrimSpace(s), 64)
 }

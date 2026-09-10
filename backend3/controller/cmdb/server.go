@@ -43,28 +43,23 @@ func (c *CMDBController) GetServers(ctx *gin.Context) {
 		return
 	}
 
-	// 转换为 Service 层使用的查询参数
+	// 转换为 Service 层使用的查询参数（字符串筛选项表驱动，避免逐字段重复手写）
 	query := make(map[string]interface{})
-	if params.Hostname != "" {
-		query["hostname"] = params.Hostname
-	}
-	if params.IP != "" {
-		query["ip"] = params.IP
-	}
-	if params.InnerIP != "" {
-		query["innerIp"] = params.InnerIP
-	}
-	if params.Env != "" {
-		query["env"] = params.Env
-	}
-	if params.Status != "" {
-		query["status"] = params.Status
-	}
-	if params.Provider != "" {
-		query["provider"] = params.Provider
-	}
-	if params.AgentStatus != "" {
-		query["agentStatus"] = params.AgentStatus
+	for _, f := range []struct {
+		src string
+		dst string
+	}{
+		{params.Hostname, "hostname"},
+		{params.IP, "ip"},
+		{params.InnerIP, "innerIp"},
+		{params.Env, "env"},
+		{params.Status, "status"},
+		{params.Provider, "provider"},
+		{params.AgentStatus, "agentStatus"},
+	} {
+		if f.src != "" {
+			query[f.dst] = f.src
+		}
 	}
 	if params.GroupID != nil {
 		query["groupId"] = *params.GroupID
@@ -172,10 +167,40 @@ func (c *CMDBController) GetServerForConnect(ctx *gin.Context) {
 // @Router       /cmdb/servers [post]
 // @Security     BearerAuth
 func (c *CMDBController) CreateServer(ctx *gin.Context) {
-	var server modelcmdb.Server
-	if err := ctx.ShouldBindJSON(&server); err != nil {
+	// 使用带校验标签的请求参数接收，校验通过后再映射到 model，避免直接绑定 GORM model 绕过校验
+	var params dto.ServerCreateParams
+	if err := ctx.ShouldBindJSON(&params); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
 		return
+	}
+
+	server := modelcmdb.Server{
+		Hostname:           params.Hostname,
+		IP:                 params.IP,
+		InnerIP:            params.InnerIP,
+		SSHPort:            params.SSHPort,
+		Status:             params.Status,
+		Provider:           params.Provider,
+		OS:                 params.OS,
+		OSVersion:          params.OSVersion,
+		Arch:               params.Arch,
+		CPU:                params.CPU,
+		Memory:             params.Memory,
+		Disk:               params.Disk,
+		ServerType:         params.ServerType,
+		BusinessID:         params.BusinessID,
+		CabinetID:          params.CabinetID,
+		SSHCredentialID:    params.SSHCredentialID,
+		CredentialID:       params.CredentialID,
+		SystemCredentialID: params.SystemCredentialID,
+		CredentialIDs:      params.CredentialIDs,
+		GroupIDs:           params.GroupIDs,
+		CloudInfo:          params.CloudInfo,
+		Remarks:            params.Remarks,
+	}
+	// SSH 端口缺省时按默认端口 22 处理（与数据库列默认值一致）
+	if server.SSHPort == 0 {
+		server.SSHPort = 22
 	}
 
 	// 获取当前用户

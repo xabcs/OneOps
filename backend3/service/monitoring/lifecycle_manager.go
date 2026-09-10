@@ -6,13 +6,12 @@ import (
 	"oneops/backend3/pkg/logger"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 // DataLifecycleManager 数据生命周期管理器
 type DataLifecycleManager struct {
-	archiveTicker *time.Ticker
-	cleanupTicker *time.Ticker
-	stopChan      chan bool
+	stopChan chan bool
 }
 
 // NewDataLifecycleManager 创建数据生命周期管理器
@@ -31,46 +30,46 @@ func (m *DataLifecycleManager) Start() {
 		m.CleanupExpiredMetrics()
 	}()
 
-	m.archiveTicker = m.scheduleAtTime(2, 0)
-	go func() {
-		for {
-			select {
-			case <-m.archiveTicker.C:
-				m.ArchiveOldMetrics()
-			case <-m.stopChan:
-				return
-			}
-		}
-	}()
-
-	m.cleanupTicker = m.scheduleAtTime(3, 0)
-	go func() {
-		for {
-			select {
-			case <-m.cleanupTicker.C:
-				m.CleanupExpiredMetrics()
-			case <-m.stopChan:
-				return
-			}
-		}
-	}()
+	// 每天固定时刻调度：使用一次性 Timer 触发后按当天时刻重新计算间隔；
+	// Ticker 只会按创建时的固定间隔重复触发，无法对齐"每天 02:00/03:00"的调度语义
+	go m.scheduleLoop(2, 0, m.ArchiveOldMetrics)
+	go m.scheduleLoop(3, 0, m.CleanupExpiredMetrics)
 
 	logger.Info("数据生命周期管理器已启动",
 		zap.String("archive_schedule", "每天 02:00"),
 		zap.String("cleanup_schedule", "每天 03:00"))
 }
 
+// scheduleLoop 每天在指定时刻执行任务，直到收到停止信号
+func (m *DataLifecycleManager) scheduleLoop(hour, minute int, task func()) {
+	timer := time.NewTimer(nextRunDelay(hour, minute))
+	defer timer.Stop()
+
+	for {
+		select {
+		case <-timer.C:
+			task()
+			// 一次性 Timer 触发后需 Reset 为下一次执行时刻
+			timer.Reset(nextRunDelay(hour, minute))
+		case <-m.stopChan:
+			return
+		}
+	}
+}
+
 // Stop 停止数据生命周期管理
 func (m *DataLifecycleManager) Stop() {
 	logger.Info("停止数据生命周期管理器")
 	close(m.stopChan)
+}
 
-	if m.archiveTicker != nil {
-		m.archiveTicker.Stop()
-	}
-	if m.cleanupTicker != nil {
-		m.cleanupTicker.Stop()
-	}
+// archivedMetricRow 归档表写入行（与 mon_agent_metrics_archive 列对应，id 由数据库自增）
+type archivedMetricRow struct {
+	ServerID   uint      `gorm:"column:server_id"`
+	MetricType string    `gorm:"column:metric_type"`
+	MetricData string    `gorm:"column:metric_data"`
+	ReceivedAt time.Time `gorm:"column:received_at"`
+	ArchivedAt time.Time `gorm:"column:archived_at"`
 }
 
 // ArchiveOldMetrics 归档旧指标数据
@@ -97,8 +96,10 @@ func (m *DataLifecycleManager) ArchiveOldMetrics() {
 	logger.Info("发现待归档数据", zap.Int64("count", count))
 
 	batchSize := 10000
-	offset := 0
 	totalArchived := 0
+	// 基于 ID 游标分页：源表数据随删除不断前移，offset 分页会跳过数据导致漏归档；
+	// 游标始终从上一批最大 ID 之后继续，保证不重不漏
+	lastID := uint(0)
 
 	for {
 		var metrics []struct {
@@ -111,10 +112,9 @@ func (m *DataLifecycleManager) ArchiveOldMetrics() {
 
 		err := getDB().Table("mon_agent_metrics").
 			Select("id, server_id, metric_type, metric_data, received_at").
-			Where("received_at < ?", thresholdTime).
-			Order("received_at ASC").
+			Where("received_at < ? AND id > ?", thresholdTime, lastID).
+			Order("id ASC").
 			Limit(batchSize).
-			Offset(offset).
 			Find(&metrics).Error
 		if err != nil {
 			logger.Error("查询待归档数据失败", zap.Error(err))
@@ -125,31 +125,36 @@ func (m *DataLifecycleManager) ArchiveOldMetrics() {
 			break
 		}
 
-		for _, metric := range metrics {
-			insertSQL := `INSERT INTO mon_agent_metrics_archive
-				(server_id, metric_type, metric_data, received_at, archived_at)
-				VALUES (?, ?, ?, ?, ?)`
-			if err := getDB().Exec(insertSQL, metric.ServerID, metric.MetricType,
-				metric.MetricData, metric.ReceivedAt, time.Now()).Error; err != nil {
-				logger.Error("插入归档数据失败",
-					zap.Uint("id", metric.ID),
-					zap.Error(err))
-				continue
+		// 组装归档行（逐行改批量写入）
+		archivedAt := time.Now()
+		ids := make([]uint, len(metrics))
+		archiveRows := make([]archivedMetricRow, len(metrics))
+		for i, metric := range metrics {
+			ids[i] = metric.ID
+			archiveRows[i] = archivedMetricRow{
+				ServerID:   metric.ServerID,
+				MetricType: metric.MetricType,
+				MetricData: metric.MetricData,
+				ReceivedAt: metric.ReceivedAt,
+				ArchivedAt: archivedAt,
 			}
 		}
 
-		ids := make([]uint, len(metrics))
-		for i, metric := range metrics {
-			ids[i] = metric.ID
-		}
-
-		if err := getDB().Table("mon_agent_metrics").Where("id IN ?", ids).Delete(nil).Error; err != nil {
-			logger.Error("删除已归档数据失败", zap.Error(err))
+		// 归档语义：先写入归档表、成功后再删源表，任一步失败事务回滚，源数据不删
+		err = getDB().Transaction(func(tx *gorm.DB) error {
+			if err := tx.Table("mon_agent_metrics_archive").CreateInBatches(archiveRows, batchSize).Error; err != nil {
+				return err
+			}
+			return tx.Table("mon_agent_metrics").Where("id IN ?", ids).Delete(nil).Error
+		})
+		if err != nil {
+			logger.Error("归档批次失败（事务已回滚，源数据未删除）", zap.Error(err))
 			break
 		}
 
+		// 推进游标到本批最大 ID
+		lastID = metrics[len(metrics)-1].ID
 		totalArchived += len(metrics)
-		offset += batchSize
 
 		logger.Info("归档进度",
 			zap.Int("batch", totalArchived),
@@ -265,8 +270,8 @@ func (m *DataLifecycleManager) GetDataStats() map[string]interface{} {
 	return stats
 }
 
-// scheduleAtTime 计算下次执行时间
-func (m *DataLifecycleManager) scheduleAtTime(hour, minute int) *time.Ticker {
+// nextRunDelay 计算距离下一个 hour:minute 时刻的等待时长
+func nextRunDelay(hour, minute int) time.Duration {
 	now := time.Now()
 	next := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, now.Location())
 
@@ -279,5 +284,5 @@ func (m *DataLifecycleManager) scheduleAtTime(hour, minute int) *time.Ticker {
 		zap.Time("next_run", next),
 		zap.Duration("wait_duration", duration))
 
-	return time.NewTicker(duration)
+	return duration
 }

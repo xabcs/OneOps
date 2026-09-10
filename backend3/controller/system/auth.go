@@ -10,8 +10,6 @@ import (
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	modelsystem "oneops/backend3/model/system"
-	"oneops/backend3/pkg/database"
 	"oneops/backend3/pkg/logger"
 	"oneops/backend3/pkg/utils"
 	"oneops/backend3/service/system"
@@ -199,64 +197,4 @@ func (ctrl *AuthController) Logout(c *gin.Context) {
 	_ = ctrl.auditSvc.LogLogout(uid)
 
 	c.JSON(http.StatusOK, utils.SuccessWithMessage("登出成功"))
-}
-
-// ChangePasswordRequest 修改密码请求
-type ChangePasswordRequest struct {
-	OldPassword string `json:"oldPassword" binding:"required"`
-	NewPassword string `json:"newPassword" binding:"required"`
-}
-
-// UpdatePassword godoc
-// @Summary      修改当前用户密码
-// @Description  校验原密码后更新当前登录用户密码（注意：该 handler 尚未注册路由）
-// @Tags         系统管理-认证
-// @Accept       json
-// @Produce      json
-// @Param        request  body  ChangePasswordRequest  true  "原密码与新密码"
-// @Success      200  {object}  utils.Response  "修改成功"
-// @Failure      200  {object}  utils.Response  "请求参数错误 / 原密码错误 / 更新密码失败"
-// @Router       /auth/password [put]
-// @Security     BearerAuth
-func (ctrl *AuthController) UpdatePassword(c *gin.Context) {
-	uid, ok := utils.GetUserIDFromContext(c)
-	if !ok {
-		return
-	}
-
-	var req ChangePasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("请求参数错误"))
-		return
-	}
-
-	// 获取当前用户（含密码哈希）
-	userInfo, err := ctrl.authSvc.GetUserInfo(uid)
-	if err != nil || userInfo.User == nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("用户不存在"))
-		return
-	}
-
-	// 验证原密码
-	if !utils.CheckPassword(req.OldPassword, userInfo.User.Password) {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("原密码错误"))
-		return
-	}
-
-	// 加密新密码
-	hashedPassword, err := utils.HashPassword(req.NewPassword)
-	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("密码加密失败"))
-		return
-	}
-
-	if err := database.GetDB().
-		Model(&modelsystem.User{}).
-		Where("id = ?", uid).
-		Update("password", hashedPassword).Error; err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("更新密码失败"))
-		return
-	}
-
-	c.JSON(http.StatusOK, utils.SuccessWithMessage("密码修改成功"))
 }

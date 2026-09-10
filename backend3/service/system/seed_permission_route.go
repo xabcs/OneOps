@@ -33,9 +33,24 @@ func (i *Initializer) syncPermissionRoutes() error {
 		{"POST", "/api/route/invalidateCache", "system.route.invalidate"},
 		{"GET", "/api/route/debugCache", "system.route.debug"},
 
-		// ========== 工单中心：流程定义管理 ==========
-		// 说明：工单发起/审批/详情/评论及 /ticket/types/options 仅需登录（审批权由流程节点配置决定），
-		// 不在本表登记；此处仅登记管理端 CRUD 的权限映射。
+		// ========== 工单中心 ==========
+		// 工单操作（发起/审批/详情/评论/催办等）映射到 ticket.ticket.view（工单中心入口权限）：
+		// 本人相关性（发起人/审批人/评论人）由 controller/service 校验（CanView），查看全部工单还需
+		// ticket.ticket.list（controller 内 scope=all 校验），审批权由流程节点配置决定。
+		// 注意：路由权限中间件为 fail-closed（无映射即 403），这些路由必须登记映射
+		{"GET", "/api/ticket/tickets", "ticket.ticket.view"},
+		{"GET", "/api/ticket/tickets/:id", "ticket.ticket.view"},
+		{"POST", "/api/ticket/tickets", "ticket.ticket.view"},
+		{"POST", "/api/ticket/tickets/:id/approve", "ticket.ticket.view"},
+		{"POST", "/api/ticket/tickets/:id/reject", "ticket.ticket.view"},
+		{"POST", "/api/ticket/tickets/:id/cancel", "ticket.ticket.view"},
+		{"POST", "/api/ticket/tickets/:id/comment", "ticket.ticket.view"},
+		{"POST", "/api/ticket/tickets/:id/resubmit", "ticket.ticket.view"},
+		{"POST", "/api/ticket/tickets/:id/urge", "ticket.ticket.view"},
+		// 发起工单的前置数据（类型下拉选项、按类型取流程）
+		{"GET", "/api/ticket/types/options", "ticket.ticket.view"},
+		{"GET", "/api/ticket/workflows/by-type/:typeId", "ticket.ticket.view"},
+		// 流程定义管理（管理端 CRUD）
 		{"GET", "/api/ticket/workflows", "ticket.workflow.list"},
 		{"GET", "/api/ticket/workflows/:id", "ticket.workflow.list"},
 		{"POST", "/api/ticket/workflows", "ticket.workflow.create"},
@@ -337,6 +352,7 @@ func (i *Initializer) syncPermissionRoutes() error {
 		{"GET", "/api/k8s/diagnostic/sessions", "k8s.diagnostic.view"},
 		{"GET", "/api/k8s/diagnostic/sessions/:sessionId", "k8s.diagnostic.view"},
 		{"POST", "/api/k8s/diagnostic/execute", "k8s.diagnostic.execute"},
+		{"GET", "/api/k8s/diagnostic/session/ws", "k8s.diagnostic.execute"}, // 诊断终端交互通道（input/output），与执行诊断同级
 		{"POST", "/api/k8s/diagnostic/sessions/:sessionId/terminate", "k8s.diagnostic.execute"},
 		{"GET", "/api/k8s/diagnostic/command-overrides", "k8s.diagnostic.view"},
 		{"POST", "/api/k8s/diagnostic/command-overrides", "k8s.diagnostic.execute"},

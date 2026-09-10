@@ -143,14 +143,26 @@ func (i *Initializer) syncMenus() error {
 	addedCount := 0
 	updatedCount := 0
 
+	// 一次查出已存在的菜单 ID 集合，替代逐条 First 存在性检查（启动慢的根源之一）
+	ids := make([]uint, 0, len(menus))
 	for _, menu := range menus {
-		var existingMenu modelsystem.Menu
-		err := db.Where("id = ?", menu.ID).First(&existingMenu).Error
+		ids = append(ids, menu.ID)
+	}
+	var existingIDs []uint
+	if err := db.Model(&modelsystem.Menu{}).Where("id IN ?", ids).Pluck("id", &existingIDs).Error; err != nil {
+		return err
+	}
+	existingSet := make(map[uint]bool, len(existingIDs))
+	for _, id := range existingIDs {
+		existingSet[id] = true
+	}
 
-		if err == nil {
+	var newMenus []modelsystem.Menu
+	for _, menu := range menus {
+		if existingSet[menu.ID] {
 			// 菜单已存在，更新数据（保持数据同步）
 			// 注意：不更新 sort 字段，保留用户在菜单管理中修改的排序
-			db.Model(&existingMenu).Updates(map[string]interface{}{
+			db.Model(&modelsystem.Menu{ID: menu.ID}).Updates(map[string]interface{}{
 				"name":       menu.Name,
 				"icon":       menu.Icon,
 				"path":       menu.Path,
@@ -165,15 +177,21 @@ func (i *Initializer) syncMenus() error {
 			logger.Debug("更新菜单",
 				zap.String("name", menu.Name),
 				zap.Uint("id", menu.ID))
-		} else {
-			// 菜单不存在，添加新菜单
-			if err := db.Create(&menu).Error; err != nil {
-				logger.Error("添加菜单失败",
-					zap.String("name", menu.Name),
-					zap.Any("error", err))
-				return err
-			}
-			addedCount++
+			continue
+		}
+		newMenus = append(newMenus, menu)
+	}
+
+	// 缺失的菜单一次性批量插入，幂等语义不变（已存在集合之外的才插）
+	if len(newMenus) > 0 {
+		if err := db.CreateInBatches(&newMenus, len(newMenus)).Error; err != nil {
+			logger.Error("批量添加菜单失败",
+				zap.Int("count", len(newMenus)),
+				zap.Error(err))
+			return err
+		}
+		addedCount = len(newMenus)
+		for _, menu := range newMenus {
 			logger.Info("添加新菜单",
 				zap.String("name", menu.Name),
 				zap.Uint("id", menu.ID),

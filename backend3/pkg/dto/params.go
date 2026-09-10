@@ -1,5 +1,9 @@
 package dto
 
+import (
+	modelcmdb "oneops/backend3/model/cmdb"
+)
+
 // ═══════════════════════════════════════════
 // 服务器相关参数
 // ═══════════════════════════════════════════
@@ -21,23 +25,31 @@ type ServerQueryParams struct {
 }
 
 // ServerCreateParams 创建服务器参数
+// 注意：Hostname 不使用自定义 hostname 校验器（其正则不允许"."，会拒绝 FQDN 主机名，与前端校验规则冲突），
+// 仅做必填和长度校验；SSHPort 允许缺省（缺省时由控制器按默认端口 22 处理）
 type ServerCreateParams struct {
-	Hostname        string `json:"hostname" binding:"required,min=1,max=100,hostname"`
-	IP              string `json:"ip" binding:"required,ip"`
-	InnerIP         string `json:"innerIp" binding:"omitempty,ip"`
-	SSHPort         int    `json:"sshPort" binding:"required,min=1,max=65535"`
-	Status          string `json:"status" binding:"omitempty,oneof=active inactive maintenance"`
-	Provider        string `json:"provider" binding:"omitempty,max=50"`
-	OS              string `json:"os" binding:"omitempty,max=50"`
-	Arch            string `json:"arch" binding:"omitempty,max=50"`
-	CPU             int    `json:"cpu" binding:"omitempty,min=1"`
-	Memory          int    `json:"memory" binding:"omitempty,min=1"`
-	Disk            int    `json:"disk" binding:"omitempty,min=1"`
-	SSHCredentialID uint   `json:"sshCredentialId" binding:"omitempty,min=1"`
-	CredentialID    uint   `json:"credentialId" binding:"omitempty,min=1"`
-	CredentialIDs   []uint `json:"credentialIds" binding:"omitempty,min=1,dive"`
-	GroupIDs        []uint `json:"groupIds" binding:"omitempty,min=1,dive"`
-	Remarks         string `json:"remarks" binding:"omitempty,max=500"`
+	Hostname           string                 `json:"hostname" binding:"required,min=1,max=100"`
+	IP                 string                 `json:"ip" binding:"required,ip"`
+	InnerIP            string                 `json:"innerIp" binding:"omitempty,ip"`
+	SSHPort            int                    `json:"sshPort" binding:"omitempty,min=1,max=65535"`
+	Status             string                 `json:"status" binding:"omitempty,oneof=active inactive maintenance"`
+	Provider           string                 `json:"provider" binding:"omitempty,max=50"`
+	OS                 string                 `json:"os" binding:"omitempty,max=50"`
+	OSVersion          string                 `json:"osVersion" binding:"omitempty,max=50"`
+	Arch               string                 `json:"arch" binding:"omitempty,max=50"`
+	CPU                int                    `json:"cpu" binding:"omitempty,min=1"`
+	Memory             int                    `json:"memory" binding:"omitempty,min=1"`
+	Disk               int                    `json:"disk" binding:"omitempty,min=1"`
+	ServerType         string                 `json:"serverType" binding:"omitempty,max=20"`
+	BusinessID         uint                   `json:"businessId" binding:"omitempty,min=1"`
+	CabinetID          uint                   `json:"cabinetId" binding:"omitempty,min=1"`
+	SSHCredentialID    uint                   `json:"sshCredentialId" binding:"omitempty,min=1"`
+	CredentialID       uint                   `json:"credentialId" binding:"omitempty,min=1"`
+	SystemCredentialID uint                   `json:"systemCredentialId" binding:"omitempty,min=1"`
+	CredentialIDs      []uint                 `json:"credentialIds" binding:"omitempty,min=1,dive"`
+	GroupIDs           []uint                 `json:"groupIds" binding:"omitempty,min=1,dive"`
+	CloudInfo          *modelcmdb.CloudServer `json:"cloudInfo"`
+	Remarks            string                 `json:"remarks" binding:"omitempty,max=500"`
 }
 
 // ServerUpdateParams 更新服务器参数

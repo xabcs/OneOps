@@ -34,12 +34,7 @@ func NewMenuController(svc *syssvc.MenuService) *MenuController {
 // @Router       /system/menus [get]
 // @Security     BearerAuth
 func (ctrl *MenuController) GetMenus(c *gin.Context) {
-	menuTree, err := ctrl.svc.GetAllAsTree()
-	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取菜单列表失败"))
-		return
-	}
-	c.JSON(http.StatusOK, utils.SuccessWithData(menuTree))
+	ctrl.getMenuTreeData(c, "获取菜单列表失败")
 }
 
 // GetMenuTree godoc
@@ -52,9 +47,14 @@ func (ctrl *MenuController) GetMenus(c *gin.Context) {
 // @Router       /system/menus/tree [get]
 // @Security     BearerAuth
 func (ctrl *MenuController) GetMenuTree(c *gin.Context) {
+	ctrl.getMenuTreeData(c, "获取菜单树失败")
+}
+
+// getMenuTreeData GetMenus 与 GetMenuTree 的公共实现（两入口仅错误文案不同）
+func (ctrl *MenuController) getMenuTreeData(c *gin.Context, errMsg string) {
 	menuTree, err := ctrl.svc.GetAllAsTree()
 	if err != nil {
-		c.JSON(http.StatusOK, utils.ErrorInternal("获取菜单树失败"))
+		c.JSON(http.StatusOK, utils.ErrorInternal(errMsg))
 		return
 	}
 	c.JSON(http.StatusOK, utils.SuccessWithData(menuTree))
@@ -110,15 +110,16 @@ func (ctrl *MenuController) CreateMenu(c *gin.Context) {
 }
 
 // UpdateMenuRequest 更新菜单请求
+// 指针字段用于区分"未提交"与"零值"，一次解析即可同时获得类型化字段与字段存在性
 type UpdateMenuRequest struct {
-	Name       string `json:"name"`
-	Icon       string `json:"icon"`
-	Path       string `json:"path"`
-	Permission string `json:"permission"`
-	MenuType   string `json:"menuType"`
-	ParentID   uint   `json:"parentId"`
-	Sort       int    `json:"sort"`
-	Status     int    `json:"status"`
+	Name       *string `json:"name"`
+	Icon       *string `json:"icon"`
+	Path       *string `json:"path"`
+	Permission *string `json:"permission"`
+	MenuType   *string `json:"menuType"`
+	ParentID   *uint   `json:"parentId"`
+	Sort       *int    `json:"sort"`
+	Status     *int    `json:"status"`
 }
 
 // UpdateMenu godoc
@@ -147,12 +148,7 @@ func (ctrl *MenuController) UpdateMenu(c *gin.Context) {
 		return
 	}
 
-	var rawBody map[string]interface{}
-	if err := json.Unmarshal(bodyBytes, &rawBody); err != nil {
-		c.JSON(http.StatusOK, utils.ErrorBadRequest("JSON解析失败"))
-		return
-	}
-
+	// 只解析一次：指针字段同时承载"字段是否存在"与类型化取值（替代 map+struct 两次 Unmarshal）
 	var req UpdateMenuRequest
 	if err := json.Unmarshal(bodyBytes, &req); err != nil {
 		c.JSON(http.StatusOK, utils.ErrorBadRequest("参数解析失败"))
@@ -160,29 +156,29 @@ func (ctrl *MenuController) UpdateMenu(c *gin.Context) {
 	}
 
 	updates := map[string]interface{}{}
-	if req.Name != "" {
-		updates["name"] = req.Name
+	if req.Name != nil && *req.Name != "" {
+		updates["name"] = *req.Name
 	}
-	if req.Icon != "" {
-		updates["icon"] = req.Icon
+	if req.Icon != nil && *req.Icon != "" {
+		updates["icon"] = *req.Icon
 	}
-	if req.Path != "" {
-		updates["path"] = req.Path
+	if req.Path != nil && *req.Path != "" {
+		updates["path"] = *req.Path
 	}
-	if req.Permission != "" {
-		updates["permission"] = req.Permission
+	if req.Permission != nil && *req.Permission != "" {
+		updates["permission"] = *req.Permission
 	}
-	if req.MenuType != "" {
-		updates["menu_type"] = req.MenuType
+	if req.MenuType != nil && *req.MenuType != "" {
+		updates["menu_type"] = *req.MenuType
 	}
-	if _, ok := rawBody["parentId"]; ok {
-		updates["parent_id"] = req.ParentID
+	if req.ParentID != nil {
+		updates["parent_id"] = *req.ParentID
 	}
-	if _, ok := rawBody["sort"]; ok {
-		updates["sort"] = req.Sort
+	if req.Sort != nil {
+		updates["sort"] = *req.Sort
 	}
-	if _, ok := rawBody["status"]; ok {
-		updates["status"] = req.Status
+	if req.Status != nil {
+		updates["status"] = *req.Status
 	}
 
 	if len(updates) == 0 {

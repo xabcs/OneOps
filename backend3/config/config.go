@@ -2,8 +2,6 @@ package config
 
 import (
 	"fmt"
-	"log"
-	"os"
 )
 
 // Config 应用配置结构
@@ -55,7 +53,11 @@ type DatabaseConfig struct {
 
 // GetDSN 获取数据库连接字符串
 func (c *DatabaseConfig) GetDSN() string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+	// interpolateParams=true：带参数的查询由驱动在客户端转义拼接后走单次
+	// COM_QUERY（1 个网络往返）；默认模式下走 COM_STMT_PREPARE + COM_STMT_EXECUTE
+	// 两个往返，远程数据库下每条带参查询多付一次 RTT。charset=utf8mb4 已保证
+	// 多字节字符转义正确，由驱动完成的转义无注入风险
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&interpolateParams=true",
 		c.User, c.Password, c.Host, c.Port, c.DBName)
 }
 
@@ -121,80 +123,4 @@ type AppConfig struct {
 	Version     string `yaml:"version"`     // 应用版本
 	Environment string `yaml:"environment"` // 运行环境
 	Debug       bool   `yaml:"debug"`       // 是否开启调试
-}
-
-// GetConfig 获取配置（兼容旧代码，保持向后兼容）
-// 已废弃：请使用 LoadConfig() 替代
-func GetConfig() *Config {
-	// 尝试加载配置文件，如果失败则返回默认配置
-	cfg, err := LoadConfig()
-	if err != nil {
-		// 如果配置文件加载失败，记录警告日志并返回环境变量配置（向后兼容）
-		log.Printf("警告: 配置文件加载失败，使用默认配置: %v", err)
-		return &Config{
-			Server: ServerConfig{
-				Port:         getEnv("SERVER_PORT", "8082"),
-				Mode:         getEnv("GIN_MODE", "debug"),
-				ReadTimeout:  60,
-				WriteTimeout: 60,
-			},
-			Database: DatabaseConfig{
-				Host:         getEnv("DB_HOST", "localhost"),
-				Port:         getEnv("DB_PORT", "3306"),
-				User:         getEnv("DB_USER", "root"),
-				Password:     getEnv("DB_PASSWORD", ""),
-				DBName:       getEnv("DB_NAME", "oneops"),
-				MaxIdleConns: 10,
-				MaxOpenConns: 100,
-				LogLevel:     "warn",
-			},
-			Redis: RedisConfig{
-				Host:         getEnv("REDIS_HOST", "localhost"),
-				Port:         getEnv("REDIS_PORT", "6379"),
-				Password:     getEnv("REDIS_PASSWORD", ""),
-				DB:           0,
-				PoolSize:     10,
-				MinIdleConns: 5,
-				DialTimeout:  5,
-				ReadTimeout:  3,
-				WriteTimeout: 3,
-				Enabled:      getEnv("REDIS_ENABLED", "true") == "true",
-			},
-			JWT: JWTConfig{
-				Secret:     getEnv("JWT_SECRET", ""),
-				ExpireTime: 24,
-				Issuer:     "oneops",
-			},
-			Log: LogConfig{
-				Level:      "info",
-				Filename:   "logs/app.log",
-				MaxSize:    100,
-				MaxBackups: 3,
-				MaxAge:     28,
-				Compress:   true,
-			},
-			CORS: CORSConfig{
-				AllowOrigins:     []string{"http://localhost:5173", "http://localhost:5174"},
-				AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-				AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-				AllowCredentials: true,
-				MaxAge:           86400,
-			},
-			App: AppConfig{
-				Name:        "OneOps",
-				Version:     "1.0.0",
-				Environment: "development",
-				Debug:       true,
-			},
-		}
-	}
-	return cfg
-}
-
-// getEnv 获取环境变量，如果不存在则返回默认值
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
 }

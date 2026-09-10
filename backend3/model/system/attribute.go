@@ -8,7 +8,7 @@ import "time"
 type AttributeDefinition struct {
 	ID           uint      `json:"id" gorm:"primaryKey"`
 	Name         string    `json:"name" gorm:"size:100;not null"`
-	Key          string    `json:"key" gorm:"size:50;not null;uniqueIndex;column:key"`
+	Key          string    `json:"key" gorm:"size:50;not null;uniqueIndex;column:attr_key"`
 	Category     string    `json:"category" gorm:"size:50;not null;index"`
 	Type         string    `json:"type" gorm:"size:20;not null;default:'text'"`
 	Options      string    `json:"options" gorm:"type:text"`

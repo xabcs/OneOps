@@ -13,6 +13,7 @@ import (
 	modelticket "oneops/backend3/model/ticket"
 	"oneops/backend3/pkg/database"
 	"oneops/backend3/pkg/logger"
+	"oneops/backend3/pkg/utils"
 	serviceticket "oneops/backend3/service/ticket"
 
 	"go.uber.org/zap"
@@ -68,6 +69,17 @@ func (i *Initializer) migrateSchema() error {
 	// 清理历史遗留的外键约束
 	db.Exec("ALTER TABLE cabinets DROP FOREIGN KEY cabinets_ibfk_1")
 	db.Exec("ALTER TABLE cabinets DROP FOREIGN KEY fk_server_rooms_cabinets")
+
+	// 历史遗留修正：cmdb_attribute_definitions 的 key 列与 MySQL 保留字冲突（手写 SQL 极易踩坑），改名为 attr_key。
+	// 必须在 AutoMigrate 之前执行：否则 AutoMigrate 会按新列名直接新建空列而非改名，导致数据"丢失"
+	var legacyKeyCol int64
+	db.Raw("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'cmdb_attribute_definitions' AND COLUMN_NAME = 'key'").Scan(&legacyKeyCol)
+	if legacyKeyCol > 0 {
+		if err := db.Exec("ALTER TABLE cmdb_attribute_definitions CHANGE COLUMN `key` `attr_key` VARCHAR(50) NOT NULL").Error; err != nil {
+			return fmt.Errorf("属性定义表 key 列改名失败: %w", err)
+		}
+		logger.Info("属性定义表列已改名：key -> attr_key（避开 MySQL 保留字）")
+	}
 
 	// 基础表（无外键依赖）
 	if err := db.AutoMigrate(
@@ -440,14 +452,16 @@ func (i *Initializer) startNotifyRecordCleanup() {
 			logger.Warn("清理站内消息失败", zap.Error(err))
 		}
 	}
-	go func() {
-		cleanup()
+	// 用 SafeGo 承载常驻清理协程（panic 不至于击穿进程），
+	// 每轮清理再用 SafeRun 包裹：单轮 panic 不会中断后续每日清理
+	utils.SafeGo("notify-record-cleanup", func() {
+		utils.SafeRun("notify-record-cleanup", cleanup)
 		ticker := time.NewTicker(24 * time.Hour)
 		defer ticker.Stop()
 		for range ticker.C {
-			cleanup()
+			utils.SafeRun("notify-record-cleanup", cleanup)
 		}
-	}()
+	})
 }
 
 // validateMenuResourceConsistency 校验启用菜单的 resource 在权限目录中存在对应权限码

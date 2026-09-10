@@ -100,10 +100,12 @@ func (r *ServerRepository) FindServersLight(query map[string]interface{}, page, 
 			AttributeValue string `gorm:"column:attribute_value"`
 		}
 		var rows []attrRow
-		r.db.Table("cmdb_server_attributes").
+		if err := r.db.Table("cmdb_server_attributes").
 			Select("server_id, attribute_key, attribute_value").
 			Where("server_id IN ?", serverIDs).
-			Scan(&rows)
+			Scan(&rows).Error; err != nil {
+			return nil, 0, err
+		}
 		attrMap := make(map[uint]map[string]string)
 		for _, row := range rows {
 			if attrMap[row.ServerID] == nil {
@@ -201,7 +203,30 @@ func (r *ServerRepository) FindServers(query map[string]interface{}, page, pageS
 	}
 
 	// 从属性表填充所有属性值
-	r.populateAttributes(servers)
+	if err := r.populateAttributes(servers); err != nil {
+		return nil, 0, err
+	}
+
+	// 批量查询系统凭证并回填，避免循环内逐条查询（N+1）
+	systemCredIDs := make(map[uint]bool)
+	for i := range servers {
+		if servers[i].SystemCredentialID > 0 {
+			systemCredIDs[servers[i].SystemCredentialID] = true
+		}
+	}
+	systemCredMap := make(map[uint]*modelcmdb.SSHCredential)
+	if len(systemCredIDs) > 0 {
+		ids := make([]uint, 0, len(systemCredIDs))
+		for id := range systemCredIDs {
+			ids = append(ids, id)
+		}
+		var systemCreds []modelcmdb.SSHCredential
+		if err := r.db.Select("id, name, credential_type").Where("id IN ?", ids).Find(&systemCreds).Error; err == nil {
+			for j := range systemCreds {
+				systemCredMap[systemCreds[j].ID] = &systemCreds[j]
+			}
+		}
+	}
 
 	for i := range servers {
 		if servers[i].GroupNames != "[]" && servers[i].GroupNames != "" && servers[i].GroupNames != "null" {
@@ -242,10 +267,7 @@ func (r *ServerRepository) FindServers(query map[string]interface{}, page, pageS
 		}
 
 		if servers[i].SystemCredentialID > 0 {
-			var systemCred modelcmdb.SSHCredential
-			if err := r.db.Select("id, name, credential_type").First(&systemCred, servers[i].SystemCredentialID).Error; err == nil {
-				servers[i].SystemCredential = &systemCred
-			}
+			servers[i].SystemCredential = systemCredMap[servers[i].SystemCredentialID]
 		}
 	}
 
@@ -288,7 +310,9 @@ func (r *ServerRepository) FindServerForConnect(id uint) (*modelcmdb.Server, err
 		return &server, err
 	}
 	// 从属性表填充属性值 map
-	r.populateAttributes([]modelcmdb.Server{server})
+	if err := r.populateAttributes([]modelcmdb.Server{server}); err != nil {
+		return nil, err
+	}
 	return &server, nil
 }
 
@@ -314,11 +338,8 @@ func (r *ServerRepository) FindServerConfig(hostname, ip string) (*modelcmdb.Ser
 		return nil, err
 	}
 
-	var updated modelcmdb.Server
-	if err := r.db.First(&updated, server.ID).Error; err != nil {
-		return nil, err
-	}
-	return &updated, nil
+	// 首次查询已取回全部字段且无中间修改，直接返回即可，无需按主键重复查询
+	return &server, nil
 }
 
 // ========== 服务器增删改 ==========
@@ -351,10 +372,14 @@ func (r *ServerRepository) CreateServer(server *modelcmdb.Server) error {
 			}
 		} else if server.SSHCredentialID != 0 {
 			rel := modelcmdb.ServerCredential{ServerID: server.ID, CredentialID: server.SSHCredentialID}
-			tx.Create(&rel)
+			if err := tx.Create(&rel).Error; err != nil {
+				return fmt.Errorf("创建凭证关联失败: %w", err)
+			}
 		} else if server.CredentialID != 0 {
 			rel := modelcmdb.ServerCredential{ServerID: server.ID, CredentialID: server.CredentialID}
-			tx.Create(&rel)
+			if err := tx.Create(&rel).Error; err != nil {
+				return fmt.Errorf("创建凭证关联失败: %w", err)
+			}
 		}
 
 		return nil
@@ -364,18 +389,22 @@ func (r *ServerRepository) CreateServer(server *modelcmdb.Server) error {
 // UpdateServerRedundantFields 更新服务器的冗余字段
 func (r *ServerRepository) UpdateServerRedundantFields(serverID uint) error {
 	var groupData []map[string]interface{}
-	r.db.Table("cmdb_server_group_relations").
+	if err := r.db.Table("cmdb_server_group_relations").
 		Select("g.id, g.name").
 		Joins("JOIN cmdb_server_groups g ON g.id = cmdb_server_group_relations.group_id").
 		Where("cmdb_server_group_relations.server_id = ?", serverID).
-		Scan(&groupData)
+		Scan(&groupData).Error; err != nil {
+		return fmt.Errorf("查询分组冗余数据失败: %w", err)
+	}
 
 	var credData []map[string]interface{}
-	r.db.Table("cmdb_server_credentials").
+	if err := r.db.Table("cmdb_server_credentials").
 		Select("c.id, c.name, c.credential_type").
 		Joins("JOIN cmdb_ssh_credentials c ON c.id = cmdb_server_credentials.credential_id").
 		Where("cmdb_server_credentials.server_id = ?", serverID).
-		Scan(&credData)
+		Scan(&credData).Error; err != nil {
+		return fmt.Errorf("查询凭证冗余数据失败: %w", err)
+	}
 
 	groupJSON, _ := json.Marshal(groupData)
 	credJSON, _ := json.Marshal(credData)
@@ -473,22 +502,26 @@ func (r *ServerRepository) GetServerStats() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
 
 	var total int64
-	r.db.Model(&modelcmdb.Server{}).Count(&total)
+	if err := r.db.Model(&modelcmdb.Server{}).Count(&total).Error; err != nil {
+		return nil, err
+	}
 	stats["total"] = total
 
 	var envStats []struct {
 		Env   string
 		Count int64
 	}
-	r.db.Table("cmdb_server_attributes").
+	if err := r.db.Table("cmdb_server_attributes").
 		Select("attribute_value as env, count(*) as count").
 		Where("attribute_key = 'env'").
 		Group("attribute_value").
-		Scan(&envStats)
+		Scan(&envStats).Error; err != nil {
+		return nil, err
+	}
 
 	// 获取 env 属性定义的 options，解析 label
 	var envDef modelsystem.AttributeDefinition
-	if err := r.db.Where("key = 'env'").First(&envDef).Error; err == nil && envDef.Options != "" {
+	if err := r.db.Where("attr_key = 'env'").First(&envDef).Error; err == nil && envDef.Options != "" {
 		var options []struct {
 			Value string `json:"value"`
 			Label string `json:"label"`
@@ -530,7 +563,9 @@ func (r *ServerRepository) GetServerStats() (map[string]interface{}, error) {
 		Status string
 		Count  int64
 	}
-	r.db.Model(&modelcmdb.Server{}).Select("status, count(*) as count").Group("status").Scan(&statusStats)
+	if err := r.db.Model(&modelcmdb.Server{}).Select("status, count(*) as count").Group("status").Scan(&statusStats).Error; err != nil {
+		return nil, err
+	}
 	statusMap := make(map[string]int64)
 	for _, stat := range statusStats {
 		statusMap[stat.Status] = stat.Count
@@ -541,7 +576,9 @@ func (r *ServerRepository) GetServerStats() (map[string]interface{}, error) {
 		Provider string
 		Count    int64
 	}
-	r.db.Model(&modelcmdb.Server{}).Select("provider, count(*) as count").Group("provider").Scan(&providerStats)
+	if err := r.db.Model(&modelcmdb.Server{}).Select("provider, count(*) as count").Group("provider").Scan(&providerStats).Error; err != nil {
+		return nil, err
+	}
 	providerMap := make(map[string]int64)
 	for _, stat := range providerStats {
 		providerMap[stat.Provider] = stat.Count
@@ -631,10 +668,12 @@ func (r *ServerRepository) FindAllServersBasic() ([]struct {
 			AttributeValue string `gorm:"column:attribute_value"`
 		}
 		var envs []envAttr
-		r.db.Table("cmdb_server_attributes").
+		if err := r.db.Table("cmdb_server_attributes").
 			Select("server_id, attribute_value").
 			Where("server_id IN ? AND attribute_key = 'env'", serverIDs).
-			Scan(&envs)
+			Scan(&envs).Error; err != nil {
+			return nil, err
+		}
 		envMap := make(map[uint]string)
 		for _, e := range envs {
 			envMap[e.ServerID] = e.AttributeValue
@@ -649,9 +688,9 @@ func (r *ServerRepository) FindAllServersBasic() ([]struct {
 }
 
 // populateAttributes 从 cmdb_server_attributes 表批量填充 Server.AttributeValues
-func (r *ServerRepository) populateAttributes(servers []modelcmdb.Server) {
+func (r *ServerRepository) populateAttributes(servers []modelcmdb.Server) error {
 	if len(servers) == 0 {
-		return
+		return nil
 	}
 	serverIDs := make([]uint, len(servers))
 	for i := range servers {
@@ -664,10 +703,12 @@ func (r *ServerRepository) populateAttributes(servers []modelcmdb.Server) {
 		AttributeValue string `gorm:"column:attribute_value"`
 	}
 	var rows []attrRow
-	r.db.Table("cmdb_server_attributes").
+	if err := r.db.Table("cmdb_server_attributes").
 		Select("server_id, attribute_key, attribute_value").
 		Where("server_id IN ?", serverIDs).
-		Scan(&rows)
+		Scan(&rows).Error; err != nil {
+		return err
+	}
 
 	// 按 serverID 分组
 	attrMap := make(map[uint]map[string]string)
@@ -682,6 +723,7 @@ func (r *ServerRepository) populateAttributes(servers []modelcmdb.Server) {
 			servers[i].AttributeValues = attrs
 		}
 	}
+	return nil
 }
 
 // ========== 业务系统管理 ==========
@@ -784,7 +826,9 @@ func (r *ServerRepository) DeleteServerTag(id uint) error {
 // AssignServerTag 为服务器分配标签
 func (r *ServerRepository) AssignServerTag(serverID, tagID uint) error {
 	var count int64
-	r.db.Model(&modelcmdb.ServerTagRelation{}).Where("server_id = ? AND tag_id = ?", serverID, tagID).Count(&count)
+	if err := r.db.Model(&modelcmdb.ServerTagRelation{}).Where("server_id = ? AND tag_id = ?", serverID, tagID).Count(&count).Error; err != nil {
+		return err
+	}
 	if count > 0 {
 		return nil
 	}
@@ -826,7 +870,9 @@ func (r *ServerRepository) DeleteServerGroup(id uint) error {
 
 // AssignServerToGroup 将服务器分配到单个分组
 func (r *ServerRepository) AssignServerToGroup(serverID, groupID uint) error {
-	r.db.Where("server_id = ?", serverID).Delete(&modelcmdb.ServerGroupRelation{})
+	if err := r.db.Where("server_id = ?", serverID).Delete(&modelcmdb.ServerGroupRelation{}).Error; err != nil {
+		return err
+	}
 	return r.db.Create(&modelcmdb.ServerGroupRelation{
 		ServerID: serverID,
 		GroupID:  groupID,
@@ -842,7 +888,9 @@ func (r *ServerRepository) AssignServerToGroups(serverID uint, groupIDs []uint) 
 		return nil
 	}
 
-	r.db.Where("server_id = ?", serverID).Delete(&modelcmdb.ServerGroupRelation{})
+	if err := r.db.Where("server_id = ?", serverID).Delete(&modelcmdb.ServerGroupRelation{}).Error; err != nil {
+		return err
+	}
 
 	relations := make([]modelcmdb.ServerGroupRelation, len(groupIDs))
 	for i, groupID := range groupIDs {
@@ -902,6 +950,14 @@ func (r *ServerRepository) FindAssetChanges(assetType string, assetID uint, page
 // CreateAssetChange 记录资产变更
 func (r *ServerRepository) CreateAssetChange(change *modelcmdb.AssetChange) error {
 	return r.db.Create(change).Error
+}
+
+// CreateAssetChanges 批量记录资产变更（一次插入，避免逐条写入）
+func (r *ServerRepository) CreateAssetChanges(changes []modelcmdb.AssetChange) error {
+	if len(changes) == 0 {
+		return nil
+	}
+	return r.db.Create(&changes).Error
 }
 
 // ========== 辅助函数 ==========

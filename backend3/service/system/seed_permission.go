@@ -228,12 +228,29 @@ func (i *Initializer) syncPermissions() error {
 		{Code: "ticket.notify.update", Name: "通知设置更新", Description: "配置工单通知事件矩阵", Module: "ticket", Resource: "notify", Action: "update", Level: 3, SortOrder: 161, Status: 1},
 	}
 
+	// 一次查出已存在的权限 code→id 映射，替代逐条 First 存在性检查（启动慢的根源之一）
+	codes := make([]string, 0, len(permissions))
 	for _, perm := range permissions {
-		var existing modelsystem.Permission
-		err := db.Where("code = ?", perm.Code).First(&existing).Error
+		codes = append(codes, perm.Code)
+	}
+	type permKeyRow struct {
+		ID   uint
+		Code string
+	}
+	var existingRows []permKeyRow
+	if err := db.Model(&modelsystem.Permission{}).Select("id, code").
+		Where("code IN ?", codes).Find(&existingRows).Error; err != nil {
+		return err
+	}
+	existingIDs := make(map[string]uint, len(existingRows))
+	for _, row := range existingRows {
+		existingIDs[row.Code] = row.ID
+	}
 
-		if err == nil {
-			db.Model(&existing).Updates(map[string]interface{}{
+	var newPerms []modelsystem.Permission
+	for _, perm := range permissions {
+		if id, ok := existingIDs[perm.Code]; ok {
+			db.Model(&modelsystem.Permission{ID: id}).Updates(map[string]interface{}{
 				"name":        perm.Name,
 				"description": perm.Description,
 				"module":      perm.Module,
@@ -243,10 +260,17 @@ func (i *Initializer) syncPermissions() error {
 				"sort_order":  perm.SortOrder,
 				"status":      perm.Status,
 			})
-		} else {
-			if err := db.Create(&perm).Error; err != nil {
-				logger.Error("创建权限失败", zap.String("code", perm.Code), zap.Error(err))
-			}
+			continue
+		}
+		newPerms = append(newPerms, perm)
+	}
+
+	// 缺失的权限一次性批量插入，幂等语义不变（已存在集合之外的才插）
+	if len(newPerms) > 0 {
+		if err := db.CreateInBatches(&newPerms, len(newPerms)).Error; err != nil {
+			logger.Error("批量创建权限失败",
+				zap.Int("count", len(newPerms)),
+				zap.Error(err))
 		}
 	}
 
@@ -480,17 +504,40 @@ func (i *Initializer) syncDefaultPermissions() error {
 			continue
 		}
 
-		assignedCount := 0
+		// 一次查出该角色已绑定的权限 ID 集合，只对缺失的批量插入（幂等语义不变）
+		permIDs := make([]uint, 0, len(permissions))
 		for _, perm := range permissions {
-			var rolePerm modelsystem.RolePermission
-			err := db.Where("role_id = ? AND permission_id = ?", role.ID, perm.ID).First(&rolePerm).Error
-			if err != nil {
-				rolePerm = modelsystem.RolePermission{RoleID: role.ID, PermissionID: perm.ID}
-				if err := db.Create(&rolePerm).Error; err != nil {
-					logger.Error("分配权限失败", zap.String("role", roleCode), zap.String("permission", perm.Code), zap.Error(err))
-				} else {
-					assignedCount++
-				}
+			permIDs = append(permIDs, perm.ID)
+		}
+		var boundIDs []uint
+		if err := db.Model(&modelsystem.RolePermission{}).
+			Where("role_id = ? AND permission_id IN ?", role.ID, permIDs).
+			Pluck("permission_id", &boundIDs).Error; err != nil {
+			logger.Warn("查询角色已有权限绑定失败", zap.String("role", roleCode), zap.Error(err))
+			continue
+		}
+		boundSet := make(map[uint]bool, len(boundIDs))
+		for _, id := range boundIDs {
+			boundSet[id] = true
+		}
+
+		var newBindings []modelsystem.RolePermission
+		for _, perm := range permissions {
+			if boundSet[perm.ID] {
+				continue
+			}
+			newBindings = append(newBindings, modelsystem.RolePermission{RoleID: role.ID, PermissionID: perm.ID})
+		}
+
+		assignedCount := 0
+		if len(newBindings) > 0 {
+			if err := db.CreateInBatches(&newBindings, len(newBindings)).Error; err != nil {
+				logger.Error("批量分配权限失败",
+					zap.String("role", roleCode),
+					zap.Int("count", len(newBindings)),
+					zap.Error(err))
+			} else {
+				assignedCount = len(newBindings)
 			}
 		}
 

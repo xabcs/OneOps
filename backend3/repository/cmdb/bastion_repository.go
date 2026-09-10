@@ -251,6 +251,35 @@ type UserBasicInfo struct {
 	Username string `json:"username"`
 }
 
+// applySessionFilter 应用会话过滤条件（列表查询与计数查询共用；列名带表前缀以兼容 JOIN 查询）
+func applySessionFilter(tx *gorm.DB, filter modelcmdb.SessionFilter) *gorm.DB {
+	if filter.ServerID != nil {
+		tx = tx.Where("cmdb_bastion_sessions.server_id = ?", *filter.ServerID)
+	}
+	if filter.UserID != nil {
+		tx = tx.Where("cmdb_bastion_sessions.user_id = ?", *filter.UserID)
+	}
+	if filter.Status != nil {
+		tx = tx.Where("cmdb_bastion_sessions.status = ?", *filter.Status)
+	}
+	if filter.Protocol != nil {
+		tx = tx.Where("cmdb_bastion_sessions.protocol = ?", *filter.Protocol)
+	}
+	if filter.ClientIP != nil {
+		tx = tx.Where("cmdb_bastion_sessions.client_ip LIKE ?", "%"+*filter.ClientIP+"%")
+	}
+	if filter.LoginAccount != nil {
+		tx = tx.Where("cmdb_bastion_sessions.login_account = ?", *filter.LoginAccount)
+	}
+	if filter.StartDate != nil {
+		tx = tx.Where("cmdb_bastion_sessions.started_at >= ?", *filter.StartDate)
+	}
+	if filter.EndDate != nil {
+		tx = tx.Where("cmdb_bastion_sessions.started_at <= ?", *filter.EndDate)
+	}
+	return tx
+}
+
 // FindSessionsList 获取会话列表（轻量级，分页）
 func (r *BastionRepository) FindSessionsList(filter modelcmdb.SessionFilter, page, pageSize int) ([]SessionListItem, int64, error) {
 	var sessions []SessionListItem
@@ -278,56 +307,10 @@ func (r *BastionRepository) FindSessionsList(filter modelcmdb.SessionFilter, pag
 		Joins("LEFT JOIN cmdb_servers ON cmdb_bastion_sessions.server_id = cmdb_servers.id").
 		Joins("LEFT JOIN sys_users ON cmdb_bastion_sessions.user_id = sys_users.id")
 
-	if filter.ServerID != nil {
-		tx = tx.Where("cmdb_bastion_sessions.server_id = ?", *filter.ServerID)
-	}
-	if filter.UserID != nil {
-		tx = tx.Where("cmdb_bastion_sessions.user_id = ?", *filter.UserID)
-	}
-	if filter.Status != nil {
-		tx = tx.Where("cmdb_bastion_sessions.status = ?", *filter.Status)
-	}
-	if filter.Protocol != nil {
-		tx = tx.Where("cmdb_bastion_sessions.protocol = ?", *filter.Protocol)
-	}
-	if filter.ClientIP != nil {
-		tx = tx.Where("cmdb_bastion_sessions.client_ip LIKE ?", "%"+*filter.ClientIP+"%")
-	}
-	if filter.LoginAccount != nil {
-		tx = tx.Where("cmdb_bastion_sessions.login_account = ?", *filter.LoginAccount)
-	}
-	if filter.StartDate != nil {
-		tx = tx.Where("cmdb_bastion_sessions.started_at >= ?", *filter.StartDate)
-	}
-	if filter.EndDate != nil {
-		tx = tx.Where("cmdb_bastion_sessions.started_at <= ?", *filter.EndDate)
-	}
+	tx = applySessionFilter(tx, filter)
 
-	countTx := r.db.Model(&modelcmdb.BastionSession{})
-	if filter.ServerID != nil {
-		countTx = countTx.Where("server_id = ?", *filter.ServerID)
-	}
-	if filter.UserID != nil {
-		countTx = countTx.Where("user_id = ?", *filter.UserID)
-	}
-	if filter.Status != nil {
-		countTx = countTx.Where("status = ?", *filter.Status)
-	}
-	if filter.Protocol != nil {
-		countTx = countTx.Where("protocol = ?", *filter.Protocol)
-	}
-	if filter.ClientIP != nil {
-		countTx = countTx.Where("client_ip LIKE ?", "%"+*filter.ClientIP+"%")
-	}
-	if filter.LoginAccount != nil {
-		countTx = countTx.Where("login_account = ?", *filter.LoginAccount)
-	}
-	if filter.StartDate != nil {
-		countTx = countTx.Where("started_at >= ?", *filter.StartDate)
-	}
-	if filter.EndDate != nil {
-		countTx = countTx.Where("started_at <= ?", *filter.EndDate)
-	}
+	// 计数查询复用同一套过滤条件（列名带表前缀，对 JOIN 查询和单表计数均适用）
+	countTx := applySessionFilter(r.db.Model(&modelcmdb.BastionSession{}), filter)
 
 	if err := countTx.Count(&total).Error; err != nil {
 		return nil, 0, err

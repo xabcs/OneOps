@@ -59,11 +59,26 @@ func (s *CMDBService) UpdateServer(id uint, updates map[string]interface{}, oper
 		return err
 	}
 
+	// 对比新旧值收集变更明细，一次性批量写入审计记录
+	changes := make([]modelcmdb.AssetChange, 0, len(updates))
 	for field, newValue := range updates {
-		oldValue := fmt.Sprintf("%v", getFieldValue(&oldServer, field))
+		oldValue := fmt.Sprintf("%v", getFieldValue(oldServer, field))
 		newValueStr := fmt.Sprintf("%v", newValue)
 		if oldValue != newValueStr {
-			s.recordAssetChange("server", id, "update", field, oldValue, newValueStr, operator, "")
+			changes = append(changes, modelcmdb.AssetChange{
+				AssetType:  "server",
+				AssetID:    id,
+				FieldName:  field,
+				OldValue:   oldValue,
+				NewValue:   newValueStr,
+				ChangeType: "update",
+				Operator:   operator,
+			})
+		}
+	}
+	if len(changes) > 0 {
+		if err := s.repo.CreateAssetChanges(changes); err != nil {
+			return err
 		}
 	}
 

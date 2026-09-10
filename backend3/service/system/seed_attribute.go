@@ -166,8 +166,9 @@ func (i *Initializer) syncAttributes() error {
 
 	// 删除已废弃的属性定义（与 Server 内置字段重复或类型不再支持）
 	deprecatedKeys := []string{"business_system", "room", "cabinet", "tags", "purchase_date", "warranty_date", "remark", "project"}
-	for _, key := range deprecatedKeys {
-		db.Where("key = ?", key).Delete(&modelsystem.AttributeDefinition{})
+	// 列名 attr_key（原 key 列为 MySQL 保留字，已由 initializer 迁移改名）
+	if err := db.Where("attr_key IN ?", deprecatedKeys).Delete(&modelsystem.AttributeDefinition{}).Error; err != nil {
+		logger.Error("删除废弃属性定义失败", zap.Any("error", err))
 	}
 
 	addedCount := 0

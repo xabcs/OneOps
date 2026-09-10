@@ -37,6 +37,9 @@ func InitDB(cfg *config.DatabaseConfig) error {
 	db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
 		// 迁移时不自动创建外键约束，避免因表顺序或已有约束导致 AutoMigrate 失败
 		DisableForeignKeyConstraintWhenMigrating: true,
+		// 单语句写不再自动包 BEGIN/COMMIT（省 2 个网络往返）；需要原子性的
+		// 多语句写仍走显式 db.Transaction，不受此开关影响
+		SkipDefaultTransaction: true,
 	})
 	if err != nil {
 		return err

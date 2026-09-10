@@ -73,10 +73,11 @@ func SetupSystemRoutes(
 }
 
 // registerPermissionRoutes 注册权限相关路由
+// 注意：三个子组均挂在 system 组下，父组已统一应用 Auth + RequirePermissionFromDB，
+// 子组不再重复挂权限中间件（重复挂载会导致同一请求执行两次权限校验）
 func registerPermissionRoutes(router *gin.RouterGroup, permController *sysctrl.PermissionController) {
 	// 权限管理路由
 	permGroup := router.Group("/permissions")
-	permGroup.Use(middleware.RequirePermissionFromDB())
 	{
 		permGroup.GET("", permController.GetPermissionList)
 		permGroup.GET("/tree", permController.GetPermissionTree)
@@ -95,7 +96,6 @@ func registerPermissionRoutes(router *gin.RouterGroup, permController *sysctrl.P
 
 	// 角色权限路由（段名统一 :id，与 /roles/:id 保持一致，避免 gin 通配符冲突）
 	rolePermGroup := router.Group("/roles/:id/permissions")
-	rolePermGroup.Use(middleware.RequirePermissionFromDB())
 	{
 		rolePermGroup.GET("", permController.GetRolePermissions)
 		rolePermGroup.POST("", permController.AssignRolePermissions)
@@ -103,7 +103,6 @@ func registerPermissionRoutes(router *gin.RouterGroup, permController *sysctrl.P
 
 	// 用户权限路由
 	userPermGroup := router.Group("/user")
-	userPermGroup.Use(middleware.RequirePermissionFromDB())
 	{
 		userPermGroup.GET("/permissions", permController.GetUserPermissions)
 	}

@@ -6,24 +6,171 @@ import (
 	"fmt"
 	"io"
 	"oneops/backend3/pkg/database"
+	"oneops/backend3/pkg/logger"
 	"oneops/backend3/pkg/utils"
 	repoaudit "oneops/backend3/repository/audit"
 	"oneops/backend3/service/audit"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
+
+// maxAuditBodySize 审计捕获请求/响应体的最大字节数，超过则截断，避免大响应成倍内存分配
+const maxAuditBodySize = 8 * 1024
+
+// truncatedFlag 截断标记
+var truncatedFlag = []byte(`...[TRUNCATED]`)
+
+// sensitiveFieldKeywords 敏感字段关键词（小写，子串匹配）：字段名命中即打码，避免请求体明文落库。
+// 子串匹配可覆盖 old_password、access_token、client_secret 等衍生字段名
+var sensitiveFieldKeywords = []string{
+	"password",
+	"passwd",
+	"passphrase",
+	"token",
+	"secret",
+	"credential",
+	"privatekey",
+	"private_key",
+	"authorization",
+	"apikey",
+}
+
+// isSensitiveField 判断字段名是否命中敏感关键词（忽略大小写，子串匹配）
+func isSensitiveField(key string) bool {
+	lowerKey := strings.ToLower(strings.TrimSpace(key))
+	for _, keyword := range sensitiveFieldKeywords {
+		if strings.Contains(lowerKey, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+// maskSensitiveFields 递归打码嵌套结构（map/slice）中的敏感字段，值替换为 "***"
+func maskSensitiveFields(v interface{}) interface{} {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		for k, item := range val {
+			if isSensitiveField(k) {
+				val[k] = "***"
+			} else {
+				val[k] = maskSensitiveFields(item)
+			}
+		}
+		return val
+	case []interface{}:
+		for i, item := range val {
+			val[i] = maskSensitiveFields(item)
+		}
+		return val
+	default:
+		return v
+	}
+}
+
+// sanitizeRequestBody 审计请求体脱敏：JSON 对象递归打码敏感字段；解析失败（非 JSON）按原始文本记录；超过上限截断并追加标记
+func sanitizeRequestBody(body []byte) []byte {
+	if len(body) == 0 {
+		return body
+	}
+	var parsed map[string]interface{}
+	if json.Unmarshal(body, &parsed) == nil {
+		if masked, err := json.Marshal(maskSensitiveFields(parsed)); err == nil {
+			body = masked
+		}
+	}
+	if len(body) > maxAuditBodySize {
+		body = append(body[:maxAuditBodySize:maxAuditBodySize], truncatedFlag...)
+	}
+	return body
+}
+
+// determineAuditStatus 判定审计成败：项目统一封装为业务错误返回 HTTP 200 + {"code":>=400,"success":false}，
+// 故优先解析响应体业务码（code>=400 或 success==false 判 failed，errorMsg 取 message），解析失败再回退 HTTP 状态码判定
+func determineAuditStatus(statusCode int, responseBody []byte) (status, errorMsg string) {
+	status = "success"
+	var resp struct {
+		Code    *int   `json:"code"`
+		Success *bool  `json:"success"`
+		Message string `json:"message"`
+	}
+	if len(responseBody) > 0 && json.Unmarshal(responseBody, &resp) == nil && resp.Code != nil {
+		if *resp.Code >= 400 || (resp.Success != nil && !*resp.Success) {
+			status = "failed"
+			errorMsg = resp.Message
+		}
+		return
+	}
+	// 回退：按 HTTP 状态码判定
+	if statusCode >= 400 {
+		status = "failed"
+		var errResp struct {
+			Message string `json:"message"`
+		}
+		if json.Unmarshal(responseBody, &errResp) == nil && errResp.Message != "" {
+			errorMsg = errResp.Message
+		}
+	}
+	return
+}
 
 // AuditMiddleware 审计中间件
 type AuditMiddleware struct {
 	auditService *audit.AuditService
 }
 
+// auditLogQueueSize 审计异步写入队列容量：满时直接丢弃并计数告警，不阻塞请求路径
+const auditLogQueueSize = 1024
+
+// auditLogChan 审计日志异步写入队列（有界，避免高峰期无限堆积内存）
+var auditLogChan = make(chan *auditLogEntry, auditLogQueueSize)
+
+// droppedAuditLogs 队列满时累计丢弃的审计日志条数
+var droppedAuditLogs int64
+
+// auditWorkerOnce 保证审计消费协程全局只启动一次
+var auditWorkerOnce sync.Once
+
+// auditLogEntry 异步审计日志条目（不持有 gin.Context，可在请求结束后安全使用）
+type auditLogEntry struct {
+	userID       uint
+	username     string
+	nickname     string
+	method       string
+	path         string
+	statusCode   int
+	ip           string
+	userAgent    string
+	requestBody  []byte
+	responseBody []byte
+	duration     int
+}
+
 // NewAuditMiddleware 创建审计中间件
 func NewAuditMiddleware() *AuditMiddleware {
-	return &AuditMiddleware{
+	m := &AuditMiddleware{
 		auditService: audit.NewAuditService(repoaudit.NewAuditRepository(database.GetDB())),
+	}
+	// 启动审计日志消费协程（全局仅一个），经 SafeGo 防 panic 打崩进程
+	auditWorkerOnce.Do(func() {
+		utils.SafeGo("audit-log-worker", m.consumeAuditLogQueue)
+	})
+	return m
+}
+
+// consumeAuditLogQueue 持续消费审计队列并落库；单条写入 panic 由 SafeRun 兜底，不影响后续消费
+func (m *AuditMiddleware) consumeAuditLogQueue() {
+	for entry := range auditLogChan {
+		utils.SafeRun("audit-log-worker", func() {
+			m.recordOperationLog2(entry.userID, entry.username, entry.nickname,
+				entry.method, entry.path, entry.statusCode, entry.ip, entry.userAgent,
+				entry.requestBody, entry.responseBody, entry.duration)
+		})
 	}
 }
 
@@ -59,15 +206,40 @@ func (m *AuditMiddleware) OperationLog() gin.HandlerFunc {
 		// 获取用户信息
 		userID, username, nickname := m.getUserInfo(c)
 
-		// 异步写审计日志，不阻塞响应
 		method := c.Request.Method
 		path := c.Request.URL.Path
 		statusCode := c.Writer.Status()
 		ip := c.ClientIP()
 		userAgent := c.Request.UserAgent()
 		respBody := append([]byte(nil), writer.body.Bytes()...)
-		reqBody := append([]byte(nil), requestBody...)
-		go m.recordOperationLog2(userID, username, nickname, method, path, statusCode, ip, userAgent, reqBody, respBody, duration)
+		// 请求体先脱敏（递归打码 password/token/secret 等敏感字段）再入队，避免明文落库
+		reqBody := sanitizeRequestBody(requestBody)
+
+		// 非阻塞写入有界队列，由后台消费协程异步落库，不阻塞响应；
+		// 队列满时丢弃并计数告警，避免高峰期阻塞请求或内存无限增长
+		entry := &auditLogEntry{
+			userID:       userID,
+			username:     username,
+			nickname:     nickname,
+			method:       method,
+			path:         path,
+			statusCode:   statusCode,
+			ip:           ip,
+			userAgent:    userAgent,
+			requestBody:  reqBody,
+			responseBody: respBody,
+			duration:     duration,
+		}
+		select {
+		case auditLogChan <- entry:
+		default:
+			dropped := atomic.AddInt64(&droppedAuditLogs, 1)
+			logger.Warn("审计日志队列已满，丢弃本次审计记录",
+				zap.Int64("dropped_total", dropped),
+				zap.String("method", method),
+				zap.String("path", path),
+			)
+		}
 	}
 }
 
@@ -75,10 +247,10 @@ func (m *AuditMiddleware) OperationLog() gin.HandlerFunc {
 func (m *AuditMiddleware) shouldSkipAudit(c *gin.Context) bool {
 	path := c.Request.URL.Path
 
-	// 跳过静态文件请求
+	// 跳过静态文件请求（前缀自带 "/" 边界，不会误伤 /staticXXX 之类路径）
 	if strings.HasPrefix(path, "/static/") ||
 		strings.HasPrefix(path, "/assets/") ||
-		strings.HasPrefix(path, "/favicon.ico") {
+		path == "/favicon.ico" {
 		return true
 	}
 
@@ -92,16 +264,13 @@ func (m *AuditMiddleware) shouldSkipAudit(c *gin.Context) bool {
 		return true
 	}
 
-	// 跳过所有 WebSocket 请求
-	wsPaths := []string{
-		"/api/k8s/terminal/ws",
-		"/api/cmdb/sessions",
-		"/api/monitoring/ws",
-	}
-	for _, wsPath := range wsPaths {
-		if strings.HasPrefix(path, wsPath) {
-			return true
-		}
+	// 跳过所有 WebSocket 请求：固定路径精确匹配；
+	// cmdb 会话 WebSocket 实际为 /api/cmdb/sessions/{id}/ws，用前缀+后缀联合匹配，
+	// 避免误伤 /api/cmdb/sessions/active 等 REST 接口和 /api/monitoring/ws/clients
+	if path == "/api/k8s/terminal/ws" ||
+		path == "/api/monitoring/ws" ||
+		(strings.HasPrefix(path, "/api/cmdb/sessions/") && strings.HasSuffix(path, "/ws")) {
+		return true
 	}
 
 	// 也跳过带有 Upgrade: websocket 头的请求
@@ -211,17 +380,9 @@ func (m *AuditMiddleware) recordOperationLog2(userID uint, username, nickname, m
 		json.Unmarshal(responseBody, &response)
 	}
 
-	status := "success"
-	errorMsg := ""
-	if statusCode >= 400 {
-		status = "failed"
-		var errResp struct {
-			Message string `json:"message"`
-		}
-		if json.Unmarshal(responseBody, &errResp) == nil && errResp.Message != "" {
-			errorMsg = errResp.Message
-		}
-	}
+	// 按响应体业务码判定成败（HTTP 200 + code>=400/success=false 视为失败），
+	// body 非 JSON 或解析失败时回退按 HTTP 状态码判定
+	status, errorMsg := determineAuditStatus(statusCode, responseBody)
 
 	m.auditService.LogOperation(
 		userID, username, nickname,
@@ -499,12 +660,29 @@ type responseWriter struct {
 	body *bytes.Buffer
 }
 
-func (w *responseWriter) Write(b []byte) (int, error) {
+// appendBody 捕获响应体到缓冲，超过 maxAuditBodySize 上限后不再捕获，避免大响应内存放大
+func (w *responseWriter) appendBody(b []byte) {
+	if w.body.Len() >= maxAuditBodySize {
+		return
+	}
+	if remain := maxAuditBodySize - w.body.Len(); len(b) > remain {
+		b = b[:remain]
+	}
 	w.body.Write(b)
+}
+
+func (w *responseWriter) Write(b []byte) (int, error) {
+	w.appendBody(b)
 	return w.ResponseWriter.Write(b)
 }
 
 func (w *responseWriter) WriteString(s string) (int, error) {
-	w.body.WriteString(s)
+	if w.body.Len() < maxAuditBodySize {
+		captured := s
+		if remain := maxAuditBodySize - w.body.Len(); len(captured) > remain {
+			captured = captured[:remain]
+		}
+		w.body.WriteString(captured)
+	}
 	return w.ResponseWriter.WriteString(s)
 }

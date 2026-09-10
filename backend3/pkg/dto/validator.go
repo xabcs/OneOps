@@ -17,8 +17,9 @@ func InitValidator() error {
 		return err
 	}
 
-	// 自定义错误信息翻译
-	validate.SetTagName("true")
+	// 注：项目请求校验走 gin 的 binding 标签，不在此处 SetTagName。
+	// 此前误设 SetTagName("true") 会把结构体标签名改成不存在的 "true"，
+	// 使本实例的校验静默通过，已删除
 
 	logger.Info("验证器初始化成功")
 	return nil

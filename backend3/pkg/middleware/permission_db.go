@@ -3,6 +3,7 @@ package middleware
 import (
 	"strings"
 
+	modelsystem "oneops/backend3/model/system"
 	"oneops/backend3/pkg/logger"
 	"oneops/backend3/pkg/utils"
 	"oneops/backend3/service/system"
@@ -55,8 +56,13 @@ func RequirePermissionFromDB() gin.HandlerFunc {
 			return
 		}
 
-		// 检查用户是否持有任一权限码（通过 Casbin）
-		hasPermission, err := permService.HasAnyPermission(userID.(uint), codes)
+		// 检查用户是否持有任一权限码（通过 Casbin）；
+		// 优先复用认证中间件预取的角色（gin 上下文），未取到时服务内回退查库
+		var roles []*modelsystem.Role
+		if v, exists := c.Get("user_roles"); exists {
+			roles, _ = v.([]*modelsystem.Role)
+		}
+		hasPermission, err := permService.HasAnyPermissionWithRoles(userID.(uint), roles, codes)
 		if err != nil {
 			c.JSON(500, utils.ErrorInternal("权限检查失败"))
 			c.Abort()

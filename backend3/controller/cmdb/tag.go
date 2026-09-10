@@ -160,8 +160,17 @@ func (c *CMDBController) AssignServerTag(ctx *gin.Context) {
 // @Router       /cmdb/server-tags/{serverId}/{tagId} [delete]
 // @Security     BearerAuth
 func (c *CMDBController) RemoveServerTag(ctx *gin.Context) {
-	tagID, _ := strconv.ParseUint(ctx.Param("tagId"), 10, 32)
-	serverID, _ := strconv.ParseUint(ctx.Param("serverId"), 10, 32)
+	// 路径参数解析失败必须立即返回，避免解析错误被忽略后用零值误操作（serverID/tagID 为 0）
+	serverID, err := strconv.ParseUint(ctx.Param("serverId"), 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的服务器ID"))
+		return
+	}
+	tagID, err := strconv.ParseUint(ctx.Param("tagId"), 10, 32)
+	if err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("无效的标签ID"))
+		return
+	}
 
 	if err := c.svc.RemoveServerTag(uint(serverID), uint(tagID)); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorInternal(err.Error()))

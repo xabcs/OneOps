@@ -86,12 +86,16 @@ func (s *CMDBService) GetAssetTree() (map[string]interface{}, error) {
 		groupedServerIDs[relation.ServerID] = true
 	}
 
+	// 按服务器 ID 建立索引后一次遍历挂接：既保留一机多分组的关联（不再因 break 丢节点），
+	// 也把 O(服务器数×关联数) 的双重循环降为线性
+	serverMap := make(map[uint]ServerBasicInfo, len(servers))
 	for _, server := range servers {
-		for _, relation := range relations {
-			if relation.ServerID == server.ID {
-				groupServerMap[relation.GroupID] = append(groupServerMap[relation.GroupID], server)
-				break
-			}
+		serverMap[server.ID] = server
+	}
+
+	for _, relation := range relations {
+		if server, ok := serverMap[relation.ServerID]; ok {
+			groupServerMap[relation.GroupID] = append(groupServerMap[relation.GroupID], server)
 		}
 	}
 

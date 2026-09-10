@@ -87,14 +87,32 @@ func (c *CMDBController) CreateSSHCredential(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, utils.SuccessWithMessage("SSH凭证创建成功"))
 }
 
+// UpdateSSHCredentialRequest SSH 凭证更新请求。
+// 指针字段：nil 表示未提交该字段、不参与更新——天然实现部分更新语义与字段白名单（防止 mass assignment），
+// 同时可挂 binding 校验。字段名与模型 JSON 契约一致（驼峰）。
+// 敏感字段（password/privateKey/passphrase）传掩码 "******" 或空串均视为"不修改"，由 service 层剔除
+type UpdateSSHCredentialRequest struct {
+	Name           *string `json:"name" binding:"omitempty,min=1,max=100"`
+	Description    *string `json:"description"`
+	Username       *string `json:"username" binding:"omitempty,min=1,max=50"`
+	AuthType       *string `json:"authType" binding:"omitempty,oneof=password key"`
+	Password       *string `json:"password"`
+	PrivateKey     *string `json:"privateKey"`
+	Passphrase     *string `json:"passphrase"`
+	Port           *int    `json:"port" binding:"omitempty,min=1,max=65535"`
+	CredentialType *string `json:"credentialType" binding:"omitempty,oneof=user system"`
+	SortOrder      *int    `json:"sortOrder"`
+	Status         *int    `json:"status" binding:"omitempty,min=0,max=1"`
+}
+
 // UpdateSSHCredential godoc
 // @Summary      更新 SSH 凭证
 // @Description  根据凭证 ID 更新 SSH 凭证信息（部分字段更新）
 // @Tags         CMDB-SSH凭证
 // @Accept       json
 // @Produce      json
-// @Param        id          path      int                    true  "凭证 ID"
-// @Param        credential  body      modelcmdb.SSHCredential  true  "需要更新的字段"
+// @Param        id          path      int                        true  "凭证 ID"
+// @Param        credential  body      UpdateSSHCredentialRequest true  "需要更新的字段（仅提交要改的字段）"
 // @Success      200         {object}  utils.Response  "SSH 凭证更新成功"
 // @Failure      200         {object}  utils.Response  "无效的 ID / 请求参数错误 / 更新失败"
 // @Router       /cmdb/ssh-credentials/{id} [put]
@@ -107,9 +125,50 @@ func (c *CMDBController) UpdateSSHCredential(ctx *gin.Context) {
 		return
 	}
 
-	var updates map[string]interface{}
-	if err := ctx.ShouldBindJSON(&updates); err != nil {
+	var req UpdateSSHCredentialRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
+
+	// 仅非 nil 字段进入更新集（部分更新），列名统一为蛇形，与 service 层加密/掩码剔除逻辑对接
+	updates := make(map[string]interface{})
+	if req.Name != nil {
+		updates["name"] = *req.Name
+	}
+	if req.Description != nil {
+		updates["description"] = *req.Description
+	}
+	if req.Username != nil {
+		updates["username"] = *req.Username
+	}
+	if req.AuthType != nil {
+		updates["auth_type"] = *req.AuthType
+	}
+	if req.Password != nil {
+		updates["password"] = *req.Password
+	}
+	if req.PrivateKey != nil {
+		updates["private_key"] = *req.PrivateKey
+	}
+	if req.Passphrase != nil {
+		updates["passphrase"] = *req.Passphrase
+	}
+	if req.Port != nil {
+		updates["port"] = *req.Port
+	}
+	if req.CredentialType != nil {
+		updates["credential_type"] = *req.CredentialType
+	}
+	if req.SortOrder != nil {
+		updates["sort_order"] = *req.SortOrder
+	}
+	if req.Status != nil {
+		updates["status"] = *req.Status
+	}
+
+	if len(updates) == 0 {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest("没有可更新的字段"))
 		return
 	}
 

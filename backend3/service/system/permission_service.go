@@ -16,9 +16,8 @@ import (
 )
 
 var (
-	permissionService     *PermissionService
-	permissionServiceOnce sync.Once
-	permissionServiceMu   sync.RWMutex
+	permissionService   *PermissionService
+	permissionServiceMu sync.Mutex
 )
 
 // PermissionService 权限服务
@@ -28,34 +27,30 @@ type PermissionService struct {
 	// syncMu 串行化 Casbin 策略同步：界面重复提交等并发同步会交错删/插，
 	// 轻则撞唯一键报"分配权限失败"，重则留下策略被清空的不一致状态
 	syncMu sync.Mutex
+	// routeCache 路由→权限码映射缓存（"METHOD /path" → codes），315 行小表全内存化，
+	// 每请求省 1 条查询；本实例内增删改映射时整体失效（单实例内仍即改即生效，
+	// 多实例部署需改为共享缓存或加 TTL）
+	routeCacheMu sync.RWMutex
+	routeCache   map[string][]string
 }
 
-// GetPermissionService 获取权限服务单例
+// GetPermissionService 获取权限服务单例（初始化失败可重试）
+// 不用 sync.Once：Once 失败一次即被消耗，后续调用会返回 (nil, nil)，
+// 调用方解引用直接 panic。此处失败不缓存实例，下次调用重新初始化
 func GetPermissionService() (*PermissionService, error) {
-	permissionServiceMu.RLock()
+	permissionServiceMu.Lock()
+	defer permissionServiceMu.Unlock()
+
 	if permissionService != nil {
-		permissionServiceMu.RUnlock()
 		return permissionService, nil
 	}
-	permissionServiceMu.RUnlock()
 
-	var initErr error
-	permissionServiceOnce.Do(func() {
-		service, err := NewPermissionService()
-		if err != nil {
-			initErr = err
-			return
-		}
-		permissionServiceMu.Lock()
-		permissionService = service
-		permissionServiceMu.Unlock()
-	})
-
-	if initErr != nil {
-		return nil, initErr
+	service, err := NewPermissionService()
+	if err != nil {
+		return nil, err
 	}
-
-	return permissionService, nil
+	permissionService = service
+	return service, nil
 }
 
 // NewPermissionService 创建权限服务实例
@@ -84,8 +79,9 @@ func NewPermissionService() (*PermissionService, error) {
 	}
 
 	return &PermissionService{
-		db:       db,
-		enforcer: enforcer,
+		db:         db,
+		enforcer:   enforcer,
+		routeCache: make(map[string][]string),
 	}, nil
 }
 
@@ -124,30 +120,70 @@ func (s *PermissionService) HasPermission(userID uint, permissionCode string) (b
 
 // HasAnyPermission 检查用户是否拥有任意一个指定权限
 func (s *PermissionService) HasAnyPermission(userID uint, permissionCodes []string) (bool, error) {
-	for _, code := range permissionCodes {
-		allowed, err := s.HasPermission(userID, code)
-		if err != nil {
-			return false, err
-		}
-		if allowed {
-			return true, nil
-		}
-	}
-	return false, nil
+	return s.checkPermissions(userID, permissionCodes, false)
 }
 
 // HasAllPermissions 检查用户是否拥有所有指定权限
 func (s *PermissionService) HasAllPermissions(userID uint, permissionCodes []string) (bool, error) {
-	for _, code := range permissionCodes {
-		allowed, err := s.HasPermission(userID, code)
+	return s.checkPermissions(userID, permissionCodes, true)
+}
+
+// HasAnyPermissionWithRoles 权限中间件入口：优先复用认证中间件经 gin 上下文
+// 传入的角色（每请求省一条角色查询）；roles 传 nil 时回退查库
+func (s *PermissionService) HasAnyPermissionWithRoles(userID uint, roles []*modelsystem.Role, permissionCodes []string) (bool, error) {
+	if roles == nil {
+		var err error
+		roles, err = s.GetUserRoles(userID)
 		if err != nil {
 			return false, err
 		}
-		if !allowed {
+	}
+	return s.checkWithRoles(roles, permissionCodes, false)
+}
+
+// checkPermissions 批量权限检查（先取角色再判定）
+func (s *PermissionService) checkPermissions(userID uint, permissionCodes []string, requireAll bool) (bool, error) {
+	roles, err := s.GetUserRoles(userID)
+	if err != nil {
+		return false, err
+	}
+	return s.checkWithRoles(roles, permissionCodes, requireAll)
+}
+
+// checkWithRoles 判权核心：超管直通；否则对各权限码逐一判定
+// requireAll=false 任一命中即通过，true 需全部命中；空集合下 Any=false、All=true
+func (s *PermissionService) checkWithRoles(roles []*modelsystem.Role, permissionCodes []string, requireAll bool) (bool, error) {
+	if len(permissionCodes) == 0 {
+		return !requireAll, nil
+	}
+
+	// 超级管理员角色检查（统一通过角色码判断）
+	if s.IsAdmin(roles) {
+		return true, nil
+	}
+
+	for _, code := range permissionCodes {
+		allowed := false
+		for _, role := range roles {
+			// Casbin 策略格式：p, role_code, system.user.list, *
+			ok, err := s.enforcer.Enforce(role.Code, code, "*")
+			if err != nil {
+				return false, err
+			}
+			if ok {
+				allowed = true
+				break
+			}
+		}
+		if allowed && !requireAll {
+			return true, nil
+		}
+		if !allowed && requireAll {
 			return false, nil
 		}
 	}
-	return true, nil
+
+	return requireAll, nil
 }
 
 // ======================================
@@ -167,16 +203,22 @@ func (s *PermissionService) GetUserPermissions(userID uint) ([]string, error) {
 		return s.getAllPermissionCodes(), nil
 	}
 
-	// 获取角色权限
-	permissionSet := make(map[string]bool)
+	// 获取角色权限：按角色集合一次查询（原逐角色查询为 N+1，且失败被静默跳过）
+	roleIDs := make([]uint, 0, len(roles))
 	for _, role := range roles {
-		permissions, err := s.GetRolePermissions(role.ID)
-		if err != nil {
-			continue
-		}
-		for _, perm := range permissions {
-			permissionSet[perm.Code] = true
-		}
+		roleIDs = append(roleIDs, role.ID)
+	}
+	var rolePerms []modelsystem.Permission
+	if err := s.db.Table("sys_permissions").
+		Joins("INNER JOIN sys_role_permissions ON sys_permissions.id = sys_role_permissions.permission_id").
+		Where("sys_role_permissions.role_id IN ? AND sys_permissions.status = 1", roleIDs).
+		Find(&rolePerms).Error; err != nil {
+		return nil, err
+	}
+
+	permissionSet := make(map[string]bool, len(rolePerms))
+	for _, perm := range rolePerms {
+		permissionSet[perm.Code] = true
 	}
 
 	// 转换为切片
@@ -190,16 +232,49 @@ func (s *PermissionService) GetUserPermissions(userID uint) ([]string, error) {
 
 // GetUserRoles 获取用户角色列表（统一方法）
 func (s *PermissionService) GetUserRoles(userID uint) ([]*modelsystem.Role, error) {
-	var user modelsystem.User
-	if err := s.db.Preload("Roles", "status = 1").First(&user, userID).Error; err != nil {
+	// 原实现 First+Preload 两条查询（先查用户再查角色），且其中的用户主键查询
+	// 与认证中间件重复；改为单条 join 直取启用角色，每个受保护请求省 1 个往返。
+	// 注：用户不存在时返回空角色集（原实现报错），权限判定上两者同为拒绝
+	var roles []*modelsystem.Role
+	if err := s.db.Table("sys_roles").
+		Joins("INNER JOIN sys_user_roles ON sys_user_roles.role_id = sys_roles.id").
+		Where("sys_user_roles.user_id = ? AND sys_roles.status = 1", userID).
+		Find(&roles).Error; err != nil {
 		return nil, err
 	}
-
-	roles := make([]*modelsystem.Role, len(user.Roles))
-	for i := range user.Roles {
-		roles[i] = &user.Roles[i]
-	}
 	return roles, nil
+}
+
+// FetchUserStatusAndRoles 认证中间件专用：一条 LEFT JOIN 同时取用户状态与启用角色，
+// 替代"auth 查状态 + 权限中间件再查角色"的两条查询（角色经 gin 上下文传递复用）。
+// 用户不存在返回 status=""（调用方按禁用处理，fail-closed）；用户无角色时 roles 为空集。
+// 只取判权所需字段（ID/Code/Name），需要完整角色信息走 GetUserRoles
+func FetchUserStatusAndRoles(db *gorm.DB, userID uint) (string, []*modelsystem.Role, error) {
+	var rows []struct {
+		UserStatus string  `gorm:"column:user_status"`
+		ID         *uint   `gorm:"column:role_id"`
+		Code       *string `gorm:"column:role_code"`
+		Name       *string `gorm:"column:role_name"`
+	}
+	if err := db.Table("sys_users u").
+		Select("u.status AS user_status, r.id AS role_id, r.code AS role_code, r.name AS role_name").
+		Joins("LEFT JOIN sys_user_roles ur ON ur.user_id = u.id").
+		Joins("LEFT JOIN sys_roles r ON r.id = ur.role_id AND r.status = 1").
+		Where("u.id = ?", userID).
+		Scan(&rows).Error; err != nil {
+		return "", nil, err
+	}
+	if len(rows) == 0 {
+		return "", nil, nil
+	}
+	roles := make([]*modelsystem.Role, 0, len(rows))
+	for _, row := range rows {
+		if row.ID == nil {
+			continue // LEFT JOIN 的无角色行
+		}
+		roles = append(roles, &modelsystem.Role{ID: *row.ID, Code: *row.Code, Name: *row.Name})
+	}
+	return rows[0].UserStatus, roles, nil
 }
 
 // IsAdmin 检查是否为超级管理员（统一通过角色码 "admin" 判断）
@@ -570,7 +645,10 @@ func (s *PermissionService) BatchAssignAPIPermissions(roleCode string, permissio
 	Method string
 }) error {
 	for _, perm := range permissions {
-		_, _ = s.enforcer.AddPolicy(roleCode, perm.Path, perm.Method)
+		// AddPolicy 返回 false 表示策略已存在，不算错误；err 须上报
+		if _, err := s.enforcer.AddPolicy(roleCode, perm.Path, perm.Method); err != nil {
+			return err
+		}
 	}
 	return s.enforcer.SavePolicy()
 }
@@ -743,14 +821,18 @@ func (s *PermissionService) BuildMenuTreeAndPermissions(userID uint) ([]*modelsy
 		permissions = append(permissions, "*:*:*")
 	} else {
 		// 非管理员：从权限码推导菜单
-		// 1. 获取用户的所有权限码（从 role_permissions 表）
+		// 1. 获取用户的所有权限码（从 role_permissions 表，按角色集合一次查询）
+		roleIDs := make([]uint, 0, len(roles))
 		for _, role := range roles {
-			var rolePerms []modelsystem.RolePermission
-			s.db.Where("role_id = ?", role.ID).Preload("Permission").Find(&rolePerms)
-			for _, rp := range rolePerms {
-				if rp.Permission.Code != "" {
-					permissions = append(permissions, rp.Permission.Code)
-				}
+			roleIDs = append(roleIDs, role.ID)
+		}
+		var rolePerms []modelsystem.RolePermission
+		if err := s.db.Where("role_id IN ?", roleIDs).Preload("Permission").Find(&rolePerms).Error; err != nil {
+			return nil, nil, nil, err
+		}
+		for _, rp := range rolePerms {
+			if rp.Permission.Code != "" {
+				permissions = append(permissions, rp.Permission.Code)
 			}
 		}
 
@@ -764,16 +846,25 @@ func (s *PermissionService) BuildMenuTreeAndPermissions(userID uint) ([]*modelsy
 			}
 		}
 
-		// 3. 根据 resource 匹配菜单
+		// 3. 根据 resource 匹配菜单，沿 ParentID 链向上标记所有祖先
+		//    （原实现逐菜单全表扫描找父级为 O(N²)，且只标记一级父级，
+		//    三级菜单的祖父目录会从菜单树中丢失）
+		menuByID := make(map[uint]*modelsystem.Menu, len(allMenus))
+		for _, m := range allMenus {
+			menuByID[m.ID] = m
+		}
 		for _, menu := range allMenus {
-			if menu.Resource != "" && allowedResources[menu.Resource] {
-				menuIDs[menu.ID] = true
-				// 标记父菜单
-				for _, m := range allMenus {
-					if m.ID == menu.ParentID {
-						menuIDs[m.ID] = true
-					}
+			if menu.Resource == "" || !allowedResources[menu.Resource] {
+				continue
+			}
+			menuIDs[menu.ID] = true
+			for pid := menu.ParentID; pid != 0; {
+				parent, ok := menuByID[pid]
+				if !ok {
+					break
 				}
+				menuIDs[parent.ID] = true
+				pid = parent.ParentID
 			}
 		}
 	}
@@ -836,13 +927,19 @@ func (s *PermissionService) GetMenuPathsByRoleIDs(roleIDs []uint) ([]*modelsyste
 			}
 		}
 
-		// resource 匹配菜单，并标记父菜单
+		// resource 匹配菜单，沿 ParentID 链向上标记所有祖先（与 BuildMenuTreeAndPermissions 口径一致）
 		for _, m := range allMenus {
-			if m.Resource != "" && allowedResources[m.Resource] {
-				visible[m.ID] = true
-				if parent, ok := menuByID[m.ParentID]; ok {
-					visible[parent.ID] = true
+			if m.Resource == "" || !allowedResources[m.Resource] {
+				continue
+			}
+			visible[m.ID] = true
+			for pid := m.ParentID; pid != 0; {
+				parent, ok := menuByID[pid]
+				if !ok {
+					break
 				}
+				visible[parent.ID] = true
+				pid = parent.ParentID
 			}
 		}
 	}

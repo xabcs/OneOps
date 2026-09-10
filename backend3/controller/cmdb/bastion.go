@@ -172,33 +172,8 @@ func (c *BastionController) GetServerSessions(ctx *gin.Context) {
 
 // ========== 会话管理 ==========
 
-// GetSessions godoc
-// @Summary      获取会话列表
-// @Description  分页获取堡垒机会话列表，支持多维筛选（服务器、用户、状态、协议、客户端 IP、登录账号、时间范围等）
-// @Tags         CMDB-堡垒机
-// @Produce      json
-// @Param        page         query     int     false  "页码"          default(1)
-// @Param        pageSize     query     int     false  "每页数量"      default(10)
-// @Param        serverId     query     int     false  "服务器 ID"
-// @Param        userId       query     int     false  "用户 ID"
-// @Param        status       query     string  false  "状态"
-// @Param        protocol     query     string  false  "协议"
-// @Param        clientIp     query     string  false  "客户端 IP"
-// @Param        loginAccount query     string  false  "登录账号"
-// @Param        startDate    query     string  false  "开始日期"
-// @Param        endDate      query     string  false  "结束日期"
-// @Success      200  {object}  utils.Response{data=dto.PageResult}
-// @Failure      200  {object}  utils.Response  "请求参数错误 / 获取会话列表失败"
-// @Router       /cmdb/sessions [get]
-// @Security     BearerAuth
-func (c *BastionController) GetSessions(ctx *gin.Context) {
-	var params dto.BasePageQuery
-	if err := ctx.ShouldBindQuery(&params); err != nil {
-		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
-		return
-	}
-
-	// 构建筛选条件
+// buildSessionFilter 从 query 参数构建会话筛选条件（serverId/userId/status/protocol/clientIp/loginAccount/日期范围）
+func (c *BastionController) buildSessionFilter(ctx *gin.Context) modelcmdb.SessionFilter {
 	filter := modelcmdb.SessionFilter{}
 
 	if serverID := ctx.Query("serverId"); serverID != "" {
@@ -238,6 +213,38 @@ func (c *BastionController) GetSessions(ctx *gin.Context) {
 	if endDate := ctx.Query("endDate"); endDate != "" {
 		filter.EndDate = &endDate
 	}
+
+	return filter
+}
+
+// GetSessions godoc
+// @Summary      获取会话列表
+// @Description  分页获取堡垒机会话列表，支持多维筛选（服务器、用户、状态、协议、客户端 IP、登录账号、时间范围等）
+// @Tags         CMDB-堡垒机
+// @Produce      json
+// @Param        page         query     int     false  "页码"          default(1)
+// @Param        pageSize     query     int     false  "每页数量"      default(10)
+// @Param        serverId     query     int     false  "服务器 ID"
+// @Param        userId       query     int     false  "用户 ID"
+// @Param        status       query     string  false  "状态"
+// @Param        protocol     query     string  false  "协议"
+// @Param        clientIp     query     string  false  "客户端 IP"
+// @Param        loginAccount query     string  false  "登录账号"
+// @Param        startDate    query     string  false  "开始日期"
+// @Param        endDate      query     string  false  "结束日期"
+// @Success      200  {object}  utils.Response{data=dto.PageResult}
+// @Failure      200  {object}  utils.Response  "请求参数错误 / 获取会话列表失败"
+// @Router       /cmdb/sessions [get]
+// @Security     BearerAuth
+func (c *BastionController) GetSessions(ctx *gin.Context) {
+	var params dto.BasePageQuery
+	if err := ctx.ShouldBindQuery(&params); err != nil {
+		ctx.JSON(http.StatusOK, utils.ErrorBadRequest(dto.FormatValidationError(err)))
+		return
+	}
+
+	// 构建筛选条件
+	filter := c.buildSessionFilter(ctx)
 
 	// 属主过滤：非管理员忽略 userId 参数，只能看自己的会话
 	if !c.applySessionAuditScope(ctx, &filter) {
@@ -281,45 +288,7 @@ func (c *BastionController) GetSessionsList(ctx *gin.Context) {
 	}
 
 	// 构建筛选条件
-	filter := modelcmdb.SessionFilter{}
-
-	if serverID := ctx.Query("serverId"); serverID != "" {
-		if id, err := strconv.ParseUint(serverID, 10, 32); err == nil {
-			uid := uint(id)
-			filter.ServerID = &uid
-		}
-	}
-
-	if userID := ctx.Query("userId"); userID != "" {
-		if id, err := strconv.ParseUint(userID, 10, 32); err == nil {
-			uid := uint(id)
-			filter.UserID = &uid
-		}
-	}
-
-	if status := ctx.Query("status"); status != "" {
-		filter.Status = &status
-	}
-
-	if protocol := ctx.Query("protocol"); protocol != "" {
-		filter.Protocol = &protocol
-	}
-
-	if clientIP := ctx.Query("clientIp"); clientIP != "" {
-		filter.ClientIP = &clientIP
-	}
-
-	if loginAccount := ctx.Query("loginAccount"); loginAccount != "" {
-		filter.LoginAccount = &loginAccount
-	}
-
-	if startDate := ctx.Query("startDate"); startDate != "" {
-		filter.StartDate = &startDate
-	}
-
-	if endDate := ctx.Query("endDate"); endDate != "" {
-		filter.EndDate = &endDate
-	}
+	filter := c.buildSessionFilter(ctx)
 
 	// 属主过滤：非管理员忽略 userId 参数，只能看自己的会话
 	if !c.applySessionAuditScope(ctx, &filter) {
@@ -587,8 +556,11 @@ func (c *BastionController) GetCommands(ctx *gin.Context) {
 		filter.RiskLevel = &riskLevel
 	}
 
-	blocked := ctx.Query("blocked") == "true"
-	filter.Blocked = &blocked
+	// blocked 过滤：参数缺省时不过滤该字段（区分"未传"与"传 false"，避免缺省被误当作 false 把被拦截记录全部滤掉）
+	if blockedStr := ctx.Query("blocked"); blockedStr != "" {
+		blocked := blockedStr == "true"
+		filter.Blocked = &blocked
+	}
 
 	if commandLike := ctx.Query("command"); commandLike != "" {
 		filter.CommandLike = &commandLike

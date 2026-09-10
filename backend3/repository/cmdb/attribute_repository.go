@@ -55,6 +55,22 @@ func (r *AttributeRepository) FindAttributeDefinitionByKey(key string) (*modelsy
 	return &attr, nil
 }
 
+// FindAttributeDefinitionsByIDs 批量获取属性定义（返回按 ID 索引的 map，避免逐条查询）
+func (r *AttributeRepository) FindAttributeDefinitionsByIDs(ids []uint) (map[uint]*modelsystem.AttributeDefinition, error) {
+	result := make(map[uint]*modelsystem.AttributeDefinition, len(ids))
+	if len(ids) == 0 {
+		return result, nil
+	}
+	var defs []modelsystem.AttributeDefinition
+	if err := r.db.Where("id IN ?", ids).Find(&defs).Error; err != nil {
+		return nil, err
+	}
+	for i := range defs {
+		result[defs[i].ID] = &defs[i]
+	}
+	return result, nil
+}
+
 // CountAttributeDefinitionByKey 根据Key统计数量（检查重复）
 func (r *AttributeRepository) CountAttributeDefinitionByKey(key string) (int64, error) {
 	var count int64
@@ -65,7 +81,7 @@ func (r *AttributeRepository) CountAttributeDefinitionByKey(key string) (int64, 
 // CountAttributeDefinitionByKeyExcludeID 根据Key统计数量（排除指定ID）
 func (r *AttributeRepository) CountAttributeDefinitionByKeyExcludeID(key string, excludeID uint) (int64, error) {
 	var count int64
-	err := r.db.Model(&modelsystem.AttributeDefinition{}).Where("`key` = ? AND id != ?", key, excludeID).Count(&count).Error
+	err := r.db.Model(&modelsystem.AttributeDefinition{}).Where("attr_key = ? AND id != ?", key, excludeID).Count(&count).Error
 	return count, err
 }
 
@@ -91,16 +107,6 @@ func (r *AttributeRepository) CountServerAttributesByAttrID(attrID uint) (int64,
 	var count int64
 	err := r.db.Model(&modelcmdb.ServerAttribute{}).Where("attribute_id = ?", attrID).Count(&count).Error
 	return count, err
-}
-
-// ServerAttributeWithDef 主机属性（含定义信息）
-type ServerAttributeWithDef struct {
-	modelcmdb.ServerAttribute
-	DefID          uint
-	DefName        sql.NullString
-	DefType        sql.NullString
-	DefCategory    sql.NullString
-	DefDescription sql.NullString
 }
 
 // FindServerAttributes 获取主机的所有属性（含定义信息）

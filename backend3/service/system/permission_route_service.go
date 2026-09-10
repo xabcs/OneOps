@@ -12,17 +12,38 @@ import (
 
 // GetPermissionCodesByRoute 运行时权限校验入口：按 (method, path) 匹配得到权限码集合
 // 同一端点可配置多个权限码（OR 语义）：单接口码与集合码并存，用户持有任一即可访问
-// 数据来源 sys_permission_routes（seed 初始化 + 权限管理页维护），无缓存、即改即生效
+// 数据来源 sys_permission_routes（seed 初始化 + 权限管理页维护）。
+// 全量内存缓存 + 本实例写操作整体失效：单实例内即改即生效；多实例部署需改为共享缓存或加 TTL
 func (s *PermissionService) GetPermissionCodesByRoute(method, path string) ([]string, error) {
+	key := method + " " + path
+
+	s.routeCacheMu.RLock()
+	codes, ok := s.routeCache[key]
+	s.routeCacheMu.RUnlock()
+	if ok {
+		return codes, nil
+	}
+
 	var routes []modelsystem.PermissionRoute
 	if err := s.db.Where("method = ? AND path = ?", method, path).Find(&routes).Error; err != nil {
 		return nil, err
 	}
-	codes := make([]string, 0, len(routes))
+	codes = make([]string, 0, len(routes))
 	for _, r := range routes {
 		codes = append(codes, r.PermissionCode)
 	}
+
+	s.routeCacheMu.Lock()
+	s.routeCache[key] = codes
+	s.routeCacheMu.Unlock()
 	return codes, nil
+}
+
+// invalidateRouteCache 映射增删改后整体失效缓存（懒加载，重建成本 = 每路由 1 条查询）
+func (s *PermissionService) invalidateRouteCache() {
+	s.routeCacheMu.Lock()
+	s.routeCache = make(map[string][]string)
+	s.routeCacheMu.Unlock()
 }
 
 // GetPermissionRoutes 查询权限路由映射，可按权限码过滤
@@ -70,11 +91,15 @@ func (s *PermissionService) CreatePermissionRoute(req modelsystem.CreatePermissi
 		return fmt.Errorf("该映射已存在: %s %s → %s", method, path, code)
 	}
 
-	return s.db.Create(&modelsystem.PermissionRoute{
+	if err := s.db.Create(&modelsystem.PermissionRoute{
 		PermissionCode: code,
 		Method:         method,
 		Path:           path,
-	}).Error
+	}).Error; err != nil {
+		return err
+	}
+	s.invalidateRouteCache()
+	return nil
 }
 
 // UpdatePermissionRoute 修改映射归属的权限码（端点 method/path 不可改，删了重建）
@@ -119,5 +144,9 @@ func (s *PermissionService) UpdatePermissionRoute(id uint, req modelsystem.Updat
 // DeletePermissionRoute 删除权限路由映射
 // 该端点若还有其他权限码行则继续受保护；一行不剩则变为拒绝访问（fail-closed）
 func (s *PermissionService) DeletePermissionRoute(id uint) error {
-	return s.db.Delete(&modelsystem.PermissionRoute{}, id).Error
+	if err := s.db.Delete(&modelsystem.PermissionRoute{}, id).Error; err != nil {
+		return err
+	}
+	s.invalidateRouteCache()
+	return nil
 }

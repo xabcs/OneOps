@@ -10,8 +10,9 @@ server:
 
 # 数据库配置
 database:
-  host: "60.191.116.75"
-  port: "38089"
+  #host: "60.191.116.75"
+  host: "192.168.4.12"
+  port: "3306"
   user: "root"
   password: "123456"
   dbname: "oneops2"
