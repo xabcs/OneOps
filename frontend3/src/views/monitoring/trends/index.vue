@@ -81,12 +81,15 @@
   }
 
   // 加载趋势数据
-  async function loadTrendData() {
+  async function loadTrendData(silent = false) {
     if (!filterForm.serverId) {
       return;
     }
 
-    chartLoading.value = true;
+    // 轮询静默刷新：不置 loading，避免骨架屏 v-if 反复销毁/重建图表 DOM
+    if (!silent) {
+      chartLoading.value = true;
+    }
     try {
       const { start, end } = calculateTimeRange(timeRange.value);
 
@@ -105,7 +108,9 @@
       console.error('加载趋势数据失败:', error);
       chartData.value = [];
     }
-    chartLoading.value = false;
+    if (!silent) {
+      chartLoading.value = false;
+    }
   }
 
   // 加载自定义时间范围数据
@@ -226,10 +231,14 @@
   function initChart() {
     if (!chartRef.value) return;
 
+    // 容器若被 v-if 重建（新 DOM），旧实例先释放再绑定，避免实例失联或泄漏
+    if (chartInstance && !chartInstance.isDisposed()) {
+      chartInstance.dispose();
+    }
     chartInstance = echarts.init(chartRef.value);
     updateChart();
 
-    // 响应式调整（具名引用，确保卸载时能正确移除监听）
+    // 响应式调整（具名引用，重复注册会被 DOM 幂等去重）
     window.addEventListener('resize', handleChartResize);
   }
 
@@ -239,7 +248,9 @@
 
   // 更新图表
   function updateChart() {
-    if (!chartInstance) return;
+    if (!chartInstance || chartInstance.isDisposed()) return;
+    // 容器从 display:none 恢复时尺寸可能变化，先同步尺寸再更新
+    chartInstance.resize();
 
     const times = chartData.value.map(item => {
       const date = new Date(item.timestamp);
@@ -352,10 +363,10 @@
       initChart();
     });
 
-    // 每30秒自动刷新
+    // 每30秒自动刷新（静默：不触发骨架屏，避免图表 DOM 被反复销毁重建）
     refreshTimer = setInterval(() => {
       if (!customDateRange.value) {
-        loadTrendData();
+        loadTrendData(true);
       }
     }, 30000);
   });
@@ -375,7 +386,8 @@
     [chartData, () => filterForm.metricType],
     () => {
       nextTick(() => {
-        if (chartInstance) {
+        // 实例有效且容器仍在 DOM 上时增量更新；否则（首次/容器重建/实例失联）重新初始化
+        if (chartInstance && !chartInstance.isDisposed() && chartRef.value) {
           updateChart();
         } else {
           initChart();
@@ -500,11 +512,12 @@
 
       <ElSkeleton v-if="chartLoading" :rows="8" animated />
 
-      <div v-else-if="chartData.length === 0" class="py-12 text-center">
+      <!-- v-show 保留 DOM：v-if 切换会销毁图表容器导致 ECharts 实例失联 -->
+      <div v-show="!chartLoading && chartData.length === 0" class="py-12 text-center">
         <ElEmpty description="暂无数据" />
       </div>
 
-      <div v-else class="chart-container">
+      <div v-show="!chartLoading && chartData.length > 0" class="chart-container">
         <!-- ECharts 图表 -->
         <div ref="chartRef" class="echarts-chart"></div>
 

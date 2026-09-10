@@ -176,14 +176,18 @@
     selectedUser.value = row;
     groupDialogVisible.value = true;
 
-    const { data: allGroupsData } = await fetchAllAuthGroups();
+    // 全部用户组与该用户已有用户组互不依赖，并行请求以缩短弹窗数据加载时间
+    const [{ data: allGroupsData }, { data: currentUserGroups }] = await Promise.all([
+      fetchAllAuthGroups(),
+      fetchUserGroups(row.id)
+    ]);
+
     if (allGroupsData) {
       allGroups.value = Array.isArray(allGroupsData)
         ? allGroupsData
         : (allGroupsData as { list?: Api.ApplicationPermission.AuthGroup[] }).list || [];
     }
 
-    const { data: currentUserGroups } = await fetchUserGroups(row.id);
     if (currentUserGroups) {
       userGroups.value = currentUserGroups;
     }

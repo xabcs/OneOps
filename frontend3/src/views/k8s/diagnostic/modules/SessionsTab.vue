@@ -21,15 +21,20 @@
 
   let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-  async function load() {
-    loading.value = true;
+  // 加载会话列表；silent 为 true 时（轮询场景）不置 loading，避免表格遮罩反复闪烁
+  async function load(silent = false) {
+    if (!silent) {
+      loading.value = true;
+    }
     try {
       const { data, error } = await fetchDiagnosticSessions();
       if (!error && data) {
         sessions.value = data;
       }
     } finally {
-      loading.value = false;
+      if (!silent) {
+        loading.value = false;
+      }
     }
   }
 
@@ -75,7 +80,8 @@
 
   onMounted(() => {
     load();
-    pollTimer = setInterval(load, 10_000);
+    // 轮询使用静默模式，不触发 loading 遮罩
+    pollTimer = setInterval(() => load(true), 10_000);
   });
 
   onBeforeUnmount(() => {
@@ -87,7 +93,7 @@
   <div class="sessions-tab">
     <div class="tab-toolbar">
       <span class="toolbar-title">活跃诊断会话（每实例同时仅允许一个会话，10 秒自动刷新）</span>
-      <ElButton :icon="Refresh" size="small" :loading="loading" @click="load">刷新</ElButton>
+      <ElButton :icon="Refresh" size="small" :loading="loading" @click="load()">刷新</ElButton>
     </div>
 
     <ElTable v-loading="loading" :data="sessions" size="small">

@@ -9,7 +9,6 @@
     ElMessage,
     ElMessageBox,
     ElPagination,
-    ElSpace,
     ElTabPane,
     ElTable,
     ElTableColumn,
@@ -94,9 +93,10 @@
   // 设置选中项
   function setSelectedItems(items: K8s.Service[] | K8s.Ingress[]) {
     if (activeTab.value === 'services') {
-      selectedServices.value = items;
+      // services 表格勾选行，按当前 Tab 收窄类型
+      selectedServices.value = items as K8s.Service[];
     } else {
-      selectedIngresses.value = items;
+      selectedIngresses.value = items as K8s.Ingress[];
     }
   }
 
@@ -175,7 +175,9 @@
   }
 
   // Service 类型显示
-  const getServiceTypeTag = (type: string) => {
+  const getServiceTypeTag = (
+    type: string
+  ): { type: 'primary' | 'success' | 'warning' | 'info'; text: string } => {
     switch (type) {
       case 'ClusterIP':
         return { type: 'primary', text: 'ClusterIP' };
@@ -313,13 +315,13 @@
       if (activeTab.value === 'services') {
         await updateK8sService(selectedCluster.value, {
           namespace: selectedResource.value.namespace,
-          manifest: yaml.load(yamlStr)
+          manifest: yaml.load(yamlStr) as Record<string, unknown>
         });
         await loadServices();
       } else {
         await updateK8sIngress(selectedCluster.value, {
           namespace: selectedResource.value.namespace,
-          manifest: yaml.load(yamlStr)
+          manifest: yaml.load(yamlStr) as Record<string, unknown>
         });
         await loadIngresses();
       }
@@ -332,10 +334,15 @@
   // 操作处理
   function handleCommand(command: string, row: K8s.Service | K8s.Ingress) {
     if (activeTab.value === 'services') {
-      if (command === 'edit') handleServiceEdit(row);
-      else if (command === 'delete') handleServiceDelete(row);
-    } else if (command === 'edit') handleIngressEdit(row);
-    else if (command === 'delete') handleIngressDelete(row);
+      // services 表格的操作行，按当前 Tab 收窄类型
+      const serviceRow = row as K8s.Service;
+      if (command === 'edit') handleServiceEdit(serviceRow);
+      else if (command === 'delete') handleServiceDelete(serviceRow);
+    } else {
+      const ingressRow = row as K8s.Ingress;
+      if (command === 'edit') handleIngressEdit(ingressRow);
+      else if (command === 'delete') handleIngressDelete(ingressRow);
+    }
   }
 
   // 选择变化
@@ -361,14 +368,21 @@
   }
 
   // Tab切换
-  function handleTabChange(tabName: string) {
-    activeTab.value = tabName;
+  function handleTabChange(tabName: string | number) {
+    activeTab.value = String(tabName);
     setSelectedItems([]);
     loadCurrentData();
   }
 
+  // 初始化标志位：init 期间（loadClusters 自动选中集群、loadNamespaces 自动选中命名空间）
+  // 的赋值由 onMounted 中的依赖链负责加载，watch 跳过以避免首屏请求重复发送
+  let initialized = false;
+
   // 监听集群和命名空间变化
   watch([selectedCluster, selectedNamespace], () => {
+    // 初始化阶段的赋值不在此处响应，加载由 onMounted 统一完成
+    if (!initialized) return;
+
     if (selectedCluster.value) {
       loadNamespaces();
       loadCurrentData();
@@ -381,6 +395,8 @@
       await loadNamespaces();
       await loadServices();
     }
+    // 初始化完成，此后 watch 正常响应手动切换集群/命名空间
+    initialized = true;
   });
 </script>
 

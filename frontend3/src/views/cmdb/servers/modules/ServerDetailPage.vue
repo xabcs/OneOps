@@ -39,9 +39,13 @@
     }
 
     try {
-      const res = await fetchGetServerById(Number(serverId));
-      server.value = res.data;
-      await checkConnectPermission(Number(serverId));
+      // 详情与连接权限检查互不依赖（后者仅依赖 serverId），并行请求以缩短加载时间；
+      // checkConnectPermission 内部自行捕获错误，不影响详情的错误提示语义
+      const [detailRes] = await Promise.all([
+        fetchGetServerById(Number(serverId)),
+        checkConnectPermission(Number(serverId))
+      ]);
+      server.value = detailRes.data;
     } catch (error) {
       console.error('获取服务器详情失败:', error);
       window.$message?.error('获取服务器详情失败');

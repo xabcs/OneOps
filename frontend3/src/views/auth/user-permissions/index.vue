@@ -1,7 +1,7 @@
 <script setup lang="tsx">
   import { computed, onMounted, ref } from 'vue';
   import {
-    fetchApplicationOptions,
+    fetchApplications,
     fetchUserEffectivePermissions,
     fetchUserEffectivePermissionsMatrix
   } from '@/service/api/application-permission';
@@ -11,6 +11,8 @@
 
   const loading = ref(false);
   const matrixLoading = ref(false);
+  // 应用列表初始加载状态：applications 返回前保持 loading，避免闪现"请选择应用"的误导性空态
+  const appLoading = ref(true);
   const tableData = ref<Api.ApplicationPermission.UserEffectivePermission[]>([]);
   const applications = ref<Api.ApplicationPermission.Application[]>([]);
   const matrixData = ref<unknown>(null);
@@ -104,14 +106,19 @@
   });
 
   async function getApplications() {
-    const { data, error } = await fetchApplications({ page: 1, pageSize: 100 });
-    if (!error && data) {
-      applications.value = data.list || [];
-      // 默认选择第一个应用
-      if (applications.value.length > 0 && !selectedAppId.value) {
-        selectedAppId.value = applications.value[0].id;
-        handleAppChange();
+    appLoading.value = true;
+    try {
+      const { data, error } = await fetchApplications({ page: 1, pageSize: 100 });
+      if (!error && data) {
+        applications.value = data.list || [];
+        // 默认选择第一个应用
+        if (applications.value.length > 0 && !selectedAppId.value) {
+          selectedAppId.value = applications.value[0].id;
+          handleAppChange();
+        }
       }
+    } finally {
+      appLoading.value = false;
     }
   }
 
@@ -305,9 +312,9 @@
 
     <!-- 数据展示 -->
     <ElCard shadow="never" class="flex-1">
-      <!-- 矩阵视图 -->
-      <div v-if="viewMode === 'matrix'" v-loading="matrixLoading">
-        <ElEmpty v-if="!selectedAppId" description="请选择应用" />
+      <!-- 矩阵视图：初始加载阶段（applications 未返回）同样显示 loading，不闪现误导性空态 -->
+      <div v-if="viewMode === 'matrix'" v-loading="matrixLoading || appLoading">
+        <ElEmpty v-if="!selectedAppId && !appLoading" description="请选择应用" />
 
         <!-- 使用统一的矩阵组件 -->
         <AppPermissionMatrix

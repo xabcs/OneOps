@@ -56,7 +56,7 @@
   };
 
   // 状态标签
-  const getStatusTag = (status: string) => {
+  const getStatusTag = (status: string): { type: 'success' | 'info' | 'danger'; text: string } => {
     switch (status) {
       case 'active':
         return { type: 'success', text: '活跃' };
@@ -73,24 +73,30 @@
   const loadClusters = async () => {
     try {
       const res = await fetchK8sClusters();
-      clusters.value = res.data || [];
+      // res 为 flat 封装结构，真实数据在 res.data.list 中
+      clusters.value = res.data?.list || [];
     } catch (error: unknown) {
       const err = error as Error;
       message.error(err.message || '加载集群列表失败');
     }
   };
 
-  // 加载活跃会话
-  const loadActiveSessions = async () => {
-    loading.value = true;
+  // 加载活跃会话；silent 为 true 时（轮询场景）不置 loading，避免表格遮罩反复闪烁
+  const loadActiveSessions = async (silent = false) => {
+    if (!silent) {
+      loading.value = true;
+    }
     try {
       const res = await fetchK8sActiveTerminalSessions();
-      activeSessions.value = res || [];
+      // res 为 flat 封装结构，真实数据在 res.data 中
+      activeSessions.value = res.data || [];
     } catch (error: unknown) {
       const err = error as Error;
       message.error(err.message || '加载活跃会话失败');
     } finally {
-      loading.value = false;
+      if (!silent) {
+        loading.value = false;
+      }
     }
   };
 
@@ -130,9 +136,9 @@
     loadClusters();
     loadActiveSessions();
 
-    // 每 10 秒刷新一次活跃会话
+    // 每 10 秒刷新一次活跃会话（静默模式，不触发 loading 遮罩）
     refreshTimer = setInterval(() => {
-      loadActiveSessions();
+      loadActiveSessions(true);
     }, 10000);
   });
 

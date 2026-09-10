@@ -196,9 +196,8 @@ export function useSessionList() {
 
     try {
       loading.value = true;
-      for (const sessionId of selectedSessionIds.value) {
-        await fetchTerminateSession(sessionId);
-      }
+      // 并行终止所有选中会话（任一失败由 Promise.all 抛出，统一提示一次）
+      await Promise.all(selectedSessionIds.value.map(sessionId => fetchTerminateSession(sessionId)));
       window.$message?.success(`已终止 ${selectedSessionIds.value.length} 个会话`);
       selectedSessionIds.value = [];
       loadSessions();

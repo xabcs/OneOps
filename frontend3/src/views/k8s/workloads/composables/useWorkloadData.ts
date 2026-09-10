@@ -207,7 +207,7 @@ export function useWorkloadData() {
         page: jobsPagination.page,
         pageSize: jobsPagination.pageSize
       });
-      const apiData = parseApiResponse(response);
+      const apiData = parseApiResponse<K8s.Job>(response);
       jobsData.value = apiData.list || [];
       jobsPagination.itemCount = apiData.total || 0;
     } catch (error) {
@@ -283,8 +283,15 @@ export function useWorkloadData() {
     loadCurrentData();
   }
 
+  // 初始化标志位：init 期间对 selectedCluster/selectedNamespace 的赋值（store 恢复、默认选中）
+  // 由 init 自身按 cluster→ns→data 依赖链加载，watch 跳过以避免首屏请求重复发送
+  let initialized = false;
+
   // 监听集群和命名空间变化，同步到 store
   watch([selectedCluster, selectedNamespace], () => {
+    // 初始化阶段的赋值不在此处响应，加载由 init 末尾统一完成
+    if (!initialized) return;
+
     k8sStore.setWorkloadFilterState({
       clusterId: selectedCluster.value,
       namespace: selectedNamespace.value,
@@ -326,6 +333,16 @@ export function useWorkloadData() {
 
       await loadCurrentData();
     }
+
+    // init 期间 watch 被跳过，这里显式同步一次 store，保持筛选状态持久化行为不变
+    k8sStore.setWorkloadFilterState({
+      clusterId: selectedCluster.value,
+      namespace: selectedNamespace.value,
+      activeTab: activeTab.value
+    });
+
+    // 初始化完成，此后 watch 正常响应手动切换集群/命名空间
+    initialized = true;
   }
 
   onMounted(init);

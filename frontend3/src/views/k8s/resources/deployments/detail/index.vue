@@ -158,14 +158,13 @@
     deploymentName.value = queryName;
 
     loading.value = true;
+    // 容器组参数全部来自 route.query，与详情数据无依赖，与详情请求并行加载
+    if (activeTab.value === 'pods') {
+      loadPods();
+    }
     try {
       const res = await getK8sDeployment(clusterId.value, namespace.value, deploymentName.value);
       deployment.value = res.data || res;
-
-      // 默认加载容器组
-      if (activeTab.value === 'pods') {
-        await loadPods();
-      }
     } catch (error: unknown) {
       console.error('获取 Deployment 详情失败:', error);
       const err = error as Error;

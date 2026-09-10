@@ -1,4 +1,3 @@
-{"code":200,"success":true,"message":"扩缩容 Deployment 成功"}
 <script setup lang="ts">
   import { computed, onMounted, ref, watch } from 'vue';
   import {

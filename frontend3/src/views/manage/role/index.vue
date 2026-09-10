@@ -80,17 +80,24 @@
       let successCount = 0;
       let failCount = 0;
 
-      for (const id of checkedRowKeys.value) {
-        const role = data.value.find(r => r.id === id);
-        const roleName = role ? role.name : `ID:${id}`;
+      // 并行删除所有选中角色（参考 manage/user 批量删除写法），失败原因逐条收集后统一提示
+      const results = await Promise.all(
+        checkedRowKeys.value.map(async rawId => {
+          const id = Number(rawId);
+          const role = data.value.find(r => r.id === id);
+          const roleName = role ? role.name : `ID:${id}`;
+          const { error } = await fetchDeleteRole(id);
+          return { id, roleName, error };
+        })
+      );
 
-        const { error } = await fetchDeleteRole(id as number);
+      for (const { id, roleName, error } of results) {
         if (!error) {
           successCount++;
         } else {
           failCount++;
           cannotDeleteRoles.push({
-            id: id as number,
+            id,
             name: roleName,
             reason: error?.response?.data?.message || error?.message || '删除失败'
           });

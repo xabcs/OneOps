@@ -54,7 +54,7 @@
   });
 
   // 状态显示
-  const getStatusTag = (deployment: K8s.Deployment) => {
+  const getStatusTag = (deployment: K8s.Deployment): { type: 'success' | 'info' | 'danger' | 'warning'; text: string } => {
     const ready = deployment.ready || 0;
     const total = deployment.replicas || 0;
 
@@ -74,8 +74,8 @@
   const loadClusters = async () => {
     try {
       const response = await fetchK8sClusters();
-      // 从响应中提取集群数组
-      const clusterList = response?.data || [];
+      // 从响应中提取集群数组（flat 请求返回 {data: {list, total}, error}）
+      const clusterList = response?.data?.list || [];
       clusters.value = clusterList;
 
       // 如果有集群，默认选择第一个

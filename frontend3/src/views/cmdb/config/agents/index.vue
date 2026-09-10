@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-  import { computed, onMounted, ref, resolveDirective, withDirectives } from 'vue';
+  import { computed, onMounted, onUnmounted, ref, resolveDirective, withDirectives } from 'vue';
   import type { FlatResponseData } from '@sa/axios';
   import {
     fetchBatchUninstallAgent,
@@ -249,6 +249,9 @@
   }
 
   // ========== 轮询 ==========
+  // 收集进行中的轮询定时器，组件卸载时统一清理，避免切页后仍持续请求
+  const pollTimers = new Set<ReturnType<typeof setInterval>>();
+
   function pollAgentStatus(serverId: number, expectedStatus: string, maxTimes = 20) {
     let count = 0;
     const timer = setInterval(async () => {
@@ -268,10 +271,18 @@
       }
       if ((statusData && statusData.agentStatus === expectedStatus) || count >= maxTimes) {
         clearInterval(timer);
+        pollTimers.delete(timer);
         getData();
       }
     }, 3000);
+    pollTimers.add(timer);
   }
+
+  // 组件卸载时清理所有仍在进行的轮询定时器
+  onUnmounted(() => {
+    pollTimers.forEach(timer => clearInterval(timer));
+    pollTimers.clear();
+  });
 
   // ========== 单条操作 ==========
   async function handleDeploy(row: CMDB.Server) {

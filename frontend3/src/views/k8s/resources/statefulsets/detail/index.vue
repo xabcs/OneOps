@@ -144,10 +144,13 @@
     resourceName.value = qName;
 
     loading.value = true;
+    // 容器组参数全部来自 route.query，与详情数据无依赖，与详情请求并行加载
+    if (activeTab.value === 'pods') {
+      loadPods();
+    }
     try {
       const res = await getK8sStatefulSet(clusterId.value, namespace.value, resourceName.value);
       resource.value = res.data || res;
-      if (activeTab.value === 'pods') await loadPods();
     } catch (error: unknown) {
       const err = error as Error;
       ElMessage.error(err.message || '获取详情失败');

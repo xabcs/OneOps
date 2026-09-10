@@ -47,7 +47,7 @@
   });
 
   // 服务类型显示
-  const getServiceTypeTag = (type: string) => {
+  const getServiceTypeTag = (type: string): { type: 'primary' | 'success' | 'warning' | 'info'; text: string } => {
     switch (type) {
       case 'ClusterIP':
         return { type: 'primary', text: 'ClusterIP' };
@@ -81,7 +81,8 @@
   const loadClusters = async () => {
     try {
       const res = await fetchK8sClusters();
-      clusters.value = res.data || [];
+      // flat 请求返回 {data: {list, total}, error}，取 list 为集群数组
+      clusters.value = res.data?.list || [];
 
       // 如果有集群，默认选择第一个
       if (clusters.value.length > 0 && !selectedCluster.value) {
@@ -100,8 +101,8 @@
     if (!selectedCluster.value) return;
 
     try {
-      const namespaceList = await fetchK8sClusterNamespaces(selectedCluster.value);
-      const namespaceNames = namespaceList.map((ns: K8s.Namespace) => ns.name);
+      const { data: namespaceList } = await fetchK8sClusterNamespaces(selectedCluster.value);
+      const namespaceNames = (namespaceList || []).map((ns: K8s.Namespace) => ns.name);
       namespaces.value = [...namespaceNames];
 
       if (namespaces.value.length > 0 && !namespaces.value.includes(filters.namespace)) {
@@ -129,10 +130,10 @@
         namespace: filters.namespace
       });
 
-      // 处理不同的响应格式
-      const services = Array.isArray(res) ? res : res?.data || [];
+      // flat 请求返回 {data: {list, total}, error}，列表与总数取自分页结构
+      const services = res.data?.list || [];
       dataSource.value = services;
-      pagination.itemCount = services?.length || 0;
+      pagination.itemCount = res.data?.total ?? services.length;
     } catch (error: unknown) {
       dataSource.value = [];
       pagination.itemCount = 0;

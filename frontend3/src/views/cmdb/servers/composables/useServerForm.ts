@@ -275,18 +275,14 @@ export function useServerForm() {
     // 由于当前作用域无法直接访问原 row，使用简单策略：先移除全部再重新分配
     // 但更高效的方式是传旧标签进来，这里采用直接 diff 的方式
     // 简化实现：直接全量同步
-    // 注意：fetchRemoveServerTag 需要逐个调用
+    // 注意：分配与移除均为并行请求（任一失败由 Promise.all 抛出，外层 catch 统一提示）
     // 此处依赖外部传入旧标签，如果没有则跳过移除逻辑
     // 实际实现：在 openEditDrawer 时保存旧标签 ID
-    for (const tagId of newTagIds) {
-      await fetchAssignServerTag(serverId, tagId);
-    }
+    await Promise.all(newTagIds.map(tagId => fetchAssignServerTag(serverId, tagId)));
     // 移除不再选中的标签
     if (oldTagIdsCache.length > 0) {
       const toRemove = oldTagIdsCache.filter(id => !newTagIds.includes(id));
-      for (const tagId of toRemove) {
-        await fetchRemoveServerTag(serverId, tagId);
-      }
+      await Promise.all(toRemove.map(tagId => fetchRemoveServerTag(serverId, tagId)));
     }
   }
 

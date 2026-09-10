@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-  import { onMounted, ref } from 'vue';
+  import { ref } from 'vue';
   import { Refresh, Search } from '@element-plus/icons-vue';
   import { fetchGetSystemEventLogs } from '@/service/api';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
@@ -29,7 +29,7 @@
     { label: '严重', value: 'critical' }
   ];
 
-  const { columns, data, loading, mobilePagination, getData, getDataByPage } = useUIPaginatedTable({
+  const { columns, data, loading, mobilePagination, getDataByPage } = useUIPaginatedTable({
     paginationProps: {
       currentPage: searchParams.value.page,
       pageSize: searchParams.value.pageSize,
@@ -80,10 +80,6 @@
     searchParams.value = getInitSearchParams();
     getDataByPage(1);
   }
-
-  onMounted(() => {
-    getData();
-  });
 </script>
 
 <template>

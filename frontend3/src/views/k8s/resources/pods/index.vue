@@ -64,7 +64,7 @@
   });
 
   // 状态显示
-  const getStatusTag = (pod: K8s.Pod) => {
+  const getStatusTag = (pod: K8s.Pod): { type: 'success' | 'info' | 'danger' | 'warning'; text: string } => {
     const phase = pod.phase || 'Unknown';
     const status = pod.status || phase;
 
@@ -87,7 +87,8 @@
   const loadClusters = async () => {
     try {
       const res = await fetchK8sClusters();
-      clusters.value = res.data || [];
+      // flat 请求返回 {data: {list, total}, error}，取 list 为集群数组
+      clusters.value = res.data?.list || [];
 
       // 如果有集群，默认选择第一个
       if (clusters.value.length > 0 && !selectedCluster.value) {
@@ -106,7 +107,7 @@
     if (!selectedCluster.value) return;
     try {
       const res = await fetchK8sClusterNamespaces(selectedCluster.value);
-      const namespaceList = res.data || res || [];
+      const namespaceList: K8s.Namespace[] = res.data || [];
       const namespaceNames = namespaceList.map((ns: K8s.Namespace) => ns.name);
       namespaces.value = [...namespaceNames];
 
@@ -136,10 +137,10 @@
         labelSelector: filters.labelSelector
       });
 
-      // 处理不同的响应格式
-      const pods = Array.isArray(res) ? res : res?.data || [];
+      // flat 请求返回 {data: {list, total}, error}，列表与总数取自分页结构
+      const pods = res.data?.list || [];
       dataSource.value = pods;
-      pagination.itemCount = pods?.length || 0;
+      pagination.itemCount = res.data?.total ?? pods.length;
     } catch (error: unknown) {
       dataSource.value = [];
       pagination.itemCount = 0;

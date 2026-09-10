@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-  import { onMounted, ref } from 'vue';
+  import { onMounted, onUnmounted, ref } from 'vue';
   import { Plus, Refresh } from '@element-plus/icons-vue';
   import { fetchDeleteServerRoom, fetchGetServerRooms } from '@/service/api';
   import RoomOperateDrawer from './modules/room-operate-drawer.vue';
@@ -64,8 +64,26 @@
     return status === 1 ? { text: '启用', type: 'success' } : { text: '禁用', type: 'danger' };
   }
 
+  // 搜索输入处理（防抖 300ms，避免每敲一字就发起全量请求，与 manage/user 页写法保持一致）
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+  function handleSearchInput() {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+    }
+    searchTimeout = setTimeout(() => {
+      getData();
+    }, 300);
+  }
+
   onMounted(() => {
     getData();
+  });
+
+  onUnmounted(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout);
+      searchTimeout = null;
+    }
   });
 </script>
 
@@ -79,7 +97,7 @@
             placeholder="搜索机房名称或代码"
             clearable
             style="width: 200px"
-            @input="getData"
+            @input="handleSearchInput"
           >
             <template #prefix>
               <icon-mdi-magnify class="align-sub text-icon" />

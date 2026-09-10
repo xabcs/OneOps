@@ -3,6 +3,7 @@
  * 从 index.vue 拆分：Agent 部署/重启/卸载/状态轮询、批量操作
  */
 
+import { onScopeDispose } from 'vue';
 import { ElMessageBox, ElNotification } from 'element-plus';
 import {
   fetchBatchDeployAgent,
@@ -25,12 +26,15 @@ function resolveErrorMsg(error: unknown): string {
 }
 
 export function useServerAgent() {
+  // 收集进行中的轮询定时器，作用域销毁（组件卸载）时统一清理，避免切页后仍持续请求
+  const pollTimers = new Set<ReturnType<typeof setInterval>>();
+
   // ===== 单台 Agent 操作 =====
   async function handleAgentDeploy(row: CMDB.Server, tableData: CMDB.Server[]) {
     try {
       const testResult = await fetchTestSSHConnection(row.id);
-      if (!testResult.data.success) {
-        await ElMessageBox.alert(`${testResult.data.message}`, '连接失败', {
+      if (!testResult.data || !testResult.data.success) {
+        await ElMessageBox.alert(`${testResult.data?.message || '连接失败'}`, '连接失败', {
           type: 'error',
           confirmButtonText: '我知道了'
         });
@@ -83,8 +87,8 @@ export function useServerAgent() {
         cancelButtonText: '取消'
       });
       const testResult = await fetchTestSSHConnection(row.id);
-      if (!testResult.data.success) {
-        await ElMessageBox.alert(`${testResult.data.message}`, '连接失败', {
+      if (!testResult.data || !testResult.data.success) {
+        await ElMessageBox.alert(`${testResult.data?.message || '连接失败'}`, '连接失败', {
           type: 'error',
           confirmButtonText: '我知道了'
         });
@@ -127,13 +131,14 @@ export function useServerAgent() {
       count++;
       try {
         const res = await fetchGetAgentStatus(serverId);
-        const status = res.data?.agentStatus as CMDB.Server['agentStatus'];
+        // 异常场景后端可能返回 failed，类型断言将其纳入，避免比较被判定为无重叠
+        const status = res.data?.agentStatus as CMDB.Server['agentStatus'] | 'failed' | undefined;
 
         const idx = tableData.findIndex(s => s.id === serverId);
         if (idx !== -1 && res.data) {
           tableData[idx] = {
             ...tableData[idx],
-            agentStatus: status,
+            agentStatus: status as CMDB.Server['agentStatus'],
             agentPort: res.data.agentPort,
             agentVersion: res.data.agentVersion,
             lastHeartbeatAt: res.data.lastHeartbeatAt
@@ -147,15 +152,17 @@ export function useServerAgent() {
             else if (status === 'failed')
               ElNotification.warning(`主机 ${tableData[idx].hostname} 的 Agent 状态异常，请检查日志`);
           }
-          previousStatus = status;
+          previousStatus = status ?? null;
         }
 
         if (status === expectedStatus) {
           clearInterval(timer);
+          pollTimers.delete(timer);
           return;
         }
         if (count >= maxTimes) {
           clearInterval(timer);
+          pollTimers.delete(timer);
           const serverName = tableData.find(s => s.id === serverId)?.hostname || serverId;
           if (status !== expectedStatus)
             ElNotification.warning(
@@ -166,10 +173,12 @@ export function useServerAgent() {
         console.error('轮询 Agent 状态失败:', error);
         if (count >= maxTimes) {
           clearInterval(timer);
+          pollTimers.delete(timer);
           ElNotification.error('轮询 Agent 状态失败，请刷新页面查看最新状态');
         }
       }
     }, 3000);
+    pollTimers.add(timer);
   }
 
   // ===== 批量操作 =====
@@ -191,13 +200,16 @@ export function useServerAgent() {
       if (!server) continue;
       try {
         const testResult = await fetchTestSSHConnection(serverId);
+        // flat 封装的 data 可能为 null，先收窄再使用（为空视为测试失败，走 catch 计数）
+        const result = testResult.data;
+        if (!result) throw new Error('连接测试无返回');
         results.details.push({
           id: serverId,
           hostname: server.hostname || server.ip,
-          success: testResult.data.success,
-          message: testResult.data.message
+          success: result.success,
+          message: result.message
         });
-        if (testResult.data.success) results.success++;
+        if (result.success) results.success++;
         else results.failed++;
       } catch (error: unknown) {
         results.failed++;
@@ -303,6 +315,12 @@ export function useServerAgent() {
       ElNotification.error(`批量卸载失败：${resolveErrorMsg(error) || '批量卸载失败'}`);
     }
   }
+
+  // 组件卸载（作用域销毁）时清理所有仍在进行的轮询定时器
+  onScopeDispose(() => {
+    pollTimers.forEach(timer => clearInterval(timer));
+    pollTimers.clear();
+  });
 
   return {
     handleAgentDeploy,

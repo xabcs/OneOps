@@ -190,7 +190,6 @@
 
   onMounted(() => {
     getApplications();
-    getData();
   });
 </script>
 

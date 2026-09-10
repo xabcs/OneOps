@@ -38,7 +38,7 @@
     }
   }
 
-  const { columns, columnChecks, data, loading, mobilePagination, getData, getDataByPage } = useUIPaginatedTable({
+  const { columns, columnChecks, data, loading, mobilePagination, getDataByPage } = useUIPaginatedTable({
     // 列配置（勾选 + 顺序）持久化到 localStorage，刷新页面后保留
     columnSettingKey: 'audit-operation-logs',
     paginationProps: {
@@ -140,7 +140,6 @@
 
   onMounted(() => {
     getModules();
-    getData();
   });
 </script>
 

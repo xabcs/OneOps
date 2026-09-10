@@ -115,14 +115,20 @@
   }
 
   // Tab切换
-  function handleTabChange(tabName: string) {
-    activeTab.value = tabName;
+  function handleTabChange(tabName: string | number) {
+    activeTab.value = String(tabName);
     loadCurrentData();
   }
 
-  // 监听集群和命名空间变化
+  // 初始化标志位：init 期间（loadClusters 自动选中集群、loadNamespaces 自动选中命名空间）
+  // 的赋值由 onMounted 中的依赖链负责加载，watch 跳过以避免首屏请求重复发送
+  let initialized = false;
+
   // 监听集群和命名空间变化
   watch([selectedCluster, selectedNamespace], () => {
+    // 初始化阶段的赋值不在此处响应，加载由 onMounted 统一完成
+    if (!initialized) return;
+
     if (selectedCluster.value) {
       loadNamespaces();
       loadCurrentData();
@@ -135,6 +141,8 @@
       await loadNamespaces();
       await loadConfigMaps();
     }
+    // 初始化完成，此后 watch 正常响应手动切换集群/命名空间
+    initialized = true;
   });
 </script>
 
