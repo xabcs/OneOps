@@ -3,10 +3,12 @@
   import { useRoute, useRouter } from 'vue-router';
   import { ElMessage, ElMessageBox } from 'element-plus';
   import { ArrowLeft } from '@element-plus/icons-vue';
-  import yaml from 'js-yaml';
   import { deleteK8sJob, fetchK8sEvents, getK8sJob, getK8sJobPods, updateK8sJob } from '@/service/api/k8s';
+  import { formatLabels, getTagType, parseManifest } from '@/views/k8s/shared/k8s-formatters';
+  import { useYamlEdit } from '@/views/k8s/composables/useYamlEdit';
   import YamlEditor from '@/components/k8s/YamlEditor.vue';
   import K8sPodsTable from '@/components/k8s/K8sPodsTable.vue';
+  import K8sEventsTable from '@/components/k8s/K8sEventsTable.vue';
 
   defineOptions({ name: 'K8sJobDetail' });
 
@@ -27,7 +29,6 @@
   const activeTab = ref('basic');
   const showYamlEditor = ref(false);
   const yamlContent = ref('');
-  const yamlSaving = ref(false);
 
   const statusType = computed(() => {
     if (!resource.value) return 'info';
@@ -37,18 +38,6 @@
   const statusText = computed(() => {
     return 'Job';
   });
-
-  // 解析manifest为YAML
-  function parseManifest(manifestStr: string): string {
-    if (!manifestStr) return '';
-    try {
-      const obj = JSON.parse(manifestStr);
-      delete obj.managedFields;
-      return yaml.dump(obj, { indent: 2, lineWidth: 120, noRefs: true });
-    } catch (e) {
-      return manifestStr;
-    }
-  }
 
   async function loadData() {
     loading.value = true;
@@ -129,23 +118,14 @@
     }
   }
 
-  async function handleYamlApply(yamlStr: string) {
-    yamlSaving.value = true;
-    try {
-      const manifest = yaml.load(yamlStr);
-      await updateK8sJob(clusterId.value, {
-        namespace: namespace.value,
-        manifest
-      });
-      message.success('更新成功');
-      await loadData();
-    } catch (error: unknown) {
-      const err = error as Error;
-      throw new Error(err.message || '更新失败');
-    } finally {
-      yamlSaving.value = false;
-    }
-  }
+  // YAML 编辑保存：统一走 useYamlEdit（YAML 校验 → 更新 API → 重载详情）
+  const { yamlSaving, handleYamlApply } = useYamlEdit({
+    getClusterId: () => clusterId.value,
+    getNamespace: () => namespace.value,
+    updateFn: updateK8sJob,
+    reload: loadData,
+    successMessage: '更新成功'
+  });
 
   async function handleTabChange(tab: string) {
     activeTab.value = tab;
@@ -155,16 +135,6 @@
       await loadEvents();
     }
   }
-
-  // 获取标签颜色
-  const getTagType = (key: string) => {
-    const keyLower = key.toLowerCase();
-    if (keyLower.includes('app') || keyLower.includes('name')) return 'primary';
-    if (keyLower.includes('env') || keyLower.includes('environment')) return 'success';
-    if (keyLower.includes('version') || keyLower.includes('ver')) return 'warning';
-    if (keyLower.includes('component')) return 'info';
-    return 'default';
-  };
 
   onMounted(() => {
     loadData();
@@ -231,27 +201,7 @@
           </div>
         </template>
         <div class="tab-content">
-          <ElTable
-            v-loading="eventsLoading"
-            :data="events"
-            class="jobs-events-table"
-            :header-cell-style="{
-              background: '#f5f7fa',
-              color: '#303133',
-              fontWeight: '600',
-              paddingLeft: '16px',
-              paddingRight: '16px'
-            }"
-            :row-style="{ backgroundColor: 'transparent' }"
-            :cell-style="{ backgroundColor: 'transparent', padding: '8px 16px' }"
-          >
-            <ElTableColumn type="index" label="序号" width="60" />
-            <ElTableColumn prop="type" label="类型" width="100" />
-            <ElTableColumn prop="reason" label="原因" width="150" />
-            <ElTableColumn prop="message" label="消息" />
-            <ElTableColumn prop="count" label="次数" width="80" />
-            <ElTableColumn prop="lastTimestamp" label="最后时间" width="180" />
-          </ElTable>
+          <K8sEventsTable :events="events" :loading="eventsLoading" />
         </div>
       </ElTabPane>
     </ElTabs>

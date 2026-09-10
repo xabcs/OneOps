@@ -1,6 +1,8 @@
 <script setup lang="ts">
   import { onMounted, ref } from 'vue';
   import { fetchGetCommands } from '@/service/api/cmdb';
+  // 时间格式化统一收敛到 @/utils/datetime（formatTime 为兼容旧命名的别名）
+  import { formatDateTime as formatTime } from '@/utils/datetime';
 
   const loading = ref(false);
   const commands = ref<Bastion.BastionCommand[]>([]);
@@ -75,11 +77,6 @@
   function handlePageChange(page: number) {
     pagination.value.page = page;
     getCommands();
-  }
-
-  // 格式化时间
-  function formatTime(time: string): string {
-    return time ? new Date(time).toLocaleString('zh-CN') : '-';
   }
 
   // 获取风险等级标签类型

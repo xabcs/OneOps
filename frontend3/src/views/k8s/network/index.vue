@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, onMounted, reactive, ref, watch } from 'vue';
+  import { computed, onMounted, reactive, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import {
     ElButton,
@@ -15,12 +15,9 @@
     ElTabs,
     ElTag
   } from 'element-plus';
-  import yaml from 'js-yaml';
   import {
     deleteK8sIngress,
     deleteK8sService,
-    fetchK8sClusterNamespaces,
-    fetchK8sClusters,
     fetchK8sIngresses,
     fetchK8sServices,
     getK8sIngress,
@@ -28,6 +25,9 @@
     updateK8sIngress,
     updateK8sService
   } from '@/service/api/k8s';
+  import { parseManifest } from '@/views/k8s/shared/k8s-formatters';
+  import { useClusterNamespace } from '@/views/k8s/composables/useClusterNamespace';
+  import { useYamlEdit } from '@/views/k8s/composables/useYamlEdit';
   import YamlEditor from '@/components/k8s/YamlEditor.vue';
 
   defineOptions({ name: 'K8sNetwork' });
@@ -38,15 +38,11 @@
   const loading = ref(false);
   const activeTab = ref('services');
 
-  // 当前选中的集群和命名空间
-  const selectedCluster = ref<number | null>(null);
-  const selectedNamespace = ref('default');
-
-  // 可用的命名空间列表
-  const namespaces = ref<string[]>([]);
-
-  // 可用的集群列表
-  const clusters = ref<K8s.Cluster[]>([]);
+  // 集群/命名空间初始化与联动统一走 useClusterNamespace；就绪后加载当前 Tab 数据
+  const { clusters, namespaces, selectedCluster, selectedNamespace, loadAll, handleClusterChange, handleNamespaceChange } =
+    useClusterNamespace({
+      onDataReady: () => loadCurrentData()
+    });
 
   // 资源数据
   const servicesData = ref<K8s.Service[]>([]);
@@ -67,24 +63,6 @@
   const selectedResource = ref<K8s.Service | K8s.Ingress | null>(null);
   const yamlLoading = ref(false);
 
-  // 解析资源manifest为YAML格式
-  function parseManifest(manifestStr: string): string {
-    if (!manifestStr) return '';
-    try {
-      const obj = JSON.parse(manifestStr);
-      delete obj.managedFields;
-      return yaml.dump(obj, {
-        indent: 2,
-        lineWidth: 120,
-        noRefs: true,
-        sortKeys: false
-      });
-    } catch (e) {
-      console.error('解析manifest失败:', e);
-      return manifestStr;
-    }
-  }
-
   // 当前数据
   const currentPagination = computed(() => {
     return activeTab.value === 'services' ? servicesPagination : ingressesPagination;
@@ -97,33 +75,6 @@
       selectedServices.value = items as K8s.Service[];
     } else {
       selectedIngresses.value = items as K8s.Ingress[];
-    }
-  }
-
-  // 加载集群列表
-  async function loadClusters() {
-    const { data, error } = await fetchK8sClusters();
-    if (!error) {
-      clusters.value = data?.list || [];
-      if (clusters.value.length > 0 && !selectedCluster.value) {
-        selectedCluster.value = clusters.value[0].id;
-      }
-    } else {
-      console.error('加载集群列表失败:', error);
-    }
-  }
-
-  // 加载命名空间列表
-  async function loadNamespaces() {
-    if (!selectedCluster.value) return;
-    const { data, error } = await fetchK8sClusterNamespaces(selectedCluster.value);
-    if (!error) {
-      namespaces.value = (data || []).map((ns: K8s.Namespace) => ns.name);
-      if (namespaces.value.length > 0 && !namespaces.value.includes(selectedNamespace.value)) {
-        selectedNamespace.value = namespaces.value[0];
-      }
-    } else {
-      console.error('加载命名空间失败:', error);
     }
   }
 
@@ -305,31 +256,14 @@
     }
   }
 
-  // YAML 应用
-  async function handleYamlApply(yamlStr: string) {
-    if (!selectedCluster.value || !selectedResource.value) {
-      throw new Error('缺少必要参数');
-    }
-
-    try {
-      if (activeTab.value === 'services') {
-        await updateK8sService(selectedCluster.value, {
-          namespace: selectedResource.value.namespace,
-          manifest: yaml.load(yamlStr) as Record<string, unknown>
-        });
-        await loadServices();
-      } else {
-        await updateK8sIngress(selectedCluster.value, {
-          namespace: selectedResource.value.namespace,
-          manifest: yaml.load(yamlStr) as Record<string, unknown>
-        });
-        await loadIngresses();
-      }
-    } catch (error: unknown) {
-      const err = error as Error;
-      throw new Error(err.message || 'YAML 应用失败');
-    }
-  }
+  // YAML 应用：按当前选中 Tab 分发到 Service/Ingress 的更新 API
+  const { handleYamlApply } = useYamlEdit({
+    getClusterId: () => selectedCluster.value!,
+    getNamespace: () => selectedResource.value?.namespace || selectedNamespace.value,
+    updateFn: (clusterId, params) =>
+      activeTab.value === 'services' ? updateK8sService(clusterId, params) : updateK8sIngress(clusterId, params),
+    reload: () => (activeTab.value === 'services' ? loadServices() : loadIngresses())
+  });
 
   // 操作处理
   function handleCommand(command: string, row: K8s.Service | K8s.Ingress) {
@@ -374,29 +308,9 @@
     loadCurrentData();
   }
 
-  // 初始化标志位：init 期间（loadClusters 自动选中集群、loadNamespaces 自动选中命名空间）
-  // 的赋值由 onMounted 中的依赖链负责加载，watch 跳过以避免首屏请求重复发送
-  let initialized = false;
-
-  // 监听集群和命名空间变化
-  watch([selectedCluster, selectedNamespace], () => {
-    // 初始化阶段的赋值不在此处响应，加载由 onMounted 统一完成
-    if (!initialized) return;
-
-    if (selectedCluster.value) {
-      loadNamespaces();
-      loadCurrentData();
-    }
-  });
-
-  onMounted(async () => {
-    await loadClusters();
-    if (selectedCluster.value) {
-      await loadNamespaces();
-      await loadServices();
-    }
-    // 初始化完成，此后 watch 正常响应手动切换集群/命名空间
-    initialized = true;
+  onMounted(() => {
+    // 集群 → 命名空间 → 首次加载当前 Tab 数据（只查一次，联动由 handle*Change 处理）
+    loadAll();
   });
 </script>
 
@@ -411,10 +325,15 @@
     <!-- 头部：集群/命名空间选择和刷新按钮 -->
     <div class="mb-16px flex items-center justify-between gap-12px">
       <div class="flex items-center gap-8px">
-        <ElSelect v-model="selectedCluster" placeholder="选择集群" style="width: 200px" @change="loadNamespaces">
+        <ElSelect v-model="selectedCluster" placeholder="选择集群" style="width: 200px" @change="handleClusterChange">
           <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
         </ElSelect>
-        <ElSelect v-model="selectedNamespace" placeholder="选择命名空间" style="width: 180px" @change="loadCurrentData">
+        <ElSelect
+          v-model="selectedNamespace"
+          placeholder="选择命名空间"
+          style="width: 180px"
+          @change="handleNamespaceChange"
+        >
           <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
         </ElSelect>
       </div>

@@ -1,7 +1,8 @@
 <script setup lang="tsx">
   import { onMounted, ref } from 'vue';
   import type { FlatResponseData } from '@sa/axios';
-  import { fetchApplicationOptions, fetchOperationLogs } from '@/service/api/application-permission';
+  import { fetchApplications, fetchOperationLogs } from '@/service/api/application-permission';
+  import { createTagMap } from '@/utils/common';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
 
   defineOptions({ name: 'AuthCenterOperationLogs' });
@@ -67,7 +68,7 @@
         width: 100,
         formatter: row => {
           const t = getStatusTag(row.status);
-          return <ElTag type={t.type}>{t.label}</ElTag>;
+          return <ElTag type={t.type}>{t.text}</ElTag>;
         }
       },
       { prop: 'operator', label: '操作人', align: 'center', minWidth: 120 },
@@ -75,17 +76,11 @@
     ]
   });
 
-  function getStatusTag(status: string): {
-    type: 'primary' | 'success' | 'warning' | 'info' | 'danger';
-    label: string;
-  } {
-    const map: Record<string, { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
-      success: { type: 'success', label: '成功' },
-      failed: { type: 'danger', label: '失败' },
-      running: { type: 'warning', label: '进行中' }
-    };
-    return map[status] || { type: 'primary', label: status };
-  }
+  const getStatusTag = createTagMap({
+    success: { text: '成功', type: 'success' },
+    failed: { text: '失败', type: 'danger' },
+    running: { text: '进行中', type: 'warning' }
+  });
 
   function handleAppChange() {
     getDataByPage(1);

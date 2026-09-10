@@ -360,28 +360,32 @@
   color: var(--msre-pagination-active-text) !important;
 }
 
-/* 标签模块统一控制内容区状态标签 */
-.msre-content .el-tag {
+/* 标签全局统一为实底胶囊样式（含弹窗/抽屉；custom-color-tag 为业务自定义颜色标签，如主机资产标签，不参与主题覆盖） */
+.el-tag:not(.custom-color-tag) {
   background: var(--msre-tag-default-bg) !important;
   border-color: var(--msre-tag-default-border) !important;
   border-radius: var(--msre-tag-radius) !important;
   color: var(--msre-tag-default-text) !important;
 }
 
-.msre-content .el-tag--success {
+.el-tag--success:not(.custom-color-tag) {
   background: var(--msre-tag-success-bg) !important;
+  border-color: var(--msre-tag-success-bg) !important;
 }
 
-.msre-content .el-tag--warning {
+.el-tag--warning:not(.custom-color-tag) {
   background: var(--msre-tag-warning-bg) !important;
+  border-color: var(--msre-tag-warning-bg) !important;
 }
 
-.msre-content .el-tag--danger {
+.el-tag--danger:not(.custom-color-tag) {
   background: var(--msre-tag-danger-bg) !important;
+  border-color: var(--msre-tag-danger-bg) !important;
 }
 
-.msre-content .el-tag--info {
+.el-tag--info:not(.custom-color-tag) {
   background: var(--msre-tag-info-bg) !important;
+  border-color: var(--msre-tag-info-bg) !important;
 }
 
 /* ========== Element Plus 组件覆盖 ========== */

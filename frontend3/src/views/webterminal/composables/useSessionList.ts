@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import { fetchGetActiveSessionsFromMemory, fetchGetSessionsList, fetchTerminateSession } from '@/service/api/cmdb';
+import { formatDuration, formatRelativeTime } from '@/utils/datetime';
 
 /** 标签页类型 */
 export type TabType = 'active' | 'terminated' | 'history';
@@ -31,43 +32,8 @@ export function useSessionList() {
     total: 0
   });
 
-  /** 格式化持续时长 */
-  function formatDuration(seconds: number): string {
-    if (seconds < 60) {
-      return `${seconds}秒`;
-    }
-    if (seconds < 3600) {
-      const minutes = Math.floor(seconds / 60);
-      return `${minutes}分钟`;
-    }
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return minutes > 0 ? `${hours}小时${minutes}分` : `${hours}小时`;
-  }
-
-  /** 格式化时间 */
-  function formatTime(timeStr?: string): string {
-    if (!timeStr) return '-';
-    const date = new Date(timeStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-
-    if (diff < 60000) {
-      return '刚刚';
-    }
-    if (diff < 3600000) {
-      return `${Math.floor(diff / 60000)}分钟前`;
-    }
-    if (diff < 86400000) {
-      return `${Math.floor(diff / 3600000)}小时前`;
-    }
-    return date.toLocaleString('zh-CN', {
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  }
+  /** 格式化持续时长 / 相对时间：统一收敛到 @/utils/datetime（formatTime 为兼容旧命名的别名） */
+  const formatTime = formatRelativeTime;
 
   /** 加载会话列表 */
   async function loadSessions() {

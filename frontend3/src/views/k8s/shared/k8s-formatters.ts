@@ -2,6 +2,7 @@
  * K8s 数据格式化工具函数
  * 用于统一格式化 Kubernetes 对象的显示数据
  */
+import yaml from 'js-yaml';
 
 /**
  * 格式化标签对象为 Tag 数组
@@ -142,4 +143,30 @@ export function formatReplicas(ready: number | undefined, total: number | undefi
   const r = ready ?? 0;
   const t = total ?? 0;
   return `${r}/${t}`;
+}
+
+/** 集群资源 manifest 转可编辑 YAML：剥离 managedFields 等系统字段，统一格式化参数 */
+export function parseManifest(manifest: string | null | undefined): string {
+  try {
+    if (!manifest) return '';
+    const obj = JSON.parse(manifest);
+    delete obj?.metadata?.managedFields;
+    return yaml.dump(obj, { indent: 2, lineWidth: 120, noRefs: true, sortKeys: false });
+  } catch (error) {
+    console.error('解析 manifest 失败:', error);
+    return manifest || '';
+  }
+}
+
+/**
+ * 根据标签键名推断 ElTag 颜色类型
+ * app/name → primary，env → success，version → warning，component → info
+ */
+export function getTagType(key: string): 'primary' | 'success' | 'warning' | 'info' | 'default' {
+  const keyLower = key.toLowerCase();
+  if (keyLower.includes('app') || keyLower.includes('name')) return 'primary';
+  if (keyLower.includes('env') || keyLower.includes('environment')) return 'success';
+  if (keyLower.includes('version') || keyLower.includes('ver')) return 'warning';
+  if (keyLower.includes('component')) return 'info';
+  return 'default';
 }

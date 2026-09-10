@@ -2,6 +2,9 @@
   import { onMounted, reactive, ref } from 'vue';
   import { ElMessage, ElMessageBox } from 'element-plus';
   import { acknowledgeAlert, fetchAlertStats, fetchAlerts } from '@/service/api/monitoring';
+  // 时间格式化与级别标签映射统一收敛到公共工具（formatTime 为兼容旧命名的别名）
+  import { formatDateTime as formatTime } from '@/utils/datetime';
+  import { createTagMap } from '@/utils/common';
 
   defineOptions({
     name: 'MonitoringAlerts'
@@ -105,41 +108,14 @@
       .catch(() => {});
   }
 
-  /**
-   * 获取级别对应的 Element Plus 类型
-   */
-  function getLevelType(level: string): 'danger' | 'warning' | 'primary' | 'info' | 'success' {
-    const map: Record<string, 'danger' | 'warning' | 'primary' | 'info' | 'success'> = {
-      critical: 'danger',
-      high: 'warning',
-      medium: 'primary',
-      low: 'info',
-      info: 'info'
-    };
-    return map[level] ?? 'info';
-  }
-
-  /**
-   * 获取级别中文文本
-   */
-  function getLevelText(level: string): string {
-    const map: Record<string, string> = {
-      critical: '严重',
-      high: '高',
-      medium: '中',
-      low: '低',
-      info: '信息'
-    };
-    return map[level] || level;
-  }
-
-  /**
-   * 格式化时间
-   */
-  function formatTime(time: string): string {
-    if (!time) return '-';
-    return new Date(time).toLocaleString('zh-CN');
-  }
+  /** 告警级别 → ElTag 标签映射 */
+  const getLevelTag = createTagMap({
+    critical: { text: '严重', type: 'danger' },
+    high: { text: '高', type: 'warning' },
+    medium: { text: '中', type: 'primary' },
+    low: { text: '低', type: 'info' },
+    info: { text: '信息', type: 'info' }
+  });
 
   onMounted(() => {
     getStats();
@@ -219,8 +195,8 @@
       <ElTable v-loading="loading" :data="alertList" border stripe>
         <ElTableColumn label="级别" width="90" align="center">
           <template #default="{ row }">
-            <ElTag :type="getLevelType(row.level)" size="small">
-              {{ getLevelText(row.level) }}
+            <ElTag :type="getLevelTag(row.level).type" size="small">
+              {{ getLevelTag(row.level).text }}
             </ElTag>
           </template>
         </ElTableColumn>

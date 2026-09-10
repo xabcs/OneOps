@@ -1,22 +1,19 @@
 <script setup lang="ts">
-  import { computed, onMounted, reactive, ref, watch } from 'vue';
+  import { computed, onMounted, reactive, ref } from 'vue';
   import { ElButton, ElPagination, ElTabPane, ElTabs, ElTag } from 'element-plus';
-  import { fetchK8sClusterNamespaces, fetchK8sClusters, fetchK8sConfigMaps, fetchK8sSecrets } from '@/service/api/k8s';
+  import { fetchK8sConfigMaps, fetchK8sSecrets } from '@/service/api/k8s';
+  import { useClusterNamespace } from '@/views/k8s/composables/useClusterNamespace';
 
   defineOptions({ name: 'K8sConfig' });
 
   const loading = ref(false);
   const activeTab = ref('configmaps');
 
-  // 当前选中的集群和命名空间
-  const selectedCluster = ref<number | null>(null);
-  const selectedNamespace = ref('default');
-
-  // 可用的命名空间列表
-  const namespaces = ref<string[]>([]);
-
-  // 可用的集群列表
-  const clusters = ref<K8s.Cluster[]>([]);
+  // 集群/命名空间初始化与联动统一走 useClusterNamespace；就绪后加载当前 Tab 数据
+  const { clusters, namespaces, selectedCluster, selectedNamespace, loadAll, handleClusterChange, handleNamespaceChange } =
+    useClusterNamespace({
+      onDataReady: () => loadCurrentData()
+    });
 
   // 资源数据
   const configmapsData = ref<K8s.ConfigMap[]>([]);
@@ -30,35 +27,6 @@
   const currentPagination = computed(() => {
     return activeTab.value === 'configmaps' ? configmapsPagination : secretsPagination;
   });
-
-  // 加载集群列表
-  async function loadClusters() {
-    const { data, error } = await fetchK8sClusters();
-    if (!error) {
-      clusters.value = data?.list || [];
-      // 自动选中第一个集群
-      if (clusters.value.length > 0 && !selectedCluster.value) {
-        selectedCluster.value = clusters.value[0].id;
-      }
-    } else {
-      console.error('加载集群列表失败:', error);
-    }
-  }
-
-  // 加载命名空间列表
-  async function loadNamespaces() {
-    if (!selectedCluster.value) return;
-    const { data, error } = await fetchK8sClusterNamespaces(selectedCluster.value);
-    if (!error) {
-      namespaces.value = (data || []).map((ns: K8s.Namespace) => ns.name);
-      // 自动选中第一个命名空间
-      if (namespaces.value.length > 0 && !namespaces.value.includes(selectedNamespace.value)) {
-        selectedNamespace.value = namespaces.value[0];
-      }
-    } else {
-      console.error('加载命名空间失败:', error);
-    }
-  }
 
   // 加载配置项
   async function loadConfigMaps() {
@@ -120,29 +88,9 @@
     loadCurrentData();
   }
 
-  // 初始化标志位：init 期间（loadClusters 自动选中集群、loadNamespaces 自动选中命名空间）
-  // 的赋值由 onMounted 中的依赖链负责加载，watch 跳过以避免首屏请求重复发送
-  let initialized = false;
-
-  // 监听集群和命名空间变化
-  watch([selectedCluster, selectedNamespace], () => {
-    // 初始化阶段的赋值不在此处响应，加载由 onMounted 统一完成
-    if (!initialized) return;
-
-    if (selectedCluster.value) {
-      loadNamespaces();
-      loadCurrentData();
-    }
-  });
-
-  onMounted(async () => {
-    await loadClusters();
-    if (selectedCluster.value) {
-      await loadNamespaces();
-      await loadConfigMaps();
-    }
-    // 初始化完成，此后 watch 正常响应手动切换集群/命名空间
-    initialized = true;
+  onMounted(() => {
+    // 集群 → 命名空间 → 首次加载当前 Tab 数据（只查一次，联动由 handle*Change 处理）
+    loadAll();
   });
 </script>
 
@@ -158,10 +106,15 @@
     <div class="mb-16px flex items-center justify-between gap-12px">
       <!-- 左侧：集群和命名空间选择 -->
       <div class="flex items-center gap-8px">
-        <ElSelect v-model="selectedCluster" placeholder="选择集群" style="width: 200px" @change="loadNamespaces">
+        <ElSelect v-model="selectedCluster" placeholder="选择集群" style="width: 200px" @change="handleClusterChange">
           <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
         </ElSelect>
-        <ElSelect v-model="selectedNamespace" placeholder="选择命名空间" style="width: 180px" @change="loadCurrentData">
+        <ElSelect
+          v-model="selectedNamespace"
+          placeholder="选择命名空间"
+          style="width: 180px"
+          @change="handleNamespaceChange"
+        >
           <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
         </ElSelect>
       </div>

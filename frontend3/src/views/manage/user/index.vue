@@ -1,5 +1,6 @@
 <script setup lang="tsx">
-  import { computed, onActivated, onMounted, onUnmounted, ref } from 'vue';
+  import { computed, onActivated, onMounted, ref } from 'vue';
+  import { useDebounceFn } from '@vueuse/core';
   import { ElMessageBox } from 'element-plus';
   import { Delete, Plus, Refresh, Search, User } from '@element-plus/icons-vue';
   import { fetchDeleteUser, fetchGetAllRoles, fetchGetUserList, fetchUpdateUser } from '@/service/api';
@@ -261,30 +262,17 @@
     getDataByPage(pagination.currentPage ?? 1);
   });
 
-  // 搜索输入处理（防抖）
-  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
-  function handleSearchInput() {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-    searchTimeout = setTimeout(() => {
-      searchParams.value.page = 1;
-      getDataByPage();
-    }, 300);
-  }
+  // 搜索输入处理（防抖 300ms）
+  const handleSearchInput = useDebounceFn(() => {
+    searchParams.value.page = 1;
+    getDataByPage();
+  }, 300);
 
   // 手动搜索
   function handleSearch() {
     searchParams.value.page = 1;
     getDataByPage();
   }
-
-  onUnmounted(() => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-      searchTimeout = null;
-    }
-  });
 </script>
 
 <template>

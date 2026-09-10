@@ -8,6 +8,7 @@
     fetchUserIdentityMappings
   } from '@/service/api/application-permission';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
+  import { createTagMap } from '@/utils/common';
   import PermissionButton from '@/components/common/PermissionButton.vue';
 
   defineOptions({ name: 'AuthUserIdentities' });
@@ -95,7 +96,7 @@
         width: 110,
         formatter: row => {
           const t = getMappingTypeTag(row.mappingType);
-          return <ElTag type={t.type}>{t.label}</ElTag>;
+          return <ElTag type={t.type}>{t.text}</ElTag>;
         }
       },
       {
@@ -105,7 +106,7 @@
         width: 100,
         formatter: row => {
           const t = getStatusTag(row.mappingStatus);
-          return <ElTag type={t.type}>{t.label}</ElTag>;
+          return <ElTag type={t.type}>{t.text}</ElTag>;
         }
       },
       {
@@ -138,28 +139,18 @@
     ]
   });
 
-  function getStatusTag(status: string): {
-    type: 'primary' | 'success' | 'warning' | 'info' | 'danger';
-    label: string;
-  } {
-    const statusMap: Record<string, { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
-      active: { type: 'success', label: '激活' },
-      inactive: { type: 'info', label: '禁用' },
-      deleted: { type: 'danger', label: '已删除' }
-    };
-    return statusMap[status] || { type: 'primary', label: status };
-  }
+  /** 映射状态 → ElTag 标签映射 */
+  const getStatusTag = createTagMap({
+    active: { text: '激活', type: 'success' },
+    inactive: { text: '禁用', type: 'info' },
+    deleted: { text: '已删除', type: 'danger' }
+  });
 
-  function getMappingTypeTag(type: string): {
-    type: 'primary' | 'success' | 'warning' | 'info' | 'danger';
-    label: string;
-  } {
-    const typeMap: Record<string, { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
-      auto: { type: 'primary', label: '自动创建' },
-      manual: { type: 'warning', label: '手动创建' }
-    };
-    return typeMap[type] || { type: 'primary', label: type };
-  }
+  /** 映射来源 → ElTag 标签映射 */
+  const getMappingTypeTag = createTagMap({
+    auto: { text: '自动创建', type: 'primary' },
+    manual: { text: '手动创建', type: 'warning' }
+  });
 
   function handleSearch() {
     getDataByPage(1);

@@ -213,8 +213,10 @@
                 <ElTag
                   v-for="tag in server.tags"
                   :key="tag.id"
+                  class="custom-color-tag"
                   size="small"
-                  :color="tag.color"
+                  effect="dark"
+                  :style="{ backgroundColor: tag.color, borderColor: tag.color }"
                   style="margin-right: 4px"
                 >
                   {{ tag.name }}

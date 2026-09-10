@@ -3,6 +3,8 @@
   import { ElMessage } from 'element-plus';
   import { Document } from '@element-plus/icons-vue';
   import { fetchServerOptions } from '@/service/api';
+  // 时间格式化统一收敛到公共工具（formatTime 为兼容旧命名的别名）
+  import { formatDateTime as formatTime } from '@/utils/datetime';
 
   defineOptions({
     name: 'MonitoringReports'
@@ -131,12 +133,6 @@
       pending: '等待中'
     };
     return map[status] || status;
-  }
-
-  // 格式化时间
-  function formatTime(time: string): string {
-    if (!time) return '-';
-    return new Date(time).toLocaleString('zh-CN');
   }
 
   onMounted(() => {

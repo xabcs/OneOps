@@ -4,6 +4,7 @@
   import { fetchExportLoginLogs, fetchGetLoginLogs } from '@/service/api';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
   import { exportFile } from '@/utils/file';
+  import { createTagMap } from '@/utils/common';
 
   defineOptions({ name: 'AuditLoginLogs' });
 
@@ -88,13 +89,11 @@
     ]
   });
 
-  function getStatusTag(status: string): { text: string; type: 'primary' | 'success' | 'warning' | 'danger' | 'info' } {
-    const statusMap: Record<string, { text: string; type: 'primary' | 'success' | 'warning' | 'danger' | 'info' }> = {
-      success: { text: '成功', type: 'success' },
-      failed: { text: '失败', type: 'danger' }
-    };
-    return statusMap[status] || { text: status, type: 'info' };
-  }
+  /** 登录状态 → ElTag 标签映射 */
+  const getStatusTag = createTagMap({
+    success: { text: '成功', type: 'success' },
+    failed: { text: '失败', type: 'danger' }
+  });
 
   function handleSearch() {
     getDataByPage(1);

@@ -26,18 +26,7 @@ import {
   updateK8sJob,
   updateK8sStatefulSet
 } from '@/service/api/k8s';
-
-function parseManifest(manifestStr: string): string {
-  if (!manifestStr) return '';
-  try {
-    const obj = JSON.parse(manifestStr);
-    delete obj.managedFields;
-    return yaml.dump(obj, { indent: 2, lineWidth: 120, noRefs: true, sortKeys: false });
-  } catch (e) {
-    console.error('解析manifest失败:', e);
-    return manifestStr;
-  }
-}
+import { parseManifest } from '@/views/k8s/shared/k8s-formatters';
 
 // 资源操作配置映射
 const resourceConfig: Record<

@@ -206,6 +206,7 @@ const local: App.I18n.Schema = {
         dangerBg: '危险状态背景',
         dangerStart: '危险状态渐变起始',
         dangerEnd: '危险状态渐变结束',
+        infoBg: '信息状态背景',
         headerBg: '表头背景颜色',
         headerText: '表头文字颜色',
         headerBorder: '表头边框颜色',

@@ -5,6 +5,7 @@
     fetchUserEffectivePermissions,
     fetchUserEffectivePermissionsMatrix
   } from '@/service/api/application-permission';
+  import { createTagMap } from '@/utils/common';
   import AppPermissionMatrix from './modules/AppPermissionMatrix.vue';
 
   defineOptions({ name: 'AuthUserPermissions' });
@@ -205,15 +206,13 @@
     }
   }
 
-  function getStatusTag(status: string) {
-    const statusMap: Record<string, { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
-      active: { type: 'success', label: '有效' },
-      inactive: { type: 'info', label: '无效' },
-      expired: { type: 'danger', label: '已过期' },
-      pending: { type: 'warning', label: '待生效' }
-    };
-    return statusMap[status] || { type: 'primary', label: status };
-  }
+  /** 权限状态 → ElTag 标签映射 */
+  const getStatusTag = createTagMap({
+    active: { text: '有效', type: 'success' },
+    inactive: { text: '无效', type: 'info' },
+    expired: { text: '已过期', type: 'danger' },
+    pending: { text: '待生效', type: 'warning' }
+  });
 
   onMounted(() => {
     getApplications();
@@ -377,7 +376,7 @@
           <ElTableColumn label="权限状态" align="center" width="100">
             <template #default="{ row }">
               <ElTag :type="getStatusTag(row.status).type">
-                {{ getStatusTag(row.status).label }}
+                {{ getStatusTag(row.status).text }}
               </ElTag>
             </template>
           </ElTableColumn>

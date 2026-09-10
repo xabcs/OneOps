@@ -3,8 +3,9 @@
   import { useRoute, useRouter } from 'vue-router';
   import { ElMessage, ElMessageBox } from 'element-plus';
   import { ArrowLeft } from '@element-plus/icons-vue';
-  import yaml from 'js-yaml';
   import { deleteK8sSecret, fetchK8sEvents, getK8sSecret, updateK8sSecret } from '@/service/api/k8s';
+  import { parseManifest } from '@/views/k8s/shared/k8s-formatters';
+  import { useYamlEdit } from '@/views/k8s/composables/useYamlEdit';
   import YamlEditor from '@/components/k8s/YamlEditor.vue';
 
   defineOptions({ name: 'K8sSecretDetail' });
@@ -25,19 +26,6 @@
   const activeTab = ref('basic');
   const showYamlEditor = ref(false);
   const yamlContent = ref('');
-  const yamlSaving = ref(false);
-
-  // 解析manifest为YAML
-  function parseManifest(manifestStr: string): string {
-    if (!manifestStr) return '';
-    try {
-      const obj = JSON.parse(manifestStr);
-      delete obj.managedFields;
-      return yaml.dump(obj, { indent: 2, lineWidth: 120, noRefs: true });
-    } catch (e) {
-      return manifestStr;
-    }
-  }
 
   // 解析数据项
   function parseDataKeys(data: Record<string, string>, type: string) {
@@ -121,23 +109,14 @@
     }
   }
 
-  async function handleYamlApply(yamlStr: string) {
-    yamlSaving.value = true;
-    try {
-      const manifest = yaml.load(yamlStr);
-      await updateK8sSecret(clusterId.value, {
-        namespace: namespace.value,
-        manifest
-      });
-      message.success('更新成功');
-      await loadData();
-    } catch (error: unknown) {
-      const err = error as Error;
-      throw new Error(err.message || '更新失败');
-    } finally {
-      yamlSaving.value = false;
-    }
-  }
+  // YAML 编辑保存：统一走 useYamlEdit（YAML 校验 → 更新 API → 重载详情）
+  const { yamlSaving, handleYamlApply } = useYamlEdit({
+    getClusterId: () => clusterId.value,
+    getNamespace: () => namespace.value,
+    updateFn: updateK8sSecret,
+    reload: loadData,
+    successMessage: '更新成功'
+  });
 
   onMounted(() => {
     loadData();

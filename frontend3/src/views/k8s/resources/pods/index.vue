@@ -7,12 +7,12 @@
     ElMessageBox,
     ElOption,
     ElSelect,
-    ElSpace,
     ElTable,
     ElTableColumn,
     ElTag
   } from 'element-plus';
-  import { deleteK8sPod, fetchK8sClusterNamespaces, fetchK8sClusters, fetchK8sPods } from '@/service/api/k8s';
+  import { deleteK8sPod, fetchK8sPods } from '@/service/api/k8s';
+  import { useClusterNamespace, useListStateRestore } from '@/views/k8s/composables/useClusterNamespace';
   import PodLogDialog from './modules/PodLogDialog.vue';
   import PodTerminalDialog from './modules/PodTerminalDialog.vue';
 
@@ -27,18 +27,24 @@
   const showTerminal = ref(false);
   const showLogs = ref(false);
 
-  // 当前选中的集群和命名空间
-  const selectedCluster = ref<number | null>(null);
-  const selectedNamespace = ref('default');
+  // 列表状态保存 key（跳转详情后返回时恢复集群/命名空间）
+  const LIST_STATE_KEY = 'k8s_pods_list_state';
 
-  // 可用的命名空间列表
-  const namespaces = ref<string[]>([]);
+  // 集群/命名空间初始化与联动统一走 useClusterNamespace
+  const clusterNs = useClusterNamespace({
+    storageKey: LIST_STATE_KEY,
+    // 集群/命名空间就绪后加载 Pod 列表
+    onDataReady: () => loadPods()
+  });
+  const { clusters, namespaces, selectedCluster, selectedNamespace, handleClusterChange, handleNamespaceChange } =
+    clusterNs;
 
-  // 可用的集群列表
-  const clusters = ref<K8s.Cluster[]>([]);
+  // sessionStorage 状态恢复（返回列表时）与保存（跳转详情前）
+  const { restoreState, saveState } = useListStateRestore(clusterNs, {
+    onLoadList: () => loadPods()
+  });
 
   const filters = reactive({
-    namespace: 'default',
     labelSelector: ''
   });
 
@@ -83,44 +89,6 @@
     }
   };
 
-  // 加载集群列表
-  const loadClusters = async () => {
-    try {
-      const res = await fetchK8sClusters();
-      // flat 请求返回 {data: {list, total}, error}，取 list 为集群数组
-      clusters.value = res.data?.list || [];
-
-      // 如果有集群，默认选择第一个
-      if (clusters.value.length > 0 && !selectedCluster.value) {
-        selectedCluster.value = clusters.value[0].id;
-        await loadNamespaces();
-        await loadPods();
-      }
-    } catch (error: unknown) {
-      const err = error as Error;
-      message.error(err.message || '加载集群列表失败');
-    }
-  };
-
-  // 加载命名空间列表
-  const loadNamespaces = async () => {
-    if (!selectedCluster.value) return;
-    try {
-      const res = await fetchK8sClusterNamespaces(selectedCluster.value);
-      const namespaceList: K8s.Namespace[] = res.data || [];
-      const namespaceNames = namespaceList.map((ns: K8s.Namespace) => ns.name);
-      namespaces.value = [...namespaceNames];
-
-      if (namespaces.value.length > 0 && !namespaces.value.includes(filters.namespace)) {
-        filters.namespace = namespaces.value[0];
-        selectedNamespace.value = namespaces.value[0];
-      }
-    } catch (error: unknown) {
-      const err = error as Error;
-      message.error(err.message || '加载命名空间列表失败');
-    }
-  };
-
   // 加载 Pod 列表
   const loadPods = async () => {
     if (!selectedCluster.value) {
@@ -133,7 +101,7 @@
     loading.value = true;
     try {
       const res = await fetchK8sPods(selectedCluster.value, {
-        namespace: filters.namespace,
+        namespace: selectedNamespace.value,
         labelSelector: filters.labelSelector
       });
 
@@ -151,17 +119,6 @@
     }
   };
 
-  // 集群变化
-  const handleClusterChange = async () => {
-    await loadNamespaces();
-    await loadPods();
-  };
-
-  // 命名空间变化
-  const handleNamespaceChange = () => {
-    loadPods();
-  };
-
   // 搜索
   const handleSearch = () => {
     pagination.page = 1;
@@ -172,7 +129,7 @@
   const handleTerminal = (row: K8s.Pod, containerName?: string) => {
     terminalProps.value = {
       clusterId: selectedCluster.value!,
-      namespace: filters.namespace,
+      namespace: selectedNamespace.value,
       podName: row.name,
       containerName: containerName || ''
     };
@@ -183,7 +140,7 @@
   const handleLogs = (row: K8s.Pod, containerName?: string) => {
     logProps.value = {
       clusterId: selectedCluster.value!,
-      namespace: filters.namespace,
+      namespace: selectedNamespace.value,
       podName: row.name,
       containerName: containerName || ''
     };
@@ -198,7 +155,7 @@
       });
 
       await deleteK8sPod(selectedCluster.value!, {
-        namespace: filters.namespace,
+        namespace: selectedNamespace.value,
         name: row.name
       });
       message.success('删除成功');
@@ -213,20 +170,18 @@
 
   // 查看详情
   const handleViewDetail = (row: K8s.Pod) => {
-    // 保存当前选择到 sessionStorage
-    // 保存当前选择到 sessionStorage
-    const stateToSave = {
+    // 保存当前选择到 sessionStorage，返回列表时恢复
+    saveState({
       clusterId: selectedCluster.value,
-      namespace: filters.namespace,
+      namespace: selectedNamespace.value,
       listPath: '/k8s/workloads'
-    };
-    sessionStorage.setItem('k8s_pods_list_state', JSON.stringify(stateToSave));
+    });
 
     router.push({
       path: '/k8s/resources/pods/detail',
       query: {
         clusterId: selectedCluster.value?.toString(),
-        namespace: filters.namespace,
+        namespace: selectedNamespace.value,
         name: row.name
       }
     });
@@ -237,36 +192,8 @@
     loadPods();
   };
 
-  // 从 sessionStorage 恢复状态
-  const restoreStateFromStorage = () => {
-    const savedState = sessionStorage.getItem('k8s_pods_list_state');
-
-    if (savedState) {
-      try {
-        const state = JSON.parse(savedState);
-
-        selectedCluster.value = state.clusterId;
-        filters.namespace = state.namespace;
-
-        // 清除保存的状态
-        sessionStorage.removeItem('k8s_pods_list_state');
-
-        // 加载命名空间和数据
-        if (selectedCluster.value) {
-          return loadNamespaces().then(() => {
-            return loadPods();
-          });
-        }
-      } catch (e) {
-        console.error('[Pod列表] 恢复状态失败:', e);
-      }
-    }
-    // 正常加载流程
-    return loadClusters();
-  };
-
   onMounted(() => {
-    restoreStateFromStorage();
+    restoreState();
   });
 
   // 监听路由变化
@@ -274,7 +201,7 @@
     () => route.path,
     (newPath, oldPath) => {
       if (newPath === '/k8s/workloads' && oldPath?.includes('/detail')) {
-        restoreStateFromStorage();
+        restoreState();
       }
     }
   );
@@ -294,7 +221,7 @@
       <div class="flex items-center gap-2">
         <span class="text-sm font-medium">命名空间:</span>
         <ElSelect
-          v-model="filters.namespace"
+          v-model="selectedNamespace"
           placeholder="请选择命名空间"
           style="width: 180px"
           @change="handleNamespaceChange"

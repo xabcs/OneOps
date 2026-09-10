@@ -56,3 +56,27 @@ export function toggleHtmlClass(className: string) {
     remove
   };
 }
+
+/** ElTag 组件可用的 type 取值 */
+export type TagType = 'primary' | 'success' | 'info' | 'warning' | 'danger';
+
+/**
+ * 创建「状态 key → ElTag 标签」映射函数
+ *
+ * 用于收口各页面重复的 getStatusTag / getStatusType / getLevelType 类样板函数：
+ * 传入业务各自的映射表，返回一个 (key) => { text, type } 的查询函数；
+ * 未命中映射时回退为 { text: key || '-', type: 'info' }。
+ *
+ * @example
+ *   ```ts
+ *   const getStatusTag = createTagMap({
+ *     active: { text: '活跃', type: 'success' },
+ *     closed: { text: '已关闭', type: 'info' }
+ *   });
+ *   getStatusTag('active'); // { text: '活跃', type: 'success' }
+ *   ```
+ */
+export function createTagMap<T extends string>(map: Partial<Record<T, { text: string; type: TagType }>>) {
+  return (key: string | null | undefined): { text: string; type: TagType } =>
+    (key && map[key as T]) || { text: key || '-', type: 'info' };
+}

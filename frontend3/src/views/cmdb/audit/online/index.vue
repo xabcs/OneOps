@@ -2,6 +2,8 @@
   import { onMounted, onUnmounted, ref } from 'vue';
   import { ElMessageBox } from 'element-plus';
   import { fetchGetActiveSessions, fetchGetSessionStats, fetchTerminateSession } from '@/service/api/cmdb';
+  // 时长与时间格式化统一收敛到 @/utils/datetime（沿用原函数名作为别名）
+  import { formatDateTime as formatTime, formatDurationHuman as formatDuration } from '@/utils/datetime';
 
   defineOptions({ name: 'CmdbAuditOnline' });
 
@@ -119,18 +121,6 @@
   function refresh() {
     getActiveSessions();
     getStats();
-  }
-
-  function formatDuration(seconds: number): string {
-    if (seconds < 60) return `${seconds}秒`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟`;
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}小时${minutes}分钟`;
-  }
-
-  function formatTime(time: string): string {
-    return time ? new Date(time).toLocaleString('zh-CN') : '-';
   }
 
   onMounted(() => {

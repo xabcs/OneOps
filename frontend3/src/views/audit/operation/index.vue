@@ -4,6 +4,7 @@
   import { fetchExportOperationLogs, fetchGetModules, fetchGetOperationLogs } from '@/service/api';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
   import { exportFile } from '@/utils/file';
+  import { createTagMap } from '@/utils/common';
 
   defineOptions({ name: 'AuditOperationLogs' });
 
@@ -96,23 +97,19 @@
     ]
   });
 
-  function getStatusTag(status: string): { text: string; type: 'primary' | 'success' | 'warning' | 'danger' | 'info' } {
-    const statusMap: Record<string, { text: string; type: 'primary' | 'success' | 'warning' | 'danger' | 'info' }> = {
-      success: { text: '成功', type: 'success' },
-      failed: { text: '失败', type: 'danger' }
-    };
-    return statusMap[status] || { text: status, type: 'info' };
-  }
+  /** 操作状态 → ElTag 标签映射 */
+  const getStatusTag = createTagMap({
+    success: { text: '成功', type: 'success' },
+    failed: { text: '失败', type: 'danger' }
+  });
 
-  function getMethodTag(method: string): { text: string; type: 'primary' | 'success' | 'warning' | 'danger' | 'info' } {
-    const methodMap: Record<string, { text: string; type: 'primary' | 'success' | 'warning' | 'danger' | 'info' }> = {
-      GET: { text: 'GET', type: 'primary' },
-      POST: { text: 'POST', type: 'success' },
-      PUT: { text: 'PUT', type: 'warning' },
-      DELETE: { text: 'DELETE', type: 'danger' }
-    };
-    return methodMap[method] || { text: method, type: 'info' };
-  }
+  /** 请求方法 → ElTag 标签映射 */
+  const getMethodTag = createTagMap({
+    GET: { text: 'GET', type: 'primary' },
+    POST: { text: 'POST', type: 'success' },
+    PUT: { text: 'PUT', type: 'warning' },
+    DELETE: { text: 'DELETE', type: 'danger' }
+  });
 
   function handleSearch() {
     getDataByPage(1);

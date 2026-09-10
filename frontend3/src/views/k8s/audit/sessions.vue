@@ -11,7 +11,8 @@
     ElTag,
     ElTooltip
   } from 'element-plus';
-  import { fetchK8sActiveTerminalSessions, fetchK8sClusters, terminateK8sTerminalSession } from '@/service/api/k8s';
+  import { fetchK8sActiveTerminalSessions, terminateK8sTerminalSession } from '@/service/api/k8s';
+  import { useClusterNamespace } from '@/views/k8s/composables/useClusterNamespace';
 
   interface AuditSession extends K8s.TerminalSession {
     status?: string;
@@ -26,8 +27,8 @@
   const loading = ref(false);
   const activeSessions = ref<AuditSession[]>([]);
 
-  // 可用的集群列表
-  const clusters = ref<K8s.Cluster[]>([]);
+  // 可用的集群列表（仅用于统计展示，无命名空间联动）
+  const { clusters, loadClusters } = useClusterNamespace();
 
   const filters = reactive({
     clusterId: null as number | null,
@@ -66,18 +67,6 @@
         return { type: 'danger', text: '异常' };
       default:
         return { type: 'info', text: status };
-    }
-  };
-
-  // 加载集群列表
-  const loadClusters = async () => {
-    try {
-      const res = await fetchK8sClusters();
-      // res 为 flat 封装结构，真实数据在 res.data.list 中
-      clusters.value = res.data?.list || [];
-    } catch (error: unknown) {
-      const err = error as Error;
-      message.error(err.message || '加载集群列表失败');
     }
   };
 

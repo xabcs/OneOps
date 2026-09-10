@@ -7,12 +7,12 @@
     ElMessageBox,
     ElOption,
     ElSelect,
-    ElSpace,
     ElTable,
     ElTableColumn,
     ElTag
   } from 'element-plus';
-  import { deleteK8sService, fetchK8sClusterNamespaces, fetchK8sClusters, fetchK8sServices } from '@/service/api/k8s';
+  import { deleteK8sService, fetchK8sServices } from '@/service/api/k8s';
+  import { useClusterNamespace, useListStateRestore } from '@/views/k8s/composables/useClusterNamespace';
   import ServiceDetailDialog from './modules/ServiceDetailDialog.vue';
 
   defineOptions({ name: 'K8sServices' });
@@ -26,18 +26,21 @@
   const showDetail = ref(false);
   const currentDetail = ref<K8s.Service | null>(null);
 
-  // 当前选中的集群和命名空间
-  const selectedCluster = ref<number | null>(null);
-  const selectedNamespace = ref('default');
+  // 列表状态保存 key（跳转详情后返回时恢复集群/命名空间）
+  const LIST_STATE_KEY = 'k8s_services_list_state';
 
-  // 可用的命名空间列表
-  const namespaces = ref<string[]>([]);
+  // 集群/命名空间初始化与联动统一走 useClusterNamespace
+  const clusterNs = useClusterNamespace({
+    storageKey: LIST_STATE_KEY,
+    // 集群/命名空间就绪后加载 Service 列表
+    onDataReady: () => loadServices()
+  });
+  const { clusters, namespaces, selectedCluster, selectedNamespace, handleClusterChange, handleNamespaceChange } =
+    clusterNs;
 
-  // 可用的集群列表
-  const clusters = ref<K8s.Cluster[]>([]);
-
-  const filters = reactive({
-    namespace: 'default'
+  // sessionStorage 状态恢复（返回列表时）与保存（跳转详情前）
+  const { restoreState, saveState } = useListStateRestore(clusterNs, {
+    onLoadList: () => loadServices()
   });
 
   const pagination = reactive({
@@ -77,44 +80,6 @@
       .join(', ');
   };
 
-  // 加载集群列表
-  const loadClusters = async () => {
-    try {
-      const res = await fetchK8sClusters();
-      // flat 请求返回 {data: {list, total}, error}，取 list 为集群数组
-      clusters.value = res.data?.list || [];
-
-      // 如果有集群，默认选择第一个
-      if (clusters.value.length > 0 && !selectedCluster.value) {
-        selectedCluster.value = clusters.value[0].id;
-        await loadNamespaces();
-        await loadServices();
-      }
-    } catch (error: unknown) {
-      const err = error as Error;
-      message.error(err.message || '加载集群列表失败');
-    }
-  };
-
-  // 加载命名空间列表
-  const loadNamespaces = async () => {
-    if (!selectedCluster.value) return;
-
-    try {
-      const { data: namespaceList } = await fetchK8sClusterNamespaces(selectedCluster.value);
-      const namespaceNames = (namespaceList || []).map((ns: K8s.Namespace) => ns.name);
-      namespaces.value = [...namespaceNames];
-
-      if (namespaces.value.length > 0 && !namespaces.value.includes(filters.namespace)) {
-        filters.namespace = namespaces.value[0];
-        selectedNamespace.value = namespaces.value[0];
-      }
-    } catch (error: unknown) {
-      const err = error as Error;
-      message.error(err.message || '加载命名空间列表失败');
-    }
-  };
-
   // 加载 Service 列表
   const loadServices = async () => {
     if (!selectedCluster.value) {
@@ -127,7 +92,7 @@
     loading.value = true;
     try {
       const res = await fetchK8sServices(selectedCluster.value, {
-        namespace: filters.namespace
+        namespace: selectedNamespace.value
       });
 
       // flat 请求返回 {data: {list, total}, error}，列表与总数取自分页结构
@@ -144,34 +109,20 @@
     }
   };
 
-  // 集群变化
-  const handleClusterChange = async () => {
-    await loadNamespaces();
-    await loadServices();
-  };
-
-  // 命名空间变化
-  const handleNamespaceChange = () => {
-    loadServices();
-  };
-
   // 跳转到详情页
   const goToDetail = (row: K8s.Service) => {
-    // 保存当前选择到 sessionStorage
-    sessionStorage.setItem(
-      'k8s_services_list_state',
-      JSON.stringify({
-        clusterId: selectedCluster.value,
-        namespace: filters.namespace,
-        listPath: '/k8s/services'
-      })
-    );
+    // 保存当前选择到 sessionStorage，返回列表时恢复
+    saveState({
+      clusterId: selectedCluster.value,
+      namespace: selectedNamespace.value,
+      listPath: '/k8s/services'
+    });
 
     router.push({
       path: '/k8s/resources/services/detail',
       query: {
         clusterId: selectedCluster.value,
-        namespace: filters.namespace,
+        namespace: selectedNamespace.value,
         name: row.name
       }
     });

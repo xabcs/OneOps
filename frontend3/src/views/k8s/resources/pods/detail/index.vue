@@ -5,6 +5,7 @@
   import yaml from 'js-yaml';
   import { fetchK8sEvents, getK8sPod, updateK8sPod } from '@/service/api/k8s';
   import { formatAnnotations, formatLabels } from '@/views/k8s/shared/k8s-formatters';
+  import { useYamlEdit } from '@/views/k8s/composables/useYamlEdit';
   import YamlEditor from '@/components/k8s/YamlEditor.vue';
   import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
   import PodLogDialog from '../modules/PodLogDialog.vue';
@@ -31,7 +32,6 @@
   // YAML 编辑相关
   const showYamlEditor = ref(false);
   const yamlContent = ref('');
-  const yamlSaving = ref(false);
 
   // 返回列表页的路径 - 直接返回工作负载汇总页，状态由 store 管理
   const backPath = '/k8s/workloads';
@@ -203,27 +203,13 @@
     }
   }
 
-  // 保存 YAML
-  async function handleYamlApply(yamlStr: string) {
-    yamlSaving.value = true;
-    try {
-      // 将 YAML 转换回 JSON 对象
-      const manifestObj = yaml.load(yamlStr);
-      // 调用更新 API
-      await updateK8sPod(clusterId.value, {
-        namespace: namespace.value,
-        manifest: manifestObj
-      });
-      ElMessage.success('保存成功');
-      // 刷新数据
-      await loadDetail();
-    } catch (error: unknown) {
-      const err = error as Error;
-      throw new Error(err.message || '保存失败');
-    } finally {
-      yamlSaving.value = false;
-    }
-  }
+  // YAML 编辑保存：统一走 useYamlEdit（YAML 校验 → 更新 API → 重载详情）
+  const { handleYamlApply } = useYamlEdit({
+    getClusterId: () => clusterId.value,
+    getNamespace: () => namespace.value,
+    updateFn: updateK8sPod,
+    reload: loadDetail
+  });
 
   onMounted(() => {
     loadDetail();

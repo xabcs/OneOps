@@ -1,6 +1,9 @@
 <script setup lang="ts">
   import { onMounted, ref } from 'vue';
   import { fetchGetSessions } from '@/service/api/cmdb';
+  // 时间格式化与状态标签映射统一收敛到公共工具
+  import { formatDateTime as formatTime, formatDurationHuman as formatDuration } from '@/utils/datetime';
+  import { createTagMap } from '@/utils/common';
 
   defineOptions({ name: 'CmdbAuditSessions' });
 
@@ -81,43 +84,13 @@
     window.$message?.info('会话详情功能开发中');
   }
 
-  function formatDuration(seconds: number): string {
-    if (!seconds) return '-';
-    if (seconds < 60) return `${seconds}秒`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟`;
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}小时${minutes}分钟`;
-  }
-
-  function formatTime(time: string): string {
-    return time ? new Date(time).toLocaleString('zh-CN') : '-';
-  }
-
-  function getStatusType(status: string): 'success' | 'info' | 'warning' | 'danger' {
-    switch (status) {
-      case 'active':
-        return 'success';
-      case 'closed':
-        return 'info';
-      case 'error':
-        return 'danger';
-      case 'terminated':
-        return 'warning';
-      default:
-        return 'info';
-    }
-  }
-
-  function getStatusText(status: string): string {
-    const map: Record<string, string> = {
-      active: '活跃',
-      closed: '已关闭',
-      error: '错误',
-      terminated: '已终止'
-    };
-    return map[status] || status;
-  }
+  /** 会话状态 → ElTag 标签映射 */
+  const getStatusTag = createTagMap({
+    active: { text: '活跃', type: 'success' },
+    closed: { text: '已关闭', type: 'info' },
+    error: { text: '错误', type: 'danger' },
+    terminated: { text: '已终止', type: 'warning' }
+  });
 
   onMounted(() => {
     getSessions();
@@ -194,8 +167,8 @@
           </ElTableColumn>
           <ElTableColumn label="状态" width="90">
             <template #default="{ row }">
-              <ElTag :type="getStatusType(row.status)" size="small">
-                {{ getStatusText(row.status) }}
+              <ElTag :type="getStatusTag(row.status).type" size="small">
+                {{ getStatusTag(row.status).text }}
               </ElTag>
             </template>
           </ElTableColumn>

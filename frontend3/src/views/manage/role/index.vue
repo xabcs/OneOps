@@ -1,5 +1,6 @@
 <script setup lang="tsx">
-  import { computed, onUnmounted, ref } from 'vue';
+  import { computed, ref } from 'vue';
+  import { useDebounceFn } from '@vueuse/core';
   import { ElMessage, ElMessageBox, ElNotification } from 'element-plus';
   import { useBoolean } from '@sa/hooks';
   import { Delete, Management, Plus, Refresh, Search } from '@element-plus/icons-vue';
@@ -237,30 +238,17 @@
     await getDataByPage();
   }
 
-  // 搜索输入处理（防抖）
-  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
-  function handleSearchInput() {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-    searchTimeout = setTimeout(() => {
-      searchParams.value.page = 1;
-      getDataByPage();
-    }, 300);
-  }
+  // 搜索输入处理（防抖 300ms）
+  const handleSearchInput = useDebounceFn(() => {
+    searchParams.value.page = 1;
+    getDataByPage();
+  }, 300);
 
   // 手动搜索
   function handleSearch() {
     searchParams.value.page = 1;
     getDataByPage();
   }
-
-  onUnmounted(() => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-      searchTimeout = null;
-    }
-  });
 </script>
 
 <template>

@@ -11,6 +11,7 @@
     formatSelectors,
     formatStrategy
   } from '@/views/k8s/shared/k8s-formatters';
+  import { useYamlEdit } from '@/views/k8s/composables/useYamlEdit';
   import K8sBasicInfoGrid from '@/components/k8s/K8sBasicInfoGrid.vue';
   import K8sPodsTable from '@/components/k8s/K8sPodsTable.vue';
   import K8sEventsTable from '@/components/k8s/K8sEventsTable.vue';
@@ -37,7 +38,6 @@
   // YAML 编辑相关
   const showYamlEditor = ref(false);
   const yamlContent = ref('');
-  const yamlSaving = ref(false);
 
   const getStatusTag = computed(() => {
     if (!resource.value) return { type: 'info', text: '未知' };
@@ -206,24 +206,14 @@
     showYamlEditor.value = true;
   }
 
-  // 保存 YAML
-  async function handleYamlApply(yamlStr: string) {
-    yamlSaving.value = true;
-    try {
-      const manifest = yaml.load(yamlStr);
-      await updateK8sDaemonSet(clusterId.value, {
-        namespace: namespace.value,
-        manifest
-      });
-      ElMessage.success('更新成功');
-      await loadDetail();
-    } catch (error: unknown) {
-      const err = error as Error;
-      throw new Error(err.message || '更新失败');
-    } finally {
-      yamlSaving.value = false;
-    }
-  }
+  // YAML 编辑保存：统一走 useYamlEdit（YAML 校验 → 更新 API → 重载详情）
+  const { handleYamlApply } = useYamlEdit({
+    getClusterId: () => clusterId.value,
+    getNamespace: () => namespace.value,
+    updateFn: updateK8sDaemonSet,
+    reload: loadDetail,
+    successMessage: '更新成功'
+  });
 
   onMounted(() => {
     loadDetail();

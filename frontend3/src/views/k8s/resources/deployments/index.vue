@@ -8,18 +8,12 @@
     ElOption,
     ElPagination,
     ElSelect,
-    ElSpace,
     ElTable,
     ElTableColumn,
     ElTag
   } from 'element-plus';
-  import {
-    deleteK8sDeployment,
-    fetchK8sClusterNamespaces,
-    fetchK8sClusters,
-    fetchK8sDeployments,
-    restartK8sDeployment
-  } from '@/service/api/k8s';
+  import { deleteK8sDeployment, fetchK8sDeployments, restartK8sDeployment } from '@/service/api/k8s';
+  import { useClusterNamespace, useListStateRestore } from '@/views/k8s/composables/useClusterNamespace';
   import ScaleDialog from './modules/ScaleDialog.vue';
 
   defineOptions({ name: 'K8sDeployments' });
@@ -33,18 +27,21 @@
   const showScaleModal = ref(false);
   const scaleTarget = ref<K8s.Deployment | null>(null);
 
-  // 当前选中的集群和命名空间
-  const selectedCluster = ref<number | null>(null);
-  const selectedNamespace = ref('default');
+  // 列表状态保存 key（跳转详情后返回时恢复集群/命名空间）
+  const LIST_STATE_KEY = 'k8s_deployments_list_state';
 
-  // 可用的命名空间列表
-  const namespaces = ref<string[]>([]);
+  // 集群/命名空间初始化与联动统一走 useClusterNamespace
+  const clusterNs = useClusterNamespace({
+    storageKey: LIST_STATE_KEY,
+    // 集群/命名空间就绪后加载 Deployment 列表
+    onDataReady: () => loadDeployments()
+  });
+  const { clusters, namespaces, selectedCluster, selectedNamespace, handleClusterChange, handleNamespaceChange } =
+    clusterNs;
 
-  // 可用的集群列表
-  const clusters = ref<K8s.Cluster[]>([]);
-
-  const filters = reactive({
-    namespace: 'default'
+  // sessionStorage 状态恢复（返回列表时）与保存（跳转详情前）
+  const { restoreState, saveState } = useListStateRestore(clusterNs, {
+    onLoadList: () => loadDeployments()
   });
 
   const pagination = reactive({
@@ -70,58 +67,6 @@
     return { type: 'danger', text: '未就绪' };
   };
 
-  // 加载集群列表
-  const loadClusters = async () => {
-    try {
-      const response = await fetchK8sClusters();
-      // 从响应中提取集群数组（flat 请求返回 {data: {list, total}, error}）
-      const clusterList = response?.data?.list || [];
-      clusters.value = clusterList;
-
-      // 如果有集群，默认选择第一个
-      if (clusters.value.length > 0 && !selectedCluster.value) {
-        selectedCluster.value = clusters.value[0].id;
-        await loadNamespaces();
-        await loadDeployments();
-      }
-    } catch (error: unknown) {
-      const err = error as Error;
-      message.error(err.message || '加载集群列表失败');
-    }
-  };
-
-  // 加载命名空间列表
-  const loadNamespaces = async () => {
-    if (!selectedCluster.value) return;
-
-    try {
-      const { data, error } = await fetchK8sClusterNamespaces(selectedCluster.value);
-
-      // 提取命名空间数组
-      let namespaceList: K8s.Namespace[] = [];
-
-      if (!error && data && Array.isArray(data)) {
-        namespaceList = data;
-      } else {
-        console.error('[调试] 无法从响应中提取数组');
-        namespaceList = [];
-      }
-
-      // 使用普通数组而不是Vue Proxy对象
-      const namespaceNames = namespaceList.map(ns => ns.name);
-      namespaces.value = [...namespaceNames]; // 创建新数组避免Proxy问题
-
-      if (namespaces.value.length > 0 && !namespaces.value.includes(filters.namespace)) {
-        filters.namespace = namespaces.value[0];
-        selectedNamespace.value = namespaces.value[0];
-      }
-    } catch (error: unknown) {
-      console.error('[调试] 加载命名空间失败:', error);
-      const err = error as Error;
-      message.error(err.message || '加载命名空间列表失败');
-    }
-  };
-
   // 加载 Deployment 列表
   const loadDeployments = async () => {
     if (!selectedCluster.value) {
@@ -134,7 +79,7 @@
     loading.value = true;
     try {
       const { data, error } = await fetchK8sDeployments(selectedCluster.value, {
-        namespace: filters.namespace,
+        namespace: selectedNamespace.value,
         page: pagination.page,
         pageSize: pagination.pageSize
       });
@@ -147,7 +92,7 @@
       pagination.itemCount = total;
 
       if (total === 0) {
-        console.warn(`[调试] 命名空间 "${filters.namespace}" 下没有 deployments`);
+        console.warn(`[调试] 命名空间 "${selectedNamespace.value}" 下没有 deployments`);
       }
     } catch (error: unknown) {
       console.error('[调试] 请求失败:', error);
@@ -158,17 +103,6 @@
     } finally {
       loading.value = false;
     }
-  };
-
-  // 集群变化
-  const handleClusterChange = async () => {
-    await loadNamespaces();
-    await loadDeployments();
-  };
-
-  // 命名空间变化
-  const handleNamespaceChange = () => {
-    loadDeployments();
   };
 
   // 缩放 Deployment
@@ -185,7 +119,7 @@
       });
 
       await restartK8sDeployment(selectedCluster.value!, {
-        namespace: filters.namespace,
+        namespace: selectedNamespace.value,
         name: row.name
       });
       message.success('重启成功');
@@ -208,7 +142,7 @@
       });
 
       await deleteK8sDeployment(selectedCluster.value!, {
-        namespace: filters.namespace,
+        namespace: selectedNamespace.value,
         name: row.name
       });
       message.success('删除成功');
@@ -241,60 +175,25 @@
 
   // 查看详情
   const handleViewDetail = (row: K8s.Deployment) => {
-    // 保存当前选择到 sessionStorage
-    const stateToSave = {
+    // 保存当前选择到 sessionStorage，返回列表时恢复
+    saveState({
       clusterId: selectedCluster.value,
-      namespace: filters.namespace,
+      namespace: selectedNamespace.value,
       listPath: '/k8s/workloads'
-    };
-
-    try {
-      sessionStorage.setItem('k8s_deployments_list_state', JSON.stringify(stateToSave));
-    } catch (e) {
-      console.error('[Deployment列表] ❌ sessionStorage 保存失败:', e);
-    }
+    });
 
     router.push({
       path: '/k8s/resources/deployments/detail',
       query: {
         clusterId: selectedCluster.value?.toString(),
-        namespace: filters.namespace,
+        namespace: selectedNamespace.value,
         name: row.name
       }
     });
   };
 
-  // 从 sessionStorage 恢复状态
-  const restoreStateFromStorage = () => {
-    const savedState = sessionStorage.getItem('k8s_deployments_list_state');
-
-    if (savedState) {
-      try {
-        const state = JSON.parse(savedState);
-
-        selectedCluster.value = state.clusterId;
-        filters.namespace = state.namespace;
-
-        // 清除保存的状态
-        sessionStorage.removeItem('k8s_deployments_list_state');
-
-        // 加载命名空间和数据
-        if (selectedCluster.value) {
-          return loadNamespaces().then(() => {
-            return loadDeployments();
-          });
-        }
-      } catch (e) {
-        console.error('[Deployment列表] 恢复状态失败:', e);
-      }
-    }
-
-    // 正常加载流程
-    return loadClusters();
-  };
-
   onMounted(() => {
-    restoreStateFromStorage();
+    restoreState();
   });
 
   // 监听路由变化，当从详情页返回时恢复状态
@@ -303,7 +202,7 @@
     (newPath, oldPath) => {
       // 如果从详情页返回到列表页
       if (newPath === '/k8s/workloads' && oldPath?.includes('/detail')) {
-        restoreStateFromStorage();
+        restoreState();
       }
     }
   );
@@ -323,7 +222,7 @@
       <div class="flex items-center gap-2">
         <span class="text-sm font-medium">命名空间:</span>
         <ElSelect
-          v-model="filters.namespace"
+          v-model="selectedNamespace"
           placeholder="请选择命名空间"
           style="width: 180px"
           @change="handleNamespaceChange"
@@ -389,7 +288,7 @@
     <ScaleDialog
       v-model:visible="showScaleModal"
       :cluster-id="selectedCluster"
-      :namespace="filters.namespace"
+      :namespace="selectedNamespace"
       :deployment="scaleTarget"
       @submitted="loadDeployments"
     />

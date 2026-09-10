@@ -89,13 +89,13 @@ export const standardContent: App.Theme.ThemeSetting['content'] = {
     activeTextColor: '#ffffff'
   },
   tags: {
-    defaultBg: '#f1f5f9',
-    defaultBorder: 'rgba(148, 163, 184, 0.2)',
-    defaultTextColor: '#475569',
-    successBg: 'rgba(16, 185, 129, 0.1)',
-    warningBg: 'rgba(245, 158, 11, 0.1)',
-    dangerBg: 'rgba(239, 68, 68, 0.1)',
-    infoBg: 'rgba(59, 130, 246, 0.1)'
+    defaultBg: '#64748b',
+    defaultBorder: '#64748b',
+    defaultTextColor: '#ffffff',
+    successBg: '#10b981',
+    warningBg: '#f59e0b',
+    dangerBg: '#ef4444',
+    infoBg: '#3b82f6'
   },
   button: {
     defaultBg: 'rgba(255, 255, 255, 0.9)',
@@ -447,7 +447,7 @@ export const themeSettings: App.Theme.ThemeSetting = {
       select: '12px',
       card: '12px',
       modal: '12px',
-      tag: '8px',
+      tag: '999px',
       switch: '12px',
       checkbox: '8px',
       radio: '50%',
@@ -490,4 +490,21 @@ export const themeSettings: App.Theme.ThemeSetting = {
  *
  * If publish new version, use `overrideThemeSettings` to override certain theme settings
  */
-export const overrideThemeSettings: Partial<App.Theme.ThemeSetting> = {};
+export const overrideThemeSettings: Partial<App.Theme.ThemeSetting> = {
+  // 标签统一为实底胶囊样式（覆盖旧缓存中的浅色标签配置）
+  content: {
+    tags: {
+      defaultBg: '#64748b',
+      defaultBorder: '#64748b',
+      defaultTextColor: '#ffffff',
+      successBg: '#10b981',
+      warningBg: '#f59e0b',
+      dangerBg: '#ef4444',
+      infoBg: '#3b82f6'
+    }
+  } as App.Theme.ThemeSetting['content'],
+  // 标签圆角默认改为胶囊（旧缓存为 8px），后续仍由主题设置控制
+  borderRadius: {
+    components: { tag: '999px' }
+  } as App.Theme.ThemeSetting['borderRadius']
+};

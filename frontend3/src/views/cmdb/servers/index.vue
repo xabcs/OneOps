@@ -3,6 +3,8 @@
   import { useRouter } from 'vue-router';
   import { ElMessageBox, ElNotification } from 'element-plus';
   import { fetchDeleteServer, fetchGetServersByAttributes } from '@/service/api';
+  // 相对时间格式化统一收敛到 @/utils/datetime（formatTime 为兼容旧命名的别名）
+  import { formatRelativeTime as formatTime } from '@/utils/datetime';
   import type { TreeNode } from './types/server.types';
 
   // 子组件
@@ -93,21 +95,6 @@
       .slice()
       .sort((a, b) => b.usage - a.usage)
       .map(p => ({ mount: p.mount, usage: p.usage }));
-  }
-
-  function formatTime(timeStr: string): string {
-    if (!timeStr) return '-';
-    const date = new Date(timeStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-    if (minutes < 1) return '刚刚';
-    if (minutes < 60) return `${minutes} 分钟前`;
-    if (hours < 24) return `${hours} 小时前`;
-    if (days < 7) return `${days} 天前`;
-    return date.toLocaleDateString('zh-CN');
   }
 
   function getUnifiedAttributes() {

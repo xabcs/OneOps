@@ -138,7 +138,8 @@ export function buildContentVars(theme: ContentThemeSettings): CssVarMap {
   vars['--msre-tag-warning-bg'] = theme.tags.warningBg;
   vars['--msre-tag-danger-bg'] = theme.tags.dangerBg;
   vars['--msre-tag-info-bg'] = theme.tags.infoBg;
-  vars['--msre-tag-radius'] = radiusVar('tag', '8px');
+  // 标签圆角由主题设置的圆角配置（borderRadius.components.tag）控制，未配置时兜底为胶囊
+  vars['--msre-tag-radius'] = radiusVar('tag', '999px');
 
   // Shared button style
   vars['--msre-button-radius'] = radiusVar('button', '10px');

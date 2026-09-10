@@ -2,6 +2,9 @@
   import { onMounted, onUnmounted, ref } from 'vue';
   import { Refresh } from '@element-plus/icons-vue';
   import { fetchMonitoringOverview } from '@/service/api/monitoring';
+  // 时间格式化与级别标签映射统一收敛到公共工具（formatTime 为兼容旧命名的别名）
+  import { formatDateTime as formatTime } from '@/utils/datetime';
+  import { createTagMap } from '@/utils/common';
   import { useWebSocket } from '@/service/websocket';
 
   defineOptions({
@@ -47,31 +50,13 @@
     }
   }
 
-  function formatTime(time: string): string {
-    return new Date(time).toLocaleString('zh-CN');
-  }
-
-  function getAlertTagType(level: string): 'danger' | 'warning' | 'primary' | 'info' | 'success' {
-    const map: Record<string, 'danger' | 'warning' | 'primary' | 'info' | 'success'> = {
-      critical: 'danger',
-      high: 'warning',
-      medium: 'primary',
-      low: 'info',
-      info: 'info'
-    };
-    return map[level] ?? 'info';
-  }
-
-  function getAlertLevelText(level: string): string {
-    const textMap: Record<string, string> = {
-      critical: '严重',
-      high: '高',
-      medium: '中',
-      low: '低',
-      info: '信息'
-    };
-    return textMap[level] || level;
-  }
+  const getAlertTag = createTagMap({
+    critical: { text: '严重', type: 'danger' },
+    high: { text: '高', type: 'warning' },
+    medium: { text: '中', type: 'primary' },
+    low: { text: '低', type: 'info' },
+    info: { text: '信息', type: 'info' }
+  });
 
   function getProgressColor(value: number): string {
     if (value > 80) return '#ff4d4f';
@@ -253,8 +238,8 @@
             <ElTable :data="overview.activeAlerts || []" border stripe size="small" max-height="300">
               <ElTableColumn label="级别" width="80" align="center">
                 <template #default="{ row }">
-                  <ElTag :type="getAlertTagType(row.level)" size="small">
-                    {{ getAlertLevelText(row.level) }}
+                  <ElTag :type="getAlertTag(row.level).type" size="small">
+                    {{ getAlertTag(row.level).text }}
                   </ElTag>
                 </template>
               </ElTableColumn>

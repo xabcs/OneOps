@@ -1,4 +1,7 @@
 <script setup lang="ts">
+  // 时长与相对时间格式化统一使用 @/utils/datetime，避免与 useSessionList 重复实现
+  import { formatDuration, formatRelativeTime } from '@/utils/datetime';
+
   interface Props {
     dataSource: Bastion.BastionSession[];
     selectedSessionIds: number[];
@@ -20,25 +23,6 @@
 
   const props = defineProps<Props>();
   const emit = defineEmits<Emits>();
-
-  function formatDuration(seconds: number): string {
-    if (seconds < 60) return `${seconds}秒`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟`;
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return minutes > 0 ? `${hours}小时${minutes}分` : `${hours}小时`;
-  }
-
-  function formatTime(timeStr?: string): string {
-    if (!timeStr) return '-';
-    const date = new Date(timeStr);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    if (diff < 60000) return '刚刚';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
-    return date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-  }
 </script>
 
 <template>
@@ -102,7 +86,7 @@
             />
           </td>
           <td class="wb-index-column">{{ (pagination.current - 1) * pagination.pageSize + index + 1 }}</td>
-          <td>{{ formatTime(session.startedAt || session.createdAt) }}</td>
+          <td>{{ formatRelativeTime(session.startedAt || session.createdAt) }}</td>
           <td>
             <template v-if="session.server">{{ session.server.hostname }} ({{ session.server.ip }})</template>
             <template v-else>服务器ID: {{ session.serverId }}</template>

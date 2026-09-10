@@ -3,6 +3,7 @@
   import { Refresh, Search } from '@element-plus/icons-vue';
   import { fetchGetSystemEventLogs } from '@/service/api';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
+  import { createTagMap } from '@/utils/common';
 
   defineOptions({ name: 'AuditSystemEvents' });
 
@@ -62,15 +63,13 @@
     ]
   });
 
-  function getLevelTag(level: string): { text: string; type: 'primary' | 'success' | 'warning' | 'danger' | 'info' } {
-    const levelMap: Record<string, { text: string; type: 'primary' | 'success' | 'warning' | 'danger' | 'info' }> = {
-      info: { text: '信息', type: 'info' },
-      warning: { text: '警告', type: 'warning' },
-      error: { text: '错误', type: 'danger' },
-      critical: { text: '严重', type: 'danger' }
-    };
-    return levelMap[level] || { text: level, type: 'info' };
-  }
+  /** 事件级别 → ElTag 标签映射 */
+  const getLevelTag = createTagMap({
+    info: { text: '信息', type: 'info' },
+    warning: { text: '警告', type: 'warning' },
+    error: { text: '错误', type: 'danger' },
+    critical: { text: '严重', type: 'danger' }
+  });
 
   function handleSearch() {
     getDataByPage(1);

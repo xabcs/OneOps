@@ -33,7 +33,8 @@
     daemonSetsPagination,
     jobsPagination,
     cronJobsPagination,
-    loadNamespaces,
+    handleClusterChange,
+    handleNamespaceChange,
     loadCurrentData,
     loadDeployments,
     loadPods,
@@ -87,10 +88,15 @@
 
     <div class="mb-16px flex items-center justify-between gap-12px">
       <div class="flex items-center gap-8px">
-        <ElSelect v-model="selectedCluster" placeholder="选择集群" style="width: 200px" @change="loadNamespaces">
+        <ElSelect v-model="selectedCluster" placeholder="选择集群" style="width: 200px" @change="handleClusterChange">
           <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
         </ElSelect>
-        <ElSelect v-model="selectedNamespace" placeholder="选择命名空间" style="width: 180px" @change="loadCurrentData">
+        <ElSelect
+          v-model="selectedNamespace"
+          placeholder="选择命名空间"
+          style="width: 180px"
+          @change="handleNamespaceChange"
+        >
           <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
         </ElSelect>
       </div>

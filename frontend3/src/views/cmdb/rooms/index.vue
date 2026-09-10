@@ -1,7 +1,9 @@
 <script setup lang="tsx">
-  import { onMounted, onUnmounted, ref } from 'vue';
+  import { onMounted, ref } from 'vue';
+  import { useDebounceFn } from '@vueuse/core';
   import { Plus, Refresh } from '@element-plus/icons-vue';
   import { fetchDeleteServerRoom, fetchGetServerRooms } from '@/service/api';
+  import { createTagMap } from '@/utils/common';
   import RoomOperateDrawer from './modules/room-operate-drawer.vue';
 
   defineOptions({ name: 'CmdbRooms' });
@@ -60,30 +62,23 @@
     }
   }
 
-  function getStatusTag(status: number): { text: string; type: 'success' | 'danger' } {
-    return status === 1 ? { text: '启用', type: 'success' } : { text: '禁用', type: 'danger' };
+  /** 机房状态（1 启用 / 0 禁用）→ ElTag 标签映射 */
+  const roomStatusTag = createTagMap({
+    '1': { text: '启用', type: 'success' },
+    '0': { text: '禁用', type: 'danger' }
+  });
+
+  function getStatusTag(status: number) {
+    return roomStatusTag(String(status));
   }
 
-  // 搜索输入处理（防抖 300ms，避免每敲一字就发起全量请求，与 manage/user 页写法保持一致）
-  let searchTimeout: ReturnType<typeof setTimeout> | null = null;
-  function handleSearchInput() {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-    }
-    searchTimeout = setTimeout(() => {
-      getData();
-    }, 300);
-  }
+  // 搜索输入处理（防抖 300ms，避免每敲一字就发起全量请求）
+  const handleSearchInput = useDebounceFn(() => {
+    getData();
+  }, 300);
 
   onMounted(() => {
     getData();
-  });
-
-  onUnmounted(() => {
-    if (searchTimeout) {
-      clearTimeout(searchTimeout);
-      searchTimeout = null;
-    }
   });
 </script>
 

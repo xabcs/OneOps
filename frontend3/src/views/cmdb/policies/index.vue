@@ -14,6 +14,7 @@
     fetchRoleOptions,
     fetchUserOptions
   } from '@/service/api';
+  import { createTagMap } from '@/utils/common';
   import PolicyOperateDrawer from './modules/policy-operate-drawer.vue';
 
   defineOptions({
@@ -118,9 +119,14 @@
     return `${timeWindow.start}-${timeWindow.end} (${dayNames || '每天'})`;
   }
 
-  // 获取状态标签
+  /** 策略状态（1 启用 / 0 禁用）→ ElTag 标签映射 */
+  const policyStatusTag = createTagMap({
+    '1': { text: '启用', type: 'success' },
+    '0': { text: '禁用', type: 'info' }
+  });
+
   function getStatusTag(policy: Bastion.AccessPolicy) {
-    return policy.status === 1 ? '启用' : '禁用';
+    return policyStatusTag(String(policy.status));
   }
 
   // ========== 获取资产数据 ==========
@@ -295,8 +301,8 @@
 
           <ElTableColumn label="状态" width="80">
             <template #default="{ row }">
-              <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
-                {{ getStatusTag(row) }}
+              <ElTag :type="getStatusTag(row).type" size="small">
+                {{ getStatusTag(row).text }}
               </ElTag>
             </template>
           </ElTableColumn>

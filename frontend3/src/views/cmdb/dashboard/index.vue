@@ -2,6 +2,9 @@
   import { onMounted, ref } from 'vue';
   import { useRouter } from 'vue-router';
   import { fetchGetCommands, fetchGetServerStats, fetchGetSessionStats, fetchGetSessions } from '@/service/api/cmdb';
+  // 时间格式化与状态标签映射统一收敛到公共工具（formatTime 为兼容旧命名的别名）
+  import { formatDateTime as formatTime } from '@/utils/datetime';
+  import { createTagMap } from '@/utils/common';
 
   defineOptions({ name: 'CmdbDashboard' });
 
@@ -82,34 +85,13 @@
     }
   }
 
-  function formatTime(time: string): string {
-    return time ? new Date(time).toLocaleString('zh-CN') : '-';
-  }
-
-  function getStatusType(status: string): 'success' | 'info' | 'warning' | 'danger' {
-    switch (status) {
-      case 'active':
-        return 'success';
-      case 'closed':
-        return 'info';
-      case 'error':
-        return 'danger';
-      case 'terminated':
-        return 'warning';
-      default:
-        return 'info';
-    }
-  }
-
-  function getStatusText(status: string): string {
-    const map: Record<string, string> = {
-      active: '活跃',
-      closed: '已关闭',
-      error: '错误',
-      terminated: '已终止'
-    };
-    return map[status] || status;
-  }
+  /** 会话状态 → ElTag 标签映射 */
+  const getStatusTag = createTagMap({
+    active: { text: '活跃', type: 'success' },
+    closed: { text: '已关闭', type: 'info' },
+    error: { text: '错误', type: 'danger' },
+    terminated: { text: '已终止', type: 'warning' }
+  });
 
   function getEnvColor(value: string): string {
     const colorMap: Record<string, string> = {
@@ -233,7 +215,7 @@
               </div>
               <div class="list-item-meta">
                 <span class="list-item-time">{{ formatTime(item.startedAt || '') }}</span>
-                <ElTag :type="getStatusType(item.status)" size="small">{{ getStatusText(item.status) }}</ElTag>
+                <ElTag :type="getStatusTag(item.status).type" size="small">{{ getStatusTag(item.status).text }}</ElTag>
               </div>
             </div>
             <ElEmpty v-if="!recentSessions.length && !loading.sessions" description="暂无数据" :image-size="60" />

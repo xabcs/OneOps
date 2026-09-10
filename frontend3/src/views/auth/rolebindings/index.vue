@@ -7,6 +7,7 @@
     fetchGroupBindingExecutions,
     fetchGroupBindings
   } from '@/service/api/application-permission';
+  import { createTagMap } from '@/utils/common';
   import BindingOperateDrawer from './modules/binding-operate-drawer.vue';
 
   defineOptions({ name: 'AuthCenterGroupBindings' });
@@ -73,18 +74,13 @@
     }
   }
 
-  function getStatusTag(status: string): {
-    type: 'primary' | 'success' | 'warning' | 'info' | 'danger';
-    label: string;
-  } {
-    const statusMap: Record<string, { type: 'primary' | 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
-      success: { type: 'success', label: '成功' },
-      pending: { type: 'warning', label: '处理中' },
-      partial: { type: 'info', label: '部分成功' },
-      failed: { type: 'danger', label: '失败' }
-    };
-    return statusMap[status] || { type: 'primary', label: status };
-  }
+  /** 映射执行状态 → ElTag 标签映射 */
+  const getStatusTag = createTagMap({
+    success: { text: '成功', type: 'success' },
+    pending: { text: '处理中', type: 'warning' },
+    partial: { text: '部分成功', type: 'info' },
+    failed: { text: '失败', type: 'danger' }
+  });
 
   onMounted(() => {
     getRoles();
@@ -187,7 +183,7 @@
         <ElTableColumn label="状态" align="center" width="80">
           <template #default="{ row }">
             <ElTag :type="getStatusTag(row.status).type">
-              {{ getStatusTag(row.status).label }}
+              {{ getStatusTag(row.status).text }}
             </ElTag>
           </template>
         </ElTableColumn>

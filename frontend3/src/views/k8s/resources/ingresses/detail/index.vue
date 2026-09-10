@@ -13,8 +13,9 @@
     ElTabs,
     ElTag
   } from 'element-plus';
-  import yaml from 'js-yaml';
   import { deleteK8sIngress, fetchK8sEvents, getK8sIngress, updateK8sIngress } from '@/service/api/k8s';
+  import { parseManifest } from '@/views/k8s/shared/k8s-formatters';
+  import { useYamlEdit } from '@/views/k8s/composables/useYamlEdit';
   import YamlEditor from '@/components/k8s/YamlEditor.vue';
   import K8sResourceActionBar from '@/components/k8s/K8sResourceActionBar.vue';
 
@@ -37,18 +38,6 @@
   const activeTab = ref('basic');
   const showYamlEditor = ref(false);
   const yamlContent = ref('');
-  const yamlSaving = ref(false);
-
-  function parseManifest(manifestStr: string): string {
-    if (!manifestStr) return '';
-    try {
-      const obj = JSON.parse(manifestStr);
-      delete obj.managedFields;
-      return yaml.dump(obj, { indent: 2, lineWidth: 120, noRefs: true });
-    } catch (e) {
-      return manifestStr;
-    }
-  }
 
   // 返回列表页的路径 - Ingress 返回到网络页面
   const backPath = '/k8s/network';
@@ -107,23 +96,14 @@
     }
   }
 
-  async function handleYamlApply(yamlStr: string) {
-    yamlSaving.value = true;
-    try {
-      const manifest = yaml.load(yamlStr);
-      await updateK8sIngress(clusterId.value, {
-        namespace: namespace.value,
-        manifest
-      });
-      message.success('更新成功');
-      await loadData();
-    } catch (error: unknown) {
-      const err = error as Error;
-      throw new Error(err.message || '更新失败');
-    } finally {
-      yamlSaving.value = false;
-    }
-  }
+  // YAML 编辑保存：统一走 useYamlEdit（YAML 校验 → 更新 API → 重载详情）
+  const { handleYamlApply } = useYamlEdit({
+    getClusterId: () => clusterId.value,
+    getNamespace: () => namespace.value,
+    updateFn: updateK8sIngress,
+    reload: loadData,
+    successMessage: '更新成功'
+  });
 
   onMounted(() => {
     loadData();

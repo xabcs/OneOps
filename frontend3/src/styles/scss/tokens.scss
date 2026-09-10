@@ -256,15 +256,15 @@
   --msre-pagination-active-text: #fff;
   --msre-pagination-radius: 10px;
 
-  /* ========== 标签 ========== */
-  --msre-tag-default-bg: #f1f5f9;
-  --msre-tag-default-border: rgb(148 163 184 / 20%);
-  --msre-tag-default-text: #475569;
-  --msre-tag-success-bg: rgb(16 185 129 / 10%);
-  --msre-tag-warning-bg: rgb(245 158 11 / 10%);
-  --msre-tag-danger-bg: rgb(239 68 68 / 10%);
-  --msre-tag-info-bg: rgb(59 130 246 / 10%);
-  --msre-tag-radius: 8px;
+  /* ========== 标签（实底胶囊、白字、无边框感） ========== */
+  --msre-tag-default-bg: #64748b;
+  --msre-tag-default-border: #64748b;
+  --msre-tag-default-text: #fff;
+  --msre-tag-success-bg: #10b981;
+  --msre-tag-warning-bg: #f59e0b;
+  --msre-tag-danger-bg: #ef4444;
+  --msre-tag-info-bg: #3b82f6;
+  --msre-tag-radius: 999px;
 
   /* ========== 统计卡片 ========== */
   --msre-stat-default-bg: rgb(255 255 255 / 98%);

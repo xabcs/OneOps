@@ -1,7 +1,5 @@
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import {
-  fetchK8sClusterNamespaces,
-  fetchK8sClusters,
   fetchK8sCronJobs,
   fetchK8sDaemonSets,
   fetchK8sDeployments,
@@ -10,6 +8,7 @@ import {
   fetchK8sStatefulSets
 } from '@/service/api/k8s';
 import { useK8sStore } from '@/store/modules/k8s';
+import { useClusterNamespace } from '@/views/k8s/composables/useClusterNamespace';
 
 export function useWorkloadData() {
   const k8sStore = useK8sStore();
@@ -17,11 +16,28 @@ export function useWorkloadData() {
   const loading = ref(false);
   const activeTab = ref(k8sStore.workloadFilterState.activeTab || 'deployments');
 
-  const selectedCluster = ref(k8sStore.workloadFilterState.clusterId);
-  const selectedNamespace = ref(k8sStore.workloadFilterState.namespace);
+  // 集群/命名空间初始化与联动统一走 useClusterNamespace；就绪后同步 store 并加载当前 Tab 数据
+  const clusterNs = useClusterNamespace({
+    onDataReady: () => {
+      syncFilterState();
+      loadCurrentData();
+    },
+    onClusterChange: () => {
+      syncFilterState();
+      loadCurrentData();
+    }
+  });
+  const { clusters, namespaces, selectedCluster, selectedNamespace, loadAll, handleClusterChange, handleNamespaceChange } =
+    clusterNs;
 
-  const namespaces = ref<string[]>([]);
-  const clusters = ref<K8s.Cluster[]>([]);
+  // 同步筛选状态到 store（集群/命名空间/Tab 变化后保持持久化）
+  function syncFilterState() {
+    k8sStore.setWorkloadFilterState({
+      clusterId: selectedCluster.value,
+      namespace: selectedNamespace.value,
+      activeTab: activeTab.value
+    });
+  }
 
   // 各种资源的数据
   const deploymentsData = ref<K8s.Deployment[]>([]);
@@ -77,37 +93,6 @@ export function useWorkloadData() {
         return { page: 1, pageSize: 10, itemCount: 0 };
     }
   });
-
-  // 加载集群列表
-  async function loadClusters() {
-    try {
-      const { data, error } = await fetchK8sClusters();
-      if (!error && data) {
-        clusters.value = data.list || [];
-        if (clusters.value.length > 0 && !selectedCluster.value) {
-          selectedCluster.value = clusters.value[0].id;
-        }
-      }
-    } catch (error) {
-      console.error('加载集群列表失败:', error);
-    }
-  }
-
-  // 加载命名空间列表
-  async function loadNamespaces() {
-    if (!selectedCluster.value) return;
-    try {
-      const { data, error } = await fetchK8sClusterNamespaces(selectedCluster.value);
-      if (!error && data) {
-        namespaces.value = data.map((ns: { name: string }) => ns.name);
-        if (namespaces.value.length > 0 && !namespaces.value.includes(selectedNamespace.value)) {
-          selectedNamespace.value = namespaces.value[0];
-        }
-      }
-    } catch (error) {
-      console.error('加载命名空间失败:', error);
-    }
-  }
 
   // 通用 API 响应解析
   function parseApiResponse<T>(response: unknown): { list: T[]; total: number } {
@@ -283,66 +268,21 @@ export function useWorkloadData() {
     loadCurrentData();
   }
 
-  // 初始化标志位：init 期间对 selectedCluster/selectedNamespace 的赋值（store 恢复、默认选中）
-  // 由 init 自身按 cluster→ns→data 依赖链加载，watch 跳过以避免首屏请求重复发送
-  let initialized = false;
-
-  // 监听集群和命名空间变化，同步到 store
-  watch([selectedCluster, selectedNamespace], () => {
-    // 初始化阶段的赋值不在此处响应，加载由 init 末尾统一完成
-    if (!initialized) return;
-
-    k8sStore.setWorkloadFilterState({
-      clusterId: selectedCluster.value,
-      namespace: selectedNamespace.value,
-      activeTab: activeTab.value
-    });
-
-    if (selectedCluster.value) {
-      loadNamespaces();
-      loadCurrentData();
-    }
-  });
-
-  // 初始化
+  // 初始化：先恢复 store 中保存的筛选状态，再走 loadAll（集群 → 命名空间 → 首次加载，只查一次）
   async function init() {
-    await loadClusters();
-
     const savedState = k8sStore.getWorkloadFilterState();
 
     if (savedState.clusterId) {
       selectedCluster.value = savedState.clusterId;
-    } else if (clusters.value.length > 0) {
-      selectedCluster.value = clusters.value[0].id;
     }
-
     if (savedState.namespace) {
       selectedNamespace.value = savedState.namespace;
     }
-
     if (savedState.activeTab) {
       activeTab.value = savedState.activeTab;
     }
 
-    if (selectedCluster.value) {
-      await loadNamespaces();
-
-      if (namespaces.value.length > 0 && !namespaces.value.includes(selectedNamespace.value)) {
-        selectedNamespace.value = namespaces.value[0];
-      }
-
-      await loadCurrentData();
-    }
-
-    // init 期间 watch 被跳过，这里显式同步一次 store，保持筛选状态持久化行为不变
-    k8sStore.setWorkloadFilterState({
-      clusterId: selectedCluster.value,
-      namespace: selectedNamespace.value,
-      activeTab: activeTab.value
-    });
-
-    // 初始化完成，此后 watch 正常响应手动切换集群/命名空间
-    initialized = true;
+    await loadAll();
   }
 
   onMounted(init);
@@ -368,15 +308,15 @@ export function useWorkloadData() {
     cronJobsPagination,
     currentData,
     currentPagination,
-    loadClusters,
-    loadNamespaces,
+    handleClusterChange,
+    handleNamespaceChange,
+    loadCurrentData,
     loadDeployments,
     loadPods,
     loadStatefulSets,
     loadDaemonSets,
     loadJobs,
     loadCronJobs,
-    loadCurrentData,
     handlePageChange,
     handlePageSizeChange,
     handleTabChange,

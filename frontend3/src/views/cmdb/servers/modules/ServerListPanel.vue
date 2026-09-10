@@ -327,6 +327,7 @@
                   <ElTag
                     v-for="tag in row.tags.slice(0, 3)"
                     :key="tag.id"
+                    class="custom-color-tag"
                     size="small"
                     effect="dark"
                     round

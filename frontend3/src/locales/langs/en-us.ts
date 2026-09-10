@@ -206,6 +206,7 @@ const local: App.I18n.Schema = {
         dangerBg: 'Danger Background',
         dangerStart: 'Danger Gradient Start',
         dangerEnd: 'Danger Gradient End',
+        infoBg: 'Info Background',
         headerBg: 'Header Background',
         headerText: 'Header Text Color',
         headerBorder: 'Header Border Color',
