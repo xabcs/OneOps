@@ -86,15 +86,26 @@
     getDataByPage(1);
   }
 
+  function handleReset() {
+    searchParams.value = getInitSearchParams();
+    getDataByPage(1);
+  }
+
   onMounted(() => {
     getApplications();
   });
 </script>
 
 <template>
-  <div class="table-page">
-    <!-- 应用选择 -->
-    <ElCard shadow="never">
+  <ListPageLayout
+    title="操作日志"
+    description="按应用查看授权中心操作记录，追踪操作类型、目标与执行状态"
+    :pagination="mobilePagination"
+    @search="handleAppChange"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选 -->
+    <template #search>
       <ElSelect
         v-model="searchParams.appId"
         placeholder="请选择应用查看操作日志"
@@ -103,29 +114,11 @@
       >
         <ElOption v-for="app in applications" :key="app.id" :label="app.name" :value="app.id" />
       </ElSelect>
-    </ElCard>
+    </template>
 
     <!-- 表格 -->
-    <ElCard shadow="never" class="flex-1">
-      <template #header>
-        <span class="text-lg font-medium">操作日志列表</span>
-      </template>
-
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" :data="data" :border="false" height="100%">
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
-
-      <div class="mt-4 flex justify-end">
-        <ElPagination
-          v-if="mobilePagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          v-bind="mobilePagination"
-          @current-change="mobilePagination['current-change']"
-          @size-change="mobilePagination['size-change']"
-        />
-      </div>
-    </ElCard>
-  </div>
+    <ElTable v-loading="loading" :data="data" :border="false" height="100%">
+      <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+    </ElTable>
+  </ListPageLayout>
 </template>

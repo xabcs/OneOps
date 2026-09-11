@@ -483,122 +483,83 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <ElCard shadow="never">
-      <template #header>
-        <div class="toolbar">
-          <ElForm :model="searchParams" inline class="search-form">
-            <ElFormItem>
-              <ElInput
-                v-model="searchParams.hostname"
-                placeholder="主机名 / IP"
-                clearable
-                style="width: 200px"
-                @keyup.enter="handleSearch"
-              />
-            </ElFormItem>
-            <ElFormItem>
-              <ElSelect v-model="searchParams.agentStatus" placeholder="全部状态" clearable style="width: 140px">
-                <ElOption label="运行中" value="running" />
-                <ElOption label="离线" value="offline" />
-                <ElOption label="未安装" value="uninstalled" />
-              </ElSelect>
-            </ElFormItem>
-            <ElFormItem>
-              <ElButton type="primary" plain @click="handleSearch">
-                <template #icon><icon-ic-round-search class="text-icon" /></template>
-                搜索
-              </ElButton>
-              <ElButton plain @click="handleReset">
-                <template #icon><icon-ic-round-refresh class="text-icon" /></template>
-                重置
-              </ElButton>
-            </ElFormItem>
-          </ElForm>
+  <ListPageLayout
+    title="Agent 管理"
+    description="管理主机 Agent 的部署、升级、重启与卸载，实时跟踪运行状态"
+    :pagination="mobilePagination"
+    @search="handleSearch"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElInput
+        v-model="searchParams.hostname"
+        placeholder="主机名 / IP"
+        clearable
+        class="w-200px"
+        @keyup.enter="handleSearch"
+      />
+      <ElSelect v-model="searchParams.agentStatus" placeholder="全部状态" clearable class="w-140px">
+        <ElOption label="运行中" value="running" />
+        <ElOption label="离线" value="offline" />
+        <ElOption label="未安装" value="uninstalled" />
+      </ElSelect>
+    </template>
 
-          <ElSpace>
-            <span v-if="batchProgress.running" class="batch-progress-text">
-              批量部署中：{{ batchProgress.current }} / {{ batchProgress.total }} 台
-            </span>
-            <PermissionButton
-              code="cmdb.agents.deploy"
-              type="primary"
-              plain
-              :disabled="batchDeployable.length === 0"
-              @click="handleBatchDeploy"
-            >
-              <template #icon><icon-mdi-rocket-launch class="text-icon" /></template>
-              批量部署
-              <span v-if="batchDeployable.length > 0">（{{ batchDeployable.length }}）</span>
-            </PermissionButton>
-            <PermissionButton
-              code="cmdb.agents.uninstall"
-              type="danger"
-              plain
-              :disabled="batchUninstallable.length === 0"
-              @click="handleBatchUninstall"
-            >
-              <template #icon><icon-mdi-delete class="text-icon" /></template>
-              批量卸载
-              <span v-if="batchUninstallable.length > 0">（{{ batchUninstallable.length }}）</span>
-            </PermissionButton>
-            <PermissionButton
-              code="cmdb.agents.upgrade"
-              type="success"
-              plain
-              :disabled="batchUpgradeable.length === 0"
-              @click="handleBatchUpgrade"
-            >
-              <template #icon><icon-mdi-arrow-up-bold class="text-icon" /></template>
-              批量升级
-              <span v-if="batchUpgradeable.length > 0">（{{ batchUpgradeable.length }}）</span>
-            </PermissionButton>
-            <ElButton plain @click="getData">
-              <template #icon>
-                <icon-mdi-refresh class="text-icon" :class="{ 'animate-spin': loading }" />
-              </template>
-              刷新
-            </ElButton>
-          </ElSpace>
-        </div>
-      </template>
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <span v-if="batchProgress.running" class="batch-progress-text">
+        批量部署中：{{ batchProgress.current }} / {{ batchProgress.total }} 台
+      </span>
+      <PermissionButton
+        code="cmdb.agents.deploy"
+        type="primary"
+        plain
+        :disabled="batchDeployable.length === 0"
+        @click="handleBatchDeploy"
+      >
+        <template #icon><icon-mdi-rocket-launch class="text-icon" /></template>
+        批量部署
+        <span v-if="batchDeployable.length > 0">（{{ batchDeployable.length }}）</span>
+      </PermissionButton>
+      <PermissionButton
+        code="cmdb.agents.uninstall"
+        type="danger"
+        plain
+        :disabled="batchUninstallable.length === 0"
+        @click="handleBatchUninstall"
+      >
+        <template #icon><icon-mdi-delete class="text-icon" /></template>
+        批量卸载
+        <span v-if="batchUninstallable.length > 0">（{{ batchUninstallable.length }}）</span>
+      </PermissionButton>
+      <PermissionButton
+        code="cmdb.agents.upgrade"
+        type="success"
+        plain
+        :disabled="batchUpgradeable.length === 0"
+        @click="handleBatchUpgrade"
+      >
+        <template #icon><icon-mdi-arrow-up-bold class="text-icon" /></template>
+        批量升级
+        <span v-if="batchUpgradeable.length > 0">（{{ batchUpgradeable.length }}）</span>
+      </PermissionButton>
+      <ElButton plain @click="getData">
+        <template #icon>
+          <icon-mdi-refresh class="text-icon" :class="{ 'animate-spin': loading }" />
+        </template>
+        刷新
+      </ElButton>
+    </template>
 
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" :data="data" border stripe height="100%" @selection-change="handleSelectionChange">
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
-
-      <div v-if="mobilePagination.total" class="pagination-bar">
-        <ElPagination
-          layout="total, sizes, prev, pager, next"
-          v-bind="mobilePagination"
-          @current-change="mobilePagination['current-change']"
-          @size-change="mobilePagination['size-change']"
-        />
-      </div>
-    </ElCard>
-  </div>
+    <!-- 表格 -->
+    <ElTable v-loading="loading" :data="data" border stripe height="100%" @selection-change="handleSelectionChange">
+      <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+    </ElTable>
+  </ListPageLayout>
 </template>
 
 <style scoped>
-  .agent-page {
-    padding: 16px;
-  }
-
-  .toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .search-form :deep(.el-form-item) {
-    margin-bottom: 0;
-    margin-right: 8px;
-  }
-
   .text-gray {
     color: #909399;
     font-size: 13px;
@@ -625,12 +586,6 @@
     font-size: 13px;
     color: #409eff;
     font-weight: 500;
-  }
-
-  .pagination-bar {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 16px;
   }
 
   .actions-wrapper {

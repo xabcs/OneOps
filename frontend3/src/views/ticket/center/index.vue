@@ -148,68 +148,51 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <ElCard class="card-wrapper sm:flex-1-hidden">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <span class="text-lg font-medium">工单中心</span>
-          <ElButton type="primary" :icon="Plus" @click="createVisible = true">发起工单</ElButton>
-        </div>
-      </template>
-
-      <!-- 视图切换 -->
-      <ElTabs :model-value="searchParams.scope" class="mb-12px" @tab-change="handleTabChange">
+  <ListPageLayout
+    title="工单中心"
+    description="发起与跟进工单，集中处理待我审批的事项"
+    :pagination="mobilePagination"
+    embedded-search
+    @search="handleSearch"
+    @reset="handleReset"
+  >
+    <!-- 视图切换：页签渲染在表格卡片 header，与内容联动 -->
+    <template #tabs>
+      <ElTabs :model-value="searchParams.scope" @tab-change="handleTabChange">
         <ElTabPane label="待我审批" name="todo" />
         <ElTabPane label="我发起的" name="created" />
         <ElTabPane label="我已审批" name="done" />
         <ElTabPane v-if="canViewAll" label="全部工单" name="all" />
       </ElTabs>
+    </template>
 
-      <!-- 搜索区 -->
-      <ElForm inline class="mb-12px" @submit.prevent>
-        <ElFormItem label="关键词">
-          <ElInput
-            v-model="searchParams.keyword"
-            placeholder="标题/工单号/发起人"
-            clearable
-            class="w-200px"
-            @keyup.enter="handleSearch"
-          />
-        </ElFormItem>
-        <ElFormItem label="状态">
-          <ElSelect v-model="searchParams.status" clearable placeholder="全部" class="w-130px">
-            <ElOption v-for="opt in ticketStatusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem label="类型">
-          <ElSelect v-model="searchParams.typeId" clearable placeholder="全部" class="w-150px">
-            <ElOption v-for="t in typeOptions" :key="t.id" :label="t.name" :value="t.id" />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem>
-          <ElButton type="primary" @click="handleSearch">搜索</ElButton>
-          <ElButton @click="handleReset">重置</ElButton>
-        </ElFormItem>
-      </ElForm>
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElInput
+        v-model="searchParams.keyword"
+        placeholder="标题/工单号/发起人"
+        clearable
+        class="w-200px"
+        @keyup.enter="handleSearch"
+      />
+      <ElSelect v-model="searchParams.status" clearable placeholder="全部" class="w-130px">
+        <ElOption v-for="opt in ticketStatusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+      </ElSelect>
+      <ElSelect v-model="searchParams.typeId" clearable placeholder="全部" class="w-150px">
+        <ElOption v-for="t in typeOptions" :key="t.id" :label="t.name" :value="t.id" />
+      </ElSelect>
+    </template>
 
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" height="100%" :data="data" :border="false" row-key="id">
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <ElButton type="primary" :icon="Plus" @click="createVisible = true">发起工单</ElButton>
+    </template>
 
-      <div class="mt-20px flex justify-end">
-        <ElPagination
-          v-if="mobilePagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          v-bind="mobilePagination"
-          @current-change="mobilePagination['current-change']"
-          @size-change="mobilePagination['size-change']"
-        />
-      </div>
-
-      <!-- 发起工单 -->
-      <TicketCreateDialog v-model:visible="createVisible" :type-options="typeOptions" @created="handleCreated" />
-    </ElCard>
-  </div>
+    <!-- 表格 -->
+    <ElTable v-loading="loading" height="100%" :data="data" :border="false" row-key="id">
+      <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+    </ElTable>
+    <!-- 发起工单（teleport 弹层须置于布局内，保持页面单根节点以正常继承 attrs 与 Transition） -->
+    <TicketCreateDialog v-model:visible="createVisible" :type-options="typeOptions" @created="handleCreated" />
+  </ListPageLayout>
 </template>

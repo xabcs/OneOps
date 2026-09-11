@@ -252,118 +252,91 @@
 </script>
 
 <template>
-  <div class="table-page">
+  <ListPageLayout
+    title="角色列表"
+    description="管理系统角色、分配菜单权限与用户关联"
+    :pagination="mobilePagination"
+    @search="handleSearch"
+    @reset="resetSearchParams"
+  >
     <!-- Hero 区域 -->
-    <ElCard v-if="heroVisible" shadow="hover" class="card-static msre-hero">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-12px">
-          <ElIcon :size="20">
-            <Management />
-          </ElIcon>
-          <div class="flex flex-col gap-2px">
-            <h2 class="m-0 text-18px font-bold">{{ $t('page.manage.role.title') }}</h2>
-            <p class="m-0 text-13px opacity-70">统一管理角色权限，支持角色创建、编辑与权限分配</p>
-          </div>
-        </div>
-        <ElButton size="small" :loading="loading" @click="refreshData">
-          <ElIcon>
-            <Refresh />
-          </ElIcon>
-          刷新
-        </ElButton>
-      </div>
-    </ElCard>
-
-    <!-- 内容卡片 -->
-    <ElCard shadow="hover">
-      <template #header>
+    <template #hero>
+      <ElCard v-if="heroVisible" shadow="hover" class="card-static msre-hero">
         <div class="flex items-center justify-between">
-          <div class="flex flex-col gap-2px">
-            <span class="text-16px font-bold">角色列表</span>
-            <span class="text-13px opacity-70">管理系统角色、分配菜单权限与用户关联</span>
+          <div class="flex items-center gap-12px">
+            <ElIcon :size="20">
+              <Management />
+            </ElIcon>
+            <div class="flex flex-col gap-2px">
+              <h2 class="m-0 text-18px font-bold">{{ $t('page.manage.role.title') }}</h2>
+              <p class="m-0 text-13px opacity-70">统一管理角色权限，支持角色创建、编辑与权限分配</p>
+            </div>
           </div>
-          <div class="flex items-center gap-8px">
-            <PermissionButton code="system.role.create" type="primary" size="small" @click="handleAddClick">
-              <ElIcon>
-                <Plus />
-              </ElIcon>
-              新增角色
-            </PermissionButton>
-            <PermissionButton
-              code="system.role.delete"
-              type="danger"
-              size="small"
-              :disabled="checkedRowKeys.length === 0"
-              @click="handleBatchDelete"
-            >
-              <ElIcon>
-                <Delete />
-              </ElIcon>
-              批量删除
-            </PermissionButton>
-          </div>
+          <ElButton size="small" :loading="loading" @click="refreshData">
+            <ElIcon>
+              <Refresh />
+            </ElIcon>
+            刷新
+          </ElButton>
         </div>
-      </template>
+      </ElCard>
+    </template>
 
-      <!-- 搜索工具栏 -->
-      <ElSpace wrap class="mb-16px">
-        <ElInput
-          v-model="searchParams.name"
-          placeholder="搜索角色名称"
-          clearable
-          style="width: 200px"
-          :prefix-icon="Search"
-          @input="handleSearchInput"
-        />
-        <ElInput
-          v-model="searchParams.code"
-          placeholder="搜索角色编码"
-          clearable
-          style="width: 200px"
-          :prefix-icon="Search"
-          @input="handleSearchInput"
-        />
-        <ElButton @click="resetSearchParams">
-          <ElIcon>
-            <Refresh />
-          </ElIcon>
-          重置
-        </ElButton>
-        <ElButton type="primary" @click="handleSearch">
-          <ElIcon>
-            <Search />
-          </ElIcon>
-          搜索
-        </ElButton>
-      </ElSpace>
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElInput
+        v-model="searchParams.name"
+        placeholder="搜索角色名称"
+        clearable
+        class="w-200px"
+        :prefix-icon="Search"
+        @input="handleSearchInput"
+      />
+      <ElInput
+        v-model="searchParams.code"
+        placeholder="搜索角色编码"
+        clearable
+        class="w-200px"
+        :prefix-icon="Search"
+        @input="handleSearchInput"
+      />
+    </template>
 
-      <!-- 数据表格 -->
-      <div class="table-scroll-wrap">
-        <ElTable
-          v-loading="loading"
-          :data="data"
-          border
-          stripe
-          row-key="id"
-          height="100%"
-          @selection-change="checkedRowKeys = $event"
-        >
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <PermissionButton code="system.role.create" type="primary" size="small" @click="handleAddClick">
+        <ElIcon>
+          <Plus />
+        </ElIcon>
+        新增角色
+      </PermissionButton>
+      <PermissionButton
+        code="system.role.delete"
+        type="danger"
+        size="small"
+        :disabled="checkedRowKeys.length === 0"
+        @click="handleBatchDelete"
+      >
+        <ElIcon>
+          <Delete />
+        </ElIcon>
+        批量删除
+      </PermissionButton>
+    </template>
 
-      <!-- 分页 -->
-      <div v-if="mobilePagination.total" class="mt-16px flex justify-end">
-        <ElPagination
-          layout="total, sizes, prev, pager, next, jumper"
-          v-bind="mobilePagination"
-          @current-change="mobilePagination['current-change']"
-          @size-change="mobilePagination['size-change']"
-        />
-      </div>
-    </ElCard>
-
-    <!-- 抽屉和模态框 -->
+    <!-- 数据表格 -->
+    <ElTable
+      v-loading="loading"
+      :data="data"
+      border
+      stripe
+      row-key="id"
+      height="100%"
+      @selection-change="checkedRowKeys = $event"
+    >
+      <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+    </ElTable>
+    <!-- 抽屉和模态框（teleport 弹层须置于布局内，保持页面单根节点以正常继承 attrs 与 Transition） -->
     <RoleOperateDrawer
       v-model:visible="drawerVisible"
       :operate-type="operateType"
@@ -377,5 +350,5 @@
       @submitted="handlePermissionSubmitted"
     />
     <RoleDetailDrawer v-model:visible="detailDrawerVisible" :role="currentDetailRole" />
-  </div>
+  </ListPageLayout>
 </template>

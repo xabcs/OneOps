@@ -529,7 +529,7 @@
             v-model:page-size="pagination.pageSize"
             :page-sizes="[10, 20, 50, 100]"
             :total="total"
-            layout="total, sizes, prev, pager, next"
+            layout="total, sizes, prev, pager, next, jumper"
             @current-change="emit('page-change', $event)"
             @size-change="emit('page-size-change', $event)"
           />

@@ -132,70 +132,50 @@
 </script>
 
 <template>
-  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
-    <ElCard class="card-wrapper sm:flex-1-hidden">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <span class="text-lg font-medium">审批流程</span>
-          <PermissionButton code="ticket.workflow.create" type="primary" :icon="Plus" @click="handleAdd">
-            新建流程
-          </PermissionButton>
-        </div>
-      </template>
-
-      <!-- 搜索区 -->
-      <ElForm inline class="mb-12px" @submit.prevent>
-        <ElFormItem label="关键词">
-          <ElInput
-            v-model="searchParams.keyword"
-            placeholder="名称/编码"
-            clearable
-            class="w-200px"
-            @keyup.enter="handleSearch"
-          />
-        </ElFormItem>
-        <ElFormItem label="场景">
-          <ElSelect v-model="searchParams.typeId" class="w-160px">
-            <ElOption label="全部" :value="-1" />
-            <ElOption v-for="t in typeOptions" :key="t.id" :label="t.name" :value="t.id" />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem label="状态">
-          <ElSelect v-model="searchParams.status" class="w-120px">
-            <ElOption label="全部" :value="-1" />
-            <ElOption label="启用" :value="1" />
-            <ElOption label="禁用" :value="0" />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem>
-          <ElButton type="primary" @click="handleSearch">搜索</ElButton>
-          <ElButton @click="handleReset">重置</ElButton>
-        </ElFormItem>
-      </ElForm>
-
-      <div class="h-[calc(100%-100px)]">
-        <ElTable v-loading="loading" height="100%" :data="data" :border="false" class="sm:h-full" row-key="id">
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-
-        <div class="mt-20px flex justify-end">
-          <ElPagination
-            v-if="mobilePagination.total"
-            layout="total, sizes, prev, pager, next, jumper"
-            v-bind="mobilePagination"
-            @current-change="mobilePagination['current-change']"
-            @size-change="mobilePagination['size-change']"
-          />
-        </div>
-      </div>
-
-      <!-- 新建/编辑弹框 -->
-      <WorkflowOperateDialog
-        v-model:visible="drawerVisible"
-        :operate-type="operateType"
-        :row-data="editingData"
-        @submitted="getDataByPage"
+  <ListPageLayout
+    title="审批流程"
+    description="配置各场景的审批流程与节点，支撑工单流转"
+    :pagination="mobilePagination"
+    @search="handleSearch"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElInput
+        v-model="searchParams.keyword"
+        placeholder="名称/编码"
+        clearable
+        class="w-200px"
+        @keyup.enter="handleSearch"
       />
-    </ElCard>
-  </div>
+      <ElSelect v-model="searchParams.typeId" class="w-160px">
+        <ElOption label="全部" :value="-1" />
+        <ElOption v-for="t in typeOptions" :key="t.id" :label="t.name" :value="t.id" />
+      </ElSelect>
+      <ElSelect v-model="searchParams.status" class="w-120px">
+        <ElOption label="全部" :value="-1" />
+        <ElOption label="启用" :value="1" />
+        <ElOption label="禁用" :value="0" />
+      </ElSelect>
+    </template>
+
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <PermissionButton code="ticket.workflow.create" type="primary" :icon="Plus" @click="handleAdd">
+        新建流程
+      </PermissionButton>
+    </template>
+
+    <!-- 表格 -->
+    <ElTable v-loading="loading" height="100%" :data="data" :border="false" row-key="id">
+      <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+    </ElTable>
+    <!-- 新建/编辑弹框（teleport 弹层须置于布局内，保持页面单根节点以正常继承 attrs 与 Transition） -->
+    <WorkflowOperateDialog
+      v-model:visible="drawerVisible"
+      :operate-type="operateType"
+      :row-data="editingData"
+      @submitted="getDataByPage"
+    />
+  </ListPageLayout>
 </template>

@@ -136,26 +136,22 @@
 </script>
 
 <template>
-  <div class="min-h-500px flex-col-stretch gap-16px overflow-hidden lt-sm:overflow-auto">
-    <ElCard class="card-wrapper sm:flex-1-hidden">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <p>Excel导出</p>
-          <ElButton plain type="primary" @click="exportExcel">
-            <template #icon>
-              <icon-file-icons-microsoft-excel class="text-icon" />
-            </template>
-            导出excel
-          </ElButton>
-        </div>
-      </template>
-      <div class="h-[calc(100%-52px)]">
-        <ElTable v-loading="loading" height="100%" border class="sm:h-full" :data="data" row-key="id">
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
-    </ElCard>
-  </div>
+  <ListPageLayout title="Excel导出" description="预览用户数据并支持一键导出为 Excel 文件">
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <ElButton plain type="primary" @click="exportExcel">
+        <template #icon>
+          <icon-file-icons-microsoft-excel class="text-icon" />
+        </template>
+        导出excel
+      </ElButton>
+    </template>
+
+    <!-- 表格 -->
+    <ElTable v-loading="loading" height="100%" border :data="data" row-key="id">
+      <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+    </ElTable>
+  </ListPageLayout>
 </template>
 
 <style scoped></style>

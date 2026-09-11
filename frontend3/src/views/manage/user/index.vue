@@ -276,147 +276,115 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <!-- Hero 区域 -->
-    <ElCard v-if="heroVisible" shadow="hover" class="card-static msre-hero">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-12px">
-          <ElIcon :size="20">
-            <User />
-          </ElIcon>
-          <div class="flex flex-col gap-4px">
-            <h2 class="m-0 text-18px font-bold">{{ $t('page.manage.user.title') }}</h2>
-            <p class="m-0 text-13px color-[var(--el-text-color-secondary)]">
-              统一维护用户、分配角色与权限，支持账号治理与安全策略管理
-            </p>
-          </div>
-        </div>
-        <ElButton size="small" :loading="loading" @click="refreshData">
-          <template #icon>
-            <ElIcon>
-              <Refresh />
-            </ElIcon>
-          </template>
-          刷新
-        </ElButton>
-      </div>
-    </ElCard>
-
-    <!-- 统计卡片 -->
-    <UserStats :user-stats="userStats" />
-
-    <!-- 搜索卡片 -->
-    <ElCard shadow="hover" class="card-static msre-toolbar">
-      <ElSpace wrap class="w-full" align="center">
-        <span class="whitespace-nowrap text-14px font-semibold">搜索筛选</span>
-        <ElInput
-          v-model="searchParams.username"
-          placeholder="搜索用户名"
-          size="small"
-          clearable
-          class="w-200px"
-          @input="handleSearchInput"
-        >
-          <template #prefix>
-            <ElIcon><Search /></ElIcon>
-          </template>
-        </ElInput>
-        <ElInput
-          v-model="searchParams.nickname"
-          placeholder="搜索昵称"
-          size="small"
-          clearable
-          class="w-200px"
-          @input="handleSearchInput"
-        >
-          <template #prefix>
-            <ElIcon><Search /></ElIcon>
-          </template>
-        </ElInput>
-        <ElInput
-          v-model="searchParams.email"
-          placeholder="搜索邮箱"
-          size="small"
-          clearable
-          class="w-240px"
-          @input="handleSearchInput"
-        >
-          <template #prefix>
-            <ElIcon><Search /></ElIcon>
-          </template>
-        </ElInput>
-        <ElButton size="small" @click="resetSearchParams">
-          <template #icon>
-            <ElIcon><Refresh /></ElIcon>
-          </template>
-          重置
-        </ElButton>
-        <ElButton size="small" type="primary" @click="handleSearch">
-          <template #icon>
-            <ElIcon><Search /></ElIcon>
-          </template>
-          搜索
-        </ElButton>
-      </ElSpace>
-    </ElCard>
-
-    <!-- 数据表格卡片 -->
-    <ElCard shadow="hover">
-      <template #header>
+  <ListPageLayout
+    title="用户列表"
+    description="管理系统用户账号、角色分配与状态控制"
+    :pagination="mobilePagination"
+    @search="handleSearch"
+    @reset="resetSearchParams"
+  >
+    <!-- Hero 区域 + 统计卡片 -->
+    <template #hero>
+      <ElCard v-if="heroVisible" shadow="hover" class="card-static msre-hero">
         <div class="flex items-center justify-between">
-          <div class="flex flex-col gap-4px">
-            <span class="text-16px font-bold">用户列表</span>
-            <span class="text-13px color-[var(--el-text-color-secondary)]">管理系统用户账号、角色分配与状态控制</span>
+          <div class="flex items-center gap-12px">
+            <ElIcon :size="20">
+              <User />
+            </ElIcon>
+            <div class="flex flex-col gap-4px">
+              <h2 class="m-0 text-18px font-bold">{{ $t('page.manage.user.title') }}</h2>
+              <p class="m-0 text-13px color-[var(--el-text-color-secondary)]">
+                统一维护用户、分配角色与权限，支持账号治理与安全策略管理
+              </p>
+            </div>
           </div>
-          <ElSpace>
-            <PermissionButton code="system.user.create" type="primary" size="small" @click="handleAddClick">
-              <template #icon>
-                <ElIcon><Plus /></ElIcon>
-              </template>
-              新增用户
-            </PermissionButton>
-            <PermissionButton
-              code="system.user.delete"
-              type="danger"
-              size="small"
-              :disabled="checkedRowKeys.length === 0"
-              @click="handleBatchDelete"
-            >
-              <template #icon>
-                <ElIcon><Delete /></ElIcon>
-              </template>
-              批量删除
-            </PermissionButton>
-          </ElSpace>
+          <ElButton size="small" :loading="loading" @click="refreshData">
+            <template #icon>
+              <ElIcon>
+                <Refresh />
+              </ElIcon>
+            </template>
+            刷新
+          </ElButton>
         </div>
-      </template>
+      </ElCard>
 
-      <div class="table-scroll-wrap">
-        <ElTable
-          v-loading="loading"
-          :data="data"
-          border
-          stripe
-          row-key="id"
-          height="100%"
-          @selection-change="checkedRowKeys = $event"
-        >
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
+      <UserStats :user-stats="userStats" />
+    </template>
 
-      <div class="mt-16px flex justify-end">
-        <ElPagination
-          v-if="mobilePagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          v-bind="mobilePagination"
-          @current-change="mobilePagination['current-change']"
-          @size-change="mobilePagination['size-change']"
-        />
-      </div>
-    </ElCard>
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElInput
+        v-model="searchParams.username"
+        placeholder="搜索用户名"
+        clearable
+        class="w-200px"
+        @input="handleSearchInput"
+      >
+        <template #prefix>
+          <ElIcon><Search /></ElIcon>
+        </template>
+      </ElInput>
+      <ElInput
+        v-model="searchParams.nickname"
+        placeholder="搜索昵称"
+        clearable
+        class="w-200px"
+        @input="handleSearchInput"
+      >
+        <template #prefix>
+          <ElIcon><Search /></ElIcon>
+        </template>
+      </ElInput>
+      <ElInput
+        v-model="searchParams.email"
+        placeholder="搜索邮箱"
+        clearable
+        class="w-240px"
+        @input="handleSearchInput"
+      >
+        <template #prefix>
+          <ElIcon><Search /></ElIcon>
+        </template>
+      </ElInput>
+    </template>
 
-    <!-- 抽屉和模态框 -->
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <PermissionButton code="system.user.create" type="primary" size="small" @click="handleAddClick">
+        <template #icon>
+          <ElIcon><Plus /></ElIcon>
+        </template>
+        新增用户
+      </PermissionButton>
+      <PermissionButton
+        code="system.user.delete"
+        type="danger"
+        size="small"
+        :disabled="checkedRowKeys.length === 0"
+        @click="handleBatchDelete"
+      >
+        <template #icon>
+          <ElIcon><Delete /></ElIcon>
+        </template>
+        批量删除
+      </PermissionButton>
+    </template>
+
+    <!-- 表格 -->
+    <ElTable
+      v-loading="loading"
+      :data="data"
+      border
+      stripe
+      row-key="id"
+      height="100%"
+      @selection-change="checkedRowKeys = $event"
+    >
+      <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+    </ElTable>
+
+    <!-- 抽屉和模态框（teleport 弹层须置于布局内，保持页面单根节点以正常继承 attrs 与 Transition） -->
     <UserOperateDrawer
       v-model:visible="drawerVisible"
       :operate-type="operateType"
@@ -430,5 +398,5 @@
       :username="resetPasswordUsername"
       @submitted="handleResetPasswordSubmitted"
     />
-  </div>
+  </ListPageLayout>
 </template>

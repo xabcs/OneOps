@@ -1,6 +1,5 @@
 <script setup lang="tsx">
   import { ref } from 'vue';
-  import { Refresh, Search } from '@element-plus/icons-vue';
   import { fetchGetSystemEventLogs } from '@/service/api';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
   import { createTagMap } from '@/utils/common';
@@ -82,66 +81,40 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <ElCard class="card-wrapper">
-      <ElForm :model="searchParams" inline class="search-form">
-        <ElFormItem label="级别">
-          <ElSelect v-model="searchParams.level" placeholder="请选择级别" clearable style="width: 150px">
-            <ElOption v-for="option in levelOptions" :key="option.value" :label="option.label" :value="option.value" />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem label="来源">
-          <ElInput v-model="searchParams.source" placeholder="请输入来源" clearable style="width: 150px" />
-        </ElFormItem>
-        <ElFormItem label="分类">
-          <ElInput v-model="searchParams.category" placeholder="请输入分类" clearable style="width: 150px" />
-        </ElFormItem>
-        <ElFormItem label="事件时间">
-          <ElDatePicker
-            v-model="searchParams.startTime"
-            type="datetime"
-            placeholder="开始时间"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            style="width: 200px"
-          />
-          <span class="mx-2">至</span>
-          <ElDatePicker
-            v-model="searchParams.endTime"
-            type="datetime"
-            placeholder="结束时间"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            style="width: 200px"
-          />
-        </ElFormItem>
-        <ElFormItem>
-          <ElButton type="primary" :icon="Search" @click="handleSearch">搜索</ElButton>
-          <ElButton :icon="Refresh" @click="handleReset">重置</ElButton>
-        </ElFormItem>
-      </ElForm>
+  <ListPageLayout
+    title="系统日志"
+    description="查看系统事件日志，追踪级别、来源与分类信息"
+    :pagination="mobilePagination"
+    @search="handleSearch"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElSelect v-model="searchParams.level" placeholder="请选择级别" clearable class="w-150px">
+        <ElOption v-for="option in levelOptions" :key="option.value" :label="option.label" :value="option.value" />
+      </ElSelect>
+      <ElInput v-model="searchParams.source" placeholder="请输入来源" clearable class="w-150px" />
+      <ElInput v-model="searchParams.category" placeholder="请输入分类" clearable class="w-150px" />
+      <ElDatePicker
+        v-model="searchParams.startTime"
+        type="datetime"
+        placeholder="开始时间"
+        value-format="YYYY-MM-DD HH:mm:ss"
+        class="w-200px"
+      />
+      <span class="self-center text-13px color-[var(--el-text-color-secondary)]">至</span>
+      <ElDatePicker
+        v-model="searchParams.endTime"
+        type="datetime"
+        placeholder="结束时间"
+        value-format="YYYY-MM-DD HH:mm:ss"
+        class="w-200px"
+      />
+    </template>
 
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" :data="data" border stripe height="100%">
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
-
-      <div class="mt-16px flex justify-end">
-        <ElPagination
-          v-if="mobilePagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          v-bind="mobilePagination"
-          @current-change="mobilePagination['current-change']"
-          @size-change="mobilePagination['size-change']"
-        />
-      </div>
-    </ElCard>
-  </div>
+    <!-- 表格 -->
+    <ElTable v-loading="loading" :data="data" border stripe height="100%">
+      <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+    </ElTable>
+  </ListPageLayout>
 </template>
-
-<style scoped lang="scss">
-  .search-form {
-    :deep(.el-form-item) {
-      margin-bottom: 12px;
-    }
-  }
-</style>

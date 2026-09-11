@@ -1,6 +1,5 @@
 <script setup lang="tsx">
   import { onMounted, ref } from 'vue';
-  import { Refresh, Search } from '@element-plus/icons-vue';
   import type { FlatResponseData } from '@sa/axios';
   import { fetchGetAssetChanges } from '@/service/api';
   import { defaultTransform, useUIPaginatedTable } from '@/hooks/common/table';
@@ -95,40 +94,32 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <ElCard class="card-wrapper">
-      <ElForm :model="searchParams" inline class="mb-16px">
-        <ElFormItem label="资产类型">
-          <ElSelect v-model="searchParams.assetType" placeholder="请选择资产类型" clearable style="width: 160px">
-            <ElOption label="服务器" value="server" />
-            <ElOption label="业务系统" value="business" />
-            <ElOption label="机房" value="room" />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem label="资产ID">
-          <ElInputNumber v-model="searchParams.assetId" :min="1" controls-position="right" style="width: 160px" />
-        </ElFormItem>
-        <ElFormItem>
-          <ElButton type="primary" :icon="Search" @click="handleSearch">搜索</ElButton>
-          <ElButton :icon="Refresh" @click="handleReset">重置</ElButton>
-        </ElFormItem>
-      </ElForm>
+  <ListPageLayout
+    title="资产变更记录"
+    description="追踪资产创建、更新与删除的字段级变更历史"
+    :pagination="mobilePagination"
+    @search="handleSearch"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElSelect v-model="searchParams.assetType" placeholder="请选择资产类型" clearable class="w-160px">
+        <ElOption label="服务器" value="server" />
+        <ElOption label="业务系统" value="business" />
+        <ElOption label="机房" value="room" />
+      </ElSelect>
+      <ElInputNumber
+        v-model="searchParams.assetId"
+        :min="1"
+        controls-position="right"
+        placeholder="资产ID"
+        class="w-160px"
+      />
+    </template>
 
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" :data="data" border stripe height="100%">
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
-
-      <div class="mt-16px flex justify-end">
-        <ElPagination
-          v-if="mobilePagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          v-bind="mobilePagination"
-          @current-change="mobilePagination['current-change']"
-          @size-change="mobilePagination['size-change']"
-        />
-      </div>
-    </ElCard>
-  </div>
+    <!-- 表格 -->
+    <ElTable v-loading="loading" :data="data" border stripe height="100%">
+      <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+    </ElTable>
+  </ListPageLayout>
 </template>

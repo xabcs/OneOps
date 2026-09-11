@@ -4,7 +4,6 @@
   import { deleteAuthGroup, fetchAuthGroups } from '@/service/api/application-permission';
   import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
   import PermissionButton from '@/components/common/PermissionButton.vue';
-  import RoleSearch from './modules/role-search.vue';
   import RoleOperateDrawer from './modules/role-operate-drawer.vue';
 
   defineOptions({ name: 'AuthCenterGroups' });
@@ -106,44 +105,37 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <!-- 搜索区域 -->
-    <RoleSearch v-model:model="searchParams" @reset="handleReset" @search="handleSearch" />
+  <ListPageLayout
+    title="授权中心用户组列表"
+    description="管理授权中心用户组的基本信息与启用状态"
+    :pagination="mobilePagination"
+    @search="handleSearch"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElInput v-model="searchParams.name" placeholder="请输入角色名称" clearable class="w-200px" />
+      <ElInput v-model="searchParams.code" placeholder="请输入角色编码" clearable class="w-200px" />
+      <ElInput v-model="searchParams.description" placeholder="请输入描述" clearable class="w-200px" />
+    </template>
 
-    <!-- 表格卡片 -->
-    <ElCard class="card-wrapper sm:flex-1-hidden">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <span class="text-lg font-medium">授权中心用户组列表</span>
-          <PermissionButton code="auth.group.create" type="primary" :icon="Plus" @click="handleAdd">
-            添加用户组
-          </PermissionButton>
-        </div>
-      </template>
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <PermissionButton code="auth.group.create" type="primary" :icon="Plus" @click="handleAdd">
+        添加用户组
+      </PermissionButton>
+    </template>
 
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" height="100%" :data="data" :border="false" row-key="id">
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
-
-      <div class="mt-20px flex justify-end">
-        <ElPagination
-          v-if="mobilePagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          v-bind="mobilePagination"
-          @current-change="mobilePagination['current-change']"
-          @size-change="mobilePagination['size-change']"
-        />
-      </div>
-
-      <!-- 添加/编辑抽屉 -->
-      <RoleOperateDrawer
-        v-model:visible="drawerVisible"
-        :operate-type="operateType"
-        :row-data="editingData"
-        @submitted="getDataByPage"
-      />
-    </ElCard>
-  </div>
+    <!-- 表格 -->
+    <ElTable v-loading="loading" height="100%" :data="data" :border="false" row-key="id">
+      <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+    </ElTable>
+    <!-- 添加/编辑抽屉（teleport 弹层须置于布局内，保持页面单根节点以正常继承 attrs 与 Transition） -->
+    <RoleOperateDrawer
+      v-model:visible="drawerVisible"
+      :operate-type="operateType"
+      :row-data="editingData"
+      @submitted="getDataByPage"
+    />
+  </ListPageLayout>
 </template>

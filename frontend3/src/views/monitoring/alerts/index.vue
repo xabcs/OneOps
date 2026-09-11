@@ -253,7 +253,7 @@
           v-model:page-size="filterForm.pageSize"
           :total="totalCount"
           :page-sizes="[20, 50, 100]"
-          layout="total, sizes, prev, pager, next"
+          layout="total, sizes, prev, pager, next, jumper"
           @current-change="handlePageChange"
           @size-change="handlePageSizeChange"
         />

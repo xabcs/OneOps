@@ -12,7 +12,6 @@
   } from '@/service/api/application-permission';
   import { defaultTransform, useTableOperate, useUIPaginatedTable } from '@/hooks/common/table';
   import PermissionButton from '@/components/common/PermissionButton.vue';
-  import UserSearch from './modules/user-search.vue';
   import UserOperateDrawer from './modules/user-operate-drawer.vue';
 
   defineOptions({ name: 'AuthCenterUsers' });
@@ -243,92 +242,85 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <!-- 搜索区域 -->
-    <UserSearch v-model:model="searchParams" @reset="handleReset" @search="handleSearch" />
+  <ListPageLayout
+    title="授权中心用户列表"
+    description="管理授权中心用户账号、用户组分配与初始密码查看"
+    :pagination="mobilePagination"
+    @search="handleSearch"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElInput v-model="searchParams.username" placeholder="请输入用户名" clearable class="w-200px" />
+      <ElInput v-model="searchParams.nickname" placeholder="请输入昵称" clearable class="w-200px" />
+      <ElInput v-model="searchParams.email" placeholder="请输入邮箱" clearable class="w-200px" />
+      <ElInput v-model="searchParams.phone" placeholder="请输入电话" clearable class="w-200px" />
+    </template>
 
-    <!-- 表格卡片 -->
-    <ElCard class="card-wrapper sm:flex-1-hidden">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <span class="text-lg font-medium">授权中心用户列表</span>
-          <PermissionButton code="auth.user.create" type="primary" :icon="Plus" @click="handleAdd">
-            添加用户
-          </PermissionButton>
-        </div>
-      </template>
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <PermissionButton code="auth.user.create" type="primary" :icon="Plus" @click="handleAdd">
+        添加用户
+      </PermissionButton>
+    </template>
 
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" height="100%" :data="data" :border="false" row-key="id">
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
-
-      <div class="mt-20px flex justify-end">
-        <ElPagination
-          v-if="mobilePagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          v-bind="mobilePagination"
-          :page-sizes="[10, 20, 50, 100]"
-          @current-change="mobilePagination['current-change']"
-          @size-change="mobilePagination['size-change']"
-        />
-      </div>
-
-      <!-- 添加/编辑抽屉 -->
-      <UserOperateDrawer
-        v-model:visible="drawerVisible"
-        :operate-type="operateType"
-        :row-data="editingData"
-        @submitted="getDataByPage"
-      />
-    </ElCard>
+    <!-- 表格 -->
+    <ElTable v-loading="loading" height="100%" :data="data" :border="false" row-key="id">
+      <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+    </ElTable>
+    <!-- 添加/编辑抽屉（teleport 弹层须置于布局内，保持页面单根节点以正常继承 attrs 与 Transition） -->
+    <UserOperateDrawer
+      v-model:visible="drawerVisible"
+      :operate-type="operateType"
+      :row-data="editingData"
+      @submitted="getDataByPage"
+    />
 
     <!-- 用户组管理对话框 -->
     <ElDialog v-model="groupDialogVisible" :title="`${selectedUser?.username || ''} 的用户组管理`" width="600px">
-      <div class="mb-4">
-        <div class="mb-4 flex items-center gap-2">
-          <ElText type="primary">分配用户组：</ElText>
-          <ElSelect v-model="groupFormData.groupId" placeholder="选择用户组" style="width: 200px">
-            <ElOption
-              v-for="group in allGroups"
-              :key="group.id"
-              :label="`${group.name} (${group.code})`"
-              :value="group.id"
-            />
-          </ElSelect>
-          <PermissionButton code="auth.user.update" type="primary" size="small" @click="handleAssignGroup">
-            分配
-          </PermissionButton>
-        </div>
-      </div>
-
-      <ElDivider content-position="left">已分配的用户组</ElDivider>
-
-      <ElTable :data="userGroups" :border="false" max-height="400px">
-        <ElTableColumn prop="groupName" label="用户组名称" align="center" min-width="150" />
-        <ElTableColumn prop="groupCode" label="用户组代码" align="center" min-width="150" />
-        <ElTableColumn prop="grantedBy" label="分配人" align="center" min-width="100" />
-        <ElTableColumn label="操作" align="center" width="100" class-name="msre-table-actions">
-          <template #default="{ row }">
-            <PermissionButton
-              link
-              type="danger"
-              size="small"
-              code="auth.user.update"
-              @click="handleRemoveGroup(row.id)"
-            >
-              移除
+        <div class="mb-4">
+          <div class="mb-4 flex items-center gap-2">
+            <ElText type="primary">分配用户组：</ElText>
+            <ElSelect v-model="groupFormData.groupId" placeholder="选择用户组" style="width: 200px">
+              <ElOption
+                v-for="group in allGroups"
+                :key="group.id"
+                :label="`${group.name} (${group.code})`"
+                :value="group.id"
+              />
+            </ElSelect>
+            <PermissionButton code="auth.user.update" type="primary" size="small" @click="handleAssignGroup">
+              分配
             </PermissionButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
+          </div>
+        </div>
 
-      <ElEmpty v-if="userGroups.length === 0" description="暂无用户组" />
+        <ElDivider content-position="left">已分配的用户组</ElDivider>
 
-      <template #footer>
-        <ElButton @click="groupDialogVisible = false">关闭</ElButton>
-      </template>
-    </ElDialog>
-  </div>
+        <ElTable :data="userGroups" :border="false" max-height="400px">
+          <ElTableColumn prop="groupName" label="用户组名称" align="center" min-width="150" />
+          <ElTableColumn prop="groupCode" label="用户组代码" align="center" min-width="150" />
+          <ElTableColumn prop="grantedBy" label="分配人" align="center" min-width="100" />
+          <ElTableColumn label="操作" align="center" width="100" class-name="msre-table-actions">
+            <template #default="{ row }">
+              <PermissionButton
+                link
+                type="danger"
+                size="small"
+                code="auth.user.update"
+                @click="handleRemoveGroup(row.id)"
+              >
+                移除
+              </PermissionButton>
+            </template>
+          </ElTableColumn>
+        </ElTable>
+
+        <ElEmpty v-if="userGroups.length === 0" description="暂无用户组" />
+
+        <template #footer>
+          <ElButton @click="groupDialogVisible = false">关闭</ElButton>
+        </template>
+      </ElDialog>
+  </ListPageLayout>
 </template>

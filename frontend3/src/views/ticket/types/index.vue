@@ -133,64 +133,46 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <ElCard class="card-wrapper sm:flex-1-hidden">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <span class="text-lg font-medium">工单类型管理</span>
-          <PermissionButton code="ticket.type.create" type="primary" :icon="Plus" @click="handleAdd">
-            新建类型
-          </PermissionButton>
-        </div>
-      </template>
-
-      <!-- 搜索区 -->
-      <ElForm inline class="mb-12px" @submit.prevent>
-        <ElFormItem label="关键词">
-          <ElInput
-            v-model="searchParams.keyword"
-            placeholder="名称/编码"
-            clearable
-            class="w-200px"
-            @keyup.enter="handleSearch"
-          />
-        </ElFormItem>
-        <ElFormItem label="状态">
-          <ElSelect v-model="searchParams.status" class="w-120px">
-            <ElOption label="全部" :value="-1" />
-            <ElOption label="启用" :value="1" />
-            <ElOption label="禁用" :value="0" />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem>
-          <ElButton type="primary" @click="handleSearch">搜索</ElButton>
-          <ElButton @click="handleReset">重置</ElButton>
-        </ElFormItem>
-      </ElForm>
-
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" height="100%" :data="data" :border="false" row-key="id">
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
-
-      <div class="mt-20px flex justify-end">
-        <ElPagination
-          v-if="mobilePagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          v-bind="mobilePagination"
-          @current-change="mobilePagination['current-change']"
-          @size-change="mobilePagination['size-change']"
-        />
-      </div>
-
-      <!-- 新建/编辑弹框 -->
-      <TypeOperateDialog
-        v-model:visible="drawerVisible"
-        :operate-type="operateType"
-        :row-data="editingData"
-        @submitted="getDataByPage"
+  <ListPageLayout
+    title="工单类型管理"
+    description="维护工单场景类型与启停状态，支撑审批流程绑定"
+    :pagination="mobilePagination"
+    @search="handleSearch"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElInput
+        v-model="searchParams.keyword"
+        placeholder="名称/编码"
+        clearable
+        class="w-200px"
+        @keyup.enter="handleSearch"
       />
-    </ElCard>
-  </div>
+      <ElSelect v-model="searchParams.status" class="w-120px">
+        <ElOption label="全部" :value="-1" />
+        <ElOption label="启用" :value="1" />
+        <ElOption label="禁用" :value="0" />
+      </ElSelect>
+    </template>
+
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <PermissionButton code="ticket.type.create" type="primary" :icon="Plus" @click="handleAdd">
+        新建类型
+      </PermissionButton>
+    </template>
+
+    <!-- 表格 -->
+    <ElTable v-loading="loading" height="100%" :data="data" :border="false" row-key="id">
+      <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+    </ElTable>
+    <!-- 新建/编辑弹框（teleport 弹层须置于布局内，保持页面单根节点以正常继承 attrs 与 Transition） -->
+    <TypeOperateDialog
+      v-model:visible="drawerVisible"
+      :operate-type="operateType"
+      :row-data="editingData"
+      @submitted="getDataByPage"
+    />
+  </ListPageLayout>
 </template>
