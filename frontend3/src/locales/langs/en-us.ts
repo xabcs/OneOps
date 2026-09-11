@@ -162,6 +162,7 @@ const local: App.I18n.Schema = {
         violetDawn: 'Violet Dawn'
       },
       sections: {
+        page: 'Page Background',
         hero: 'Hero Section',
         statCards: 'Statistics Cards',
         contentCard: 'Content Card',

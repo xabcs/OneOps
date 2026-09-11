@@ -50,6 +50,11 @@
     getData();
   }
 
+  // 布局重置按钮：清空用户组筛选
+  function handleReset() {
+    selectedGroupId.value = null;
+  }
+
   function handleAdd() {
     if (!selectedGroupId.value) {
       ElMessage.warning('请先选择用户组');
@@ -88,33 +93,29 @@
 </script>
 
 <template>
-  <div class="table-page">
+  <ListPageLayout title="权限映射列表" @search="getData" @reset="handleReset">
     <!-- 用户组选择 -->
-    <ElCard class="card-wrapper">
-      <ElSpace>
-        <ElSelect v-model="selectedGroupId" placeholder="请选择用户组" class="w-300px" @change="handleGroupChange">
-          <ElOption v-for="group in groups" :key="group.id" :label="group.name" :value="group.id" />
-        </ElSelect>
-        <PermissionButton
-          code="auth.group.create"
-          type="primary"
-          :icon="Plus"
-          :disabled="!selectedGroupId"
-          @click="handleAdd"
-        >
-          添加映射
-        </PermissionButton>
-      </ElSpace>
-    </ElCard>
+    <template #search>
+      <ElSelect v-model="selectedGroupId" placeholder="请选择用户组" class="w-300px" @change="handleGroupChange">
+        <ElOption v-for="group in groups" :key="group.id" :label="group.name" :value="group.id" />
+      </ElSelect>
+    </template>
+
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <PermissionButton
+        code="auth.group.create"
+        type="primary"
+        :icon="Plus"
+        :disabled="!selectedGroupId"
+        @click="handleAdd"
+      >
+        添加映射
+      </PermissionButton>
+    </template>
 
     <!-- 表格 -->
-    <ElCard class="card-wrapper sm:flex-1-hidden">
-      <template #header>
-        <span class="text-lg font-medium">权限映射列表</span>
-      </template>
-
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" height="100%" :data="tableData" :border="false" row-key="id">
+    <ElTable v-loading="loading" height="100%" :data="tableData" :border="false" row-key="id">
           <ElTableColumn type="index" label="序号" width="60" align="center" />
           <ElTableColumn label="应用名称" align="center" min-width="120">
             <template #default="{ row }">
@@ -154,12 +155,10 @@
               </PermissionButton>
             </template>
           </ElTableColumn>
-        </ElTable>
-      </div>
+    </ElTable>
 
-      <!-- 添加映射抽屉（P0a + P1a + P2a）-->
-      <BindingOperateDrawer v-model:visible="drawerVisible" :group-id="selectedGroupId" @submitted="getData" />
-    </ElCard>
+    <!-- 添加映射抽屉（P0a + P1a + P2a）-->
+    <BindingOperateDrawer v-model:visible="drawerVisible" :group-id="selectedGroupId" @submitted="getData" />
 
     <!-- 执行详情抽屉 -->
     <ElDrawer v-model="executionDetailVisible" title="权限分配执行详情" :width="600">
@@ -195,5 +194,5 @@
         <ElTableColumn prop="createdAt" label="执行时间" align="center" min-width="160" />
       </ElTable>
     </ElDrawer>
-  </div>
+  </ListPageLayout>
 </template>

@@ -1,13 +1,13 @@
 <script setup lang="tsx">
   import { ref } from 'vue';
   import { usePagination } from '@sa/alova/client';
-  import { enableStatusRecord, userGenderRecord } from '@/constants/business';
+  import { enableStatusOptions, enableStatusRecord, userGenderOptions, userGenderRecord } from '@/constants/business';
   import { batchDeleteUser, deleteUser, fetchGetUserList } from '@/service-alova/api';
+  import { translateOptions } from '@/utils/common';
   import { $t } from '@/locales';
   import useCheckedColumns from './hooks/use-checked-columns';
   import useTableOperate from './hooks/use-table-operate';
   import UserOperateDrawer from './modules/user-operate-drawer.vue';
-  import UserSearch from './modules/user-search.vue';
 
   const searchParams = ref({
     status: undefined,
@@ -43,6 +43,18 @@
     pageSize.value = newSize;
     send(page.value, newSize);
   };
+
+  // 布局重置按钮：恢复初始筛选（Object.assign 保持引用，alova watching 自动刷新）
+  function handleReset() {
+    Object.assign(searchParams.value, {
+      status: undefined,
+      userName: undefined,
+      userGender: undefined,
+      nickName: undefined,
+      userPhone: undefined,
+      userEmail: undefined
+    });
+  }
 
   const {
     drawerVisible,
@@ -142,61 +154,88 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <UserSearch v-model:model="searchParams" @search="getDataByPage" />
-    <ElCard class="card-wrapper sm:flex-1-hidden">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <p>{{ $t('page.manage.user.title') }}</p>
-          <TableHeaderOperation
-            v-model:columns="columnChecks"
-            :disabled-delete="checkedRowKeys.length === 0"
-            :loading="loading"
-            @add="handleAdd"
-            @delete="handleBatchDelete"
-            @refresh="refresh"
-          />
-        </div>
-      </template>
-      <div class="table-scroll-wrap">
-        <ElTable
-          v-loading="loading"
-          height="100%"
-          border
-          :data="data"
-          row-key="id"
-          @selection-change="checkedRowKeys = $event"
-        >
-          <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
-        </ElTable>
-      </div>
-      <div class="mt-20px flex justify-end">
-        <ElPagination
-          v-if="total"
-          layout="total,prev,pager,next,sizes"
-          :current-page="page"
-          :total="total"
-          :page-size="pageSize"
-          :page-sizes="[10, 15, 20, 25, 30]"
-          :page-count="pageCount"
-          @current-change="getDataByPage"
-          @size-change="handleSizeChange"
+  <ListPageLayout
+    :title="$t('page.manage.user.title')"
+    :pagination="
+      total
+        ? {
+            total,
+            currentPage: page,
+            pageSize,
+            pageCount,
+            pageSizes: [10, 15, 20, 25, 30],
+            'current-change': getDataByPage,
+            'size-change': handleSizeChange
+          }
+        : null
+    "
+    @search="getDataByPage"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElInput v-model="searchParams.userName" :placeholder="$t('page.manage.user.form.userName')" clearable class="w-180px" />
+      <ElSelect
+        v-model="searchParams.userGender"
+        :placeholder="$t('page.manage.user.form.userGender')"
+        clearable
+        class="w-120px"
+      >
+        <ElOption
+          v-for="{ label, value } in translateOptions(userGenderOptions)"
+          :key="value"
+          :label="label"
+          :value="value"
         />
-      </div>
-      <UserOperateDrawer
-        v-model:visible="drawerVisible"
-        :operate-type="operateType"
-        :row-data="editingData"
-        @submitted="reload"
-      />
-    </ElCard>
-  </div>
-</template>
+      </ElSelect>
+      <ElInput v-model="searchParams.nickName" :placeholder="$t('page.manage.user.form.nickName')" clearable class="w-180px" />
+      <ElInput v-model="searchParams.userPhone" :placeholder="$t('page.manage.user.form.userPhone')" clearable class="w-160px" />
+      <ElInput v-model="searchParams.userEmail" :placeholder="$t('page.manage.user.form.userEmail')" clearable class="w-200px" />
+      <ElSelect
+        v-model="searchParams.status"
+        :placeholder="$t('page.manage.user.form.userStatus')"
+        clearable
+        class="w-120px"
+      >
+        <ElOption
+          v-for="{ label, value } in translateOptions(enableStatusOptions)"
+          :key="value"
+          :label="label"
+          :value="value"
+        />
+      </ElSelect>
+    </template>
 
-<style lang="scss" scoped>
-  :deep(.el-card) {
-    .ht50 {
-      height: calc(100% - 50px);
-    }
-  }
-</style>
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <TableHeaderOperation
+        v-model:columns="columnChecks"
+        :disabled-delete="checkedRowKeys.length === 0"
+        :loading="loading"
+        @add="handleAdd"
+        @delete="handleBatchDelete"
+        @refresh="refresh"
+      />
+    </template>
+
+    <!-- 表格 -->
+    <ElTable
+      v-loading="loading"
+      height="100%"
+      border
+      :data="data"
+      row-key="id"
+      @selection-change="checkedRowKeys = $event"
+    >
+      <ElTableColumn v-for="col in columns" :key="col.prop" v-bind="col" />
+    </ElTable>
+
+    <!-- 用户新增/编辑抽屉 -->
+    <UserOperateDrawer
+      v-model:visible="drawerVisible"
+      :operate-type="operateType"
+      :row-data="editingData"
+      @submitted="reload"
+    />
+  </ListPageLayout>
+</template>

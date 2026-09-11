@@ -80,13 +80,13 @@
 </script>
 
 <template>
-  <div class="workloads-page p-24px">
-    <div class="mb-24px">
+  <div class="table-page p-24px">
+    <div class="shrink-0">
       <h1 class="text-28px text-primary font-bold">工作负载</h1>
       <p class="text-tertiary mt-8px text-14px">管理 Kubernetes 工作负载资源</p>
     </div>
 
-    <div class="mb-16px flex items-center justify-between gap-12px">
+    <div class="flex shrink-0 items-center justify-between gap-12px">
       <div class="flex items-center gap-8px">
         <ElSelect v-model="selectedCluster" placeholder="选择集群" style="width: 200px" @change="handleClusterChange">
           <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
@@ -244,13 +244,7 @@
 </template>
 
 <style scoped>
-  .workloads-page {
-    height: calc(100vh - 80px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
+  /* 高度模型由 .table-page 提供（h-full + flex-col + gap + overflow-hidden） */
   :deep(.el-tabs) {
     flex: 1;
     display: flex;

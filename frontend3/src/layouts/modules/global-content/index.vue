@@ -47,7 +47,7 @@
           :key="tabStore.getTabIdByRoute(route)"
           :class="{ 'p-16px': showPadding }"
           :data-msre-variant="themeStore.content.variant"
-          class="msre-content flex-grow bg-layout"
+          class="msre-content flex-grow"
         />
       </KeepAlive>
     </Transition>

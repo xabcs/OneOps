@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue';
+  import { computed, onMounted, ref } from 'vue';
   import { ElMessageBox } from 'element-plus';
   import {
     fetchDeleteAccessPolicy,
@@ -30,6 +30,22 @@
     page: 1,
     pageSize: 20
   });
+
+  // ListPageLayout 内联分页适配（替代手写 ElPagination）
+  const layoutPagination = computed(() => ({
+    total: total.value,
+    currentPage: pagination.value.page,
+    pageSize: pagination.value.pageSize,
+    pageSizes: [10, 20, 50, 100],
+    'current-change': (page: number) => {
+      pagination.value.page = page;
+      getPolicies();
+    },
+    'size-change': (size: number) => {
+      pagination.value.pageSize = size;
+      getPolicies();
+    }
+  }));
 
   // Drawer 状态
   const drawerVisible = ref(false);
@@ -223,137 +239,121 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <ElCard shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span class="title">访问策略管理</span>
-          <PermissionButton code="cmdb.access_policy.create" type="primary" @click="handleCreate">
-            新增策略
+  <ListPageLayout
+    title="访问策略管理"
+    description="管理用户与角色的资产访问授权，控制允许账号、协议与时间窗口"
+    :pagination="layoutPagination"
+  >
+    <template #toolbar>
+      <PermissionButton code="cmdb.access_policy.create" type="primary" @click="handleCreate">
+        新增策略
+      </PermissionButton>
+    </template>
+
+    <!-- 策略列表 -->
+    <ElTable v-loading="loading" :data="policies" stripe height="100%">
+      <ElTableColumn prop="id" label="ID" width="60" />
+
+      <ElTableColumn prop="name" label="策略名称" min-width="150" />
+
+      <ElTableColumn label="授权对象" width="200">
+        <template #default="{ row }">
+          <ElTag size="small" type="primary">
+            {{ row.subjectType === 'user' ? '用户' : row.subjectType === 'role' ? '角色' : '用户组' }}
+          </ElTag>
+          <span style="margin-left: 8px">
+            {{ getSubjectName(row.subjectType, row.subjectId) }}
+          </span>
+        </template>
+      </ElTableColumn>
+
+      <ElTableColumn label="资产范围" width="200">
+        <template #default="{ row }">
+          <ElTag size="small" type="success">
+            {{ getAssetScopeTypeName(row.assetScopeType) }}
+          </ElTag>
+          <span v-if="row.assetScopeType !== 'all'" style="margin-left: 8px">
+            {{ getAssetScopeName(row.assetScopeType, row.assetScopeId) }}
+          </span>
+        </template>
+      </ElTableColumn>
+
+      <ElTableColumn label="允许账号" width="200">
+        <template #default="{ row }">
+          <ElTag
+            v-for="(account, idx) in (row.loginAccounts || []).slice(0, 2)"
+            :key="idx"
+            size="small"
+            style="margin-right: 4px"
+          >
+            {{ account }}
+          </ElTag>
+          <span v-if="(row.loginAccounts || []).length > 2" style="font-size: 12px; color: #909399">
+            +{{ (row.loginAccounts || []).length - 2 }}
+          </span>
+        </template>
+      </ElTableColumn>
+
+      <ElTableColumn label="允许协议" width="120">
+        <template #default="{ row }">
+          <ElTag
+            v-for="(protocol, idx) in row.protocols || []"
+            :key="idx"
+            size="small"
+            :type="protocol === 'ssh' ? 'primary' : 'success'"
+            style="margin-right: 4px"
+          >
+            {{ protocol.toUpperCase() }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+
+      <ElTableColumn label="时间窗口" width="180">
+        <template #default="{ row }">
+          {{ formatTimeWindow(row.timeWindow) }}
+        </template>
+      </ElTableColumn>
+
+      <ElTableColumn label="状态" width="80">
+        <template #default="{ row }">
+          <ElTag :type="getStatusTag(row).type" size="small">
+            {{ getStatusTag(row).text }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+
+      <ElTableColumn label="操作" align="center" width="200" fixed="right" class-name="msre-table-actions">
+        <template #default="{ row }">
+          <PermissionButton
+            link
+            type="primary"
+            size="small"
+            code="cmdb.access_policy.update"
+            @click="handleEdit(row)"
+          >
+            编辑
           </PermissionButton>
-        </div>
-      </template>
-
-      <!-- 策略列表 -->
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" :data="policies" stripe height="100%">
-          <ElTableColumn prop="id" label="ID" width="60" />
-
-          <ElTableColumn prop="name" label="策略名称" min-width="150" />
-
-          <ElTableColumn label="授权对象" width="200">
-            <template #default="{ row }">
-              <ElTag size="small" type="primary">
-                {{ row.subjectType === 'user' ? '用户' : row.subjectType === 'role' ? '角色' : '用户组' }}
-              </ElTag>
-              <span style="margin-left: 8px">
-                {{ getSubjectName(row.subjectType, row.subjectId) }}
-              </span>
-            </template>
-          </ElTableColumn>
-
-          <ElTableColumn label="资产范围" width="200">
-            <template #default="{ row }">
-              <ElTag size="small" type="success">
-                {{ getAssetScopeTypeName(row.assetScopeType) }}
-              </ElTag>
-              <span v-if="row.assetScopeType !== 'all'" style="margin-left: 8px">
-                {{ getAssetScopeName(row.assetScopeType, row.assetScopeId) }}
-              </span>
-            </template>
-          </ElTableColumn>
-
-          <ElTableColumn label="允许账号" width="200">
-            <template #default="{ row }">
-              <ElTag
-                v-for="(account, idx) in (row.loginAccounts || []).slice(0, 2)"
-                :key="idx"
-                size="small"
-                style="margin-right: 4px"
-              >
-                {{ account }}
-              </ElTag>
-              <span v-if="(row.loginAccounts || []).length > 2" style="font-size: 12px; color: #909399">
-                +{{ (row.loginAccounts || []).length - 2 }}
-              </span>
-            </template>
-          </ElTableColumn>
-
-          <ElTableColumn label="允许协议" width="120">
-            <template #default="{ row }">
-              <ElTag
-                v-for="(protocol, idx) in row.protocols || []"
-                :key="idx"
-                size="small"
-                :type="protocol === 'ssh' ? 'primary' : 'success'"
-                style="margin-right: 4px"
-              >
-                {{ protocol.toUpperCase() }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-
-          <ElTableColumn label="时间窗口" width="180">
-            <template #default="{ row }">
-              {{ formatTimeWindow(row.timeWindow) }}
-            </template>
-          </ElTableColumn>
-
-          <ElTableColumn label="状态" width="80">
-            <template #default="{ row }">
-              <ElTag :type="getStatusTag(row).type" size="small">
-                {{ getStatusTag(row).text }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-
-          <ElTableColumn label="操作" align="center" width="200" fixed="right" class-name="msre-table-actions">
-            <template #default="{ row }">
-              <PermissionButton
-                link
-                type="primary"
-                size="small"
-                code="cmdb.access_policy.update"
-                @click="handleEdit(row)"
-              >
-                编辑
-              </PermissionButton>
-              <PermissionButton
-                link
-                type="primary"
-                size="small"
-                code="cmdb.access_policy.update"
-                @click="handleToggleStatus(row)"
-              >
-                {{ row.status === 1 ? '禁用' : '启用' }}
-              </PermissionButton>
-              <PermissionButton
-                link
-                type="danger"
-                size="small"
-                code="cmdb.access_policy.delete"
-                @click="handleDelete(row)"
-              >
-                删除
-              </PermissionButton>
-            </template>
-          </ElTableColumn>
-        </ElTable>
-      </div>
-
-      <!-- 分页 -->
-      <div class="pagination-wrapper">
-        <ElPagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="getPolicies"
-          @current-change="getPolicies"
-        />
-      </div>
-    </ElCard>
+          <PermissionButton
+            link
+            type="primary"
+            size="small"
+            code="cmdb.access_policy.update"
+            @click="handleToggleStatus(row)"
+          >
+            {{ row.status === 1 ? '禁用' : '启用' }}
+          </PermissionButton>
+          <PermissionButton
+            link
+            type="danger"
+            size="small"
+            code="cmdb.access_policy.delete"
+            @click="handleDelete(row)"
+          >
+            删除
+          </PermissionButton>
+        </template>
+      </ElTableColumn>
+    </ElTable>
 
     <PolicyOperateDrawer
       v-model:visible="drawerVisible"
@@ -361,28 +361,5 @@
       :row-data="editingData"
       @submitted="getPolicies"
     />
-  </div>
+  </ListPageLayout>
 </template>
-
-<style scoped>
-  .access-policies-page {
-    padding: 16px;
-  }
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .title {
-    font-size: 16px;
-    font-weight: 500;
-  }
-
-  .pagination-wrapper {
-    display: flex;
-    justify-content: center;
-    margin-top: 16px;
-  }
-</style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue';
+  import { computed, onMounted, ref } from 'vue';
   import { fetchGetSessions } from '@/service/api/cmdb';
   // 时间格式化与状态标签映射统一收敛到公共工具
   import { formatDateTime as formatTime, formatDurationHuman as formatDuration } from '@/utils/datetime';
@@ -15,6 +15,19 @@
     page: 1,
     pageSize: 20
   });
+
+  // ListPageLayout 内联分页适配（替代手写 ElPagination）
+  const layoutPagination = computed(() => ({
+    total: total.value,
+    currentPage: pagination.value.page,
+    pageSize: pagination.value.pageSize,
+    pageSizes: [10, 20, 50, 100],
+    'current-change': handlePageChange,
+    'size-change': (size: number) => {
+      pagination.value.pageSize = size;
+      handleSearch();
+    }
+  }));
 
   const filters = ref<{
     status?: string;
@@ -98,133 +111,82 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <ElCard shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span class="title">历史会话</span>
-          <ElButton type="primary" @click="getSessions">刷新</ElButton>
-        </div>
-      </template>
+  <ListPageLayout
+    title="历史会话"
+    description="查询堡垒机会话记录，追踪协议、时长与关闭原因"
+    :pagination="layoutPagination"
+    @search="handleSearch"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElSelect v-model="filters.status" placeholder="全部状态" clearable class="w-130px">
+        <ElOption v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+      </ElSelect>
+      <ElSelect v-model="filters.protocol" placeholder="全部协议" clearable class="w-110px">
+        <ElOption v-for="opt in protocolOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+      </ElSelect>
+      <ElDatePicker
+        v-model="dateRange"
+        type="daterange"
+        range-separator="至"
+        start-placeholder="开始日期"
+        end-placeholder="结束日期"
+        value-format="YYYY-MM-DD"
+        class="w-240px"
+      />
+    </template>
 
-      <div class="filter-bar">
-        <ElForm :inline="true" :model="filters">
-          <ElFormItem label="状态">
-            <ElSelect v-model="filters.status" placeholder="全部状态" clearable style="width: 130px">
-              <ElOption v-for="opt in statusOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-            </ElSelect>
-          </ElFormItem>
-          <ElFormItem label="协议">
-            <ElSelect v-model="filters.protocol" placeholder="全部协议" clearable style="width: 110px">
-              <ElOption v-for="opt in protocolOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-            </ElSelect>
-          </ElFormItem>
-          <ElFormItem label="时间范围">
-            <ElDatePicker
-              v-model="dateRange"
-              type="daterange"
-              range-separator="至"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
-              value-format="YYYY-MM-DD"
-              style="width: 240px"
-            />
-          </ElFormItem>
-          <ElFormItem>
-            <ElButton type="primary" @click="handleSearch">搜索</ElButton>
-            <ElButton @click="handleReset">重置</ElButton>
-          </ElFormItem>
-        </ElForm>
-      </div>
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <ElButton type="primary" @click="getSessions">刷新</ElButton>
+    </template>
 
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" :data="sessions" stripe height="100%">
-          <ElTableColumn prop="id" label="ID" width="70" />
-          <ElTableColumn prop="username" label="用户名" width="110" />
-          <ElTableColumn label="服务器" width="160">
-            <template #default="{ row }">
-              {{ row.server?.hostname || row.server?.ip || `ID:${row.serverId}` }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn prop="loginAccount" label="登录账号" width="120" />
-          <ElTableColumn prop="clientIp" label="客户端IP" width="140" />
-          <ElTableColumn prop="protocol" label="协议" width="90">
-            <template #default="{ row }">
-              <ElTag :type="row.protocol === 'ssh' ? 'primary' : 'success'" size="small">
-                {{ row.protocol?.toUpperCase() }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="开始时间" width="180">
-            <template #default="{ row }">
-              {{ formatTime(row.startedAt || '') }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="时长" width="110">
-            <template #default="{ row }">
-              {{ formatDuration(row.duration) }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="状态" width="90">
-            <template #default="{ row }">
-              <ElTag :type="getStatusTag(row.status).type" size="small">
-                {{ getStatusTag(row.status).text }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="关闭原因" width="150" show-overflow-tooltip>
-            <template #default="{ row }">
-              {{ row.closeReason || '-' }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="操作" align="center" width="100" fixed="right" class-name="msre-table-actions">
-            <template #default="{ row }">
-              <ElButton link type="primary" size="small" @click="handleViewDetail(row)">详情</ElButton>
-            </template>
-          </ElTableColumn>
-        </ElTable>
-      </div>
-
-      <div class="pagination-wrapper">
-        <ElPagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSearch"
-          @current-change="handlePageChange"
-        />
-      </div>
-    </ElCard>
-  </div>
+    <!-- 表格 -->
+    <ElTable v-loading="loading" :data="sessions" stripe height="100%">
+      <ElTableColumn prop="id" label="ID" width="70" />
+      <ElTableColumn prop="username" label="用户名" width="110" />
+      <ElTableColumn label="服务器" width="160">
+        <template #default="{ row }">
+          {{ row.server?.hostname || row.server?.ip || `ID:${row.serverId}` }}
+        </template>
+      </ElTableColumn>
+      <ElTableColumn prop="loginAccount" label="登录账号" width="120" />
+      <ElTableColumn prop="clientIp" label="客户端IP" width="140" />
+      <ElTableColumn prop="protocol" label="协议" width="90">
+        <template #default="{ row }">
+          <ElTag :type="row.protocol === 'ssh' ? 'primary' : 'success'" size="small">
+            {{ row.protocol?.toUpperCase() }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="开始时间" width="180">
+        <template #default="{ row }">
+          {{ formatTime(row.startedAt || '') }}
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="时长" width="110">
+        <template #default="{ row }">
+          {{ formatDuration(row.duration) }}
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="状态" width="90">
+        <template #default="{ row }">
+          <ElTag :type="getStatusTag(row.status).type" size="small">
+            {{ getStatusTag(row.status).text }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="关闭原因" width="150" show-overflow-tooltip>
+        <template #default="{ row }">
+          {{ row.closeReason || '-' }}
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="操作" align="center" width="100" fixed="right" class-name="msre-table-actions">
+        <template #default="{ row }">
+          <ElButton link type="primary" size="small" @click="handleViewDetail(row)">详情</ElButton>
+        </template>
+      </ElTableColumn>
+    </ElTable>
+  </ListPageLayout>
 </template>
-
-<style scoped>
-  .sessions-page {
-    padding: 16px;
-  }
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .title {
-    font-size: 16px;
-    font-weight: 500;
-  }
-
-  .filter-bar {
-    padding: 16px;
-    background: #f5f7fa;
-    border-radius: 4px;
-  }
-
-  .pagination-wrapper {
-    display: flex;
-    justify-content: center;
-    margin-top: 16px;
-  }
-</style>

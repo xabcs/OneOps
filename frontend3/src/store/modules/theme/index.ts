@@ -299,6 +299,7 @@ export const useThemeStore = defineStore(SetupStoreId.Theme, () => {
         ...preset.dataTable,
         tableStyle: settings.value.content.dataTable.tableStyle
       },
+      page: { background: settings.value.content.page.background },
       colors: { ...settings.value.content.colors },
       text: { ...settings.value.content.text },
       border: { ...settings.value.content.border }

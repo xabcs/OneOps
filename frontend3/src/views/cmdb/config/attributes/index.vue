@@ -89,6 +89,12 @@
     getAttributes();
   }
 
+  // 重置分类筛选
+  function handleReset() {
+    selectedCategory.value = '';
+    getAttributes();
+  }
+
   // 新增属性
   function handleCreate() {
     dialogMode.value = 'create';
@@ -261,95 +267,94 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <ElCard shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span class="title">属性管理</span>
-          <PermissionButton code="cmdb.attribute.create" type="primary" @click="handleCreate">
-            <icon-mdi-plus class="text-icon" />
-            新增属性
+  <ListPageLayout
+    title="属性管理"
+    description="定义资产扩展属性的分类、类型与取值选项"
+    @search="getAttributes"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElRadioGroup v-model="selectedCategory" @change="handleCategoryChange">
+        <ElRadioButton label="">全部</ElRadioButton>
+        <ElRadioButton label="system">系统分类</ElRadioButton>
+        <ElRadioButton label="location">地理位置</ElRadioButton>
+        <ElRadioButton label="environment">环境信息</ElRadioButton>
+        <ElRadioButton label="hardware">硬件配置</ElRadioButton>
+        <ElRadioButton label="custom">自定义</ElRadioButton>
+      </ElRadioGroup>
+    </template>
+
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <PermissionButton code="cmdb.attribute.create" type="primary" @click="handleCreate">
+        <icon-mdi-plus class="text-icon" />
+        新增属性
+      </PermissionButton>
+    </template>
+
+    <!-- 属性列表表格 -->
+    <ElTable v-loading="loading" :data="attributes" stripe height="100%">
+      <ElTableColumn prop="name" label="属性名称" min-width="120" />
+      <ElTableColumn prop="key" label="属性键" min-width="120">
+        <template #default="{ row }">
+          <ElTag type="info" size="small">{{ row.key }}</ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="分类" width="100">
+        <template #default="{ row }">
+          <ElTag :type="getCategoryTagType(row.category)" size="small">
+            {{ getCategoryName(row.category) }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="类型" width="100">
+        <template #default="{ row }">
+          {{ getTypeName(row.type) }}
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="选项预览" min-width="200">
+        <template #default="{ row }">
+          <template v-if="row.type === 'select' || row.type === 'multiselect'">
+            <ElTag
+              v-for="(opt, idx) in parseOptions(row.options)"
+              :key="idx"
+              type="info"
+              size="small"
+              style="margin-right: 4px; margin-bottom: 4px"
+            >
+              {{ opt.label }}
+            </ElTag>
+          </template>
+          <span v-else class="text-gray-400">-</span>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="必填" width="80" align="center">
+        <template #default="{ row }">
+          <ElTag :type="row.required ? 'danger' : 'info'" size="small">
+            {{ row.required ? '是' : '否' }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn prop="sortOrder" label="排序" width="80" align="center" />
+      <ElTableColumn label="状态" width="80" align="center">
+        <template #default="{ row }">
+          <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
+            {{ row.status === 1 ? '启用' : '禁用' }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="操作" width="150" align="center" fixed="right" class-name="msre-table-actions">
+        <template #default="{ row }">
+          <PermissionButton link type="primary" size="small" code="cmdb.attribute.update" @click="handleEdit(row)">
+            编辑
           </PermissionButton>
-        </div>
-      </template>
-
-      <!-- 筛选栏 -->
-      <div class="filter-bar">
-        <ElRadioGroup v-model="selectedCategory" @change="handleCategoryChange">
-          <ElRadioButton label="">全部</ElRadioButton>
-          <ElRadioButton label="system">系统分类</ElRadioButton>
-          <ElRadioButton label="location">地理位置</ElRadioButton>
-          <ElRadioButton label="environment">环境信息</ElRadioButton>
-          <ElRadioButton label="hardware">硬件配置</ElRadioButton>
-          <ElRadioButton label="custom">自定义</ElRadioButton>
-        </ElRadioGroup>
-      </div>
-
-      <!-- 属性列表表格 -->
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" :data="attributes" stripe height="100%">
-          <ElTableColumn prop="name" label="属性名称" min-width="120" />
-          <ElTableColumn prop="key" label="属性键" min-width="120">
-            <template #default="{ row }">
-              <ElTag type="info" size="small">{{ row.key }}</ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="分类" width="100">
-            <template #default="{ row }">
-              <ElTag :type="getCategoryTagType(row.category)" size="small">
-                {{ getCategoryName(row.category) }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="类型" width="100">
-            <template #default="{ row }">
-              {{ getTypeName(row.type) }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="选项预览" min-width="200">
-            <template #default="{ row }">
-              <template v-if="row.type === 'select' || row.type === 'multiselect'">
-                <ElTag
-                  v-for="(opt, idx) in parseOptions(row.options)"
-                  :key="idx"
-                  type="info"
-                  size="small"
-                  style="margin-right: 4px; margin-bottom: 4px"
-                >
-                  {{ opt.label }}
-                </ElTag>
-              </template>
-              <span v-else class="text-gray-400">-</span>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="必填" width="80" align="center">
-            <template #default="{ row }">
-              <ElTag :type="row.required ? 'danger' : 'info'" size="small">
-                {{ row.required ? '是' : '否' }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn prop="sortOrder" label="排序" width="80" align="center" />
-          <ElTableColumn label="状态" width="80" align="center">
-            <template #default="{ row }">
-              <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
-                {{ row.status === 1 ? '启用' : '禁用' }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="操作" width="150" align="center" fixed="right" class-name="msre-table-actions">
-            <template #default="{ row }">
-              <PermissionButton link type="primary" size="small" code="cmdb.attribute.update" @click="handleEdit(row)">
-                编辑
-              </PermissionButton>
-              <PermissionButton link type="danger" size="small" code="cmdb.attribute.delete" @click="handleDelete(row)">
-                删除
-              </PermissionButton>
-            </template>
-          </ElTableColumn>
-        </ElTable>
-      </div>
-    </ElCard>
+          <PermissionButton link type="danger" size="small" code="cmdb.attribute.delete" @click="handleDelete(row)">
+            删除
+          </PermissionButton>
+        </template>
+      </ElTableColumn>
+    </ElTable>
 
     <!-- 属性表单对话框 -->
     <ElDialog
@@ -428,29 +433,10 @@
         <ElButton type="primary" @click="handleSubmit">保存</ElButton>
       </template>
     </ElDialog>
-  </div>
+  </ListPageLayout>
 </template>
 
 <style scoped>
-  .attributes-page {
-    padding: 16px;
-  }
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .title {
-    font-size: 16px;
-    font-weight: 500;
-  }
-
-  .filter-bar {
-    margin-bottom: 16px;
-  }
-
   .options-config {
     display: flex;
     flex-direction: column;

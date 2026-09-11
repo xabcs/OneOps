@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { onMounted, ref, watch } from 'vue';
   import { ElMessage } from 'element-plus';
-  import { Key, Refresh, Search } from '@element-plus/icons-vue';
+  import { Search } from '@element-plus/icons-vue';
   import {
     fetchK8sClusterNamespaces,
     fetchK8sClusters,
@@ -209,160 +209,146 @@
     return (row.subjects || []).map(s => `${s.kind}/${s.name}`).join('、');
   }
 
+  function handleReset() {
+    search.value = '';
+    namespaceFilter.value = '';
+    loadList();
+  }
+
   onMounted(() => {
     loadClusters();
   });
 </script>
 
 <template>
-  <div class="flex flex-col gap-16px">
-    <!-- Hero 区域 -->
-    <ElCard shadow="hover">
-      <div class="flex flex-wrap items-center justify-between gap-12px">
-        <div class="flex items-center gap-12px">
-          <ElIcon :size="24">
-            <Key />
-          </ElIcon>
-          <div class="flex flex-col gap-2px">
-            <h2 class="m-0 text-18px font-bold">角色管理</h2>
-            <p class="m-0 text-13px opacity-70">
-              集群内原生 RBAC 对象代管：ClusterRole / Role / ClusterRoleBinding / RoleBinding，Helm
-              等外部管理的对象可查看但编辑会被还原
-            </p>
-          </div>
-        </div>
-        <div class="flex items-center gap-8px">
-          <ElSelect v-model="clusterId" filterable placeholder="选择集群" style="width: 240px">
-            <ElOption v-for="c in clusters" :key="c.id" :value="c.id" :label="c.name" />
-          </ElSelect>
-          <ElButton size="small" :loading="loading" @click="loadList">
-            <ElIcon>
-              <Refresh />
-            </ElIcon>
-            刷新
-          </ElButton>
-        </div>
-      </div>
-    </ElCard>
+  <ListPageLayout
+    title="角色管理"
+    description="集群内原生 RBAC 对象代管：ClusterRole / Role / ClusterRoleBinding / RoleBinding，Helm 等外部管理的对象可查看但编辑会被还原"
+    embedded-search
+    @search="loadList"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选：集群 / 关键字 / 命名空间 -->
+    <template #search>
+      <ElSelect v-model="clusterId" filterable placeholder="选择集群" style="width: 240px">
+        <ElOption v-for="c in clusters" :key="c.id" :value="c.id" :label="c.name" />
+      </ElSelect>
+      <ElInput
+        v-model="search"
+        :prefix-icon="Search"
+        placeholder="按名称 / 主体搜索"
+        clearable
+        style="width: 240px"
+        @keyup.enter="loadList"
+        @clear="loadList"
+      />
+      <ElSelect
+        v-if="showNamespaceFilter()"
+        v-model="namespaceFilter"
+        filterable
+        clearable
+        placeholder="命名空间（全部）"
+        style="width: 200px"
+        @change="loadList"
+      >
+        <ElOption v-for="ns in namespaces" :key="ns" :value="ns" :label="ns" />
+      </ElSelect>
+    </template>
 
-    <ElCard shadow="hover">
+    <template #tabs>
       <ElTabs v-model="activeTab">
         <ElTabPane label="ClusterRole" name="clusterroles" />
         <ElTabPane label="Role（命名空间级）" name="roles" />
         <ElTabPane label="ClusterRoleBinding" name="crbs" />
         <ElTabPane label="RoleBinding（命名空间级）" name="rbs" />
       </ElTabs>
+    </template>
 
-      <div class="mb-12px flex items-center gap-8px">
-        <ElInput
-          v-model="search"
-          :prefix-icon="Search"
-          placeholder="按名称 / 主体搜索"
-          clearable
-          style="width: 240px"
-          @keyup.enter="loadList"
-          @clear="loadList"
-        />
-        <ElSelect
-          v-if="showNamespaceFilter()"
-          v-model="namespaceFilter"
-          filterable
-          clearable
-          placeholder="命名空间（全部）"
-          style="width: 200px"
-          @change="loadList"
-        >
-          <ElOption v-for="ns in namespaces" :key="ns" :value="ns" :label="ns" />
-        </ElSelect>
-        <ElButton type="primary" plain @click="loadList">查询</ElButton>
-      </div>
+    <!-- ClusterRole -->
+    <ElTable v-if="activeTab === 'clusterroles'" v-loading="loading" :data="clusterRoles" stripe height="100%">
+      <ElTableColumn prop="name" label="名称" min-width="260" show-overflow-tooltip />
+      <ElTableColumn label="管理方" width="130">
+        <template #default="{ row }">
+          <ElTag v-if="row.managedBy" type="warning" size="small" effect="plain">{{ row.managedBy }}</ElTag>
+          <ElTag v-else type="info" size="small" effect="plain">原生</ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn prop="rules" label="规则数" width="90" />
+      <ElTableColumn prop="createdAt" label="创建时间" width="170" />
+      <ElTableColumn label="操作" align="center" width="130" fixed="right" class-name="msre-table-actions">
+        <template #default="{ row }">
+          <ElButton link type="primary" size="small" @click="openRoleDetail('ClusterRole', row)">详情</ElButton>
+        </template>
+      </ElTableColumn>
+    </ElTable>
 
-      <!-- ClusterRole -->
-      <ElTable v-if="activeTab === 'clusterroles'" v-loading="loading" :data="clusterRoles" stripe>
-        <ElTableColumn prop="name" label="名称" min-width="260" show-overflow-tooltip />
-        <ElTableColumn label="管理方" width="130">
-          <template #default="{ row }">
-            <ElTag v-if="row.managedBy" type="warning" size="small" effect="plain">{{ row.managedBy }}</ElTag>
-            <ElTag v-else type="info" size="small" effect="plain">原生</ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn prop="rules" label="规则数" width="90" />
-        <ElTableColumn prop="createdAt" label="创建时间" width="170" />
-        <ElTableColumn label="操作" align="center" width="130" fixed="right" class-name="msre-table-actions">
-          <template #default="{ row }">
-            <ElButton link type="primary" size="small" @click="openRoleDetail('ClusterRole', row)">详情</ElButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
+    <!-- Role -->
+    <ElTable v-else-if="activeTab === 'roles'" v-loading="loading" :data="roles" stripe height="100%">
+      <ElTableColumn prop="name" label="名称" min-width="240" show-overflow-tooltip />
+      <ElTableColumn prop="namespace" label="命名空间" min-width="140" show-overflow-tooltip />
+      <ElTableColumn label="管理方" width="130">
+        <template #default="{ row }">
+          <ElTag v-if="row.managedBy" type="warning" size="small" effect="plain">{{ row.managedBy }}</ElTag>
+          <ElTag v-else type="info" size="small" effect="plain">原生</ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn prop="rules" label="规则数" width="90" />
+      <ElTableColumn prop="createdAt" label="创建时间" width="170" />
+      <ElTableColumn label="操作" align="center" width="130" fixed="right" class-name="msre-table-actions">
+        <template #default="{ row }">
+          <ElButton link type="primary" size="small" @click="openRoleDetail('Role', row)">详情</ElButton>
+        </template>
+      </ElTableColumn>
+    </ElTable>
 
-      <!-- Role -->
-      <ElTable v-else-if="activeTab === 'roles'" v-loading="loading" :data="roles" stripe>
-        <ElTableColumn prop="name" label="名称" min-width="240" show-overflow-tooltip />
-        <ElTableColumn prop="namespace" label="命名空间" min-width="140" show-overflow-tooltip />
-        <ElTableColumn label="管理方" width="130">
-          <template #default="{ row }">
-            <ElTag v-if="row.managedBy" type="warning" size="small" effect="plain">{{ row.managedBy }}</ElTag>
-            <ElTag v-else type="info" size="small" effect="plain">原生</ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn prop="rules" label="规则数" width="90" />
-        <ElTableColumn prop="createdAt" label="创建时间" width="170" />
-        <ElTableColumn label="操作" align="center" width="130" fixed="right" class-name="msre-table-actions">
-          <template #default="{ row }">
-            <ElButton link type="primary" size="small" @click="openRoleDetail('Role', row)">详情</ElButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
+    <!-- ClusterRoleBinding -->
+    <ElTable v-else-if="activeTab === 'crbs'" v-loading="loading" :data="crbs" stripe height="100%">
+      <ElTableColumn prop="name" label="名称" min-width="240" show-overflow-tooltip />
+      <ElTableColumn label="主体" min-width="240" show-overflow-tooltip>
+        <template #default="{ row }">{{ subjectPreview(row) }}</template>
+      </ElTableColumn>
+      <ElTableColumn label="引用角色" min-width="200" show-overflow-tooltip>
+        <template #default="{ row }">{{ row.roleKind }}/{{ row.roleName }}</template>
+      </ElTableColumn>
+      <ElTableColumn label="管理方" width="130">
+        <template #default="{ row }">
+          <ElTag v-if="row.managedBy === 'oneops'" type="success" size="small" effect="plain">OneOps</ElTag>
+          <ElTag v-else-if="row.managedBy" type="warning" size="small" effect="plain">{{ row.managedBy }}</ElTag>
+          <ElTag v-else type="info" size="small" effect="plain">原生</ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn prop="createdAt" label="创建时间" width="170" />
+      <ElTableColumn label="操作" align="center" width="130" fixed="right" class-name="msre-table-actions">
+        <template #default="{ row }">
+          <ElButton link type="primary" size="small" @click="openBindingDetail('CRB', row)">详情</ElButton>
+        </template>
+      </ElTableColumn>
+    </ElTable>
 
-      <!-- ClusterRoleBinding -->
-      <ElTable v-else-if="activeTab === 'crbs'" v-loading="loading" :data="crbs" stripe>
-        <ElTableColumn prop="name" label="名称" min-width="240" show-overflow-tooltip />
-        <ElTableColumn label="主体" min-width="240" show-overflow-tooltip>
-          <template #default="{ row }">{{ subjectPreview(row) }}</template>
-        </ElTableColumn>
-        <ElTableColumn label="引用角色" min-width="200" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.roleKind }}/{{ row.roleName }}</template>
-        </ElTableColumn>
-        <ElTableColumn label="管理方" width="130">
-          <template #default="{ row }">
-            <ElTag v-if="row.managedBy === 'oneops'" type="success" size="small" effect="plain">OneOps</ElTag>
-            <ElTag v-else-if="row.managedBy" type="warning" size="small" effect="plain">{{ row.managedBy }}</ElTag>
-            <ElTag v-else type="info" size="small" effect="plain">原生</ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn prop="createdAt" label="创建时间" width="170" />
-        <ElTableColumn label="操作" align="center" width="130" fixed="right" class-name="msre-table-actions">
-          <template #default="{ row }">
-            <ElButton link type="primary" size="small" @click="openBindingDetail('CRB', row)">详情</ElButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
-
-      <!-- RoleBinding -->
-      <ElTable v-else v-loading="loading" :data="rbs" stripe>
-        <ElTableColumn prop="name" label="名称" min-width="220" show-overflow-tooltip />
-        <ElTableColumn prop="namespace" label="命名空间" min-width="130" show-overflow-tooltip />
-        <ElTableColumn label="主体" min-width="220" show-overflow-tooltip>
-          <template #default="{ row }">{{ subjectPreview(row) }}</template>
-        </ElTableColumn>
-        <ElTableColumn label="引用角色" min-width="200" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.roleKind }}/{{ row.roleName }}</template>
-        </ElTableColumn>
-        <ElTableColumn label="管理方" width="130">
-          <template #default="{ row }">
-            <ElTag v-if="row.managedBy === 'oneops'" type="success" size="small" effect="plain">OneOps</ElTag>
-            <ElTag v-else-if="row.managedBy" type="warning" size="small" effect="plain">{{ row.managedBy }}</ElTag>
-            <ElTag v-else type="info" size="small" effect="plain">原生</ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn prop="createdAt" label="创建时间" width="170" />
-        <ElTableColumn label="操作" align="center" width="130" fixed="right" class-name="msre-table-actions">
-          <template #default="{ row }">
-            <ElButton link type="primary" size="small" @click="openBindingDetail('RB', row)">详情</ElButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
-    </ElCard>
+    <!-- RoleBinding -->
+    <ElTable v-else v-loading="loading" :data="rbs" stripe height="100%">
+      <ElTableColumn prop="name" label="名称" min-width="220" show-overflow-tooltip />
+      <ElTableColumn prop="namespace" label="命名空间" min-width="130" show-overflow-tooltip />
+      <ElTableColumn label="主体" min-width="220" show-overflow-tooltip>
+        <template #default="{ row }">{{ subjectPreview(row) }}</template>
+      </ElTableColumn>
+      <ElTableColumn label="引用角色" min-width="200" show-overflow-tooltip>
+        <template #default="{ row }">{{ row.roleKind }}/{{ row.roleName }}</template>
+      </ElTableColumn>
+      <ElTableColumn label="管理方" width="130">
+        <template #default="{ row }">
+          <ElTag v-if="row.managedBy === 'oneops'" type="success" size="small" effect="plain">OneOps</ElTag>
+          <ElTag v-else-if="row.managedBy" type="warning" size="small" effect="plain">{{ row.managedBy }}</ElTag>
+          <ElTag v-else type="info" size="small" effect="plain">原生</ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn prop="createdAt" label="创建时间" width="170" />
+      <ElTableColumn label="操作" align="center" width="130" fixed="right" class-name="msre-table-actions">
+        <template #default="{ row }">
+          <ElButton link type="primary" size="small" @click="openBindingDetail('RB', row)">详情</ElButton>
+        </template>
+      </ElTableColumn>
+    </ElTable>
 
     <!-- 详情抽屉 -->
     <ElDrawer v-model="detailVisible" :title="detailTitle" size="60%">
@@ -476,7 +462,5 @@
         <ElButton type="primary" :loading="editSaving" @click="handleSave">保存</ElButton>
       </template>
     </ElDialog>
-  </div>
+  </ListPageLayout>
 </template>
-
-<style scoped></style>

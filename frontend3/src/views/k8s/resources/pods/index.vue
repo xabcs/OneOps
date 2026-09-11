@@ -125,6 +125,13 @@
     loadPods();
   };
 
+  // 重置筛选（集群/命名空间为作用域，仅重置标签选择器）
+  const handleReset = () => {
+    filters.labelSelector = '';
+    pagination.page = 1;
+    loadPods();
+  };
+
   // 进入终端
   const handleTerminal = (row: K8s.Pod, containerName?: string) => {
     terminalProps.value = {
@@ -208,45 +215,36 @@
 </script>
 
 <template>
-  <div class="p-4">
-    <!-- 筛选栏 -->
-    <div class="bg-card mb-4 flex items-center gap-4 rounded-lg p-4">
-      <div class="flex items-center gap-2">
-        <span class="text-sm font-medium">集群:</span>
-        <ElSelect v-model="selectedCluster" placeholder="请选择集群" style="width: 200px" @change="handleClusterChange">
-          <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
-        </ElSelect>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <span class="text-sm font-medium">命名空间:</span>
-        <ElSelect
-          v-model="selectedNamespace"
-          placeholder="请选择命名空间"
-          style="width: 180px"
-          @change="handleNamespaceChange"
-        >
-          <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
-        </ElSelect>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <ElInput
-          v-model="filters.labelSelector"
-          placeholder="标签选择器 (可选)"
-          style="width: 200px"
-          clearable
-          @change="handleSearch"
-        />
-      </div>
-
-      <div class="flex-1" />
-
-      <ElButton type="primary" :disabled="!selectedCluster" @click="handleRefresh">刷新</ElButton>
-    </div>
+  <ListPageLayout
+    title="容器组（Pod）"
+    description="查看集群内容器组运行状态，支持日志查看、终端连接与删除"
+    @search="handleRefresh"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选：集群 / 命名空间 / 标签选择器 -->
+    <template #search>
+      <ElSelect v-model="selectedCluster" placeholder="请选择集群" style="width: 200px" @change="handleClusterChange">
+        <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
+      </ElSelect>
+      <ElSelect
+        v-model="selectedNamespace"
+        placeholder="请选择命名空间"
+        style="width: 180px"
+        @change="handleNamespaceChange"
+      >
+        <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
+      </ElSelect>
+      <ElInput
+        v-model="filters.labelSelector"
+        placeholder="标签选择器 (可选)"
+        style="width: 200px"
+        clearable
+        @change="handleSearch"
+      />
+    </template>
 
     <!-- Pod 列表 -->
-    <ElTable v-loading="loading" :data="dataSource" stripe>
+    <ElTable v-loading="loading" :data="dataSource" stripe height="100%">
       <ElTableColumn prop="name" label="名称" min-width="200">
         <template #default="{ row }">
           <ElButton link type="primary" @click="handleViewDetail(row)">{{ row.name }}</ElButton>
@@ -299,5 +297,5 @@
       :pod-name="terminalProps.podName"
       :container-name="terminalProps.containerName"
     />
-  </div>
+  </ListPageLayout>
 </template>

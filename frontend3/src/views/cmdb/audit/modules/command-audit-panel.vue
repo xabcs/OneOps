@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { onMounted, ref } from 'vue';
+  import { computed, onMounted, ref } from 'vue';
   import { fetchGetCommands } from '@/service/api/cmdb';
   // 时间格式化统一收敛到 @/utils/datetime（formatTime 为兼容旧命名的别名）
   import { formatDateTime as formatTime } from '@/utils/datetime';
@@ -13,6 +13,20 @@
     page: 1,
     pageSize: 20
   });
+
+  // ListPageLayout 内联分页适配（替代手写 ElPagination）
+  const layoutPagination = computed(() => ({
+    total: total.value,
+    currentPage: pagination.value.page,
+    pageSize: pagination.value.pageSize,
+    pageSizes: [10, 20, 50, 100],
+    'current-change': handlePageChange,
+    'size-change': (size: number) => {
+      pagination.value.pageSize = size;
+      pagination.value.page = 1;
+      getCommands();
+    }
+  }));
 
   // 筛选条件
   const filters = ref<{
@@ -128,159 +142,114 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <ElCard shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span class="title">命令审计</span>
-          <ElButton type="primary" @click="getCommands">刷新</ElButton>
-        </div>
-      </template>
-
-      <!-- 筛选条件 -->
-      <div class="filter-bar">
-        <ElForm :inline="true" :model="filters">
-          <ElFormItem label="命令">
-            <ElInput
-              v-model="filters.command"
-              placeholder="输入命令关键字"
-              clearable
-              style="width: 200px"
-              @keyup.enter="handleSearch"
-            />
-          </ElFormItem>
-
-          <ElFormItem label="风险等级">
-            <ElSelect v-model="filters.riskLevel" placeholder="选择风险等级" clearable style="width: 150px">
-              <ElOption
-                v-for="option in riskLevelOptions"
-                :key="option.value"
-                :value="option.value"
-                :label="option.label"
-              />
-            </ElSelect>
-          </ElFormItem>
-
-          <ElFormItem label="是否拦截">
-            <ElSelect v-model="filters.blocked" placeholder="选择" clearable style="width: 120px">
-              <ElOption :value="true" label="是" />
-              <ElOption :value="false" label="否" />
-            </ElSelect>
-          </ElFormItem>
-
-          <ElFormItem>
-            <ElButton type="primary" @click="handleSearch">搜索</ElButton>
-            <ElButton @click="handleReset">重置</ElButton>
-          </ElFormItem>
-        </ElForm>
-      </div>
-
-      <!-- 命令表格 -->
-      <div class="table-scroll-wrap">
-        <ElTable
-          v-loading="loading"
-          :data="commands"
-          stripe
-          height="100%"
-          :default-sort="{ prop: 'executedAt', order: 'descending' }"
-        >
-          <ElTableColumn prop="id" label="ID" width="60" />
-
-          <ElTableColumn label="会话ID" width="80">
-            <template #default="{ row }">
-              {{ row.sessionId }}
-            </template>
-          </ElTableColumn>
-
-          <ElTableColumn label="用户" width="100">
-            <template #default="{ row }">
-              {{ row.session?.user?.username || '-' }}
-            </template>
-          </ElTableColumn>
-
-          <ElTableColumn label="服务器" width="120">
-            <template #default="{ row }">
-              {{ row.session?.server?.hostname || '-' }}
-            </template>
-          </ElTableColumn>
-
-          <ElTableColumn label="命令" min-width="300">
-            <template #default="{ row }">
-              <div class="command-cell">
-                <code class="command-text" :style="{ color: getRiskLevelColor(row.riskLevel) }">
-                  {{ row.command }}
-                </code>
-                <ElTag v-if="row.blocked" type="danger" size="small" style="margin-left: 8px">已拦截</ElTag>
-              </div>
-            </template>
-          </ElTableColumn>
-
-          <ElTableColumn label="风险等级" width="100">
-            <template #default="{ row }">
-              <ElTag :type="getRiskLevelType(row.riskLevel)" size="small">
-                {{ getRiskLevelText(row.riskLevel) }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-
-          <ElTableColumn label="退出码" width="80">
-            <template #default="{ row }">
-              <span :class="row.exitCode === 0 ? 'text-success' : 'text-danger'">
-                {{ row.exitCode ?? '-' }}
-              </span>
-            </template>
-          </ElTableColumn>
-
-          <ElTableColumn label="执行时间" width="160">
-            <template #default="{ row }">
-              {{ formatTime(row.executedAt || '') }}
-            </template>
-          </ElTableColumn>
-
-          <ElTableColumn label="输出摘要" width="200">
-            <template #default="{ row }">
-              <ElText truncated :title="row.outputSummary">
-                {{ row.outputSummary || '-' }}
-              </ElText>
-            </template>
-          </ElTableColumn>
-        </ElTable>
-      </div>
-
-      <!-- 分页 -->
-      <div class="pagination-wrapper">
-        <ElPagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.pageSize"
-          :total="total"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handlePageChange"
-          @current-change="handlePageChange"
+  <ListPageLayout
+    title="命令审计"
+    description="检索堡垒机会话执行的命令，追踪风险等级与拦截记录"
+    :pagination="layoutPagination"
+    @search="handleSearch"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElInput
+        v-model="filters.command"
+        placeholder="输入命令关键字"
+        clearable
+        class="w-200px"
+        @keyup.enter="handleSearch"
+      />
+      <ElSelect v-model="filters.riskLevel" placeholder="选择风险等级" clearable class="w-150px">
+        <ElOption
+          v-for="option in riskLevelOptions"
+          :key="option.value"
+          :value="option.value"
+          :label="option.label"
         />
-      </div>
-    </ElCard>
-  </div>
+      </ElSelect>
+      <ElSelect v-model="filters.blocked" placeholder="是否拦截" clearable class="w-120px">
+        <ElOption :value="true" label="是" />
+        <ElOption :value="false" label="否" />
+      </ElSelect>
+    </template>
+
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <ElButton type="primary" @click="getCommands">刷新</ElButton>
+    </template>
+
+    <!-- 命令表格 -->
+    <ElTable
+      v-loading="loading"
+      :data="commands"
+      stripe
+      height="100%"
+      :default-sort="{ prop: 'executedAt', order: 'descending' }"
+    >
+      <ElTableColumn prop="id" label="ID" width="60" />
+
+      <ElTableColumn label="会话ID" width="80">
+        <template #default="{ row }">
+          {{ row.sessionId }}
+        </template>
+      </ElTableColumn>
+
+      <ElTableColumn label="用户" width="100">
+        <template #default="{ row }">
+          {{ row.session?.user?.username || '-' }}
+        </template>
+      </ElTableColumn>
+
+      <ElTableColumn label="服务器" width="120">
+        <template #default="{ row }">
+          {{ row.session?.server?.hostname || '-' }}
+        </template>
+      </ElTableColumn>
+
+      <ElTableColumn label="命令" min-width="300">
+        <template #default="{ row }">
+          <div class="command-cell">
+            <code class="command-text" :style="{ color: getRiskLevelColor(row.riskLevel) }">
+              {{ row.command }}
+            </code>
+            <ElTag v-if="row.blocked" type="danger" size="small" style="margin-left: 8px">已拦截</ElTag>
+          </div>
+        </template>
+      </ElTableColumn>
+
+      <ElTableColumn label="风险等级" width="100">
+        <template #default="{ row }">
+          <ElTag :type="getRiskLevelType(row.riskLevel)" size="small">
+            {{ getRiskLevelText(row.riskLevel) }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+
+      <ElTableColumn label="退出码" width="80">
+        <template #default="{ row }">
+          <span :class="row.exitCode === 0 ? 'text-success' : 'text-danger'">
+            {{ row.exitCode ?? '-' }}
+          </span>
+        </template>
+      </ElTableColumn>
+
+      <ElTableColumn label="执行时间" width="160">
+        <template #default="{ row }">
+          {{ formatTime(row.executedAt || '') }}
+        </template>
+      </ElTableColumn>
+
+      <ElTableColumn label="输出摘要" width="200">
+        <template #default="{ row }">
+          <ElText truncated :title="row.outputSummary">
+            {{ row.outputSummary || '-' }}
+          </ElText>
+        </template>
+      </ElTableColumn>
+    </ElTable>
+  </ListPageLayout>
 </template>
 
 <style scoped>
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .title {
-    font-size: 16px;
-    font-weight: 500;
-  }
-
-  .filter-bar {
-    padding: 16px;
-    background: #f5f7fa;
-    border-radius: 4px;
-  }
-
   .command-cell {
     display: flex;
     align-items: center;
@@ -298,11 +267,5 @@
 
   .text-danger {
     color: #f56c6c;
-  }
-
-  .pagination-wrapper {
-    display: flex;
-    justify-content: center;
-    margin-top: 16px;
   }
 </style>

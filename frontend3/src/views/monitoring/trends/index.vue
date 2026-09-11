@@ -227,6 +227,14 @@
     }
   }
 
+  // 布局内置「重置」：恢复默认筛选并重新加载
+  function handleFilterReset() {
+    filterForm.metricType = 'cpu';
+    timeRange.value = '24h';
+    customDateRange.value = null;
+    loadTrendData();
+  }
+
   // 初始化图表
   function initChart() {
     if (!chartRef.value) return;
@@ -399,150 +407,145 @@
 </script>
 
 <template>
-  <div class="p-4 space-y-4">
-    <!-- 标题栏 -->
-    <ElCard shadow="never">
-      <div class="flex items-center justify-between">
-        <span class="text-lg font-semibold">趋势分析</span>
-        <ElButton type="primary" :loading="chartLoading" @click="handleRefresh">
-          <ElIcon :size="16">
-            <Refresh />
-          </ElIcon>
-          刷新
-        </ElButton>
-      </div>
-    </ElCard>
+  <ListPageLayout
+    title="趋势分析"
+    description="查看主机性能指标的历史趋势"
+    @search="handleRefresh"
+    @reset="handleFilterReset"
+  >
+    <!-- 图表区：统计卡片 + 趋势图 -->
+    <template #hero>
+      <!-- 统计信息 -->
+      <ElRow v-if="chartData.length > 0" :gutter="16">
+        <ElCol :xs="12" :sm="6">
+          <ElCard shadow="never" class="text-center">
+            <div class="text-2xl text-blue-600 font-bold">
+              {{ statistics.current.toFixed(1) }}{{ getMetricUnit(filterForm.metricType) }}
+            </div>
+            <div class="mt-1 text-sm text-gray-500">当前值</div>
+          </ElCard>
+        </ElCol>
+        <ElCol :xs="12" :sm="6">
+          <ElCard shadow="never" class="text-center">
+            <div class="text-2xl text-green-600 font-bold">
+              {{ statistics.min.toFixed(1) }}{{ getMetricUnit(filterForm.metricType) }}
+            </div>
+            <div class="mt-1 text-sm text-gray-500">最小值</div>
+          </ElCard>
+        </ElCol>
+        <ElCol :xs="12" :sm="6">
+          <ElCard shadow="never" class="text-center">
+            <div class="text-2xl text-red-600 font-bold">
+              {{ statistics.max.toFixed(1) }}{{ getMetricUnit(filterForm.metricType) }}
+            </div>
+            <div class="mt-1 text-sm text-gray-500">最大值</div>
+          </ElCard>
+        </ElCol>
+        <ElCol :xs="12" :sm="6">
+          <ElCard shadow="never" class="text-center">
+            <div class="text-2xl text-orange-600 font-bold">
+              {{ statistics.avg.toFixed(1) }}{{ getMetricUnit(filterForm.metricType) }}
+            </div>
+            <div class="mt-1 text-sm text-gray-500">平均值</div>
+          </ElCard>
+        </ElCol>
+      </ElRow>
 
-    <!-- 过滤栏 -->
-    <ElCard shadow="never">
-      <ElForm :model="filterForm" inline>
-        <ElFormItem label="主机">
-          <ElSelect
-            v-model="filterForm.serverId"
-            placeholder="选择主机"
-            filterable
-            style="width: 200px"
-            @change="handleServerChange"
-          >
-            <ElOption
-              v-for="server in servers"
-              :key="server.id"
-              :label="`${server.hostname} (${server.ip})`"
-              :value="server.id"
-            />
-          </ElSelect>
-        </ElFormItem>
+      <!-- 图表 -->
+      <ElCard shadow="never" class="card-static">
+        <template #header>
+          <span>{{ getMetricTypeName(filterForm.metricType) }}趋势图</span>
+        </template>
 
-        <ElFormItem label="指标类型">
-          <ElSelect v-model="filterForm.metricType" style="width: 130px" @change="handleMetricTypeChange">
-            <ElOption label="CPU使用率" value="cpu" />
-            <ElOption label="内存使用率" value="memory" />
-            <ElOption label="磁盘使用率" value="disk" />
-            <ElOption label="1分钟负载" value="load1" />
-            <ElOption label="5分钟负载" value="load5" />
-          </ElSelect>
-        </ElFormItem>
+        <ElSkeleton v-if="chartLoading" :rows="8" animated />
 
-        <ElFormItem label="时间范围">
-          <ElRadioGroup v-model="timeRange" @change="handleTimeRangeChange">
-            <ElRadioButton label="1h">近1小时</ElRadioButton>
-            <ElRadioButton label="6h">近6小时</ElRadioButton>
-            <ElRadioButton label="24h">近24小时</ElRadioButton>
-            <ElRadioButton label="7d">近7天</ElRadioButton>
-            <ElRadioButton label="30d">近30天</ElRadioButton>
-          </ElRadioGroup>
-        </ElFormItem>
-
-        <ElFormItem label="自定义时间">
-          <ElDatePicker
-            v-model="customDateRange"
-            type="datetimerange"
-            range-separator="至"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-            format="YYYY-MM-DD HH:mm"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            @change="handleCustomDateChange"
-          />
-        </ElFormItem>
-      </ElForm>
-    </ElCard>
-
-    <!-- 统计信息 -->
-    <ElRow v-if="chartData.length > 0" :gutter="16">
-      <ElCol :xs="12" :sm="6">
-        <ElCard shadow="never" class="text-center">
-          <div class="text-2xl text-blue-600 font-bold">
-            {{ statistics.current.toFixed(1) }}{{ getMetricUnit(filterForm.metricType) }}
-          </div>
-          <div class="mt-1 text-sm text-gray-500">当前值</div>
-        </ElCard>
-      </ElCol>
-      <ElCol :xs="12" :sm="6">
-        <ElCard shadow="never" class="text-center">
-          <div class="text-2xl text-green-600 font-bold">
-            {{ statistics.min.toFixed(1) }}{{ getMetricUnit(filterForm.metricType) }}
-          </div>
-          <div class="mt-1 text-sm text-gray-500">最小值</div>
-        </ElCard>
-      </ElCol>
-      <ElCol :xs="12" :sm="6">
-        <ElCard shadow="never" class="text-center">
-          <div class="text-2xl text-red-600 font-bold">
-            {{ statistics.max.toFixed(1) }}{{ getMetricUnit(filterForm.metricType) }}
-          </div>
-          <div class="mt-1 text-sm text-gray-500">最大值</div>
-        </ElCard>
-      </ElCol>
-      <ElCol :xs="12" :sm="6">
-        <ElCard shadow="never" class="text-center">
-          <div class="text-2xl text-orange-600 font-bold">
-            {{ statistics.avg.toFixed(1) }}{{ getMetricUnit(filterForm.metricType) }}
-          </div>
-          <div class="mt-1 text-sm text-gray-500">平均值</div>
-        </ElCard>
-      </ElCol>
-    </ElRow>
-
-    <!-- 图表 -->
-    <ElCard shadow="never">
-      <template #header>
-        <span>{{ getMetricTypeName(filterForm.metricType) }}趋势图</span>
-      </template>
-
-      <ElSkeleton v-if="chartLoading" :rows="8" animated />
-
-      <!-- v-show 保留 DOM：v-if 切换会销毁图表容器导致 ECharts 实例失联 -->
-      <div v-show="!chartLoading && chartData.length === 0" class="py-12 text-center">
-        <ElEmpty description="暂无数据" />
-      </div>
-
-      <div v-show="!chartLoading && chartData.length > 0" class="chart-container">
-        <!-- ECharts 图表 -->
-        <div ref="chartRef" class="echarts-chart"></div>
-
-        <!-- 数据表格 -->
-        <div class="mt-4">
-          <ElTable :data="formattedChartData.slice(-10)" border size="small" max-height="300">
-            <ElTableColumn label="时间" prop="time" width="180" />
-            <ElTableColumn label="值" width="120">
-              <template #default="{ row }">
-                {{ row.value.toFixed(2) }}{{ getMetricUnit(filterForm.metricType) }}
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="状态" width="100">
-              <template #default="{ row }">
-                <ElTag :type="row.value > 80 ? 'danger' : row.value > 60 ? 'warning' : 'success'" size="small">
-                  {{ row.value > 80 ? '高' : row.value > 60 ? '中' : '正常' }}
-                </ElTag>
-              </template>
-            </ElTableColumn>
-          </ElTable>
-          <div class="mt-2 text-center text-sm text-gray-400">仅显示最近10条数据，完整数据请查看上方图表</div>
+        <!-- v-show 保留 DOM：v-if 切换会销毁图表容器导致 ECharts 实例失联 -->
+        <div v-show="!chartLoading && chartData.length === 0" class="py-12 text-center">
+          <ElEmpty description="暂无数据" />
         </div>
-      </div>
-    </ElCard>
-  </div>
+
+        <div v-show="!chartLoading && chartData.length > 0" class="chart-container">
+          <!-- ECharts 图表 -->
+          <div ref="chartRef" class="echarts-chart"></div>
+        </div>
+      </ElCard>
+    </template>
+
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElSelect
+        v-model="filterForm.serverId"
+        placeholder="选择主机"
+        filterable
+        class="w-200px"
+        @change="handleServerChange"
+      >
+        <ElOption
+          v-for="server in servers"
+          :key="server.id"
+          :label="`${server.hostname} (${server.ip})`"
+          :value="server.id"
+        />
+      </ElSelect>
+
+      <ElSelect v-model="filterForm.metricType" class="w-130px" @change="handleMetricTypeChange">
+        <ElOption label="CPU使用率" value="cpu" />
+        <ElOption label="内存使用率" value="memory" />
+        <ElOption label="磁盘使用率" value="disk" />
+        <ElOption label="1分钟负载" value="load1" />
+        <ElOption label="5分钟负载" value="load5" />
+      </ElSelect>
+
+      <ElRadioGroup v-model="timeRange" @change="handleTimeRangeChange">
+        <ElRadioButton label="1h">近1小时</ElRadioButton>
+        <ElRadioButton label="6h">近6小时</ElRadioButton>
+        <ElRadioButton label="24h">近24小时</ElRadioButton>
+        <ElRadioButton label="7d">近7天</ElRadioButton>
+        <ElRadioButton label="30d">近30天</ElRadioButton>
+      </ElRadioGroup>
+
+      <ElDatePicker
+        v-model="customDateRange"
+        type="datetimerange"
+        range-separator="至"
+        start-placeholder="开始时间"
+        end-placeholder="结束时间"
+        format="YYYY-MM-DD HH:mm"
+        value-format="YYYY-MM-DD HH:mm:ss"
+        @change="handleCustomDateChange"
+      />
+    </template>
+
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <ElButton type="primary" :loading="chartLoading" @click="handleRefresh">
+        <ElIcon :size="16">
+          <Refresh />
+        </ElIcon>
+        刷新
+      </ElButton>
+    </template>
+
+    <!-- 数据表格 -->
+    <div class="flex h-full flex-col">
+      <ElTable :data="formattedChartData.slice(-10)" border size="small" height="100%" class="min-h-0 flex-1">
+        <ElTableColumn label="时间" prop="time" width="180" />
+        <ElTableColumn label="值" width="120">
+          <template #default="{ row }">
+            {{ row.value.toFixed(2) }}{{ getMetricUnit(filterForm.metricType) }}
+          </template>
+        </ElTableColumn>
+        <ElTableColumn label="状态" width="100">
+          <template #default="{ row }">
+            <ElTag :type="row.value > 80 ? 'danger' : row.value > 60 ? 'warning' : 'success'" size="small">
+              {{ row.value > 80 ? '高' : row.value > 60 ? '中' : '正常' }}
+            </ElTag>
+          </template>
+        </ElTableColumn>
+      </ElTable>
+      <div class="mt-8px shrink-0 text-center text-sm text-gray-400">仅显示最近10条数据，完整数据请查看上方图表</div>
+    </div>
+  </ListPageLayout>
 </template>
 
 <style scoped>

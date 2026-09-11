@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { onMounted, reactive, ref } from 'vue';
+  import { computed, onMounted, reactive, ref } from 'vue';
   import { ElMessage, ElMessageBox } from 'element-plus';
   import { acknowledgeAlert, fetchAlertStats, fetchAlerts } from '@/service/api/monitoring';
   // 时间格式化与级别标签映射统一收敛到公共工具（formatTime 为兼容旧命名的别名）
@@ -117,6 +117,16 @@
     info: { text: '信息', type: 'info' }
   });
 
+  // 布局内置分页：托管给 ListPageLayout，复用现有翻页处理器
+  const layoutPagination = computed(() => ({
+    currentPage: filterForm.page,
+    pageSize: filterForm.pageSize,
+    total: totalCount.value,
+    pageSizes: [20, 50, 100],
+    'current-change': handlePageChange,
+    'size-change': handlePageSizeChange
+  }));
+
   onMounted(() => {
     getStats();
     getAlerts();
@@ -124,140 +134,123 @@
 </script>
 
 <template>
-  <div class="p-4 space-y-4">
+  <ListPageLayout
+    title="告警管理"
+    description="查看与处理监控告警"
+    :pagination="layoutPagination"
+    @search="handleSearch"
+    @reset="handleReset"
+  >
     <!-- 统计卡片 -->
-    <ElRow v-if="stats" :gutter="16">
-      <ElCol :span="4">
-        <ElCard shadow="never" class="text-center">
-          <div class="text-2xl text-gray-800 font-bold">{{ stats.total }}</div>
-          <div class="mt-1 text-sm text-gray-500">告警总数</div>
-        </ElCard>
-      </ElCol>
-      <ElCol :span="4">
-        <ElCard shadow="never" class="text-center">
-          <div class="text-2xl text-red-600 font-bold">{{ stats.byLevel.critical }}</div>
-          <div class="mt-1 text-sm text-gray-500">严重</div>
-        </ElCard>
-      </ElCol>
-      <ElCol :span="4">
-        <ElCard shadow="never" class="text-center">
-          <div class="text-2xl text-orange-500 font-bold">{{ stats.byLevel.high }}</div>
-          <div class="mt-1 text-sm text-gray-500">高</div>
-        </ElCard>
-      </ElCol>
-      <ElCol :span="4">
-        <ElCard shadow="never" class="text-center">
-          <div class="text-2xl text-blue-500 font-bold">{{ stats.byLevel.medium }}</div>
-          <div class="mt-1 text-sm text-gray-500">中</div>
-        </ElCard>
-      </ElCol>
-      <ElCol :span="4">
-        <ElCard shadow="never" class="text-center">
-          <div class="text-2xl text-yellow-500 font-bold">{{ stats.active }}</div>
-          <div class="mt-1 text-sm text-gray-500">未处理</div>
-        </ElCard>
-      </ElCol>
-      <ElCol :span="4">
-        <ElCard shadow="never" class="text-center">
-          <div class="text-2xl text-green-600 font-bold">{{ stats.acknowledged }}</div>
-          <div class="mt-1 text-sm text-gray-500">已确认</div>
-        </ElCard>
-      </ElCol>
-    </ElRow>
+    <template #hero>
+      <ElRow v-if="stats" :gutter="16">
+        <ElCol :span="4">
+          <ElCard shadow="never" class="text-center">
+            <div class="text-2xl text-gray-800 font-bold">{{ stats.total }}</div>
+            <div class="mt-1 text-sm text-gray-500">告警总数</div>
+          </ElCard>
+        </ElCol>
+        <ElCol :span="4">
+          <ElCard shadow="never" class="text-center">
+            <div class="text-2xl text-red-600 font-bold">{{ stats.byLevel.critical }}</div>
+            <div class="mt-1 text-sm text-gray-500">严重</div>
+          </ElCard>
+        </ElCol>
+        <ElCol :span="4">
+          <ElCard shadow="never" class="text-center">
+            <div class="text-2xl text-orange-500 font-bold">{{ stats.byLevel.high }}</div>
+            <div class="mt-1 text-sm text-gray-500">高</div>
+          </ElCard>
+        </ElCol>
+        <ElCol :span="4">
+          <ElCard shadow="never" class="text-center">
+            <div class="text-2xl text-blue-500 font-bold">{{ stats.byLevel.medium }}</div>
+            <div class="mt-1 text-sm text-gray-500">中</div>
+          </ElCard>
+        </ElCol>
+        <ElCol :span="4">
+          <ElCard shadow="never" class="text-center">
+            <div class="text-2xl text-yellow-500 font-bold">{{ stats.active }}</div>
+            <div class="mt-1 text-sm text-gray-500">未处理</div>
+          </ElCard>
+        </ElCol>
+        <ElCol :span="4">
+          <ElCard shadow="never" class="text-center">
+            <div class="text-2xl text-green-600 font-bold">{{ stats.acknowledged }}</div>
+            <div class="mt-1 text-sm text-gray-500">已确认</div>
+          </ElCard>
+        </ElCol>
+      </ElRow>
+    </template>
 
-    <!-- 过滤栏 -->
-    <ElCard shadow="never">
-      <ElForm :model="filterForm" inline>
-        <ElFormItem label="告警级别">
-          <ElSelect v-model="filterForm.level" placeholder="全部" clearable style="width: 130px">
-            <ElOption label="严重" value="critical" />
-            <ElOption label="高" value="high" />
-            <ElOption label="中" value="medium" />
-            <ElOption label="低" value="low" />
-            <ElOption label="信息" value="info" />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem label="处理状态">
-          <ElSelect v-model="filterForm.acknowledged" placeholder="全部" clearable style="width: 130px">
-            <ElOption label="未处理" value="false" />
-            <ElOption label="已确认" value="true" />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem>
-          <ElButton type="primary" @click="handleSearch">搜索</ElButton>
-          <ElButton @click="handleReset">重置</ElButton>
-        </ElFormItem>
-      </ElForm>
-    </ElCard>
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElSelect v-model="filterForm.level" placeholder="告警级别" clearable class="w-130px">
+        <ElOption label="严重" value="critical" />
+        <ElOption label="高" value="high" />
+        <ElOption label="中" value="medium" />
+        <ElOption label="低" value="low" />
+        <ElOption label="信息" value="info" />
+      </ElSelect>
+      <ElSelect v-model="filterForm.acknowledged" placeholder="处理状态" clearable class="w-130px">
+        <ElOption label="未处理" value="false" />
+        <ElOption label="已确认" value="true" />
+      </ElSelect>
+    </template>
 
     <!-- 告警列表 -->
-    <ElCard shadow="never">
-      <ElTable v-loading="loading" :data="alertList" border stripe>
-        <ElTableColumn label="级别" width="90" align="center">
-          <template #default="{ row }">
-            <ElTag :type="getLevelTag(row.level).type" size="small">
-              {{ getLevelTag(row.level).text }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="主机名" prop="hostname" min-width="140" />
-        <ElTableColumn label="IP地址" prop="ip" width="140" />
-        <ElTableColumn label="告警内容" prop="message" min-width="260" show-overflow-tooltip />
-        <ElTableColumn label="指标值" width="100" align="right">
-          <template #default="{ row }">
-            {{ row.metricValue != null ? row.metricValue.toFixed(1) + '%' : '-' }}
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="阈值" width="90" align="right">
-          <template #default="{ row }">
-            {{ row.threshold != null ? row.threshold + '%' : '-' }}
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="首次触发" width="170">
-          <template #default="{ row }">{{ formatTime(row.firstSeen) }}</template>
-        </ElTableColumn>
-        <ElTableColumn label="最后触发" width="170">
-          <template #default="{ row }">{{ formatTime(row.lastSeen) }}</template>
-        </ElTableColumn>
-        <ElTableColumn label="状态" width="100" align="center">
-          <template #default="{ row }">
-            <ElTag v-if="row.resolvedAt" type="success" size="small">已恢复</ElTag>
-            <ElTag v-else-if="row.acknowledged" type="info" size="small">已确认</ElTag>
-            <ElTag v-else type="danger" size="small">未处理</ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="确认人" prop="acknowledgedBy" width="110">
-          <template #default="{ row }">{{ row.acknowledgedBy || '-' }}</template>
-        </ElTableColumn>
-        <ElTableColumn label="操作" width="100" align="center" fixed="right" class-name="msre-table-actions">
-          <template #default="{ row }">
-            <PermissionButton
-              link
-              type="primary"
-              size="small"
-              v-if="!row.acknowledged && !row.resolvedAt"
-              code="monitor.alert.ack"
-              @click="handleAcknowledge(row)"
-            >
-              确认
-            </PermissionButton>
-            <span v-else class="text-sm text-gray-400">-</span>
-          </template>
-        </ElTableColumn>
-      </ElTable>
-
-      <!-- 分页 -->
-      <div class="mt-4 flex justify-end">
-        <ElPagination
-          v-model:current-page="filterForm.page"
-          v-model:page-size="filterForm.pageSize"
-          :total="totalCount"
-          :page-sizes="[20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @current-change="handlePageChange"
-          @size-change="handlePageSizeChange"
-        />
-      </div>
-    </ElCard>
-  </div>
+    <ElTable v-loading="loading" :data="alertList" border stripe height="100%">
+      <ElTableColumn label="级别" width="90" align="center">
+        <template #default="{ row }">
+          <ElTag :type="getLevelTag(row.level).type" size="small">
+            {{ getLevelTag(row.level).text }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="主机名" prop="hostname" min-width="140" />
+      <ElTableColumn label="IP地址" prop="ip" width="140" />
+      <ElTableColumn label="告警内容" prop="message" min-width="260" show-overflow-tooltip />
+      <ElTableColumn label="指标值" width="100" align="right">
+        <template #default="{ row }">
+          {{ row.metricValue != null ? row.metricValue.toFixed(1) + '%' : '-' }}
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="阈值" width="90" align="right">
+        <template #default="{ row }">
+          {{ row.threshold != null ? row.threshold + '%' : '-' }}
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="首次触发" width="170">
+        <template #default="{ row }">{{ formatTime(row.firstSeen) }}</template>
+      </ElTableColumn>
+      <ElTableColumn label="最后触发" width="170">
+        <template #default="{ row }">{{ formatTime(row.lastSeen) }}</template>
+      </ElTableColumn>
+      <ElTableColumn label="状态" width="100" align="center">
+        <template #default="{ row }">
+          <ElTag v-if="row.resolvedAt" type="success" size="small">已恢复</ElTag>
+          <ElTag v-else-if="row.acknowledged" type="info" size="small">已确认</ElTag>
+          <ElTag v-else type="danger" size="small">未处理</ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="确认人" prop="acknowledgedBy" width="110">
+        <template #default="{ row }">{{ row.acknowledgedBy || '-' }}</template>
+      </ElTableColumn>
+      <ElTableColumn label="操作" width="100" align="center" fixed="right" class-name="msre-table-actions">
+        <template #default="{ row }">
+          <PermissionButton
+            link
+            type="primary"
+            size="small"
+            v-if="!row.acknowledged && !row.resolvedAt"
+            code="monitor.alert.ack"
+            @click="handleAcknowledge(row)"
+          >
+            确认
+          </PermissionButton>
+          <span v-else class="text-sm text-gray-400">-</span>
+        </template>
+      </ElTableColumn>
+    </ElTable>
+  </ListPageLayout>
 </template>

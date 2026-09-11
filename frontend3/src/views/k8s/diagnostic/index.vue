@@ -68,7 +68,7 @@
 </script>
 
 <template>
-  <div class="diagnostic-page">
+  <div class="table-page py-12px px-16px">
     <!-- 上下文条：诊断目标选择（跨 Tab 共享） -->
     <div class="context-bar">
       <div class="context-title">应用诊断中心</div>

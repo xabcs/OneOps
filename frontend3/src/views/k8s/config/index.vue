@@ -224,12 +224,7 @@
 </template>
 
 <style scoped>
-  .config-page {
-    height: calc(100vh - 80px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+  /* 高度模型由 .table-page 提供（h-full + flex-col + gap + overflow-hidden） */
 
   /* Tab 容器自动填充剩余空间 */
   :deep(.el-tabs) {

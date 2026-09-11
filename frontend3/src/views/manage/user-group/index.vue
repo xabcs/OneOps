@@ -138,9 +138,26 @@
 </script>
 
 <template>
-  <div class="table-page">
+  <ListPageLayout
+    title="用户组列表"
+    description="维护用户组与组成员，供集群授权时按组绑定"
+    :pagination="
+      total
+        ? {
+            total,
+            currentPage: searchParams.page,
+            pageSize: searchParams.pageSize,
+            'current-change': handlePageChange,
+            'size-change': handleSizeChange
+          }
+        : null
+    "
+    @search="handleSearch"
+    @reset="resetSearchParams"
+  >
     <!-- Hero 区域 -->
-    <ElCard v-if="heroVisible" shadow="hover" class="card-static msre-hero">
+    <template #hero>
+      <ElCard v-if="heroVisible" shadow="hover" class="card-static msre-hero">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-12px">
           <ElIcon :size="20">
@@ -159,51 +176,32 @@
         </ElButton>
       </div>
     </ElCard>
+    </template>
 
-    <!-- 内容卡片 -->
-    <ElCard shadow="hover">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <div class="flex flex-col gap-2px">
-            <span class="text-16px font-bold">用户组列表</span>
-            <span class="text-13px opacity-70">维护用户组与组成员，供集群授权时按组绑定</span>
-          </div>
-          <PermissionButton code="system.user.create" type="primary" size="small" @click="handleAddClick">
-            <ElIcon>
-              <Plus />
-            </ElIcon>
-            新增用户组
-          </PermissionButton>
-        </div>
-      </template>
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElInput
+        v-model="searchParams.keyword"
+        placeholder="搜索名称/编码"
+        clearable
+        class="w-220px"
+        :prefix-icon="Search"
+        @input="handleSearchInput"
+      />
+    </template>
 
-      <!-- 搜索工具栏 -->
-      <ElSpace wrap class="mb-16px">
-        <ElInput
-          v-model="searchParams.keyword"
-          placeholder="搜索名称/编码"
-          clearable
-          style="width: 220px"
-          :prefix-icon="Search"
-          @input="handleSearchInput"
-        />
-        <ElButton @click="resetSearchParams">
-          <ElIcon>
-            <Refresh />
-          </ElIcon>
-          重置
-        </ElButton>
-        <ElButton type="primary" @click="handleSearch">
-          <ElIcon>
-            <Search />
-          </ElIcon>
-          搜索
-        </ElButton>
-      </ElSpace>
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <PermissionButton code="system.user.create" type="primary" size="small" @click="handleAddClick">
+        <ElIcon>
+          <Plus />
+        </ElIcon>
+        新增用户组
+      </PermissionButton>
+    </template>
 
-      <!-- 数据表格 -->
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" :data="data" border stripe row-key="id" height="100%">
+    <!-- 数据表格 -->
+    <ElTable v-loading="loading" :data="data" border stripe row-key="id" height="100%">
           <ElTableColumn prop="id" label="ID" width="70" />
           <ElTableColumn prop="code" label="编码" min-width="120" />
           <ElTableColumn prop="name" label="名称" min-width="120" />
@@ -232,21 +230,7 @@
               </PermissionButton>
             </template>
           </ElTableColumn>
-        </ElTable>
-      </div>
-
-      <!-- 分页 -->
-      <div v-if="total" class="mt-16px flex justify-end">
-        <ElPagination
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="total"
-          :current-page="searchParams.page"
-          :page-size="searchParams.pageSize"
-          @current-change="handlePageChange"
-          @size-change="handleSizeChange"
-        />
-      </div>
-    </ElCard>
+    </ElTable>
 
     <!-- 抽屉和弹窗 -->
     <UserGroupOperateDrawer
@@ -256,7 +240,7 @@
       @submitted="getData"
     />
     <GroupMemberModal v-model:visible="memberModalVisible" :group-data="currentGroup" @submitted="getData" />
-  </div>
+  </ListPageLayout>
 </template>
 
 <style scoped></style>

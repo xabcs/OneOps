@@ -112,7 +112,7 @@
 </script>
 
 <template>
-  <div class="detail-page bg-layout">
+  <div class="detail-page">
     <!-- 顶部操作栏 - 使用新组件 -->
     <K8sResourceActionBar
       :name="resourceName || '-'"

@@ -252,224 +252,233 @@
     logQuery.page = 1;
     loadLogs();
   }
+
+  // 分页变化（布局内分页无 v-model，显式回写受控状态）
+  function handleLogPageChange(page: number) {
+    logQuery.page = page;
+    loadLogs();
+  }
+
+  function handleLogSizeChange(size: number) {
+    logQuery.pageSize = size;
+    logQuery.page = 1;
+    loadLogs();
+  }
+
+  // 布局分页适配对象：仅发送记录 tab 展示（事件矩阵为本地全量表格）
+  const logsPagination = computed(() =>
+    activeTab.value === 'logs'
+      ? {
+          currentPage: logQuery.page,
+          pageSize: logQuery.pageSize,
+          pageSizes: [10, 20, 50],
+          total: logTotal.value,
+          'current-change': handleLogPageChange,
+          'size-change': handleLogSizeChange
+        }
+      : null
+  );
 </script>
 
 <template>
-  <div class="table-page">
-    <!-- 标题栏 -->
-    <ElCard shadow="never" class="card-static">
-      <div class="flex items-center justify-between">
-        <div>
-          <span class="text-lg font-semibold">通知设置</span>
-          <div class="mt-1 text-xs text-gray-400">
-            事件矩阵：为各审批事件选择通知渠道（渠道在「系统管理 →
-            通知渠道」维护）。未定制的事件默认走全部启用渠道；站内消息为兜底渠道，事件启用即写入
-          </div>
-        </div>
-      </div>
-    </ElCard>
-
-    <ElCard shadow="never">
+  <ListPageLayout
+    title="通知设置"
+    description="事件矩阵：为各审批事件选择通知渠道（渠道在「系统管理 → 通知渠道」维护）。未定制的事件默认走全部启用渠道；站内消息为兜底渠道，事件启用即写入"
+    :pagination="logsPagination"
+  >
+    <!-- 视图切换：页签渲染在表格卡片 header，与内容联动 -->
+    <template #tabs>
       <ElTabs v-model="activeTab" @tab-change="(name: string | number) => name === 'logs' && loadLogs()">
-        <!-- 事件矩阵 -->
-        <ElTabPane label="事件矩阵" name="matrix">
-          <!-- 防轰炸设置（蓝图⑥） -->
-          <div
-            class="mb-4 flex flex-wrap items-center gap-4 border border-gray-300 rounded border-dashed p-3 dark:border-gray-600"
-          >
-            <span class="text-sm font-medium">防轰炸</span>
-            <ElTooltip
-              content="静默时段内：邮件/企微/钉钉等外部渠道暂停推送，站内消息不受影响；超时升级通知不受静默限制"
-              placement="top"
-            >
-              <span class="i-material-symbols:info-outline cursor-help text-gray-400"></span>
-            </ElTooltip>
-            <ElSwitch v-model="quiet.quietEnabled" :active-value="1" :inactive-value="0" active-text="夜间静默期" />
-            <template v-if="quiet.quietEnabled === 1">
-              <ElSelect v-model="quiet.quietStartHour" class="w-28">
-                <ElOption v-for="h in hourOptions" :key="h.value" :label="h.label" :value="h.value" />
-              </ElSelect>
-              <span class="text-gray-400">至</span>
-              <ElSelect v-model="quiet.quietEndHour" class="w-28">
-                <ElOption v-for="h in hourOptions" :key="h.value" :label="h.label" :value="h.value" />
-              </ElSelect>
-            </template>
-            <PermissionButton
-              code="ticket.notify.update"
-              type="primary"
-              size="small"
-              :loading="savingQuiet"
-              @click="handleSaveQuiet"
-            >
-              保存
-            </PermissionButton>
-            <span class="ml-auto text-xs text-gray-400">
-              固定规则：同工单同事件 10 分钟内去重 · 单人外部推送每小时上限 30 条
-            </span>
-          </div>
-
-          <div class="table-scroll-wrap">
-            <ElTable v-loading="loading" :data="policies" border stripe height="100%">
-              <ElTableColumn label="通知事件" width="130">
-                <template #default="{ row }">
-                  <span class="font-medium">{{ row.name }}</span>
-                </template>
-              </ElTableColumn>
-              <ElTableColumn label="说明" min-width="180">
-                <template #default="{ row }">
-                  <span class="text-sm text-gray-500">{{ row.desc }}</span>
-                </template>
-              </ElTableColumn>
-              <ElTableColumn label="通知渠道" min-width="300">
-                <template #default="{ row }">
-                  <div class="flex items-center gap-2">
-                    <ElSelect
-                      v-model="row.channels"
-                      multiple
-                      collapse-tags
-                      collapse-tags-tooltip
-                      clearable
-                      placeholder="不选则该事件不发送"
-                      :disabled="!hasUpdatePerm || row.enabled === 0"
-                      class="w-full"
-                      @change="markDirty(row)"
-                    >
-                      <ElOption
-                        v-for="ch in channelOptions"
-                        :key="ch.id"
-                        :value="ch.id"
-                        :label="channelLabel(ch)"
-                        :disabled="!ch.enabled"
-                      />
-                    </ElSelect>
-                    <ElTag v-if="!row.configured" type="info" size="small" class="shrink-0">默认</ElTag>
-                  </div>
-                </template>
-              </ElTableColumn>
-              <ElTableColumn label="通知模板" width="110" align="center">
-                <template #default="{ row }">
-                  <div class="flex items-center justify-center gap-1">
-                    <ElTag v-if="row.hasTpl" type="warning" size="small">自定义</ElTag>
-                    <ElTag v-else type="info" size="small">默认</ElTag>
-                    <PermissionButton
-                      code="ticket.notify.update"
-                      type="primary"
-                      link
-                      size="small"
-                      @click="handleEditTpl(row)"
-                    >
-                      编辑
-                    </PermissionButton>
-                  </div>
-                </template>
-              </ElTableColumn>
-              <ElTableColumn label="启用" width="90" align="center">
-                <template #default="{ row }">
-                  <ElSwitch
-                    v-model="row.enabled"
-                    :active-value="1"
-                    :inactive-value="0"
-                    :disabled="!hasUpdatePerm"
-                    @change="markDirty(row)"
-                  />
-                </template>
-              </ElTableColumn>
-              <ElTableColumn label="操作" width="100" align="center" fixed="right" class-name="msre-table-actions">
-                <template #default="{ row }">
-                  <PermissionButton
-                    link
-                    type="primary"
-                    size="small"
-                    code="ticket.notify.update"
-                    :loading="savingEvent === row.event"
-                    @click="handleSave(row)"
-                  >
-                    保存
-                  </PermissionButton>
-                </template>
-              </ElTableColumn>
-            </ElTable>
-          </div>
-        </ElTabPane>
-
-        <!-- 发送记录 -->
-        <ElTabPane label="发送记录" name="logs">
-          <div class="mb-4 flex items-center gap-3">
-            <ElSelect v-model="logQuery.event" clearable placeholder="事件" class="w-40" @change="handleLogSearch">
-              <ElOption label="待审批" value="pending" />
-              <ElOption label="审批结果" value="result" />
-              <ElOption label="改派" value="reassign" />
-              <ElOption label="撤销" value="cancel" />
-              <ElOption label="催办" value="urge" />
-              <ElOption label="审批超时" value="timeout" />
-              <ElOption label="超时升级" value="escalation" />
-            </ElSelect>
-            <ElSelect v-model="logQuery.status" clearable placeholder="状态" class="w-32" @change="handleLogSearch">
-              <ElOption label="成功" :value="1" />
-              <ElOption label="失败" :value="0" />
-            </ElSelect>
-            <PermissionButton code="ticket.notify.list" type="primary" @click="loadLogs">查询</PermissionButton>
-            <span class="text-xs text-gray-400">外部渠道投递结果（保留 30 天）；站内消息不在此列，见头部通知中心</span>
-          </div>
-
-          <div class="table-scroll-wrap">
-            <ElTable v-loading="logsLoading" :data="logs" border stripe height="100%">
-              <ElTableColumn label="时间" width="170">
-                <template #default="{ row }">
-                  {{ new Date(row.createdAt).toLocaleString('zh-CN', { hour12: false }) }}
-                </template>
-              </ElTableColumn>
-              <ElTableColumn label="事件" width="100" align="center">
-                <template #default="{ row }">
-                  <ElTag size="small">{{ eventText(row.event) }}</ElTag>
-                </template>
-              </ElTableColumn>
-              <ElTableColumn label="工单" width="140">
-                <template #default="{ row }">
-                  <span class="text-xs">{{ row.ticketNo || '-' }}</span>
-                </template>
-              </ElTableColumn>
-              <ElTableColumn label="渠道" width="150">
-                <template #default="{ row }">
-                  {{ row.channelName || row.channelType }}
-                </template>
-              </ElTableColumn>
-              <ElTableColumn label="接收者" min-width="220" show-overflow-tooltip>
-                <template #default="{ row }">
-                  <span class="text-xs">{{ row.recipient }}</span>
-                </template>
-              </ElTableColumn>
-              <ElTableColumn label="状态" width="80" align="center">
-                <template #default="{ row }">
-                  <ElTag :type="row.status === 1 ? 'success' : 'danger'" size="small">
-                    {{ row.status === 1 ? '成功' : '失败' }}
-                  </ElTag>
-                </template>
-              </ElTableColumn>
-              <ElTableColumn label="错误信息" min-width="200" show-overflow-tooltip>
-                <template #default="{ row }">
-                  <span class="text-xs" :class="row.error ? 'text-red-500' : 'text-gray-400'">
-                    {{ row.error || '—' }}
-                  </span>
-                </template>
-              </ElTableColumn>
-            </ElTable>
-          </div>
-
-          <div class="mt-4 flex justify-end">
-            <ElPagination
-              v-model:current-page="logQuery.page"
-              v-model:page-size="logQuery.pageSize"
-              :total="logTotal"
-              :page-sizes="[10, 20, 50]"
-              layout="total, sizes, prev, pager, next, jumper"
-              @current-change="loadLogs"
-              @size-change="handleLogSearch"
-            />
-          </div>
-        </ElTabPane>
+        <ElTabPane label="事件矩阵" name="matrix" />
+        <ElTabPane label="发送记录" name="logs" />
       </ElTabs>
-    </ElCard>
+    </template>
+
+    <!-- 事件矩阵 -->
+    <div v-show="activeTab === 'matrix'" class="flex h-full flex-col">
+      <!-- 防轰炸设置（蓝图⑥） -->
+      <div
+        class="mb-4 flex shrink-0 flex-wrap items-center gap-4 border border-gray-300 rounded border-dashed p-3 dark:border-gray-600"
+      >
+        <span class="text-sm font-medium">防轰炸</span>
+        <ElTooltip
+          content="静默时段内：邮件/企微/钉钉等外部渠道暂停推送，站内消息不受影响；超时升级通知不受静默限制"
+          placement="top"
+        >
+          <span class="i-material-symbols:info-outline cursor-help text-gray-400"></span>
+        </ElTooltip>
+        <ElSwitch v-model="quiet.quietEnabled" :active-value="1" :inactive-value="0" active-text="夜间静默期" />
+        <template v-if="quiet.quietEnabled === 1">
+          <ElSelect v-model="quiet.quietStartHour" class="w-28">
+            <ElOption v-for="h in hourOptions" :key="h.value" :label="h.label" :value="h.value" />
+          </ElSelect>
+          <span class="text-gray-400">至</span>
+          <ElSelect v-model="quiet.quietEndHour" class="w-28">
+            <ElOption v-for="h in hourOptions" :key="h.value" :label="h.label" :value="h.value" />
+          </ElSelect>
+        </template>
+        <PermissionButton
+          code="ticket.notify.update"
+          type="primary"
+          size="small"
+          :loading="savingQuiet"
+          @click="handleSaveQuiet"
+        >
+          保存
+        </PermissionButton>
+        <span class="ml-auto text-xs text-gray-400">
+          固定规则：同工单同事件 10 分钟内去重 · 单人外部推送每小时上限 30 条
+        </span>
+      </div>
+
+      <div class="table-scroll-wrap">
+        <ElTable v-loading="loading" :data="policies" border stripe height="100%">
+          <ElTableColumn label="通知事件" width="130">
+            <template #default="{ row }">
+              <span class="font-medium">{{ row.name }}</span>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="说明" min-width="180">
+            <template #default="{ row }">
+              <span class="text-sm text-gray-500">{{ row.desc }}</span>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="通知渠道" min-width="300">
+            <template #default="{ row }">
+              <div class="flex items-center gap-2">
+                <ElSelect
+                  v-model="row.channels"
+                  multiple
+                  collapse-tags
+                  collapse-tags-tooltip
+                  clearable
+                  placeholder="不选则该事件不发送"
+                  :disabled="!hasUpdatePerm || row.enabled === 0"
+                  class="w-full"
+                  @change="markDirty(row)"
+                >
+                  <ElOption
+                    v-for="ch in channelOptions"
+                    :key="ch.id"
+                    :value="ch.id"
+                    :label="channelLabel(ch)"
+                    :disabled="!ch.enabled"
+                  />
+                </ElSelect>
+                <ElTag v-if="!row.configured" type="info" size="small" class="shrink-0">默认</ElTag>
+              </div>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="通知模板" width="110" align="center">
+            <template #default="{ row }">
+              <div class="flex items-center justify-center gap-1">
+                <ElTag v-if="row.hasTpl" type="warning" size="small">自定义</ElTag>
+                <ElTag v-else type="info" size="small">默认</ElTag>
+                <PermissionButton
+                  code="ticket.notify.update"
+                  type="primary"
+                  link
+                  size="small"
+                  @click="handleEditTpl(row)"
+                >
+                  编辑
+                </PermissionButton>
+              </div>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="启用" width="90" align="center">
+            <template #default="{ row }">
+              <ElSwitch
+                v-model="row.enabled"
+                :active-value="1"
+                :inactive-value="0"
+                :disabled="!hasUpdatePerm"
+                @change="markDirty(row)"
+              />
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="操作" width="100" align="center" fixed="right" class-name="msre-table-actions">
+            <template #default="{ row }">
+              <PermissionButton
+                link
+                type="primary"
+                size="small"
+                code="ticket.notify.update"
+                :loading="savingEvent === row.event"
+                @click="handleSave(row)"
+              >
+                保存
+              </PermissionButton>
+            </template>
+          </ElTableColumn>
+        </ElTable>
+      </div>
+    </div>
+
+    <!-- 发送记录 -->
+    <div v-show="activeTab === 'logs'" class="flex h-full flex-col">
+      <div class="mb-4 flex shrink-0 items-center gap-3">
+        <ElSelect v-model="logQuery.event" clearable placeholder="事件" class="w-40" @change="handleLogSearch">
+          <ElOption label="待审批" value="pending" />
+          <ElOption label="审批结果" value="result" />
+          <ElOption label="改派" value="reassign" />
+          <ElOption label="撤销" value="cancel" />
+          <ElOption label="催办" value="urge" />
+          <ElOption label="审批超时" value="timeout" />
+          <ElOption label="超时升级" value="escalation" />
+        </ElSelect>
+        <ElSelect v-model="logQuery.status" clearable placeholder="状态" class="w-32" @change="handleLogSearch">
+          <ElOption label="成功" :value="1" />
+          <ElOption label="失败" :value="0" />
+        </ElSelect>
+        <PermissionButton code="ticket.notify.list" type="primary" @click="loadLogs">查询</PermissionButton>
+        <span class="text-xs text-gray-400">外部渠道投递结果（保留 30 天）；站内消息不在此列，见头部通知中心</span>
+      </div>
+
+      <div class="table-scroll-wrap">
+        <ElTable v-loading="logsLoading" :data="logs" border stripe height="100%">
+          <ElTableColumn label="时间" width="170">
+            <template #default="{ row }">
+              {{ new Date(row.createdAt).toLocaleString('zh-CN', { hour12: false }) }}
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="事件" width="100" align="center">
+            <template #default="{ row }">
+              <ElTag size="small">{{ eventText(row.event) }}</ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="工单" width="140">
+            <template #default="{ row }">
+              <span class="text-xs">{{ row.ticketNo || '-' }}</span>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="渠道" width="150">
+            <template #default="{ row }">
+              {{ row.channelName || row.channelType }}
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="接收者" min-width="220" show-overflow-tooltip>
+            <template #default="{ row }">
+              <span class="text-xs">{{ row.recipient }}</span>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="状态" width="80" align="center">
+            <template #default="{ row }">
+              <ElTag :type="row.status === 1 ? 'success' : 'danger'" size="small">
+                {{ row.status === 1 ? '成功' : '失败' }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn label="错误信息" min-width="200" show-overflow-tooltip>
+            <template #default="{ row }">
+              <span class="text-xs" :class="row.error ? 'text-red-500' : 'text-gray-400'">
+                {{ row.error || '—' }}
+              </span>
+            </template>
+          </ElTableColumn>
+        </ElTable>
+      </div>
+    </div>
 
     <!-- 通知模板编辑弹窗（蓝图⑤） -->
     <ElDialog v-model="tplDialog.visible" :title="`通知模板 · ${tplDialog.name}`" width="640px" destroy-on-close>
@@ -525,5 +534,5 @@
         <ElButton type="primary" :loading="savingTpl" @click="handleSaveTpl">保存</ElButton>
       </template>
     </ElDialog>
-  </div>
+  </ListPageLayout>
 </template>

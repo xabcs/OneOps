@@ -498,12 +498,7 @@
 </template>
 
 <style scoped>
-  .network-page {
-    height: calc(100vh - 80px);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+  /* 高度模型由 .table-page 提供（h-full + flex-col + gap + overflow-hidden） */
 
   :deep(.el-tabs) {
     flex: 1;

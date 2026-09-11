@@ -8,6 +8,9 @@
 /** Standard（标准）预设：扁平简洁风格 */
 export const standardContent: App.Theme.ThemeSetting['content'] = {
   variant: 'standard',
+  page: {
+    background: 'rgb(241, 245, 249)'
+  },
   hero: {
     visible: false,
     background: '#f8fafc',

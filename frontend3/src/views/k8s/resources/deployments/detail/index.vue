@@ -315,7 +315,7 @@
 </script>
 
 <template>
-  <div v-loading="loading" class="detail-page bg-layout">
+  <div v-loading="loading" class="detail-page">
     <!-- 顶部操作栏 - 使用新组件 -->
     <K8sResourceActionBar
       :name="deployment?.name || '-'"

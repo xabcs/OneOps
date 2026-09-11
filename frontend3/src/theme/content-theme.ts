@@ -37,6 +37,9 @@ function buildBg(
 export function buildContentVars(theme: ContentThemeSettings): CssVarMap {
   const vars: CssVarMap = {};
 
+  // Page background (content area root container)
+  vars['--msre-page-bg'] = theme.page.background;
+
   // Hero section
   vars['--msre-hero-visible'] = theme.hero.visible ? '1' : '0';
   vars['--msre-hero-bg'] = buildBg(

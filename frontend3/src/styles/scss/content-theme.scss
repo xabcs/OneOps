@@ -93,6 +93,13 @@
 /* 路由页面根节点由 GlobalContent 统一注入 msre-content */
 .msre-content {
   color: var(--msre-text-primary);
+  /* 内容区底色统一由主题配置的 page.background 控制，未注入时兜底布局底色 */
+  background: var(--msre-page-bg, rgb(var(--layout-bg-color)));
+}
+
+/* 暗色模式下内容区底色不跟随亮色预设，统一为暗色底 */
+html.dark .msre-content {
+  background: var(--msre-content-bg, #121212);
 }
 
 /* 所有内容区页面卡片统一使用页面级 contentCard 配置 */

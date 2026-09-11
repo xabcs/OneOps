@@ -1,12 +1,11 @@
 <script setup lang="ts">
-  import { onMounted, reactive, ref, watch } from 'vue';
+  import { computed, onMounted, reactive, ref, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import {
     ElButton,
     ElMessage,
     ElMessageBox,
     ElOption,
-    ElPagination,
     ElSelect,
     ElTable,
     ElTableColumn,
@@ -173,6 +172,16 @@
     loadDeployments();
   };
 
+  // 布局分页适配对象：受控状态 + 变更处理器（size-change 内显式回写 pageSize 保证受控同步）
+  const layoutPagination = computed(() => ({
+    currentPage: pagination.page,
+    pageSize: pagination.pageSize,
+    pageSizes: [10, 20, 50, 100],
+    total: pagination.itemCount,
+    'current-change': handlePageChange,
+    'size-change': handlePageSizeChange
+  }));
+
   // 查看详情
   const handleViewDetail = (row: K8s.Deployment) => {
     // 保存当前选择到 sessionStorage，返回列表时恢复
@@ -209,35 +218,29 @@
 </script>
 
 <template>
-  <div class="p-4">
-    <!-- 筛选栏 -->
-    <div class="bg-card mb-4 flex items-center gap-4 rounded-lg p-4">
-      <div class="flex items-center gap-2">
-        <span class="text-sm font-medium">集群:</span>
-        <ElSelect v-model="selectedCluster" placeholder="请选择集群" style="width: 200px" @change="handleClusterChange">
-          <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
-        </ElSelect>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <span class="text-sm font-medium">命名空间:</span>
-        <ElSelect
-          v-model="selectedNamespace"
-          placeholder="请选择命名空间"
-          style="width: 180px"
-          @change="handleNamespaceChange"
-        >
-          <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
-        </ElSelect>
-      </div>
-
-      <div class="flex-1" />
-
-      <ElButton type="primary" :disabled="!selectedCluster" @click="handleRefresh">刷新</ElButton>
-    </div>
+  <ListPageLayout
+    title="部署（Deployment）"
+    description="管理集群 Deployment 工作负载，支持缩放、重启与删除"
+    :pagination="layoutPagination"
+    @search="handleRefresh"
+  >
+    <!-- 搜索筛选：集群 / 命名空间 -->
+    <template #search>
+      <ElSelect v-model="selectedCluster" placeholder="请选择集群" style="width: 200px" @change="handleClusterChange">
+        <ElOption v-for="cluster in clusters" :key="cluster.id" :label="cluster.name" :value="cluster.id" />
+      </ElSelect>
+      <ElSelect
+        v-model="selectedNamespace"
+        placeholder="请选择命名空间"
+        style="width: 180px"
+        @change="handleNamespaceChange"
+      >
+        <ElOption v-for="ns in namespaces" :key="ns" :label="ns" :value="ns" />
+      </ElSelect>
+    </template>
 
     <!-- Deployment 列表 -->
-    <ElTable v-loading="loading" :data="dataSource" stripe>
+    <ElTable v-loading="loading" :data="dataSource" stripe height="100%">
       <ElTableColumn prop="name" label="名称" min-width="200">
         <template #default="{ row }">
           <ElButton link type="primary" @click="handleViewDetail(row)">{{ row.name }}</ElButton>
@@ -271,19 +274,6 @@
       </ElTableColumn>
     </ElTable>
 
-    <!-- 分页 -->
-    <div class="mt-4 flex justify-end">
-      <ElPagination
-        v-model:current-page="pagination.page"
-        v-model:page-size="pagination.pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        :total="pagination.itemCount"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handlePageSizeChange"
-        @current-change="handlePageChange"
-      />
-    </div>
-
     <!-- 缩放对话框 -->
     <ScaleDialog
       v-model:visible="showScaleModal"
@@ -292,5 +282,5 @@
       :deployment="scaleTarget"
       @submitted="loadDeployments"
     />
-  </div>
+  </ListPageLayout>
 </template>

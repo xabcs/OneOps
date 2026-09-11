@@ -17,7 +17,7 @@
     ElTag,
     ElText
   } from 'element-plus';
-  import { Plus, Refresh, Search } from '@element-plus/icons-vue';
+  import { Plus, Search } from '@element-plus/icons-vue';
   import {
     assignK8sNativeBinding,
     fetchK8sAllNativeBindings,
@@ -437,183 +437,193 @@
     }
   ];
 
+  function handleReset() {
+    userSearch.value = '';
+    groupSearch.value = '';
+    clusterFilter.value = undefined;
+  }
+
   onMounted(() => {
     loadPageData();
   });
 </script>
 
 <template>
-  <div class="flex flex-col gap-16px">
-    <ElAlert
-      type="info"
-      show-icon
-      :closable="false"
-      title="以用户/用户组视角管理集群访问授权：有效权限 = 系统权限码 ∧ 集群内原生 RBAC 绑定（含经用户组继承）；此处创建集群内真实 Binding，操作经 impersonation 由 kube-apiserver 最终判定"
-      class="!mb-0"
-    />
+  <ListPageLayout title="授权管理" embedded-search @search="loadPageData" @reset="handleReset">
+    <!-- 页面说明 -->
+    <template #hero>
+      <ElAlert
+        type="info"
+        show-icon
+        :closable="false"
+        title="以用户/用户组视角管理集群访问授权：有效权限 = 系统权限码 ∧ 集群内原生 RBAC 绑定（含经用户组继承）；此处创建集群内真实 Binding，操作经 impersonation 由 kube-apiserver 最终判定"
+        class="!mb-0"
+      />
+    </template>
 
-    <ElTabs v-model="activeTab">
-      <!-- 用户 tab：主体视角 -->
-      <ElTabPane label="用户" name="users">
-        <div class="mb-12px flex items-center gap-8px">
-          <ElInput
-            v-model="userSearch"
-            :prefix-icon="Search"
-            placeholder="按用户名 / 昵称搜索"
-            clearable
-            style="width: 240px"
-          />
-        </div>
-        <ElTable v-loading="loading && users.length === 0" :data="filteredUsers" stripe>
-          <ElTableColumn label="用户" min-width="200">
-            <template #default="{ row }">
-              <span>{{ row.nickname || row.username }}</span>
-              <span v-if="row.nickname && row.nickname !== row.username" class="ml-4px text-12px opacity-60">
-                {{ row.username }}
-              </span>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="所属用户组" min-width="180">
-            <template #default="{ row }">
-              <ElTag v-for="gid in row.groupIds || []" :key="gid" size="small" effect="plain" class="mr-4px">
-                {{ groupNameById.get(gid) || gid }}
-              </ElTag>
-              <span v-if="!(row.groupIds || []).length" class="opacity-40">-</span>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="有效授权" width="170">
-            <template #default="{ row }">
-              <ElTag :type="userPermSummary(row).total > 0 ? 'success' : 'info'" size="small" effect="plain">
-                {{ userPermSummary(row).total }} 条
-              </ElTag>
-              <span v-if="userPermSummary(row).inherited > 0" class="ml-4px text-12px opacity-60">
-                直 {{ userPermSummary(row).direct }} / 继承 {{ userPermSummary(row).inherited }}
-              </span>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="操作" align="center" width="110" fixed="right" class-name="msre-table-actions">
-            <template #default="{ row }">
-              <ElButton
-                link
-                type="primary"
-                size="small"
-                @click="
-                  openPerms({
-                    type: 'user',
-                    id: row.id,
-                    label: row.nickname || row.username,
-                    sub: row.username,
-                    groupIds: row.groupIds
-                  })
-                "
-              >
-                权限管理
-              </ElButton>
-            </template>
-          </ElTableColumn>
-        </ElTable>
-      </ElTabPane>
+    <!-- 搜索筛选：随页签切换（用户/用户组搜索、授权记录集群筛选） -->
+    <template #search>
+      <ElInput
+        v-if="activeTab === 'users'"
+        v-model="userSearch"
+        :prefix-icon="Search"
+        placeholder="按用户名 / 昵称搜索"
+        clearable
+        style="width: 240px"
+      />
+      <ElInput
+        v-else-if="activeTab === 'groups'"
+        v-model="groupSearch"
+        :prefix-icon="Search"
+        placeholder="按名称 / 编码搜索"
+        clearable
+        style="width: 240px"
+      />
+      <ElSelect v-else v-model="clusterFilter" filterable clearable placeholder="全部集群" style="width: 200px">
+        <ElOption v-for="c in clusterOptions" :key="c.id" :value="c.id" :label="c.name" />
+      </ElSelect>
+    </template>
 
-      <!-- 用户组 tab：主体视角 -->
-      <ElTabPane label="用户组" name="groups">
-        <div class="mb-12px flex items-center gap-8px">
-          <ElInput
-            v-model="groupSearch"
-            :prefix-icon="Search"
-            placeholder="按名称 / 编码搜索"
-            clearable
-            style="width: 240px"
-          />
-        </div>
-        <ElTable v-loading="loading && groups.length === 0" :data="filteredGroups" stripe>
-          <ElTableColumn label="用户组" min-width="200">
-            <template #default="{ row }">
-              <span>{{ row.name }}</span>
-              <span v-if="row.code && row.code !== row.name" class="ml-4px text-12px opacity-60">{{ row.code }}</span>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="有效授权" width="120">
-            <template #default="{ row }">
-              <ElTag :type="groupPermCount(row.id) > 0 ? 'success' : 'info'" size="small" effect="plain">
-                {{ groupPermCount(row.id) }} 条
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="操作" align="center" width="110" fixed="right" class-name="msre-table-actions">
-            <template #default="{ row }">
-              <ElButton
-                link
-                type="primary"
-                size="small"
-                @click="openPerms({ type: 'group', id: row.id, label: row.name, sub: row.code || '' })"
-              >
-                权限管理
-              </ElButton>
-            </template>
-          </ElTableColumn>
-        </ElTable>
-      </ElTabPane>
+    <template #tabs>
+      <ElTabs v-model="activeTab">
+        <!-- 用户 tab：主体视角 -->
+        <ElTabPane label="用户" name="users">
+          <ElTable v-loading="loading && users.length === 0" :data="filteredUsers" stripe height="100%">
+            <ElTableColumn label="用户" min-width="200">
+              <template #default="{ row }">
+                <span>{{ row.nickname || row.username }}</span>
+                <span v-if="row.nickname && row.nickname !== row.username" class="ml-4px text-12px opacity-60">
+                  {{ row.username }}
+                </span>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="所属用户组" min-width="180">
+              <template #default="{ row }">
+                <ElTag v-for="gid in row.groupIds || []" :key="gid" size="small" effect="plain" class="mr-4px">
+                  {{ groupNameById.get(gid) || gid }}
+                </ElTag>
+                <span v-if="!(row.groupIds || []).length" class="opacity-40">-</span>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="有效授权" width="170">
+              <template #default="{ row }">
+                <ElTag :type="userPermSummary(row).total > 0 ? 'success' : 'info'" size="small" effect="plain">
+                  {{ userPermSummary(row).total }} 条
+                </ElTag>
+                <span v-if="userPermSummary(row).inherited > 0" class="ml-4px text-12px opacity-60">
+                  直 {{ userPermSummary(row).direct }} / 继承 {{ userPermSummary(row).inherited }}
+                </span>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="操作" align="center" width="110" fixed="right" class-name="msre-table-actions">
+              <template #default="{ row }">
+                <ElButton
+                  link
+                  type="primary"
+                  size="small"
+                  @click="
+                    openPerms({
+                      type: 'user',
+                      id: row.id,
+                      label: row.nickname || row.username,
+                      sub: row.username,
+                      groupIds: row.groupIds
+                    })
+                  "
+                >
+                  权限管理
+                </ElButton>
+              </template>
+            </ElTableColumn>
+          </ElTable>
+        </ElTabPane>
 
-      <!-- 授权记录 tab：全局绑定流水（审计视角） -->
-      <ElTabPane label="授权记录" name="records">
-        <div class="mb-12px flex items-center gap-8px">
-          <ElSelect v-model="clusterFilter" filterable clearable placeholder="全部集群" style="width: 200px">
-            <ElOption v-for="c in clusterOptions" :key="c.id" :value="c.id" :label="c.name" />
-          </ElSelect>
-          <ElButton :icon="Refresh" @click="loadPageData">刷新</ElButton>
-        </div>
-        <ElTable v-loading="loading" :data="filteredRecords" stripe>
-          <ElTableColumn label="主体类型" width="100">
-            <template #default="{ row }">
-              <ElTag :type="row.subjectType === 'user' ? 'primary' : 'warning'" size="small">
-                {{ row.subjectType === 'user' ? '用户' : '用户组' }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="主体" min-width="150">
-            <template #default="{ row }">
-              <span>{{ row.subjectName }}</span>
-              <span
-                v-if="row.subjectNickname && row.subjectNickname !== row.subjectName"
-                class="ml-4px text-12px opacity-60"
-              >
-                {{ row.subjectNickname }}
-              </span>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="集群" min-width="130">
-            <template #default="{ row }">
-              {{ row.clusterName || row.clusterId }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="角色" min-width="220">
-            <template #default="{ row }">
-              <ElTag size="small" effect="plain">{{ row.roleKind }}</ElTag>
-              <span class="ml-4px">{{ row.roleName }}</span>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="范围" width="130">
-            <template #default="{ row }">
-              <ElTag v-if="!row.namespace" size="small" effect="plain" type="info">全集群</ElTag>
-              <span v-else>{{ row.namespace }}</span>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn prop="createdAt" label="授权时间" width="170" />
-          <ElTableColumn
-            v-if="canRevoke"
-            label="操作"
-            align="center"
-            width="100"
-            fixed="right"
-            class-name="msre-table-actions"
-          >
-            <template #default="{ row }">
-              <ElButton link type="danger" size="small" @click="handleRevoke(row)">撤销</ElButton>
-            </template>
-          </ElTableColumn>
-        </ElTable>
-      </ElTabPane>
-    </ElTabs>
+        <!-- 用户组 tab：主体视角 -->
+        <ElTabPane label="用户组" name="groups">
+          <ElTable v-loading="loading && groups.length === 0" :data="filteredGroups" stripe height="100%">
+            <ElTableColumn label="用户组" min-width="200">
+              <template #default="{ row }">
+                <span>{{ row.name }}</span>
+                <span v-if="row.code && row.code !== row.name" class="ml-4px text-12px opacity-60">{{ row.code }}</span>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="有效授权" width="120">
+              <template #default="{ row }">
+                <ElTag :type="groupPermCount(row.id) > 0 ? 'success' : 'info'" size="small" effect="plain">
+                  {{ groupPermCount(row.id) }} 条
+                </ElTag>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="操作" align="center" width="110" fixed="right" class-name="msre-table-actions">
+              <template #default="{ row }">
+                <ElButton
+                  link
+                  type="primary"
+                  size="small"
+                  @click="openPerms({ type: 'group', id: row.id, label: row.name, sub: row.code || '' })"
+                >
+                  权限管理
+                </ElButton>
+              </template>
+            </ElTableColumn>
+          </ElTable>
+        </ElTabPane>
+
+        <!-- 授权记录 tab：全局绑定流水（审计视角） -->
+        <ElTabPane label="授权记录" name="records">
+          <ElTable v-loading="loading" :data="filteredRecords" stripe height="100%">
+            <ElTableColumn label="主体类型" width="100">
+              <template #default="{ row }">
+                <ElTag :type="row.subjectType === 'user' ? 'primary' : 'warning'" size="small">
+                  {{ row.subjectType === 'user' ? '用户' : '用户组' }}
+                </ElTag>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="主体" min-width="150">
+              <template #default="{ row }">
+                <span>{{ row.subjectName }}</span>
+                <span
+                  v-if="row.subjectNickname && row.subjectNickname !== row.subjectName"
+                  class="ml-4px text-12px opacity-60"
+                >
+                  {{ row.subjectNickname }}
+                </span>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="集群" min-width="130">
+              <template #default="{ row }">
+                {{ row.clusterName || row.clusterId }}
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="角色" min-width="220">
+              <template #default="{ row }">
+                <ElTag size="small" effect="plain">{{ row.roleKind }}</ElTag>
+                <span class="ml-4px">{{ row.roleName }}</span>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="范围" width="130">
+              <template #default="{ row }">
+                <ElTag v-if="!row.namespace" size="small" effect="plain" type="info">全集群</ElTag>
+                <span v-else>{{ row.namespace }}</span>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn prop="createdAt" label="授权时间" width="170" />
+            <ElTableColumn
+              v-if="canRevoke"
+              label="操作"
+              align="center"
+              width="100"
+              fixed="right"
+              class-name="msre-table-actions"
+            >
+              <template #default="{ row }">
+                <ElButton link type="danger" size="small" @click="handleRevoke(row)">撤销</ElButton>
+              </template>
+            </ElTableColumn>
+          </ElTable>
+        </ElTabPane>
+      </ElTabs>
+    </template>
 
     <!-- 权限管理抽屉：主体头 + 已有权限 + 添加权限（待提交行清单）+ 权限说明 -->
     <ElDrawer v-model="permsVisible" title="权限管理" size="70%">
@@ -776,5 +786,5 @@
         <ElButton @click="permsVisible = false">取消</ElButton>
       </template>
     </ElDrawer>
-  </div>
+  </ListPageLayout>
 </template>

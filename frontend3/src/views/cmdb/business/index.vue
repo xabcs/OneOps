@@ -66,65 +66,57 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <ElCard class="card-wrapper">
-      <div class="mb-16px flex justify-between">
-        <ElButton :icon="Refresh" @click="getData">刷新</ElButton>
-        <PermissionButton code="cmdb.business.create" type="primary" :icon="Plus" @click="handleAdd">
-          新增业务
-        </PermissionButton>
-      </div>
+  <ListPageLayout title="业务系统管理" description="维护业务系统层级结构、负责人与联系信息">
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <ElButton :icon="Refresh" @click="getData">刷新</ElButton>
+      <PermissionButton code="cmdb.business.create" type="primary" :icon="Plus" @click="handleAdd">
+        新增业务
+      </PermissionButton>
+    </template>
 
-      <div class="table-scroll-wrap">
-        <ElTable
-          v-loading="loading"
-          :data="tableData"
-          row-key="id"
-          border
-          stripe
-          height="100%"
-          :tree-props="{ children: 'children' }"
-        >
-          <ElTableColumn prop="id" label="ID" width="80" />
-          <ElTableColumn prop="name" label="业务名称" min-width="160" show-overflow-tooltip />
-          <ElTableColumn prop="code" label="业务代码" width="140" />
-          <ElTableColumn prop="owner" label="负责人" width="120" />
-          <ElTableColumn prop="phone" label="联系电话" width="140" />
-          <ElTableColumn prop="sortOrder" label="排序" width="80" />
-          <ElTableColumn label="状态" width="90">
-            <template #default="{ row }">
-              <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
-                {{ row.status === 1 ? '启用' : '禁用' }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn prop="remarks" label="备注" min-width="180" show-overflow-tooltip />
-          <ElTableColumn label="操作" align="center" width="160" fixed="right" class-name="msre-table-actions">
-            <template #default="{ row }">
-              <PermissionButton link type="primary" size="small" code="cmdb.business.update" @click="handleEdit(row)">
-                编辑
-              </PermissionButton>
-              <PermissionButton link type="danger" size="small" code="cmdb.business.delete" @click="handleDelete(row)">
-                删除
-              </PermissionButton>
-            </template>
-          </ElTableColumn>
-        </ElTable>
-      </div>
+    <!-- 表格 -->
+    <ElTable
+      v-loading="loading"
+      :data="tableData"
+      row-key="id"
+      border
+      stripe
+      height="100%"
+      :tree-props="{ children: 'children' }"
+    >
+      <ElTableColumn prop="id" label="ID" width="80" />
+      <ElTableColumn prop="name" label="业务名称" min-width="160" show-overflow-tooltip />
+      <ElTableColumn prop="code" label="业务代码" width="140" />
+      <ElTableColumn prop="owner" label="负责人" width="120" />
+      <ElTableColumn prop="phone" label="联系电话" width="140" />
+      <ElTableColumn prop="sortOrder" label="排序" width="80" />
+      <ElTableColumn label="状态" width="90">
+        <template #default="{ row }">
+          <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
+            {{ row.status === 1 ? '启用' : '禁用' }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn prop="remarks" label="备注" min-width="180" show-overflow-tooltip />
+      <ElTableColumn label="操作" align="center" width="160" fixed="right" class-name="msre-table-actions">
+        <template #default="{ row }">
+          <PermissionButton link type="primary" size="small" code="cmdb.business.update" @click="handleEdit(row)">
+            编辑
+          </PermissionButton>
+          <PermissionButton link type="danger" size="small" code="cmdb.business.delete" @click="handleDelete(row)">
+            删除
+          </PermissionButton>
+        </template>
+      </ElTableColumn>
+    </ElTable>
 
-      <BusinessOperateDrawer
-        v-model:visible="drawerVisible"
-        :operate-type="operateType"
-        :row-data="editingData"
-        :tree-options="businessTreeOptions"
-        @submitted="getData"
-      />
-    </ElCard>
-  </div>
+    <BusinessOperateDrawer
+      v-model:visible="drawerVisible"
+      :operate-type="operateType"
+      :row-data="editingData"
+      :tree-options="businessTreeOptions"
+      @submitted="getData"
+    />
+  </ListPageLayout>
 </template>
-
-<style scoped lang="scss">
-  .card-wrapper {
-    @apply flex-col-stretch p-16px;
-  }
-</style>

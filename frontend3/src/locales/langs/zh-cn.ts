@@ -162,6 +162,7 @@ const local: App.I18n.Schema = {
         violetDawn: '紫罗黎明'
       },
       sections: {
+        page: '内容区底色',
         hero: 'Hero 区域',
         statCards: '统计卡片',
         contentCard: '内容卡片',

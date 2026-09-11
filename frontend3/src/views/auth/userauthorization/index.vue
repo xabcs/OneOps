@@ -53,6 +53,11 @@
     getData();
   }
 
+  // 布局重置按钮：清空用户筛选
+  function handleReset() {
+    selectedUserId.value = null;
+  }
+
   function handleAssignGroup() {
     if (!selectedUserId.value) {
       ElMessage.warning('请先选择用户');
@@ -83,38 +88,34 @@
 </script>
 
 <template>
-  <div class="table-page">
+  <ListPageLayout title="用户所属用户组列表" @search="getData" @reset="handleReset">
     <!-- 用户选择 -->
-    <ElCard class="card-wrapper">
-      <ElSpace>
-        <ElSelect v-model="selectedUserId" placeholder="请选择用户" class="w-300px" @change="handleUserChange">
-          <ElOption
-            v-for="user in users"
-            :key="user.id"
-            :label="`${user.username} (${user.nickname || '-'})`"
-            :value="user.id"
-          />
-        </ElSelect>
-        <PermissionButton
-          code="auth.user.update"
-          type="primary"
-          :icon="Plus"
-          :disabled="!selectedUserId"
-          @click="handleAssignGroup"
-        >
-          分配用户组
-        </PermissionButton>
-      </ElSpace>
-    </ElCard>
+    <template #search>
+      <ElSelect v-model="selectedUserId" placeholder="请选择用户" class="w-300px" @change="handleUserChange">
+        <ElOption
+          v-for="user in users"
+          :key="user.id"
+          :label="`${user.username} (${user.nickname || '-'})`"
+          :value="user.id"
+        />
+      </ElSelect>
+    </template>
+
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <PermissionButton
+        code="auth.user.update"
+        type="primary"
+        :icon="Plus"
+        :disabled="!selectedUserId"
+        @click="handleAssignGroup"
+      >
+        分配用户组
+      </PermissionButton>
+    </template>
 
     <!-- 表格 -->
-    <ElCard class="card-wrapper sm:flex-1-hidden">
-      <template #header>
-        <span class="text-lg font-medium">用户所属用户组列表</span>
-      </template>
-
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" height="100%" :data="tableData" :border="false" row-key="groupId">
+    <ElTable v-loading="loading" height="100%" :data="tableData" :border="false" row-key="groupId">
           <ElTableColumn type="index" label="序号" width="60" align="center" />
           <ElTableColumn prop="groupName" label="用户组名称" align="center" min-width="150" />
           <ElTableColumn prop="groupCode" label="用户组代码" align="center" min-width="150" />
@@ -134,18 +135,16 @@
               </PermissionButton>
             </template>
           </ElTableColumn>
-        </ElTable>
-      </div>
+    </ElTable>
 
-      <!-- 分配用户组抽屉（P0a + P1a + P2a）-->
-      <AuthorizationOperateDrawer
-        v-model:visible="drawerVisible"
-        :user-id="selectedUserId"
-        :groups="groups"
-        @submitted="getData"
-        @show-results="handleShowResults"
-      />
-    </ElCard>
+    <!-- 分配用户组抽屉（P0a + P1a + P2a）-->
+    <AuthorizationOperateDrawer
+      v-model:visible="drawerVisible"
+      :user-id="selectedUserId"
+      :groups="groups"
+      @submitted="getData"
+      @show-results="handleShowResults"
+    />
 
     <!-- 授权结果对话框 -->
     <ElDialog v-model="resultDialogVisible" title="授权结果" width="600px">
@@ -175,7 +174,7 @@
         <ElButton type="primary" @click="resultDialogVisible = false">关闭</ElButton>
       </template>
     </ElDialog>
-  </div>
+  </ListPageLayout>
 </template>
 
 <style scoped lang="scss">

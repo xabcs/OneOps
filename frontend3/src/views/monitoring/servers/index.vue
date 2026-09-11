@@ -1,7 +1,7 @@
 <script setup lang="ts">
-  import { onMounted, onUnmounted, ref } from 'vue';
+  import { computed, onMounted, onUnmounted, ref } from 'vue';
   import { useRouter } from 'vue-router';
-  import { Refresh, RefreshRight, Search } from '@element-plus/icons-vue';
+  import { Refresh, Search } from '@element-plus/icons-vue';
   import { fetchGetServers } from '@/service/api/cmdb';
   import { useWebSocket } from '@/service/websocket';
 
@@ -65,6 +65,16 @@
     pagination.value.page = 1;
     getServerList();
   }
+
+  // 布局内置分页：托管给 ListPageLayout，复用现有翻页处理器
+  const layoutPagination = computed(() => ({
+    currentPage: pagination.value.page,
+    pageSize: pagination.value.pageSize,
+    total: pagination.value.total,
+    pageSizes: [20, 50, 100],
+    'current-change': handlePageChange,
+    'size-change': handlePageSizeChange
+  }));
 
   function handleViewMonitoring(serverId: number) {
     router.push({
@@ -136,127 +146,118 @@
 </script>
 
 <template>
-  <div class="p-4 space-y-4">
-    <!-- 过滤栏 -->
-    <ElCard shadow="never">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <span class="text-lg font-semibold">主机监控</span>
-        <div class="flex flex-wrap items-center gap-2">
-          <ElInput
-            v-model="searchParams.keyword"
-            placeholder="搜索主机名或IP"
-            clearable
-            style="width: 200px"
-            @keyup.enter="handleSearch"
-          >
-            <template #prefix>
-              <ElIcon :size="16"><Search /></ElIcon>
-            </template>
-          </ElInput>
-          <ElSelect v-model="searchParams.agentStatus" placeholder="Agent状态" clearable style="width: 130px">
-            <ElOption label="全部" value="" />
-            <ElOption label="运行中" value="running" />
-            <ElOption label="离线" value="offline" />
-            <ElOption label="失败" value="failed" />
-            <ElOption label="未安装" value="uninstalled" />
-          </ElSelect>
-          <ElButton type="primary" @click="handleSearch">
-            <ElIcon :size="16"><Search /></ElIcon>
-            搜索
-          </ElButton>
-          <ElButton @click="handleReset">
-            <ElIcon :size="16"><RefreshRight /></ElIcon>
-            重置
-          </ElButton>
-          <ElButton :loading="loading" @click="getServerList">
-            <ElIcon :size="16"><Refresh /></ElIcon>
-            刷新
-          </ElButton>
-        </div>
-      </div>
-    </ElCard>
+  <ListPageLayout
+    title="主机监控"
+    description="实时查看主机运行状态与资源使用率"
+    :pagination="layoutPagination"
+    @search="handleSearch"
+    @reset="handleReset"
+  >
+    <!-- 搜索筛选 -->
+    <template #search>
+      <ElInput
+        v-model="searchParams.keyword"
+        placeholder="搜索主机名或IP"
+        clearable
+        class="w-200px"
+        @keyup.enter="handleSearch"
+      >
+        <template #prefix>
+          <ElIcon :size="16"><Search /></ElIcon>
+        </template>
+      </ElInput>
+      <ElSelect v-model="searchParams.agentStatus" placeholder="Agent状态" clearable class="w-130px">
+        <ElOption label="全部" value="" />
+        <ElOption label="运行中" value="running" />
+        <ElOption label="离线" value="offline" />
+        <ElOption label="失败" value="failed" />
+        <ElOption label="未安装" value="uninstalled" />
+      </ElSelect>
+    </template>
+
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <ElButton :loading="loading" @click="getServerList">
+        <ElIcon :size="16"><Refresh /></ElIcon>
+        刷新
+      </ElButton>
+    </template>
 
     <!-- 主机表格 -->
-    <ElCard shadow="never">
-      <ElTable v-loading="loading" :data="servers" border stripe size="small" row-key="id" style="width: 100%">
-        <ElTableColumn label="主机名" prop="hostname" min-width="140" show-overflow-tooltip />
-        <ElTableColumn label="IP地址" prop="ip" width="130" />
-        <ElTableColumn label="Agent状态" width="110" align="center">
-          <template #default="{ row }">
-            <ElTag :type="getAgentTagType(row.agentStatus)" size="small">
-              {{ getAgentStatusText(row.agentStatus) }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="CPU使用率" width="140" align="center">
-          <template #default="{ row }">
-            <ElProgress
-              :percentage="Math.round(row.cpuUsage || 0)"
-              :color="getProgressColor(row.cpuUsage || 0)"
-              :stroke-width="4"
-              :format="(percentage: number) => (row.cpuUsage ? row.cpuUsage.toFixed(1) + '%' : '0%')"
-            />
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="内存使用率" width="140" align="center">
-          <template #default="{ row }">
-            <ElProgress
-              :percentage="Math.round(row.memoryUsage || 0)"
-              :color="getProgressColor(row.memoryUsage || 0)"
-              :stroke-width="4"
-              :format="(percentage: number) => (row.memoryUsage ? row.memoryUsage.toFixed(1) + '%' : '0%')"
-            />
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="磁盘使用率" width="140" align="center">
-          <template #default="{ row }">
-            <ElProgress
-              :percentage="Math.round(row.diskUsage || 0)"
-              :color="getProgressColor(row.diskUsage || 0)"
-              :stroke-width="4"
-              :format="(percentage: number) => (row.diskUsage ? row.diskUsage.toFixed(1) + '%' : '0%')"
-            />
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="系统负载" width="100" align="center">
-          <template #default="{ row }">
-            <span :style="{ color: getLoadColor(row.load5 || 0), fontSize: '12px', fontWeight: '500' }">
-              {{ row.load5 ? row.load5.toFixed(2) : '-' }}
-            </span>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="最后更新" width="170">
-          <template #default="{ row }">
-            {{ row.metricsUpdatedAt ? new Date(row.metricsUpdatedAt).toLocaleString('zh-CN') : '-' }}
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="操作" width="110" align="center" fixed="right" class-name="msre-table-actions">
-          <template #default="{ row }">
-            <ElButton
-              link
-              type="primary"
-              size="small"
-              :disabled="row.agentStatus !== 'running'"
-              @click="handleViewMonitoring(row.id)"
-            >
-              监控详情
-            </ElButton>
-          </template>
-        </ElTableColumn>
-      </ElTable>
-
-      <!-- 分页 -->
-      <div class="mt-4 flex justify-end">
-        <ElPagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.pageSize"
-          :total="pagination.total"
-          :page-sizes="[20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          @current-change="handlePageChange"
-          @size-change="handlePageSizeChange"
-        />
-      </div>
-    </ElCard>
-  </div>
+    <ElTable
+      v-loading="loading"
+      :data="servers"
+      border
+      stripe
+      size="small"
+      row-key="id"
+      height="100%"
+      style="width: 100%"
+    >
+      <ElTableColumn label="主机名" prop="hostname" min-width="140" show-overflow-tooltip />
+      <ElTableColumn label="IP地址" prop="ip" width="130" />
+      <ElTableColumn label="Agent状态" width="110" align="center">
+        <template #default="{ row }">
+          <ElTag :type="getAgentTagType(row.agentStatus)" size="small">
+            {{ getAgentStatusText(row.agentStatus) }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="CPU使用率" width="140" align="center">
+        <template #default="{ row }">
+          <ElProgress
+            :percentage="Math.round(row.cpuUsage || 0)"
+            :color="getProgressColor(row.cpuUsage || 0)"
+            :stroke-width="4"
+            :format="(percentage: number) => (row.cpuUsage ? row.cpuUsage.toFixed(1) + '%' : '0%')"
+          />
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="内存使用率" width="140" align="center">
+        <template #default="{ row }">
+          <ElProgress
+            :percentage="Math.round(row.memoryUsage || 0)"
+            :color="getProgressColor(row.memoryUsage || 0)"
+            :stroke-width="4"
+            :format="(percentage: number) => (row.memoryUsage ? row.memoryUsage.toFixed(1) + '%' : '0%')"
+          />
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="磁盘使用率" width="140" align="center">
+        <template #default="{ row }">
+          <ElProgress
+            :percentage="Math.round(row.diskUsage || 0)"
+            :color="getProgressColor(row.diskUsage || 0)"
+            :stroke-width="4"
+            :format="(percentage: number) => (row.diskUsage ? row.diskUsage.toFixed(1) + '%' : '0%')"
+          />
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="系统负载" width="100" align="center">
+        <template #default="{ row }">
+          <span :style="{ color: getLoadColor(row.load5 || 0), fontSize: '12px', fontWeight: '500' }">
+            {{ row.load5 ? row.load5.toFixed(2) : '-' }}
+          </span>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="最后更新" width="170">
+        <template #default="{ row }">
+          {{ row.metricsUpdatedAt ? new Date(row.metricsUpdatedAt).toLocaleString('zh-CN') : '-' }}
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="操作" width="110" align="center" fixed="right" class-name="msre-table-actions">
+        <template #default="{ row }">
+          <ElButton
+            link
+            type="primary"
+            size="small"
+            :disabled="row.agentStatus !== 'running'"
+            @click="handleViewMonitoring(row.id)"
+          >
+            监控详情
+          </ElButton>
+        </template>
+      </ElTableColumn>
+    </ElTable>
+  </ListPageLayout>
 </template>

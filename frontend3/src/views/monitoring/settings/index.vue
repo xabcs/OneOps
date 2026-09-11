@@ -11,7 +11,6 @@
   });
 
   const authStore = useAuthStore();
-  const activeTab = ref('rules');
 
   // 无权限时点击置灰开关的提示（disabled 的 ElSwitch 不拦截原生 click 冒泡）
   function handleDisabledSwitchClick(code: string) {
@@ -149,97 +148,84 @@
 </script>
 
 <template>
-  <div class="p-4 space-y-4">
-    <!-- 标题栏 -->
-    <ElCard shadow="never">
-      <div class="flex items-center justify-between">
-        <span class="text-lg font-semibold">监控配置</span>
-      </div>
-    </ElCard>
+  <ListPageLayout title="监控配置" description="配置触发告警的规则条件；通知渠道在「系统管理 → 通知渠道」维护">
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <PermissionButton code="monitor.alert_rule.create" type="primary" @click="handleCreateRule">
+        <ElIcon :size="16">
+          <Plus />
+        </ElIcon>
+        新增规则
+      </PermissionButton>
+    </template>
 
     <!-- 告警规则 -->
-    <ElCard shadow="never">
-      <div class="max-w-6xl">
-        <div class="mb-4 flex items-center justify-between">
-          <ElText type="info">配置触发告警的规则条件；通知渠道在「系统管理 → 通知渠道」维护</ElText>
-          <PermissionButton code="monitor.alert_rule.create" type="primary" @click="handleCreateRule">
-            <ElIcon :size="16">
-              <Plus />
-            </ElIcon>
-            新增规则
+    <ElTable v-loading="alertRulesLoading" :data="alertRules" border stripe height="100%">
+      <ElTableColumn label="规则名称" prop="name" min-width="150" />
+      <ElTableColumn label="监控指标" width="130">
+        <template #default="{ row }">
+          {{ getMetricText(row.metric) }}
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="条件" width="70" align="center">
+        <template #default="{ row }">
+          {{ row.condition }}
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="阈值" width="100" align="center">
+        <template #default="{ row }">{{ row.threshold }}{{ row.metric.includes('usage') ? '%' : '' }}</template>
+      </ElTableColumn>
+      <ElTableColumn label="持续时间" width="100" align="center">
+        <template #default="{ row }">{{ row.duration }}秒</template>
+      </ElTableColumn>
+      <ElTableColumn label="级别" width="80" align="center">
+        <template #default="{ row }">
+          <ElTag :type="getLevelTagType(row.level)" size="small">
+            {{ getLevelText(row.level) }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="状态" width="90" align="center">
+        <template #default="{ row }">
+          <ElSwitch
+            :model-value="row.enabled"
+            :disabled="!authStore.hasPermission('monitor.alert_rule.update')"
+            title="缺少权限：monitor.alert_rule.update"
+            @click="handleDisabledSwitchClick('monitor.alert_rule.update')"
+            @change="handleToggleRuleStatus(row)"
+          />
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="操作" width="150" align="center" fixed="right" class-name="msre-table-actions">
+        <template #default="{ row }">
+          <PermissionButton
+            link
+            type="primary"
+            size="small"
+            code="monitor.alert_rule.update"
+            @click="handleEditRule(row)"
+          >
+            编辑
           </PermissionButton>
-        </div>
+          <PermissionButton
+            link
+            type="danger"
+            size="small"
+            code="monitor.alert_rule.delete"
+            @click="handleDeleteRule(row)"
+          >
+            删除
+          </PermissionButton>
+        </template>
+      </ElTableColumn>
+    </ElTable>
 
-        <ElTable v-loading="alertRulesLoading" :data="alertRules" border stripe>
-          <ElTableColumn label="规则名称" prop="name" min-width="150" />
-          <ElTableColumn label="监控指标" width="130">
-            <template #default="{ row }">
-              {{ getMetricText(row.metric) }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="条件" width="70" align="center">
-            <template #default="{ row }">
-              {{ row.condition }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="阈值" width="100" align="center">
-            <template #default="{ row }">{{ row.threshold }}{{ row.metric.includes('usage') ? '%' : '' }}</template>
-          </ElTableColumn>
-          <ElTableColumn label="持续时间" width="100" align="center">
-            <template #default="{ row }">{{ row.duration }}秒</template>
-          </ElTableColumn>
-          <ElTableColumn label="级别" width="80" align="center">
-            <template #default="{ row }">
-              <ElTag :type="getLevelTagType(row.level)" size="small">
-                {{ getLevelText(row.level) }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="状态" width="90" align="center">
-            <template #default="{ row }">
-              <ElSwitch
-                :model-value="row.enabled"
-                :disabled="!authStore.hasPermission('monitor.alert_rule.update')"
-                title="缺少权限：monitor.alert_rule.update"
-                @click="handleDisabledSwitchClick('monitor.alert_rule.update')"
-                @change="handleToggleRuleStatus(row)"
-              />
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="操作" width="150" align="center" fixed="right" class-name="msre-table-actions">
-            <template #default="{ row }">
-              <PermissionButton
-                link
-                type="primary"
-                size="small"
-                code="monitor.alert_rule.update"
-                @click="handleEditRule(row)"
-              >
-                编辑
-              </PermissionButton>
-              <PermissionButton
-                link
-                type="danger"
-                size="small"
-                code="monitor.alert_rule.delete"
-                @click="handleDeleteRule(row)"
-              >
-                删除
-              </PermissionButton>
-            </template>
-          </ElTableColumn>
-        </ElTable>
-
-        <ElEmpty v-if="!alertRulesLoading && alertRules.length === 0" description="暂无告警规则" />
-      </div>
-    </ElCard>
-
-    <!-- 告警规则对话框 -->
+    <!-- 告警规则对话框（teleport 弹层须置于布局内，保持页面单根节点） -->
     <AlertRuleDialog
       v-model:visible="showRuleDialog"
       :mode="ruleDialogMode"
       :rule="currentRule"
       @submitted="loadAlertRules"
     />
-  </div>
+  </ListPageLayout>
 </template>

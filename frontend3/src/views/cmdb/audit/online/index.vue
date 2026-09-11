@@ -137,21 +137,10 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <ElCard shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span class="title">在线会话</span>
-          <div class="header-actions">
-            <PermissionButton code="cmdb.session.terminate" type="warning" @click="handleCleanupInvalidSessions">
-              清理无效会话
-            </PermissionButton>
-            <ElButton type="primary" @click="refresh">刷新</ElButton>
-          </div>
-        </div>
-      </template>
-
-      <ElAlert type="info" :closable="false" style="margin-bottom: 16px">
+  <ListPageLayout title="在线会话" description="实时监控堡垒机活跃会话，支持强制断开与无效会话清理">
+    <!-- 提示 + 统计卡片 -->
+    <template #hero>
+      <ElAlert type="info" :closable="false" class="mb-16px">
         <template #default>
           在线会话列表可能包含已失效的会话（服务器重启、网络中断等原因）。
           使用「清理无效会话」功能可自动移除已断开的会话。
@@ -168,80 +157,67 @@
           <div class="stat-label">今日会话总数</div>
         </div>
       </div>
+    </template>
 
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" :data="sessions" stripe height="100%">
-          <ElTableColumn prop="id" label="会话ID" width="80" />
-          <ElTableColumn prop="username" label="用户名" width="120" />
-          <ElTableColumn label="服务器" width="160">
-            <template #default="{ row }">
-              {{ row.server?.hostname || `ID:${row.serverId}` }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn prop="loginAccount" label="登录账号" width="120" />
-          <ElTableColumn prop="clientIp" label="客户端IP" width="140" />
-          <ElTableColumn prop="protocol" label="协议" width="90">
-            <template #default="{ row }">
-              <ElTag :type="row.protocol === 'ssh' ? 'primary' : 'success'" size="small">
-                {{ row.protocol?.toUpperCase() }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="开始时间" width="180">
-            <template #default="{ row }">
-              {{ formatTime(row.startedAt || '') }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="时长" width="110">
-            <template #default="{ row }">
-              {{ formatDuration(row.duration || 0) }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="状态" width="90">
-            <template #default>
-              <ElTag type="success" size="small">活跃</ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="操作" align="center" width="120" fixed="right" class-name="msre-table-actions">
-            <template #default="{ row }">
-              <PermissionButton
-                link
-                type="danger"
-                size="small"
-                code="cmdb.session.terminate"
-                @click="handleTerminate(row)"
-              >
-                强制断开
-              </PermissionButton>
-            </template>
-          </ElTableColumn>
-        </ElTable>
-      </div>
-    </ElCard>
-  </div>
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <PermissionButton code="cmdb.session.terminate" type="warning" @click="handleCleanupInvalidSessions">
+        清理无效会话
+      </PermissionButton>
+      <ElButton type="primary" @click="refresh">刷新</ElButton>
+    </template>
+
+    <!-- 表格 -->
+    <ElTable v-loading="loading" :data="sessions" stripe height="100%">
+      <ElTableColumn prop="id" label="会话ID" width="80" />
+      <ElTableColumn prop="username" label="用户名" width="120" />
+      <ElTableColumn label="服务器" width="160">
+        <template #default="{ row }">
+          {{ row.server?.hostname || `ID:${row.serverId}` }}
+        </template>
+      </ElTableColumn>
+      <ElTableColumn prop="loginAccount" label="登录账号" width="120" />
+      <ElTableColumn prop="clientIp" label="客户端IP" width="140" />
+      <ElTableColumn prop="protocol" label="协议" width="90">
+        <template #default="{ row }">
+          <ElTag :type="row.protocol === 'ssh' ? 'primary' : 'success'" size="small">
+            {{ row.protocol?.toUpperCase() }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="开始时间" width="180">
+        <template #default="{ row }">
+          {{ formatTime(row.startedAt || '') }}
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="时长" width="110">
+        <template #default="{ row }">
+          {{ formatDuration(row.duration || 0) }}
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="状态" width="90">
+        <template #default>
+          <ElTag type="success" size="small">活跃</ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="操作" align="center" width="120" fixed="right" class-name="msre-table-actions">
+        <template #default="{ row }">
+          <PermissionButton
+            link
+            type="danger"
+            size="small"
+            code="cmdb.session.terminate"
+            @click="handleTerminate(row)"
+          >
+            强制断开
+          </PermissionButton>
+        </template>
+      </ElTableColumn>
+    </ElTable>
+  </ListPageLayout>
 </template>
 
 <style scoped>
-  .online-page {
-    padding: 16px;
-  }
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .header-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .title {
-    font-size: 16px;
-    font-weight: 500;
-  }
-
   .stats-cards {
     display: flex;
     gap: 16px;

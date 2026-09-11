@@ -55,6 +55,11 @@
 
   const modules: ModuleDef[] = [
     {
+      key: 'page',
+      titleKey: 'theme.content.sections.page',
+      fields: [commonFields.background]
+    },
+    {
       key: 'hero',
       titleKey: 'theme.content.sections.hero',
       fields: [{ key: 'visible', label: 'theme.content.fields.visible', type: 'switch' }, ...gradientFields()]

@@ -165,29 +165,22 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <!-- 标题栏 -->
-    <ElCard shadow="never" class="card-static">
-      <div class="flex items-center justify-between">
-        <div>
-          <span class="text-lg font-semibold">通知渠道</span>
-          <div class="mt-1 text-xs text-gray-400">
-            平台级渠道池：监控告警与工单通知（工单中心-通知设置）共同引用此处的渠道
-          </div>
-        </div>
-        <PermissionButton code="monitor.notification.create" type="primary" @click="handleCreate">
-          <ElIcon :size="16">
-            <Plus />
-          </ElIcon>
-          新增渠道
-        </PermissionButton>
-      </div>
-    </ElCard>
+  <ListPageLayout
+    title="通知渠道"
+    description="平台级渠道池：监控告警与工单通知（工单中心-通知设置）共同引用此处的渠道"
+  >
+    <!-- 工具栏 -->
+    <template #toolbar>
+      <PermissionButton code="monitor.notification.create" type="primary" @click="handleCreate">
+        <ElIcon :size="16">
+          <Plus />
+        </ElIcon>
+        新增渠道
+      </PermissionButton>
+    </template>
 
     <!-- 渠道列表 -->
-    <ElCard shadow="never">
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" :data="channels" border stripe height="100%">
+    <ElTable v-loading="loading" :data="channels" border stripe height="100%">
           <ElTableColumn label="类型" width="110" align="center">
             <template #default="{ row }">
               <ElIcon :size="20">
@@ -258,9 +251,7 @@
               </PermissionButton>
             </template>
           </ElTableColumn>
-        </ElTable>
-      </div>
-    </ElCard>
+    </ElTable>
 
     <!-- 通知渠道对话框 -->
     <NotificationChannelDialog
@@ -269,5 +260,5 @@
       :channel="currentChannel"
       @submitted="loadChannels"
     />
-  </div>
+  </ListPageLayout>
 </template>

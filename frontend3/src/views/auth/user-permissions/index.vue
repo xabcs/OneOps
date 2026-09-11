@@ -220,9 +220,27 @@
 </script>
 
 <template>
-  <div class="table-page">
+  <ListPageLayout
+    title="用户权限"
+    description="查看用户在各应用下的有效权限与角色分配"
+    :pagination="
+      viewMode === 'list' && pagination.total
+        ? {
+            total: pagination.total,
+            currentPage: pagination.page,
+            pageSize: pagination.pageSize,
+            pageSizes: [10, 20, 50, 100],
+            'current-change': handlePageChange,
+            'size-change': handleSizeChange
+          }
+        : null
+    "
+    @search="handleSearch"
+    @reset="handleReset"
+  >
     <!-- Tab 切换层 -->
-    <div class="space-y-3">
+    <template #hero>
+      <div class="space-y-3">
       <!-- 第一层：应用切换 + 视图切换 -->
       <div class="flex items-center justify-between gap-4">
         <div class="permission-tabs-shell flex-1">
@@ -308,42 +326,31 @@
         </template>
       </div>
     </div>
+    </template>
 
-    <!-- 数据展示 -->
-    <ElCard shadow="never" class="flex-1">
-      <!-- 矩阵视图：初始加载阶段（applications 未返回）同样显示 loading，不闪现误导性空态 -->
-      <div v-if="viewMode === 'matrix'" v-loading="matrixLoading || appLoading">
-        <ElEmpty v-if="!selectedAppId && !appLoading" description="请选择应用" />
+    <!-- 列表视图筛选（矩阵视图不渲染搜索区） -->
+    <template v-if="viewMode === 'list'" #search>
+      <ElInput v-model="searchParams.username" placeholder="请输入用户名" class="w-200px" clearable />
+    </template>
 
-        <!-- 使用统一的矩阵组件 -->
-        <AppPermissionMatrix
-          v-else-if="adaptedMatrixData && adaptedMatrixData.columns && adaptedMatrixData.columns.length > 0"
-          :data="adaptedMatrixData as any"
-          :item-type="selectedRoleType"
-          :app-type="selectedApp?.type || 'jenkins'"
-          @refresh="getMatrixData"
-        />
+    <!-- 矩阵视图：初始加载阶段（applications 未返回）同样显示 loading，不闪现误导性空态 -->
+    <div v-if="viewMode === 'matrix'" v-loading="matrixLoading || appLoading">
+      <ElEmpty v-if="!selectedAppId && !appLoading" description="请选择应用" />
 
-        <ElEmpty v-else-if="selectedAppId && !matrixLoading" description="暂无数据" />
-      </div>
+      <!-- 使用统一的矩阵组件 -->
+      <AppPermissionMatrix
+        v-else-if="adaptedMatrixData && adaptedMatrixData.columns && adaptedMatrixData.columns.length > 0"
+        :data="adaptedMatrixData as any"
+        :item-type="selectedRoleType"
+        :app-type="selectedApp?.type || 'jenkins'"
+        @refresh="getMatrixData"
+      />
 
-      <!-- 列表视图 -->
-      <div v-else class="flex flex-col flex-1 min-h-0">
-        <!-- 搜索栏 -->
-        <div class="mb-4">
-          <ElForm :model="searchParams" inline>
-            <ElFormItem label="用户名">
-              <ElInput v-model="searchParams.username" placeholder="请输入用户名" class="w-200px" clearable />
-            </ElFormItem>
-            <ElFormItem>
-              <ElButton type="primary" @click="handleSearch">查询</ElButton>
-              <ElButton @click="handleReset">重置</ElButton>
-            </ElFormItem>
-          </ElForm>
-        </div>
+      <ElEmpty v-else-if="selectedAppId && !matrixLoading" description="暂无数据" />
+    </div>
 
-        <div class="table-scroll-wrap">
-          <ElTable v-loading="loading" :data="tableData" :border="false" height="100%">
+    <!-- 列表视图 -->
+    <ElTable v-else v-loading="loading" :data="tableData" :border="false" height="100%">
           <ElTableColumn type="index" label="序号" width="60" align="center" />
           <ElTableColumn label="授权中心用户" align="center" min-width="120">
             <template #default="{ row }">
@@ -399,23 +406,8 @@
               {{ row.assigned_at || '-' }}
             </template>
           </ElTableColumn>
-          </ElTable>
-        </div>
-
-        <div class="mt-4 flex justify-end">
-          <ElPagination
-            v-model:current-page="pagination.page"
-            v-model:page-size="pagination.pageSize"
-            :total="pagination.total"
-            :page-sizes="[10, 20, 50, 100]"
-            layout="total, sizes, prev, pager, next, jumper"
-            @current-change="handlePageChange"
-            @size-change="handleSizeChange"
-          />
-        </div>
-      </div>
-    </ElCard>
-  </div>
+      </ElTable>
+  </ListPageLayout>
 </template>
 
 <style scoped>

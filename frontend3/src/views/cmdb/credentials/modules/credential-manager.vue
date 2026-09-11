@@ -129,125 +129,112 @@
 </script>
 
 <template>
-  <div class="table-page">
-    <ElCard class="card-wrapper">
-      <!-- 类型 Tab + 新增按钮 -->
-      <div class="mb-16px flex items-center justify-between">
-        <ElTabs v-model="activeTab" class="credential-tabs">
-          <ElTabPane label="全部凭证" name="all" />
-          <ElTabPane name="user">
-            <template #label>
-              <span class="flex items-center gap-4px">
-                <ElIcon><User /></ElIcon>
-                用户连接凭证
-              </span>
-            </template>
-          </ElTabPane>
-          <ElTabPane name="system">
-            <template #label>
-              <span class="flex items-center gap-4px">
-                <ElIcon><Setting /></ElIcon>
-                系统运维凭证
-              </span>
-            </template>
-          </ElTabPane>
-        </ElTabs>
-        <PermissionButton code="cmdb.credential.create" type="primary" @click="handleAdd">新增凭证</PermissionButton>
-      </div>
+  <ListPageLayout title="凭证管理" description="维护 SSH 连接凭证，区分用户连接与系统运维用途">
+    <!-- 主操作按钮 -->
+    <template #toolbar>
+      <PermissionButton code="cmdb.credential.create" type="primary" @click="handleAdd">新增凭证</PermissionButton>
+    </template>
 
-      <!-- 凭证用途说明 -->
+    <!-- 类型 Tab + 凭证用途说明 -->
+    <template #tabs>
+      <ElTabs v-model="activeTab">
+        <ElTabPane label="全部凭证" name="all" />
+        <ElTabPane name="user">
+          <template #label>
+            <span class="flex items-center gap-4px">
+              <ElIcon><User /></ElIcon>
+              用户连接凭证
+            </span>
+          </template>
+        </ElTabPane>
+        <ElTabPane name="system">
+          <template #label>
+            <span class="flex items-center gap-4px">
+              <ElIcon><Setting /></ElIcon>
+              系统运维凭证
+            </span>
+          </template>
+        </ElTabPane>
+      </ElTabs>
+
       <ElAlert
         v-if="activeTab === 'system'"
         type="warning"
         :closable="false"
-        class="mb-12px"
+        class="mb-8px"
         description="系统运维凭证仅供 OneOps 后端使用（Agent 部署、重启、卸载、SSH 指标采集），不出现在用户连接弹窗中。通常需要 root 或具备 sudo 权限的账号。"
       />
       <ElAlert
         v-else-if="activeTab === 'user'"
         type="info"
         :closable="false"
-        class="mb-12px"
+        class="mb-8px"
         description="用户连接凭证用于用户通过堡垒机建立 SSH 会话，受访问策略约束，全程记录会话和命令审计。"
       />
+    </template>
 
-      <!-- 数据表格 -->
-      <div class="table-scroll-wrap">
-        <ElTable v-loading="loading" :data="tableData" border stripe height="100%">
-          <ElTableColumn prop="id" label="ID" width="70" align="center" />
-          <ElTableColumn prop="name" label="凭证名称" min-width="150" />
-          <ElTableColumn label="凭证用途" width="120" align="center">
-            <template #default="{ row }">
-              <ElTag :type="getCredentialTypeTag(row.credentialType).type" size="small">
-                {{ getCredentialTypeTag(row.credentialType).text }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn prop="username" label="用户名" width="120" align="center" />
-          <ElTableColumn label="认证方式" width="100" align="center">
-            <template #default="{ row }">
-              <ElTag :type="getAuthTypeTag(row.authType).type" size="small">
-                {{ getAuthTypeTag(row.authType).text }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn prop="port" label="端口" width="80" align="center" />
-          <ElTableColumn prop="description" label="描述" min-width="180" show-overflow-tooltip />
-          <ElTableColumn label="状态" width="80" align="center">
-            <template #default="{ row }">
-              <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
-                {{ row.status === 1 ? '启用' : '禁用' }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="操作" width="230" align="center" fixed="right" class-name="msre-table-actions">
-            <template #default="{ row }">
-              <PermissionButton
-                link
-                type="primary"
-                size="small"
-                code="cmdb.credential.test"
-                :loading="testLoading"
-                @click="handleTest(row)"
-              >
-                测试
-              </PermissionButton>
-              <PermissionButton link type="primary" size="small" code="cmdb.credential.update" @click="handleEdit(row)">
-                编辑
-              </PermissionButton>
-              <PermissionButton
-                link
-                type="danger"
-                size="small"
-                code="cmdb.credential.delete"
-                @click="handleDelete(row)"
-              >
-                删除
-              </PermissionButton>
-            </template>
-          </ElTableColumn>
-        </ElTable>
-      </div>
+    <!-- 数据表格 -->
+    <ElTable v-loading="loading" :data="tableData" border stripe height="100%">
+      <ElTableColumn prop="id" label="ID" width="70" align="center" />
+      <ElTableColumn prop="name" label="凭证名称" min-width="150" />
+      <ElTableColumn label="凭证用途" width="120" align="center">
+        <template #default="{ row }">
+          <ElTag :type="getCredentialTypeTag(row.credentialType).type" size="small">
+            {{ getCredentialTypeTag(row.credentialType).text }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn prop="username" label="用户名" width="120" align="center" />
+      <ElTableColumn label="认证方式" width="100" align="center">
+        <template #default="{ row }">
+          <ElTag :type="getAuthTypeTag(row.authType).type" size="small">
+            {{ getAuthTypeTag(row.authType).text }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn prop="port" label="端口" width="80" align="center" />
+      <ElTableColumn prop="description" label="描述" min-width="180" show-overflow-tooltip />
+      <ElTableColumn label="状态" width="80" align="center">
+        <template #default="{ row }">
+          <ElTag :type="row.status === 1 ? 'success' : 'info'" size="small">
+            {{ row.status === 1 ? '启用' : '禁用' }}
+          </ElTag>
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="操作" width="230" align="center" fixed="right" class-name="msre-table-actions">
+        <template #default="{ row }">
+          <PermissionButton
+            link
+            type="primary"
+            size="small"
+            code="cmdb.credential.test"
+            :loading="testLoading"
+            @click="handleTest(row)"
+          >
+            测试
+          </PermissionButton>
+          <PermissionButton link type="primary" size="small" code="cmdb.credential.update" @click="handleEdit(row)">
+            编辑
+          </PermissionButton>
+          <PermissionButton
+            link
+            type="danger"
+            size="small"
+            code="cmdb.credential.delete"
+            @click="handleDelete(row)"
+          >
+            删除
+          </PermissionButton>
+        </template>
+      </ElTableColumn>
+    </ElTable>
 
-      <SshCredentialOperateDrawer
-        v-model:visible="drawerVisible"
-        :operate-type="operateType"
-        :row-data="editingData"
-        :default-credential-type="defaultCredentialType"
-        @submitted="getData"
-      />
-    </ElCard>
-  </div>
+    <SshCredentialOperateDrawer
+      v-model:visible="drawerVisible"
+      :operate-type="operateType"
+      :row-data="editingData"
+      :default-credential-type="defaultCredentialType"
+      @submitted="getData"
+    />
+  </ListPageLayout>
 </template>
-
-<style scoped lang="scss">
-  .card-wrapper {
-    @apply flex-col-stretch;
-  }
-
-  .credential-tabs {
-    :deep(.el-tabs__header) {
-      margin-bottom: 0;
-    }
-  }
-</style>

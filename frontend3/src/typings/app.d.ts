@@ -182,6 +182,12 @@ declare namespace App {
         /** Content variant: standard (flat) or modern (gradient) */
         variant: 'standard' | 'modern';
 
+        /** Page background (root container of content area) */
+        page: {
+          /** Content area page background color */
+          background: string;
+        };
+
         /** Hero section (top banner area) */
         hero: {
           /** Whether hero section is visible */
